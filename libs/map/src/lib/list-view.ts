@@ -111,14 +111,13 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     armed: (mode) => {
       for (const [shape, button] of toolButtons) button.setAttribute('aria-pressed', String(shape === mode));
     },
-    done: (area) => box.ready((map, L) => searchIn(map, L, area)),
+    done: (area) => searchIn(area),
     escaped: () => toolButtons.get('polygon')?.focus(),
     finishesOn: (target) => target === toolButtons.get('polygon'),
     over: '.fd-map-here, .fd-map-draw, .fd-map-list-note',
   });
-  /** The area drawn, on the map while its search is in the search bar. */
-  let searched: Leaflet.Path | null = null;
-  let searchedKey = '';
+  /** The areas drawn that the search holds, on the map under the pins. */
+  const searched: Leaflet.Path[] = [];
 
   let records: MapRecord[] = [];
   let places: (LatLng | null)[] = [];
@@ -187,7 +186,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   }
 
   /** An area drawn becomes a search of its own, "In the area drawn": the places inside it, in the table and on the map. */
-  function searchIn(map: Leaflet.Map, L: LeafletModule, area: Area) {
+  function searchIn(area: Area) {
     const round = (n: number) => Math.round(n * 1e6) / 1e6;
     const shape: Record<string, JsonValue> =
       area.shape === 'circle'
@@ -196,17 +195,33 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const condition: ResolvedFilter = spec.point
       ? { field: spec.point, op: 'within', value: shape }
       : { field: spec.latitude as string, op: 'within', value: { ...shape, longitude: spec.longitude as string } };
-    searched?.remove();
-    searched = (
-      area.shape === 'circle'
-        ? L.circle([area.center.lat, area.center.lng], { radius: area.radius, className: 'fd-map-shape fd-map-searched', interactive: false })
-        : L.polygon(area.points.map((p) => [p.lat, p.lng] as [number, number]), { className: 'fd-map-shape fd-map-searched', interactive: false })
-    ).addTo(map);
-    searchedKey = JSON.stringify(condition);
     ownSearch = true;
     here.hidden = true;
     announce(labels.shapeDrawn);
     context.addSearch({ label: labels.inDrawnArea, filter: [condition] });
+  }
+
+  /**
+   * The areas drawn that the search holds, drawn on the map: one drawn here,
+   * or one a favourite brings back; gone when their search leaves the bar.
+   */
+  function drawSearched(map: Leaflet.Map, L: LeafletModule, filter: readonly ResolvedFilter[]) {
+    for (const path of searched.splice(0)) path.remove();
+    const own = new Set([spec.point, spec.latitude].filter((name): name is string => !!name));
+    const style = { className: 'fd-map-shape fd-map-searched', interactive: false };
+    const walk = (items: readonly ResolvedFilter[]): void =>
+      items.forEach((item) => {
+        if ('any' in item) return walk(item.any);
+        if ('all' in item) return walk(item.all);
+        if (item.op !== 'within' || !own.has(item.field)) return;
+        const area = item.value as Record<string, unknown>;
+        if (Array.isArray(area['polygon'])) searched.push(L.polygon((area['polygon'] as number[][]).map(([lng, lat]) => [lat, lng] as [number, number]), style).addTo(map));
+        else if (Array.isArray(area['center'])) {
+          const [lng, lat] = area['center'] as number[];
+          searched.push(L.circle([lat, lng], { ...style, radius: Number(area['radius']) }).addTo(map));
+        }
+      });
+    walk(filter);
   }
 
   // ---- the card -------------------------------------------------------------------
@@ -239,6 +254,8 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
       chosen: context.isChosen(record.id),
       choose: (on) => context.choose(record.id, on),
       ...(context.open ? { open: () => context.open?.(record.id) } : {}),
+      actions: context.actions,
+      act: (id, button) => void context.act(id, [record.id], button),
       close: () => closeCard(map, true),
     });
     showCard(map, L, at, height, card, record.id, back, keys);
@@ -406,12 +423,6 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const refit = !fitted || (key !== lastFilter && !ownSearch);
     lastFilter = key;
     ownSearch = false;
-    // The area drawn leaves the map when its search leaves the search bar.
-    if (searchedKey && !key.includes(searchedKey)) {
-      searched?.remove();
-      searched = null;
-      searchedKey = '';
-    }
     const missing = places.filter((p) => !p).length;
     const words = [
       result.total > records.length ? fill(labels.mapShowsFirst, { n: count(records.length), total: count(result.total) }) : '',
@@ -426,6 +437,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
         here.hidden = true;
       }
       draw(map, L);
+      drawSearched(map, L, filter);
       if (open?.id !== null && open && !records.some((r) => r.id === open?.id)) closeCard(map, false);
       else open?.card.setChosen(open.id !== null && context.isChosen(open.id));
     });

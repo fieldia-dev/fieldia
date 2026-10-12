@@ -25,6 +25,9 @@ export interface CardOptions {
   chosen?: boolean;
   choose?(on: boolean): void;
   open?: () => void;
+  /** The list's buttons, each pressed for this record alone. */
+  actions?: { id: string; label: string; style?: string }[];
+  act?(id: string, button: HTMLElement): void;
   close(): void;
 }
 
@@ -83,6 +86,14 @@ export function drawCard(options: CardOptions): Card {
   box.addEventListener('change', () => options.choose?.(box.checked));
   const actions = make(doc, 'div', 'fd-map-card-actions', ...(options.choose ? [make(doc, 'label', 'fd-map-card-choose', box, labels.choose)] : []));
   let first: HTMLElement = close;
+  for (const action of options.actions ?? []) {
+    const button = make(doc, 'button', `fd-button fd-button-${action.style ?? 'secondary'} fd-map-card-act`, action.label);
+    button.type = 'button';
+    button.dataset['action'] = action.id;
+    button.addEventListener('click', () => options.act?.(action.id, button));
+    actions.append(button);
+    first = button;
+  }
   if (options.open && options.card.open !== false) {
     const open = make(doc, 'button', 'fd-button fd-button-primary fd-map-card-open', labels.openRecord);
     open.type = 'button';

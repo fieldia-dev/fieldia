@@ -70,6 +70,10 @@ export interface ListViewContext {
   highlight(id: RecordId | null): void;
   /** Put a search into the search bar, as a person's own: "In this area". */
   addSearch(search: { label: string; filter: Resolved[] }): void;
+  /** The list's buttons for the records chosen, to offer on one record's card too: "Assign", for this driver alone. */
+  actions: { id: string; label: string; style?: ButtonNode['style'] }[];
+  /** Press one of them for these records, `button` busy meanwhile: its confirmation, its steps, then the records again. */
+  act(id: string, ids: RecordId[], button: HTMLElement): Promise<void>;
 }
 
 /** Another way of showing the list's records, made by a ListViewFactory. */
@@ -414,6 +418,13 @@ export function listView(context: ListContext): ListView {
         }
       },
       addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),
+      actions: (node.actions ?? []).map((action) => ({ id: action.id, label: action.label, ...(action.style ? { style: action.style } : {}) })),
+      act: (id, ids, button) =>
+        context.press(button, async () => {
+          const result = await form.runAction(id, { recordIds: ids });
+          await Promise.all([load(), mapPart?.reload()]);
+          return result;
+        }),
     });
     mapHolder.append(mapPart.element);
     void mapPart.reload();

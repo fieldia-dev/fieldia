@@ -193,7 +193,9 @@ test('a pin opens its card: picture, title, fields, a Choose shared with its row
   // Chosen on the card is chosen in the table, with the list's buttons for it; and back.
   await card(page).getByLabel('Choose').check();
   await expect(rowOf(page, id).locator('.fd-list-checkbox')).toBeChecked();
-  await expect(page.getByRole('button', { name: 'Add to shortlist' })).toBeVisible();
+  await expect(page.locator('.fd-list-selection').getByRole('button', { name: 'Add to shortlist' })).toBeVisible();
+  // The card offers the list's button too, for this home alone.
+  await expect(card(page).getByRole('button', { name: 'Add to shortlist' })).toBeVisible();
   await expect(pin.locator('.fd-map-face')).toHaveAttribute('data-chosen', '');
   await rowOf(page, id).locator('.fd-list-checkbox').uncheck();
   await expect(card(page).getByLabel('Choose')).not.toBeChecked();
@@ -363,6 +365,23 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
   expect(problems).toEqual([]);
 });
 
+test('a courier’s card offers the list’s own button, pressed for that courier alone', async ({ page }) => {
+  const { demo } = await openList(page, 'plain', COURIERS);
+  for (let i = 0; i < 3; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await page.waitForTimeout(600);
+  const pin = pins(page).first();
+  const id = (await pin.getAttribute('data-id'))!;
+  await pin.locator('.fd-map-face').click();
+  await cardShown(page);
+  const give = card(page).getByRole('button', { name: 'Give the next order' });
+  await expect(give).toBeVisible();
+  await give.click();
+  await expect.poll(async () => (await demo<{ action: string; recordIds?: unknown[] }[]>('requests')).at(-1)).toMatchObject({ action: 'assign', recordIds: [Number(id)] });
+  // Nothing was chosen for it: the button acts on its card's courier, not on the table's choice.
+  await expect(page.locator('.fd-list-selection')).toBeHidden();
+  await screen(page, 'map-list-card-button');
+});
+
 test('at a phone’s width: the map over the table, shorter, and nothing sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openList(page);
@@ -427,6 +446,28 @@ test('an area drawn on the map is a search of its own: the homes inside it, the 
   await expect(range(page)).toHaveText('1–12 / 64');
   await expect(drawnArea(page)).toHaveCount(0);
   expect(problems).toEqual([]);
+});
+
+test('an area drawn is kept in a favourite, and the favourite brings the area back onto the map', async ({ page }) => {
+  await openList(page);
+  await tools(page).getByRole('button', { name: 'Box' }).click();
+  await drag(page, await at(theMap(page), 0.42, 0.42), await at(theMap(page), 0.62, 0.6));
+  await expect(chips(page)).toHaveText(['In the area drawn']);
+  const kept = await total(page);
+  const panel = page.locator('.fd-search-panel');
+  await page.getByRole('button', { name: 'Search options' }).click();
+  await panel.getByText('Save current search').click();
+  await panel.getByRole('textbox').last().fill('Middle of Cairo');
+  await panel.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.reload();
+  await mapReady(theMap(page));
+  await expect(range(page)).toHaveText('1–12 / 64');
+  await expect(drawnArea(page)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Search options' }).click();
+  await panel.getByRole('button', { name: 'Middle of Cairo', exact: true }).click();
+  await expect(chips(page)).toHaveText(['In the area drawn']);
+  await expect.poll(() => total(page)).toBe(kept);
+  await expect(drawnArea(page)).toHaveCount(1);
 });
 
 test('a polygon drawn by the keys, the pins letting every press through while it is drawn', async ({ page }) => {

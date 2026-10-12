@@ -213,8 +213,8 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card-fields div { display: flex; justify-content: space-between; gap: 10px; }
 .fd-map-card-fields dt { color: var(--fd-muted); }
 .fd-map-card-fields dd { margin: 0; text-align: end; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-inline-end: auto; }
 .fd-map-card-choose input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }
 .fd-map-card .fd-button { min-height: 30px; padding-inline: 14px; }
 .fd-map-card :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
