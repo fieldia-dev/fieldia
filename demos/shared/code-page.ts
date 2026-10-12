@@ -88,7 +88,6 @@ export const codePage: Page = {
   translations: {
     ar: {
       'Code fields, each coloured in its own language, all in one editor.': 'حقول برمجية، كل منها ملوّن بلغته، كلها في محرّر واحد.',
-      'VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.': 'يأخذ محرّر VS Code شيفرة من عدة أسطر: يبقى هذا الشرط ذو السطر الواحد في CodeMirror.',
       'Nightly job': 'المهمة الليلية',
       'Code fields, each coloured in its own language.': 'حقول برمجية، كل منها ملوّن بلغته.',
       'Job name': 'اسم المهمة',
@@ -149,21 +148,16 @@ const CODE_FIELDS: [name: string, language?: string][] = [
 
 /**
  * The code page with its fields in the editor asked for: each where it fits
- * (`both`), or every one in CodeMirror or VS Code's editor. VS Code's editor
- * takes code of several lines (a text or json field): the one-line condition
- * stays in CodeMirror, and says so.
+ * (`both`), or every one in CodeMirror or VS Code's editor — the one-line
+ * condition too, one line in either.
  */
 export function codePageFor(editor: string | null): Page {
   if (editor !== 'codemirror' && editor !== 'monaco') return codePage;
-  const widgetOf = (name: string) => (editor === 'codemirror' || codePage.fields[name].type === 'char' ? 'code' : 'monaco');
+  const widget = editor === 'codemirror' ? 'code' : 'monaco';
   const sections = (codePage.layout as { children: { id: string }[] }).children;
   return {
     ...codePage,
     description: 'Code fields, each coloured in its own language, all in one editor.',
-    fields:
-      editor === 'monaco'
-        ? { ...codePage.fields, condition: { ...codePage.fields['condition'], help: 'VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.' } as Page['fields'][string] }
-        : codePage.fields,
     layout: {
       type: 'sections',
       id: 'root',
@@ -174,9 +168,7 @@ export function codePageFor(editor: string | null): Page {
           id: `s-${editor}`,
           title: editor === 'codemirror' ? 'CodeMirror' : 'VS Code’s editor',
           columns: 1,
-          children: CODE_FIELDS.map(([name, language]) =>
-            field(name, name, widgetOf(name), language, name === 'condition' ? { placeholder: 'order.total > 100' } : {})
-          ),
+          children: CODE_FIELDS.map(([name, language]) => field(name, name, widget, language, name === 'condition' ? { placeholder: 'order.total > 100' } : {})),
         },
         sections[sections.length - 1],
       ],
