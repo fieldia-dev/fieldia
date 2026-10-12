@@ -143,3 +143,37 @@ test('a map on a page, in the screen designer: its layers in its panel, a new on
   await expect(tried.locator('.fd-map-mark')).toHaveCount(3);
   expect(problems).toEqual([]);
 });
+
+test('a kitchen’s map in the screen designer: its areas from the app’s borders, its tools, a reachable area, and a fence with its steps', async ({ page }) => {
+  const problems = watch(page);
+  await stubMaps(page);
+  await page.goto('/screen/?start=kitchen&ride=off');
+  await page.locator('.fd-map-preview.fd-canvas-block').click();
+  const layers = page.locator('.fd-map-layer:not(.fd-map-fence)');
+  await expect(layers).toHaveCount(4);
+  // The districts: the app's borders, shaded by their fee, a press choosing into the offer's field.
+  const areas = layers.first();
+  await expect(areas.getByLabel('Areas', { exact: true })).toHaveValue('cairo-districts');
+  await expect(areas.getByLabel('Shaded by')).toHaveValue('fee');
+  await expect(areas.getByLabel('A press chooses it into')).toHaveValue('offer_district');
+  // The area within fifteen minutes, made ten by typing.
+  const near = layers.nth(1);
+  await near.getByRole('spinbutton', { name: 'Minutes' }).fill('10');
+  await expect.poll(async () => mapsOn((await page_(page)).layout)[0].layers[1]).toMatchObject({ reachable: { from: 'kitchen', minutes: 10 } });
+  // Its tools, ticked as the page has them.
+  const tools = page.getByRole('group', { name: 'Tools' });
+  await expect(tools.getByLabel('Full screen')).toBeChecked();
+  await expect(tools.getByLabel('Satellite')).not.toBeChecked();
+  await tools.getByLabel('Satellite').check();
+  await expect.poll(async () => (mapsOn((await page_(page)).layout)[0] as { tools?: string[] }).tools).toEqual(['satellite', 'fullscreen', 'measure']);
+  // Its fences, named in words, each with its steps as a button's are set.
+  const fences = page.locator('.fd-map-fence');
+  await expect(fences).toHaveCount(2);
+  await expect(fences.first().locator('.fd-map-layer-head strong')).toHaveText('When Courier goes into Drop-off zone');
+  await expect(fences.first().locator('.fd-do-say')).toHaveText(['Set In the drop-off zone to Yes', 'Say as good news: The courier is in the drop-off zone: tell the customer they are almost there.']);
+  await fences.nth(1).getByLabel('When it').selectOption({ label: 'Goes into' });
+  await expect(fences.nth(1).locator('.fd-map-layer-head strong')).toHaveText('When Courier goes into Drop-off zone');
+  await screen(page, 'map-designer-kitchen', { viewport: true });
+  expect(problems).toEqual([]);
+});
+

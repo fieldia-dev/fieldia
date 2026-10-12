@@ -4,7 +4,7 @@ import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import { codeWidgets } from '@fieldia/code';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
-import { demoListViews, demoMaps } from '../shared/maps';
+import { DEMO_REGION_SETS, demoListViews, demoMaps } from '../shared/maps';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
@@ -19,7 +19,8 @@ import addressPage from '../../examples/pages/address.page.json';
  * the "New employee" page: groups side by side, arrangements, tabs and blocks,
  * `?start=big` a supplier's file of 500 fields, for timing, `?start=homes`
  * the homes in Cairo, a list on a map (its Map in the list's panel, and Try
- * it with the map), `?start=order` an order with its map's layers, and
+ * it with the map), `?start=order` an order with its map's layers,
+ * `?start=kitchen` a kitchen's map with its areas, reach and fences, and
  * `?start=template-<id>` a page of the template library, to change.
  * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  * `?locale=ar` shows the designer in Arabic, its sample pages written in
@@ -138,19 +139,19 @@ const customerPage: Page = {
 };
 store.pages.set('customer-card', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
-const model = start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : start === 'order' ? pages['map-order'].fields : undefined;
+const model = start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : start === 'order' ? pages['map-order'].fields : start === 'kitchen' ? pages['map-kitchen'].fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
 const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
 const first = template
   ? (structuredClone(template) as Page)
-  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : start === 'order' ? (structuredClone(pages['map-order']) as Page) : siteVisit();
+  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : start === 'order' ? (structuredClone(pages['map-order']) as Page) : start === 'kitchen' ? (structuredClone(pages['map-kitchen']) as Page) : siteVisit();
 // The app's own kind, an IBAN, and the widget that draws it.
 const opened = timeFirstPaint('screen');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
 const lists = arabic ? APP_LISTS_AR : APP_LISTS;
 /** “Open it” on a saved form: the editor closes, and opens that form from the store. */
 const openForm = (id: string) => void reopen(id);
-const designer = createDesigner({ page: first, store, model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale });
+const designer = createDesigner({ page: first, store, model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
@@ -166,7 +167,7 @@ opened();
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale });
+  demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
   demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
 }
 Object.assign(window, { fieldiaDesigner: demo });

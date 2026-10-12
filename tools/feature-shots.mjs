@@ -103,6 +103,35 @@ const SHOTS = [
       await page.waitForTimeout(600);
     } },
 
+  // ---- maps ----
+  // Maps are JPEGs: their pictures are a quarter the size that way. Their images load from OpenStreetMap.
+  { file: 'maps/fields.jpg', query: 'page=map-zone&skin=underline', width: 1280, height: 640, settle: 2500, before: async (page) => {
+      await page.locator('.leaflet-tile-loaded').first().waitFor();
+      // A zone drawn round Downtown and Garden City, its corners ready to drag, as a person leaves one.
+      await page.evaluate(() => window.fieldiaDemo.handle.form.setValues({ zone: { type: 'Feature', properties: { shape: 'polygon' }, geometry: { type: 'Polygon', coordinates: [[[31.2268, 30.0522], [31.2391, 30.0571], [31.2512, 30.0516], [31.2489, 30.0381], [31.2352, 30.0322], [31.2241, 30.0398], [31.2268, 30.0522]]] } } }));
+      await page.waitForTimeout(1200);
+    } },
+  { file: 'maps/list.jpg', query: 'page=map-homes&skin=underline', width: 1280, height: 700, settle: 2500, before: async (page) => {
+      await page.locator('.fd-map-list .leaflet-tile-loaded').first().waitFor();
+      await page.locator('.fd-list-row').first().hover();
+      await page.waitForTimeout(600);
+    } },
+  // The courier a few points along the road, the minutes left under their photo.
+  { file: 'maps/live.jpg', query: 'page=map-order&skin=underline&readonly=1', width: 1280, height: 640, settle: 2500, top: '.fd-map-form', before: async (page) => {
+      await page.locator('.fd-map-form .leaflet-tile-loaded').first().waitFor();
+      await page.waitForTimeout(7000);
+    } },
+  { file: 'maps/areas.jpg', query: 'page=map-zones&skin=underline', width: 1280, height: 700, settle: 2500, before: async (page) => {
+      await page.locator('.fd-map-list .leaflet-tile-loaded').first().waitFor();
+      await page.locator('path.fd-map-region[data-shade]').first().waitFor();
+      await page.waitForTimeout(600);
+    } },
+  { file: 'maps/reach.jpg', query: 'page=map-kitchen&skin=underline', width: 1280, height: 640, settle: 2500, top: '.fd-map-form', before: async (page) => {
+      await page.locator('.fd-map-form .leaflet-tile-loaded').first().waitFor();
+      await page.locator('path.fd-map-reach').first().waitFor();
+      await page.waitForTimeout(5000);
+    } },
+
   // ---- looks and languages ----
   // The gallery's first two rows: four themes.
   { file: 'looks/themes.png', site: '/look/', node: '.theme-grid', width: 1280, height: 900, maxHeight: 940 },

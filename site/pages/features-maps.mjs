@@ -1,0 +1,72 @@
+import { demoHref as demo, featurePage } from '../feature-page.mjs';
+
+/** A feature page: Maps. A place, a list's records, a form's places that move, and areas by colour, on the provider the app chooses. */
+export default featurePage({
+  path: '/features/maps/',
+  folder: 'maps',
+  title: 'Maps',
+  description: 'Maps with Fieldia: a place and an area as fields, a list’s records on a map, a map on a form with places that move and routes along the roads, and areas shaded by colour, on Azure Maps, Google, Mapbox or your own.',
+  kicker: 'Maps',
+  headline: ['Where it is.', 'Where it is going.'],
+  lede: 'A place and an area as fields, a list’s records on a map beside the table, a map on a form whose courier glides along the road, and districts shaded by their orders. The page says what each map shows, by field name; your app chooses whose maps. This map is live. Move it.',
+  opening: { frame: 'page=map-zones&skin=underline', title: 'The week’s orders by district, live' },
+  parts: [
+    {
+      id: 'fields',
+      no: 'A place and an area',
+      title: 'Fields that are places',
+      body: 'A place set by searching an address, a press on the map, a dragged pin, “My location” or typed coordinates; an area drawn as a polygon, a box or a circle, or chosen from named ones. Kept as GeoJSON in a field.',
+      ticks: ['Address search as people type, on the provider’s own search or yours', 'Drawn by mouse, finger, pen or keyboard alone', 'Named areas beside the drawing, for those who cannot draw', 'Kept as GeoJSON your server can read'],
+      shot: 'fields.jpg', alt: 'A delivery zone drawn as a polygon over Cairo, its corners ready to drag, beside the zone’s fee and time', width: 1280, height: 640,
+      tryIt: ['Try an area', demo('page=map-zone&skin=underline')], docs: ['Maps among the fields, in the docs', '/fields/#map'],
+    },
+    {
+      id: 'list',
+      no: 'A list on a map',
+      title: 'The records beside their map',
+      body: 'A list’s records on a map: a price, a name, a car or a face on each pin, a card for each, crowded pins as one bubble; a pin lights its row and a row its pin; Search this area, or draw one.',
+      ticks: ['Pins drawn by the page: words, an icon turned the way it goes, a photo, a colour by condition', 'The same search and the same records chosen as the table', 'Search this area, or an area drawn to search in', 'Nearest first, from where the reader is'],
+      shot: 'list.jpg', alt: 'Homes in Cairo as a list beside their map: a price on each pin, a bubble of homes, the first row lit on the map', width: 1280, height: 700,
+      tryIt: ['Try the homes', demo('page=map-homes&skin=underline')], docs: ['Lists on a map, in the docs', '/lists/#map'],
+    },
+    {
+      id: 'live',
+      no: 'Places that move',
+      title: 'A courier on the way, the minutes counting down',
+      body: 'A map on a form shows the record’s places as layers: a kitchen, a door, a courier who glides along the road as each new place comes in, the road behind them fading and the minutes left written into the record.',
+      ticks: ['Places that glide, grey when their news is old, followed until the map is moved', 'Routes along the roads, by car, bike or on foot', 'The time and distance left written into the record’s fields', 'A place for each line: a round’s stops, numbered in their order'],
+      shot: 'live.jpg', alt: 'An order’s map: the kitchen, the courier’s photo on the road with 4 min under it, the road travelled faded, the door in Zamalek', width: 1280, height: 640,
+      tryIt: ['Watch an order on its way', demo('page=map-order&skin=underline&readonly=1')], docs: ['A map on a form, in the docs', '/maps/#form'],
+    },
+    {
+      id: 'areas',
+      no: 'Areas by colour',
+      title: 'Districts shaded by their numbers',
+      body: 'Districts, zones or municipalities shaded by how many records each has, or by a number of their own, with a legend. Point at one for its numbers; press one to search for its records, or to choose it into a field.',
+      ticks: ['Borders from your app: a file, a field or a function', 'Shades from the page’s own accent, light and dark', 'A press searches, or chooses the area into a field', 'Every area by keyboard: one stop, the arrows from one to the next'],
+      shot: 'areas.jpg', alt: 'Cairo’s districts shaded by the week’s orders beside the list of orders, a legend from 1–5 to 21–25', width: 1280, height: 700,
+      tryIt: ['Try the districts', demo('page=map-zones&skin=underline')], docs: ['Areas by colour, in the docs', '/maps/#areas'],
+    },
+    {
+      id: 'reach',
+      no: 'Reach, fences and heat',
+      title: 'Within fifteen minutes, and a step when they arrive',
+      body: 'The area within some minutes’ drive of a place; a fence that runs the page’s own steps as a courier goes into an area; a heat map where pins are too many to read; and under the zoom, satellite images, full screen and a ruler.',
+      ticks: ['The area within some minutes, from Azure Maps, Mapbox or your app', 'Fences that run steps as a place goes in or out', 'A heat map from afar, each record’s pin back at the streets', 'Satellite, full screen and measuring a way'],
+      shot: 'reach.jpg', alt: 'A kitchen’s map: districts shaded by their delivery fee, the area within fifteen minutes’ drive dashed round the kitchen, the courier on the way', width: 1280, height: 640,
+      tryIt: ['Try the kitchen’s map', demo('page=map-kitchen&skin=underline')], docs: ['Reach and fences, in the docs', '/maps/#reach'],
+    },
+  ],
+  facts: {
+    no: 'Kept right',
+    title: 'What maps need in an app',
+    items: [
+      ['Any provider', 'Azure Maps, Google, Mapbox, your own map images, or OpenStreetMap’s for a demo. Keys stay on your server.'],
+      ['Nothing until used', 'The map engine, routes, areas and tools load the first time a page shows them.'],
+      ['Every reader', 'Pins and areas by keyboard, named for screen readers, an area’s field always offering named areas.'],
+      ['One page', 'The page names what each map shows by field; the app gives the maps once.'],
+    ],
+  },
+  factLinks: [['Maps, in the docs', '/maps/'], ['Lists on a map', '/lists/#map']],
+  finale: { title: 'Put your records on a map', words: 'Name the place field and what each pin shows, give the viewer your maps once, and every page can have one.' },
+});

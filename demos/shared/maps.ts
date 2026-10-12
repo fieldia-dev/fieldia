@@ -18,6 +18,8 @@ const settings: MapSettings = {
   reach: madeUpReach,
 };
 export const demoMapWidgets = mapWidgets(settings);
+/** The borders the demos' maps know, for the designer to offer a map's areas by colour. */
+export const DEMO_REGION_SETS = [{ name: 'cairo-districts', key: 'code', nameKey: 'name', numbers: ['fee'] }];
 /** A list's records on the same maps: the viewer's `listViews`. */
 export const demoListViews = mapListViews(settings);
 

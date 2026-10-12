@@ -136,6 +136,38 @@ seconds, metres and line go into. Routes come from the provider (`route`),
 loaded the first time one is asked for, or from the app's own `route` in the
 settings.
 
+## Areas by colour, reach and fences
+
+Districts, zones or municipalities shaded in up to five steps of the page's
+accent, with a legend. The borders are the app's: GeoJSON polygons given once
+by name, loaded the first time a map shades them.
+
+```ts
+mapListViews({ provider, regions: { districts: () => fetch('/geo/districts.json').then((r) => r.json()) } });
+```
+
+On a list's map (`"regions": { "from": "districts", "key": "code", "field":
+"district" }`) each area is shaded by its records, counted by the data source's
+`groups` under the search; a press searches for them, and the other areas keep
+their shades. On a form's map, a layer with `regions` is shaded by a number
+among each border's properties (`shade`), and a press chooses an area into a
+field (`choose`). The areas are one keyboard stop, the arrows going from one to
+the next.
+
+A layer with `reachable: { from, minutes, mode }` draws the area within some
+minutes of a place: Azure Maps (by car), Mapbox (car, bike, foot), or the app's
+own `reach({ at, minutes, mode })`. A map's `fences` run the page's own steps,
+as a button's, when a place that moves goes into an area field (`area`) or a
+reachable area (`within`), or comes out of it; never at first sight. They run in
+the browser showing the map: what must happen once, your server watches.
+
+A list's map with `heat` shows its records as a heat map from afar (each
+weighing one, or `weight`), their pins back at the streets. Any map takes
+`tools`: `satellite`, `fullscreen`, `measure`, and on a list's map `nearest`
+(its records nearest the reader first, the data source sorting by `near`).
+Areas, reach, fences, the heat map and the tools each load with the first map
+that has them.
+
 ## Without a mouse
 
 Tab reaches the map, which shows a cross at its centre: the arrow keys move the
@@ -152,13 +184,13 @@ zooms into a bubble, and Escape closes the card, back on its pin.
 
 ## Providers
 
-| Provider | Road | Dark | Satellite | Address search | Routes |
-| --- | --- | --- | --- | --- | --- |
-| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, as people type | car, foot |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | Places API, as people type | car, bike, foot (Routes API) |
-| `mapbox({ token })` | yes | yes | yes | yes, as people type | car (traffic), bike, foot |
-| `tiles({ url, credit, route })` | the app's own map images | | | the app's own | the app's own |
-| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) |
+| Provider | Road | Dark | Satellite | Address search | Routes | Reachable area |
+| --- | --- | --- | --- | --- | --- | --- |
+| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, as people type | car, foot | car |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | Places API, as people type | car, bike, foot (Routes API) | no |
+| `mapbox({ token })` | yes | yes | yes | yes, as people type | car (traffic), bike, foot | car, bike, foot |
+| `tiles({ url, credit, route, reach })` | the app's own map images | | | the app's own | the app's own | the app's own |
+| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
 
 Keys never live in Fieldia: pass one restricted to your sites, or a function
 fetching a short-lived token from your server. Each provider's credits are shown
@@ -187,6 +219,9 @@ designer and its editors too. A list page's panel has its Map: where each
 record is, its pins, its card, and how the list opens. Give the screen editor
 `listViews` and `maps` (and `sampleCentre`, where its made-up records and
 places are) and Try it shows the maps; with `maps` it offers a Map among its
-blocks, whose panel sets its layers and the routes between them.
+blocks, whose panel sets its tools, its layers (places, routes, areas by colour,
+the area within some minutes) and its fences with their steps. Give
+`createDesigner` the app's `regionSets` (each set's name, key property, name
+property and numbers) and a map's areas are offered from them.
 
 MIT. Leaflet is BSD-2-Clause; its stylesheet is included with its licence.

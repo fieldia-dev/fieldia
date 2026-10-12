@@ -3,7 +3,7 @@ import { c, code } from '../layout.mjs';
 export default {
   path: '/maps/',
   title: 'Maps',
-  description: 'Maps in Fieldia pages: a place and an area as fields, a list’s records on a map, and a map on a form with its layers, live places and routes, on the map provider you choose.',
+  description: 'Maps in Fieldia pages: a place and an area as fields, a list’s records on a map, a map on a form with its layers, live places and routes, areas by colour, reachable areas and fences, on the map provider you choose.',
   body: `
 <p class="lead">${c('@fieldia/map')} puts maps in Fieldia pages, on the provider you choose: Azure Maps, Google, Mapbox, your own map images, or OpenStreetMap's for a demo. The page says what each map shows, by field name; the app gives the maps once.</p>
 
@@ -87,7 +87,58 @@ handle.form.setValues({ courier_lat: 30.0512, courier_lng: 31.2337 });`
 </table>
 <p>Values a route writes are changes to the record, as the page asks: they are saved as any change is. A page that only follows an order, and keeps nothing, is shown read-only.</p>
 
+<h2 id="areas">Areas by colour</h2>
+<p>Districts, zones or municipalities, shaded in up to five steps of the page's accent, with a legend. Their borders are the app's, never Fieldia's: GeoJSON polygons, from your own data or an open source such as OpenStreetMap or geoBoundaries, given to the maps once by name, and loaded the first time a map shades them.</p>
+${code(
+  'ts',
+  `
+const maps = {
+  provider,
+  regions: { districts: () => fetch('/geo/districts.json').then((r) => r.json()) },
+};`
+)}
+<p>On a list's map, each area is shaded by its records: those whose ${c('field')} holds the area's ${c('key')}, counted by the data source's ${c('groups')} under the search. A press searches for an area's records (“In Zamalek”), and the other areas keep their shades. On a form's map, an area is shaded by a number among its own properties, and a press chooses it into a field.</p>
+${code(
+  'json',
+  `
+"map": { "point": "place", "regions": { "from": "districts", "key": "code", "name": "name", "field": "district" } }
+
+{ "id": "districts", "label": "Delivery fee, EGP",
+  "regions": { "from": "districts", "key": "code", "name": "name", "shade": "fee", "choose": "district" } }`
+)}
+<p>Pointing at an area lights it and says its name and number. On the keyboard the areas are one stop: the arrow keys go from one to the next in reading order, Enter presses one. <a href="/demos/plain/?page=map-zones&skin=outlined">Try the orders by district</a> · <a href="/demos/plain/?page=map-kitchen&skin=outlined">try the kitchen's map</a>.</p>
+
+<h2 id="heat">A heat map, and nearest first</h2>
+<p>With ${c('heat')}, a list's map shows its records as a heat map while it is far out, each weighing one or the number its ${c('weight')} names, their pins coming back close in, at the streets. With the tool ${c('nearest')}, a button under the zoom puts the list in order from where the reader is (the middle of the map, if they do not say): the table and the map both, the data source asked with ${c('sort: [{ field, near }]')}. <a href="/demos/plain/?page=map-heat&skin=outlined">Try the heat map</a>.</p>
+
+<h2 id="reach">The area within some minutes, and fences</h2>
+<p>A layer with ${c('reachable')} draws the area within some minutes of a place (or of the reader's own), by car unless said, asked again once the place has moved:</p>
+${code(
+  'json',
+  `
+{ "id": "near", "label": "Within 15 minutes' drive", "reachable": { "from": "kitchen", "minutes": 15 } }`
+)}
+<table>
+  <thead><tr><th>Provider</th><th>The area within some minutes</th></tr></thead>
+  <tbody>
+    <tr><td>${c('azureMaps')}</td><td>By car (Route Range of 2025).</td></tr>
+    <tr><td>${c('mapbox')}</td><td>By car, bike and on foot (Isochrone).</td></tr>
+    <tr><td>${c('googleMaps')}, ${c('openStreetMap')}</td><td>None: the app's own, ${c('reach: ({ at, minutes, mode }) => ({ rings })')}.</td></tr>
+  </tbody>
+</table>
+<p>A fence runs the page's own steps, as a button's, when a place that moves goes into an area or comes out of it: an area field, or a reachable area of the map. Never at first sight, when the place was there already:</p>
+${code(
+  'json',
+  `
+"fences": [{ "layer": "courier", "area": "drop_zone", "when": "enter",
+  "steps": [{ "do": "set", "field": "arriving", "value": "true" }, { "do": "call", "action": "tell_customer" }] }]`
+)}
+<p>A fence runs in the browser that shows the map: for something that must happen once, whoever is looking, your server watches the place instead.</p>
+
+<h2 id="tools">Tools under the zoom</h2>
+<p>Any map, a field's, a list's or a form's, takes ${c('tools')}: ${c('satellite')} (no button where the provider has no satellite images), ${c('fullscreen')} (filling the window where the browser refuses the screen), ${c('measure')} (points clicked, or put at the cross with Space; its length said as it grows) and, on a list's map, ${c('nearest')}. Their code comes with the first map that has them.</p>
+
 <h2 id="designer">In the designer</h2>
-<p>The screen editor offers a Map among its blocks when it is given ${c('maps')}: its panel sets its name, its height and its layers, each with the fields it reads, and adds a route between two of them. Try it draws the map, its places made up around the middle the app gives (${c('sampleCentre')}).</p>
+<p>The screen editor offers a Map among its blocks when it is given ${c('maps')}: its panel sets its name, its height, its tools and its layers, each with the fields it reads, adds a route between two of them, areas by colour from the app's borders (${c('regionSets')}), the area within some minutes, and fences, each with the steps it runs, set as a button's are. A list's panel sets its map's tools, a heat map and its areas by colour. Try it draws the map, its places made up around the middle the app gives (${c('sampleCentre')}).</p>
 `,
 };

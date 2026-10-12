@@ -9,12 +9,13 @@ import { code } from './layout.mjs';
  * own module in site/pages/; this module draws them all the same way.
  */
 
-/** The six areas, in the order the Features page and the top bar's menu list them. */
+/** The seven areas, in the order the Features page and the top bar's menu list them. */
 export const FEATURES = [
   { path: '/features/forms/', name: 'Forms and surveys', blurb: 'Every field a form needs, steps that follow the answers, checks as people type, and a Google Forms look.' },
   { path: '/features/records/', name: 'Business records', blurb: 'Status bars, stat buttons, lines that add up, tabs, the chatter, the PDF beside the sheet and a pager.' },
   { path: '/features/rules/', name: 'Rules and actions', blurb: 'Fields shown, required and locked by conditions, values worked out, and buttons that run steps.' },
   { path: '/features/lists/', name: 'Lists and search', blurb: 'Suggestions as people type, filters, grouping and favourites, and buttons for the records chosen.' },
+  { path: '/features/maps/', name: 'Maps', blurb: 'Places and areas as fields, records on a map, couriers that move along the road, and districts shaded by colour.' },
   { path: '/features/looks/', name: 'Looks and languages', blurb: 'Eight themes, two skins, light and dark, four languages right to left, and your app’s own words.' },
   { path: '/features/backend/', name: 'Your backend', blurb: 'One small interface to load and save; your server fills in fields and puts its refusals on them.' },
 ];
