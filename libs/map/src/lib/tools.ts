@@ -46,7 +46,7 @@ export function wireTools(options: {
   const traffic = options.provider.traffic;
   if (tools.has('traffic') && traffic) {
     const button = box.tool(labels.traffic, '<rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/>');
-    // None where the map is: no such button.
+    // None from the provider: no such button, as with no traffic at all.
     button.hidden = true;
     void traffic('road', locale).then((spec) => (button.hidden = !spec), () => (button.hidden = true));
     let on = false;
