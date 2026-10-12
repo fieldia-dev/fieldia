@@ -198,6 +198,10 @@ function mapSection(el: ElementFactory, designer: Designer) {
   const areas = el('select', { class: 'fd-input fd-select', 'aria-label': w.areas }) as HTMLSelectElement;
   const areaField = el('select', { class: 'fd-input fd-select', 'aria-label': w.areaField }) as HTMLSelectElement;
   const areaWhy = el('p', { class: 'fd-properties-hint', role: 'status', hidden: '' }, w.noAreaField);
+  // How the map sits in its page: its height, the gestures it takes, the closest it zooms to show its records.
+  const height = el('select', { class: 'fd-input fd-select', 'aria-label': w.mapHeight }) as HTMLSelectElement;
+  const allGestures = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const fitZoom = el('input', { class: 'fd-input', type: 'number', min: '1', max: '22', placeholder: '16', 'aria-label': w.fitZoom }) as HTMLInputElement;
   const rows = {
     lat: prop(el, w.latitude, lat),
     lng: prop(el, w.longitude, lng),
@@ -232,6 +236,9 @@ function mapSection(el: ElementFactory, designer: Designer) {
     rows.areas,
     rows.areaField,
     areaWhy,
+    prop(el, w.mapHeight, height),
+    el('label', { class: 'fd-q-required' }, allGestures, el('span', {}, w.allGestures)),
+    prop(el, w.fitZoom, fitZoom),
     el('p', { class: 'fd-properties-hint' }, w.mapNote)
   );
   const element = el('div', { class: 'fd-prop', 'data-part': 'map' }, el('span', { class: 'fd-prop-name' }, w.map), onRow, noPlace, details);
@@ -323,6 +330,25 @@ function mapSection(el: ElementFactory, designer: Designer) {
     });
   });
   areaField.addEventListener('change', () => change((map) => map.regions && (map.regions.field = areaField.value)));
+  height.addEventListener('change', () =>
+    change((map) => {
+      if (!height.value) delete map.height;
+      else map.height = height.value === 'fill' ? 'fill' : Number(height.value);
+    })
+  );
+  allGestures.addEventListener('change', () =>
+    change((map) => {
+      if (allGestures.checked) map.gestures = 'all';
+      else delete map.gestures;
+    })
+  );
+  fitZoom.addEventListener('change', () =>
+    change((map) => {
+      const zoom = Math.round(Number(fitZoom.value));
+      if (fitZoom.value.trim() === '' || !Number.isFinite(zoom)) delete map.fitZoom;
+      else map.fitZoom = Math.min(22, Math.max(1, zoom));
+    })
+  );
   addToCard.addEventListener('click', () => {
     const page = designer.getPage();
     const shown = new Set(current()?.card?.fields ?? []);
@@ -398,6 +424,14 @@ function mapSection(el: ElementFactory, designer: Designer) {
       areaField.value = map.regions?.field ?? '';
       rows.areaField.hidden = !map.regions;
       if (map.regions) areaWhy.hidden = true;
+      // The heights offered, and one of the page's own as it is.
+      const heights: [string, string][] = [['', w.mapHeights.window], ['fill', w.mapHeights.fill], ['320', w.mapHeights.small], ['480', w.mapHeights.medium], ['640', w.mapHeights.large]];
+      const own = map.height === undefined ? '' : String(map.height);
+      if (!heights.some(([value]) => value === own)) heights.push([own, w.pixels(Number(own))]);
+      height.replaceChildren(...heights.map(([value, text]) => el('option', { value }, text)));
+      height.value = own;
+      allGestures.checked = map.gestures === 'all';
+      if (!focused(fitZoom)) fitZoom.value = map.fitZoom === undefined ? '' : String(map.fitZoom);
     },
   };
 }

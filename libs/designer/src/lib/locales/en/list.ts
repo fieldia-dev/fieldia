@@ -67,6 +67,12 @@ export const list = {
   areaField: 'Each record’s area is in',
   noAreaField: 'No field can hold an area’s key: a text, a choice, a whole number or a link.',
   mapNote: 'The app chooses whose maps are shown. Pin colours by condition are written in the page’s JSON.',
+  // How the map sits in its page: its height, the gestures it takes, the closest it zooms by itself.
+  mapHeight: 'Map height',
+  mapHeights: { window: 'As tall as the window allows', fill: 'As tall as the place it is put in', small: 'Small, 320 pixels', medium: 'Medium, 480 pixels', large: 'Large, 640 pixels' },
+  pixels: (n: number) => `${n} pixels`,
+  allGestures: 'Every gesture moves the map: one finger, and the wheel with no key held',
+  fitZoom: 'Closest it zooms to show the records',
   // ---- a filter
   filterName: 'Filter name',
   filterField: 'Filter field',
