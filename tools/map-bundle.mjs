@@ -39,11 +39,12 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * map's height and gestures, its starting view, its view said as it stops,
  * the closest a fit comes, and "Search this area (24)" with its word in four
  * languages (the counting itself is a chunk of its own, loaded when the
- * button first shows) — 2.3 more, to 42.2. An app of the viewer's carries
- * none of the page of its own: its bundler leaves mountListMap out.
- * `embed`: a site's own page with mountListMap and the providers alone: 29.3.
+ * button first shows), none of it offered when nothing takes a search — 2.4
+ * more, to 42.3. An app of the viewer's carries none of the page of its own:
+ * its bundler leaves mountListMap out.
+ * `embed`: a site's own page with mountListMap and the providers alone: 29.4.
  */
-const BUDGET = { fields: 23.8, all: 42.2, embed: 29.3, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.8, all: 42.3, embed: 29.4, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

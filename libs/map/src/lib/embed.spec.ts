@@ -106,6 +106,23 @@ describe('a list’s map in a page of its own', () => {
     other.destroy();
   });
 
+  it('offers to search only when the page says what to do with a search: no tools to draw an area, no "Search this area", otherwise', async () => {
+    const ready = async (map: { element: HTMLElement }) => {
+      for (let i = 0; i < 100 && !map.element.querySelector('.fd-map-zoom'); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(map.element.querySelector('.fd-map-zoom')).not.toBeNull();
+    };
+    const looking = mountListMap(host(), { page, provider, records: [] });
+    await ready(looking);
+    expect(looking.element.querySelector('.fd-map-draw')).toBeNull();
+    expect(looking.element.querySelector('.fd-map-here')).toBeNull();
+    looking.destroy();
+    const searching = mountListMap(host(), { page, provider, records: [], onSearch: () => undefined });
+    await ready(searching);
+    expect(searching.element.querySelector('.fd-map-draw')).not.toBeNull();
+    expect(searching.element.querySelector('.fd-map-here')).not.toBeNull();
+    searching.destroy();
+  });
+
   it('refuses a page it cannot show, saying why', () => {
     expect(() => mountListMap(host(), { page: { ...page, fields: {} } as unknown as Page, provider })).toThrow(/This page cannot be shown:\n {2}layout/);
     const form = { ...page, layout: { type: 'sections', id: 's', children: [] } } as unknown as Page;

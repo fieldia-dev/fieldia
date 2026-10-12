@@ -108,6 +108,59 @@ styles or its words.
 A card offers the list's own buttons too, each pressed for its record alone
 ("Assign", for this driver).
 
+How the map sits in its page: `height` is pixels, or `fill` (as tall as the
+element it is put in), as tall as the window allows (320 to 640 pixels) unless
+said; `gestures: "all"` lets the map take every gesture — one finger pans, the
+wheel zooms with no key held — where it is most of its page (unless said, one
+finger and the wheel scroll the page past it); `fitZoom` is the closest it comes
+when it fits its records, 16 unless said.
+
+Once the map is moved, "Search this area" says how many records the view holds,
+"Search this area (24)", when the records on hand can tell (all the search
+finds, and a view within any area already searched). Otherwise, with
+`countArea: true` in the settings, the data source is asked: one record, its
+`total` the count, a moment after the map stops, the request's `signal` aborted
+when it moves again; or `countArea` is the app's own
+`(filter, signal) => Promise<number>`. Each time it stops, the map's element
+sends `fd-map-view` (it bubbles): `{ center, zoom, bounds, byPerson }`.
+
+## A list's map in a page of your own
+
+A page that is not Fieldia's — its own list, filters and address — shows a list's
+map beside them with `mountListMap`. The app gives the page that describes the
+records (a list with `map`), a data source or the records themselves, the
+conditions they are found by, and what to do when the map asks for something; it
+gets back the map.
+
+```ts
+import { mountListMap, azureMaps } from '@fieldia/map';
+
+const map = mountListMap(element, {
+  page,                                          // a list page with "map"
+  provider: azureMaps({ key }),
+  dataSource,                                    // or records: [{ id, values }, …]
+  filter: () => yourSearch(),                    // the conditions the records are found by
+  start: { center: { lat: 30.05, lng: 31.23 }, zoom: 13 },   // from the address: no fit at first
+  countArea: true,
+  onSearch: ({ kind, filter }) => { keep(kind, filter); map.reload(); },  // 'view', 'drawn' or 'region'
+  onViewChange: ({ center, zoom, bounds, byPerson }) => writeTheAddress(center, zoom),
+  onHighlight: (id) => lightYourRow(id),
+  onOpenRecord: (id) => location.assign(`/homes/${id}`),
+});
+map.highlight(id);   // a row of yours under the pointer
+map.reload();        // your search changed
+map.destroy();
+```
+
+Also `locale` (a tag; the document's language unless said), `sort`, `icons`,
+`isChosen` and `onChoose`, `actions` and `onAction`, `onSort` (Nearest first),
+and every setting `mapListViews` takes. Without `onSearch` the map offers no
+search. It brings its own base on its own element alone (a part hidden stays
+hidden, words for a screen reader, its buttons) and Fieldia's colours as tokens,
+light or dark by the page's `color-scheme`: set your own on `.fd-map-embed`
+(`.fd-map-embed { --fd-accent: #375dfb; }`), and your rule wins whatever its
+weight.
+
 ## A map on a form
 
 A part of type `map` shows the record's places as layers: the record's own

@@ -61,7 +61,8 @@ export interface ListMapOptions extends MapSettings {
    * The map asks for a search: its view (`kind: 'view'`, "Search this area"),
    * an area drawn (`drawn`), or a shaded area pressed (`region`). The app
    * keeps one of each kind, a new one in the last one's place, as a search bar
-   * does, puts its conditions in `filter`, and calls `reload()`.
+   * does, puts its conditions in `filter`, and calls `reload()`. Without it the
+   * map offers no search: no "Search this area", no tools to draw an area.
    */
   onSearch?: (search: MapSearch) => void;
   /** The map has stopped, after a move or a zoom: where it stands, to keep in the page's address. Each view once. */
@@ -116,6 +117,7 @@ export function mountListMap(host: HTMLElement, options: ListMapOptions): ListMa
     ...(options.icons ? { icons: options.icons } : {}),
     ...(options.start ? { start: options.start } : {}),
     given: !!given,
+    searches: !!options.onSearch,
     filter: () => [...read(options.filter, [])],
     sort: () => order ?? [...read(options.sort, [])],
     sortBy(next) {

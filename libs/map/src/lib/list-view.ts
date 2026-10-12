@@ -57,6 +57,8 @@ export interface ListMapContext extends ListViewContext {
   start?: { center: LatLng; zoom: number };
   /** The records come as they are, not from a source that can count a view's (`countArea: true` asks none). */
   given?: boolean;
+  /** False when nothing takes a search the map asks for: no "Search this area", no tools to draw one. The viewer's list always takes them. */
+  searches?: boolean;
 }
 
 /** Room kept around the records when the map fits them, in pixels. */
@@ -571,8 +573,10 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     else map.fitBounds(at.map((p) => [p.lat, p.lng] as [number, number]), { padding: [ROOM, ROOM], maxZoom: closest ?? 16, animate: false });
   }
 
+  // A search nothing would take is not offered.
+  const searches = context.searches !== false;
   box.ready((map, L) => {
-    box.element.append(tools, here, note);
+    box.element.append(...(searches ? [tools, here] : []), note);
     box.shield(tools);
     box.shield(here);
     box.follow(note);
@@ -588,7 +592,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       // A quick second press of + or −, made when this zoom ends: the map has not stopped.
       if (box.stepping()) return;
       const byPerson = moving;
-      if (moving) here.hidden = false;
+      if (moving && searches) here.hidden = false;
       moving = false;
       if (!here.hidden) countHere(map);
       tellView(map, byPerson);
