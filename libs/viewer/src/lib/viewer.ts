@@ -430,7 +430,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Empty and quiet, it says what to add, unless the page gives it words of its own: "Add story points", or for a
       // question "Your answer". A field of several boxes, each with its own label (an address), says it in none of them.
       const ownWords = !!node.placeholder || labelsAt === 'hidden' || def.type === 'json' || def.type === 'properties';
-      const hint = /[?؟]\s*$/.test(labelText) ? labels.quietAnswer : fill(labels.quietHint, { label: inSentence(labelText, locale) });
+      const hint = quietHint(labelText, locale, labels);
       const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
       // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
       const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : hint);
@@ -1886,6 +1886,14 @@ const isBlank = (value: unknown) => value === null || value === undefined || val
  */
 function inSentence(label: string, locale: Locale): string {
   return (locale === 'en' || locale === 'fr') && /^\p{Lu}\p{Ll}/u.test(label) ? label[0].toLocaleLowerCase(locale) + label.slice(1) : label;
+}
+
+/**
+ * What an empty field in the quiet look says, by its label, in the viewer's
+ * words for `locale`: "Add story points", or for a question "Your answer".
+ */
+export function quietHint(label: string, locale: Locale, labels: Pick<ViewerLabels, 'quietHint' | 'quietAnswer'> = VIEWER_LABELS[locale]): string {
+  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', inSentence(label, locale));
 }
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
