@@ -129,6 +129,31 @@ describe('a place inside a box on the map: within', () => {
     expect(matchesFilter(at(0, -10), pacific)).toBe(false);
   });
 
+  it('holds inside a polygon drawn on the map, and not in the bay its outline leaves out', () => {
+    // A U, open to the north: its bay is outside.
+    const u = [[31, 30], [31.3, 30], [31.3, 30.1], [31.2, 30.1], [31.2, 30.03], [31.1, 30.03], [31.1, 30.1], [31, 30.1]];
+    const inU: ResolvedFilter[] = [{ field: 'spot', op: 'within', value: { polygon: u } }];
+    expect(matchesFilter(at(31.05, 30.05), inU)).toBe(true);
+    expect(matchesFilter(at(31.25, 30.08), inU)).toBe(true);
+    expect(matchesFilter(at(31.15, 30.06), inU)).toBe(false);
+    expect(matchesFilter(at(31.5, 30.05), inU)).toBe(false);
+  });
+
+  it('holds inside a circle, by metres on the earth', () => {
+    // Tahrir Square, and a kilometre around it.
+    const near: ResolvedFilter[] = [{ field: 'spot', op: 'within', value: { center: [31.2357, 30.0444], radius: 1000 } }];
+    expect(matchesFilter(at(31.2357, 30.0525), near)).toBe(true); // about 900 m north
+    expect(matchesFilter(at(31.2357, 30.0545), near)).toBe(false); // about 1.1 km north
+  });
+
+  it('reads a place kept in two number fields: the latitude, and the longitude its area names', () => {
+    const area = (value: Record<string, unknown>): ResolvedFilter[] => [{ field: 'lat', op: 'within', value: { ...value, longitude: 'lng' } as never }];
+    expect(matchesFilter({ lat: 30.05, lng: 31.2 }, area(box))).toBe(true);
+    expect(matchesFilter({ lat: 30.05, lng: 31.4 }, area(box))).toBe(false);
+    expect(matchesFilter({ lat: 30.0444, lng: 31.2357 }, area({ center: [31.2357, 30.0444], radius: 10 }))).toBe(true);
+    expect(matchesFilter({ lat: null, lng: 31.2 }, area(box))).toBe(false);
+  });
+
   it('is a condition a page may write, its box four numbers', async () => {
     const { validatePage } = await import('../../index');
     const page = (value: unknown) => ({
@@ -141,5 +166,12 @@ describe('a place inside a box on the map: within', () => {
     expect(validatePage(page(box)).ok).toBe(true);
     expect(validatePage(page({ south: 30, west: 31 })).ok).toBe(false);
     expect(validatePage(page([30, 31])).ok).toBe(false);
+    // A polygon of three points or more, a circle with its radius, and a latitude's longitude by name.
+    expect(validatePage(page({ polygon: [[31, 30], [31.2, 30], [31.1, 30.1]] })).ok).toBe(true);
+    expect(validatePage(page({ center: [31.2, 30.04], radius: 500 })).ok).toBe(true);
+    expect(validatePage(page({ ...box, longitude: 'lng' })).ok).toBe(true);
+    expect(validatePage(page({ polygon: [[31, 30], [31.2, 30]] })).ok).toBe(false);
+    expect(validatePage(page({ center: [31.2, 30.04], radius: 0 })).ok).toBe(false);
+    expect(validatePage(page({ ...box, longitude: 3 })).ok).toBe(false);
   });
 });

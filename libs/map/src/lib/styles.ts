@@ -230,6 +230,22 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 /* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach. */
 @container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list .fd-map-box { height: clamp(260px, 46vh, 420px); } }
 .fd-map-ghost .fd-map-face { pointer-events: none; }
+/* The tools that draw an area to search in: at the map's start, the zoom at its end. */
+.fd-map-draw { position: absolute; top: 8px; left: 8px; z-index: 1000; display: grid; gap: 4px; }
+.fd-map-box[data-side="left"] .fd-map-draw { left: auto; right: 8px; }
+.fd-map-draw button {
+  width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.fd-map-draw button svg { width: 18px; height: 18px; }
+.fd-map-draw button:hover, .fd-map-draw button[aria-pressed="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-map-draw button[aria-pressed="true"] { background: var(--fd-accent-soft); }
+.fd-map-draw button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* While an area is drawn, the pins let every press through to the map. */
+.fd-map-box[data-drawing] .fd-map-mark { pointer-events: none; }
+/* The drawing's bar starts after the tools. */
+.fd-map-list .fd-map-hint { left: 48px; }
+.fd-map-list .fd-map-box[data-side="left"] .fd-map-hint { left: 52px; right: 48px; }
 .fd-map-list-note {
   position: absolute; left: 8px; bottom: 28px; z-index: 1000; max-width: calc(100% - 64px); margin: 0; padding: 4px 8px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;
   background: color-mix(in srgb, var(--fd-surface) 92%, transparent); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);

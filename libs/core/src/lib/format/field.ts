@@ -69,10 +69,18 @@ export const FilterConditionSchema = z
   .refine(
     (c) => {
       if (c.op !== 'within' || c.valueFrom !== undefined) return true;
-      const box = c.value as Record<string, unknown> | undefined;
-      return !!box && typeof box === 'object' && !Array.isArray(box) && ['south', 'west', 'north', 'east'].every((side) => typeof box[side] === 'number');
+      const area = c.value as Record<string, unknown> | undefined;
+      if (!area || typeof area !== 'object' || Array.isArray(area)) return false;
+      if (area['longitude'] !== undefined && typeof area['longitude'] !== 'string') return false;
+      const pair = (p: unknown) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number');
+      if (area['polygon'] !== undefined) return Array.isArray(area['polygon']) && area['polygon'].length >= 3 && area['polygon'].every(pair);
+      if (area['center'] !== undefined) return pair(area['center']) && typeof area['radius'] === 'number' && area['radius'] > 0;
+      return ['south', 'west', 'north', 'east'].every((side) => typeof area[side] === 'number');
     },
-    { message: 'within takes value: { south, west, north, east }, in degrees' }
+    {
+      message:
+        'within takes value: a box { south, west, north, east }, a { polygon: [[longitude, latitude], …] } or a { center: [longitude, latitude], radius } in metres, all in degrees; with longitude: "a field" when the field is a latitude',
+    }
   )
   .meta({ id: 'FilterCondition' });
 

@@ -1,6 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import type { JsonValue } from '@fieldia/core';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
+import { SHAPE_ICONS, shapeDrawing } from './drawing';
 import { areaBounds, asJson, boxFrom, metresBetween, moveArea, offsetEast, readArea, writeArea, type Area, type CircleArea, type LatLng, type PointsArea, type Shape } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
@@ -26,16 +27,6 @@ import type { MapSettings } from './settings';
  */
 
 const ALL: Shape[] = ['polygon', 'box', 'circle'];
-const ICONS: Record<Shape, string> = {
-  polygon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l7-5 7 6-3 11H7z"/></svg>',
-  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>',
-  circle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>',
-};
-/** How near the first point a press closes the ring: a fingertip's width, not the mark's. */
-const CLOSE_PX = 22;
-/** A press that moves less than this is a press, not a drag. */
-const DRAG_PX = 4;
-
 interface NamedArea {
   label: string;
   value: JsonValue;
@@ -58,11 +49,6 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
 
     let readonly = false;
     let area: Area | null = null;
-    let mode: Shape | null = null;
-    /** A polygon's points so far. */
-    let points: LatLng[] = [];
-    /** Where a box or a circle began, by pointer or by Space. */
-    let anchor: LatLng | null = null;
 
     const element = doc.createElement('div');
     element.className = 'fd-map-field fd-area';
@@ -99,9 +85,9 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
       button.type = 'button';
       button.className = 'fd-button';
       button.setAttribute('aria-pressed', 'false');
-      button.innerHTML = ICONS[shape];
+      button.innerHTML = SHAPE_ICONS[shape];
       button.append(labels[shape]);
-      button.addEventListener('click', () => arm(mode === shape ? null : shape));
+      button.addEventListener('click', () => drawing.arm(drawing.mode === shape ? null : shape));
       toolButtons.set(shape, button);
       tools.append(button);
     });
@@ -124,7 +110,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
         const choice = named[Number(chooser!.value)];
         const chosen = choice ? readArea(choice.value) : null;
         if (!chosen) return;
-        arm(null);
+        drawing.arm(null);
         commit(chosen, true);
       });
       tools.append(chooser);
@@ -135,32 +121,30 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
     clear.textContent = labels.clear;
     clear.hidden = true;
     clear.addEventListener('click', () => {
-      arm(null);
+      drawing.arm(null);
       commit(null);
       announce(labels.shapeCleared);
       (toolButtons.get(shapes[0]) ?? box.element).focus();
     });
     tools.append(clear);
 
-    // The bar over the map while a tool is in hand: what to do, and the ways out.
-    const hint = doc.createElement('div');
-    hint.className = 'fd-map-hint';
-    hint.hidden = true;
-    const hintWords = doc.createElement('p');
-    const finishButton = doc.createElement('button');
-    finishButton.type = 'button';
-    finishButton.className = 'fd-button fd-button-primary';
-    finishButton.textContent = labels.finish;
-    finishButton.addEventListener('click', () => finish());
-    const cancelButton = doc.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'fd-button';
-    cancelButton.textContent = labels.cancel;
-    cancelButton.addEventListener('click', () => arm(null));
-    hint.append(hintWords, finishButton, cancelButton);
-    box.element.append(hint);
-    box.shield(hint);
-    box.follow(hint);
+    // Drawing a new shape: the tools' buttons say which is in hand; the shape drawn becomes the value.
+    const drawing = shapeDrawing({
+      box,
+      labels,
+      keys: element,
+      announce,
+      armed: (mode) => {
+        for (const [shape, button] of toolButtons) button.setAttribute('aria-pressed', String(shape === mode));
+        draw();
+      },
+      done: (drawn) => {
+        commit(drawn);
+        announce(labels.shapeDrawn);
+      },
+      escaped: () => (toolButtons.get(shapes[0]) ?? box.element).focus(),
+      finishesOn: (target) => target === toolButtons.get('polygon'),
+    });
     element.append(tools, box.element, live);
 
     // ---- the value -------------------------------------------------------------
@@ -175,12 +159,9 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
     let map: Leaflet.Map | null = null;
     let L: LeafletModule | null = null;
     let shapeLayer: Leaflet.Path | null = null;
-    let trace: Leaflet.Path | null = null;
     const grips: Leaflet.Marker[] = [];
     /** The grip under the hand: the others follow it, it follows the hand. */
     let held: Leaflet.Marker | null = null;
-    /** A polygon's points while it is drawn, and the line reaching for the pointer. */
-    const marks: Leaflet.Marker[] = [];
 
     function clearLayers() {
       shapeLayer?.remove();
@@ -190,15 +171,15 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
 
     function layerFor(shape: Area, className: string): Leaflet.Path {
       return shape.shape === 'circle'
-        ? L!.circle([shape.center.lat, shape.center.lng], { radius: shape.radius, className, interactive: !readonly && !mode })
-        : L!.polygon(shape.points.map((p) => [p.lat, p.lng] as [number, number]), { className, interactive: !readonly && !mode });
+        ? L!.circle([shape.center.lat, shape.center.lng], { radius: shape.radius, className, interactive: !readonly && !drawing.mode })
+        : L!.polygon(shape.points.map((p) => [p.lat, p.lng] as [number, number]), { className, interactive: !readonly && !drawing.mode });
     }
 
     /** The shape as it now is, and its grips; `fit` brings it into view. */
     function draw(fit = false) {
       if (!map || !L) return;
       clearLayers();
-      if (!area || mode) return;
+      if (!area || drawing.mode) return;
       shapeLayer = layerFor(area, `fd-map-shape${readonly ? '' : ' fd-map-movable'}`).addTo(map);
       if (!readonly) {
         makeMovable(shapeLayer);
@@ -353,7 +334,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
       const el = layer.getElement() as SVGElement | undefined;
       if (!el) return;
       el.addEventListener('pointerdown', (event: PointerEvent) => {
-        if (!map || !area || readonly || mode || event.button !== 0) return;
+        if (!map || !area || readonly || drawing.mode || event.button !== 0) return;
         event.stopPropagation();
         const start = map.mouseEventToLatLng(event as unknown as MouseEvent);
         const from = area;
@@ -381,188 +362,10 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
     }
 
     // ---- the tools ---------------------------------------------------------------
-    function sayStep() {
-      if (!mode) return;
-      const words = mode === 'polygon' ? labels.drawPolygon : mode === 'box' ? labels.drawBox : labels.drawCircle;
-      hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${fill(labels.points, { n: points.length })}.` : words;
-      finishButton.hidden = mode !== 'polygon' || points.length < 3;
-    }
-
-    function arm(next: Shape | null) {
-      if (readonly) next = null;
-      mode = next;
-      points = [];
-      anchor = null;
-      trace?.remove();
-      trace = null;
-      remark();
-      for (const [shape, button] of toolButtons) button.setAttribute('aria-pressed', String(shape === mode));
-      hint.hidden = !mode;
-      // Every tool holds the ground still: a press is a point, never a pan.
-      box.setPannable(!mode);
-      box.ready((m) => (mode ? m.doubleClickZoom.disable() : m.doubleClickZoom.enable()));
-      box.element.dataset['drawing'] = mode ?? '';
-      if (!mode) delete box.element.dataset['drawing'];
-      sayStep();
-      draw();
-      if (mode) announce(hintWords.textContent ?? '');
-    }
-
-    /** The marks of a polygon's points: made again only when the points change, never as the pointer moves. */
-    function remark() {
-      for (const m of marks.splice(0)) m.remove();
-      if (!map || !L || mode !== 'polygon') return;
-      points.forEach((p, i) => {
-        const mark = L!.marker([p.lat, p.lng], { icon: gripIcon(), interactive: i === 0, keyboard: false }).addTo(map!);
-        // Back on the first point closes the ring.
-        if (i === 0) mark.on('click', () => points.length >= 3 && finish());
-        marks.push(mark);
-      });
-    }
-
-    /** The outline being drawn, toward the pointer: changed in place as it moves. */
-    function retrace(toward?: LatLng) {
-      if (!map || !L) return;
-      let ring: LatLng[] | null = null;
-      let circle: { center: LatLng; radius: number } | null = null;
-      if (mode === 'polygon') {
-        ring = [...points, ...(toward ? [toward] : [])];
-        if (ring.length < 2) ring = null;
-        marks[0]?.getElement()?.toggleAttribute('data-closes', nearFirst(toward));
-      } else if (anchor && toward) {
-        if (mode === 'box') ring = boxFrom(anchor, toward);
-        else circle = { center: anchor, radius: metresBetween(anchor, toward) };
-      }
-      const latLngs = ring?.map((p) => [p.lat, p.lng] as [number, number]);
-      if (trace && latLngs && trace instanceof L.Polygon && !(trace instanceof L.Rectangle)) {
-        trace.setLatLngs(latLngs);
-        return;
-      }
-      if (trace && circle && trace instanceof L.Circle) {
-        trace.setLatLng([circle.center.lat, circle.center.lng]);
-        trace.setRadius(circle.radius);
-        return;
-      }
-      trace?.remove();
-      trace = null;
-      if (latLngs) trace = L.polygon(latLngs, { className: 'fd-map-trace', interactive: false }).addTo(map);
-      else if (circle) trace = L.circle([circle.center.lat, circle.center.lng], { radius: circle.radius, className: 'fd-map-trace', interactive: false }).addTo(map);
-    }
-
-    function nearFirst(at?: LatLng): boolean {
-      if (!map || !at || points.length < 3) return false;
-      return map.latLngToContainerPoint([points[0].lat, points[0].lng]).distanceTo(map.latLngToContainerPoint([at.lat, at.lng])) <= CLOSE_PX;
-    }
-
-    function addPoint(at: LatLng) {
-      if (mode === 'polygon') {
-        if (nearFirst(at)) return finish();
-        points.push(at);
-        sayStep();
-        remark();
-        retrace();
-        announce(fill(labels.points, { n: points.length }));
-        return;
-      }
-      if (!anchor) {
-        anchor = at;
-        retrace(at);
-        return;
-      }
-      const end = at;
-      const start = anchor;
-      if (mode === 'box') complete({ shape: 'box', points: boxFrom(start, end) });
-      else if (mode === 'circle') complete({ shape: 'circle', center: start, radius: Math.max(1, metresBetween(start, end)) });
-    }
-
-    function finish() {
-      if (mode !== 'polygon' || points.length < 3) return;
-      complete({ shape: 'polygon', points: [...points] });
-    }
-
-    function complete(drawn: Area) {
-      mode = null;
-      arm(null);
-      commit(drawn);
-      announce(labels.shapeDrawn);
-    }
-
     box.ready((m, leaflet) => {
       map = m;
       L = leaflet;
       draw(!!area);
-      m.on('click', (event: Leaflet.LeafletMouseEvent) => {
-        if (mode !== 'polygon' || readonly) return;
-        addPoint({ lat: event.latlng.lat, lng: event.latlng.lng });
-      });
-      m.on('dblclick', () => {
-        if (mode !== 'polygon') return;
-        // The two clicks of a double-click have each placed a point, on top of each other: one is enough.
-        const [a, b] = points.slice(-2);
-        if (a && b && m.latLngToContainerPoint([a.lat, a.lng]).distanceTo(m.latLngToContainerPoint([b.lat, b.lng])) < 6) {
-          points.pop();
-          remark();
-        }
-        finish();
-      });
-      m.on('mousemove', (event: Leaflet.LeafletMouseEvent) => {
-        if (mode === 'polygon' && points.length) retrace({ lat: event.latlng.lat, lng: event.latlng.lng });
-      });
-      // A box and a circle are drawn by dragging: pointer events, which a mouse, a finger and a pen all raise.
-      let pressed: { x: number; y: number; at: LatLng; id: number } | null = null;
-      box.element.addEventListener('pointerdown', (event) => {
-        if ((mode !== 'box' && mode !== 'circle') || readonly || event.button !== 0) return;
-        if ((event.target as Element).closest('.fd-map-hint, .fd-map-zoom, .fd-map-credits, .fd-map-logo')) return;
-        const at = m.mouseEventToLatLng(event as unknown as MouseEvent);
-        pressed = { x: event.clientX, y: event.clientY, at: { lat: at.lat, lng: at.lng }, id: event.pointerId };
-        anchor = pressed.at;
-        box.element.setPointerCapture?.(event.pointerId);
-      });
-      box.element.addEventListener('pointermove', (event) => {
-        if (!pressed || event.pointerId !== pressed.id) return;
-        const at = m.mouseEventToLatLng(event as unknown as MouseEvent);
-        retrace({ lat: at.lat, lng: at.lng });
-      });
-      const release = (event: PointerEvent) => {
-        if (!pressed || event.pointerId !== pressed.id) return;
-        const moved = Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y);
-        const at = m.mouseEventToLatLng(event as unknown as MouseEvent);
-        pressed = null;
-        // A press with no drag is no shape: the tool stays in hand.
-        if (event.type === 'pointercancel' || moved < DRAG_PX) {
-          anchor = null;
-          retrace();
-          return;
-        }
-        addPoint({ lat: at.lat, lng: at.lng });
-      };
-      box.element.addEventListener('pointerup', release);
-      box.element.addEventListener('pointercancel', release);
-    });
-
-    // The keys of drawing, wherever in the field the focus is.
-    element.addEventListener('keydown', (event) => {
-      if (!mode) return;
-      const onMap = event.target === box.element;
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        arm(null);
-        (toolButtons.get(shapes[0]) ?? box.element).focus();
-      } else if (event.key === 'Enter' && mode === 'polygon' && points.length >= 3 && (onMap || event.target === finishButton || toolButtons.get('polygon') === event.target)) {
-        event.preventDefault();
-        finish();
-      } else if (event.key === 'Backspace' && mode === 'polygon' && points.length && onMap) {
-        event.preventDefault();
-        points.pop();
-        sayStep();
-        remark();
-        retrace();
-        announce(fill(labels.points, { n: points.length }));
-      } else if (event.key === ' ' && onMap && map) {
-        event.preventDefault();
-        const c = map.getCenter();
-        addPoint({ lat: c.lat, lng: c.lng });
-      }
     });
 
     return {
@@ -573,7 +376,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
         const wasReadonly = readonly;
         readonly = state.readonly;
         tools.hidden = readonly;
-        if (readonly && mode) arm(null);
+        if (readonly && drawing.mode) drawing.arm(null);
         const next = readArea(state.value);
         const outside = !same(next, area);
         if (outside) area = next;

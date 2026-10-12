@@ -88,9 +88,17 @@ turns whole; other icons keep upright, a pointer on their edge turning), and
 takes `title`, `image`, `fields` and `open`; `cluster: false` keeps every pin
 apart; `view` is `list`, `map` or `both`; `limit` is 500 unless said.
 
+The map's own tools draw an area to search in: a polygon, a box or a circle,
+by mouse, finger or keys, as the area field draws one. It becomes a search of
+its own ("In the area drawn"), shown on the map until it leaves the search bar.
+
 "Search this area" asks for `between` on a latitude and a longitude, or the
 `within` condition on a point: `{ south, west, north, east }` in degrees, west
-beyond east across the antimeridian.
+beyond east across the antimeridian. An area drawn asks for `within` with
+`{ polygon: [[lng, lat], …] }` or `{ center: [lng, lat], radius }` in metres;
+on a latitude field, `longitude` names the field of its longitude. The memory
+data source answers all of them; a server's adapter turns them into its own
+query.
 
 A form with only a place or an area never carries the list map's code, its
 styles or its words.

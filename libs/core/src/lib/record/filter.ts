@@ -79,18 +79,62 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
       const [low, high] = expected as (number | string)[];
       return (actual as number | string) >= low && (actual as number | string) <= high;
     }
-    case 'within': {
-      // A GeoJSON point (or a Feature holding one), longitude first, inside the box.
-      const geometry = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>)['type'] === 'Feature' ? (raw as Record<string, unknown>)['geometry'] : raw;
-      const coordinates = geometry !== null && typeof geometry === 'object' && (geometry as Record<string, unknown>)['type'] === 'Point' ? (geometry as Record<string, unknown>)['coordinates'] : null;
-      if (!Array.isArray(coordinates)) return false;
-      const [lng, lat] = coordinates as number[];
-      const box = expected as Record<string, number>;
-      if (typeof lat !== 'number' || typeof lng !== 'number' || lat < box['south'] || lat > box['north']) return false;
-      // A west beyond its east: the box crosses the antimeridian, as a map over the Pacific does.
-      return box['west'] <= box['east'] ? lng >= box['west'] && lng <= box['east'] : lng >= box['west'] || lng <= box['east'];
-    }
+    case 'within':
+      return within(values, raw, expected);
   }
+}
+
+const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+/**
+ * Whether a place is inside an area, as a map's "In this area" and an area
+ * drawn on it ask: a box ({ south, west, north, east }, a west beyond its east
+ * crossing the antimeridian, as a map over the Pacific does), a polygon
+ * ({ polygon: [[longitude, latitude], …] }) or a circle ({ center: [longitude,
+ * latitude], radius } in metres). The place is the condition's field: a
+ * GeoJSON point (or a Feature holding one); or, when `longitude` names another
+ * field, a latitude and that field's longitude.
+ */
+function within(values: Values, raw: unknown, area: JsonValue): boolean {
+  if (!isObject(area)) return false;
+  let lat: unknown;
+  let lng: unknown;
+  if (typeof area['longitude'] === 'string') {
+    lat = raw;
+    lng = values[area['longitude']];
+  } else {
+    const geometry = isObject(raw) && raw['type'] === 'Feature' ? raw['geometry'] : raw;
+    const coordinates = isObject(geometry) && geometry['type'] === 'Point' ? geometry['coordinates'] : null;
+    if (!Array.isArray(coordinates)) return false;
+    [lng, lat] = coordinates;
+  }
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  if (Array.isArray(area['polygon'])) return insideRing(lng, lat, area['polygon'] as number[][]);
+  if (Array.isArray(area['center'])) {
+    const [centreLng, centreLat] = area['center'] as number[];
+    return metresApart(lat, lng, centreLat, centreLng) <= (area['radius'] as number);
+  }
+  const { south, west, north, east } = area as Record<string, number>;
+  if (lat < south || lat > north) return false;
+  return west <= east ? lng >= west && lng <= east : lng >= west || lng <= east;
+}
+
+/** Inside a ring when a line from the point crosses its edges an odd number of times. */
+function insideRing(x: number, y: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** How far apart two places are on the earth, in metres. */
+function metresApart(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const rad = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+  return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
 /** What a condition left out stands for: it always holds. */

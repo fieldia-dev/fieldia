@@ -1,9 +1,10 @@
 import type * as Leaflet from 'leaflet';
-import type { ListMap, ListResult, RecordId, ResolvedFilter, Values } from '@fieldia/core';
+import type { JsonValue, ListMap, ListResult, RecordId, ResolvedFilter, Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
-import { readPoint, type LatLng } from './geo';
+import { SHAPE_ICONS, shapeDrawing } from './drawing';
+import { readPoint, type Area, type LatLng, type Shape } from './geo';
 import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox } from './map-core';
@@ -81,6 +82,49 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   note.setAttribute('role', 'status');
   note.hidden = true;
 
+  // ---- an area drawn, to search in -----------------------------------------------------
+  const live = doc.createElement('div');
+  live.className = 'fd-sr-only';
+  live.setAttribute('aria-live', 'polite');
+  element.append(live);
+  const announce = (words: string) => {
+    live.textContent = '';
+    // A new node each time, so the same words are said again.
+    setTimeout(() => (live.textContent = words), 30);
+  };
+  const tools = doc.createElement('div');
+  tools.className = 'fd-map-draw';
+  tools.setAttribute('role', 'group');
+  tools.setAttribute('aria-label', labels.drawArea);
+  const toolButtons = new Map<Shape, HTMLButtonElement>();
+  for (const shape of ['polygon', 'box', 'circle'] as const) {
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.innerHTML = SHAPE_ICONS[shape];
+    button.setAttribute('aria-label', labels[shape]);
+    button.title = `${labels.drawArea}: ${labels[shape]}`;
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => drawing.arm(drawing.mode === shape ? null : shape));
+    toolButtons.set(shape, button);
+    tools.append(button);
+  }
+  const drawing = shapeDrawing({
+    box,
+    labels,
+    keys: element,
+    announce,
+    armed: (mode) => {
+      for (const [shape, button] of toolButtons) button.setAttribute('aria-pressed', String(shape === mode));
+    },
+    done: (area) => box.ready((map, L) => searchIn(map, L, area)),
+    escaped: () => toolButtons.get('polygon')?.focus(),
+    finishesOn: (target) => target === toolButtons.get('polygon'),
+    over: '.fd-map-here, .fd-map-draw, .fd-map-list-note',
+  });
+  /** The area drawn, on the map while its search is in the search bar. */
+  let searched: Leaflet.Path | null = null;
+  let searchedKey = '';
+
   let records: MapRecord[] = [];
   let places: (LatLng | null)[] = [];
   let drawn: Drawn[] = [];
@@ -146,6 +190,29 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     ownSearch = true;
     here.hidden = true;
     context.addSearch({ label: labels.inThisArea, filter });
+  }
+
+  /** An area drawn becomes a search of its own, "In the area drawn": the places inside it, in the table and on the map. */
+  function searchIn(map: Leaflet.Map, L: LeafletModule, area: Area) {
+    const round = (n: number) => Math.round(n * 1e6) / 1e6;
+    const shape: Record<string, JsonValue> =
+      area.shape === 'circle'
+        ? { center: [round(area.center.lng), round(area.center.lat)], radius: Math.round(area.radius) }
+        : { polygon: area.points.map((p) => [round(p.lng), round(p.lat)]) };
+    const condition: ResolvedFilter = spec.point
+      ? { field: spec.point, op: 'within', value: shape }
+      : { field: spec.latitude as string, op: 'within', value: { ...shape, longitude: spec.longitude as string } };
+    searched?.remove();
+    searched = (
+      area.shape === 'circle'
+        ? L.circle([area.center.lat, area.center.lng], { radius: area.radius, className: 'fd-map-shape fd-map-searched', interactive: false })
+        : L.polygon(area.points.map((p) => [p.lat, p.lng] as [number, number]), { className: 'fd-map-shape fd-map-searched', interactive: false })
+    ).addTo(map);
+    searchedKey = JSON.stringify(condition);
+    ownSearch = true;
+    here.hidden = true;
+    announce(labels.shapeDrawn);
+    context.addSearch({ label: labels.inDrawnArea, filter: [condition] });
   }
 
   // ---- the card -------------------------------------------------------------------
@@ -333,7 +400,8 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   }
 
   box.ready((map, L) => {
-    box.element.append(here, note);
+    box.element.append(tools, here, note);
+    box.shield(tools);
     box.shield(here);
     box.follow(note);
     box.follow(here);
@@ -369,6 +437,12 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const refit = !fitted || (key !== lastFilter && !ownSearch);
     lastFilter = key;
     ownSearch = false;
+    // The area drawn leaves the map when its search leaves the search bar.
+    if (searchedKey && !key.includes(searchedKey)) {
+      searched?.remove();
+      searched = null;
+      searchedKey = '';
+    }
     const missing = places.filter((p) => !p).length;
     const words = [
       result.total > records.length ? fill(labels.mapShowsFirst, { n: count(records.length), total: count(result.total) }) : '',

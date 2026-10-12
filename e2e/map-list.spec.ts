@@ -401,6 +401,74 @@ test('axe finds nothing on the homes, their map and an open card', async ({ page
   expect(await axeFindings(page, 'list map, a card open')).toEqual([]);
 });
 
+const tools = (page: Page) => page.getByRole('group', { name: 'Draw an area to search in' });
+const drawnArea = (page: Page) => page.locator('.fd-map-list path.fd-map-searched');
+const total = async (page: Page) => Number((await range(page).textContent())!.split('/ ')[1]);
+
+test('an area drawn on the map is a search of its own: the homes inside it, the area shown until its search goes', async ({ page }) => {
+  const { problems } = await openList(page);
+  await tools(page).getByRole('button', { name: 'Box' }).click();
+  await expect(tools(page).getByRole('button', { name: 'Box' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(theMap(page)).toHaveAttribute('data-drawing', 'box');
+  // The middle of the city, dragged across: the ground holds still while it is drawn.
+  await drag(page, await at(theMap(page), 0.42, 0.42), await at(theMap(page), 0.62, 0.6));
+  await expect(chips(page)).toHaveText(['In the area drawn']);
+  await expect(theMap(page)).not.toHaveAttribute('data-drawing', /./);
+  await expect.poll(() => total(page)).toBeLessThan(64);
+  const kept = await total(page);
+  expect(kept).toBeGreaterThan(0);
+  // The map shows what the table keeps, the area drawn over them; the view stays.
+  await expect.poll(() => onTheMap(page)).toBe(kept);
+  await expect(drawnArea(page)).toHaveCount(1);
+  await screen(page, 'map-list-area-drawn');
+  // Its search taken out: every home again, and the area off the map.
+  await box(page).focus();
+  await box(page).press('Backspace');
+  await expect(range(page)).toHaveText('1–12 / 64');
+  await expect(drawnArea(page)).toHaveCount(0);
+  expect(problems).toEqual([]);
+});
+
+test('a polygon drawn by the keys, the pins letting every press through while it is drawn', async ({ page }) => {
+  await openList(page);
+  const polygon = tools(page).getByRole('button', { name: 'Polygon' });
+  await polygon.click();
+  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('Click to add points');
+  // A press on a pin is a point of the polygon, not the pin's card.
+  await bubbles(page).first().click({ force: true });
+  await expect(card(page)).toHaveCount(0);
+  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('1 points');
+  // By the keys: Space puts a point at the cross, the arrows move the map under it, Enter finishes.
+  await theMap(page).focus();
+  for (const key of ['ArrowLeft', 'ArrowDown']) {
+    await page.keyboard.press(key);
+    await page.keyboard.press(key);
+    await page.waitForTimeout(300);
+    await page.keyboard.press(' ');
+  }
+  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('3 points');
+  await page.keyboard.press('Enter');
+  await expect(chips(page)).toHaveText(['In the area drawn']);
+  await expect(drawnArea(page)).toHaveCount(1);
+  // Escape puts a tool down, back on its button.
+  await polygon.click();
+  await theMap(page).focus();
+  await page.keyboard.press('Escape');
+  await expect(polygon).toHaveAttribute('aria-pressed', 'false');
+  await expect(polygon).toBeFocused();
+});
+
+test('a circle drawn on the couriers’ map keeps those within it, their place one GeoJSON point', async ({ page }) => {
+  await openList(page, 'plain', COURIERS);
+  await tools(page).getByRole('button', { name: 'Circle' }).click();
+  const centre = await at(theMap(page), 0.5, 0.45);
+  await drag(page, centre, { x: centre.x + 160, y: centre.y });
+  await expect(chips(page)).toHaveText(['In the area drawn']);
+  await expect.poll(() => pins(page).count()).toBeLessThan(18);
+  expect(await pins(page).count()).toBeGreaterThan(0);
+  await expect(page.locator('.fd-map-list circle, .fd-map-list path.fd-map-searched')).not.toHaveCount(0);
+});
+
 for (const variant of ['react', 'vue', 'angular']) {
   test(`${variant}: the list’s map is there, a pin opens its card, and Choose ticks its row`, async ({ page }) => {
     const { problems } = await openList(page, variant);

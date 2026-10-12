@@ -301,6 +301,9 @@ export interface ListMapLabels {
   /** More records than a map shows: `{n}` shown of `{total}`. */
   mapShowsFirst: string;
   mapFailed: string;
+  /** The tools that draw an area on a list's map, and the search the area becomes. */
+  drawArea: string;
+  inDrawnArea: string;
 }
 
 export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
@@ -316,6 +319,8 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} without a place, not on the map',
     mapShowsFirst: 'The map shows {n} of {total}. Zoom in and search this area for the rest.',
     mapFailed: 'The map could not load the records.',
+    drawArea: 'Draw an area to search in',
+    inDrawnArea: 'In the area drawn',
   },
   ar: {
     pinKeys: 'ينتقل Tab بين الدبابيس. يفتح Enter بطاقة الدبوس، ويغلقها Escape.',
@@ -329,6 +334,8 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} بلا مكان، ليست على الخريطة',
     mapShowsFirst: 'تعرض الخريطة {n} من {total}. كبّر الخريطة وابحث في هذه المنطقة لرؤية البقية.',
     mapFailed: 'تعذّر تحميل السجلات على الخريطة.',
+    drawArea: 'ارسم منطقة للبحث فيها',
+    inDrawnArea: 'في المنطقة المرسومة',
   },
   fr: {
     pinKeys: 'Tab parcourt les épingles. Entrée ouvre la fiche d’une épingle, Échap la ferme.',
@@ -342,6 +349,8 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} sans lieu, absents de la carte',
     mapShowsFirst: 'La carte en montre {n} sur {total}. Zoomez et recherchez dans cette zone pour voir les autres.',
     mapFailed: 'La carte n’a pas pu charger les enregistrements.',
+    drawArea: 'Tracer une zone où chercher',
+    inDrawnArea: 'Dans la zone tracée',
   },
   de: {
     pinKeys: 'Tab springt von Nadel zu Nadel. Eingabe öffnet die Karte einer Nadel, Escape schließt sie.',
@@ -355,6 +364,8 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} ohne Ort, nicht auf der Karte',
     mapShowsFirst: 'Die Karte zeigt {n} von {total}. Hineinzoomen und in diesem Gebiet suchen, um die übrigen zu sehen.',
     mapFailed: 'Die Karte konnte die Datensätze nicht laden.',
+    drawArea: 'Ein Gebiet zum Suchen zeichnen',
+    inDrawnArea: 'Im gezeichneten Gebiet',
   },
 };
 

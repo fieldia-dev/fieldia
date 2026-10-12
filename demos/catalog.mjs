@@ -248,6 +248,7 @@ export const DEMOS = [
       'Click a pin: its card opens with the picture and the price. Tick Choose: its row is chosen too, and Add to shortlist appears.',
       'Click a bubble: the map zooms in until its pins part.',
       'Move the map over Maadi and press Search this area: the list keeps only the homes there, and “In this area” joins the search bar.',
+      'Press the box at the map’s corner and drag across the middle of the city: the list keeps the homes inside, “In the area drawn”. Take its chip away and the area goes too.',
       'Pick For rent from the search menu: the map keeps only the rentals.',
       'Press Map or List over the records to see one alone.',
     ],
@@ -261,6 +262,7 @@ export const DEMOS = [
     howTo: [
       'Tab to the map, then on through the couriers: each is read out by name. Enter opens their card; Escape closes it.',
       'Ctrl-click (⌘-click) a courier: they are chosen, a tick on their icon.',
+      'Press the circle at the map’s corner and drag out from a spot: only the couriers within it stay.',
       'Press List to see the same couriers as a table, and Map to come back.',
     ],
   },
