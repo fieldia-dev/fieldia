@@ -1,0 +1,184 @@
+{
+  "fieldia": "0.1",
+  "id": "work-item",
+  "title": "Bug 5140",
+  "description": "A work item as Azure DevOps draws one: its header quiet, each value plain words until it is pointed at or clicked; the rest in boxes.",
+  "data": { "kind": "record", "model": "work.item" },
+  "look": { "skin": "outlined", "density": "compact" },
+  "fields": {
+    "title": { "type": "char", "label": "Title", "required": true },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "required": true,
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "active", "label": "Active" },
+        { "value": "resolved", "label": "Resolved" },
+        { "value": "closed", "label": "Closed" }
+      ]
+    },
+    "reason": {
+      "type": "selection",
+      "label": "Reason",
+      "options": [
+        { "value": "new", "label": "New defect reported" },
+        { "value": "approved", "label": "Approved" },
+        { "value": "fixed", "label": "Fixed" },
+        { "value": "verified", "label": "Verified" },
+        { "value": "duplicate", "label": "Duplicate" }
+      ]
+    },
+    "area": {
+      "type": "selection",
+      "label": "Area",
+      "options": [
+        { "value": "portal", "label": "Portal" },
+        { "value": "portal-checkout", "label": "Portal\\Checkout" },
+        { "value": "portal-search", "label": "Portal\\Search" },
+        { "value": "warehouse", "label": "Warehouse" }
+      ]
+    },
+    "iteration": {
+      "type": "selection",
+      "label": "Iteration",
+      "options": [
+        { "value": "s13", "label": "Portal\\Sprint 13" },
+        { "value": "s14", "label": "Portal\\Sprint 14" },
+        { "value": "s15", "label": "Portal\\Sprint 15" }
+      ]
+    },
+    "assigned_to": { "type": "many2one", "label": "Assigned to", "relation": "reading.user" },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" }
+      ]
+    },
+    "severity": {
+      "type": "selection",
+      "label": "Severity",
+      "options": [
+        { "value": "1", "label": "1 - Critical" },
+        { "value": "2", "label": "2 - High" },
+        { "value": "3", "label": "3 - Medium" },
+        { "value": "4", "label": "4 - Low" }
+      ]
+    },
+    "story_points": { "type": "float", "label": "Story points", "digits": [16, 1] },
+    "activity": {
+      "type": "selection",
+      "label": "Activity",
+      "options": [
+        { "value": "development", "label": "Development" },
+        { "value": "testing", "label": "Testing" },
+        { "value": "design", "label": "Design" },
+        { "value": "documentation", "label": "Documentation" }
+      ]
+    },
+    "due_date": { "type": "date", "label": "Due date" },
+    "found_in": { "type": "char", "label": "Found in build" },
+    "repro_steps": { "type": "html", "label": "Repro steps" },
+    "system_info": { "type": "html", "label": "System info" },
+    "acceptance": { "type": "text", "label": "Acceptance criteria" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "style": "card",
+        "quiet": true,
+        "labels": "beside",
+        "labelWidth": 100,
+        "columns": { "wide": 2, "medium": 1 },
+        "children": [
+          { "type": "field", "id": "f-title", "field": "title", "colspan": 2, "labels": "hidden", "placeholder": "Name the bug" },
+          { "type": "field", "id": "f-state", "field": "state", "widget": "dot", "options": { "label": true, "tones": { "new": "muted", "active": "info", "resolved": "warning", "closed": "success" } } },
+          { "type": "field", "id": "f-area", "field": "area" },
+          {
+            "type": "field",
+            "id": "f-reason",
+            "field": "reason",
+            "readonly": "state in ('resolved', 'closed')",
+            "readonlyReason": "Set by the workflow when the bug is resolved"
+          },
+          { "type": "field", "id": "f-iteration", "field": "iteration" },
+          { "type": "field", "id": "f-assigned", "field": "assigned_to", "options": { "avatar": true } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "planning",
+        "title": "Planning",
+        "columns": { "wide": 3, "medium": 2, "narrow": 1 },
+        "children": [
+          { "type": "field", "id": "f-priority", "field": "priority" },
+          { "type": "field", "id": "f-severity", "field": "severity" },
+          { "type": "field", "id": "f-points", "field": "story_points" },
+          { "type": "field", "id": "f-activity", "field": "activity" },
+          { "type": "field", "id": "f-due", "field": "due_date" },
+          { "type": "field", "id": "f-found", "field": "found_in" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "details",
+        "title": "Details",
+        "children": [
+          { "type": "field", "id": "f-repro", "field": "repro_steps" },
+          { "type": "field", "id": "f-system", "field": "system_info" },
+          { "type": "field", "id": "f-acceptance", "field": "acceptance" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Bug 5140": "خلل 5140",
+      "A work item as Azure DevOps draws one: its header quiet, each value plain words until it is pointed at or clicked; the rest in boxes.": "بند عمل كما يعرضه Azure DevOps: رأسه هادئ، كل قيمة نص عادي حتى يُشار إليها أو يُنقر عليها، والباقي في مربعات.",
+      "Title": "العنوان",
+      "Name the bug": "سمِّ الخلل",
+      "State": "الحالة",
+      "New": "جديد",
+      "Active": "نشط",
+      "Resolved": "تم الحل",
+      "Closed": "مغلق",
+      "Reason": "السبب",
+      "New defect reported": "أُبلغ عن خلل جديد",
+      "Approved": "معتمد",
+      "Fixed": "تم الإصلاح",
+      "Verified": "تم التحقق",
+      "Duplicate": "مكرر",
+      "Set by the workflow when the bug is resolved": "يضبطه سير العمل عند حل الخلل",
+      "Area": "المجال",
+      "Iteration": "الدورة",
+      "Assigned to": "مسند إلى",
+      "Planning": "التخطيط",
+      "Priority": "الأولوية",
+      "Severity": "الخطورة",
+      "1 - Critical": "1 - حرج",
+      "2 - High": "2 - مرتفع",
+      "3 - Medium": "3 - متوسط",
+      "4 - Low": "4 - منخفض",
+      "Story points": "نقاط القصة",
+      "Activity": "النشاط",
+      "Development": "التطوير",
+      "Testing": "الاختبار",
+      "Design": "التصميم",
+      "Documentation": "التوثيق",
+      "Due date": "تاريخ الاستحقاق",
+      "Found in build": "وُجد في الإصدار",
+      "Details": "التفاصيل",
+      "Repro steps": "خطوات إعادة الإنتاج",
+      "System info": "معلومات النظام",
+      "Acceptance criteria": "معايير القبول"
+    }
+  }
+}

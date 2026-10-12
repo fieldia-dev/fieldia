@@ -29,7 +29,7 @@ export const LAYOUT_CSS = /* css */ `
 /* ---- how a group is drawn: a card, plain, a line under its title, or a frame round it ---- */
 /* A group of its own paints the ground it stands on, so nothing of the grid round it shows through. */
 .fd-form { --fd-ground: transparent; }
-.fd-card, .fd-form[data-fd-skin="outlined"] .fd-section[data-style="card"][data-on-page] { --fd-ground: var(--fd-surface); }
+.fd-card, .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-section[data-style="card"][data-on-page] { --fd-ground: var(--fd-surface); }
 fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 .fd-form .fd-section[data-style="line"] > .fd-section-title { border-block-end: 1px solid var(--fd-border); padding-block-end: 8px; }
 .fd-form .fd-section[data-style="plain"] > .fd-section-title { border-block-end: 0; padding-block-end: 0; }
@@ -173,7 +173,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
     --fd-focus: var(--fd-look-accent-dark);
   }
 }
-:is(.fd-form, .fd-form-dialog)[data-fd-skin="outlined"][data-accent] { --fd-focus-ring: 0 0 0 2px color-mix(in srgb, var(--fd-accent) 22%, transparent); }
+:is(.fd-form, .fd-form-dialog):is([data-fd-skin="outlined"], [data-fd-skin="quiet"])[data-accent] { --fd-focus-ring: 0 0 0 2px color-mix(in srgb, var(--fd-accent) 22%, transparent); }
 }
 :is(.fd-form, .fd-form-dialog)[data-accent] .fd-button-primary:hover { filter: none; background: var(--fd-accent-hover); border-color: var(--fd-accent-hover); }
 /* A band of the accent under the page's title. */

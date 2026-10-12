@@ -16,6 +16,7 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
+  type Skin,
   type Theme,
   type RecordId,
   type ResolvedFilter,
@@ -41,7 +42,7 @@ import {
   type Values,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, wearsQuiet, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView, type ListViewFactory } from './list';
 import type { MapPartFactory } from './map-part';
@@ -58,7 +59,8 @@ import { attachmentPreview } from './attachment-preview';
 import { installRecordStyles } from './record-styles';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
-export type Skin = 'underline' | 'outlined';
+/** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
+export type { Skin };
 
 import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
 import { keepTabIn } from './focus-trap';
@@ -72,7 +74,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   page: Page;
   /** A form made elsewhere, to share one record between two views. */
   form?: Form;
-  /** The skin: a theme's own when it is left out (see `THEME_SKINS`), else `underline`. */
+  /**
+   * The skin: `underline`, `outlined`, or `quiet`, whose values read as words
+   * until pointed at or entered. The page's own (`look.skin`) when left out,
+   * else its theme's (see `THEME_SKINS`), else `underline`.
+   */
   skin?: Skin;
   /** A theme in the style of a known design system, over the page's own (`look.theme`). */
   theme?: Theme;
@@ -325,7 +331,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
 
   const theme = options.theme ?? page.look?.theme;
-  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
+  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
   const confirm = options.confirm ?? dialogConfirm;
@@ -360,6 +366,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /** The fields that take the focus as the record opens, in the order they are drawn. */
   const focusers: { wrapper: HTMLElement; focus(): void }[] = [];
+  /** Each field's face, put on again when the form changes skin: quiet, or in its box. */
+  const faces: (() => void)[] = [];
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
   /** Every part drawn again from the state of the page shown. */
@@ -387,8 +395,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const watch = (update: Updater) => sink.push(scope.root ? update : () => update(form.getState()));
 
 
-    /** A field with its label, help and messages. `place` is where labels sit where it is put; the title's own fields take none. */
-    function fieldItem(node: FieldNode, place?: LabelPlace): HTMLElement {
+    /**
+     * A field with its label, help and messages. `place` is where labels sit where it is put; the title's own fields take none.
+     * `around` says what the groups round it say of the quiet look: quiet or boxed, and why their fields are read-only.
+     */
+    function fieldItem(node: FieldNode, place?: LabelPlace, around: Pick<Place, 'quiet' | 'reason'> = {}): HTMLElement {
       const def = page.fields[node.field];
       const id = uid(node.id);
       const labelsAt = labelPlace(node, def.type, place);
@@ -411,6 +422,36 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Words chosen by a condition (placeholderWhen), else what the box showed as it was drawn.
       const drawnPlaceholder = textBox?.getAttribute('placeholder') ?? null;
       const chosenPlaceholder = node.placeholderWhen?.length ? textBox : null;
+      // The quiet look: its own word, else its group's, else the form's skin. In a quiet place its label is quiet; its value
+      // wears the look (data-quiet) unless its widget keeps its own face.
+      const quietOwn = node.quiet ?? around.quiet;
+      const wears = wearsQuiet(def, node);
+      const quietPlace = () => quietOwn ?? root.getAttribute('data-fd-skin') === 'quiet';
+      // Empty and quiet, it says what to add, unless the page gives it words of its own: "Add story points", or for a
+      // question "Your answer". A field of several boxes, each with its own label (an address), says it in none of them.
+      const ownWords = !!node.placeholder || labelsAt === 'hidden' || def.type === 'json' || def.type === 'properties';
+      const hint = quietHint(labelText, locale, labels);
+      const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
+      // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
+      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : hint);
+      const quietSelect = widget.element instanceof HTMLSelectElement ? widget.element.querySelector<HTMLOptionElement>(':scope > option[value=""]') : null;
+      const richText = widget.element.matches('.fd-richtext') ? widget.element : widget.element.querySelector<HTMLElement>(':scope > .fd-richtext');
+      const stateWords = widget.element.querySelector<HTMLElement>(':scope > .fd-dot-label');
+      const face = () => {
+        const place = quietPlace();
+        const quiet = wears && place;
+        wrapper.toggleAttribute('data-in-quiet', place);
+        wrapper.toggleAttribute('data-quiet', quiet);
+        if (textBox && !chosenPlaceholder) setAttr(textBox, 'placeholder', restWords());
+        if (quietSelect) quietSelect.textContent = quiet ? blankWords : '';
+        if (richText && !node.placeholder) {
+          setAttr(richText, 'data-placeholder', quiet ? hint : null);
+          setAttr(richText, 'aria-placeholder', quiet ? hint : null);
+        }
+        if (stateWords) setAttr(stateWords, 'data-hint', quiet ? blankWords : null);
+      };
+      faces.push(face);
+      face();
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
         // `for` stays: a custom field that puts the id on its own input is
         // labelled natively. Only a wrapper with a role (a radio group, say) may
@@ -420,7 +461,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         named?.setAttribute('aria-labelledby', label.id);
         // Not a press on its (?) or the help bubble beside it: they show the help, and must not open a picker's list.
         label.addEventListener('click', (event) => {
-          if (!(event.target as Element).closest?.('.fd-help-tip-wrap')) widget.focus();
+          if (!(event.target as Element).closest?.('.fd-help-tip-wrap, .fd-lock-wrap')) widget.focus();
         });
       }
       const helpText = node.help ?? def.help;
@@ -435,6 +476,28 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         label.append(tip.element);
         label.dir = 'auto';
       }
+      // A rule keeping it read-only: a lock by its label (after the box when the label is out of sight) in the quiet look,
+      // and in any skin when the page says why — why, it says in a bubble, as the (?) does, pointed at or focused. Made
+      // the first time it is needed: a field never locked has none.
+      const reason = node.readonlyReason ?? around.reason;
+      // Read-only by its nature — worked out from others, or always read-only where the page puts it — a value is shown,
+      // not locked: it has a lock only when the page says why.
+      const fixed = node.readonly === true || def.readonly === true || def.compute !== undefined;
+      let lock: ReturnType<typeof bubbleTip> | null = null;
+      let lockMark: HTMLElement | null = null;
+      let lockedNow = false;
+      const lockFor = (): HTMLElement => {
+        if (lockMark) return lockMark;
+        const icon = drawIcon(doc, 'lock', options.icons) ?? '';
+        lock = reason ? bubbleTip(`${id}-lock`, reason, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
+        lockMark = lock?.element ?? el('span', { class: 'fd-lock-wrap' }, el('span', { class: 'fd-lock', 'aria-hidden': 'true' }, icon));
+        if (labelsAt === 'hidden') widget.element.after(lockMark);
+        else label.insertBefore(lockMark, tip && labelsAt !== 'after' ? tip.element : null);
+        return lockMark;
+      };
+      // Pointing at a locked quiet value, or focusing it, says why too.
+      const point = (on: boolean) => lock?.point(on && lockedNow && wrapper.hasAttribute('data-in-quiet'));
+      if (reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
       // Not an alert of its own: a refused save is announced once, naming every field to look at.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
@@ -443,6 +506,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Read-only, as words in place of the box, when the page draws them so.
       const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
+      if (asText && reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false]] as const) asText.element.addEventListener(event, () => point(on));
       if (widget.destroy) cleanups.push(() => widget.destroy?.());
       // An answer rule's warning waits until the person leaves the field: no advice
       // mid-word. One already shown stays while they put it right, and goes once they have.
@@ -456,6 +520,19 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // (a deleted line's button), and that redraw must finish first.
         queueMicrotask(() => update(form.getState()));
       });
+      // Quiet, Escape puts back the value the field had as it was entered — once its own list or calendar, if open, has
+      // taken the key — and only then is it left for the dialog round it. Leaving keeps the change, for Save.
+      let entered: unknown;
+      wrapper.addEventListener('focusin', (event) => {
+        if (!wrapper.contains(event.relatedTarget as Node | null)) entered = form.getState().values[node.field];
+      });
+      wrapper.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !wrapper.hasAttribute('data-quiet')) return;
+        if (JSON.stringify(form.getState().values[node.field] ?? null) === JSON.stringify(entered ?? null)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        form.setValue(node.field, (entered ?? null) as Values[string]);
+      });
 
       const toned = node.tones !== undefined || node.bold !== undefined;
       const update = (state: FormState) => {
@@ -468,7 +545,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           setAttr(wrapper, 'data-tone', look.tone);
           wrapper.classList.toggle('fd-value-bold', look.bold);
         }
-        if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? drawnPlaceholder);
+        if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
         const message = state.errors[node.field];
         setHidden(error, !message);
         setText(error, message ?? '');
@@ -486,6 +563,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           mark.toggleAttribute('hidden', !valid);
         }
         const readonly = shown.readonly || locked || scope.locked();
+        // Locked by a rule, not by the whole form being read: its lock shows, in the quiet look or with its reason, and its words are muted.
+        const quiet = wrapper.hasAttribute('data-quiet');
+        lockedNow = readonly && !locked;
+        const showsLock = lockedNow && (!!reason || (wrapper.hasAttribute('data-in-quiet') && !fixed));
+        if (showsLock || lockMark) setHidden(lockFor(), !showsLock);
+        if (!lockedNow) point(false);
+        setAttr(wrapper, 'data-locked', quiet && showsLock ? '' : null);
+        setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
         if (asText) {
           setHidden(widget.element, readonly);
           setHidden(asText.element, !readonly);
@@ -498,7 +583,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           readonly,
           required: shown.required,
           invalid: !!message,
-          describedBy: [help?.id ?? tip?.bubble.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
+          describedBy: [help?.id ?? tip?.bubble.id, lock && lockedNow ? lock.bubble.id : undefined, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
         });
       };
       watch(update);
@@ -507,8 +592,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     /** A (?) that shows a field's help in a bubble: on hover, on focus, or kept open by a press — a tap — and gone with Escape. */
     function helpTip(bubbleId: string, text: string, name: string): { element: HTMLElement; bubble: HTMLElement } {
+      return bubbleTip(bubbleId, text, name, 'fd-help-tip', '?');
+    }
+
+    /**
+     * A small button with words in a bubble — a field's help behind its (?), why it is locked behind its lock — shown
+     * on hover, on focus, or kept open by a press, and gone with Escape. `point` shows it from elsewhere: its value pointed at.
+     */
+    function bubbleTip(bubbleId: string, text: string, name: string, kind: 'fd-help-tip' | 'fd-lock', face: Node | string): { element: HTMLElement; bubble: HTMLElement; point(on: boolean): void } {
       const bubble = el('span', { class: 'fd-help-bubble', role: 'tooltip', id: bubbleId, hidden: '' }, text);
-      const button = el('button', { type: 'button', class: 'fd-help-tip', 'aria-label': name, 'aria-expanded': 'false', 'aria-controls': bubbleId }, '?');
+      const button = el('button', { type: 'button', class: kind, 'aria-label': name, 'aria-expanded': 'false', 'aria-controls': bubbleId }, face);
+      // A lock's reason is said as it is reached; the help waits to be asked for.
+      if (kind === 'fd-lock') button.setAttribute('aria-describedby', bubbleId);
       let kept = false;
       const show = (open: boolean) => {
         bubble.hidden = !open;
@@ -531,7 +626,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         kept = false;
         show(false);
       });
-      return { element: el('span', { class: 'fd-help-tip-wrap' }, button, bubble), bubble };
+      return { element: el('span', { class: kind === 'fd-lock' ? 'fd-lock-wrap' : 'fd-help-tip-wrap' }, button, bubble), bubble, point: (on) => show(on || kept) };
     }
 
     /** A bubble hangs from its (?): near the edge of a phone's screen it runs past it, so it is moved back in. */
@@ -631,7 +726,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const line = el('div', { class: 'fd-field fd-oneline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
       spans(line, node.colspan);
       const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...onelineRuns(node.children).map((run) => {
-        const parts = run.map((child) => item(child, { columns: 1, onPage: false, inline: true }));
+        const parts = run.map((child) => item(child, { columns: 1, onPage: false, inline: true, quiet: node.quiet ?? place.quiet, reason: node.readonlyReason ?? place.reason }));
         return parts.length === 1 ? parts[0] : el('span', { class: 'fd-oneline-pair' }, ...parts);
       }));
       if (node.title) {
@@ -641,6 +736,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       line.append(row);
       hideWhen(line, node.id);
+      // In a quiet place the line's label is quiet, as its fields' are.
+      const face = () => line.toggleAttribute('data-in-quiet', node.quiet ?? place.quiet ?? root.getAttribute('data-fd-skin') === 'quiet');
+      faces.push(face);
+      face();
       return line;
     }
 
@@ -722,7 +821,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           sink = own;
           try {
             // A tab's parts sit where the tabs do: on the page, or in the box round them.
-            panel.append(grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
+            panel.append(grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels, quiet: place.quiet, reason: place.reason }));
           } finally {
             sink = outer;
           }
@@ -812,7 +911,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function partItem(node: LayoutNode, place: Place): HTMLElement {
       switch (node.type) {
         case 'field':
-          return fieldItem(node, place.labels);
+          return fieldItem(node, place.labels, place);
         case 'button':
           return buttonItem(node);
         case 'text':
@@ -932,7 +1031,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         });
         const layout = saved.layout as SectionsNode | TabsNode;
         // Its parts sit in the part's box: a card there draws none of its own.
-        note.replaceWith(own.grid(layout.type === 'tabs' ? [layout] : layout.children, 1, { columns: 1, onPage: false, labels: place.labels }));
+        note.replaceWith(own.grid(layout.type === 'tabs' ? [layout] : layout.children, 1, { columns: 1, onPage: false, labels: place.labels, quiet: place.quiet }));
         box.removeAttribute('aria-busy');
         cleanups.push(inner.subscribe(renderNow));
         if (mounted) renderNow();
@@ -1697,6 +1796,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     })
   );
   render(form.getState());
+  /** The form in another skin: each field's face put on again, and drawn again from the state. */
+  function refaced() {
+    for (const face of faces) face();
+    if (mounted) renderNow();
+  }
+
   mounted = true;
   // As the record opens, its focused field takes the focus — the first shown — unless the person is busy elsewhere:
   // only while nothing has the focus, or, the first time, while it is in this form (a dialog's first box).
@@ -1723,11 +1828,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     element: root,
     setSkin(skin) {
       root.setAttribute('data-fd-skin', skin);
+      refaced();
     },
     setTheme(next) {
       if (next) root.setAttribute('data-fd-theme', next);
       else root.removeAttribute('data-fd-theme');
-      root.setAttribute('data-fd-skin', skinFor(options.skin, next ?? undefined));
+      root.setAttribute('data-fd-skin', skinFor(options.skin ?? page.look?.skin, next ?? undefined));
+      refaced();
     },
     setTokens(next) {
       options.tokens = next ?? undefined;
@@ -1769,6 +1876,25 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
 /** The boxes a label can be shown in, as the words of an empty box. */
 const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea';
+
+/** Nothing in it: no value, empty words, nothing picked. */
+const isBlank = (value: unknown) => value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length);
+
+/**
+ * A label inside a sentence, as "Add story points" says it: in English and French its first letter small, unless the
+ * word is a name such as "VAT"; German nouns, and Arabic, as written.
+ */
+function inSentence(label: string, locale: Locale): string {
+  return (locale === 'en' || locale === 'fr') && /^\p{Lu}\p{Ll}/u.test(label) ? label[0].toLocaleLowerCase(locale) + label.slice(1) : label;
+}
+
+/**
+ * What an empty field in the quiet look says, by its label, in the viewer's
+ * words for `locale`: "Add story points", or for a question "Your answer".
+ */
+export function quietHint(label: string, locale: Locale, labels: Pick<ViewerLabels, 'quietHint' | 'quietAnswer'> = VIEWER_LABELS[locale]): string {
+  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', inSentence(label, locale));
+}
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
 const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html', 'json', 'properties']);

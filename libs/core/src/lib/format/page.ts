@@ -5,6 +5,7 @@ import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } fr
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
+import { SKINS, type Skin } from './themes';
 
 import { FORMAT_VERSION } from './version';
 export { FORMAT_VERSION } from './version';
@@ -51,6 +52,13 @@ export interface PageLook {
   scheme?: 'light' | 'dark' | 'auto';
   /** A look for each kind of part, over the page's: text boxes, choices, groups, buttons, tables. See `PART_LOOKS`. */
   parts?: PartsLook;
+  /**
+   * The skin the form is drawn in, unless the app's viewer names one: `quiet`
+   * draws each value as plain words until it is pointed at or entered; a
+   * section or a field can be quiet on its own instead (`quiet`). A theme's
+   * own skin when left out (see `SKINS`).
+   */
+  skin?: Skin;
 }
 
 export interface Page {
@@ -124,6 +132,7 @@ export const PageSchema = z
         readonlyShown: z.enum(['text', 'box']).optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
+        skin: z.enum(SKINS).optional(),
       })
       .optional(),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),

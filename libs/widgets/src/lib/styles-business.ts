@@ -42,6 +42,8 @@ export const BUSINESS_CSS = /* css */ `
 .fd-dot-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px; }
 .fd-dot-item:hover, .fd-dot-item:focus { background: var(--fd-accent-soft); outline: none; }
 .fd-dot-item[aria-checked="true"] { font-weight: 600; }
+/* The state picked, ticked at the menu's end too: told by more than its weight. */
+.fd-dot-item[aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; padding-inline-start: 16px; color: var(--fd-accent); }
 /* A colour: a swatch of it, and a palette of Flectra's twelve under it; none is a crossed-out square. */
 .fd-colour-box { position: relative; display: inline-flex; align-items: center; gap: 8px; }
 .fd-colour-button, .fd-colour { width: 24px; height: 24px; padding: 0; border: 1px solid var(--fd-border-strong); border-radius: 4px; background: var(--fd-swatch, transparent); cursor: pointer; }

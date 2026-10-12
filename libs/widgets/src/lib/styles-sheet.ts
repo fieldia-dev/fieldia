@@ -16,7 +16,7 @@ export const SHEET_CSS = /* css */ `
 [dir="rtl"] .fd-read-text { text-align: right; }
 /* Its words start where a box's words do, inside the box's padding (and an outlined box's border). */
 .fd-read-text { padding-inline: var(--fd-pad-x); }
-.fd-form[data-fd-skin="outlined"] .fd-read-text { padding-inline: calc(var(--fd-pad-x) + 1px); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-read-text { padding-inline: calc(var(--fd-pad-x) + 1px); }
 /* A sheet's title stays flush with the labels under it, as it was drawn. */
 .fd-form :is(.fd-title, .fd-title-line) .fd-read-text { padding-inline: 0; }
 .fd-read-text a, .fd-read-link { color: var(--fd-accent); text-decoration: none; }

@@ -88,7 +88,7 @@ const POWERS = [
   ['The chatter', 'On every record', 'Messages, notes and @mentions, scheduled activities, followers and files, beside the sheet.', '/features/records/#chatter'],
   ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/features/lists/'],
   ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/features/forms/#steps'],
-  ['Looks', '2 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
+  ['Looks', '3 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
   ['Languages and access', '4 languages, AA', 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
   ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/features/backend/'],
 ];

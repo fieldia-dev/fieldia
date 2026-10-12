@@ -143,7 +143,8 @@ export function tryIt(options: TryItOptions): TryIt {
     viewer = mountViewer(frame, {
       page,
       dataSource,
-      skin: options.skin,
+      // The page's own skin when it names one, as the form will wear it; else the editor's.
+      skin: page.look?.skin ?? options.skin,
       widgets: options.widgets,
       ...(options.listViews ? { listViews: options.listViews } : {}),
       ...(options.maps ? { maps: options.maps, values: madeUpPlaces(page, options.sampleCentre) } : {}),

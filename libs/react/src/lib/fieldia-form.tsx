@@ -221,12 +221,12 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     };
   }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
 
-  // A theme and a skin switch in place: the theme brings its skin, unless one is given.
+  // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
   useEffect(() => {
     if (!handle) return;
     const theme = props.theme ?? props.page.look?.theme;
     handle.setTheme(theme ?? null);
-    handle.setSkin(skinFor(props.skin, theme));
+    handle.setSkin(skinFor(props.skin ?? props.page.look?.skin, theme));
   }, [handle, props.skin, props.theme]);
 
   // The host's tokens, worn in place as its app changes them (light to dark): by their values, not the object.

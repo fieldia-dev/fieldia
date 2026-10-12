@@ -205,8 +205,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // cards — 0.6 more, to 456.1; a map's areas by colour, reachable areas, fences and tools checked on a page, and a
 // list put nearest a place first — 1.1 more, to 457.2; Enter moving on from a one-line code editor, as from a
 // text box — 0.1 more, to 457.3; an address with suggestions checked as a page is shown (a char field, the
-// kinds of the fields it fills with a place and an address's parts) — 1.1 more, to 458.4.
-const BUDGET_KB = 458.4;
+// kinds of the fields it fills with a place and an address's parts) — 1.1 more, to 458.4. The quiet look, a third skin (each value plain words until pointed at or entered,
+// as Azure DevOps draws a work item: its stylesheet of rest, hover and editing for every kind of field that wears it,
+// a state's dot with its words and a tick, a date opened at a click, the empty field's words, Escape putting a value
+// back, the lock of a field locked by a rule with why, a choice's chevron and a date's calendar right to left) — 12.2
+// more, to 469.5 alone: two thirds of it the stylesheet, whose rules each name the quiet field to win over the themes' own shapes.
+// Together in 0.19, the address's checks and the quiet look: 470.6.
+const BUDGET_KB = 470.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -235,7 +240,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a list's records on a map (the view switch, the map beside the table, its page checks), 1.4 more, to 137.5;
 // a map on a form, its layers checked, 0.8 more, to 138.3.
 // a map's areas, reachable areas, fences and tools checked, a list nearest a place first, 0.8 more, to 139.1.
-const GZIP_BUDGET_KB = 139.1;
+// the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
+// together with an address's checks in 0.19, to 141.8.
+const GZIP_BUDGET_KB = 141.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -256,7 +263,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // What sits around a record — the gear menu's and its built-ins' words, the trail, the pager, the attachment,
 // and what Archive and Delete ask — eighteen words in each, a little more again.
 // A list's switch between its table and its map, four words in each: Arabic's to 23.
-const ADD_ON_BUDGET_KB = { ar: [23.0, 4.8], de: [9.8, 4.1], fr: [9.9, 4.1] };
+// The quiet look's three — what an empty field and an empty question say, and its lock's name — Arabic's to 23.1,
+// German's to 9.9 and 4.2, French's to 10.0.
+const ADD_ON_BUDGET_KB = { ar: [23.1, 4.8], de: [9.9, 4.2], fr: [10.0, 4.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

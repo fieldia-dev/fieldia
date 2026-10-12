@@ -71,7 +71,7 @@ export const FieldiaForm = defineComponent({
     /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
     context: { type: Object as PropType<ViewerOptions['context']>, default: undefined },
     values: { type: Object as PropType<Values>, default: undefined },
-    /** The skin: the theme's own when left out, else underline. */
+    /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
     skin: { type: String as PropType<Skin>, default: undefined },
     /** A theme in the style of a known design system, over the page's own. */
     theme: { type: String as PropType<Theme>, default: undefined },
@@ -254,14 +254,14 @@ export const FieldiaForm = defineComponent({
       (tokens) => handle?.setTokens(tokens ?? null),
       { deep: true }
     );
-    // A theme and a skin switch in place: the theme brings its skin, unless one is given.
+    // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
     watch(
       () => [props.skin, props.theme],
       () => {
         if (!handle) return;
         const theme = props.theme ?? props.page.look?.theme;
         handle.setTheme(theme ?? null);
-        handle.setSkin(skinFor(props.skin, theme));
+        handle.setSkin(skinFor(props.skin ?? props.page.look?.skin, theme));
       }
     );
     watch(

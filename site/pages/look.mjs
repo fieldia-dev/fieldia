@@ -4,7 +4,7 @@ export default {
   path: '/look/',
   wide: true,
   title: 'Themes, skins and languages',
-  description: 'Eight themes in the style of Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms; Fieldia’s two skins, the CSS custom properties that restyle them, a look for each kind of part, and the four languages with right-to-left Arabic.',
+  description: 'Eight themes in the style of Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms; Fieldia’s three skins, the quiet look, the CSS custom properties that restyle them, a look for each kind of part, and the four languages with right-to-left Arabic.',
   body: `
 <p class="lead">How a form looks is set per form, not per page: the same page can be a quiet business sheet in one place and a friendly survey in another.</p>
 
@@ -57,13 +57,29 @@ ${code('ts', `mountViewer(host, { page, dataSource, theme: 'google-forms' });   
 })();
 </script>
 
-<h2 id="skins">Two skins</h2>
+<h2 id="skins">Three skins</h2>
 <ul>
   <li>${c('underline')} — labels beside the values, inputs as a single underline, square corners. The look of a business record sheet, for screens people fill all day.</li>
   <li>${c('outlined')} — labels above boxed inputs, rounded corners, a blue accent. Ant Design style, for surveys and sign-ups.</li>
+  <li>${c('quiet')} — the outlined skin's page, each value plain words until it is wanted, as Azure DevOps draws a work item. See <a href="#quiet">the quiet look</a>.</li>
 </ul>
-${code('ts', `mountViewer(host, { page, dataSource, skin: 'outlined' });   // viewer.setSkin('underline') switches it live`)}
+${code('ts', `mountViewer(host, { page, dataSource, skin: 'outlined' });   // viewer.setSkin('quiet') switches it live`)}
+<p>A page can name its own skin, ${c('"look": { "skin": "quiet" }')}; the viewer's ${c('skin')}, when given, wins over it, as a theme's does.</p>
 <p>A skin applies only inside its own form (${c('.fd-form[data-fd-skin="…"]')}), so two forms with different skins can share a page, and Fieldia's styles never leak into yours.</p>
+
+<h2 id="quiet">The quiet look</h2>
+<p>In the quiet look a value reads as plain words, as a label does: no box, no arrow, a state with its coloured dot. Pointed at, a light box and the control's own sign appear — the chevron of a choice, a date's calendar, a link's ×; nothing opens and nothing moves. Clicked or tabbed into, it is its editor, ringed in the focus colour: a choice opens its options, a state its dots with the one picked ticked, a date its calendar, formatted text its toolbar. Leaving, it reads as words again, showing the new value; Escape puts back what the field held as it was entered. On a touch screen one tap goes straight to the editor. An empty field says what to add, in the muted colour — its placeholder, else “Add story points” from its label. Fields that are already as quiet as they can be keep their own face: a tick box, a switch, stars, a scale, a slider, a progress bar, a statusbar, radios, pictures, tables, files, code and maps.</p>
+<p>A whole page wears it with the ${c('quiet')} skin; a section, or a single field, can be quiet on its own, so a record's header reads as words while the rest keeps its boxes — and ${c('"quiet": false')} keeps a field or a section in boxes inside a quiet page:</p>
+${code(
+  'json',
+  `
+{ "type": "section", "id": "header", "quiet": true, "labels": "beside", "children": [
+  { "type": "field", "id": "f-state", "field": "state", "widget": "dot", "options": { "label": true } },
+  { "type": "field", "id": "f-reason", "field": "reason",
+    "readonly": "state in ('resolved', 'closed')", "readonlyReason": "Set by the workflow when the bug is resolved" }
+] }`
+)}
+<p>A field a rule keeps read-only shows a lock by its label, and ${c('readonlyReason')} — on the field, or on the section whose rule locks it — says why, in a bubble, when the lock or the value is pointed at, or the lock is reached with Tab. A value read-only by its nature (worked out, or always read-only) has no lock unless the page says why. <a href="/demos/plain/?page=work-item&amp;skin=outlined">Try the work item</a>.</p>
 
 <h2 id="tokens">Restyle with custom properties</h2>
 <p>Both skins are built from CSS custom properties on ${c('.fd-form')}. Override them to match your product:</p>

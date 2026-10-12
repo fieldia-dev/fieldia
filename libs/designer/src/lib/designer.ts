@@ -262,6 +262,8 @@ export interface QuestionPatch {
   placeholder?: string;
   /** Takes the focus as the record opens (the node's `focus`), as Flectra's default_focus. */
   focus?: boolean;
+  /** Why it is read-only while its rule holds, in plain words: said by its lock (the node's `readonlyReason`). Empty takes it off. */
+  readonlyReason?: string;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -391,6 +393,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setFieldLabels(id: string, place: LabelPlace | null): boolean;
   /** Where one field's help shows — under it, behind a (?), or both; `null` for where the page shows help. */
   setFieldHelpShown(id: string, shown: HelpShown | null): boolean;
+  /** One field in the quiet look (true), or in its box though its group or the page is quiet (false); `null` for as they draw it. */
+  setFieldQuiet(id: string, quiet: boolean | null): boolean;
   /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
   setLook(patch: LookPatch): boolean;
   /**
@@ -872,14 +876,18 @@ export function createDesigner(options: {
     },
 
     updateQuestion(id, patch) {
-      const textOnly = Object.keys(patch).length === 1 && ('label' in patch || 'help' in patch || 'placeholder' in patch);
+      const textOnly = Object.keys(patch).length === 1 && ('label' in patch || 'help' in patch || 'placeholder' in patch || 'readonlyReason' in patch);
       return apply(
         (draft) => {
           const node = fieldNode(draft, id);
-          // Where the focus goes as the record opens is the place's, whatever the field.
+          // Where the focus goes as the record opens is the place's, whatever the field; and why the place keeps it read-only.
           if (patch.focus !== undefined) {
             if (patch.focus) node.focus = true;
             else delete node.focus;
+          }
+          if (patch.readonlyReason !== undefined) {
+            if (patch.readonlyReason.trim()) node.readonlyReason = patch.readonlyReason;
+            else delete node.readonlyReason;
           }
           if (fromModel(node.field)) {
             // The backend's definition stays as it is: what this page says goes on the field's place on it.
@@ -1412,6 +1420,7 @@ export function createDesigner(options: {
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
     setFieldHelpShown: (id, shown) => apply((draft) => settings.setFieldHelpShown(draft, id, shown)),
+    setFieldQuiet: (id, quiet) => apply((draft) => settings.setFieldQuiet(draft, id, quiet)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
     setPartLook: (kind, patch) => {
       const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));

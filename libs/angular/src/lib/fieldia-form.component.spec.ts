@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Theme, type Value } from '@fieldia/core';
+import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Skin, type Theme, type Value } from '@fieldia/core';
 import type { Tokens, ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
@@ -71,7 +71,7 @@ class NoteComponent implements OnInit {
 })
 class HostComponent {
   readonly page = signal<Page>(custom);
-  readonly skin = signal<'underline' | 'outlined' | undefined>('underline');
+  readonly skin = signal<Skin | undefined>('underline');
   readonly theme = signal<Theme | undefined>(undefined);
   readonly tokens = signal<Tokens | undefined>(undefined);
   readonly fieldTypes = { 'char.shout': ShoutComponent };
@@ -220,6 +220,22 @@ describe('<fieldia-form> for Angular', () => {
     host.skin.set('outlined');
     await fixture.whenStable();
     expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('outlined');
+    expect(host.ready).toHaveLength(1);
+  });
+
+  it('wears the quiet skin, the page’s own or given here, and keeps the page’s when no skin is given', async () => {
+    const survey = page('survey');
+    const { fixture, host, el } = await setup({ ...survey, look: { ...survey.look, skin: 'quiet' } });
+    host.skin.set(undefined);
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('quiet');
+    expect(el.querySelector('.fd-field[data-quiet]')).not.toBeNull();
+    host.skin.set('outlined');
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-field[data-quiet]')).toBeNull();
+    host.skin.set('quiet');
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-field[data-quiet]')).not.toBeNull();
     expect(host.ready).toHaveLength(1);
   });
 

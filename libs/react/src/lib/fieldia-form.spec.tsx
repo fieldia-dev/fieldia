@@ -115,6 +115,22 @@ describe('<FieldiaForm>', () => {
     expect(mounts).toBe(1);
   });
 
+  it('wears the quiet skin, the page’s own or given here, and keeps the page’s when no skin is given', () => {
+    let mounts = 0;
+    const survey = page('survey');
+    const quiet: Page = { ...survey, look: { ...survey.look, skin: 'quiet' } };
+    const { container, rerender } = render(<FieldiaForm page={quiet} onReady={() => mounts++} />);
+    const form = () => container.querySelector('.fd-form');
+    expect(form()?.getAttribute('data-fd-skin')).toBe('quiet');
+    expect(container.querySelector('.fd-field[data-quiet]')).not.toBeNull();
+    rerender(<FieldiaForm page={quiet} skin="outlined" onReady={() => mounts++} />);
+    expect(form()?.getAttribute('data-fd-skin')).toBe('outlined');
+    expect(container.querySelector('.fd-field[data-quiet]')).toBeNull();
+    rerender(<FieldiaForm page={quiet} skin="quiet" onReady={() => mounts++} />);
+    expect(container.querySelector('.fd-field[data-quiet]')).not.toBeNull();
+    expect(mounts).toBe(1);
+  });
+
   it('wears a theme on its own skin, and switches it without mounting again', () => {
     let mounts = 0;
     const survey = page('survey');

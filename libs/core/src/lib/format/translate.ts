@@ -1,11 +1,11 @@
 import type { Page } from './page';
 
 /**
- * Keys whose text a person reads: titles, labels, help, prompts and messages.
+ * Keys whose text a person reads: titles, labels, help, prompts, messages and why a field is locked.
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit']);
+const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason']);
 
 /**
  * Parts that hold names or data, never words to translate: which line fields
@@ -72,7 +72,7 @@ export function pageWords(page: Page): string[] {
         if (node['type'] === 'wizard') visit(node['children']);
         const def = node['type'] === 'field' ? fields[node['field'] as string] : undefined;
         if (!def) return;
-        for (const [part, name] of [[node, 'label'], [def, 'label'], [node, 'placeholder'], [node, 'help'], [def, 'help']] as const) visit(part[name], name);
+        for (const [part, name] of [[node, 'label'], [def, 'label'], [node, 'placeholder'], [node, 'help'], [def, 'help'], [node, 'readonlyReason']] as const) visit(part[name], name);
         visit(def);
       }
     );

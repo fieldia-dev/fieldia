@@ -4,6 +4,7 @@ import { INPUTS_CSS } from './styles-inputs';
 import { PARTS_CSS } from './styles-parts';
 import { SHEET_CSS } from './styles-sheet';
 import { BUSINESS_CSS } from './styles-business';
+import { QUIET_CSS } from './styles-quiet';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -14,6 +15,8 @@ import { BUSINESS_CSS } from './styles-business';
  *             beside the field, navy accents.
  * outlined  — the Ant Design style: boxed inputs with rounded corners, labels
  *             above the field, a blue focus glow.
+ * quiet     — the outlined skin's page, each value plain words until pointed
+ *             at or entered, as Azure DevOps draws a work item (styles-quiet).
  *
  * Written with logical properties (inline/block, start/end), so a right-to-left
  * form mirrors without a second stylesheet.
@@ -66,8 +69,9 @@ const SKINS_CSS = /* css */ `
   --fd-gap-x: 32px;
   --fd-gap-y: 14px;
 }
-/* Ant Design's blue and red, a shade darker: words in them read at 4.5:1 (WCAG AA) on white, the page and their soft shades. */
-.fd-form[data-fd-skin="outlined"], .fd-theme[data-fd-skin="outlined"] {
+/* Ant Design's blue and red, a shade darker: words in them read at 4.5:1 (WCAG AA) on white, the page and their soft shades.
+   The quiet skin is drawn on the outlined one's page. */
+:is(.fd-form, .fd-theme):is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) {
   --fd-text: rgba(0, 0, 0, 0.88);
   --fd-muted: rgba(0, 0, 0, 0.55);
   --fd-page: #f5f5f5;
@@ -88,6 +92,8 @@ const SKINS_CSS = /* css */ `
   --fd-gap-x: 24px;
   --fd-gap-y: 18px;
 }
+/* Its values read as words, set in from their labels by no more than a light box needs. */
+:is(.fd-form, .fd-theme)[data-fd-skin="quiet"] { --fd-pad-x: 8px; }
 }
 .fd-form, .fd-theme:is([data-fd-skin], :not(.fd-form *)) {
   container-type: inline-size;
@@ -140,8 +146,8 @@ const SKINS_CSS = /* css */ `
 .fd-valid-mark { color: var(--fd-success); width: 1em; height: 1em; margin-inline-start: 6px; vertical-align: -0.15em; stroke-width: 2.4; }
 /* No space between the star and the label's last word, its gap a margin: a line never breaks before it. */
 .fd-field.fd-required > .fd-label::after { content: "*"; margin-inline-start: 0.25em; color: var(--fd-error); }
-.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: none; }
-.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "*"; margin-inline-end: 0.25em; color: var(--fd-error); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label::after { content: none; }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label::before { content: "*"; margin-inline-end: 0.25em; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
 /* A field's help behind a (?) by its label: a bubble on hover, focus or a tap. */
 .fd-help-tip-wrap { position: relative; display: inline-flex; vertical-align: 0.05em; margin-inline-start: 6px; }
@@ -151,7 +157,7 @@ const SKINS_CSS = /* css */ `
 .fd-label > .fd-help-tip-wrap { position: absolute; margin-block-start: 0.15em; }
 .fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 22px; }
 .fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap)::after { padding-inline-start: 22px; }
-.fd-form:not([data-fd-skin="outlined"]) .fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 0; }
+.fd-form:not([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 0; }
 .fd-help-tip { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--fd-border); border-radius: 50%; color: var(--fd-muted); font-size: 11px; font-weight: 600; line-height: 1; cursor: help; }
 .fd-help-tip:hover, .fd-help-tip[aria-expanded="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-help-tip:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
@@ -242,9 +248,9 @@ const SKINS_CSS = /* css */ `
 .fd-input:focus { outline: none; border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
 .fd-form[data-fd-skin="underline"] .fd-input { background: transparent; }
 .fd-form[data-fd-skin="underline"] .fd-input:focus { box-shadow: 0 1px 0 0 var(--fd-focus); }
-.fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-input { border-color: var(--fd-accent); }
+.fd-form[data-fd-skin="underline"] .fd-field.fd-required:not([data-quiet]) .fd-input { border-color: var(--fd-accent); }
 .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; }
-.fd-form[data-fd-skin="outlined"] .fd-input[readonly] { background: color-mix(in srgb, var(--fd-text) 5%, var(--fd-surface)); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-input[readonly] { background: color-mix(in srgb, var(--fd-text) 5%, var(--fd-surface)); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
 /* A whole form locked reads as a record: plain values in either skin, no boxes, and no prompts to type. */
 .fd-form[data-readonly] .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); }
 .fd-form[data-readonly] .fd-input::placeholder { color: transparent; }
@@ -253,7 +259,7 @@ const SKINS_CSS = /* css */ `
 .fd-blank[readonly]::-webkit-calendar-picker-indicator { display: none; }
 .fd-form[data-readonly] select.fd-input:disabled { appearance: none; background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); opacity: 1; }
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
-.fd-form[data-fd-skin="outlined"] .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
 .fd-textarea { resize: vertical; min-height: 64px; }
 .fd-select { appearance: auto; }
 .fd-number { display: flex; align-items: baseline; gap: 6px; }
@@ -598,7 +604,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-section-folded .fd-section-chevron { transform: rotate(-45deg); margin-block-start: 0; }
 [dir="rtl"] .fd-section-folded .fd-section-chevron { transform: rotate(135deg); }
 /* A card on the page's own ground is a box of its own: on the page, or in an arrangement, a line or tabs there (data-on-page). */
-.fd-form[data-fd-skin="outlined"] :is(.fd-sections > .fd-section:not([data-style]), .fd-section[data-style="card"][data-on-page]) {
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) :is(.fd-sections > .fd-section:not([data-style]), .fd-section[data-style="card"][data-on-page]) {
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: var(--fd-group-pad, 20px 24px);
 }
 /* A saved form placed in another: a quiet line while its page comes, and words in a dashed box when it cannot be shown. */
@@ -1015,8 +1021,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
 // Themes' tokens after the skins' and before the page's look; their own shapes after the parts they reshape, and
-// before the page's own looks for each kind of part, which win over a theme as the page's look does.
-export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+// before the page's own looks for each kind of part, which win over a theme as the page's look does. The quiet look
+// after the themes' shapes, which it quietens.
+export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

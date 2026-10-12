@@ -210,7 +210,19 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
     else designer.setSectionLook(id, { labels: chosen });
   });
   const notSet = place.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
-  const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: w.label, hint: w.labelInBox } : { words: w.labelsInside })];
+  // The quiet look: as round it, quiet, or in boxes though the page is quiet.
+  const quiet = segmented<string>(el, w.quiet, [{ value: AROUND, words: w.asGroup }, { value: 'quiet', words: w.quietWays.quiet }, { value: 'boxed', words: w.quietWays.boxed }], (value) => {
+    const chosen = value === 'quiet' ? true : value === 'boxed' ? false : null;
+    if (what === 'field') designer.setFieldQuiet(id, chosen);
+    else designer.setSectionLook(id, { quiet: chosen });
+  });
+  const quietNotSet = quiet.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
+  const quietRow = setting(el, 'layout', 'Quiet', quiet.element, { words: w.quiet, hint: w.quietHint });
+  const showQuiet = (page: Page, own: boolean | undefined) => {
+    quietNotSet.textContent = aroundWords(page, id, designer.words);
+    quiet.set(own === undefined ? AROUND : own ? 'quiet' : 'boxed');
+  };
+  const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: w.label, hint: w.labelInBox } : { words: w.labelsInside }), quietRow];
   if (what === 'field') {
     // Where its help shows: as the page has it, or its own way.
     const help = segmented<string>(
@@ -223,10 +235,11 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
     return {
       rows: [...rows, helpRow],
       update(page) {
-        const node = locate(page, id)?.node as { labels?: LabelPlace; helpShown?: HelpShown; help?: string; field?: string } | undefined;
+        const node = locate(page, id)?.node as { labels?: LabelPlace; helpShown?: HelpShown; help?: string; field?: string; quiet?: boolean } | undefined;
         if (!node) return;
         notSet.textContent = aroundWords(page, id, designer.words);
         place.set(node.labels ?? AROUND);
+        showQuiet(page, node.quiet);
         // Only a field with help has anywhere to show it.
         helpRow.hidden = !(node.help || (node.field && page.fields[node.field]?.help));
         help.set(node.helpShown ?? AROUND);
@@ -251,6 +264,7 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
       const around = labelsAround(page, id);
       notSet.textContent = around.group ? w.asGroup : w.asPage;
       place.set(section.labels ?? AROUND);
+      showQuiet(page, section.quiet);
       widthRow.hidden = (section.labels ?? around.place) !== 'beside';
       const value = String(section.labelWidth ?? around.width ?? 140);
       if (number.ownerDocument.activeElement !== number) number.value = value;

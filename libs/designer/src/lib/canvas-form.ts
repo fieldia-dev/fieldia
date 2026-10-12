@@ -1,4 +1,4 @@
-import type { FormNode, Page } from '@fieldia/core';
+import type { FormNode, Page, Skin } from '@fieldia/core';
 import { mountViewer, type PageRequest, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -135,7 +135,7 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
         unmount(view);
         view.body.replaceChildren();
         try {
-          view.viewer = mountViewer(view.body, { page: placing(node, look, language), showActions: false, skin: (options.skin ?? 'outlined') as 'outlined' | 'underline', widgets: options.widgets, pages });
+          view.viewer = mountViewer(view.body, { page: placing(node, look, language), showActions: false, skin: (options.skin ?? 'outlined') as Skin, widgets: options.widgets, pages });
           // Parts the viewer draws later — a tab when first shown, a saved form inside when its page comes — are kept apart too.
           const Watch = doc.defaultView?.MutationObserver;
           const drawn = view;

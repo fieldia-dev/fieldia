@@ -17,7 +17,7 @@ import page from './signup.page.json';
 const viewer = mountViewer(document.getElementById('app')!, {
   page,
   dataSource: createMemoryDataSource(),   // or your own DataSource
-  skin: 'outlined',                       // or 'underline'
+  skin: 'outlined',                       // or 'underline', or 'quiet': values as words until wanted
   locale: 'en',                           // 'ar' lays the form out right to left
 });
 // later: viewer.destroy()

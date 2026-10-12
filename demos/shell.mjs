@@ -77,7 +77,7 @@ function drawHeader() {
     ? demo.schemes
       ? `<div class="dh-looks">${schemes}</div>`
       : ''
-    : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
+    : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined', 'quiet']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
         .join('')}</nav>${schemes}<label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
         .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)
