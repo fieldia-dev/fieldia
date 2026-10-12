@@ -142,3 +142,27 @@ export async function stubRoutes(page: Page) {
 export const ROUTE_LINE: { lat: number; lng: number }[] = (
   JSON.parse(readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/osrm-route.json'), 'utf8')).routes[0].geometry.coordinates as [number, number][]
 ).map(([lng, lat]) => ({ lat, lng }));
+
+/**
+ * Azure Maps, answered as it answers (its recorded answers, map-support's
+ * grid for its map images): its traffic over Cairo is a real image of it,
+ * and its credits its own. Every request kept.
+ */
+export async function stubAzure(page: Page) {
+  const asked: string[] = [];
+  const fixtures = join(__dirname, '../libs/map/src/lib/fixtures');
+  const traffic = readFileSync(join(fixtures, 'azure-traffic-tile.png'));
+  const answers = JSON.parse(readFileSync(join(fixtures, 'azure-answers.json'), 'utf8'));
+  const trafficAnswers = JSON.parse(readFileSync(join(fixtures, 'azure-traffic.json'), 'utf8'));
+  await page.route('https://atlas.microsoft.com/**', (route) => {
+    const url = route.request().url();
+    asked.push(url);
+    const headers = { 'access-control-allow-origin': '*' };
+    if (url.includes('/map/attribution')) {
+      const body = JSON.stringify(url.includes('.traffic.') ? trafficAnswers.attribution : answers.attribution);
+      return route.fulfill({ status: 200, contentType: 'application/json', body, headers });
+    }
+    return route.fulfill({ status: 200, contentType: 'image/png', body: url.includes('.traffic.') ? traffic : TILE, headers });
+  });
+  return asked;
+}

@@ -5,6 +5,8 @@ import { azureMaps, googleMaps, mapbox, openStreetMap, tiles } from './providers
 
 /** Azure Maps' own answers, as it gave them on 12 Oct 2026 (the key taken out): its HTML credits, its addresses' parts, its Arabic with direction marks. */
 const AZURE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-answers.json'), 'utf8'));
+/** Its traffic over Cairo the same day: an image's answer, which zooms it answers at, and its traffic's credit. */
+const AZURE_TRAFFIC = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-traffic.json'), 'utf8'));
 
 /** A stand-in for the network: every request kept, each answered from the table by the start of its URL. */
 function network(answers: Record<string, unknown>) {
@@ -28,6 +30,8 @@ describe('OpenStreetMap', () => {
     expect(await osm.tiles('road', 'en')).toEqual({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 19 });
     expect(await osm.tiles('satellite', 'en')).toBeNull();
     expect(await osm.credits('road', view, 'en')).toEqual([{ text: '© OpenStreetMap contributors', href: 'https://www.openstreetmap.org/copyright' }]);
+    // No live traffic: no Traffic button.
+    expect(osm.traffic).toBeUndefined();
   });
 
   it('searches as people type through Photon, nearest the map first, each place on two lines', async () => {
@@ -96,6 +100,26 @@ describe('Azure Maps', () => {
     await expect(azureMaps({ key: 'K', fetch }).search!({ text: 'x', locale: 'en' })).rejects.toThrow('Access denied due to invalid subscription key.');
   });
 
+  it('draws its live traffic over the map, in its dark colours over the dark map, at the zooms it answers, again as it goes out of date', async () => {
+    const azure = azureMaps({ key: 'K' });
+    const traffic = await azure.traffic!('road', 'ar');
+    expect(traffic?.url).toBe('https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.traffic.relative.main&zoom={z}&x={x}&y={y}&tileSize=256&language=ar&view=Auto&subscription-key=K');
+    expect((await azure.traffic!('satellite', 'en'))?.url).toContain('tilesetId=microsoft.traffic.relative.main&');
+    expect((await azure.traffic!('dark', 'en'))?.url).toContain('tilesetId=microsoft.traffic.relative.dark&');
+    // Its answers: an image from zoom 6 to 21, nothing (204) outside them; good for 239 seconds.
+    const answered = Object.entries(AZURE_TRAFFIC.statusByZoom as Record<string, number>).filter(([, status]) => status === 200).map(([zoom]) => Number(zoom));
+    expect([traffic?.minZoom, traffic?.maxZoom]).toEqual([Math.min(...answered), Math.max(...answered)]);
+    expect(traffic?.fresh).toBe(Number(/max-age=(\d+)/.exec(AZURE_TRAFFIC.headers['cache-control'])![1]) + 1);
+    // A token goes in a header, as for its map images.
+    expect(await (await azureMaps({ token: async () => 'T' }).traffic!('road', 'en'))?.headers?.()).toEqual({ Authorization: 'Bearer T' });
+  });
+
+  it('credits its traffic, while it is drawn, as its attribution service names it', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/map/attribution': AZURE_TRAFFIC.attribution });
+    expect(await azureMaps({ key: 'K', fetch }).credits('traffic', view, 'en')).toEqual([{ text: '©2026 TomTom' }]);
+    expect(asked[0].url).toContain('tilesetId=microsoft.traffic.relative.main&');
+  });
+
   it('keeps a credit when its attribution service fails', async () => {
     const { fetch } = network({});
     expect(await azureMaps({ key: 'K', fetch }).credits('road', view, 'en')).toEqual([{ text: '© Microsoft' }]);
@@ -147,6 +171,18 @@ describe('Google', () => {
     expect(JSON.parse(String(asked[1].init?.body))).toMatchObject({ mapType: 'satellite' });
     // Google's map images have no dark kind through this service.
     expect(await google.tiles('dark', 'ar')).toBeNull();
+  });
+
+  it('opens a session of its own for traffic: the traffic layer alone, without the map under it', async () => {
+    const { fetch, asked } = network({ 'https://tile.googleapis.com/v1/createSession': session });
+    const google = googleMaps({ key: 'G', region: 'EG', fetch });
+    expect(await google.traffic!('road', 'en')).toEqual({ url: 'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=S1&key=G', maxZoom: 22 });
+    expect(JSON.parse(String(asked[0].init?.body))).toEqual({ mapType: 'roadmap', language: 'en', region: 'EG', layerTypes: ['layerTraffic'], overlay: true });
+    // One session for it, whatever the map under it, apart from the road map's.
+    await google.traffic!('dark', 'en');
+    expect(asked).toHaveLength(1);
+    await google.tiles('road', 'en');
+    expect(JSON.parse(String(asked[1].init?.body))).toEqual({ mapType: 'roadmap', language: 'en', region: 'EG' });
   });
 
   it('shows its credits for the view, and its name where its logo goes', async () => {
@@ -222,6 +258,12 @@ describe('Mapbox', () => {
     expect(box.logo).toEqual({ text: 'mapbox', href: 'https://www.mapbox.com/' });
   });
 
+  it('draws traffic only from a style of the app’s own: Mapbox has none of its own to draw as images', async () => {
+    expect(mapbox({ token: 'M' }).traffic).toBeUndefined();
+    const box = mapbox({ token: 'M', trafficStyle: 'nile/traffic-only' });
+    expect(await box.traffic!('dark', 'en')).toEqual({ url: 'https://api.mapbox.com/styles/v1/nile/traffic-only/tiles/512/{z}/{x}/{y}@2x?access_token=M', maxZoom: 22, tileSize: 512, zoomOffset: -1 });
+  });
+
   it('searches as people type, asking for results it may keep', async () => {
     const found = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [2.3522, 48.8566] }, properties: { name: 'Paris', full_address: 'Paris, France', place_formatted: 'Île-de-France, France' } }] };
     const { fetch, asked } = network({ 'https://api.mapbox.com/search/geocode/v6/forward': found, 'https://api.mapbox.com/search/geocode/v6/reverse': found });
@@ -239,6 +281,12 @@ describe('any map images', () => {
     expect((await own.tiles('dark', 'en'))?.url).toBe('https://maps.example.com/dark/{z}/{x}/{y}.png');
     expect(await own.tiles('satellite', 'en')).toBeNull();
     expect(await own.credits('road', view, 'en')).toEqual([{ text: '© Example' }]);
+    expect(own.traffic).toBeUndefined();
+  });
+
+  it('draws the app’s own traffic over them, when it has some', async () => {
+    const own = tiles({ url: 'https://maps.example.com/{z}/{x}/{y}.png', trafficUrl: 'https://maps.example.com/traffic/{z}/{x}/{y}.png', maxZoom: 18, credit: { text: '© Example' } });
+    expect(await own.traffic!('road', 'en')).toEqual({ url: 'https://maps.example.com/traffic/{z}/{x}/{y}.png', maxZoom: 18 });
   });
 });
 

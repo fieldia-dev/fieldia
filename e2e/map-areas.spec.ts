@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { axeFindings } from './a11y-support';
-import { at, mapReady, stubMaps, valueOf } from './map-support';
-import { open } from './support';
+import { at, mapReady, stubAzure, stubMaps, valueOf } from './map-support';
+import { open, screen } from './support';
 
 /**
  * Areas by colour and the rest of the map's box: the week's orders by
@@ -9,8 +9,9 @@ import { open } from './support';
  * searching for them, Nearest first, measuring a way), the same orders as a
  * heat map, and a kitchen's map (districts shaded by their fee, one chosen by
  * a press, the area within fifteen minutes, a fence whose steps run as the
- * courier reaches the drop-off zone). The districts are the demo's own rough
- * shapes; every map image is a stand-in (map-support.ts).
+ * courier reaches the drop-off zone), its live traffic from Azure Maps. The
+ * districts are the demo's own rough shapes; every map image is a stand-in
+ * (map-support.ts).
  */
 
 const ZONES = 'page=map-zones&skin=outlined';
@@ -339,5 +340,64 @@ test.describe('a kitchen’s map', () => {
     await openMap(page, KITCHEN);
     await region(page, 'Zamalek').focus();
     expect(await axeFindings(page, 'map-kitchen, a district focused')).toEqual([]);
+  });
+});
+
+test.describe('live traffic', () => {
+  const traffic = (page: Page) => tool(page, 'Traffic');
+  const overlay = (page: Page) => theMap(page).locator('.fd-map-traffic');
+  const trafficAsked = (asked: string[], tileset: string) => asked.filter((url) => url.includes('/map/tile?') && url.includes(`tilesetId=${tileset}&`));
+
+  test('Azure Maps’ traffic: the button lays it over the map, under the pins, credits it while shown, and takes it off again', async ({ page }) => {
+    const asked = await stubAzure(page);
+    const { problems } = await open(page, 'plain', `${KITCHEN}&maps=azure`);
+    await mapReady(theMap(page));
+    await expect(traffic(page)).toBeVisible();
+    await expect(traffic(page)).toHaveAttribute('aria-pressed', 'false');
+    await expect(overlay(page)).toHaveCount(0);
+    await traffic(page).click();
+    await expect(traffic(page)).toHaveAttribute('aria-pressed', 'true');
+    await expect(overlay(page).locator('img.leaflet-tile-loaded').first()).toBeVisible();
+    expect(trafficAsked(asked, 'microsoft.traffic.relative.main').length).toBeGreaterThan(0);
+    // Over the map images, under the areas, routes and pins.
+    const order = await theMap(page).evaluate((map) => {
+      const z = (selector: string) => Number(getComputedStyle(map.querySelector(selector)!).zIndex);
+      return { traffic: z('.fd-map-traffic'), images: z('.leaflet-tile-pane > .leaflet-layer:not(.fd-map-traffic)'), pane: z('.leaflet-tile-pane'), pins: z('.leaflet-marker-pane') };
+    });
+    expect(order.traffic).toBeGreaterThan(order.images);
+    expect(order.pins).toBeGreaterThan(order.pane);
+    // Its credits asked for while it is shown.
+    await expect.poll(() => asked.some((url) => url.includes('/map/attribution') && url.includes('tilesetId=microsoft.traffic.relative.main&'))).toBe(true);
+    await screen(page, 'map-traffic');
+    expect(await axeFindings(page, 'map-kitchen, traffic on')).toEqual([]);
+    await traffic(page).click();
+    await expect(traffic(page)).toHaveAttribute('aria-pressed', 'false');
+    await expect(overlay(page)).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+
+  test('on a dark page, the traffic in Azure’s dark colours; drawn again as it goes out of date, the old kept until the new has come', async ({ page }) => {
+    await page.clock.install();
+    const asked = await stubAzure(page);
+    await open(page, 'plain', `${KITCHEN}&maps=azure&scheme=dark`);
+    await mapReady(theMap(page));
+    await traffic(page).click();
+    await expect(overlay(page).locator('img.leaflet-tile-loaded').first()).toBeVisible();
+    expect(trafficAsked(asked, 'microsoft.traffic.relative.dark').length).toBeGreaterThan(0);
+    expect(trafficAsked(asked, 'microsoft.traffic.relative.main')).toEqual([]);
+    await screen(page, 'map-traffic-dark');
+    const times = () => new Set(trafficAsked(asked, 'microsoft.traffic.relative.dark').map((url) => new URL(url).searchParams.get('t'))).size;
+    expect(times()).toBe(1);
+    // Four minutes on: Azure's images have gone out of date, and are asked for again.
+    await page.clock.fastForward(241_000);
+    await expect.poll(times).toBe(2);
+    await expect(overlay(page)).toHaveCount(1);
+    await expect(overlay(page).locator('img.leaflet-tile-loaded').first()).toBeVisible();
+  });
+
+  test('OpenStreetMap has no traffic: no Traffic button at all', async ({ page }) => {
+    await openMap(page, KITCHEN);
+    await expect(tool(page, 'Full screen')).toBeVisible();
+    await expect(traffic(page)).toHaveCount(0);
   });
 });

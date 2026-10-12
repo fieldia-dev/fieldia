@@ -1,4 +1,4 @@
-import { mapListViews, mapParts, mapWidgets, openStreetMap, type MapSettings } from '@fieldia/map';
+import { azureMaps, mapListViews, mapParts, mapWidgets, openStreetMap, type MapSettings } from '@fieldia/map';
 import type { MapPartFactory } from '@fieldia/viewer';
 import { rideCourier } from './courier-ride';
 import { cairoDistricts, madeUpReach } from './districts';
@@ -6,10 +6,12 @@ import { cairoDistricts, madeUpReach } from './districts';
 /**
  * The demos' maps: OpenStreetMap's own map images and search, which are for
  * demos and development only (an app in use names its provider), opening
- * on Cairo, where the demos' shop is.
+ * on Cairo, where the demos' shop is. `?maps=azure` draws them from Azure
+ * Maps instead, with a stand-in key, for a test that answers Azure's
+ * requests itself: its live traffic, which OpenStreetMap has none of.
  */
 const settings: MapSettings = {
-  provider: openStreetMap(),
+  provider: new URLSearchParams(location.search).get('maps') === 'azure' ? azureMaps({ key: 'stand-in' }) : openStreetMap(),
   center: { lat: 30.0444, lng: 31.2357 },
   zoom: 12,
   // Rough districts drawn for the demos (not real borders), as an app hands over its own: loaded the first time a map shades them.

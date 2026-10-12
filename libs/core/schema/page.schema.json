@@ -7147,6 +7147,7 @@
             "type": "string",
             "enum": [
               "satellite",
+              "traffic",
               "fullscreen",
               "measure"
             ]
@@ -8030,6 +8031,7 @@
             "type": "string",
             "enum": [
               "satellite",
+              "traffic",
               "fullscreen",
               "measure",
               "nearest"

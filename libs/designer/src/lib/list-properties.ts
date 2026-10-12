@@ -166,7 +166,7 @@ const PICTURES = new Set(['image', 'binary']);
 /** Fields a pin or a card can say in words. */
 const SAYABLE = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean']);
 
-const LIST_TOOLS = ['nearest', 'satellite', 'fullscreen', 'measure'] as const satisfies readonly MapTool[];
+const LIST_TOOLS = ['nearest', 'satellite', 'traffic', 'fullscreen', 'measure'] as const satisfies readonly MapTool[];
 /** A field an area's key can be kept in. */
 const KEYS = new Set(['char', 'selection', 'integer', 'many2one']);
 

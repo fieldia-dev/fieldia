@@ -60,6 +60,7 @@ export interface MapLabels {
   settingNowhere: string;
   /** The tools under the zoom. */
   satellite: string;
+  traffic: string;
   fullScreen: string;
   leaveFullScreen: string;
   measure: string;
@@ -128,6 +129,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'Address goes into',
     settingNowhere: 'Nowhere',
     satellite: 'Satellite',
+    traffic: 'Traffic',
     fullScreen: 'Full screen',
     leaveFullScreen: 'Leave full screen',
     measure: 'Measure a distance',
@@ -191,6 +193,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'يُكتب العنوان في',
     settingNowhere: 'لا مكان',
     satellite: 'القمر الصناعي',
+    traffic: 'حركة المرور',
     fullScreen: 'ملء الشاشة',
     leaveFullScreen: 'الخروج من ملء الشاشة',
     measure: 'قِس مسافة',
@@ -254,6 +257,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'L’adresse va dans',
     settingNowhere: 'Nulle part',
     satellite: 'Satellite',
+    traffic: 'Trafic',
     fullScreen: 'Plein écran',
     leaveFullScreen: 'Quitter le plein écran',
     measure: 'Mesurer une distance',
@@ -317,6 +321,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'Adresse kommt in',
     settingNowhere: 'Nirgends',
     satellite: 'Satellit',
+    traffic: 'Verkehr',
     fullScreen: 'Vollbild',
     leaveFullScreen: 'Vollbild verlassen',
     measure: 'Entfernung messen',

@@ -3,7 +3,7 @@ import { getJson, pathOf, type Fetch } from './answers';
 import type { Bounds, LatLng } from './geo';
 
 /**
- * Where a map's images, credits, address search and routes come from. Every map in
+ * Where a map's images, live traffic, credits, address search and routes come from. Every map in
  * the package draws through one of these, so an app changes provider in one
  * place and nothing else moves. Keys never live in Fieldia: the app passes
  * them, or a function that fetches a short-lived token from its own server.
@@ -16,6 +16,10 @@ export interface TileSpec {
   /** With `{z}`, `{x}` and `{y}` where the tile's numbers go. */
   url: string;
   maxZoom: number;
+  /** The zoom they start at, when not the world's. */
+  minZoom?: number;
+  /** Seconds after which they are out of date, as live traffic's are: drawn again then, each address with `&t=` and the time. */
+  fresh?: number;
   tileSize?: number;
   zoomOffset?: number;
   /** Headers each image is fetched with: a token that must not sit in an address. */
@@ -97,8 +101,10 @@ export interface MapProvider {
   readonly id: string;
   /** The map images of a kind, or null when the provider has none of it. */
   tiles(kind: BaseMap, locale: Locale): Promise<TileSpec | null>;
-  /** What must be credited under the map, for what is in view. */
-  credits(kind: BaseMap, view: MapView, locale: Locale): Promise<Credit[]>;
+  /** What must be credited under the map, for what is in view: its images', and its traffic's while that is drawn. */
+  credits(kind: BaseMap | 'traffic', view: MapView, locale: Locale): Promise<Credit[]>;
+  /** Live traffic, drawn over its map images of a kind; a provider with none has no Traffic button. */
+  traffic?(kind: BaseMap, locale: Locale): Promise<TileSpec | null>;
   /** The provider's mark, which its terms ask for in the map's corner. */
   readonly logo?: { text: string; image?: string; href?: string };
   readonly search?: AddressSearch;
@@ -276,9 +282,9 @@ export interface AzureMapsOptions {
 
 /** Azure lists the languages it draws; it refuses any other tag, `ar-001` among them. */
 const AZURE_LANGUAGE: Record<Locale, string> = { en: 'en-US', ar: 'ar', fr: 'fr-FR', de: 'de-DE' };
-const AZURE_TILESET: Record<BaseMap, string> = { road: 'microsoft.base.road', dark: 'microsoft.base.darkgrey', satellite: 'microsoft.imagery' };
+const AZURE_TILESET: Record<BaseMap | 'traffic', string> = { road: 'microsoft.base.road', dark: 'microsoft.base.darkgrey', satellite: 'microsoft.imagery', traffic: 'microsoft.traffic.relative.main' };
 
-/** Microsoft Azure Maps: road, dark and satellite map images, credits for the view, and address search. */
+/** Microsoft Azure Maps: road, dark and satellite map images, live traffic, credits for the view, and address search. */
 export function azureMaps(options: AzureMapsOptions): MapProvider {
   if (!options.key && !options.token) throw new Error('azureMaps needs a key or a token');
   const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
@@ -290,12 +296,17 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
       signal,
       headers: { ...(await headers()), ...(locale ? { 'Accept-Language': AZURE_LANGUAGE[locale] } : {}) },
     });
+  const tile = (tileset: string, locale: Locale) =>
+    `https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=${tileset}&zoom={z}&x={x}&y={y}&tileSize=256&language=${AZURE_LANGUAGE[locale]}&view=Auto${auth}`;
   return {
     id: 'azure-maps',
     searchAsYouType: true,
     async tiles(kind, locale) {
-      const url = `https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=${AZURE_TILESET[kind]}&zoom={z}&x={x}&y={y}&tileSize=256&language=${AZURE_LANGUAGE[locale]}&view=Auto${auth}`;
-      return { url, maxZoom: kind === 'satellite' ? 19 : 22, ...(options.key ? {} : { headers }) };
+      return { url: tile(AZURE_TILESET[kind], locale), maxZoom: kind === 'satellite' ? 19 : 22, ...(options.key ? {} : { headers }) };
+    },
+    // How each road flows against its free flow, in its own colours over the dark map; zooms 6 to 21 (it answers none outside them), out of date in four minutes (its cache-control's max-age).
+    async traffic(kind, locale) {
+      return { url: tile(kind === 'dark' ? 'microsoft.traffic.relative.dark' : AZURE_TILESET.traffic, locale), minZoom: 6, maxZoom: 21, fresh: 240, ...(options.key ? {} : { headers }) };
     },
     async credits(kind, { zoom, bounds }) {
       try {
@@ -375,12 +386,13 @@ export interface GoogleMapsOptions {
   fetch?: Fetch;
 }
 
-const GOOGLE_MAP_TYPE: Partial<Record<BaseMap, string>> = { road: 'roadmap', satellite: 'satellite' };
+const GOOGLE_MAP_TYPE: Partial<Record<BaseMap | 'traffic', string>> = { road: 'roadmap', satellite: 'satellite', traffic: 'roadmap' };
 
 /**
  * Google's map images through its Map Tiles API (a session for each kind and
  * language, credits for the view, Google's mark in the corner its terms
- * name), its Places API's suggestions as people type, and its Geocoding API
+ * name; its traffic, a layer of its own over them), its Places API's
+ * suggestions as people type, and its Geocoding API
  * to name a point. The key needs those three APIs enabled, and should be
  * restricted to the app's sites.
  */
@@ -388,16 +400,17 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
   const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const key = encodeURIComponent(options.key);
   const sessions = new Map<string, Promise<{ session: string; expiry: number }>>();
-  function session(kind: BaseMap, locale: Locale) {
+  function session(kind: BaseMap | 'traffic', locale: Locale) {
     const mapType = GOOGLE_MAP_TYPE[kind]!;
-    const id = `${mapType}:${locale}`;
+    const id = `${kind}:${locale}`;
     const known = sessions.get(id);
     return known ?? open();
     function open() {
       const opening = getJson(fetchWith, `https://tile.googleapis.com/v1/createSession?key=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mapType, language: locale, region: options.region ?? 'US' }),
+        // Traffic alone, without the map under it: an overlay.
+        body: JSON.stringify({ mapType, language: locale, region: options.region ?? 'US', ...(kind === 'traffic' ? { layerTypes: ['layerTraffic'], overlay: true } : {}) }),
       }).then((answer) => {
         const value = pathOf(answer, 'session');
         if (typeof value !== 'string') throw new Error('Google gave no session');
@@ -418,6 +431,11 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
   /** One session from the first letter typed to the place picked: Google charges the suggestions of a session that ends in a pick as the pick. */
   let searching: string | undefined;
   const newSession = () => (globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => ((Math.random() * 16) | (c === 'x' ? 0 : 8)).toString(16).slice(0, 1)));
+  async function tilesOf(kind: BaseMap | 'traffic', locale: Locale): Promise<TileSpec | null> {
+    if (!GOOGLE_MAP_TYPE[kind]) return null;
+    const { session: id } = await session(kind, locale);
+    return { url: `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${id}&key=${key}`, maxZoom: 22 };
+  }
   /** How far "near" reaches at a zoom: about what the map shows, within Google's bounds. */
   const radiusAt = (zoom: number | undefined) => Math.round(Math.min(50_000, Math.max(100, 40_075_016 / 2 ** (zoom ?? 12))));
   return {
@@ -479,11 +497,8 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
     async route(request) {
       return (await routes()).googleRoute({ fetchWith, key: options.key }, request);
     },
-    async tiles(kind, locale) {
-      if (!GOOGLE_MAP_TYPE[kind]) return null;
-      const { session: id } = await session(kind, locale);
-      return { url: `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${id}&key=${key}`, maxZoom: 22 };
-    },
+    tiles: (kind, locale) => tilesOf(kind, locale),
+    traffic: (_kind, locale) => tilesOf('traffic', locale),
     async credits(kind, { zoom, bounds }, locale) {
       try {
         const { session: id } = await session(kind === 'dark' ? 'road' : kind, locale);
@@ -506,6 +521,13 @@ export interface MapboxOptions {
   style?: string;
   darkStyle?: string;
   satelliteStyle?: string;
+  /**
+   * A style of the app's own that draws Mapbox Traffic's lines and nothing
+   * else (no background), for the Traffic button: Mapbox's traffic is a
+   * vector tileset its styles draw, and it has no such style of its own.
+   * Without one, no Traffic button.
+   */
+  trafficStyle?: string;
   /** Mapbox's wordmark, as an image the app serves; its name is shown until one is given. */
   logo?: string;
   /**
@@ -526,6 +548,8 @@ export function mapbox(options: MapboxOptions): MapProvider {
     dark: options.darkStyle ?? 'mapbox/dark-v11',
     satellite: options.satelliteStyle ?? 'mapbox/satellite-streets-v12',
   };
+  const styleTiles = (style: string): TileSpec => ({ url: `https://api.mapbox.com/styles/v1/${style}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`, maxZoom: 22, tileSize: 512, zoomOffset: -1 });
+  const traffic = options.trafficStyle;
   const permanent = options.permanent ?? true;
   const ask = async (path: string, params: Record<string, string | number | undefined>, signal?: AbortSignal) =>
     getJson(fetchWith, `https://api.mapbox.com/search/geocode/v6/${path}?${query({ ...params, permanent: String(permanent) })}&access_token=${token}`, { signal });
@@ -534,8 +558,9 @@ export function mapbox(options: MapboxOptions): MapProvider {
     searchAsYouType: true,
     logo: { text: 'mapbox', ...(options.logo ? { image: options.logo } : {}), href: 'https://www.mapbox.com/' },
     async tiles(kind) {
-      return { url: `https://api.mapbox.com/styles/v1/${styles[kind]}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`, maxZoom: 22, tileSize: 512, zoomOffset: -1 };
+      return styleTiles(styles[kind]);
     },
+    ...(traffic ? { traffic: async () => styleTiles(traffic) } : {}),
     async credits() {
       return [
         { text: '© Mapbox', href: 'https://www.mapbox.com/about/maps/' },
@@ -565,6 +590,8 @@ export interface TilesOptions {
   url: string;
   darkUrl?: string;
   satelliteUrl?: string;
+  /** The app's own live traffic, drawn over the map: with it, a Traffic button. */
+  trafficUrl?: string;
   credit: Credit | Credit[];
   maxZoom?: number;
   tileSize?: number;
@@ -582,6 +609,8 @@ export interface TilesOptions {
 export function tiles(options: TilesOptions): MapProvider {
   const urls: Record<BaseMap, string | undefined> = { road: options.url, dark: options.darkUrl, satellite: options.satelliteUrl };
   const credits = Array.isArray(options.credit) ? options.credit : [options.credit];
+  const spec = (url: string): TileSpec => ({ url, maxZoom: options.maxZoom ?? 19, ...(options.tileSize ? { tileSize: options.tileSize } : {}), ...(options.zoomOffset ? { zoomOffset: options.zoomOffset } : {}) });
+  const traffic = options.trafficUrl;
   return {
     id: 'tiles',
     search: options.search,
@@ -591,9 +620,9 @@ export function tiles(options: TilesOptions): MapProvider {
     searchAsYouType: options.searchAsYouType ?? !!options.search,
     async tiles(kind) {
       const url = urls[kind];
-      if (!url) return null;
-      return { url, maxZoom: options.maxZoom ?? 19, ...(options.tileSize ? { tileSize: options.tileSize } : {}), ...(options.zoomOffset ? { zoomOffset: options.zoomOffset } : {}) };
+      return url ? spec(url) : null;
     },
+    ...(traffic ? { traffic: async () => spec(traffic) } : {}),
     async credits() {
       return credits;
     },

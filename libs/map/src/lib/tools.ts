@@ -1,13 +1,14 @@
 import type * as Leaflet from 'leaflet';
 import type { Locale } from '@fieldia/core';
 import type { MapLabels } from './labels';
-import type { LeafletModule } from './leaflet';
-import type { MapBox, MapTool } from './map-core';
-import type { MapProvider } from './providers';
+import { tileLayer, type LeafletModule } from './leaflet';
+import { warnOnce, type MapBox, type MapTool } from './map-core';
+import type { BaseMap, MapProvider } from './providers';
 
 /**
  * The tools under a map's zoom, those its page asks for: the satellite's
- * images (no button where the provider has none), full screen (filling the
+ * images (no button where the provider has none), the provider's live
+ * traffic over the map (no button where it has none), full screen (filling the
  * window where the browser refuses the screen, as a frame may), and measuring
  * a way (its drawing asked for as the tools come, so a key pressed straight
  * after its press is not lost). Loaded with the first map that has any.
@@ -23,6 +24,8 @@ export function wireTools(options: {
   provider: MapProvider;
   /** The satellite's images on or off: the map draws them. */
   satellite(on: boolean): void;
+  /** Traffic on or off: the map says its credits. */
+  traffic(on: boolean): void;
   /** What to undo when the map goes. */
   cleanup(done: () => void): void;
 }): void {
@@ -39,6 +42,50 @@ export function wireTools(options: {
       button.setAttribute('aria-pressed', String(on));
       options.satellite(on);
     });
+  }
+  const traffic = options.provider.traffic;
+  if (tools.has('traffic') && traffic) {
+    const button = box.tool(labels.traffic, '<rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="17" r="1.5"/>');
+    // None where the map is: no such button.
+    button.hidden = true;
+    void traffic('road', locale).then((spec) => (button.hidden = !spec), () => (button.hidden = true));
+    let on = false;
+    let layer: Leaflet.TileLayer | null = null;
+    let asked = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    /**
+     * The traffic for the map images drawn now (Azure's has colours of its own
+     * over the dark map): over them, under the routes and pins; drawn again
+     * as it goes out of date, the new over the old until it has come.
+     */
+    const draw = async () => {
+      const asking = ++asked;
+      clearTimeout(timer);
+      const spec = on ? await traffic((element.dataset['baseMap'] ?? 'road') as BaseMap, locale).catch((error: Error) => (warnOnce(`The ${options.provider.id} traffic could not be drawn: ${error.message}`), null)) : null;
+      if (asking !== asked) return;
+      const last = layer;
+      layer = spec && tileLayer(options.L, spec.fresh ? { ...spec, url: `${spec.url}&t=${Date.now()}` } : spec);
+      if (layer) {
+        layer.options.className = 'fd-map-traffic';
+        layer.setZIndex(2).addTo(map);
+        if (spec?.fresh) timer = setTimeout(draw, spec.fresh * 1000);
+      }
+      const drop = () => last?.remove();
+      if (layer && last) {
+        layer.once('load', drop);
+        setTimeout(drop, 5000);
+      } else drop();
+    };
+    button.addEventListener('click', () => {
+      on = !on;
+      button.setAttribute('aria-pressed', String(on));
+      options.traffic(on);
+      void draw();
+    });
+    // The map's images change kind (dark for a dark page, the satellite's): the traffic for them.
+    const watch = new MutationObserver(() => on && void draw());
+    watch.observe(element, { attributes: true, attributeFilter: ['data-base-map'] });
+    options.cleanup(() => (watch.disconnect(), clearTimeout(timer)));
   }
   if (tools.has('fullscreen')) {
     const button = box.tool(labels.fullScreen, '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');

@@ -20,7 +20,7 @@ import { placeName } from './steps-words';
 type LayerKind = 'place' | 'lines' | 'route' | 'me' | 'regions' | 'reach';
 const kindOf = (layer: MapLayer): LayerKind =>
   layer.route ? 'route' : layer.myLocation ? 'me' : layer.regions ? 'regions' : layer.reachable ? 'reach' : layer.lines ? 'lines' : 'place';
-const TOOLS = ['satellite', 'fullscreen', 'measure'] as const;
+const TOOLS = ['satellite', 'traffic', 'fullscreen', 'measure'] as const;
 /** A field a press on an area can write its key into. */
 const KEYS = new Set(['char', 'selection', 'integer', 'many2one']);
 
