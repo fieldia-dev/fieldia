@@ -37,9 +37,10 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * rent, named in full to a screen reader), a card's bare lines, several
  * fields on one line with their words in the plural they need, its lead
  * line, its link and its box to choose left off, each word of a record in
- * its own direction, and an area's words given as text — 1.0 more, to 40.9.
+ * its own direction, an amount's symbol kept whole on an Arabic page ("E£",
+ * never "£E"), and an area's words given as text — 1.1 more, to 41.0.
  */
-const BUDGET = { fields: 23.8, all: 40.9, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.8, all: 41.0, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

@@ -129,6 +129,16 @@ describe('a record’s pin', () => {
     expect(pins(dawarly).name(villa)).toBe('Villa <b>Nile</b>, E£\u00a09,500,000.00/month');
   });
 
+  it('keeps a symbol whole on a right-to-left page, the amount written as ever', () => {
+    // Intl writes "E£" after the amount in Arabic; isolated, the page round it cannot turn it to "£E".
+    expect(pinText(page, 'price', villa.values, 'ar')).toMatch(/^\u200f?9\.5\u00a0مليون\u00a0\u2066E£\u2069$/);
+    expect(pins({ label: 'name' }, { locale: 'ar' }).name(villa)).toBe('Villa <b>Nile</b>');
+    expect(pins({ label: 'price' }, { locale: 'ar' }).name(villa)).toBe('Villa <b>Nile</b>، \u200f9,500,000.00\u00a0\u2066E£\u2069');
+    // Left to right, and a symbol that is letters alone, as ever.
+    expect(pinText(page, 'price', villa.values, 'en')).toBe('E£9.5M');
+    expect(pinText(page, 'price', { price: 9_500_000, currency: 'Gold' }, 'ar')).toBe('Gold 9.5\u00a0مليون');
+  });
+
   it('writes a record’s words on its pin in their own direction', () => {
     expect(pins({ label: 'name' }).face(villa).element.querySelector<HTMLElement>('.fd-map-face-text')!.dir).toBe('auto');
     const photo = pins({ look: 'photo', image: 'face', label: 'name' }).face(villa);

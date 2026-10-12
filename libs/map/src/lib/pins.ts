@@ -1,4 +1,4 @@
-import { compileModifier, expressionContext, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { compileModifier, expressionContext, isRightToLeft, type FileValue, type LineField, type Locale, type MoneyLook, type Page, type Pin, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { currencyOf, displayValue, drawIcon, moneyReads, writeMoney, type IconSet } from '@fieldia/widgets';
 import { MAP_ICONS } from './map-icons';
 
@@ -190,12 +190,25 @@ export function pinMoney(page: Page, pin: Pin, homeCurrency?: string): MoneyLook
   return { short: true, ...def.money, ...pin.money, ...(home ? { home } : {}) };
 }
 
-/** A value as a person reads it in full: a card's line, a pin's name. */
+/**
+ * Money written as it always was, its symbol kept whole on a right-to-left
+ * page: Intl writes "E£" in Arabic, and the page round it turns it to "£E"
+ * unless it stands apart. (A money look's own words keep it so already.)
+ */
+function wholeSymbol(text: string, currency: string | null, locale: Locale): string {
+  if (!currency || !isRightToLeft(locale) || !/^[A-Z]{3}$/.test(currency)) return text;
+  const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(1).find((part) => part.type === 'currency')?.value ?? '';
+  return !symbol || /^\p{L}+$/u.test(symbol) || !text.includes(symbol) ? text : text.replace(symbol, `\u2066${symbol}\u2069`);
+}
+
+/** A value as a person reads it in full: a card's line, a pin's name. An amount's symbol is kept whole, "E£" on an Arabic page too. */
 export function shown(page: Page, name: string, values: Values, locale: Locale): string {
   const def = page.fields[name];
   const value = values[name];
   if (value === null || value === undefined || value === '') return '';
-  return def ? displayValue(def as LineField, value, values, locale) : String(value);
+  if (!def) return String(value);
+  const said = displayValue(def as LineField, value, values, locale);
+  return def.type === 'monetary' && !def.money ? wholeSymbol(said, currencyOf(def as LineField, values), locale) : said;
 }
 
 /**
@@ -212,7 +225,7 @@ export function pinText(page: Page, name: string, values: Values, locale: Locale
     const currency = currencyOf(def as LineField, values);
     const plain = { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 } as const;
     try {
-      if (currency) return new Intl.NumberFormat(locale, { ...plain, style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(value);
+      if (currency) return wholeSymbol(new Intl.NumberFormat(locale, { ...plain, style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(value), currency, locale);
     } catch {
       // A currency named by words that are no code: written before the amount, as it is.
       return `${currency} ${new Intl.NumberFormat(locale, plain).format(value)}`;

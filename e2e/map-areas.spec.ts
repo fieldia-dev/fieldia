@@ -275,6 +275,27 @@ test.describe('orders as a heat map', () => {
     await expect(map.locator('.fd-map-list-note')).toBeHidden();
   });
 
+  test('in Arabic, an order’s total on its pin keeps its symbol whole: “E£”, never “£E”', async ({ page }) => {
+    await openMap(page, `${HEAT}&locale=ar&dir=rtl`);
+    for (let i = 0; i < 5; i++) {
+      await tool(page, 'تكبير').click();
+      await page.waitForTimeout(350);
+    }
+    const said = theMap(page).locator('.fd-map-mark .fd-map-face-text').first();
+    await expect(said).toBeVisible();
+    await expect(said).toHaveAttribute('dir', 'auto');
+    // Drawn: its "E" to the left of its "£", as the symbol is written.
+    const drawn = await said.evaluate((face) => {
+      const text = face.firstChild as Text;
+      const range = document.createRange();
+      const x = (i: number) => (range.setStart(text, i), range.setEnd(text, i + 1), range.getBoundingClientRect().x);
+      const at = text.data.indexOf('E£');
+      return { at, e: x(at), pound: x(at + 1) };
+    });
+    expect(drawn.at).toBeGreaterThan(-1);
+    expect(drawn.e).toBeLessThan(drawn.pound);
+  });
+
   test('a provider with no satellite images: no Satellite button; Full screen and back', async ({ page }) => {
     await openMap(page, HEAT);
     // OpenStreetMap has no satellite images: the button is not there at all.
