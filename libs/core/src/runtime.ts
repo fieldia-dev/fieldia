@@ -61,6 +61,7 @@ export type {
   FormNode,
   WidgetOptions,
 } from './lib/format/layout';
+export type { AddressSearchOptions } from './lib/format/address-search';
 export { wideColumns } from './lib/format/columns';
 export type {
   ActionStep,

@@ -13,4 +13,5 @@ export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNod
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { validatePage } from './lib/format/validate';
+export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { pageJsonSchema } from './lib/format/json-schema';

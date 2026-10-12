@@ -18,7 +18,7 @@ export function pageNeeds(page) {
     if (widget === 'grid') needs.grid = true;
     if (widget === 'code') needs.code = true;
     if (widget === 'monaco') needs.monaco = true;
-    if (widget === 'place' || widget === 'area') needs.mapFields = true;
+    if (widget === 'place' || widget === 'area' || widget === 'address-search') needs.mapFields = true;
     if (widget === 'shout') needs.own = true;
     if (node.type === 'map') needs.formMap = true;
     if (node.type === 'slot' && node.name === 'chatter') needs.chatter = true;

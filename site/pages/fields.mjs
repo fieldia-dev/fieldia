@@ -427,7 +427,7 @@ mountViewer(host, { page, dataSource, widgets: monacoWidgets });
 )}
 
 <h2 id="map">Places and areas on a map</h2>
-<p>${c('@fieldia/map')} adds a place and an area as fields, on the map provider you choose: Azure Maps, Google, Mapbox, your own map images, or OpenStreetMap's for a demo. A place is set by a press on the map, a dragged pin, an address found, typed coordinates or “My location”, and kept as a GeoJSON Point (or in two number fields, as Odoo keeps a partner's place). An area is a polygon, a box or a circle, drawn by mouse, finger or keyboard, reshaped by its grips, and kept as a GeoJSON Feature. Leaflet draws them, loaded only when a map is shown. <a href="/demos/plain/?page=map-delivery&skin=outlined">Try a place</a> · <a href="/demos/plain/?page=map-zone&skin=outlined">try an area</a>. A list's records can be on a map too: see <a href="/lists/#map">lists on a map</a>.</p>
+<p>${c('@fieldia/map')} adds a place and an area as fields, on the map provider you choose: Azure Maps, Google, Mapbox, your own map images, or OpenStreetMap's for a demo. A place is set by a press on the map, a dragged pin, an address found, typed coordinates or “My location”, and kept as a GeoJSON Point (or in two number fields, as Odoo keeps a partner's place). An area is a polygon, a box or a circle, drawn by mouse, finger or keyboard, reshaped by its grips, and kept as a GeoJSON Feature. Leaflet draws them, loaded only when a map is shown. An address with suggestions is a text field and no map: the provider suggests addresses as people type, what is typed stays when none is picked, and one picked can fill a place field and an address's parts (a ${c('json.address')} field). <a href="/demos/plain/?page=map-delivery&skin=outlined">Try a place</a> · <a href="/demos/plain/?page=map-zone&skin=outlined">try an area</a> · <a href="/demos/plain/?page=map-address&skin=outlined">try an address</a>. A list's records can be on a map too: see <a href="/lists/#map">lists on a map</a>.</p>
 ${code(
   'ts',
   `
@@ -437,7 +437,8 @@ mountViewer(host, { page, dataSource, widgets: mapWidgets({
   provider: azureMaps({ token: () => fetch('/maps/token').then((r) => r.text()) }),
 }) });
 // { "widget": "place", "options": { "addressField": "street" } } on a json field
-// { "widget": "area", "options": { "shapes": ["polygon", "box"] } } on a json field`
+// { "widget": "area", "options": { "shapes": ["polygon", "box"] } } on a json field
+// { "widget": "address-search", "options": { "placeField": "spot", "partsField": "parts", "countries": ["EG"] } } on a char field`
 )}
 
 <h2 id="custom">Your own widget</h2>

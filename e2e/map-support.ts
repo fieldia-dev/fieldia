@@ -58,6 +58,11 @@ export interface PhotonPlace {
   district?: string;
   city?: string;
   country?: string;
+  /** Its parts, for an address field that fills them: what kind of place it is, its region, postcode and country code. */
+  type?: string;
+  state?: string;
+  postcode?: string;
+  countrycode?: string;
 }
 
 const photonAnswer = (places: PhotonPlace[]) => ({
@@ -165,6 +170,8 @@ export async function quietMapServers(context: BrowserContext) {
       ? r.fulfill(json(answers.attribution ?? {}))
       : r.fulfill({ status: 200, contentType: 'image/png', body: TILE, headers: { 'access-control-allow-origin': '*' } })
   );
+  // Azure's address search, for an address field's suggestions: its recorded suggestions, and its place for one picked.
+  await context.route('https://atlas.microsoft.com/geocode**', (r) => r.fulfill(json(r.request().url().includes('geocode:autocomplete') ? answers.autocomplete : answers.geocode)));
 }
 
 /**

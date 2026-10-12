@@ -3,6 +3,7 @@ import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
+import { AddressSearchOptionsSchema } from './address-search';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -1040,6 +1041,11 @@ export const FieldNodeSchema = z.strictObject({
   invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
+}).superRefine((node, context) => {
+  // A widget's own options, where the format knows them: an address with suggestions.
+  if (node.widget !== 'address-search') return;
+  const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
+  for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });
 });
 
 export const LineFormSchema = z

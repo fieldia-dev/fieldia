@@ -3,6 +3,7 @@ import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
 import mapDelivery from '../../examples/pages/map-delivery.page.json';
+import mapAddress from '../../examples/pages/map-address.page.json';
 import mapZone from '../../examples/pages/map-zone.page.json';
 import mapHomes from '../../examples/pages/map-homes.page.json';
 import mapHome from '../../examples/pages/map-home.page.json';
@@ -61,6 +62,8 @@ export const pages: Record<string, Page> = {
   // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
   'map-delivery': mapDelivery as Page,
   'map-zone': mapZone as Page,
+  // An address on one line with the map service's suggestions, filling a place and an address's parts.
+  'map-address': mapAddress as Page,
   // A list's records on a map, and the record each opens: shared/homes.ts.
   'map-homes': mapHomes as Page,
   'map-home': mapHome as Page,
