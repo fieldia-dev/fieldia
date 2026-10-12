@@ -112,7 +112,7 @@ describe('a record’s pin', () => {
     expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' })).toBe('25K/month');
     // Arabic: its own short words, Latin digits, a symbol kept whole.
     expect(said({ price: 13_900_000, currency: 'EGP', offer: 'sale' }, 'ar')).toBe('13.9\u00a0مليون');
-    expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' }, 'ar')).toBe('25\u00a0ألف/شهر');
+    expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' }, 'ar')).toBe('\u206825\u00a0ألف\u2069/شهر');
     expect(said({ price: 450_000, currency: 'USD', offer: 'sale' }, 'ar')).toBe('\u2066US$\u2069\u00a0450\u00a0ألف');
     // The fields its words read are asked for with the records: the currency, and the condition's.
     expect(pins(dawarly).fields).toEqual(['name', 'price', 'currency', 'offer']);

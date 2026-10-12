@@ -65,7 +65,9 @@ export function writeMoney(value: number, currency: string | null, decimals: num
   const period = periodOf(look, values);
   if (!period) return money;
   const words = WIDGET_LABELS[locale] ?? WIDGET_LABELS.en;
-  return `${money}${words[PER_KEYS[period]]}`;
+  // On a right-to-left page the amount keeps its own direction, so what it is for comes after it as an Arabic
+  // reader reads: "25,000 EGP" then "/شهر", never "/شهر" first because the line began with Latin letters.
+  return `${isRightToLeft(locale) ? `\u2068${money}\u2069` : money}${words[PER_KEYS[period]]}`;
 }
 
 /** The fields an amount's words read besides its own: its currency's, and those its look's conditions read. */

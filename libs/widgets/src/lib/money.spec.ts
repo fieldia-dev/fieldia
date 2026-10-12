@@ -58,7 +58,7 @@ describe('an amount, as its money look writes it', () => {
     const look: MoneyLook = { currency: 'code', at: 'after', per: [{ period: 'month', when: "offer == 'rent'" }, { period: 'night', when: "offer == 'holiday'" }] };
     const rent = { currency: 'EGP', offer: 'rent' };
     expect(displayValue(money(look), 25_000, rent)).toBe('25,000\u00a0EGP/month');
-    expect(displayValue(money(look), 25_000, rent, 'ar')).toBe('25,000\u00a0EGP/شهر');
+    expect(displayValue(money(look), 25_000, rent, 'ar')).toBe('\u206825,000\u00a0EGP\u2069/شهر');
     expect(displayValue(money(look), 25_000, rent, 'fr')).toBe('25\u202f000\u00a0EGP/mois');
     expect(displayValue(money(look), 25_000, rent, 'de')).toBe('25.000\u00a0EGP/Monat');
     expect(displayValue(money(look), 3_000, { currency: 'EGP', offer: 'holiday' })).toBe('3,000\u00a0EGP/night');
