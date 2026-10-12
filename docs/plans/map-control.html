@@ -94,7 +94,7 @@ footer { padding-top: 28px; border-top: 1px solid var(--line); color: var(--mute
   <p class="kicker">Fieldia · plan for review · 11 October 2026</p>
   <h1>Fieldia Maps</h1>
   <p class="lede">A new package, <code>@fieldia/map</code>, with the map features apps usually spend weeks building, ready to use. Any map provider. Pins and cards are described by the page. Places and areas can be fields on a form. Records go on a map beside their list. Routes with a driver on the way. Positions that move live. Areas coloured by their numbers.</p>
-  <div class="meta"><span>Status: phase 1 released in 0.14.0 (11 Oct); phase 2 next</span><span>Package: separate, like <code>@fieldia/code</code></span><span>Main script: unchanged in size</span></div>
+  <div class="meta"><span>Status: phase 1 released in 0.14.0 (11 Oct), phase 2 in 0.15.0 (12 Oct); phase 3 under way</span><span>Package: separate, like <code>@fieldia/code</code></span><span>Main script: unchanged in size</span></div>
   <nav class="toc" aria-label="Contents">
     <a href="#examples">Four example apps</a><a href="#shape">How it stacks</a><a href="#parts">The parts</a><a href="#providers">Providers</a><a href="#phases">Phases</a><a href="#proof">How each part is proved</a><a href="#decide">Decisions</a>
   </nav>
@@ -106,7 +106,7 @@ footer { padding-top: 28px; border-top: 1px solid var(--line); color: var(--mute
     <p>Each one becomes a live demo on fieldia.dev. Between them they use every part, and none of them hard-wires what a pin or a card shows. A price on a pin is one page's choice, a courier's face is another's.</p>
   </div>
   <div class="grid">
-    <div class="card"><span class="tag">phase 2</span><h3>A property search</h3><p>Homes on a map beside their list.</p><ul><li>Each pin shows its price, coloured by sale or rent</li><li>Bubbles where pins crowd</li><li>A card with photo, price and rooms</li><li>"Search this area" and a drawn area as filters</li><li>Hovering a row lights its pin</li></ul></div>
+    <div class="card"><span class="tag">phase 2 · live in 0.15.0</span><h3>A property search</h3><p>Homes on a map beside their list.</p><ul><li>Each pin shows its price, coloured by sale or rent</li><li>Bubbles where pins crowd</li><li>A card with photo, price and rooms</li><li>"Search this area" and a drawn area as filters</li><li>Hovering a row lights its pin</li></ul></div>
     <div class="card"><span class="tag route">phase 3</span><h3>A food order coming to me</h3><p>One order with three kinds of point on it.</p><ul><li>The kitchen, my door, and the courier's photo with "4 min" under it</li><li>The route on the roads, the part already driven fading</li><li>The courier's pin gliding along as the position updates</li></ul></div>
     <div class="card"><span class="tag route">phase 3</span><h3>A ride map</h3><p>Drivers as cars, each facing the way it drives.</p><ul><li>Grey when busy</li><li>Pressing a car shows the driver and an Assign button</li><li>Choosing several cars feeds the list's buttons for chosen records</li></ul></div>
     <div class="card"><span class="tag">phase 4</span><h3>Delivery zones</h3><p>Districts shaded by orders this week, with a legend.</p><ul><li>Hovering a district shows its numbers</li><li>Clicking one filters the orders</li><li>A zone drawn on a form becomes the zone's shape</li><li>"Within 15 minutes' drive" of a kitchen</li></ul></div>
@@ -300,21 +300,22 @@ mountViewer(host, { page, dataSource,
   </div>
 
   <div class="phase">
-    <div class="phase-head"><span class="no">PHASE 2</span><h3>Pins, cards and records on a map</h3></div>
+    <div class="phase-head"><span class="no">PHASE 2 · DONE, 0.15.0</span><h3>Pins, cards and records on a map</h3></div>
     <div class="phase-cols">
-      <div><h4>Builds</h4><ul><li>Part 3 (pins, labels, cards, bubbles) and part 4 (the map view beside a list)</li><li>The data source's optional "records in this area" call</li><li>Area and "this area" filters in the search bar and favourites</li><li>Choosing pins for the list's buttons</li></ul></div>
-      <div><h4>Designer</h4><ul><li>Add a map view to a list page</li><li>Set what a pin shows and lay out its card, by picking fields</li></ul></div>
-      <div><h4>Demo</h4><ul><li>The property search</li></ul></div>
+      <div><h4>Builds</h4><ul><li>Pins as a pin, words (a price, short), an icon (a car turned the way it goes), a round photo or a dot, coloured by condition, or the app's own; bubbles where they crowd</li><li>A card with the record's picture and fields, Choose and Open; the map beside the list or instead of it, a pin lighting its row and a row its pin</li><li>"Search this area", and an area drawn (polygon, box, circle) as a search of its own, kept in favourites. No new data-source call: the list's own call gets a <code>within</code> or <code>between</code> condition</li><li>Choosing on the map feeds the list's buttons</li></ul></div>
+      <div><h4>Designer</h4><ul><li>A list's Map in its panel: where each record is, what its pins show and look like, its card, how the list opens</li><li>Try it shows the map; a place's address field is set there too</li></ul></div>
+      <div><h4>Demo</h4><ul><li>Homes in Cairo, beside their map</li><li>Couriers out now, as icons by vehicle</li></ul></div>
     </div>
   </div>
 
   <div class="phase">
-    <div class="phase-head"><span class="no">PHASE 3</span><h3>Layers, live positions and routes</h3></div>
+    <div class="phase-head"><span class="no">PHASE 3 · UNDER WAY</span><h3>Layers, live positions and routes</h3></div>
     <div class="phase-cols">
       <div><h4>Builds</h4><ul><li>Parts 5, 6 and 7: several kinds of point, moving pins, routes with progress</li><li>"My location", with permission</li><li>Saving a route's distance, time and line on the record</li></ul></div>
       <div><h4>Designer</h4><ul><li>Add layers to a form's map, choose fields for each</li><li>Add a route between two layers</li></ul></div>
       <div><h4>Demo</h4><ul><li>The food order coming to me, with a simulated courier</li><li>The ride map</li></ul></div>
     </div>
+    <p class="note">Built so far: a map on a form with its layers (the record's places, its lines' places, routes, the reader's own place); places that glide, grey when their news is old, and are followed until the map is moved; routes from Azure Maps, Google, Mapbox or OSRM, or the app's own, loaded the first time one is asked for, the part travelled fading and the time and distance left written into the record; the order demo; a card offering the list's buttons ("Assign"). Next: the designer's layers and routes, the ride map demo, docs.</p>
   </div>
 
   <div class="phase">
