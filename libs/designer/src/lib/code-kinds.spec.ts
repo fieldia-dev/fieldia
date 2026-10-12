@@ -41,13 +41,13 @@ describe('code as a kind of field', () => {
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
-  it('is offered for a model’s text, char and JSON fields — VS Code’s editor for text and JSON — and for nothing else', () => {
+  it('is offered for a model’s text, char and JSON fields, in either editor, and for nothing else', () => {
     const designer = screen();
     // Each field placed once: placed again, it is not added, and has no kinds to offer.
     const kinds = Object.fromEntries(Object.keys(model).map((name) => [name, designer.kindsFor(designer.addModelField(name) as string).map((k) => k.id)]));
     expect(kinds['script']).toEqual(expect.arrayContaining(['paragraph', 'code', 'vscode']));
-    expect(kinds['expression']).toEqual(expect.arrayContaining(['short-answer', 'code']));
-    expect(kinds['expression']).not.toContain('vscode');
+    // A char field: one line, in either editor.
+    expect(kinds['expression']).toEqual(expect.arrayContaining(['short-answer', 'code', 'vscode']));
     expect(kinds['settings']).toEqual(expect.arrayContaining(['code', 'vscode']));
     for (const name of ['stage', 'hours']) {
       expect(kinds[name].length).toBeGreaterThan(0);
@@ -66,13 +66,24 @@ describe('code as a kind of field', () => {
     expect(nodeOf(designer, id).widget).toBeUndefined();
   });
 
-  it('is known again from a field’s widget: text, char and JSON in CodeMirror, text and JSON in VS Code’s editor', () => {
+  it('is known again from a field’s widget: text, char and JSON, in either editor', () => {
     const node = (widget: string): FieldNode => ({ type: 'field', id: 'n', field: 'f', widget });
     expect(kindOfField(model['script'], node('code'))).toBe('code');
     expect(kindOfField(model['expression'], node('code'))).toBe('code');
     expect(kindOfField(model['settings'], node('code'))).toBe('code');
     expect(kindOfField(model['script'], node('monaco'))).toBe('vscode');
+    expect(kindOfField(model['expression'], node('monaco'))).toBe('vscode');
     expect(kindOfField(model['settings'], node('monaco'))).toBe('vscode');
+  });
+
+  it('shows a model’s char field in VS Code’s editor, keeping what it holds', () => {
+    const designer = screen();
+    const id = designer.addModelField('expression') as string;
+    expect(designer.changeKind(id, 'vscode')).toBe(true);
+    expect(nodeOf(designer, id).widget).toBe('monaco');
+    expect(designer.getPage().fields['expression']).toEqual(model['expression']);
+    const node = nodeOf(designer, id);
+    expect(kindOfField(designer.getPage().fields[node.field], node)).toBe('vscode');
   });
 
   it('is named in Arabic', () => {

@@ -131,6 +131,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'char':
       if (node.widget === 'color') return 'colour';
       if (node.widget === 'code') return 'code';
+      if (node.widget === 'monaco') return 'vscode';
       if (node.widget === 'copy' || node.widget === 'embed') return node.widget;
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
@@ -269,9 +270,9 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   distribution: (field) => field.type === 'json',
   'tax-totals': (field) => field.type === 'json',
   payments: (field) => field.type === 'json',
-  // Text kept as it is, in a language; JSON, as JSON. VS Code's editor takes no one-line field.
+  // Text kept as it is, in a language, a char field on one line; JSON, as JSON. The same in either editor.
   code: (field) => field.type === 'text' || field.type === 'char' || field.type === 'json',
-  vscode: (field) => field.type === 'text' || field.type === 'json',
+  vscode: (field) => field.type === 'text' || field.type === 'char' || field.type === 'json',
 };
 
 /**
