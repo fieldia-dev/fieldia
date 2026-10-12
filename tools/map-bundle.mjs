@@ -33,8 +33,17 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * crowd (its bubbles, a place that moves leading the pins round it, the
  * keys kept where they were, a list of pins on one spot), their count's
  * style and their words — with the traffic, 1.4 more, to 39.9.
+ * A list's map in a page of the app's own (mountListMap: the page checked
+ * and in its language, the app's search and choices, its own base and its
+ * tokens light and dark, which the viewer's form gave it before), a list's
+ * map's height and gestures, its starting view, its view said as it stops,
+ * the closest a fit comes, and "Search this area (24)" with its word in four
+ * languages (the counting itself is a chunk of its own, loaded when the
+ * button first shows) — 2.3 more, to 42.2. An app of the viewer's carries
+ * none of the page of its own: its bundler leaves mountListMap out.
+ * `embed`: a site's own page with mountListMap and the providers alone: 29.3.
  */
-const BUDGET = { fields: 23.8, all: 39.9, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.8, all: 42.2, embed: 29.3, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
@@ -84,10 +93,12 @@ async function measure(name, exports) {
 
 const fields = await measure('fields', 'mapWidgets, mapKinds, azureMaps, googleMaps, mapbox, openStreetMap, tiles');
 const all = await measure('all');
+const embed = await measure('embed', 'mountListMap, azureMaps, googleMaps, mapbox, openStreetMap, tiles');
 const kb = (n) => (n / 1024).toFixed(1);
 if (fields.own > BUDGET.fields * 1024) throw new Error(`@fieldia/map for a place and an area is ${kb(fields.own)} KB gzipped, over its ${BUDGET.fields} KB budget`);
 if (all.own > BUDGET.all * 1024) throw new Error(`@fieldia/map with a list's map is ${kb(all.own)} KB gzipped, over its ${BUDGET.all} KB budget`);
+if (embed.own > BUDGET.embed * 1024) throw new Error(`@fieldia/map for a list's map in a page of its own is ${kb(embed.own)} KB gzipped, over its ${BUDGET.embed} KB budget`);
 if (all.leaflet > BUDGET.leaflet * 1024) throw new Error(`Leaflet's chunk is ${kb(all.leaflet)} KB gzipped, over its ${BUDGET.leaflet} KB budget`);
 if (!all.routes) throw new Error('The routes are not in a chunk of their own: every map would carry them');
 if (all.routes > BUDGET.routes * 1024) throw new Error(`The routes' chunk is ${kb(all.routes)} KB gzipped, over its ${BUDGET.routes} KB budget`);
-console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes})`);
+console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}), ${kb(embed.own)} KB for a list's map in a page of its own (budget ${BUDGET.embed}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes})`);
