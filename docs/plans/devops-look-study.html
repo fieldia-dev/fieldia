@@ -1,0 +1,407 @@
+<title>Form Look Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a working document. A short verdict, a coverage ledger read top to bottom, then one sketch per proposal, then the order to build in. */
+:root {
+  --page: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #18202b;
+  --muted: #59636f;
+  --line: #dde1e7;
+  --accent: #0b5cad;      /* Fieldia's link blue */
+  --navy: #002855;        /* Fieldia's brand navy */
+  --soft: #e8f0fa;
+  --ok: #1d7a46;  --ok-soft: #e3f3ea;
+  --part: #8a5a00; --part-soft: #fbf0d9;
+  --miss: #b3261e; --miss-soft: #fbe5e3;
+  --dot-new: #8a929c; --dot-active: #2a6fdb; --dot-resolved: #d97706; --dot-closed: #2f9e66;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0f141b; --surface: #171e27; --ink: #e7ecf2; --muted: #a3adba; --line: #2b3542;
+    --accent: #7db4ff; --navy: #b9d3ff; --soft: #1c2a3c;
+    --ok: #6fd39b; --ok-soft: #173326; --part: #f0c46a; --part-soft: #362b14; --miss: #ff9a92; --miss-soft: #3a1d1b;
+    --dot-new: #9aa3ad; --dot-active: #6ea4ff; --dot-resolved: #f5a524; --dot-closed: #5ccf8f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0f141b; --surface: #171e27; --ink: #e7ecf2; --muted: #a3adba; --line: #2b3542;
+  --accent: #7db4ff; --navy: #b9d3ff; --soft: #1c2a3c;
+  --ok: #6fd39b; --ok-soft: #173326; --part: #f0c46a; --part-soft: #362b14; --miss: #ff9a92; --miss-soft: #3a1d1b;
+  --dot-new: #9aa3ad; --dot-active: #6ea4ff; --dot-resolved: #f5a524; --dot-closed: #5ccf8f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font: 15px/1.6 var(--body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 4.2vw, 40px); font-weight: 800; color: var(--navy); }
+h2 { font-size: 24px; font-weight: 800; margin-block: 48px 8px; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.kicker { font: 600 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 17px; color: var(--ink); margin-top: 12px; }
+.meta { margin-top: 10px; color: var(--muted); font-size: 13.5px; }
+code { font: 12.5px/1.5 var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+a { color: var(--accent); }
+
+/* The verdict */
+.verdict { margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.verdict > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.verdict b { display: block; font-family: var(--display); font-size: 15px; margin-bottom: 4px; }
+.verdict p { font-size: 14px; color: var(--muted); }
+@media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+/* The ledger */
+.ledger-wrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+th, td { text-align: start; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--page); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; width: 22%; }
+.pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font: 600 12px/1.6 var(--body); white-space: nowrap; }
+.ok { background: var(--ok-soft); color: var(--ok); }
+.part { background: var(--part-soft); color: var(--part); }
+.miss { background: var(--miss-soft); color: var(--miss); }
+
+/* Proposals */
+.proposal { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.proposal-head { padding: 18px 20px 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.proposal-head .size { margin-inline-start: auto; font: 600 12px/1 var(--mono); color: var(--muted); }
+.proposal-body { padding: 4px 20px 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; }
+.proposal-body ul { margin: 8px 0 0; padding-inline-start: 18px; }
+.proposal-body li { margin: 3px 0; }
+.saw { font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+.proposal-body.wide { grid-template-columns: minmax(0, 1fr); }
+.proposal-body.wide > div:first-child ul { columns: 2; column-gap: 28px; }
+.proposal-body.wide > div:first-child li { break-inside: avoid; }
+@media (max-width: 860px) { .proposal-body { grid-template-columns: 1fr; } .proposal-body.wide > div:first-child ul { columns: 1; } }
+
+/* Sketches: drawn in the page's own tokens, the way a Fieldia form would draw them */
+.sketch { align-self: start; border: 1px solid var(--line); border-radius: 10px; background: var(--page); padding: 14px; overflow-x: auto; font-size: 13.5px; }
+.sk-label { font-size: 12px; color: var(--muted); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-inline-end: 6px; vertical-align: 1px; }
+.dot.new { background: var(--dot-new); } .dot.active { background: var(--dot-active); } .dot.resolved { background: var(--dot-resolved); } .dot.closed { background: var(--dot-closed); }
+.quiet { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 4px 10px; min-width: 300px; }
+.q-val { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; }
+.q-val.hover { border-color: var(--line); background: var(--surface); }
+.q-val.focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 2px var(--soft); }
+.q-val.locked { color: var(--muted); }
+.q-note { font-size: 11.5px; color: var(--muted); margin-inline-start: 6px; }
+
+.hdr { min-width: 560px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; border-inline-start: 4px solid var(--miss); }
+.hdr-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; font-size: 12px; color: var(--miss); font-weight: 600; }
+.hdr-title { padding: 2px 12px 8px; display: flex; gap: 10px; align-items: baseline; font-size: 17px; font-weight: 600; }
+.hdr-title span:first-child { color: var(--muted); font-weight: 400; }
+.hdr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.hdr-bar .chip { padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--accent); font-size: 12px; }
+.hdr-bar .grow { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 12.5px; white-space: nowrap; }
+.btn.primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.split { display: inline-flex; }
+.split .btn:first-child { border-start-end-radius: 0; border-end-end-radius: 0; }
+.split .btn:last-child { border-start-start-radius: 0; border-end-start-radius: 0; border-inline-start: 0; padding-inline: 6px; }
+.tabs { display: flex; gap: 2px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.tabs span { padding: 7px 10px; border-bottom: 2px solid transparent; color: var(--muted); }
+.tabs span.on { border-bottom-color: var(--accent); color: var(--ink); font-weight: 600; }
+.tabs b { display: inline-block; min-width: 18px; margin-inline-start: 4px; padding: 0 5px; border-radius: 999px; background: var(--soft); font-size: 11px; text-align: center; }
+
+.cols3 { min-width: 600px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+.group h4 { margin: 0 0 6px; font: 600 13.5px/1.3 var(--display); padding-bottom: 5px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.group h4 i { font-style: normal; color: var(--muted); font-weight: 400; font-size: 12px; }
+.group .empty { font-style: italic; color: var(--muted); font-size: 12.5px; padding: 6px 2px; }
+.group .pair { margin: 6px 0; }
+.group .pair div:last-child { padding-inline-start: 2px; }
+
+.picker { min-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.picker .box { padding: 7px 10px; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; }
+.picker .sec { padding: 6px 10px 2px; font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.picker .row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 10px; }
+.picker .row.on { background: var(--soft); }
+.picker .row small { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.picker .indent1 { padding-inline-start: 26px; } .picker .indent0 { padding-inline-start: 10px; }
+
+.board { min-width: 620px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.lane h5 { margin: 0 0 6px; display: flex; justify-content: space-between; font: 600 13px/1.3 var(--display); }
+.lane h5 small { font: 600 12px var(--mono); color: var(--muted); }
+.lane h5 small.over { color: var(--miss); }
+.card { background: var(--surface); border: 1px solid var(--line); border-inline-start: 3px solid var(--dot-active); border-radius: 6px; padding: 7px 8px; margin-bottom: 7px; font-size: 12.5px; }
+.card.bug { border-inline-start-color: var(--miss); }
+.card .id { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-end: 4px; }
+.card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 11.5px; color: var(--muted); }
+.card .tag { padding: 0 6px; border-radius: 999px; background: var(--soft); color: var(--accent); }
+.add { font-size: 12px; color: var(--accent); margin-bottom: 7px; }
+
+.filterbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.filterbar .kw { flex: 1; color: var(--muted); }
+.filterbar .f { padding: 2px 8px; border-radius: 6px; font-size: 12.5px; }
+.filterbar .f.on { background: var(--soft); color: var(--accent); font-weight: 600; }
+
+.rich { min-width: 440px; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; }
+.rich .text { padding: 10px 12px; min-height: 52px; }
+.rich .text .mention { color: var(--accent); background: var(--soft); border-radius: 4px; padding: 0 3px; }
+.rich .tools { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px; border-top: 1px solid var(--line); font: 600 12px var(--mono); color: var(--muted); }
+.rich .tools .grow { flex: 1; }
+
+.timeline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; }
+.timeline .state { padding: 3px 9px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.timeline .arrow { color: var(--muted); text-align: center; line-height: 1.2; font-size: 11px; }
+.diff { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 12.5px; }
+.diff .was { text-decoration: line-through; color: var(--miss); background: var(--miss-soft); padding: 1px 6px; border-radius: 4px; }
+.diff .now { color: var(--ok); background: var(--ok-soft); padding: 1px 6px; border-radius: 4px; }
+
+pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border: 1px solid var(--line); border-radius: 8px; font: 12px/1.55 var(--mono); overflow-x: auto; }
+
+/* What not to copy, and the order */
+.donts { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.donts > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.donts b { display: block; margin-bottom: 4px; }
+.donts p { font-size: 14px; color: var(--muted); }
+@media (max-width: 760px) { .donts { grid-template-columns: 1fr; } }
+.order { margin-top: 14px; display: grid; gap: 10px; }
+.order > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.order .when { font: 600 13px/1.4 var(--mono); color: var(--navy); }
+.order ul { margin: 0; padding-inline-start: 18px; }
+@media (max-width: 560px) { .order > div { grid-template-columns: 1fr; gap: 4px; } }
+.colophon { margin-top: 40px; font-size: 13px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <div class="kicker">Fieldia · look and layout · 12 Azure DevOps screens</div>
+  <h1>What Azure DevOps teaches our forms</h1>
+  <p class="lede">I went through your twelve screenshots of Azure DevOps Boards: the Kanban board, the backlog, and a bug's work item with each control open (state, area, iteration, rich text, comment, links, history). This page lists what Fieldia already covers, what it covers in part, what it lacks, and what I would add, in the order I would build it.</p>
+  <p class="meta">Screens: board, backlog list, work item form (read state, editing State, Area and Iteration pickers, Repro Steps in Markdown, System Info in rich text, a new comment, the Add link menu), and the History tab. No screenshot is copied into this page: every sketch below is drawn the way a Fieldia form would draw it.</p>
+
+  <div class="verdict">
+    <div><b>The layout: mostly covered</b><p>Three columns of titled groups, labels above or beside, compact density and collapsible groups are all already in Fieldia's page format.</p></div>
+    <div><b>The controls: the real gap</b><p>DevOps fields read as plain text until you point at them. Ours always look like boxes. A quiet look is the single change that would make Fieldia feel like this.</p></div>
+    <div><b>Missing parts</b><p>A Kanban board, a path picker with suggestions, a record header bar with tabs that carry counts, and a state history with before and after.</p></div>
+  </div>
+
+  <h2>What we cover today</h2>
+  <p>Each pattern in the screenshots, against Fieldia 0.18.</p>
+  <div class="ledger-wrap">
+    <table>
+      <thead><tr><th>Pattern</th><th>What DevOps does</th><th>Fieldia today</th><th>Gap</th></tr></thead>
+      <tbody>
+        <tr><td>Groups in columns</td><td>Three columns: a wide one (Repro Steps, System Info, Discussion), two narrow (Planning, Effort / Deployment, Development, Related Work). Each group has a title and a hairline under it.</td><td><span class="pill ok">Covered</span> sections and groups, twelfths columns, titles</td><td>Nothing structural.</td></tr>
+        <tr><td>Labels beside, labels above</td><td>Header fields have small labels to the left (State, Reason, Area, Iteration); group fields have labels above (Category, Priority).</td><td><span class="pill ok">Covered</span> <code>look.labels</code> above, beside or hidden, <code>labelWidth</code></td><td>Per-section label placement (header beside, body above) in one page.</td></tr>
+        <tr><td>Compact density</td><td>Small type, tight rows, hairlines instead of boxes.</td><td><span class="pill ok">Covered</span> <code>look.density: "compact"</code>, the Fluent theme</td><td>None.</td></tr>
+        <tr><td>Fields that read as text</td><td>A value is plain text; pointing shows a box; clicking edits in place. State shows a coloured dot.</td><td><span class="pill part">Partly</span> read-only fields as text (<code>readonlyShown</code>), Edit switch for the whole form</td><td>No quiet look for <em>editable</em> fields.</td></tr>
+        <tr><td>Status with a coloured dot</td><td>New grey, Active blue, Resolved amber, Closed green, in the field and in its list.</td><td><span class="pill part">Partly</span> <code>selection.dot</code>, tones by condition</td><td>Dots inside the open dropdown, and a tick on the chosen one.</td></tr>
+        <tr><td>Locked fields</td><td>A lock icon before Reason and Resolved Reason.</td><td><span class="pill part">Partly</span> read-only by condition</td><td>A lock with the reason it is locked.</td></tr>
+        <tr><td>Path picker with suggestions</td><td>Area and Iteration: recent choices under "Suggestions", then the whole tree, with dates right-aligned in a second column.</td><td><span class="pill part">Partly</span> link search, details under a name</td><td>A tree, a suggestions section, a right-aligned second column.</td></tr>
+        <tr><td>Rich text</td><td>"Click to add System Info." until clicked; a full toolbar on focus (colour, highlight, emoji, indent, code, image, @ person, # work item); a Markdown editor with Preview.</td><td><span class="pill part">Partly</span> formatted text with a toolbar (bold, italic, headings, lists, links)</td><td>Toolbar on focus only, mentions and record links, code, image paste, Markdown with preview.</td></tr>
+        <tr><td>Discussion</td><td>Comment box with avatar and hint ("# to link a work item, @ to mention"), Cancel and Save on focus.</td><td><span class="pill ok">Covered</span> the chatter: messages, notes, @mentions, followers, files</td><td># to link a record.</td></tr>
+        <tr><td>Record header bar</td><td>Type badge and colour strip, ID and inline title, assignee, comment count, tags, Save and Close (split), Follow, refresh, revert, "Updated by … : Aug 25", icon tabs with counts (History, Links 0, Attachments 1).</td><td><span class="pill part">Partly</span> sheet header: title, avatar, status bar, stat buttons, gear menu, pager, breadcrumbs</td><td>Kind strip and badge, tabs with counts, "updated by", split button, Follow, revert.</td></tr>
+        <tr><td>Open over the list</td><td>The work item opens large over the backlog, with maximise and close.</td><td><span class="pill ok">Covered</span> dialogs and side panels</td><td>Maximise.</td></tr>
+        <tr><td>History</td><td>A state graph (each change with who and when), a history list grouped by age, and each change's before and after (old struck out, new in green).</td><td><span class="pill part">Partly</span> the chatter's tracked field changes</td><td>State timeline, before-and-after view.</td></tr>
+        <tr><td>Kanban board</td><td>Columns by state with counts and limits (11/5 in red), cards with type, ID, title, state, assignee, tags, checklist 0/1; New item at the top; columns that collapse; Show more items.</td><td><span class="pill miss">Missing</span> a list shows as a table or a map</td><td>A board view of a list.</td></tr>
+        <tr><td>Filter bar</td><td>"Filter by keyword", then a dropdown per field (Bug, Active, Area, Iteration, Tags), then clear.</td><td><span class="pill part">Partly</span> one search bar with chips, Filters, Group By, Favourites</td><td>A field-per-dropdown filter bar.</td></tr>
+        <tr><td>Column options</td><td>Column Options, expand and collapse all, an order column.</td><td><span class="pill part">Partly</span> grouped rows that open and close; the page sets the columns</td><td>A column chooser, and expand and collapse all.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>What I would add</h2>
+  <p>Seven additions, each sketched as a Fieldia page would draw it. Sizes are rough: S is days, M about a week, L two weeks or more.</p>
+
+  <section class="proposal" id="quiet">
+    <div class="proposal-head"><h3>1. A quiet look for fields</h3><span class="pill miss">Biggest gap</span><span class="size">Size M</span></div>
+    <div class="proposal-body">
+      <div>
+        <p class="saw">Seen in: the work item header and Planning group. Values read as text; the box only appears when you point at it or click.</p>
+        <ul>
+          <li>A third skin beside underline and outlined: <code>skin: "quiet"</code>.</li>
+          <li>At rest, a value is text with no box. Pointing shows a faint box; focus shows the full input.</li>
+          <li>An empty field says what to do, in the muted colour ("Add a reason").</li>
+          <li>Selections keep their coloured dot at rest and in the open list, with a tick on the chosen option.</li>
+          <li>A field locked by a rule shows a lock; pointing at it or focusing it says why ("Set when the bug is resolved").</li>
+          <li>Keyboard first: Tab lands on each field with a visible ring. Nothing is hidden behind hover.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of the quiet look">
+        <div class="quiet">
+          <span class="sk-label">State</span><span class="q-val"><span class="dot active"></span>Active</span>
+          <span class="sk-label">Reason</span><span class="q-val locked">🔒 Approved <span class="q-note">set by the workflow</span></span>
+          <span class="sk-label">Area</span><span class="q-val hover">Portal <span class="q-note">pointing</span></span>
+          <span class="sk-label">Iteration</span><span class="q-val focus">Portal\Sprint 14 <span class="q-note">focused</span></span>
+          <span class="sk-label">Priority</span><span class="q-val">1</span>
+          <span class="sk-label">Story points</span><span class="q-val" style="color: var(--muted); font-style: italic">Add story points</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="header">
+    <div class="proposal-head"><h3>2. A record header bar</h3><span class="pill part">Extends the sheet header</span><span class="size">Size M</span></div>
+    <div class="proposal-body wide">
+      <div>
+        <p class="saw">Seen in: the top of every work item.</p>
+        <ul>
+          <li>A kind: a badge and a colour strip at the start edge, set by a field (a bug red, a story blue).</li>
+          <li>The ID beside the title, which is edited in place.</li>
+          <li>A row for the assignee, comment count and tags.</li>
+          <li>"Updated by Nour Kamal, 25 Aug" from the record's own fields.</li>
+          <li>Tabs at the end with an icon and a count: History, Links 0, Attachments 1.</li>
+          <li>Save as a split button: Save, and its menu with Save and close.</li>
+          <li>Follow, and Undo all changes.</li>
+        </ul>
+        <p class="saw" style="margin-top:10px">DevOps greys out Save and Close until something changes. We would show Save always, and say "Saved" when there is nothing new, as our forms already do.</p>
+      </div>
+      <div class="sketch" aria-label="Sketch of the header bar">
+        <div class="hdr">
+          <div class="hdr-top">🐞 BUG</div>
+          <div class="hdr-title"><span>5140</span><span>Stock count wrong after a partial release</span></div>
+          <div class="hdr-bar"><span>👤 No one assigned</span><span style="color:var(--accent)">💬 1 comment</span><span class="chip">+ Tag</span><span class="grow"></span><span class="split"><span class="btn primary">Save</span><span class="btn primary">▾</span></span><span class="btn">Follow</span></div>
+          <div class="hdr-bar" style="border-top:0;padding-top:0;color:var(--muted);font-size:12px"><span class="grow"></span>Updated by Nour Kamal, 25 Aug</div>
+          <div class="tabs"><span class="on">Details</span><span>History</span><span>Links<b>0</b></span><span>Files<b>1</b></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="board">
+    <div class="proposal-head"><h3>3. A board view of a list</h3><span class="pill miss">Missing</span><span class="size">Size L</span></div>
+    <div class="proposal-body wide">
+      <div>
+        <p class="saw">Seen in: the board. Five columns by state, about 80 cards, cards dragged between columns to change their state.</p>
+        <ul>
+          <li>A list view like the map: <code>"board": { "column": "state" }</code> beside <code>"map"</code>, with the same view switch, search and selection.</li>
+          <li>Each column shows its count and a limit, in red when over it ("11/5").</li>
+          <li>The card is laid out by the page: kind strip, ID, title, state dot, assignee, tags, checklist progress.</li>
+          <li>Moving a card changes its column's field, by drag and by keyboard (a Move to… menu), through the data source.</li>
+          <li>New item at the top of a column; columns that fold; Show more at the bottom, loaded by page.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of a board">
+        <div class="board">
+          <div class="lane"><h5>To do <small>24</small></h5><div class="add">+ New item</div>
+            <div class="card bug"><span class="id">4404</span>Draft lost when offline<div class="foot"><span><span class="dot new"></span>New</span><span>RO</span></div></div>
+            <div class="card"><span class="id">5073</span>Add an export to Excel<div class="foot"><span><span class="dot new"></span>New</span><span>☑ 0/1</span></div></div></div>
+          <div class="lane"><h5>Returned <small class="over">11/5</small></h5>
+            <div class="card bug"><span class="id">5513</span>Price change not shown in list<div class="foot"><span><span class="dot new"></span>New</span><span class="tag">video</span></div></div></div>
+          <div class="lane"><h5>In progress <small class="over">17/5</small></h5>
+            <div class="card bug"><span class="id">5140</span>Stock count wrong<div class="foot"><span><span class="dot active"></span>Active</span><span></span></div></div></div>
+          <div class="lane"><h5>For testing <small>3/5</small></h5>
+            <div class="card bug"><span class="id">5786</span>Receipt total shows zero<div class="foot"><span><span class="dot resolved"></span>Resolved</span><span></span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="picker">
+    <div class="proposal-head"><h3>4. A path picker with suggestions</h3><span class="pill part">Extends the link field</span><span class="size">Size M</span></div>
+    <div class="proposal-body">
+      <div>
+        <p class="saw">Seen in: Area and Iteration. Recently used paths first, then the full tree; each iteration's dates right-aligned.</p>
+        <ul>
+          <li>A link field to a record with a parent (<code>parentField</code>) shows the whole path, "Portal\Sprint 14".</li>
+          <li>The list opens with Suggestions (recent and frequent for this person), then the tree, folded to the current branch.</li>
+          <li>A second column of the record's own field, right-aligned (dates, a code, a balance).</li>
+          <li>Typing filters the tree and keeps each match's parents shown.</li>
+          <li>The arrow keys move through the tree; Right opens a branch, Left folds it.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of the path picker">
+        <div class="picker">
+          <div class="box"><span>Portal\Sprint 14</span><span>▾</span></div>
+          <div class="sec">Suggestions</div>
+          <div class="row"><span>Portal\Sprint 13</span><small>25 Mar – 16 Apr 2026</small></div>
+          <div class="row on"><span>Portal\Sprint 14</span><small>12 Apr – 25 May 2027</small></div>
+          <div class="row"><span>Portal\Sprint 15</span><small>16 Jul – 28 Aug 2026</small></div>
+          <div class="sec">All</div>
+          <div class="row indent0"><span>▾ Portal</span><small></small></div>
+          <div class="row indent1"><span>Sprint 12</span><small>3 Aug – 17 Aug 2025</small></div>
+          <div class="row indent1"><span>Sprint 13</span><small>25 Mar – 16 Apr 2026</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="rich">
+    <div class="proposal-head"><h3>5. Rich text that stays out of the way</h3><span class="pill part">Extends formatted text</span><span class="size">Size M</span></div>
+    <div class="proposal-body">
+      <div>
+        <p class="saw">Seen in: System Info and the comment box. The toolbar appears only while the field has the focus.</p>
+        <ul>
+          <li>At rest, formatted text is shown as text; empty, it says what goes there ("Add system info").</li>
+          <li>The toolbar appears on focus and goes on blur, as in the quiet look.</li>
+          <li>@ for a person and # for a record, from the data source's search, kept as links in the text.</li>
+          <li>Inline code, strike-through, highlight, and an image pasted or dropped in (stored through the app's files).</li>
+          <li>A Markdown mode with Preview for fields that keep Markdown, set by the field.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of rich text in use">
+        <div class="rich">
+          <div class="text">Seen on <b>order 26-0847</b>; <span class="mention">@Salma</span> has the steps. Linked to <span class="mention">#5786</span>.</div>
+          <div class="tools"><span>B</span><span>I</span><span>U</span><span>S</span><span>• list</span><span>1. list</span><span>&lt;/&gt;</span><span>🔗</span><span>🖼</span><span>@</span><span>#</span><span class="grow"></span><span>Markdown ○</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="history">
+    <div class="proposal-head"><h3>6. History with before and after</h3><span class="pill part">Extends the chatter</span><span class="size">Size M</span></div>
+    <div class="proposal-body">
+      <div>
+        <p class="saw">Seen in: the History tab. The state's path across the top; each change's old value struck out beside its new one.</p>
+        <ul>
+          <li>A history part for a record: the state field's changes as a timeline, each with who and when.</li>
+          <li>Under it, every change grouped by age (today, this week, older), each opening to its fields' before and after.</li>
+          <li>It reads the chatter's tracked changes, so the app gives nothing new.</li>
+          <li>Before and after are told apart by words and strike-through, not only colour.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of the state timeline">
+        <div class="timeline">
+          <span class="state"><span class="dot new"></span>New</span><span class="arrow">→<br>Nour, 11 Jun</span>
+          <span class="state"><span class="dot active"></span>Active</span><span class="arrow">→<br>Omar, 14 Jun</span>
+          <span class="state"><span class="dot new"></span>New</span><span class="arrow">→<br>Omar, 8 Jul</span>
+          <span class="state"><span class="dot active"></span>Active</span>
+        </div>
+        <div class="diff"><span class="sk-label">Iteration</span><span class="sk-label">now</span><span class="now">Portal\Sprint 14</span><span class="sk-label">was</span><span class="was">Portal\Sprint 13</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal" id="filters">
+    <div class="proposal-head"><h3>7. A filter bar, one dropdown per field</h3><span class="pill part">Another face of the search</span><span class="size">Size S</span></div>
+    <div class="proposal-body">
+      <div>
+        <p class="saw">Seen in: the backlog. Keyword on the left; Work item type, State, Area, Iteration and Tags as dropdowns of checkboxes.</p>
+        <ul>
+          <li>A list option, <code>"search": { "style": "bar" }</code>, the same filter underneath, so favourites and the map keep working.</li>
+          <li>Each named field is a dropdown with a checkbox per value and its count.</li>
+          <li>A field with something picked shows it ("Active") in the accent; Clear all at the end.</li>
+        </ul>
+      </div>
+      <div class="sketch" aria-label="Sketch of the filter bar">
+        <div class="filterbar"><span class="kw">⌕ Filter by keyword</span><span class="f on">Bug ▾</span><span class="f on">Active ▾</span><span class="f">Area ▾</span><span class="f">Iteration ▾</span><span class="f">Tags ▾</span><span class="f">✕</span></div>
+      </div>
+    </div>
+  </section>
+
+  <h2>What not to copy</h2>
+  <div class="donts">
+    <div><b>Buttons greyed until something changes</b><p>Save and Close is grey and does nothing until you edit. Our rule is to hide or explain, never disable without a word: Save shows, and says "Saved" when there is nothing new.</p></div>
+    <div><b>Icon-only buttons</b><p>Refresh, revert, settings and the history tab are icons alone. Ours keep a name on screen or in a tooltip, and for screen readers.</p></div>
+    <div><b>Actions shown only on hover</b><p>A group's expand and collapse appear when the pointer is over it. Ours appear on focus too, so keyboard and touch get them.</p></div>
+    <div><b>Locks with no reason</b><p>Reason and Resolved Reason show a lock and nothing more. A lock should say why, and when it will open.</p></div>
+  </div>
+
+  <h2>The order I would build in</h2>
+  <div class="order">
+    <div><span class="when">0.19</span><ul><li>Already planned: the map features Dawarly needs, and the text address field if you want it.</li><li>The quiet look (1), as the rest leans on it.</li></ul></div>
+    <div><span class="when">0.20</span><ul><li>The record header bar (2) and History with before and after (6).</li><li>The path picker (4).</li></ul></div>
+    <div><span class="when">0.21</span><ul><li>The board view of a list (3).</li><li>Rich text upgrades (5) and the filter bar (7).</li></ul></div>
+  </div>
+
+  <p class="colophon">Made from the screenshots in Downloads/fieldia-screens, 12 October 2026, and Fieldia 0.18. The source of this page is kept at docs/plans/devops-look-study.html in the Fieldia repository.</p>
+</div>
