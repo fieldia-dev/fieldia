@@ -1,12 +1,12 @@
-import type { ButtonNode, Field, FilterCondition, FilterItem, ListNode, Page } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, FilterItem, ListMap, ListNode, Page } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, nextName, shownFields } from './page-tree';
+import { allIds, listMapFields, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
 /**
  * A list page, as the designer edits it: its columns, its order, how many
  * rows a page holds, where the search bar looks, its named filters and
- * groupings, and the buttons for the rows chosen. A field a list names comes
+ * groupings, the buttons for the rows chosen, and its records on a map. A field a list names comes
  * onto the page from the model as the model has it, and leaves when nothing
  * names it any more.
  */
@@ -18,6 +18,8 @@ export interface ListOptionsPatch {
   searchFields?: string[];
   /** The fields people can group by; empty for none. */
   groupBy?: string[];
+  /** The records on a map too: where each is, its pin and its card; null for no map. */
+  map?: ListMap | null;
 }
 
 export interface ListActionPatch {
@@ -163,6 +165,12 @@ export function listCommands(context: {
         }
         fields('searchFields', options.searchFields);
         fields('groupBy', options.groupBy);
+        if (options.map === null) delete list.map;
+        else if (options.map !== undefined) {
+          // The fields it names come onto the page from the model; the page check says what is wrong with the rest.
+          for (const name of listMapFields(options.map)) fieldFor(draft, name);
+          list.map = JSON.parse(JSON.stringify(options.map)) as ListMap;
+        }
         prune(draft);
       });
     },

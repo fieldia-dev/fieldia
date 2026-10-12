@@ -1,5 +1,5 @@
 import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
-import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
+import { mountViewer, type ListViewFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -28,6 +28,10 @@ export interface TryItOptions {
   dataSource?: DataSource;
   /** The app's own widgets, by `type` or `type.widget`, as the viewer takes them. */
   widgets?: Record<string, WidgetFactory>;
+  /** The app's other ways of showing a list's records, as the viewer takes them: a map with @fieldia/map's mapListViews. */
+  listViews?: Record<string, ListViewFactory>;
+  /** Where the made-up records are, on a list's map: the middle of the app's maps. Near 0, 0 unless said. */
+  sampleCentre?: { lat: number; lng: number };
 }
 
 export interface TryIt {
@@ -47,9 +51,20 @@ type Width = 'desktop' | 'tablet' | 'phone';
 type Direction = 'ltr' | 'rtl';
 
 /** A list's records to try it with: made up, enough for a few pages. */
-function madeUp(page: Page): Record<string, Record<string, Values>> {
+function madeUp(page: Page, centre = { lat: 0, lng: 0 }): Record<string, Record<string, Values>> {
   if (page.layout.type !== 'list' || page.data.kind !== 'record') return {};
   const rows = sampleRows(page.fields, Object.keys(page.fields), 36);
+  // On a list's map, each made-up record somewhere around the middle of the app's maps, a few kilometres apart.
+  const map = page.layout.map;
+  if (map) {
+    rows.forEach((values, i) => {
+      const lat = Math.round((centre.lat + Math.sin(i * 2.4) * (0.01 + (i % 6) * 0.008)) * 1e6) / 1e6;
+      const lng = Math.round((centre.lng + Math.cos(i * 2.4) * (0.01 + (i % 6) * 0.008)) * 1e6) / 1e6;
+      if (map.point) values[map.point] = { type: 'Point', coordinates: [lng, lat] };
+      if (map.latitude) values[map.latitude] = lat;
+      if (map.longitude) values[map.longitude] = lng;
+    });
+  }
   return { [page.data.model]: Object.fromEntries(rows.map((values, i) => [String(i + 1), values as Values])) };
 }
 
@@ -98,7 +113,7 @@ export function tryIt(options: TryItOptions): TryIt {
     if (!trying) return;
     frame.dataset['width'] = width;
     const page = designer.getPage();
-    const dataSource = createMemoryDataSource({ records: madeUp(page) });
+    const dataSource = createMemoryDataSource({ records: madeUp(page, options.sampleCentre) });
     const app = options.dataSource;
     if (app?.options) dataSource.options = app.options.bind(app);
     // Sent: the answers' score, under the viewer's thanks, when the page gives points.
@@ -113,6 +128,7 @@ export function tryIt(options: TryItOptions): TryIt {
       dataSource,
       skin: options.skin,
       widgets: options.widgets,
+      ...(options.listViews ? { listViews: options.listViews } : {}),
       ...language.viewerOptions(direction),
     });
     tryDrawer(el, frame, viewer, designer.words);

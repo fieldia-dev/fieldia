@@ -55,6 +55,9 @@ export interface MapLabels {
   heightMedium: string;
   heightLarge: string;
   settingShapes: string;
+  /** The designer's setting naming the field a place's address is written into. */
+  settingAddress: string;
+  settingNowhere: string;
 }
 
 export const MAP_LABELS: Record<Locale, MapLabels> = {
@@ -110,6 +113,8 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Medium',
     heightLarge: 'Large',
     settingShapes: 'Shapes',
+    settingAddress: 'Address goes into',
+    settingNowhere: 'Nowhere',
   },
   ar: {
     mapOf: '{label}، خريطة',
@@ -163,6 +168,8 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'متوسط',
     heightLarge: 'كبير',
     settingShapes: 'الأشكال',
+    settingAddress: 'يُكتب العنوان في',
+    settingNowhere: 'لا مكان',
   },
   fr: {
     mapOf: '{label}, carte',
@@ -216,6 +223,8 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Moyenne',
     heightLarge: 'Grande',
     settingShapes: 'Formes',
+    settingAddress: 'L’adresse va dans',
+    settingNowhere: 'Nulle part',
   },
   de: {
     mapOf: '{label}, Karte',
@@ -269,6 +278,8 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Mittel',
     heightLarge: 'Groß',
     settingShapes: 'Formen',
+    settingAddress: 'Adresse kommt in',
+    settingNowhere: 'Nirgends',
   },
 };
 

@@ -73,3 +73,29 @@ test('in Arabic: the Maps group and its kinds have Arabic names', async ({ page 
   await expect(tile(page, 'kind:map-place')).toContainText('مكان');
   await expect(tile(page, 'kind:map-area')).toContainText('منطقة');
 });
+
+test('a list on a map, in the screen designer: its Map in the list’s panel, and Try it shows the records on the map', async ({ page }) => {
+  const problems = watch(page);
+  await stubMaps(page);
+  await page.goto('/screen/?start=homes');
+  const map = page.locator('[data-part="map"]');
+  await expect(map.getByLabel('Show the records on a map too')).toBeChecked();
+  await expect(map.getByLabel('Where each record is')).toHaveValue('latlng');
+  await expect(map.getByLabel('Each pin shows')).toHaveValue('price');
+  await expect(map.locator('.fd-chip')).toHaveText(['Price×', 'Bedrooms×', 'Area, m²×', 'District×']);
+  await map.getByLabel('Opens as').selectOption({ label: 'The map' });
+  expect((await page_(page)).layout.map.view).toBe('map');
+  await map.scrollIntoViewIfNeeded();
+  await screen(page, 'map-designer-list', { viewport: true });
+
+  await page.getByRole('button', { name: 'Try it' }).click();
+  const tried = page.locator('.fd-try-frame');
+  await expect(tried.locator('.fd-list-views').getByRole('button', { name: 'Map', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(tried.locator('.fd-map-list .leaflet-tile-loaded').first()).toBeVisible();
+  // Thirty-six made-up homes, all placed around the middle the app gave.
+  await expect
+    .poll(() => tried.locator('.fd-map-list .fd-map-mark').evaluateAll((marks) => marks.reduce((n, m) => n + (Number(m.querySelector('.fd-map-bubble')?.textContent) || 1), 0)))
+    .toBe(36);
+  await expect(tried.locator('.fd-map-list-note')).toBeHidden();
+  expect(problems).toEqual([]);
+});

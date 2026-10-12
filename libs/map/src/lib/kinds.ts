@@ -95,14 +95,21 @@ export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels>
       const myLocation = checkbox(doc, (on) => set({ myLocation: on ? null : false }));
       const search = checkbox(doc, (on) => set({ search: on ? null : false }));
       const height = heightSetting(doc, words, set);
+      // The words of the address found, written into a text field of the page.
+      const address = doc.createElement('select');
+      address.className = 'fd-inline-select';
+      address.addEventListener('change', () => set({ addressField: address.value || null }));
       const element = settingsRow(doc);
-      element.append(row(doc, words.settingMyLocation, myLocation), row(doc, words.settingSearch, search), height.element);
+      element.append(row(doc, words.settingMyLocation, myLocation), row(doc, words.settingSearch, search), row(doc, words.settingAddress, address), height.element);
       return {
         element,
-        refresh(_page, node) {
+        refresh(page, node) {
           myLocation.checked = node.options?.['myLocation'] !== false;
           search.checked = node.options?.['search'] !== false;
           height.read(node);
+          const texts = Object.entries(page.fields).filter(([, field]) => field.type === 'char' || field.type === 'text');
+          address.replaceChildren(new Option(words.settingNowhere, ''), ...texts.map(([name, field]) => new Option(field.label, name)));
+          address.value = String(node.options?.['addressField'] ?? '');
         },
       };
     },

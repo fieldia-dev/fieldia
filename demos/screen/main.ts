@@ -4,6 +4,7 @@ import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import { codeWidgets } from '@fieldia/code';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
+import { demoListViews } from '../shared/maps';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
@@ -16,7 +17,9 @@ import addressPage from '../../examples/pages/address.page.json';
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
  * the "New employee" page: groups side by side, arrangements, tabs and blocks,
- * `?start=big` a supplier's file of 500 fields, for timing, and
+ * `?start=big` a supplier's file of 500 fields, for timing, `?start=homes`
+ * the homes in Cairo, a list on a map (its Map in the list's panel, and Try
+ * it with the map), and
  * `?start=template-<id>` a page of the template library, to change.
  * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  * `?locale=ar` shows the designer in Arabic, its sample pages written in
@@ -135,12 +138,12 @@ const customerPage: Page = {
 };
 store.pages.set('customer-card', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
-const model = start === 'sheet' || start === 'list' ? customer : undefined;
+const model = start === 'sheet' || start === 'list' ? customer : start === 'homes' ? pages['map-homes'].fields : undefined;
 // `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
 const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
 const first = template
   ? (structuredClone(template) as Page)
-  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : siteVisit();
+  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : start === 'homes' ? (structuredClone(pages['map-homes']) as Page) : siteVisit();
 // The app's own kind, an IBAN, and the widget that draws it.
 const opened = timeFirstPaint('screen');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
@@ -156,12 +159,14 @@ const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ??
 const app = document.getElementById('app') as HTMLElement;
 /** The app's own widgets, and the code editor for the Code kind's fields, on the canvas and in Try it. */
 const widgets = { ...APP_WIDGETS, ...codeWidgets };
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant }), reopen };
+/** A list's records on the demos' maps in Try it, made-up homes around Cairo, where the demos' shop is. */
+const onMaps = { listViews: demoListViews, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant, ...onMaps }), reopen };
 opened();
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
   demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
 }
 Object.assign(window, { fieldiaDesigner: demo });

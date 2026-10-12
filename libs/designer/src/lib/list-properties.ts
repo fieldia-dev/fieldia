@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, ListNode, Page } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, ListMap, ListNode, Page, Pin } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
@@ -159,6 +159,189 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
   };
 }
 
+// ---- the records on a map ------------------------------------------------------------------------
+
+const NUMBERS = new Set(['float', 'integer']);
+const PICTURES = new Set(['image', 'binary']);
+/** Fields a pin or a card can say in words. */
+const SAYABLE = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean']);
+
+/** A list's map: whether there is one, where each record is, its pins and its card, and how the list opens. */
+function mapSection(el: ElementFactory, designer: Designer) {
+  const w = designer.words.list;
+  const on = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const onRow = el('label', { class: 'fd-q-required' }, on, el('span', {}, w.onAMap));
+  const noPlace = el('p', { class: 'fd-properties-hint' }, w.noPlace);
+  const where = el('select', { class: 'fd-input fd-select', 'aria-label': w.where }) as HTMLSelectElement;
+  const lat = el('select', { class: 'fd-input fd-select', 'aria-label': w.latitude }) as HTMLSelectElement;
+  const lng = el('select', { class: 'fd-input fd-select', 'aria-label': w.longitude }) as HTMLSelectElement;
+  const label = el('select', { class: 'fd-input fd-select', 'aria-label': w.pinShows }) as HTMLSelectElement;
+  const look = select(el, w.pinLook, (['pin', 'label', 'icon', 'photo', 'dot'] as const).map((k) => [k, w.pinLooks[k]]));
+  const photo = el('select', { class: 'fd-input fd-select', 'aria-label': w.pinPhoto }) as HTMLSelectElement;
+  const icon = el('input', { class: 'fd-input', 'aria-label': w.pinIcon, placeholder: 'car' }) as HTMLInputElement;
+  const iconFrom = el('select', { class: 'fd-input fd-select', 'aria-label': w.iconFrom }) as HTMLSelectElement;
+  const turn = el('select', { class: 'fd-input fd-select', 'aria-label': w.turnedBy }) as HTMLSelectElement;
+  const title = el('select', { class: 'fd-input fd-select', 'aria-label': w.cardTitle }) as HTMLSelectElement;
+  const picture = el('select', { class: 'fd-input fd-select', 'aria-label': w.cardPicture }) as HTMLSelectElement;
+  const cardFields = el('div', { class: 'fd-chips' });
+  const addToCard = el('button', { type: 'button', class: 'fd-button' }, w.addToCard);
+  const opens = select(el, w.opensAs, (['list', 'map', 'both'] as const).map((k) => [k, w.opensAsChoices[k]]));
+  const bubbles = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const rows = {
+    lat: prop(el, w.latitude, lat),
+    lng: prop(el, w.longitude, lng),
+    photo: prop(el, w.pinPhoto, photo),
+    icon: prop(el, w.pinIcon, icon),
+    iconFrom: prop(el, w.iconFrom, iconFrom),
+    turn: prop(el, w.turnedBy, turn),
+  };
+  const details = el(
+    'div',
+    { class: 'fd-props' },
+    prop(el, w.where, where),
+    rows.lat,
+    rows.lng,
+    prop(el, w.pinShows, label),
+    prop(el, w.pinLook, look),
+    rows.photo,
+    rows.icon,
+    rows.iconFrom,
+    rows.turn,
+    prop(el, w.cardTitle, title),
+    prop(el, w.cardPicture, picture),
+    el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.cardShows), cardFields, addToCard),
+    prop(el, w.opensAs, opens),
+    el('label', { class: 'fd-q-required' }, bubbles, el('span', {}, w.bubbles)),
+    el('p', { class: 'fd-properties-hint' }, w.mapNote)
+  );
+  const element = el('div', { class: 'fd-prop', 'data-part': 'map' }, el('span', { class: 'fd-prop-name' }, w.map), onRow, noPlace, details);
+
+  const fieldsOf = (page: Page, kinds: (field: Field) => boolean) => everyField(page, designer).filter(({ field }) => kinds(field));
+  const fill = (box: HTMLSelectElement, choices: { name: string; field: Field }[], none?: string) =>
+    box.replaceChildren(...(none === undefined ? [] : [el('option', { value: '' }, none)]), ...choices.map(({ name, field }) => el('option', { value: name }, field.label)));
+  const current = (): ListMap | undefined => listOf(designer.getPage()).map;
+  /** The map with a change, its empty parts left out. */
+  const change = (edit: (map: ListMap) => void) => {
+    const map = JSON.parse(JSON.stringify(current() ?? {})) as ListMap;
+    edit(map);
+    const pin = map.pin as Record<string, unknown> | undefined;
+    if (pin) for (const key of Object.keys(pin)) if (pin[key] === '' || pin[key] === undefined) delete pin[key];
+    if (pin && !Object.keys(pin).length) delete map.pin;
+    const card = map.card as Record<string, unknown> | undefined;
+    if (card) for (const key of Object.keys(card)) if (card[key] === '' || card[key] === undefined || (Array.isArray(card[key]) && !(card[key] as unknown[]).length)) delete card[key];
+    if (card && !Object.keys(card).length) delete map.card;
+    designer.setListOptions({ map });
+  };
+  const pinOf = (map: ListMap): Pin => (map.pin ??= {});
+
+  /** Where a new map puts its records: the first point, or the two numbers named for latitude and longitude. */
+  function firstPlace(page: Page): ListMap | null {
+    const point = fieldsOf(page, (f) => f.type === 'json')[0];
+    return point ? { point: point.name } : firstLatLng(page);
+  }
+  function firstLatLng(page: Page): ListMap | null {
+    const numbers = fieldsOf(page, (f) => NUMBERS.has(f.type));
+    if (numbers.length < 2) return null;
+    const latitude = numbers.find(({ name }) => /lat/i.test(name)) ?? numbers[0];
+    const longitude = numbers.find(({ name }) => /lng|lon/i.test(name) && name !== latitude.name) ?? numbers.find(({ name }) => name !== latitude.name)!;
+    return { latitude: latitude.name, longitude: longitude.name };
+  }
+
+  on.addEventListener('change', () => {
+    const first = firstPlace(designer.getPage());
+    designer.setListOptions({ map: on.checked && first ? { ...first, view: 'both' } : null });
+  });
+  where.addEventListener('change', () =>
+    change((map) => {
+      delete map.point;
+      delete map.latitude;
+      delete map.longitude;
+      if (where.value === 'latlng') Object.assign(map, firstLatLng(designer.getPage()));
+      else map.point = where.value.slice('point:'.length);
+    })
+  );
+  lat.addEventListener('change', () => change((map) => (map.latitude = lat.value)));
+  lng.addEventListener('change', () => change((map) => (map.longitude = lng.value)));
+  label.addEventListener('change', () => change((map) => (pinOf(map).label = label.value)));
+  look.addEventListener('change', () => change((map) => (pinOf(map).look = look.value as Pin['look'])));
+  photo.addEventListener('change', () => change((map) => (pinOf(map).image = photo.value)));
+  icon.addEventListener('change', () => change((map) => (pinOf(map).icon = icon.value.trim())));
+  iconFrom.addEventListener('change', () => change((map) => (pinOf(map).iconField = iconFrom.value)));
+  turn.addEventListener('change', () => change((map) => (pinOf(map).turn = turn.value)));
+  title.addEventListener('change', () => change((map) => ((map.card ??= {}).title = title.value)));
+  picture.addEventListener('change', () => change((map) => ((map.card ??= {}).image = picture.value)));
+  opens.addEventListener('change', () => change((map) => (map.view = opens.value as ListMap['view'])));
+  bubbles.addEventListener('change', () =>
+    change((map) => {
+      if (bubbles.checked) delete map.cluster;
+      else map.cluster = false;
+    })
+  );
+  addToCard.addEventListener('click', () => {
+    const page = designer.getPage();
+    const shown = new Set(current()?.card?.fields ?? []);
+    const choices = fieldsOf(page, (f) => SAYABLE.has(f.type)).filter(({ name }) => !shown.has(name));
+    openMenu({
+      el,
+      anchor: addToCard,
+      title: w.cardShows,
+      items: choices.map(({ name, field }) => ({ id: name, label: field.label })),
+      onPick: (name) => change((map) => ((map.card ??= {}).fields = [...shown, name])),
+    });
+  });
+
+  return {
+    element,
+    update(page: Page) {
+      const map = listOf(page).map;
+      const place = firstPlace(page);
+      on.checked = !!map;
+      onRow.hidden = !map && !place;
+      noPlace.hidden = !!map || !!place;
+      details.hidden = !map;
+      if (!map) return;
+      const points = fieldsOf(page, (f) => f.type === 'json');
+      const numbers = fieldsOf(page, (f) => NUMBERS.has(f.type));
+      where.replaceChildren(...points.map(({ name, field }) => el('option', { value: `point:${name}` }, w.onePoint(field.label))), ...(numbers.length >= 2 ? [el('option', { value: 'latlng' }, w.latLng)] : []));
+      where.value = map.point ? `point:${map.point}` : 'latlng';
+      fill(lat, numbers);
+      fill(lng, numbers);
+      lat.value = map.latitude ?? '';
+      lng.value = map.longitude ?? '';
+      rows.lat.hidden = rows.lng.hidden = !!map.point;
+      const pin = map.pin ?? {};
+      fill(label, fieldsOf(page, (f) => SAYABLE.has(f.type)), w.nothing);
+      label.value = pin.label ?? '';
+      const shownLook = pin.look ?? (pin.label ? 'label' : pin.image ? 'photo' : pin.icon || pin.iconField ? 'icon' : 'pin');
+      look.value = shownLook;
+      fill(photo, fieldsOf(page, (f) => PICTURES.has(f.type)), w.nothing);
+      photo.value = pin.image ?? '';
+      rows.photo.hidden = shownLook !== 'photo';
+      if (!focused(icon)) icon.value = pin.icon ?? '';
+      fill(iconFrom, fieldsOf(page, (f) => f.type === 'char' || f.type === 'selection'), w.nothing);
+      iconFrom.value = pin.iconField ?? '';
+      fill(turn, numbers, w.nothing);
+      turn.value = pin.turn ?? '';
+      rows.icon.hidden = rows.iconFrom.hidden = rows.turn.hidden = shownLook !== 'icon';
+      fill(title, fieldsOf(page, (f) => SAYABLE.has(f.type)));
+      title.value = map.card?.title ?? listOf(page).columns[0];
+      fill(picture, fieldsOf(page, (f) => PICTURES.has(f.type)), w.nothing);
+      picture.value = map.card?.image ?? '';
+      const onCard = map.card?.fields ?? [];
+      cardFields.replaceChildren(
+        ...onCard.map((name) => {
+          const named = page.fields[name]?.label ?? name;
+          const remove = el('button', { type: 'button', class: 'fd-chip-remove', 'aria-label': w.takeOffCard(named) }, '×');
+          remove.addEventListener('click', () => change((next) => ((next.card ??= {}).fields = onCard.filter((n) => n !== name))));
+          return el('span', { class: 'fd-chip' }, named, remove);
+        })
+      );
+      opens.value = map.view ?? 'list';
+      bubbles.checked = map.cluster !== false;
+    },
+  };
+}
+
 // ---- the list --------------------------------------------------------------------------------
 
 export function listProperties(el: ElementFactory, designer: Designer): PropertiesView {
@@ -199,6 +382,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     });
   });
 
+  const onMap = mapSection(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -208,6 +392,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.groupBy), groupsBox, addGroup),
+    onMap.element,
     el('p', { class: 'fd-properties-hint' }, w.rowOpens)
   );
 
@@ -262,6 +447,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
           return el('span', { class: 'fd-chip' }, label, remove);
         })
       );
+      onMap.update(page);
     },
     focus() {
       const filters = element.querySelector<HTMLElement>('[data-part="filters"]');

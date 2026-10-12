@@ -1,4 +1,4 @@
-import { valuesIn, type FieldNode, type FilterItem, type LayoutNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -119,8 +119,23 @@ export function shownFields(page: Page): Set<string> {
   if (root.type === 'list') {
     const read = (items: readonly FilterItem[]): string[] => items.flatMap((i) => ('any' in i ? read(i.any) : 'all' in i ? read(i.all) : [i.field]));
     for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => read(f.filter))]) shown.add(name);
+    if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
   }
   return shown;
+}
+
+/** The fields a list's map names: where each record is, what its pin and its card show, and what its pin's tones read. */
+export function listMapFields(map: ListMap): string[] {
+  const pin = map.pin ?? {};
+  const read = (when: string | boolean) => {
+    try {
+      return [...compileModifier(when).fields];
+    } catch {
+      return [];
+    }
+  };
+  const named = [map.point, map.latitude, map.longitude, pin.label, pin.iconField, pin.image, pin.turn, ...(pin.tones ?? []).flatMap((t) => read(t.when)), map.card?.title, map.card?.image, ...(map.card?.fields ?? [])];
+  return [...new Set(named.filter((name): name is string => !!name))];
 }
 
 /** Every section, wherever it sits: at the top, in a section, or in a tab. */
