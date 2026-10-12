@@ -283,11 +283,13 @@ test('Search this area: once the map is moved, it puts the area into the search 
   const here = page.getByRole('button', { name: 'Search this area' });
   await expect(here).toBeHidden();
   await expect(range(page)).toHaveText('1–12 / 64');
-  // Closer, over the middle of the city.
+  // Closer, over the middle of the city: two steps, read once the second has ended (its old images linger meanwhile).
+  const start = await zoomOf(theMap(page));
   await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
   await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
   await expect(here).toBeVisible();
-  const zoom = await zoomOf(theMap(page));
+  const zoom = start + 2;
+  await expect.poll(() => zoomOf(theMap(page))).toBe(zoom);
   await here.click();
   await expect(here).toBeHidden();
   await expect(chips(page)).toHaveText(['In this area']);

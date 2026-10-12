@@ -298,8 +298,24 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     else map.setView([20, 0], options.zoom ?? 2);
     element.append(...overlays);
     for (const over of overlays) shield(over);
-    zoomIn.addEventListener('click', () => map?.zoomIn());
-    zoomOut.addEventListener('click', () => map?.zoomOut());
+    // A press while the map still zooms from the last is kept and made when that zoom ends (Leaflet drops it): two quick presses, two steps.
+    let zooming = false;
+    let owed = 0;
+    map.on('zoomstart', () => (zooming = true));
+    map.on('zoomend', () => {
+      zooming = false;
+      if (!owed || !map) return;
+      const by = owed;
+      owed = 0;
+      map.setZoom(map.getZoom() + by);
+    });
+    const step = (by: number) => {
+      if (!map) return;
+      if (zooming) owed += by;
+      else map.setZoom(map.getZoom() + by);
+    };
+    zoomIn.addEventListener('click', () => step(1));
+    zoomOut.addEventListener('click', () => step(-1));
     map.on('moveend', askCredits);
     // Shown at last in a tab or a dialog: the map measures itself again.
     const ResizeWatch = doc.defaultView?.ResizeObserver;
