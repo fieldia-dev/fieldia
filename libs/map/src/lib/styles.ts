@@ -236,8 +236,8 @@ span.fd-map-crowd-item { display: block; cursor: default; }
 }
 .fd-map-here:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-map-here:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
-/* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach. */
-@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list .fd-map-box { height: clamp(260px, 46vh, 420px); } }
+/* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach (unless the page says how tall). */
+@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list:not([data-height]) .fd-map-box { height: clamp(260px, 46vh, 420px); } }
 .fd-map-ghost .fd-map-face { pointer-events: none; }
 /* The tools that draw an area to search in: at the map's start, the zoom at its end. */
 .fd-map-draw { position: absolute; top: 8px; left: 8px; z-index: 1000; display: grid; gap: 4px; }
@@ -259,6 +259,12 @@ span.fd-map-crowd-item { display: block; cursor: default; }
   position: absolute; left: 8px; bottom: 28px; z-index: 1000; max-width: calc(100% - 64px); margin: 0; padding: 4px 8px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;
   background: color-mix(in srgb, var(--fd-surface) 92%, transparent); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
+/* As tall as the element it is put in; in the viewer's list, which gives it no height to fill, as tall as a list's map is. */
+.fd-map-list[data-height="fill"] { height: 100%; }
+.fd-list-map .fd-map-list[data-height="fill"] { height: auto; }
+.fd-list-map .fd-map-list[data-height="fill"] .fd-map-box { height: clamp(320px, 64vh, 640px); }
+/* A map that takes every gesture: one finger pans it, the page does not scroll under it. */
+.fd-map-box.leaflet-container[data-gestures="all"] { touch-action: none; }
 `;
 
 /** The list map's stylesheet, once per document, after the maps' own. */
@@ -269,6 +275,48 @@ export function installListMapStyles(doc: Document) {
   own.id = 'fieldia-list-map-styles';
   own.textContent = LIST_MAP_CSS;
   doc.getElementById('fieldia-map-styles')?.after(own);
+}
+
+/**
+ * A list's map in a page of its own (`mountListMap`), outside the viewer:
+ * what the viewer's form gives its map — a part hidden stays hidden, words
+ * for a screen reader alone, its buttons, its sizes — on the map's element
+ * alone, so none of it reaches the page round it. Its colours are Fieldia's
+ * tokens, light and dark by the page's colour scheme, in Fieldia's tokens'
+ * layer: a page's own rule for `.fd-map-embed`, of any weight, sets them.
+ */
+export const EMBED_CSS = `
+@layer fieldia-tokens {
+.fd-map-embed {
+  --fd-text: light-dark(#1f2328, #e8eaed); --fd-muted: light-dark(#59636e, #a3a9b2); --fd-surface: light-dark(#fff, #1f2329); --fd-border: light-dark(#d0d7de, #3a4048);
+  --fd-accent: light-dark(#1365d9, #5aa2ff); --fd-accent-text: light-dark(#fff, #0b1220); --fd-accent-soft: light-dark(#e6f4ff, #1d2c42); --fd-focus: var(--fd-accent);
+  --fd-info: light-dark(#0b5cad, #7db7ff); --fd-success: light-dark(#2e7d32, #6fd08e); --fd-warning: light-dark(#8a5300, #f2b55c); --fd-error: light-dark(#c62828, #ff8a7a);
+  --fd-control-radius: 6px;
+}
+}
+.fd-map-embed { position: relative; color: var(--fd-text); font-size: 14px; line-height: 1.45; }
+.fd-map-embed *, .fd-map-embed ::before, .fd-map-embed ::after { box-sizing: border-box; }
+.fd-map-embed [hidden] { display: none !important; }
+.fd-map-embed .fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-map-embed .fd-button {
+  font: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 4px 14px;
+  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-text);
+}
+.fd-map-embed .fd-button:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
+.fd-map-embed .fd-button-primary { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text); }
+.fd-map-embed .fd-button-primary:hover { color: var(--fd-accent-text); filter: brightness(1.12); }
+.fd-map-embed .fd-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-map-embed .fd-button[aria-busy="true"] { cursor: progress; opacity: 0.7; }
+`;
+
+/** A list's map's own base, once per document, after the list map's stylesheet: a page of its own carries it, the viewer never does. */
+export function installEmbedStyles(doc: Document) {
+  installListMapStyles(doc);
+  if (doc.getElementById('fieldia-map-embed-styles')) return;
+  const own = doc.createElement('style');
+  own.id = 'fieldia-map-embed-styles';
+  own.textContent = EMBED_CSS;
+  doc.getElementById('fieldia-list-map-styles')?.after(own);
 }
 
 /**

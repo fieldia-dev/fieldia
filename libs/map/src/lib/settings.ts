@@ -1,4 +1,4 @@
-import type { Locale } from '@fieldia/core';
+import type { Locale, ResolvedFilter } from '@fieldia/core';
 import type { LatLng } from './geo';
 import type { FormMapLabels, ListMapLabels, MapLabels } from './labels';
 import type { PinDrawer } from './pins';
@@ -30,4 +30,14 @@ export interface MapSettings {
   pins?: Record<string, PinDrawer>;
   /** The app's own words over the maps', by language. */
   labels?: Partial<Record<Locale, Partial<MapLabels & ListMapLabels & FormMapLabels>>>;
+  /**
+   * How a list's map learns how many records its view holds, for "Search
+   * this area (24)", when the records on hand cannot say (more than the map
+   * shows, or a view past the area searched): `true` asks the data source's
+   * `list` for one record and reads its `total`; a function is the app's own
+   * count. Asked a moment after the map stops, aborted when it moves again.
+   * Left out, only the records on hand are counted, and the button says no
+   * number when they cannot tell.
+   */
+  countArea?: boolean | ((filter: ResolvedFilter[], signal: AbortSignal) => Promise<number>);
 }
