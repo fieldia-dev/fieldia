@@ -1,12 +1,14 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { sitePages } from './site-pages';
 import { DEMOS, FEATURED } from '../demos/catalog.mjs';
 import { expectNoSidewaysScroll } from './support';
 
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
 const SITE = process.env['SITE_URL'] ?? `http://127.0.0.1:${process.env['FIELDIA_SITE_PORT'] ?? 4322}`;
-const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/actions/', '/record/', '/lists/', '/maps/', '/chatter/', '/look/', '/demos/', '/designer/', '/templates/', '/features/', '/features/forms/', '/features/records/', '/features/rules/', '/features/lists/', '/features/maps/', '/features/looks/', '/features/backend/', '/accessibility/'];
+// Every page of the site, as it builds them: none left off.
+const PAGES = sitePages();
 
 function watch(page: Page) {
   const problems: string[] = [];
