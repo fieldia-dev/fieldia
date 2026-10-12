@@ -178,9 +178,10 @@ describe('a map’s panel', () => {
     expect(map().layers[1].reachable).toEqual({ from: 'me', minutes: 10, mode: 'bike' });
     expect(validatePage(designer.getPage()).ok).toBe(true);
     // Without any place: said why.
-    designer.updateMap(map().id, { layers: [{ id: 'way', route: { from: 'a', to: 'b' } }] });
-    expect(map().layers).toHaveLength(2);
-    void host;
+    designer.updateMap(map().id, { layers: [{ id: 'areas', regions: { from: 'cairo-districts', key: 'code' } }] });
+    add('The area within some minutes');
+    expect(host.querySelector('[role="status"]')!.textContent).toBe('A reachable area is worked out from a place: add a place first.');
+    expect(map().layers).toHaveLength(1);
   });
 
   it('ticks the tools under the map’s zoom', () => {
@@ -199,7 +200,7 @@ describe('a map’s panel', () => {
   });
 
   it('adds a fence on a place that moves and an area, its steps set as a button’s, named in words', () => {
-    const { add, layer, change, host, map, designer } = mount();
+    const { layer, change, host, map, designer } = mount();
     const addFence = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Add a fence')!.click();
     const said = () => host.querySelectorAll('[role="status"]')[1]?.textContent;
     // The reader's own place moves; an area is wanted.

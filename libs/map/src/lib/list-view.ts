@@ -8,7 +8,7 @@ import { readPoint, type Area, type LatLng, type Shape } from './geo';
 import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { HeatLayer } from './heat';
-import { createMapBox, warnOnce, type MapTool } from './map-core';
+import { createMapBox, type MapTool } from './map-core';
 import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
 import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
