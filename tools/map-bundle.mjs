@@ -61,11 +61,12 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * its own direction, an amount's symbol kept whole on an Arabic page ("E£",
  * never "£E"), and an area's words given as text — 1.1 more, to 41.0.
  * All three together in 0.19 (the address, the page of its own, the
- * money look; the page of its own carries the card's and the pin's money
- * too): 25.6 for a place and an area, 45.0 for all, 31.1 for the page of
+ * money look, and Search this area stepping aside from an open card; the
+ * page of its own carries the card's and the pin's money
+ * too): 25.6 for a place and an area, 45.1 for all, 31.1 for the page of
  * its own.
  */
-const BUDGET = { fields: 25.6, all: 45.0, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.6, all: 45.1, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

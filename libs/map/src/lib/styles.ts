@@ -245,6 +245,7 @@ span.fd-map-crowd-item { display: block; cursor: default; }
 }
 .fd-map-here:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-map-here:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-map-box[data-card] > .fd-map-here { visibility: hidden; }
 /* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach (unless the page says how tall). */
 @container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list:not([data-height]) .fd-map-box { height: clamp(260px, 46vh, 420px); } }
 .fd-map-ghost .fd-map-face { pointer-events: none; }

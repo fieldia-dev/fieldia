@@ -600,8 +600,13 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       if (!here.hidden) countHere(map);
       tellView(map, byPerson);
     });
+    // An open card is what the person is reading: Search this area steps out of its way (on a phone the card
+    // fills the map's height, and the button sat over its picture) and is back when the card closes.
+    map.on('popupopen', () => (box.element.dataset['card'] = ''));
     map.on('popupclose', (event: Leaflet.PopupEvent) => {
       if (open?.popup === event.popup) open = null;
+      // Leaflet closes the last card before it opens the next, so the next one's open sets this again.
+      delete box.element.dataset['card'];
     });
   });
 
