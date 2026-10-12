@@ -55,6 +55,7 @@ import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
+import { openOnClick } from './quiet';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -557,7 +558,9 @@ const dateWidget: WidgetFactory = (context) => {
       describe(input, state);
     },
   };
-  return node.options?.['weekNumbers'] === true ? withCalendar(widget, context, 'date') : widget;
+  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'date');
+  openOnClick(input);
+  return widget;
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -588,7 +591,9 @@ const dateTimeWidget: WidgetFactory = (context) => {
       describe(input, state);
     },
   };
-  return node.options?.['weekNumbers'] === true ? withCalendar(widget, context, 'datetime') : widget;
+  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'datetime');
+  openOnClick(input);
+  return widget;
 };
 
 /** Until a type has its own editor (Phase 5), show what it holds. */

@@ -1,6 +1,7 @@
 import type { Locale, Value } from '@fieldia/core';
 import { describeState, maker, rightToLeft, setAttr, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
+import { openOnClick } from './quiet';
 
 /**
  * A range of dates in one box, from → to: Flectra's widget="daterange". The
@@ -57,6 +58,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
       const d = new Date(input.value);
       if (!Number.isNaN(d.getTime())) form.setValue(fieldName, d.toISOString());
     });
+    openOnClick(input, () => calendar.hidden && open());
     return input;
   };
   const from = box(name, field.label, id);

@@ -39,7 +39,7 @@ input.fd-monaco-plain { font-family: ui-monospace, SFMono-Regular, Menlo, Consol
 .fd-form[data-fd-skin="underline"] .fd-monaco-line .fd-monaco-frame:focus-within { box-shadow: 0 1px 0 0 var(--fd-focus); }
 .fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-monaco-line .fd-monaco-frame { border-color: var(--fd-accent); }
 .fd-monaco-line[data-readonly] .fd-monaco-frame { background: transparent; border-color: transparent; padding-inline: 0; }
-.fd-form[data-fd-skin="outlined"] .fd-monaco-line[data-readonly] .fd-monaco-frame { background: color-mix(in srgb, var(--fd-text) 5%, var(--fd-surface)); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-monaco-line[data-readonly] .fd-monaco-frame { background: color-mix(in srgb, var(--fd-text) 5%, var(--fd-surface)); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); }
 .fd-form[data-readonly] .fd-monaco-line[data-readonly] .fd-monaco-frame { background: transparent; border-color: transparent; padding-inline: 0; }
 .fd-monaco-line:is([data-invalid], :has(.inputarea[aria-invalid="true"])) .fd-monaco-frame { border-color: var(--fd-error); }
 @layer fieldia-tokens {

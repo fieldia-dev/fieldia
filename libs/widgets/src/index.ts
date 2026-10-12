@@ -19,3 +19,4 @@ export * from './lib/focus-trap';
 export { countriesIn } from './lib/address';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
+export { wearsQuiet } from './lib/quiet';

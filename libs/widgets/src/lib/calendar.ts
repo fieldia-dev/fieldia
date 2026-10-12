@@ -1,6 +1,7 @@
 import type { Locale, Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { Widget, WidgetContext } from './widgets';
+import { openOnClick } from './quiet';
 
 /**
  * A calendar beside a date, for when the person needs the week numbers
@@ -221,6 +222,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   }
 
   button.addEventListener('click', () => (dialog.hidden ? open() : close()));
+  if (inner.element instanceof HTMLInputElement) openOnClick(inner.element, () => dialog.hidden && open());
   prev.addEventListener('click', () => {
     focused = addMonths(focused, -1);
     draw(false);

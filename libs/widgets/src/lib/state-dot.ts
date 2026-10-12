@@ -9,8 +9,9 @@ import type { WidgetFactory } from './widgets';
  * the page's (`options.tones`, a tone by value), else known by the value —
  * `normal` grey, `blocked` red, `done` green — else by place: the first grey,
  * the second red, the third green. `options.label` shows the state's words
- * beside the dot. A button with its menu, used with the arrow keys; in a form
- * the menu floats over the page, so a table's cell does not clip it.
+ * beside the dot, as the quiet look always does. A button with its menu, the
+ * state picked ticked in it, used with the arrow keys; in a form the menu
+ * floats over the page, so a table's cell does not clip it.
  */
 
 const KNOWN: Record<string, Tone> = { normal: 'muted', grey: 'muted', blocked: 'danger', red: 'danger', done: 'success', green: 'success', waiting: 'warning' };
@@ -28,14 +29,15 @@ export const stateDotWidget: WidgetFactory = ({ form, name, field, node, id, doc
   };
   const dot = () => make('span', { class: 'fd-dot', 'aria-hidden': 'true' });
   const button = make('button', { type: 'button', id, class: 'fd-dot-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': `${id}-menu` }, dot());
-  const words = node.options?.['label'] === true ? make('span', { class: 'fd-dot-label' }) : null;
+  // The state's words beside its dot: always there, shown where the page asks, and in the quiet look, where the value reads as words.
+  const words = make('span', { class: 'fd-dot-label', 'data-quiet-words': node.options?.['label'] === true ? undefined : '' });
   const items = options.map((option, at) => {
     const item = make('div', { role: 'menuitemradio', class: 'fd-dot-item', tabindex: '-1', 'data-tone': toneOf(option.value, at) }, dot(), option.label);
     item.addEventListener('click', () => pick(at));
     return item;
   });
   const menu = make('div', { id: `${id}-menu`, role: 'menu', class: 'fd-dot-menu', 'aria-label': field.label, hidden: '' }, ...items);
-  const element = make('span', { class: 'fd-dot-box' }, button, ...(words ? [words] : []), menu);
+  const element = make('span', { class: 'fd-dot-box' }, button, words, menu);
 
   const current = () => options.findIndex((option) => option.value === form.getState().values[name]);
   let refocus = false;
@@ -88,7 +90,7 @@ export const stateDotWidget: WidgetFactory = ({ form, name, field, node, id, doc
       setAttr(button, 'aria-label', label ? `${field.label}: ${label}` : field.label);
       setAttr(button, 'title', label || null);
       setAttr(button, 'data-tone', at < 0 ? 'muted' : toneOf(state.value, at));
-      if (words) setText(words, label);
+      setText(words, label);
       items.forEach((item, i) => setAttr(item, 'aria-checked', String(i === at)));
       if (button.disabled !== state.readonly) button.disabled = state.readonly;
       if (state.readonly) close(false);
