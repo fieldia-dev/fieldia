@@ -53,12 +53,13 @@ export const QUIET_CSS = /* css */ `
     border-color: var(--fd-border); background-color: var(--fd-inputs-bg, var(--fd-surface));
   }
 }
-/* Clicked or tabbed into: the editor, ringed in the focus colour two pixels wide. */
+/* Clicked or tabbed into: the editor, ringed two pixels wide in the accent, which every theme keeps readable on its
+   ground (a theme's own focus colour may be a pale glow, as Bootstrap's and shadcn's are). */
 .fd-form .fd-field[data-quiet] :is(.fd-input:not(.fd-tags *):not([readonly], :disabled, [contenteditable="false"]):focus, .fd-tags:focus-within, .fd-dot-box:has(> .fd-dot-button:is(:focus-visible, [aria-expanded="true"]))) {
-  border-color: var(--fd-focus); background-color: var(--fd-inputs-bg, var(--fd-surface)); box-shadow: 0 0 0 1px var(--fd-focus);
+  border-color: var(--fd-accent); background-color: var(--fd-inputs-bg, var(--fd-surface)); box-shadow: 0 0 0 1px var(--fd-accent);
 }
 /* A read-only value tabbed to has a ring of its own, and no box: there is nothing to type. */
-.fd-form .fd-field[data-quiet] .fd-input:is([readonly], [contenteditable="false"]):focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 0; }
+.fd-form .fd-field[data-quiet] .fd-input:is([readonly], [contenteditable="false"]):focus-visible { outline: 2px solid var(--fd-accent); outline-offset: 0; }
 
 /* A choice: its chevron when pointed at or entered, its room kept at rest. */
 .fd-form .fd-field[data-quiet] select.fd-input { appearance: none; padding-inline-end: calc(var(--fd-quiet-pad) + 14px); background-image: none; }
@@ -108,7 +109,8 @@ export const QUIET_CSS = /* css */ `
 }
 .fd-form .fd-field[data-quiet] .fd-dot-box:has(> .fd-dot-button:is(:focus-visible, [aria-expanded="true"]))::after { visibility: visible; }
 @media (hover: hover) { .fd-form .fd-field[data-quiet] .fd-dot-box:not(:has(:disabled)):hover::after { visibility: visible; } }
-.fd-form .fd-field[data-quiet] .fd-dot-button { width: auto; height: auto; border-radius: 0; background: none; }
+/* The dot's own button keeps a finger's room, its dot where the other values' words start. */
+.fd-form .fd-field[data-quiet] .fd-dot-button { margin-inline-start: -6px; margin-inline-end: -4px; background: none; }
 .fd-form .fd-field[data-quiet] .fd-dot-button::before { content: ""; position: absolute; inset: 0; }
 .fd-form .fd-field[data-quiet] .fd-dot-button:focus-visible { outline: none; }
 .fd-form .fd-field[data-quiet] .fd-dot-label { display: inline; font-size: inherit; color: var(--fd-text); }
@@ -117,6 +119,8 @@ export const QUIET_CSS = /* css */ `
 .fd-form .fd-field[data-quiet] .fd-richtext-box { position: relative; }
 .fd-form .fd-field[data-quiet] .fd-richtext { min-height: 64px; }
 .fd-form .fd-field[data-quiet] .fd-richtext[contenteditable="false"] { min-height: 0; }
+/* Its paragraphs read their own way, as a value read as words does: English on an Arabic page keeps its full stop at its end. */
+.fd-form .fd-field[data-quiet] .fd-richtext > * { unicode-bidi: plaintext; text-align: match-parent; }
 .fd-form .fd-field[data-quiet] .fd-richtext-box:not(:focus-within) > :is(.fd-richtext-bar, .fd-link-row) { display: none; }
 .fd-form .fd-field[data-quiet] .fd-richtext-box > :is(.fd-richtext-bar, .fd-link-row) {
   position: absolute; inset-inline: 0; z-index: 25; border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);
