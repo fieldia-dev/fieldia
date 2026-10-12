@@ -32,9 +32,9 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * in the tools' chunk) — 0.3 more, to 23.8. A form's map gathering pins that
  * crowd (its bubbles, a place that moves leading the pins round it, the
  * keys kept where they were, a list of pins on one spot), their count's
- * style and their words — with the traffic, 1.3 more, to 39.8.
+ * style and their words — with the traffic, 1.4 more, to 39.9.
  */
-const BUDGET = { fields: 23.8, all: 39.8, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.8, all: 39.9, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
