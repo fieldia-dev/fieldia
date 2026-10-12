@@ -55,6 +55,29 @@ async function selectAllIn(page: Page, input: Locator) {
 const cm = (page: Page, name: string) => field(page, name).locator('.cm-content');
 const monaco = (page: Page, name: string) => field(page, name).locator('.monaco-editor');
 
+test('the Editor switch shows the same fields in either editor, or each where it fits, and says what stays', async ({ page }) => {
+  await openCode(page);
+  const editor = page.getByRole('navigation', { name: 'Editor' });
+  await expect(editor.getByRole('link', { name: 'Both' })).toHaveAttribute('aria-current', 'page');
+  // Every code field in VS Code's editor; the one-line condition stays in CodeMirror, and says why.
+  await editor.getByRole('link', { name: 'VS Code' }).click();
+  await expect(page).toHaveURL(/editor=monaco/);
+  await expect(page.locator('.monaco-editor')).toHaveCount(10);
+  await expect(page.locator('.cm-editor')).toHaveCount(1);
+  await expect(field(page, 'condition').locator('.cm-editor')).toHaveCount(1);
+  await expect(field(page, 'condition')).toContainText('VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.');
+  await expect(page.getByRole('navigation', { name: 'Editor' }).getByRole('link', { name: 'VS Code' })).toHaveAttribute('aria-current', 'page');
+  // The same fields in CodeMirror, the record's values the same.
+  await page.getByRole('navigation', { name: 'Editor' }).getByRole('link', { name: 'CodeMirror' }).click();
+  await expect(page).toHaveURL(/editor=codemirror/);
+  await expect(page.locator('.cm-editor')).toHaveCount(11);
+  await expect(page.locator('.monaco-editor')).toHaveCount(0);
+  expect((await values(page))['handler']).toContain('export async function handle');
+  // The switch is the code demo's own: no other demo has it.
+  await open(page, 'plain', 'page=customer&skin=outlined');
+  await expect(page.getByRole('navigation', { name: 'Editor' })).toHaveCount(0);
+});
+
 test.describe('code in CodeMirror', () => {
   test('typed Python reaches the form, indented as Python is, its keywords coloured as they are typed', async ({ page }) => {
     const { problems } = await openCode(page);

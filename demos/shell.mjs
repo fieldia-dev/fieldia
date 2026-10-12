@@ -49,10 +49,18 @@ function drawHeader() {
   const theme = params.get('theme') ?? '';
   // A theme brings its own skin: the skin's pills show which, and picking one keeps the theme over it.
   const skin = params.get('skin') ?? (theme === 'odoo' || !theme ? 'underline' : 'outlined');
+  // The code demo's fields in either editor, or each where it fits: the same fields, to compare (demos/shared/code-page.ts).
+  const editor = params.get('editor') ?? 'both';
+  const editors =
+    demo?.id === 'code'
+      ? `<div class="dh-editor"><span aria-hidden="true">Editor</span><nav class="dh-pills" aria-label="Editor">${[['both', 'Both'], ['codemirror', 'CodeMirror'], ['monaco', 'VS Code']]
+          .map(([id, name]) => `<a href="${esc(withParam('editor', id))}"${id === editor ? ' aria-current="page"' : ''}>${name}</a>`)
+          .join('')}</nav></div>`
+      : '';
   // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not.
   const skins = demo?.app && demo.app !== 'plain'
     ? ''
-    : `<div class="dh-looks"><nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
+    : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
         .join('')}</nav><label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
         .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)

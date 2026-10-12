@@ -7,7 +7,18 @@ import type { MemoryDataSourceOptions, Page } from '@fieldia/core';
  * `"widget": "monaco"`) for TypeScript, JSON and Markdown. Each language's
  * grammar loads only as a field shows it. One of each is read-only. The
  * fields before and after are plain, for Tab to move through.
+ *
+ * The demo's Editor switch (`?editor=codemirror` or `monaco`) shows every one
+ * of the code fields in the one editor instead, to compare them field by field.
  */
+
+/** Which editor the code fields are shown in: each where it fits, or all in one. */
+export type CodeEditor = 'both' | 'codemirror' | 'monaco';
+export const CODE_EDITORS: readonly { id: CodeEditor; label: string }[] = [
+  { id: 'both', label: 'Both' },
+  { id: 'codemirror', label: 'CodeMirror' },
+  { id: 'monaco', label: 'VS Code' },
+];
 
 const field = (id: string, name: string, widget: 'code' | 'monaco', language?: string, extra: Record<string, unknown> = {}) => ({
   type: 'field' as const,
@@ -76,6 +87,8 @@ export const codePage: Page = {
   },
   translations: {
     ar: {
+      'Code fields, each coloured in its own language, all in one editor.': 'حقول برمجية، كل منها ملوّن بلغته، كلها في محرّر واحد.',
+      'VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.': 'يأخذ محرّر VS Code شيفرة من عدة أسطر: يبقى هذا الشرط ذو السطر الواحد في CodeMirror.',
       'Nightly job': 'المهمة الليلية',
       'Code fields, each coloured in its own language.': 'حقول برمجية، كل منها ملوّن بلغته.',
       'Job name': 'اسم المهمة',
@@ -118,3 +131,55 @@ export const codeData: Pick<MemoryDataSourceOptions, 'records'> = {
     },
   },
 };
+
+/** The code fields in order, each with its language: what both editors are shown with. */
+const CODE_FIELDS: [name: string, language?: string][] = [
+  ['query', 'sql'],
+  ['script', 'python'],
+  ['styles', 'css'],
+  ['runner', 'yaml'],
+  ['condition', 'javascript'],
+  ['access', 'json'],
+  ['generated', 'python'],
+  ['handler', 'typescript'],
+  ['payload', 'json'],
+  ['notes', 'markdown'],
+  ['approved', 'typescript'],
+];
+
+/**
+ * The code page with its fields in the editor asked for: each where it fits
+ * (`both`), or every one in CodeMirror or VS Code's editor. VS Code's editor
+ * takes code of several lines (a text or json field): the one-line condition
+ * stays in CodeMirror, and says so.
+ */
+export function codePageFor(editor: string | null): Page {
+  if (editor !== 'codemirror' && editor !== 'monaco') return codePage;
+  const widgetOf = (name: string) => (editor === 'codemirror' || codePage.fields[name].type === 'char' ? 'code' : 'monaco');
+  const sections = (codePage.layout as { children: { id: string }[] }).children;
+  return {
+    ...codePage,
+    description: 'Code fields, each coloured in its own language, all in one editor.',
+    fields:
+      editor === 'monaco'
+        ? { ...codePage.fields, condition: { ...codePage.fields['condition'], help: 'VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.' } as Page['fields'][string] }
+        : codePage.fields,
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [
+        sections[0],
+        {
+          type: 'section',
+          id: `s-${editor}`,
+          title: editor === 'codemirror' ? 'CodeMirror' : 'VS Code’s editor',
+          columns: 1,
+          children: CODE_FIELDS.map(([name, language]) =>
+            field(name, name, widgetOf(name), language, name === 'condition' ? { placeholder: 'order.total > 100' } : {})
+          ),
+        },
+        sections[sections.length - 1],
+      ],
+    } as Page['layout'],
+  };
+}

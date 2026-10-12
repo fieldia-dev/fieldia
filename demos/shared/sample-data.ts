@@ -32,7 +32,7 @@ import { customPage } from './custom-page';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { businessData, businessPage } from './business';
-import { codeData, codePage } from './code-page';
+import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
@@ -93,7 +93,8 @@ export const pages: Record<string, Page> = {
  * page's own words when it keeps them in that language.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
-  const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+  // The code page in the editor the demo's switch picked.
+  const page = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;

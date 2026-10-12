@@ -125,8 +125,9 @@ export const DEMOS = [
     // VS Code's editor is in the plain demo alone: the code page is shown there.
     app: 'plain',
     query: 'page=code&skin=outlined',
-    blurb: 'Code fields coloured in their own language: SQL, Python, CSS, YAML and JavaScript in CodeMirror; TypeScript, JSON and Markdown in VS Code’s editor. Each language’s grammar loads only when a field shows it.',
+    blurb: 'Code fields coloured in their own language, in either editor Fieldia supports: CodeMirror, light and quick, or VS Code’s own editor. The Editor switch at the top shows every field in one or the other, or each where it fits. Each language’s grammar loads only when a field shows it.',
     howTo: [
+      'Press VS Code at the top: every field is drawn in VS Code’s editor. Press CodeMirror: the same fields in CodeMirror, to compare.',
       'Type in the cleanup script: Python’s keywords take their colour as you type.',
       'Press Tab in any editor: the focus moves on to the next field, as it does from any box.',
       'Break the sample payload’s JSON: it says so, and keeps the last good value.',
