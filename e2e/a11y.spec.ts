@@ -8,7 +8,7 @@ import { node, screen } from './support';
 
 /**
  * The accessibility sweep: axe, against WCAG 2.2 A and AA, on every demo of
- * the gallery in both skins, in the dark scheme and right to left in Arabic;
+ * the gallery in each skin, in the dark scheme and right to left in Arabic;
  * on the states a person reaches — errors after a failed send, a dialog
  * open, a list's search open — and on the designers: every view, dialog and
  * sheet, a part picked with each tab of the panel, and the empty state, in
@@ -31,7 +31,7 @@ function addresses(): string[] {
       continue;
     }
     const own = new URLSearchParams(demo.query);
-    for (const skin of ['outlined', 'underline']) {
+    for (const skin of ['outlined', 'underline', 'quiet']) {
       const query = new URLSearchParams(own);
       query.set('skin', skin);
       urls.add(`/plain/?${query}`);
@@ -62,7 +62,7 @@ test.describe('axe on every demo of the gallery', () => {
 });
 
 test.describe('axe on what a person reaches', () => {
-  for (const look of ['skin=outlined', 'skin=underline', 'skin=outlined&scheme=dark', 'skin=outlined&locale=ar&dir=rtl']) {
+  for (const look of ['skin=outlined', 'skin=underline', 'skin=quiet', 'skin=outlined&scheme=dark', 'skin=quiet&scheme=dark', 'skin=outlined&locale=ar&dir=rtl']) {
     test(`errors after a failed send · ${look}`, async ({ page }) => {
       await visit(page, `/plain/?page=signup&${look}`);
       await page.locator('.fd-form button[type="submit"]:visible').last().click();

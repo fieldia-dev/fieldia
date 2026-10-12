@@ -70,7 +70,7 @@ function drawHeader() {
   // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not.
   const skins = demo?.app && demo.app !== 'plain'
     ? ''
-    : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
+    : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined', 'quiet']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
         .join('')}</nav><nav class="dh-pills dh-schemes" aria-label="Scheme">${[['', 'System'], ['light', 'Light'], ['dark', 'Dark']]
         .map(([id, name]) => `<a href="${esc(withParam('scheme', id))}"${id === (params.get('scheme') ?? '') ? ' aria-current="page"' : ''}>${name}</a>`)

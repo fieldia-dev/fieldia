@@ -28,6 +28,7 @@ import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
 import reading from '../../examples/pages/reading.page.json';
+import workItem from '../../examples/pages/work-item.page.json';
 import { customPage } from './custom-page';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
@@ -78,6 +79,8 @@ export const pages: Record<string, Page> = {
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
   reading: reading as Page,
+  // A bug as a work item, its header in the quiet look: values plain words until pointed at or clicked.
+  'work-item': workItem as Page,
   // What sits around a record: the gear menu, the pager and breadcrumbs, the PDF beside it (shared/vendor-bill.ts).
   'vendor-bill': vendorBill,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
@@ -289,6 +292,25 @@ export function sampleDataSource() {
       'delivery.round': { 1: sampleRound() },
       'shop.order': sampleWeekOrders(),
       'shop.kitchen': { 1: sampleKitchen() },
+      'work.item': {
+        1: {
+          title: 'Stock count wrong after a partial release',
+          state: 'resolved',
+          reason: 'fixed',
+          area: 'portal-checkout',
+          iteration: 's14',
+          assigned_to: { id: 5, label: 'Mona Adel' },
+          priority: '2',
+          severity: '3',
+          story_points: 3,
+          activity: 'development',
+          due_date: '2026-10-20',
+          found_in: 'Build 2026.10.4',
+          repro_steps: '<p>Release half of order 26-0847 from the warehouse.</p><p>Open the product: the stock count still shows the whole order as reserved.</p>',
+          system_info: null,
+          acceptance: null,
+        },
+      },
       partner: {
         1: {
           name: 'Nile Traders',
