@@ -47,7 +47,8 @@ for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${loca
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
 // The template library's pages, each beside its gallery: /templates/<id>.page.json.
 for (const file of readdirSync(join(WORKSPACE, 'examples/templates')).filter((f) => f.endsWith('.json'))) cpSync(join(WORKSPACE, 'examples/templates', file), join(OUT, 'templates', file));
-for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'templates.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
+// The demos' shell, every file of it as tools/build-demos.mjs made it: one added there is never missing here.
+for (const file of readdirSync(DEMOS, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name)) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
 cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });
 // The catalog imports the real pages' cards from here: without it the shell cannot load.
 cpSync(join(DEMOS, 'real'), join(OUT, 'demos/real'), { recursive: true });

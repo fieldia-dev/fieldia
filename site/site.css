@@ -91,6 +91,14 @@ main#main { display: block; }
 .prose p, .prose li { color: #353c45; }
 .prose ul { padding-inline-start: 22px; }
 .prose li { margin-bottom: 6px; }
+/* Code's colours, each at least 4.5:1 on --code-bg (demos/highlight.mjs; the demos' Code drawer shares them). */
+.code .tok-keyword { color: #cf222e; }
+.code .tok-string { color: #0a3069; }
+.code .tok-number, .code .tok-literal { color: #0550ae; }
+.code .tok-key { color: #953800; }
+.code .tok-comment { color: #59636e; font-style: italic; }
+.code .tok-tag { color: #116329; }
+.code .tok-attr { color: #6639ba; }
 .code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font: 13.5px/1.55 var(--mono); margin: 14px 0 18px; }
 .code code { background: none; padding: 0; font-size: inherit; }
 table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 15px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }

@@ -77,11 +77,23 @@ test.describe('the demo frame', () => {
     await page.getByRole('button', { name: '‹/› Code' }).click();
     const code = page.locator('#demo-code');
     await expect(code.locator('code')).toContainText('"id": "customers"');
+    // Coloured as it reads: a key apart from its value, in colours of their own.
+    const colour = (selector: string) => code.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
+    await expect(code.locator('.tok-key').first()).toHaveText('"fieldia"');
+    await expect(code.locator('.tok-string').first()).toHaveText('"0.1"');
+    expect(await colour('.tok-key')).not.toBe(await colour('.tok-string'));
+    expect(await colour('.tok-string')).not.toBe(await code.locator('code').evaluate((el) => getComputedStyle(el).color));
     await code.getByRole('tab', { name: 'React' }).click();
     await expect(code.locator('code')).toContainText('<FieldiaForm page={page} dataSource={dataSource} skin="underline" />');
+    await expect(code.locator('.tok-keyword').first()).toHaveText('import');
+    await expect(code.locator('.tok-tag').first()).toHaveText('<FieldiaForm');
+    await expect(code.locator('.tok-attr')).toHaveText(['page', 'dataSource', 'skin']);
     await code.getByRole('button', { name: 'Copy' }).click();
     await expect(code.getByRole('button', { name: 'Copied' })).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('@fieldia/react');
+    // What is copied is the code, never its colours' markup.
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toContain('@fieldia/react');
+    expect(copied).not.toContain('tok-');
     await screen(page, 'demo-frame-code', { viewport: true });
     expect(problems).toEqual([]);
   });

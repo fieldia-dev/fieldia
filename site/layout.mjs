@@ -1,3 +1,4 @@
+import { highlight } from '../demos/highlight.mjs';
 /** The shell every page of fieldia.dev shares: head, top bar, the docs menu, footer. */
 
 export const DOCS = [
@@ -16,10 +17,15 @@ export const DOCS = [
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** A code block. `text` is written as is and escaped here, so samples read naturally in the source. In the Tab order, so a long line scrolls by keyboard. */
+/**
+ * A code block. `text` is written as is, and escaped and coloured here
+ * (demos/highlight.mjs, as the demos' Code drawer colours its code), so
+ * samples read naturally in the source. In the Tab order, so a long line
+ * scrolls by keyboard.
+ */
 export function code(lang, text) {
   const body = text.replace(/^\n/, '').replace(/\n\s*$/, '');
-  return `<pre class="code" data-lang="${lang}" tabindex="0"><code>${escape(body)}</code></pre>`;
+  return `<pre class="code" data-lang="${lang}" tabindex="0"><code>${highlight(lang, body)}</code></pre>`;
 }
 
 /** Inline code. */

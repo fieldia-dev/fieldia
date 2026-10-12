@@ -93,4 +93,12 @@ body.dc-open { padding-block-end: 46vh; }
 .dc-note { color: var(--dh-muted); font-size: 12.5px; flex: 1; min-width: 0; }
 .dc-copy { border: 1px solid #b8d3f2; background: var(--dh-wash); color: var(--dh-link); border-radius: 6px; padding: 4px 12px; font: inherit; font-weight: 600; cursor: pointer; }
 .dc-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; }
+/* Code's colours, each at least 4.5:1 on the code's ground (demos/highlight.mjs; the docs share them). */
+.dc-code .tok-keyword { color: #cf222e; }
+.dc-code .tok-string { color: #0a3069; }
+.dc-code .tok-number, .dc-code .tok-literal { color: #0550ae; }
+.dc-code .tok-key { color: #953800; }
+.dc-code .tok-comment { color: #59636e; font-style: italic; }
+.dc-code .tok-tag { color: #116329; }
+.dc-code .tok-attr { color: #6639ba; }
 .dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: #fbfcfd; font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #24292f; white-space: pre; }

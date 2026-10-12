@@ -8,6 +8,7 @@
  * show it inside their own.
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
+import { highlight } from './highlight.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -225,7 +226,8 @@ function drawCode() {
   const show = (tab) => {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? null;
-    code.textContent = snippets(page)[tab];
+    // Coloured as its language reads: the page's JSON, the frameworks' own code.
+    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], snippets(page)[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

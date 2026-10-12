@@ -61,6 +61,19 @@ test('the live form on the front page checks, sends, changes skin and language',
   expect(problems).toEqual([]);
 });
 
+test('the docs’ code is coloured as it reads, and the words are the sample’s own', async ({ page }) => {
+  await page.goto(SITE + '/maps/');
+  const block = page.locator('pre.code[data-lang="json"]').first();
+  await expect(block.locator('.tok-key').first()).toHaveText('"type"');
+  await expect(block.locator('.tok-string').first()).toHaveText('"map"');
+  const ts = page.locator('pre.code[data-lang="ts"]').first();
+  await expect(ts.locator('.tok-keyword').first()).toHaveText('import');
+  // The text is the sample's, letter for letter: the colours add nothing to it.
+  expect(await ts.textContent()).toContain("import { azureMaps, mapListViews, mapParts, mapWidgets } from '@fieldia/map';");
+  const colour = (selector: string) => block.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
+  expect(await colour('.tok-key')).not.toBe(await colour('.tok-string'));
+});
+
 test('a link to a heading shows the heading below the bar, not under it', async ({ page }) => {
   for (const anchor of ['/fields/#dialogs', '/fields/#grid', '/data/#requests']) {
     await page.goto(SITE + anchor);
