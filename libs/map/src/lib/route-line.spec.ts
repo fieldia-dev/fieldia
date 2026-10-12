@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { metresBetween } from './geo';
-import { nearestOnLine, pointAlong, routeLine, splitLine } from './route-line';
+import { leftRoute, nearestOnLine, pointAlong, routeLine, splitLine } from './route-line';
+import { decodePolyline } from './routes';
 
 /** An L along Cairo's streets: east about 960 m, then north about 1.1 km. */
 const L_SHAPE = [
@@ -48,5 +51,28 @@ describe('a route’s line as a traveller moves along it', () => {
     expect(metresBetween(pointAlong(route, 963 + 556), { lat: 30.045, lng: 31.24 })).toBeLessThan(5);
     expect(pointAlong(route, -10)).toEqual(L_SHAPE[0]);
     expect(pointAlong(route, 1e6)).toEqual(L_SHAPE[2]);
+  });
+});
+
+describe('a traveller off their route', () => {
+  /** Google's route by car from Cairo airport to Tahrir, as it answered on 12 Oct 2026: it starts on the road, 81 m from the point asked from. */
+  const answer = JSON.parse(readFileSync(join(__dirname, 'fixtures/google-routes-live.json'), 'utf8'))['car-airport-tahrir'];
+  const asked = { lat: answer.request.origin.location.latLng.latitude, lng: answer.request.origin.location.latLng.longitude };
+  const route = routeLine(decodePolyline(answer.body.routes[0].polyline.encodedPolyline));
+
+  it('has not left a route asked from beside the road, standing there, or wandering a little', () => {
+    expect(nearestOnLine(route, asked).off).toBeCloseTo(81, -1);
+    expect(leftRoute(route, asked, asked)).toBe(false);
+    // 30 m off, as a phone's fix wanders.
+    expect(leftRoute(route, { lat: asked.lat + 0.00027, lng: asked.lng }, asked)).toBe(false);
+  });
+
+  it('has left it, away from its line and from where it was asked', () => {
+    // 300 m east, further from the road.
+    expect(leftRoute(route, { lat: asked.lat, lng: asked.lng + 0.003 }, asked)).toBe(true);
+    // On the road, a kilometre on: still on it.
+    expect(leftRoute(route, route.line[Math.floor(route.line.length / 10)], asked)).toBe(false);
+    // With no point asked from, by its line alone.
+    expect(leftRoute(route, asked, undefined)).toBe(true);
   });
 });

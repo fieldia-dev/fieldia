@@ -3,14 +3,14 @@ import { compileModifier, expressionContext, type FormState, type Line, type Map
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
-import { readPoint, type LatLng } from './geo';
+import { metresBetween, readPoint, type LatLng } from './geo';
 import { fill, formMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox, warnOnce } from './map-core';
 import { anchor, bubbleFace, byKeys, CROWD, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE, zoomToPart } from './marks';
 import { comma, makePins, shown, type MapRecord, type Pins } from './pins';
 import type { RouteFound } from './providers';
-import { nearestOnLine, pointAlong, routeLine, splitLine, type RouteLine } from './route-line';
+import { leftRoute, nearestOnLine, OFF_ROUTE_M, pointAlong, routeLine, splitLine, type RouteLine } from './route-line';
 import type { MapSettings } from './settings';
 import { installFormMapStyles } from './styles';
 
@@ -36,8 +36,6 @@ export function mapParts(settings: MapSettings): MapPartFactory {
 
 /** How long a pin takes to glide to its new place, in milliseconds. */
 const GLIDE_MS = 900;
-/** A traveller this far from their route, in metres, has left it: a new one is asked for. */
-const OFF_ROUTE_M = 60;
 /** A route is asked for again at most this often, in milliseconds, however its traveller wanders. */
 const ROUTE_EVERY_MS = 10_000;
 /** Room kept round the places when the map fits them, in pixels. */
@@ -77,6 +75,8 @@ interface RouteState {
   /** The far ends it was asked for: a route stays while they stay. */
   ends: string;
   askedAt: number;
+  /** Where its traveller was when it was asked: one still there has not left it, though the route starts on the road beside them. */
+  from?: LatLng;
   found?: RouteFound & { path: RouteLine };
   done?: Leaflet.Polyline;
   left?: Leaflet.Polyline;
@@ -482,8 +482,9 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
         continue;
       }
       const ends = JSON.stringify([...via, ...(to ? [to] : [])].map((p) => [p.lat.toFixed(5), p.lng.toFixed(5)]));
-      const away = state.found ? nearestOnLine(state.found.path, from).off : Infinity;
-      const fresh = ends !== state.ends || (away > OFF_ROUTE_M && Date.now() - state.askedAt > ROUTE_EVERY_MS);
+      // Off it (or none found yet): asked again, at most every ten seconds.
+      const left = !state.found || leftRoute(state.found.path, from, state.from);
+      const fresh = ends !== state.ends || (left && Date.now() - state.askedAt > ROUTE_EVERY_MS);
       if (fresh) ask(state, [from, ...via, ...(to ? [to] : [])], ends);
       if (state.found) drawRoute(map, L, state, from);
     }
@@ -493,7 +494,10 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const finder = settings.route ?? settings.provider.route;
     state.ends = ends;
     state.askedAt = Date.now();
-    if (!finder) {
+    state.from = points[0];
+    // Its ends on one spot (a courier at the door): no way to go, asked of no one; a provider may say there is no route.
+    const there = points.every((p) => metresBetween(p, points[0]) < 1);
+    if (!finder && !there) {
       warnOnce(`This map has a route, and its provider "${settings.provider.id}" finds none: give mapParts a provider with routes, or the app's own route.`);
       return say(labels.routeFailed);
     }
@@ -501,7 +505,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const abort = new AbortController();
     state.abort = abort;
     const asked = ++state.asking;
-    finder({ points, mode: state.layer.route?.mode ?? 'car', locale, signal: abort.signal })
+    (there ? Promise.resolve({ line: [points[0], points[0]], metres: 0, seconds: 0 }) : finder!({ points, mode: state.layer.route?.mode ?? 'car', locale, signal: abort.signal }))
       .then((found) => {
         if (asked !== state.asking || destroyed) return;
         state.found = { ...found, path: routeLine(found.line) };

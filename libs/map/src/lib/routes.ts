@@ -101,9 +101,12 @@ export async function googleRoute(ask: { fetchWith: Fetch; key: string }, { poin
     }),
   });
   const route = (pathOf(answer, 'routes') as unknown[] | undefined)?.[0];
+  // Its bicycle routes do not cover every country: in Egypt and Dubai it answers with nothing.
+  if (!route && mode === 'bike') throw new Error("Google has no bicycle routes here: its bicycle routing does not cover every country (none in Egypt or Dubai)");
   const encoded = pathOf(route, 'polyline', 'encodedPolyline');
-  // Its duration is words: "489s".
-  return routed({ line: typeof encoded === 'string' ? decodePolyline(encoded) : [], metres: Number(pathOf(route, 'distanceMeters')), seconds: parseFloat(String(pathOf(route, 'duration'))) }, "Google's Routes API");
+  const line = typeof encoded === 'string' ? decodePolyline(encoded) : [];
+  // Its duration is words ("489s"); its zeros are left out, as a spot's way to itself has: no metres, one point.
+  return routed({ line: line.length === 1 ? [line[0], line[0]] : line, metres: Number(pathOf(route, 'distanceMeters') ?? 0), seconds: parseFloat(String(pathOf(route, 'duration'))) }, "Google's Routes API");
 }
 
 /** Mapbox Directions: by its profile, traffic for a car. */
