@@ -116,7 +116,7 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   const box = make('div', {
     // Its own tokens and skin: the dialog sits outside the page that opened it.
     class: `fd-theme fd-form-dialog ${shape}`,
-    'data-fd-skin': skinFor(options.skin, theme),
+    'data-fd-skin': skinFor(options.skin ?? look?.skin, theme),
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': title.id,
@@ -335,7 +335,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   const cancel = make('button', { type: 'button', class: 'fd-button' }, labels.cancel);
   const box = make('div', {
     class: `fd-theme fd-form-dialog fd-search-dialog fd-size-small`,
-    'data-fd-skin': skinFor(options.skin, options.theme ?? options.look?.theme),
+    'data-fd-skin': skinFor(options.skin ?? options.look?.skin, options.theme ?? options.look?.theme),
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': title.id,

@@ -1,4 +1,4 @@
-import type { PageLook, PartLook, Theme } from '@fieldia/core';
+import type { PageLook, PartLook, Skin, Theme } from '@fieldia/core';
 
 /**
  * The page's look, worn by the form: what the page says about its accent,
@@ -133,8 +133,8 @@ export const THEME_SKINS: Record<Theme, 'underline' | 'outlined'> = {
   material: 'outlined', fluent: 'outlined', apple: 'outlined', bootstrap: 'outlined', shadcn: 'outlined', ant: 'outlined', odoo: 'underline', 'google-forms': 'outlined',
 };
 
-/** The skin a form wears: the one given, else its theme's, else the underline skin. */
-export function skinFor(skin: 'underline' | 'outlined' | undefined, theme: Theme | undefined): 'underline' | 'outlined' {
+/** The skin a form wears: the one given (the app's, else the page's own), else its theme's, else the underline skin. */
+export function skinFor(skin: Skin | undefined, theme: Theme | undefined): Skin {
   return skin ?? (theme ? THEME_SKINS[theme] : 'underline');
 }
 

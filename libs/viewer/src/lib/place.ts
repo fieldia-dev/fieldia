@@ -14,6 +14,10 @@ export interface Place {
   labels?: LabelPlace;
   /** On a line of parts: words are drawn as words in the line, not a paragraph of their own. */
   inline?: boolean;
+  /** Its fields in the quiet look, or boxed, as a group round it says; undefined leaves them to the skin. */
+  quiet?: boolean;
+  /** Why its fields are read-only, as a group round it says. */
+  reason?: string;
 }
 
 export type SectionStyle = NonNullable<SectionNode['style']>;
@@ -48,6 +52,8 @@ export function planSection(node: SectionNode, place: Place): SectionPlan {
       // A line under a title and a plain group draw no box: what is inside them still sits on the page.
       onPage: place.onPage && (style === 'plain' || style === 'line'),
       labels: node.labels ?? place.labels,
+      quiet: node.quiet ?? place.quiet,
+      reason: node.readonlyReason ?? place.reason,
     },
   };
 }

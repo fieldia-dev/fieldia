@@ -35,6 +35,14 @@ export interface ViewerLabels {
   dismiss: string;
   /** The (?) beside a label that shows its help: its name, as a screen reader says it. */
   helpFor: string;
+  /**
+   * The quiet look: the words in an empty field that say what to add
+   * (`{label}`, the field's label), or in an empty question's, and the name of
+   * the lock by a field a rule keeps read-only.
+   */
+  quietHint: string;
+  quietAnswer: string;
+  locked: string;
   /** Saving again after a save failed. */
   retry: string;
   notSaved: string;
@@ -158,6 +166,9 @@ const en: ViewerLabels = {
   discardChanges: 'Discard your changes?',
   dismiss: 'Dismiss',
   helpFor: 'Help for {label}',
+  quietHint: 'Add {label}',
+  quietAnswer: 'Your answer',
+  locked: 'Locked: {label}',
   retry: 'Retry',
   notSaved: 'Not saved',
   notSent: 'Not sent',
