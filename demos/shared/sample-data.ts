@@ -273,6 +273,22 @@ export const APP_LISTS_AR = [
 ];
 const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 
+/**
+ * Each home's own address, as a site keeps one for each of its listings:
+ * its page in the demo's look and language, so a card's link opens it here,
+ * in a new tab, or is copied, as a link is.
+ */
+function linkedHomes(homes: Record<number, Values>): Record<number, Values> {
+  const here = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
+  for (const [id, home] of Object.entries(homes)) {
+    const to = new URLSearchParams(here);
+    to.set('page', 'map-home');
+    to.set('record', id);
+    home['link'] = `?${to}`;
+  }
+  return homes;
+}
+
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
   return createMemoryDataSource(withReal({
@@ -283,7 +299,7 @@ export function sampleDataSource() {
     records: {
       ...READING,
       'account.move': BILLS,
-      home: sampleHomes(),
+      home: linkedHomes(sampleHomes()),
       courier: sampleCouriers(),
       'food.order': { 1: sampleOrder() },
       'delivery.round': { 1: sampleRound() },

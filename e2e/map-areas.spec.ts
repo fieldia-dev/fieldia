@@ -233,6 +233,13 @@ test.describe('orders by district', () => {
     const map = (await theMap(page).boundingBox())!;
     const zoom = (await tool(page, 'تكبير').boundingBox().catch(() => null)) ?? (await theMap(page).locator('.fd-map-zoom').boundingBox())!;
     expect(zoom.x).toBeLessThan(map.x + map.width / 2);
+    // A district's words over the map: in the page's direction, its name in its own, only ever as text.
+    const spot = await spotOf(page, region(page, 'Zamalek'));
+    await page.mouse.move(spot.x, spot.y);
+    const tip = page.locator('.leaflet-tooltip.fd-map-tip > span');
+    await expect(tip).toHaveAttribute('dir', 'rtl');
+    await expect(tip.locator('bdi')).toHaveText('Zamalek');
+    await expect(tip).toHaveText(/^Zamalek: \d+$/);
   });
 
   test('axe finds nothing with a district lit and the way measured', async ({ page }) => {
