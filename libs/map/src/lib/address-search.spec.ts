@@ -77,6 +77,8 @@ describe('an address with suggestions', () => {
     expect(asked[0]).toMatchObject({ text: 'tahr', near: { lat: 30.04, lng: 31.23 }, locale: 'en' });
     expect(asked[0].parts).toBeUndefined();
     expect(asked[0].countries).toBeUndefined();
+    // Addresses before shops and malls, where the provider says which are which.
+    expect(asked[0].addresses).toBe(true);
     expect(options()).toEqual(['Tahrir Street 12Downtown, Cairo, Egypt', '26 July StreetZamalek, Cairo, Egypt']);
     expect([box.getAttribute('aria-expanded'), box.getAttribute('aria-controls')]).toEqual(['true', list().id]);
     expect(document.querySelector('[role="status"]')?.textContent).toBe('Suggestions: 2');
@@ -170,10 +172,29 @@ describe('an address with suggestions', () => {
   });
 
   it('keeps to the countries the page names, near the point it names', async () => {
-    const { box, asked } = await mount({ countries: ['eg', 'SA'], near: { lat: 21.42, lng: 39.82 } });
+    const { box, asked } = await mount({ countries: ['eg', 'SA', 'uk'], near: { lat: 21.42, lng: 39.82 } });
     type(box, 'tahr');
     await pause();
-    expect(asked[0]).toMatchObject({ countries: ['EG', 'SA'], near: { lat: 21.42, lng: 39.82 } });
+    // "UK" as every provider's parts name it.
+    expect(asked[0]).toMatchObject({ countries: ['EG', 'SA', 'GB'], near: { lat: 21.42, lng: 39.82 } });
+  });
+
+  it('shows each suggestion in its own words’ direction: a Latin street on an Arabic page keeps its number before it', async () => {
+    const { box } = await mount({}, {}, [{ label: '1 Mohammed Mahmoud', detail: 'ميدان التحرير، قسم قصر النيل', lat: 30.0436, lng: 31.2371 }], 'ar');
+    type(box, '1 moh');
+    await pause();
+    expect([...document.querySelectorAll('.fd-map-result-name, .fd-map-result-detail')].map((span) => span.getAttribute('dir'))).toEqual(['auto', 'auto']);
+  });
+
+  it('says a suggestion is picked though nothing is looked up for it: a provider’s session ends there', async () => {
+    const picked = jest.fn();
+    const locate = jest.fn(async () => ({ lat: 1, lng: 2 }));
+    const { box } = await mount({}, {}, [{ label: 'Tahrir Square', detail: 'Cairo, Egypt', locate, picked }]);
+    type(box, 'tah');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    expect([picked.mock.calls.length, locate.mock.calls.length]).toEqual([1, 0]);
   });
 
   it('searches nothing read-only: the words are only shown', async () => {

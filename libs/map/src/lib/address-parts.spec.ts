@@ -80,22 +80,24 @@ describe('an address in its parts', () => {
     ]);
   });
 
-  it('reads Azure’s suggestions, its own street line first, in English and in Arabic without direction marks', async () => {
+  it('reads Azure’s suggestions, its own street line first, its city where it keeps one in Egypt, in English and in Arabic without direction marks', async () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete });
     const [first] = await azureMaps({ key: 'K', fetch }).search!({ text: '26 july st', locale: 'en', parts: true });
-    expect(first.parts).toEqual({ street: '26 26 July Street', city: 'El Sheikh Ali', region: 'Cairo', country: 'EG' });
+    // Not the house number Azure makes of the street's own "26"; not the district it calls a locality.
+    expect(first.parts).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo', country: 'EG' });
     const arabic = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocompleteArabic });
     const found = await azureMaps({ key: 'K', fetch: arabic.fetch }).search!({ text: 'ميدان التح', locale: 'ar', parts: true });
     // A place, then a street: a place has no street line of its own.
     expect(found[0].parts).toEqual({ city: 'القاهرة', region: 'القاهرة', country: 'EG' });
-    expect(found[1].parts).toEqual({ street: 'ميدان التحرير', city: 'الإسماعيلية', region: 'القاهرة', country: 'EG' });
+    expect(found[1].parts).toEqual({ street: 'ميدان التحرير', city: 'القاهرة', region: 'القاهرة', country: 'EG' });
   });
 
-  it('keeps Azure’s suggestions to the countries asked for, by reading its answer', async () => {
+  it('asks Azure for the country asked for, and keeps its answer to it', async () => {
     const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocompleteArabic });
     const found = await azureMaps({ key: 'K', fetch }).search!({ text: 'ميدان التح', locale: 'ar', countries: ['YE'] });
-    expect(found.every((place) => place.parts?.country === 'YE')).toBe(true);
-    expect(asked[0].url).not.toContain('YE');
+    expect(asked[0].url).toContain('&countryRegion=YE&');
+    // An answer from elsewhere (this one is Cairo's) is never suggested.
+    expect(found).toEqual([]);
   });
 
   it('asks Google for its regions, and for the parts with the place picked, at the same price', async () => {
@@ -118,7 +120,8 @@ describe('an address in its parts', () => {
     expect(JSON.parse(String(asked[0].init?.body)).includedRegionCodes).toEqual(['eg']);
     // Its suggestions carry no parts: the place picked does.
     expect(found.parts).toBeUndefined();
-    expect(await found.locate!()).toEqual({ lat: 30.0436, lng: 31.2371, address: details.formattedAddress, parts: { street: 'Mohamed Mahmoud 1', city: 'Cairo', region: 'Cairo Governorate', postcode: '4272077', country: 'EG' } });
+    // Its number before the street, where Google's own line has it.
+    expect(await found.locate!()).toEqual({ lat: 30.0436, lng: 31.2371, address: details.formattedAddress, parts: { street: '1 Mohamed Mahmoud', city: 'Cairo', region: 'Cairo Governorate', postcode: '4272077', country: 'EG' } });
     expect((asked[1].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress,addressComponents');
   });
 

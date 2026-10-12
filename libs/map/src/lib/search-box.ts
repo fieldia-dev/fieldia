@@ -85,6 +85,7 @@ export function searchBox(options: SearchBoxOptions) {
     input.value = place.label;
     close();
     options.say(null);
+    place.picked?.();
     options.pick(place);
   }
 
@@ -96,14 +97,16 @@ export function searchBox(options: SearchBoxOptions) {
         option.id = `${listId}-${i}`;
         option.setAttribute('role', 'option');
         option.setAttribute('aria-selected', 'false');
-        // The place on one line, where it is on the next, as a map's own search shows them.
+        // The place on one line, where it is on the next, as a map's own search shows them; each in its own words' direction ("1 Mohammed Mahmoud" on an Arabic page).
         const name = doc.createElement('span');
         name.className = 'fd-map-result-name';
+        name.dir = 'auto';
         name.textContent = place.label;
         option.append(name);
         if (place.detail) {
           const detail = doc.createElement('span');
           detail.className = 'fd-map-result-detail';
+          detail.dir = 'auto';
           detail.textContent = place.detail;
           option.append(detail);
         }

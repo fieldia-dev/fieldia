@@ -131,13 +131,15 @@ describe('Azure Maps', () => {
     const azure = azureMaps({ key: 'K', fetch });
     expect(azure.searchAsYouType).toBe(true);
     const [first] = await azure.search!({ text: '26 july st', near: { lat: 30.05, lng: 31.24 }, locale: 'en' });
-    expect(first).toMatchObject({ label: '26 26 July Street', detail: 'El Sheikh Ali, Cairo, Egypt' });
+    expect(first).toMatchObject({ label: '26 July Street', detail: 'El Sheikh Ali, Cairo, Egypt' });
     // Its suggestions carry no place: looked up when one is picked.
     expect(first.lat).toBeUndefined();
     expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode:autocomplete?api-version=2026-01-01&top=5&query=26%20july%20st&coordinates=31.24%2C30.05&subscription-key=K');
     expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('en-US');
-    expect(await first.locate!()).toEqual({ lat: 30.0565786550162, lng: 31.2300206845206, address: '26 26 July Street, El Sheikh Ali, Cairo, Egypt' });
-    expect(asked[1].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=1&query=26%2026%20July%20Street%2C%20El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&coordinates=31.24%2C30.05&subscription-key=K');
+    // Its hits are in other districts (Qesm Bolak, Qesm El Zamalek): one of them, said to be only near.
+    expect(await first.locate!()).toEqual({ lat: 30.0565786550162, lng: 31.2300206845206, address: '26 July Street, El Sheikh Ali, Cairo, Egypt', precise: false });
+    expect(asked[1].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&query=26%20July%20Street%2C%20El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&coordinates=31.24%2C30.05&subscription-key=K');
+    expect(asked[2].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=1&query=El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&coordinates=31.24%2C30.05&subscription-key=K');
   });
 
   it('suggests what a half-typed Arabic name may be, in Arabic, without direction marks', async () => {
@@ -349,6 +351,34 @@ describe('routes along the roads', () => {
       intermediates: [{ location: { latLng: { latitude: 30.05, longitude: 31.23 } } }],
       travelMode: 'BICYCLE',
     });
+  });
+
+  /** Google's own answers on 12 Oct 2026, each to the request Fieldia sends (the key taken out). */
+  const GOOGLE_ROUTES = JSON.parse(readFileSync(join(__dirname, 'fixtures/google-routes-live.json'), 'utf8')) as Record<string, { request: unknown; body: unknown }>;
+  const googleAnswering = (name: string) => network({ 'https://routes.googleapis.com/directions/v2:computeRoutes': GOOGLE_ROUTES[name].body });
+  const pointsOf = (name: string) => {
+    const sent = GOOGLE_ROUTES[name].request as { origin: { location: { latLng: { latitude: number; longitude: number } } }; destination: { location: { latLng: { latitude: number; longitude: number } } } };
+    return [sent.origin, sent.destination].map(({ location: { latLng } }) => ({ lat: latLng.latitude, lng: latLng.longitude }));
+  };
+
+  it('says plainly where Google has no bicycle routes: it answers Cairo’s with nothing', async () => {
+    const cairo = googleAnswering('bike-tahrir-zamalek');
+    await expect(googleMaps({ key: 'g', fetch: cairo.fetch }).route!({ points: pointsOf('bike-tahrir-zamalek'), mode: 'bike', locale: 'en' })).rejects.toThrow(/Google has no bicycle routes here/);
+    expect(JSON.parse(String(cairo.asked[0].init?.body))).toEqual(GOOGLE_ROUTES['bike-tahrir-zamalek'].request);
+    // Berlin's, it has.
+    const berlin = googleAnswering('bike-berlin-control');
+    expect((await googleMaps({ key: 'g', fetch: berlin.fetch }).route!({ points: pointsOf('bike-berlin-control'), mode: 'bike', locale: 'en' })).metres).toBe(2754);
+  });
+
+  it('takes a route from a spot to itself as no way to go: Google leaves out its zero metres, and draws one point', async () => {
+    for (const [name, mode, seconds] of [['car-same-point', 'car', 3], ['walk-same-point', 'foot', 0]] as const) {
+      const { fetch, asked } = googleAnswering(name);
+      const route = await googleMaps({ key: 'g', fetch }).route!({ points: pointsOf(name), mode, locale: 'en' });
+      expect(JSON.parse(String(asked[0].init?.body))).toEqual(GOOGLE_ROUTES[name].request);
+      // Its one point the road's nearest to Tahrir.
+      const road = { lat: 30.04429, lng: 31.23527 };
+      expect(route).toEqual({ metres: 0, seconds, line: [road, road] });
+    }
   });
 
   it('asks Mapbox by its profile, traffic for a car', async () => {

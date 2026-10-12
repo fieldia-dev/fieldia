@@ -18,9 +18,14 @@ import { installMapStyles } from './styles';
  * suggestion picked writes.
  */
 
-/** The list as the place search draws it, in a box of its own with the credit under it; hidden with the list. */
+/**
+ * The list as the place search draws it, in a box of its own with the credit under it; hidden with the list. The address
+ * in its own words' direction: one that starts in Latin on an Arabic page ("1 Mohammed Mahmoud، ميدان التحرير") keeps its
+ * number first, and an empty box stays the page's way round.
+ */
 const ADDRESS_CSS = `
 .fd-address-search { position: relative; min-width: 0; }
+.fd-address-search input { unicode-bidi: plaintext; }
 .fd-address-popup {
   position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 1100; overflow: hidden;
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
@@ -56,7 +61,8 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   const named = (key: string) => (typeof options[key] === 'string' ? (options[key] as string) : null);
   const [placeField, longitudeField, partsField] = [named('placeField'), named('longitudeField'), named('partsField')];
   const listed = options['countries'];
-  const countries = (Array.isArray(listed) ? listed.map(String) : typeof listed === 'string' ? listed.split(',') : []).map((code) => code.trim().toUpperCase()).filter(Boolean);
+  // "UK" as every provider's parts name it, "GB".
+  const countries = (Array.isArray(listed) ? listed.map(String) : typeof listed === 'string' ? listed.split(',') : []).map((code) => code.trim().toUpperCase().replace(/^UK$/, 'GB')).filter(Boolean);
   const near = isObject(options['near']) && isLatLng(options['near']['lat'], options['near']['lng']) ? (options['near'] as unknown as LatLng) : settings.center;
   installMapStyles(doc);
   if (!doc.getElementById('fieldia-address-styles')) {
@@ -86,7 +92,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     id,
     input,
     labels: words,
-    search: (request) => search({ ...request, ...(countries.length ? { countries } : {}), ...(partsField ? { parts: true } : {}) }),
+    search: (request) => search({ ...request, addresses: true, ...(countries.length ? { countries } : {}), ...(partsField ? { parts: true } : {}) }),
     asYouType: settings.search ? (settings.searchAsYouType ?? true) : !!settings.provider.searchAsYouType,
     locale,
     near: () => near,

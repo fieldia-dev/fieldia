@@ -193,14 +193,16 @@ test('on Azure Maps: its suggestions, the one picked located then, its parts fro
   const { field, box, options, problems } = await openAddress(page, `${QUERY}&maps=azure`);
   await box.pressSequentially('26 july', { delay: 60 });
   await expect(options).toHaveCount(3);
-  await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('26 26 July Street');
+  // The street's own "26", not a house's too.
+  await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('26 July Street');
   await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('El Sheikh Ali, Cairo, Egypt');
   // Azure's terms ask for nothing under its suggestions.
   await expect(field.locator('.fd-address-credit')).toHaveCount(0);
   await box.press('Enter');
   await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.230021, 30.056579] });
-  expect(await valueOf(page, 'parts')).toEqual({ street: '26 26 July Street', city: 'El Sheikh Ali', region: 'Cairo', country: 'EG' });
-  expect(await valueOf(page, 'address')).toBe('26 26 July Street, El Sheikh Ali, Cairo, Egypt');
+  // Its city where Azure keeps Egypt's, not its district.
+  expect(await valueOf(page, 'parts')).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo', country: 'EG' });
+  expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');
   expect(problems).toEqual([]);
 });
 

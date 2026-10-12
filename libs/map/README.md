@@ -252,7 +252,7 @@ pin, or the bubble, that holds the place they were on.
 | Provider | Road | Dark | Satellite | Traffic | Address search | Routes | Reachable area |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, from zoom 6, in dark colours on the dark map, drawn again every four minutes | yes, as people type | car, foot | car |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car, bike, foot (Routes API) | no |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car (with traffic), foot; bike where Google has bicycle routes, none in Egypt or Dubai (Routes API) | no: Google's Isochrones API is in preview, and Fieldia does not use it yet |
 | `mapbox({ token, trafficStyle })` | yes | yes | yes | from `trafficStyle`, a style of yours with Mapbox Traffic's lines alone | yes, as people type | car (traffic), bike, foot | car, bike, foot |
 | `tiles({ url, credit, trafficUrl, route, reach })` | the app's own map images | | | the app's own (`trafficUrl`) | the app's own | the app's own | the app's own |
 | `openStreetMap()` | yes, **for demos only** | no | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
@@ -271,6 +271,27 @@ map is looking first, each on two lines (the place, then where it is); Enter
 takes the first. "My location" says how sure it is: a rough location (a
 desktop's, placed by its network) shows the circle it may be anywhere in, says
 how wide, and names no address from it.
+
+An address with suggestions (`address-search` on a char field) keeps them to
+the `countries` the page names (ISO codes; "UK" is read as "GB", a code no one
+knows is left out and said in the console). Azure Maps is asked once for each
+country, up to ten (an autocomplete request is a tenth of a Search
+transaction); Google, for fifteen at most; Mapbox and Nominatim, for the list;
+Photon's answers are kept to them. Nearest `near` first (or where the app's
+maps open), so give a point in the page's own country: Azure ranks another
+country's suggestions by their distance from it. Addresses come before shops
+and malls where Google says which are which. A suggestion of Azure's is
+located when picked: in its own district, or said to be only near it
+(`precise: false`) when Azure finds the street but not the house, or the
+district alone.
+
+Google's costs, as its pricing pages put them (October 2026): a session of
+suggestions ended by a pick bills its first 12 requests (Autocomplete
+Requests) and the place's details (Place Details Essentials, its parts at the
+same price); a session never picked bills each request. A route by car asks
+for traffic, which makes it Compute Routes Pro; on foot (or by bike) with up
+to 10 stops it is Essentials, 11 to 25 stops Pro, and Google refuses more than
+25.
 
 Pass your own `search` (and `reverse`) to `mapWidgets` to use your own address
 search with any provider.

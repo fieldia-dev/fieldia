@@ -14,8 +14,9 @@ import type { MapSettings } from './settings';
  * longitude) and its parts into an address field (`partsField`, a
  * `json.address`: street, city, region, postcode and country, the line under
  * the street kept as typed). `countries` (ISO codes) keeps the suggestions to
- * those countries; `near` (`{ "lat", "lng" }`) puts those near it first, as
- * where the app's maps open does unless it says.
+ * those countries; `near` (`{ "lat", "lng" }`, in the page's own country)
+ * puts those near it first, as where the app's maps open does unless it
+ * says. Addresses come before shops and malls.
  *
  * The box is the app's own text box, there at once; the suggestions come
  * with their code, loaded the first time an address field is shown. With no

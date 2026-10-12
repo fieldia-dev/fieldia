@@ -17,14 +17,16 @@ const words = (piece: string) => piece.toLowerCase().split(/\s+/);
 /** Whether `few` are in `many`, one after another, as whole words. */
 const within = (few: string[], many: string[]) => many.some((_, at) => few.every((word, i) => many[at + i] === word));
 
-export function addressLine(pieces: unknown[], locale?: Locale): string {
-  const said: string[][] = [];
+/** Its pieces, cut where the provider put commas, without the marks it put in Arabic. */
+const cut = (pieces: unknown[]) => pieces.flatMap((p) => (typeof p === 'string' ? p.replace(MARKS, '').split(/[,،]/) : [])).map((piece) => piece.trim()).filter(Boolean);
+
+/** `before`: what is said already, on a line above (a suggestion's name), and not said again. */
+export function addressLine(pieces: unknown[], locale?: Locale, before: unknown[] = []): string {
+  const said = cut(before).map(words);
   const kept: string[] = [];
-  for (const piece of pieces.flatMap((p) => (typeof p === 'string' ? p.replace(MARKS, '').split(/[,،]/) : []))) {
-    const text = piece.trim();
-    if (!text) continue;
+  for (const text of cut(pieces)) {
     const these = words(text);
-    if (said.some((before) => within(before, these) && (before.length === these.length || !/\p{Nd}/u.test(text)))) continue;
+    if (said.some((earlier) => within(earlier, these) && (earlier.length === these.length || !/\p{Nd}/u.test(text)))) continue;
     said.push(these);
     kept.push(text);
   }
