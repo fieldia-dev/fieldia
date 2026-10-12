@@ -1,6 +1,6 @@
 import type { Locale } from '@fieldia/core';
 import type { LatLng } from './geo';
-import type { MapLabels } from './labels';
+import type { ListMapLabels, MapLabels } from './labels';
 import type { PinDrawer } from './pins';
 import type { AddressSearch, MapProvider, ReverseSearch } from './providers';
 
@@ -19,5 +19,5 @@ export interface MapSettings {
   /** The app's own pins for a list's map, by the name a page's `pin.widget` gives. */
   pins?: Record<string, PinDrawer>;
   /** The app's own words over the maps', by language. */
-  labels?: Partial<Record<Locale, Partial<MapLabels>>>;
+  labels?: Partial<Record<Locale, Partial<MapLabels & ListMapLabels>>>;
 }

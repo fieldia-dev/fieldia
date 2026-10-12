@@ -4,9 +4,10 @@ import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/vi
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
 import { readPoint, type LatLng } from './geo';
-import { fill, mapLabels } from './labels';
+import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox } from './map-core';
+import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord, type PinFace } from './pins';
 import type { MapSettings } from './settings';
 
@@ -46,7 +47,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   const { page, node, document: doc, locale } = context;
   // The viewer asks for a map only for a list with `map`.
   const spec = node.map as ListMap;
-  const labels = mapLabels(locale, settings.labels?.[locale]);
+  const labels = listMapLabels(locale, settings.labels?.[locale]);
   const model = page.data.kind === 'record' ? page.data.model : '';
   const title = spec.card?.title ?? node.columns[0];
   const cardFields = spec.card?.fields ?? node.columns.filter((name) => name !== title).slice(0, 4);
@@ -55,6 +56,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   const fields = [...new Set([...where, ...pins.fields, ...(spec.card?.image ? [spec.card.image] : []), ...cardFields.flatMap((name) => withCurrency(page, name))])];
   const count = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
 
+  installListMapStyles(doc);
   const element = doc.createElement('div');
   element.className = 'fd-map-list';
   const box = createMapBox({

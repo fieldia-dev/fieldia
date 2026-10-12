@@ -98,7 +98,35 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-grip-add::after { width: 10px; height: 10px; opacity: 0.7; }
 /* Each image overlaps the next by a pixel (leaflet.ts): drawn plainly over it, not added to it as Leaflet's own seam fix adds light. */
 .fd-map-box.leaflet-container img.leaflet-tile { mix-blend-mode: normal; }
-/* A list's map: each record's pin in its look and tone, bubbles of pins that crowd, the card a pin opens, "Search this area". */
+`;
+
+/** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */
+export function installMapStyles(doc: Document) {
+  if (doc.getElementById('fieldia-map-styles')) return;
+  const own = doc.createElement('style');
+  own.id = 'fieldia-map-styles';
+  own.textContent = MAP_CSS;
+  // Before the page's own styles, so an app's rule for a map wins over these.
+  doc.head.prepend(own);
+}
+
+/** Leaflet's stylesheet, once per document, before the maps' own (which add to it): it comes with Leaflet. */
+export function installLeafletStyles(doc: Document, css: string) {
+  if (doc.getElementById('fieldia-leaflet-styles')) return;
+  const leaflet = doc.createElement('style');
+  leaflet.id = 'fieldia-leaflet-styles';
+  leaflet.textContent = css;
+  const own = doc.getElementById('fieldia-map-styles');
+  if (own) own.before(leaflet);
+  else doc.head.prepend(leaflet);
+}
+
+/**
+ * A list's map, on top of the maps' own: each record's pin in its look and
+ * tone, bubbles of pins that crowd, the card a pin opens, "Search this area".
+ * Its own stylesheet, so a form with only a place or an area never carries it.
+ */
+export const LIST_MAP_CSS = `
 .fd-map-list { min-width: 0; }
 .fd-map-mark { overflow: visible; }
 .fd-map-mark:focus { outline: none; }
@@ -208,23 +236,12 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 }
 `;
 
-/** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */
-export function installMapStyles(doc: Document) {
-  if (doc.getElementById('fieldia-map-styles')) return;
+/** The list map's stylesheet, once per document, after the maps' own. */
+export function installListMapStyles(doc: Document) {
+  installMapStyles(doc);
+  if (doc.getElementById('fieldia-list-map-styles')) return;
   const own = doc.createElement('style');
-  own.id = 'fieldia-map-styles';
-  own.textContent = MAP_CSS;
-  // Before the page's own styles, so an app's rule for a map wins over these.
-  doc.head.prepend(own);
-}
-
-/** Leaflet's stylesheet, once per document, before the maps' own (which add to it): it comes with Leaflet. */
-export function installLeafletStyles(doc: Document, css: string) {
-  if (doc.getElementById('fieldia-leaflet-styles')) return;
-  const leaflet = doc.createElement('style');
-  leaflet.id = 'fieldia-leaflet-styles';
-  leaflet.textContent = css;
-  const own = doc.getElementById('fieldia-map-styles');
-  if (own) own.before(leaflet);
-  else doc.head.prepend(leaflet);
+  own.id = 'fieldia-list-map-styles';
+  own.textContent = LIST_MAP_CSS;
+  doc.getElementById('fieldia-map-styles')?.after(own);
 }

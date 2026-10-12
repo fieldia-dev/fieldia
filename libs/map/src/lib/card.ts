@@ -1,6 +1,5 @@
 import type { Locale, MapCard, Page } from '@fieldia/core';
-import type { MapLabels } from './labels';
-import { fill } from './labels';
+import { fill, type ListMapLabels, type MapLabels } from './labels';
 import { imageSource, shown, type MapRecord } from './pins';
 
 /**
@@ -14,7 +13,7 @@ export interface CardOptions {
   document: Document;
   page: Page;
   locale: Locale;
-  labels: MapLabels;
+  labels: MapLabels & ListMapLabels;
   dir: 'ltr' | 'rtl';
   card: MapCard;
   /** The field that names the record. */
@@ -42,7 +41,7 @@ function make<K extends keyof HTMLElementTagNameMap>(doc: Document, tag: K, clas
   return element;
 }
 
-function closeButton(doc: Document, labels: MapLabels, close: () => void) {
+function closeButton(doc: Document, labels: ListMapLabels, close: () => void) {
   const button = make(doc, 'button', 'fd-map-card-close', '×');
   button.type = 'button';
   button.setAttribute('aria-label', labels.closeCard);
@@ -102,7 +101,7 @@ export function drawCard(options: CardOptions): Card {
 /** Pins on one spot that no zoom parts: a list of them, each opening its own card. */
 export function drawCrowd(options: {
   document: Document;
-  labels: MapLabels;
+  labels: ListMapLabels;
   dir: 'ltr' | 'rtl';
   records: { record: MapRecord; name: string }[];
   pick(record: MapRecord): void;

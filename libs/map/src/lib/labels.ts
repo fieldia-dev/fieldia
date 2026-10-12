@@ -55,22 +55,6 @@ export interface MapLabels {
   heightMedium: string;
   heightLarge: string;
   settingShapes: string;
-  /** A list's map: how the keys reach its pins. */
-  pinKeys: string;
-  searchThisArea: string;
-  /** The search a map puts in the list's search bar. */
-  inThisArea: string;
-  openRecord: string;
-  choose: string;
-  closeCard: string;
-  /** A bubble of pins: `{n}` how many. */
-  cluster: string;
-  /** Pins on one spot, listed. */
-  crowd: string;
-  notOnMap: string;
-  /** More records than a map shows: `{n}` shown of `{total}`. */
-  mapShowsFirst: string;
-  mapFailed: string;
 }
 
 export const MAP_LABELS: Record<Locale, MapLabels> = {
@@ -126,17 +110,6 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Medium',
     heightLarge: 'Large',
     settingShapes: 'Shapes',
-    pinKeys: 'Tab goes through the pins. Enter opens a pin’s card; Escape closes it.',
-    searchThisArea: 'Search this area',
-    inThisArea: 'In this area',
-    openRecord: 'Open',
-    choose: 'Choose',
-    closeCard: 'Close',
-    cluster: '{n} here. Zoom in to see them.',
-    crowd: '{n} in one place',
-    notOnMap: '{n} without a place, not on the map',
-    mapShowsFirst: 'The map shows {n} of {total}. Zoom in and search this area for the rest.',
-    mapFailed: 'The map could not load the records.',
   },
   ar: {
     mapOf: '{label}، خريطة',
@@ -190,17 +163,6 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'متوسط',
     heightLarge: 'كبير',
     settingShapes: 'الأشكال',
-    pinKeys: 'ينتقل Tab بين الدبابيس. يفتح Enter بطاقة الدبوس، ويغلقها Escape.',
-    searchThisArea: 'ابحث في هذه المنطقة',
-    inThisArea: 'في هذه المنطقة',
-    openRecord: 'فتح',
-    choose: 'اختيار',
-    closeCard: 'إغلاق',
-    cluster: '{n} هنا. كبّر الخريطة لرؤيتها.',
-    crowd: '{n} في مكان واحد',
-    notOnMap: '{n} بلا مكان، ليست على الخريطة',
-    mapShowsFirst: 'تعرض الخريطة {n} من {total}. كبّر الخريطة وابحث في هذه المنطقة لرؤية البقية.',
-    mapFailed: 'تعذّر تحميل السجلات على الخريطة.',
   },
   fr: {
     mapOf: '{label}, carte',
@@ -254,17 +216,6 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Moyenne',
     heightLarge: 'Grande',
     settingShapes: 'Formes',
-    pinKeys: 'Tab parcourt les épingles. Entrée ouvre la fiche d’une épingle, Échap la ferme.',
-    searchThisArea: 'Rechercher dans cette zone',
-    inThisArea: 'Dans cette zone',
-    openRecord: 'Ouvrir',
-    choose: 'Choisir',
-    closeCard: 'Fermer',
-    cluster: '{n} ici. Zoomez pour les voir.',
-    crowd: '{n} au même endroit',
-    notOnMap: '{n} sans lieu, absents de la carte',
-    mapShowsFirst: 'La carte en montre {n} sur {total}. Zoomez et recherchez dans cette zone pour voir les autres.',
-    mapFailed: 'La carte n’a pas pu charger les enregistrements.',
   },
   de: {
     mapOf: '{label}, Karte',
@@ -318,6 +269,70 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     heightMedium: 'Mittel',
     heightLarge: 'Groß',
     settingShapes: 'Formen',
+  },
+};
+
+/** The words a list's map shows, besides the maps' own: kept apart, so a form with only a place or an area never carries them. */
+export interface ListMapLabels {
+  /** How the keys reach the pins. */
+  pinKeys: string;
+  searchThisArea: string;
+  /** The search a map puts in the list's search bar. */
+  inThisArea: string;
+  openRecord: string;
+  choose: string;
+  closeCard: string;
+  /** A bubble of pins: `{n}` how many. */
+  cluster: string;
+  /** Pins on one spot, listed. */
+  crowd: string;
+  notOnMap: string;
+  /** More records than a map shows: `{n}` shown of `{total}`. */
+  mapShowsFirst: string;
+  mapFailed: string;
+}
+
+export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
+  en: {
+    pinKeys: 'Tab goes through the pins. Enter opens a pin’s card; Escape closes it.',
+    searchThisArea: 'Search this area',
+    inThisArea: 'In this area',
+    openRecord: 'Open',
+    choose: 'Choose',
+    closeCard: 'Close',
+    cluster: '{n} here. Zoom in to see them.',
+    crowd: '{n} in one place',
+    notOnMap: '{n} without a place, not on the map',
+    mapShowsFirst: 'The map shows {n} of {total}. Zoom in and search this area for the rest.',
+    mapFailed: 'The map could not load the records.',
+  },
+  ar: {
+    pinKeys: 'ينتقل Tab بين الدبابيس. يفتح Enter بطاقة الدبوس، ويغلقها Escape.',
+    searchThisArea: 'ابحث في هذه المنطقة',
+    inThisArea: 'في هذه المنطقة',
+    openRecord: 'فتح',
+    choose: 'اختيار',
+    closeCard: 'إغلاق',
+    cluster: '{n} هنا. كبّر الخريطة لرؤيتها.',
+    crowd: '{n} في مكان واحد',
+    notOnMap: '{n} بلا مكان، ليست على الخريطة',
+    mapShowsFirst: 'تعرض الخريطة {n} من {total}. كبّر الخريطة وابحث في هذه المنطقة لرؤية البقية.',
+    mapFailed: 'تعذّر تحميل السجلات على الخريطة.',
+  },
+  fr: {
+    pinKeys: 'Tab parcourt les épingles. Entrée ouvre la fiche d’une épingle, Échap la ferme.',
+    searchThisArea: 'Rechercher dans cette zone',
+    inThisArea: 'Dans cette zone',
+    openRecord: 'Ouvrir',
+    choose: 'Choisir',
+    closeCard: 'Fermer',
+    cluster: '{n} ici. Zoomez pour les voir.',
+    crowd: '{n} au même endroit',
+    notOnMap: '{n} sans lieu, absents de la carte',
+    mapShowsFirst: 'La carte en montre {n} sur {total}. Zoomez et recherchez dans cette zone pour voir les autres.',
+    mapFailed: 'La carte n’a pas pu charger les enregistrements.',
+  },
+  de: {
     pinKeys: 'Tab springt von Nadel zu Nadel. Eingabe öffnet die Karte einer Nadel, Escape schließt sie.',
     searchThisArea: 'In diesem Gebiet suchen',
     inThisArea: 'In diesem Gebiet',
@@ -335,6 +350,11 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
 /** The words for a page's language, with the app's own over them. */
 export function mapLabels(locale: Locale | undefined, own?: Partial<MapLabels>): MapLabels {
   return { ...MAP_LABELS[locale ?? 'en'], ...own };
+}
+
+/** A list's map's words for a page's language, the maps' own with them, and the app's own over both. */
+export function listMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels>): MapLabels & ListMapLabels {
+  return { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...own };
 }
 
 /** A word with its `{name}`s filled in. */
