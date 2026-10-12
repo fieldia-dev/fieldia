@@ -35,5 +35,5 @@ export {
 } from './lib/providers';
 export { readArea, readPoint, writeArea, writePoint, metresBetween, type Area, type AreaFeature, type LatLng, type PointGeometry, type Shape } from './lib/geo';
 export { MAP_LABELS, type MapLabels } from './lib/labels';
-export { ADDRESS_LABELS, type AddressLabels } from './lib/labels';
+export type { AddressLabels } from './lib/address-labels';
 export type { AddressParts } from './lib/address-parts';

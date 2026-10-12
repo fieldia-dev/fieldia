@@ -1,6 +1,7 @@
 import type { Locale } from '@fieldia/core';
 import type { LatLng } from './geo';
-import type { AddressLabels, FormMapLabels, ListMapLabels, MapLabels } from './labels';
+import type { AddressLabels } from './address-labels';
+import type { FormMapLabels, ListMapLabels, MapLabels } from './labels';
 import type { PinDrawer } from './pins';
 import type { AddressSearch, MapProvider, ReachFinder, ReverseSearch, RouteFinder } from './providers';
 

@@ -51,7 +51,8 @@ test('suggestions come as the typing pauses, near Cairo and in Egypt; the arrows
   // No Enter: the list comes as the typing pauses, without the place outside Egypt.
   await expect(options).toHaveCount(2);
   await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('Tahrir Street 12');
-  await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('Downtown, Cairo, Cairo Governorate, Egypt');
+  // Cairo once: the governorate named after it is left out.
+  await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('Downtown, Cairo, Egypt');
   await expect(options.nth(1).locator('.fd-map-result-name')).toHaveText('26 July Street');
   await expect(box).toHaveAttribute('aria-expanded', 'true');
   // What is typed is the answer until one is picked.
@@ -72,7 +73,7 @@ test('suggestions come as the typing pauses, near Cairo and in Egypt; the arrows
   await expect(box).toHaveAttribute('aria-activedescendant', (await options.nth(0).getAttribute('id'))!);
   await box.press('Enter');
   await expect(field.getByRole('listbox')).toBeHidden();
-  await expect(box).toHaveValue('Tahrir Street 12, Downtown, Cairo, Cairo Governorate, Egypt');
+  await expect(box).toHaveValue('Tahrir Street 12, Downtown, Cairo, Egypt');
   await expect.poll(() => valueOf(page, 'parts')).toEqual({ street: 'Tahrir Street 12', city: 'Cairo', region: 'Cairo Governorate', postcode: '11511', country: 'EG' });
   expect(await valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.2391, 30.0487] });
   // The address's parts in their boxes, the place on its map.
@@ -97,7 +98,7 @@ test('suggestions come as the typing pauses, near Cairo and in Egypt; the arrows
   await box.press('Enter');
   await expect.poll(() => valueOf(page, 'parts')).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo Governorate', country: 'EG', line2: 'Flat 4' });
   expect(await valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.2197, 30.0626] });
-  expect(await valueOf(page, 'address')).toBe('26 July Street, Zamalek, Cairo, Cairo Governorate, Egypt');
+  expect(await valueOf(page, 'address')).toBe('26 July Street, Zamalek, Cairo, Egypt');
   expect(problems).toEqual([]);
 });
 
@@ -121,6 +122,8 @@ test('in Arabic, right to left: the list under the box from its right edge, its 
   await box.pressSequentially('التحر', { delay: 60 });
   await expect(options).toHaveCount(2);
   await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('شارع التحرير 12');
+  // Joined with the Arabic comma, the city once.
+  await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('وسط البلد، القاهرة، مصر');
   await expect(field.locator('.fd-address-search > [role="status"]')).toHaveText('الاقتراحات: 2');
   const input = (await box.boundingBox())!;
   const list = (await field.locator('.fd-address-popup').boundingBox())!;
@@ -129,6 +132,7 @@ test('in Arabic, right to left: the list under the box from its right edge, its 
   for (const option of await options.all()) expect(await seen(option)).toBe(true);
   await screen(page, 'map-address-arabic', { viewport: true });
   await box.press('Enter');
+  await expect(box).toHaveValue('شارع التحرير 12، وسط البلد، القاهرة، مصر');
   await expect.poll(() => valueOf(page, 'parts')).toEqual({ street: 'شارع التحرير 12', city: 'القاهرة', region: 'محافظة القاهرة', country: 'EG' });
   await screen(page, 'map-address-arabic-picked');
 });
@@ -181,6 +185,7 @@ test('on a phone in English, light: the list fits under the box, and a pick fill
   await screen(page, 'map-address-phone', { viewport: true });
   await box.press('Enter');
   await expect.poll(() => valueOf(page, 'parts')).toMatchObject({ street: 'Tahrir Street 12' });
+  expect(await valueOf(page, 'address')).toBe('Tahrir Street 12, Downtown, Cairo, Egypt');
   await screen(page, 'map-address-phone-picked');
 });
 

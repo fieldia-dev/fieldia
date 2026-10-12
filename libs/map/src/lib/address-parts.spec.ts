@@ -50,7 +50,7 @@ describe('an address in its parts', () => {
       { street: 'Tahrir Street', city: 'Mecca', region: 'Makkah Region', country: 'SA' },
     ]);
     // Asked for nothing more, the places are as a map's search has them.
-    expect((await openStreetMap({ fetch }).search!({ text: 'tahrir', locale: 'en' }))[0]).toEqual({ label: 'Tahrir Street 12', detail: 'Downtown, Cairo, Cairo Governorate, Egypt', lat: 30.0487, lng: 31.2391 });
+    expect((await openStreetMap({ fetch }).search!({ text: 'tahrir', locale: 'en' }))[0]).toEqual({ label: 'Tahrir Street 12', detail: 'Downtown, Cairo, Egypt', lat: 30.0487, lng: 31.2391 });
   });
 
   it('keeps Photon’s places to the countries asked for, by reading its answer: Photon cannot be asked', async () => {

@@ -1,5 +1,6 @@
 import type { Locale } from '@fieldia/core';
 import { getJson, pathOf, type Fetch } from './answers';
+import { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
 import type { Bounds, LatLng } from './geo';
 
@@ -150,13 +151,6 @@ const textOfHtml = (html: string) =>
     )
     .trim();
 
-/** The words of a list that are there, once each, joined: "Downtown, Cairo, Egypt". */
-const joined = (...parts: unknown[]) => {
-  const seen: string[] = [];
-  for (const part of parts) if (typeof part === 'string' && part.trim() && !seen.includes(part.trim())) seen.push(part.trim());
-  return seen.join(', ');
-};
-
 /** Places from a GeoJSON FeatureCollection: each named by the first of `labels` it has, with the line under it from `detail`, and its parts from `parts`. */
 function placesFrom(collection: unknown, labels: string[][], detail?: (properties: unknown) => string, parts?: (properties: unknown) => AddressParts | undefined): PlaceFound[] {
   const features = pathOf(collection, 'features');
@@ -195,7 +189,7 @@ export interface OpenStreetMapOptions {
 const PHOTON_LANGUAGES = new Set(['en', 'de', 'fr']);
 
 /** Photon's places: each one's name (or its street and number) on one line, where it is on the next; their parts when asked. */
-function photonPlaces(found: unknown, parts?: (properties: unknown) => AddressParts | undefined): PlaceFound[] {
+function photonPlaces(found: unknown, locale: Locale, parts?: (properties: unknown) => AddressParts | undefined): PlaceFound[] {
   const features = pathOf(found, 'features');
   if (!Array.isArray(features)) return [];
   return features.flatMap((feature) => {
@@ -205,7 +199,7 @@ function photonPlaces(found: unknown, parts?: (properties: unknown) => AddressPa
     const label = typeof name === 'string' && name.trim() ? name.trim() : streetOf(p);
     if (typeof lat !== 'number' || typeof lng !== 'number' || !label) return [];
     // Under a named place, its street when it has one; then its district, city and country.
-    const detail = joined(label === streetOf(p) ? '' : streetOf(p), pathOf(p, 'district'), pathOf(p, 'city'), pathOf(p, 'state'), pathOf(p, 'country'));
+    const detail = addressLine([label === streetOf(p) ? '' : streetOf(p), pathOf(p, 'district'), pathOf(p, 'city'), pathOf(p, 'state'), pathOf(p, 'country')], locale);
     const own = parts?.(p);
     return [{ label, ...(detail ? { detail } : {}), lat, lng, ...(own ? { parts: own } : {}) }];
   });
@@ -255,14 +249,14 @@ export function openStreetMap(options: OpenStreetMapOptions = {}): MapProvider {
               const label = typeof name === 'string' && name.trim() ? name : whole.split(',')[0];
               const rest = whole.split(',').map((part) => part.trim()).filter((part, i) => !(i === 0 && part === label));
               const own = read?.nominatimParts(pathOf(place, 'address'));
-              return [{ label, ...(rest.length ? { detail: rest.join(', ') } : {}), lat, lng, ...(own ? { parts: own } : {}) }];
+              const detail = addressLine(rest, locale);
+              return [{ label, ...(detail ? { detail } : {}), lat, lng, ...(own ? { parts: own } : {}) }];
             })
           : [];
       },
       async reverse({ lat, lng, locale, signal }) {
         const found = await getJson(fetchWith, `https://nominatim.openstreetmap.org/reverse?${query({ format: 'jsonv2', lat, lon: lng, 'accept-language': locale })}`, { signal });
-        const label = pathOf(found, 'display_name');
-        return typeof label === 'string' ? label : null;
+        return addressLine([pathOf(found, 'display_name')], locale) || null;
       },
     };
   }
@@ -274,12 +268,12 @@ export function openStreetMap(options: OpenStreetMapOptions = {}): MapProvider {
       const found = await getJson(fetchWith, `${photon}/api?${query({ q: text, limit: 6, lang: lang(locale), lat: near?.lat, lon: near?.lng, zoom: near && zoom !== undefined ? Math.round(zoom) : undefined })}`, { signal });
       // Photon cannot be asked to keep to some countries: those outside them are left out here.
       const read = await partsReader(parts, countries);
-      return read ? read.inCountries(photonPlaces(found, read.photonParts), countries) : photonPlaces(found);
+      return read ? read.inCountries(photonPlaces(found, locale, read.photonParts), countries) : photonPlaces(found, locale);
     },
     async reverse({ lat, lng, locale, signal }) {
       const found = await getJson(fetchWith, `${photon}/reverse?${query({ lat, lon: lng, limit: 1, lang: lang(locale) })}`, { signal });
-      const [place] = photonPlaces(found);
-      return place ? joined(place.label, place.detail) : null;
+      const [place] = photonPlaces(found, locale);
+      return place ? addressLine([place.label, place.detail], locale) : null;
     },
   };
 }
@@ -346,11 +340,11 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
       const found = await ask('geocode:autocomplete', { 'api-version': '2026-01-01', top: 5, query: text, coordinates }, locale, signal);
       // Its parts come with each suggestion; those outside the countries asked for are left out here.
       const read = await partsReader(parts, countries);
-      return (read ? read.inCountries(azurePlaces(found, read.azureParts), countries) : azurePlaces(found)).map((place) => ({
+      return (read ? read.inCountries(azurePlaces(found, locale, read.azureParts), countries) : azurePlaces(found, locale)).map((place) => ({
         ...place,
         locate: async () => {
-          const address = [place.label, place.detail].filter(Boolean).join(', ');
-          const [hit] = azurePlaces(await ask('geocode', { 'api-version': '2023-06-01', top: 1, query: place.whole ?? address, coordinates }, locale));
+          const address = addressLine([place.label, place.detail], locale);
+          const [hit] = azurePlaces(await ask('geocode', { 'api-version': '2023-06-01', top: 1, query: place.whole ?? address, coordinates }, locale), locale);
           if (hit?.lat === undefined || hit.lng === undefined) throw new Error('Azure Maps found no place');
           // The address as its two lines read: with its town, which Azure's own may leave out.
           return { lat: hit.lat, lng: hit.lng, address };
@@ -361,7 +355,7 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
       const found = await ask('reverseGeocode', { 'api-version': '2023-06-01', coordinates: `${lng},${lat}` }, locale, signal);
       const features = pathOf(found, 'features');
       const formatted = Array.isArray(features) ? clean(pathOf(features[0], 'properties', 'address', 'formattedAddress')) : '';
-      return formatted || null;
+      return addressLine([formatted], locale) || null;
     },
     async route(request) {
       return (await routes()).azureRoute({ fetchWith, auth, headers }, request);
@@ -378,7 +372,7 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
  * says (geocoding does, autocomplete does not); and the whole address as Azure
  * wrote it, to geocode a suggestion by.
  */
-function azurePlaces(found: unknown, partsOf?: (address: unknown) => AddressParts | undefined): (PlaceFound & { whole?: string })[] {
+function azurePlaces(found: unknown, locale: Locale, partsOf?: (address: unknown) => AddressParts | undefined): (PlaceFound & { whole?: string })[] {
   const features = pathOf(found, 'features');
   if (!Array.isArray(features)) return [];
   return features.flatMap((feature) => {
@@ -396,7 +390,8 @@ function azurePlaces(found: unknown, partsOf?: (address: unknown) => AddressPart
     if (town && !rest.includes(town)) rest = [town, ...rest];
     const at = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
     const own = partsOf?.(address);
-    return [{ label, ...(rest.length ? { detail: rest.join(', ') } : {}), ...at, ...(whole ? { whole } : {}), ...(own ? { parts: own } : {}) }];
+    const detail = addressLine(rest, locale);
+    return [{ label, ...(detail ? { detail } : {}), ...at, ...(whole ? { whole } : {}), ...(own ? { parts: own } : {}) }];
   });
 }
 
@@ -490,7 +485,7 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
         const placeId = pathOf(prediction, 'placeId');
         const label = clean(pathOf(prediction, 'structuredFormat', 'mainText', 'text')) || clean(pathOf(prediction, 'text', 'text'));
         if (typeof placeId !== 'string' || !label) return [];
-        const detail = clean(pathOf(prediction, 'structuredFormat', 'secondaryText', 'text'));
+        const detail = addressLine([pathOf(prediction, 'structuredFormat', 'secondaryText', 'text')], locale);
         return [
           {
             label,
@@ -505,7 +500,7 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
               const latitude = pathOf(place, 'location', 'latitude');
               const longitude = pathOf(place, 'location', 'longitude');
               if (typeof latitude !== 'number' || typeof longitude !== 'number') throw new Error('Google gave no place');
-              const address = clean(pathOf(place, 'formattedAddress'));
+              const address = addressLine([pathOf(place, 'formattedAddress')], locale);
               const own = (await partsReader(parts))?.googleParts(pathOf(place, 'addressComponents'));
               return { lat: latitude, lng: longitude, ...(address ? { address } : {}), ...(own ? { parts: own } : {}) };
             },
@@ -519,7 +514,7 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
       const status = pathOf(answer, 'status');
       if (typeof status === 'string' && status !== 'OK' && status !== 'ZERO_RESULTS') throw new Error(`Google's Geocoding API answered ${status}: ${String(pathOf(answer, 'error_message') ?? '')}`);
       const results = pathOf(answer, 'results');
-      const named = Array.isArray(results) ? clean(pathOf(results[0], 'formatted_address')) : '';
+      const named = Array.isArray(results) ? addressLine([pathOf(results[0], 'formatted_address')], locale) : '';
       return named || null;
     },
     async route(request) {
@@ -600,12 +595,13 @@ export function mapbox(options: MapboxOptions): MapProvider {
       return placesFrom(
         await ask('forward', { q: text, limit: 5, language: locale, proximity: near ? `${near.lng},${near.lat}` : undefined, country: countries?.join(',').toLowerCase() || undefined }, signal),
         [['properties', 'name'], ['properties', 'full_address']],
-        (p) => joined(pathOf(p, 'place_formatted')),
+        (p) => addressLine([pathOf(p, 'place_formatted')], locale),
         (await partsReader(parts))?.mapboxParts
       );
     },
     async reverse({ lat, lng, locale, signal }) {
-      return placesFrom(await ask('reverse', { longitude: lng, latitude: lat, language: locale, limit: 1 }, signal), [['properties', 'full_address'], ['properties', 'name']])[0]?.label ?? null;
+      const [named] = placesFrom(await ask('reverse', { longitude: lng, latitude: lat, language: locale, limit: 1 }, signal), [['properties', 'full_address'], ['properties', 'name']]);
+      return named ? addressLine([named.label], locale) : null;
     },
     async route(request) {
       return (await routes()).mapboxRoute({ fetchWith, token }, request);

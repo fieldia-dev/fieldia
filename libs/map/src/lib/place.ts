@@ -1,6 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
 import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { addressLine } from './address-line';
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
@@ -247,7 +248,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
                 ? { lat: place.lat, lng: place.lng, address: undefined }
                 : await place.locate?.().catch((error: Error) => (warnOnce(`Finding the place picked failed: ${error.message}`), null));
             if (!located) return say(labels.searchFailed, 'error');
-            set({ lat: located.lat, lng: located.lng }, { fly: true, address: located.address ?? [place.label, place.detail].filter(Boolean).join(', ') });
+            set({ lat: located.lat, lng: located.lng }, { fly: true, address: addressLine(located.address ? [located.address] : [place.label, place.detail], context.locale) });
           },
           say,
         })

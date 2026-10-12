@@ -1,6 +1,7 @@
 import type { Field, FieldNode, Locale, Page } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
-import { addressLabels, mapLabels, type AddressLabels, type MapLabels } from './labels';
+import { addressLabels, type AddressLabels } from './address-labels';
+import { mapLabels, type MapLabels } from './labels';
 
 /**
  * The maps as kinds of field in Fieldia's designer: Place, Area and an

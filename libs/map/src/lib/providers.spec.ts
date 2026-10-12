@@ -65,7 +65,8 @@ describe('OpenStreetMap', () => {
     const { fetch, asked } = network({ 'https://nominatim.openstreetmap.org/search': [{ lat: '30.0444', lon: '31.2357', name: 'Cairo', display_name: 'Cairo, Cairo Governorate, Egypt' }] });
     const osm = openStreetMap({ fetch, search: 'nominatim' });
     expect(osm.searchAsYouType).toBe(false);
-    expect(await osm.search!({ text: 'cairo', locale: 'ar' })).toEqual([{ label: 'Cairo', detail: 'Cairo Governorate, Egypt', lat: 30.0444, lng: 31.2357 }]);
+    // Joined with the Arabic comma, as the page reads.
+    expect(await osm.search!({ text: 'cairo', locale: 'ar' })).toEqual([{ label: 'Cairo', detail: 'Cairo Governorate، Egypt', lat: 30.0444, lng: 31.2357 }]);
     expect(asked[0].url).toBe('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=cairo&accept-language=ar');
   });
 });
@@ -143,14 +144,14 @@ describe('Azure Maps', () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocompleteArabic });
     const found = await azureMaps({ key: 'K', fetch }).search!({ text: 'ميدان التح', locale: 'ar' });
     expect(found.map((place) => place.label)).toEqual(['ميدان التحرير', 'ميدان التحرير', 'ميدان التحرير']);
-    expect(found[1].detail).toBe('الإسماعيلية, القاهرة, مصر');
+    expect(found[1].detail).toBe('الإسماعيلية، القاهرة، مصر');
     expect(found.every((place) => !/[\u200e\u200f\u061c]/.test(`${place.label}${place.detail}`))).toBe(true);
   });
 
   it('names a point without the direction marks Azure puts in Arabic, which would sit unseen in an address field', async () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/reverseGeocode': AZURE.reverseArabic });
     const named = await azureMaps({ key: 'K', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' });
-    expect(named).toBe('7 ميدان التحرير, Cairo, القاهرة, مصر');
+    expect(named).toBe('7 ميدان التحرير، Cairo، القاهرة، مصر');
     expect(named).not.toMatch(/[\u200e\u200f\u061c]/);
   });
 });
@@ -208,7 +209,7 @@ describe('Google', () => {
     const found = await google.search!({ text: 'tahr', near: { lat: 30.05, lng: 31.24 }, zoom: 13, locale: 'ar' });
     // A suggestion of words, not of a place, is left out.
     expect(found).toHaveLength(1);
-    expect(found[0]).toMatchObject({ label: 'Tahrir Square', detail: 'Cairo, Egypt' });
+    expect(found[0]).toMatchObject({ label: 'Tahrir Square', detail: 'Cairo، Egypt' });
     expect(found[0].lat).toBeUndefined();
     const sent = JSON.parse(String(asked[0].init?.body));
     expect(asked[0].url).toBe('https://places.googleapis.com/v1/places:autocomplete');
@@ -219,7 +220,7 @@ describe('Google', () => {
     await google.search!({ text: 'tahri', locale: 'ar' });
     expect(JSON.parse(String(asked[1].init?.body)).sessionToken).toBe(sent.sessionToken);
 
-    expect(await found[0].locate!()).toEqual({ lat: 30.0444, lng: 31.2357, address: 'Tahrir Square, Qasr El Nil, Cairo, Egypt' });
+    expect(await found[0].locate!()).toEqual({ lat: 30.0444, lng: 31.2357, address: 'Tahrir Square، Qasr El Nil، Cairo، Egypt' });
     expect(asked[2].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=ar&sessionToken=${sent.sessionToken}`);
     expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress');
     // Picked: the next search is a new session.
@@ -236,9 +237,9 @@ describe('Google', () => {
     await expect(googleMaps({ key: 'G', fetch: refused(200, denied) }).reverse!({ lat: 30, lng: 31, locale: 'en' })).rejects.toThrow('This API is not activated on your API project.');
   });
 
-  it('names a point in Arabic without the direction marks Google puts in it', async () => {
+  it('names a point in Arabic without the direction marks Google puts in it, every piece after the Arabic comma', async () => {
     const { fetch } = network({ 'https://maps.googleapis.com/maps/api/geocode/json': { status: 'OK', results: [{ formatted_address: '1 شارع محمد محمود، ميدان التحرير, قسم قصر النيل، محافظة القاهرة\u202c 4272077، مصر' }] } });
-    expect(await googleMaps({ key: 'G', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' })).toBe('1 شارع محمد محمود، ميدان التحرير, قسم قصر النيل، محافظة القاهرة 4272077، مصر');
+    expect(await googleMaps({ key: 'G', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' })).toBe('1 شارع محمد محمود، ميدان التحرير، قسم قصر النيل، محافظة القاهرة 4272077، مصر');
   });
 
   it('names a point through the Geocoding API', async () => {

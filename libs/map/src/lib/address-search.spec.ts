@@ -30,13 +30,13 @@ const ZAMALEK: PlaceFound = { label: '26 July Street', detail: 'Zamalek, Cairo, 
 
 const pause = (ms = 300) => new Promise((done) => setTimeout(done, ms));
 
-async function mount(options: FieldNode['options'] = {}, settings: Partial<MapSettings> = {}, found: PlaceFound[] = [TAHRIR, ZAMALEK]) {
+async function mount(options: FieldNode['options'] = {}, settings: Partial<MapSettings> = {}, found: PlaceFound[] = [TAHRIR, ZAMALEK], locale?: 'ar') {
   const asked: SearchRequest[] = [];
   const search: AddressSearch = async (request) => (asked.push(request), found);
   const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' }, search }), center: { lat: 30.04, lng: 31.23 }, ...settings });
   const form = createForm({ page });
   const node: FieldNode = { type: 'field', id: 'address', field: 'address', widget: 'address-search', options };
-  const widget = createWidget({ form, name: 'address', field: page.fields['address'] as Field, node, id: 'fd-address', document, labels: undefined }, widgets);
+  const widget = createWidget({ form, name: 'address', field: page.fields['address'] as Field, node, id: 'fd-address', document, labels: undefined, locale }, widgets);
   document.body.replaceChildren(widget.element);
   let readonly = false;
   const refresh = () => {
@@ -99,6 +99,39 @@ describe('an address with suggestions', () => {
     });
     expect(box.value).toBe('Tahrir Street 12, Downtown, Cairo, Egypt');
     expect(list().hidden).toBe(true);
+  });
+
+  it('writes each piece of the address once, a governorate named after its city left out', async () => {
+    const { box, values } = await mount({}, {}, [{ label: 'Pyramids Road 5', detail: 'Giza, Giza Governorate, Egypt', lat: 29.99, lng: 31.16 }]);
+    type(box, 'pyr');
+    await pause();
+    press(box, 'Enter');
+    expect(values()['address']).toBe('Pyramids Road 5, Giza, Egypt');
+  });
+
+  it('joins with the Arabic comma on an Arabic page, the provider’s own line too', async () => {
+    const locate = jest.fn(async () => ({ lat: 30.05, lng: 31.24, address: 'شارع التحرير 12, وسط البلد, القاهرة, محافظة القاهرة, مصر' }));
+    const { box, values } = await mount({ placeField: 'spot' }, {}, [{ label: 'شارع التحرير 12', detail: 'وسط البلد، القاهرة، محافظة القاهرة، مصر', locate }], 'ar');
+    type(box, 'التحر');
+    await pause();
+    press(box, 'Enter');
+    expect(box.value).toBe('شارع التحرير 12، وسط البلد، القاهرة، مصر');
+    await pause(0);
+    expect(values()['address']).toBe('شارع التحرير 12، وسط البلد، القاهرة، مصر');
+  });
+
+  it('keeps the place and parts a pick wrote as a person types on after it', async () => {
+    const { box, values } = await mount({ placeField: 'spot', partsField: 'parts' });
+    type(box, 'tahr');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    const { spot, parts } = values();
+    type(box, ', flat 3');
+    await pause();
+    press(box, 'Escape');
+    expect(values()).toMatchObject({ address: 'Tahrir Street 12, Downtown, Cairo, Egypt, flat 3', spot, parts });
+    expect(spot).toMatchObject({ type: 'Point' });
   });
 
   it('keeps what is typed when nothing is picked: Escape closes the list and the words stay', async () => {
@@ -165,6 +198,22 @@ describe('an address with suggestions', () => {
     expect([credit.textContent, credit.href, credit.target]).toEqual(['© OpenStreetMap contributors', 'https://www.openstreetmap.org/copyright', '_blank']);
     // Under the list, not in it: a listbox holds its options alone.
     expect(credit.closest('[role="listbox"]')).toBeNull();
+  });
+
+  it('gives a place’s Address the same line: each piece once, with the Arabic comma on an Arabic page', async () => {
+    const found: PlaceFound[] = [{ label: 'ميدان التحرير', detail: 'القاهرة، محافظة القاهرة، مصر', lat: 30.0444, lng: 31.2357 }];
+    const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' }, search: async () => found }) });
+    const form = createForm({ page });
+    const node: FieldNode = { type: 'field', id: 'spot', field: 'spot', widget: 'place', options: { addressField: 'address', myLocation: false } };
+    const widget = createWidget({ form, name: 'spot', field: page.fields['spot'] as Field, node, id: 'fd-spot', document, locale: 'ar' }, widgets);
+    document.body.replaceChildren(widget.element);
+    const search = document.querySelector('[role="combobox"]') as HTMLInputElement;
+    type(search, 'التحر');
+    await pause();
+    press(search, 'Enter');
+    await pause(0);
+    expect(form.getState().values['address']).toBe('ميدان التحرير، القاهرة، مصر');
+    widget.destroy?.();
   });
 
   it('is a plain text box where there is no address search', async () => {

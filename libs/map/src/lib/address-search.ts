@@ -1,4 +1,5 @@
 import { createWidget, type WidgetFactory } from '@fieldia/widgets';
+import { addressLine } from './address-line';
 import { searchBox } from './search-box';
 import type { MapSettings } from './settings';
 
@@ -30,9 +31,9 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
     element.className = 'fd-address-search';
     element.append(plain.element);
     let stop: (() => void) | null | undefined;
-    // The place search's own combobox is handed over, as the page has it already: the suggestions' chunk carries none of it.
+    // The place search's own combobox and line are handed over, as the page has them already: the suggestions' chunk carries neither.
     import('./address-suggest').then(({ suggest }) => {
-      if (stop === undefined) stop = suggest({ settings, context, search, element, input, searchBox });
+      if (stop === undefined) stop = suggest({ settings, context, search, element, input, searchBox, addressLine });
     });
     return {
       ...plain,

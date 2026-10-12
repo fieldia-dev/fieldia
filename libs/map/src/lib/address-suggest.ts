@@ -1,8 +1,10 @@
 import type { Value } from '@fieldia/core';
 import type { WidgetContext } from '@fieldia/widgets';
+import type { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
 import { asJson, isLatLng, writePoint, type LatLng } from './geo';
-import { addressLabels, fill } from './labels';
+import { addressLabels } from './address-labels';
+import { fill } from './labels';
 import { warnOnce } from './map-core';
 import type { AddressSearch, PlaceFound } from './providers';
 import type { searchBox } from './search-box';
@@ -40,12 +42,13 @@ export interface SuggestOptions {
   /** The field's box, and what holds it (and the list under it). */
   element: HTMLElement;
   input: HTMLInputElement;
-  /** The place search's combobox. */
+  /** The place search's combobox, and the line it writes. */
   searchBox: typeof searchBox;
+  addressLine: typeof addressLine;
 }
 
 /** The suggestions on the field's box; what it gives back takes them off. */
-export function suggest({ settings, context, search, element, input, searchBox }: SuggestOptions): () => void {
+export function suggest({ settings, context, search, element, input, searchBox, addressLine }: SuggestOptions): () => void {
   const { form, name, node, id, document: doc } = context;
   const locale = context.locale ?? 'en';
   const options = node.options ?? {};
@@ -93,7 +96,7 @@ export function suggest({ settings, context, search, element, input, searchBox }
     // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose suggestions carry none).
     async pick(place: PlaceFound) {
       const mine = ++picking;
-      const whole = [place.label, place.detail].filter(Boolean).join(', ');
+      const whole = addressLine([place.label, place.detail], locale);
       write(whole);
       let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
       let parts = place.parts;
@@ -103,7 +106,7 @@ export function suggest({ settings, context, search, element, input, searchBox }
         at = located;
         parts = located.parts ?? parts;
         // The provider's own way of writing it, unless a person has typed since.
-        if (located.address && input.value === whole) write(located.address);
+        if (located.address && input.value === whole) write(addressLine([located.address], locale));
       }
       if (at && placeField) {
         if (form.page.fields[placeField]?.type !== 'float') form.setValue(placeField, asJson(writePoint(at)));

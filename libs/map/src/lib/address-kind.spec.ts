@@ -1,6 +1,6 @@
 import type { FieldNode, Page } from '@fieldia/core';
 import { mapKinds } from './kinds';
-import { ADDRESS_LABELS } from './labels';
+import { ADDRESS_LABELS } from './address-labels';
 
 /** The address with suggestions in the designer: a char field drawn by `address-search`, its settings the fields a picked address fills and the country it keeps to. */
 
