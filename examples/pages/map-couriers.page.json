@@ -1,0 +1,85 @@
+{
+  "fieldia": "0.1",
+  "id": "map-couriers",
+  "title": "Couriers out now",
+  "description": "Couriers on a map: each one's car, scooter or bike facing the way they go, in green when free and amber when busy.",
+  "data": { "kind": "record", "model": "courier" },
+  "fields": {
+    "name": { "type": "char", "label": "Courier" },
+    "vehicle": {
+      "type": "selection",
+      "label": "Vehicle",
+      "options": [
+        { "value": "car", "label": "Car" },
+        { "value": "scooter", "label": "Scooter" },
+        { "value": "bike", "label": "Bike" }
+      ]
+    },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "free", "label": "Free" },
+        { "value": "busy", "label": "Delivering" },
+        { "value": "off", "label": "On a break" }
+      ]
+    },
+    "heading": { "type": "integer", "label": "Heading, degrees" },
+    "orders_today": { "type": "integer", "label": "Orders today" },
+    "phone": { "type": "char", "label": "Phone" },
+    "face": { "type": "image", "label": "Photo" },
+    "place": { "type": "json", "label": "Where" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "couriers",
+    "columns": ["name", "vehicle", "status", "orders_today", "phone"],
+    "sort": [{ "field": "name" }],
+    "pageSize": 20,
+    "searchFields": ["name", "vehicle", "status"],
+    "filters": [
+      { "id": "free", "label": "Free", "filter": [{ "field": "status", "op": "=", "value": "free" }] },
+      { "id": "busy", "label": "Delivering", "filter": [{ "field": "status", "op": "=", "value": "busy" }] }
+    ],
+    "groupBy": ["status", "vehicle"],
+    "actions": [{ "type": "button", "id": "assign", "label": "Give the next order", "action": "assign" }],
+    "map": {
+      "point": "place",
+      "pin": {
+        "look": "icon",
+        "icon": "scooter",
+        "iconField": "vehicle",
+        "turn": "heading",
+        "tones": [
+          { "tone": "success", "when": "status == 'free'" },
+          { "tone": "warning", "when": "status == 'busy'" },
+          { "tone": "muted", "when": "status == 'off'" }
+        ]
+      },
+      "card": { "title": "name", "image": "face", "fields": ["status", "vehicle", "orders_today", "phone"] },
+      "cluster": false,
+      "view": "map"
+    }
+  },
+  "translations": {
+    "ar": {
+      "Couriers out now": "المندوبون الآن",
+      "Couriers on a map: each one's car, scooter or bike facing the way they go, in green when free and amber when busy.": "المندوبون على خريطة: سيارة كل منهم أو دراجته النارية أو الهوائية متجهة إلى حيث يسير، بالأخضر إن كان متاحًا وبالكهرماني إن كان مشغولًا.",
+      "Courier": "المندوب",
+      "Vehicle": "المركبة",
+      "Car": "سيارة",
+      "Scooter": "دراجة نارية",
+      "Bike": "دراجة",
+      "Status": "الحالة",
+      "Free": "متاح",
+      "Delivering": "في توصيل",
+      "On a break": "في استراحة",
+      "Heading, degrees": "الاتجاه بالدرجات",
+      "Orders today": "طلبات اليوم",
+      "Phone": "الهاتف",
+      "Photo": "الصورة",
+      "Where": "المكان",
+      "Give the next order": "أسند الطلب التالي"
+    }
+  }
+}

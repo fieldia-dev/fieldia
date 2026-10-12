@@ -4,6 +4,10 @@ import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
 import mapDelivery from '../../examples/pages/map-delivery.page.json';
 import mapZone from '../../examples/pages/map-zone.page.json';
+import mapHomes from '../../examples/pages/map-homes.page.json';
+import mapHome from '../../examples/pages/map-home.page.json';
+import mapCouriers from '../../examples/pages/map-couriers.page.json';
+import mapCourier from '../../examples/pages/map-courier.page.json';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
@@ -24,6 +28,7 @@ import { real } from './real';
 import { businessData, businessPage } from './business';
 import { codeData, codePage } from './code-page';
 import { templatePages } from './templates';
+import { sampleCouriers, sampleHomes } from './homes';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -49,6 +54,11 @@ export const pages: Record<string, Page> = {
   // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
   'map-delivery': mapDelivery as Page,
   'map-zone': mapZone as Page,
+  // A list's records on a map, and the record each opens: shared/homes.ts.
+  'map-homes': mapHomes as Page,
+  'map-home': mapHome as Page,
+  'map-couriers': mapCouriers as Page,
+  'map-courier': mapCourier as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
@@ -93,10 +103,13 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
   return Number(params.get('record') ?? 1);
 }
 
-/** A list's row opens its record on the customer's own page, keeping the skin, language and direction. */
+/** Each list's record page: a home's for the homes on a map, a courier's for the couriers; the customer's for the rest. */
+const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier' };
+
+/** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
   const next = new URLSearchParams(params);
-  next.set('page', 'customer');
+  next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
   next.set('record', String(id));
   location.search = next.toString();
 }
@@ -251,6 +264,8 @@ export function sampleDataSource() {
     records: {
       ...READING,
       'account.move': BILLS,
+      home: sampleHomes(),
+      courier: sampleCouriers(),
       partner: {
         1: {
           name: 'Nile Traders',

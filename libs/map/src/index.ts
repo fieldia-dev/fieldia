@@ -1,4 +1,7 @@
 export { mapWidgets } from './lib/widgets';
+export { mapListViews } from './lib/list-view';
+export { MAP_ICONS } from './lib/map-icons';
+export type { MapRecord, PinDrawer } from './lib/pins';
 export { mapKinds, type MapKind, type MapKindContext } from './lib/kinds';
 export type { MapSettings } from './lib/settings';
 export {

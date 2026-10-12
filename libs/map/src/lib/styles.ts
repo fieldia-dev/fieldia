@@ -98,6 +98,114 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-grip-add::after { width: 10px; height: 10px; opacity: 0.7; }
 /* Each image overlaps the next by a pixel (leaflet.ts): drawn plainly over it, not added to it as Leaflet's own seam fix adds light. */
 .fd-map-box.leaflet-container img.leaflet-tile { mix-blend-mode: normal; }
+/* A list's map: each record's pin in its look and tone, bubbles of pins that crowd, the card a pin opens, "Search this area". */
+.fd-map-list { min-width: 0; }
+.fd-map-mark { overflow: visible; }
+.fd-map-mark:focus { outline: none; }
+/* Each mark is as large as its face, stood on its point by its foot, its middle, or the tip of a label's tail. */
+.fd-map-mark.fd-map-foot { translate: -50% -100%; }
+.fd-map-mark.fd-map-middle { translate: -50% -50%; }
+.fd-map-mark.fd-map-tail { translate: -50% calc(-100% - 6px); }
+.fd-map-face {
+  --fd-map-tone: var(--fd-accent); --fd-map-on: var(--fd-accent-text);
+  position: relative; box-sizing: border-box; cursor: pointer; transition: scale 0.12s;
+}
+.fd-map-face[data-tone] { --fd-map-on: var(--fd-surface); }
+.fd-map-face[data-tone="info"] { --fd-map-tone: var(--fd-info); }
+.fd-map-face[data-tone="success"] { --fd-map-tone: var(--fd-success); }
+.fd-map-face[data-tone="warning"] { --fd-map-tone: var(--fd-warning); }
+.fd-map-face[data-tone="danger"] { --fd-map-tone: var(--fd-error); }
+.fd-map-face[data-tone="muted"] { --fd-map-tone: var(--fd-muted); }
+.fd-map-face[data-stands="foot"] { transform-origin: 50% 100%; }
+.fd-map-face[data-stands="middle"] { transform-origin: 50% 50%; }
+.fd-map-face[data-hot], .fd-map-mark:hover .fd-map-face, .fd-map-bubble[data-hot], .fd-map-mark:hover .fd-map-bubble { scale: 1.12; }
+.fd-map-mark:focus-visible .fd-map-face, .fd-map-mark:focus-visible .fd-map-bubble { outline: 2px solid var(--fd-focus); outline-offset: 3px; }
+.fd-map-face-icon { display: block; }
+.fd-map-face-icon svg { display: block; width: 100%; height: 100%; }
+.fd-map-face[data-look="label"] {
+  padding: 4px 9px; border-radius: 999px; font-weight: 700; font-size: 13px; line-height: 1.25; font-variant-numeric: tabular-nums;
+  background: var(--fd-surface); color: var(--fd-text); border: 1.5px solid color-mix(in srgb, var(--fd-text) 20%, transparent); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+.fd-map-face[data-look="label"][data-tone] { color: var(--fd-map-tone); border-color: var(--fd-map-tone); }
+.fd-map-face[data-look="label"]::after {
+  content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg);
+  background: inherit; border: inherit; border-top: 0; border-left: 0;
+}
+.fd-map-face[data-look="label"]:is([data-hot], [data-chosen]), .fd-map-mark:hover .fd-map-face[data-look="label"] { background: var(--fd-map-tone); color: var(--fd-map-on); border-color: var(--fd-map-tone); }
+.fd-map-face-text { display: block; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-map-face[data-look="pin"] { width: 30px; height: 40px; }
+.fd-map-face[data-look="pin"] > svg { display: block; width: 30px; height: 40px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3)); }
+.fd-map-face-body { fill: var(--fd-map-tone); stroke: var(--fd-surface); stroke-width: 1.5; }
+.fd-map-face[data-look="pin"] .fd-map-face-icon { position: absolute; left: 7px; top: 6px; width: 16px; height: 16px; color: var(--fd-map-on); }
+.fd-map-face[data-look="pin"] .fd-map-face-icon:empty { left: 10px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--fd-map-on); }
+.fd-map-face[data-look="icon"] {
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--fd-map-tone); color: var(--fd-map-on); border: 2px solid var(--fd-surface); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.fd-map-face[data-look="icon"] .fd-map-face-icon { width: 20px; height: 20px; }
+.fd-map-face-turn { position: absolute; inset: -9px; pointer-events: none; }
+.fd-map-face-turn::before { content: ""; position: absolute; left: 50%; top: 0; margin-left: -5px; border: 5px solid transparent; border-top: 0; border-bottom: 7px solid var(--fd-map-tone); }
+.fd-map-face-photo {
+  display: grid; place-items: center; width: 40px; height: 40px; box-sizing: border-box; border-radius: 50%; object-fit: cover;
+  border: 3px solid var(--fd-map-tone); background: var(--fd-fill); color: var(--fd-muted); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+span.fd-map-face-photo svg { width: 22px; height: 22px; }
+.fd-map-face[data-look="photo"] .fd-map-face-text {
+  position: absolute; top: calc(100% + 2px); left: 50%; translate: -50% 0; max-width: 14ch; padding: 1px 6px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.fd-map-face[data-look="dot"] { width: 16px; height: 16px; border-radius: 50%; background: var(--fd-map-tone); border: 2px solid var(--fd-surface); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.fd-map-face:is([data-look="icon"], [data-look="dot"])[data-chosen], .fd-map-face[data-chosen] .fd-map-face-photo { box-shadow: 0 0 0 2px var(--fd-surface), 0 0 0 4px var(--fd-map-tone); }
+.fd-map-face[data-chosen]::before, .fd-map-bubble[data-chosen]::before {
+  content: "✓"; position: absolute; top: -7px; right: -7px; z-index: 1; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box;
+  display: grid; place-items: center; font: 700 10px/1 system-ui, sans-serif; background: var(--fd-accent); color: var(--fd-accent-text); border: 1.5px solid var(--fd-surface);
+}
+.fd-map-bubble {
+  position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+  background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; transition: scale 0.12s;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--fd-accent) 30%, transparent), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.fd-map-bubble[data-size="m"] { width: 40px; height: 40px; }
+.fd-map-bubble[data-size="l"] { width: 48px; height: 48px; }
+.fd-map-card-popup .leaflet-popup-content-wrapper { padding: 0; border-radius: 10px; overflow: hidden; background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24); }
+.fd-map-card-popup .leaflet-popup-content { margin: 0; font: inherit; font-size: 14px; line-height: 1.4; }
+.fd-map-card-popup .leaflet-popup-tip { background: var(--fd-surface); }
+.fd-map-card { display: grid; }
+.fd-map-card-image { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--fd-fill); }
+.fd-map-card-body { display: grid; gap: 8px; padding: 10px 12px 12px; }
+.fd-map-card-head { display: flex; align-items: flex-start; gap: 8px; }
+.fd-map-card-title { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.3; overflow-wrap: anywhere; }
+.fd-map-card-close {
+  flex: none; width: 28px; height: 28px; margin: -4px -6px -4px 0; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--fd-muted); font: 400 20px/1 system-ui, sans-serif; cursor: pointer;
+}
+.fd-map-card[dir="rtl"] .fd-map-card-close { margin: -4px 0 -4px -6px; }
+.fd-map-card-close:hover { background: var(--fd-fill); color: var(--fd-text); }
+.fd-map-card-fields { margin: 0; display: grid; gap: 3px; font-size: 13px; }
+.fd-map-card-fields div { display: flex; justify-content: space-between; gap: 10px; }
+.fd-map-card-fields dt { color: var(--fd-muted); }
+.fd-map-card-fields dd { margin: 0; text-align: end; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.fd-map-card-choose input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }
+.fd-map-card .fd-button { min-height: 30px; padding-inline: 14px; }
+.fd-map-card :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow: auto; }
+.fd-map-crowd-item { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; text-align: start; background: transparent; color: var(--fd-text); font: inherit; font-size: 13px; cursor: pointer; }
+.fd-map-crowd-item:hover { background: var(--fd-accent-soft); }
+.fd-map-here {
+  position: absolute; top: 10px; left: 50%; translate: -50% 0; z-index: 1000; padding: 7px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer;
+  border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-text); font: inherit; font-size: 13.5px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.fd-map-here:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-map-here:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+/* The map over the table when the list is too narrow for both side by side: shorter, so the table is in reach. */
+@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-map-list .fd-map-box { height: clamp(260px, 46vh, 420px); } }
+.fd-map-ghost .fd-map-face { pointer-events: none; }
+.fd-map-list-note {
+  position: absolute; left: 8px; bottom: 28px; z-index: 1000; max-width: calc(100% - 64px); margin: 0; padding: 4px 8px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;
+  background: color-mix(in srgb, var(--fd-surface) 92%, transparent); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
 `;
 
 /** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */

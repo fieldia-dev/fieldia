@@ -1,7 +1,7 @@
 {
   "name": "@fieldia/map",
   "version": "0.14.1",
-  "description": "Fieldia's maps: a place and an area as fields, on any map provider. Leaflet, loaded only where a map is shown.",
+  "description": "Fieldia's maps: a place and an area as fields, and a list's records on a map, on any map provider. Leaflet, loaded only where a map is shown.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
   "type": "commonjs",
@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@fieldia/core": "0.14.1",
+    "@fieldia/viewer": "0.14.1",
     "@fieldia/widgets": "0.14.1",
     "leaflet": "^1.9.4",
     "tslib": "^2.8.1"

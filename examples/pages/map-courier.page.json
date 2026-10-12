@@ -1,0 +1,151 @@
+{
+  "fieldia": "0.1",
+  "id": "map-courier",
+  "title": "Courier",
+  "description": "One courier: how to reach them, what they ride, and where they are now.",
+  "data": {
+    "kind": "record",
+    "model": "courier"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Courier"
+    },
+    "vehicle": {
+      "type": "selection",
+      "label": "Vehicle",
+      "options": [
+        {
+          "value": "car",
+          "label": "Car"
+        },
+        {
+          "value": "scooter",
+          "label": "Scooter"
+        },
+        {
+          "value": "bike",
+          "label": "Bike"
+        }
+      ]
+    },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "free",
+          "label": "Free"
+        },
+        {
+          "value": "busy",
+          "label": "Delivering"
+        },
+        {
+          "value": "off",
+          "label": "On a break"
+        }
+      ]
+    },
+    "heading": {
+      "type": "integer",
+      "label": "Heading, degrees"
+    },
+    "orders_today": {
+      "type": "integer",
+      "label": "Orders today"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "face": {
+      "type": "image",
+      "label": "Photo"
+    },
+    "place": {
+      "type": "json",
+      "label": "Where"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "avatarField": "face"
+    },
+    "statusbar": {
+      "field": "status"
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-vehicle",
+            "field": "vehicle"
+          },
+          {
+            "type": "field",
+            "id": "f-orders",
+            "field": "orders_today"
+          },
+          {
+            "type": "field",
+            "id": "f-heading",
+            "field": "heading"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Where now",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-place",
+            "field": "place",
+            "colspan": 2,
+            "widget": "place",
+            "options": {
+              "search": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Courier": "المندوب",
+      "Vehicle": "المركبة",
+      "Car": "سيارة",
+      "Scooter": "دراجة نارية",
+      "Bike": "دراجة",
+      "Status": "الحالة",
+      "Free": "متاح",
+      "Delivering": "في توصيل",
+      "On a break": "في استراحة",
+      "Heading, degrees": "الاتجاه بالدرجات",
+      "Orders today": "طلبات اليوم",
+      "Phone": "الهاتف",
+      "Photo": "الصورة",
+      "Where": "المكان",
+      "One courier: how to reach them, what they ride, and where they are now.": "مندوب واحد: كيف تصل إليه، وما يركبه، وأين هو الآن.",
+      "Where now": "أين هو الآن"
+    }
+  }
+}

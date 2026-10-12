@@ -1,0 +1,109 @@
+{
+  "fieldia": "0.1",
+  "id": "map-homes",
+  "title": "Homes in Cairo",
+  "description": "Homes for sale and to rent, as a list and on a map: each price on its pin, rentals in blue, a card for each with its picture.",
+  "data": { "kind": "record", "model": "home" },
+  "fields": {
+    "name": { "type": "char", "label": "Home" },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        { "value": "flat", "label": "Flat" },
+        { "value": "duplex", "label": "Duplex" },
+        { "value": "penthouse", "label": "Penthouse" },
+        { "value": "villa", "label": "Villa" }
+      ]
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        { "value": "sale", "label": "For sale" },
+        { "value": "rent", "label": "For rent, a month" }
+      ]
+    },
+    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [12, 0] },
+    "bedrooms": { "type": "integer", "label": "Bedrooms" },
+    "area_m2": { "type": "integer", "label": "Area, m²" },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        { "value": "zamalek", "label": "Zamalek" },
+        { "value": "garden_city", "label": "Garden City" },
+        { "value": "dokki", "label": "Dokki" },
+        { "value": "mohandessin", "label": "Mohandessin" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "heliopolis", "label": "Heliopolis" },
+        { "value": "nasr_city", "label": "Nasr City" },
+        { "value": "new_cairo", "label": "New Cairo" },
+        { "value": "sheikh_zayed", "label": "Sheikh Zayed" },
+        { "value": "october", "label": "6th of October" }
+      ]
+    },
+    "lat": { "type": "float", "label": "Latitude" },
+    "lng": { "type": "float", "label": "Longitude" },
+    "photo": { "type": "image", "label": "Photo" },
+    "listed_on": { "type": "date", "label": "Listed on" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "homes",
+    "columns": ["name", "offer", "price", "bedrooms"],
+    "sort": [{ "field": "listed_on", "desc": true }],
+    "pageSize": 12,
+    "searchFields": ["name", "district", "kind", "offer"],
+    "filters": [
+      { "id": "sale", "label": "For sale", "filter": [{ "field": "offer", "op": "=", "value": "sale" }] },
+      { "id": "rent", "label": "For rent", "filter": [{ "field": "offer", "op": "=", "value": "rent" }] },
+      { "id": "family", "label": "Three bedrooms or more", "filter": [{ "field": "bedrooms", "op": ">=", "value": 3 }] }
+    ],
+    "groupBy": ["district", "kind", "offer"],
+    "actions": [{ "type": "button", "id": "shortlist", "label": "Add to shortlist", "action": "shortlist" }],
+    "map": {
+      "latitude": "lat",
+      "longitude": "lng",
+      "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
+      "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms", "area_m2", "district"] },
+      "view": "both"
+    }
+  },
+  "translations": {
+    "ar": {
+      "Homes in Cairo": "منازل في القاهرة",
+      "Homes for sale and to rent, as a list and on a map: each price on its pin, rentals in blue, a card for each with its picture.": "منازل للبيع وللإيجار، في قائمة وعلى خريطة: سعر كل منزل على دبوسه، والإيجار بالأزرق، ولكل منزل بطاقة بصورته.",
+      "Home": "المنزل",
+      "Type": "النوع",
+      "Flat": "شقة",
+      "Duplex": "دوبلكس",
+      "Penthouse": "بنتهاوس",
+      "Villa": "فيلا",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "For rent, a month": "للإيجار، شهريًا",
+      "Price": "السعر",
+      "Bedrooms": "غرف النوم",
+      "Area, m²": "المساحة، م²",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Garden City": "جاردن سيتي",
+      "Dokki": "الدقي",
+      "Mohandessin": "المهندسين",
+      "Maadi": "المعادي",
+      "Heliopolis": "مصر الجديدة",
+      "Nasr City": "مدينة نصر",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "6th of October": "السادس من أكتوبر",
+      "Latitude": "خط العرض",
+      "Longitude": "خط الطول",
+      "Photo": "الصورة",
+      "Listed on": "تاريخ العرض",
+      "For rent": "للإيجار",
+      "Three bedrooms or more": "ثلاث غرف نوم أو أكثر",
+      "Add to shortlist": "أضف إلى القائمة المختصرة"
+    }
+  }
+}

@@ -122,6 +122,13 @@ describe('a place inside a box on the map: within', () => {
     expect(matchesFilter({ spot: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [31.2, 30.05] } } }, within)).toBe(true);
   });
 
+  it('crosses the line where east meets west: a west beyond its east is a box over the Pacific', () => {
+    const pacific: ResolvedFilter[] = [{ field: 'spot', op: 'within', value: { south: -20, west: 170, north: 0, east: -170 } }];
+    expect(matchesFilter(at(178, -10), pacific)).toBe(true);
+    expect(matchesFilter(at(-175, -10), pacific)).toBe(true);
+    expect(matchesFilter(at(0, -10), pacific)).toBe(false);
+  });
+
   it('is a condition a page may write, its box four numbers', async () => {
     const { validatePage } = await import('../../index');
     const page = (value: unknown) => ({

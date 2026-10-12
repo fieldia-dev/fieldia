@@ -28,8 +28,8 @@ export interface MapBoxOptions {
   keys?: string;
   center?: LatLng;
   zoom?: number;
-  /** Height in pixels; 280 unless said. */
-  height?: number;
+  /** Height in pixels, or as CSS says it (`clamp(…)`); 280 pixels unless said. */
+  height?: number | string;
 }
 
 export interface MapBox {
@@ -65,7 +65,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   element.className = 'fd-map-box';
   // The map's own layout is left to right in every language; the controls over it follow the page.
   element.dir = 'ltr';
-  element.style.setProperty('--fd-map-height', `${options.height ?? 280}px`);
+  element.style.setProperty('--fd-map-height', typeof options.height === 'string' ? options.height : `${options.height ?? 280}px`);
   element.setAttribute('role', 'region');
   element.setAttribute('aria-label', fill(labels.mapOf, { label: options.name }));
   const keysId = `fd-map-keys-${Math.random().toString(36).slice(2, 9)}`;

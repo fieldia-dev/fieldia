@@ -238,6 +238,33 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-homes',
+    name: 'Homes on a map',
+    category: 'lists',
+    query: 'page=map-homes&skin=outlined',
+    blurb: 'A list of homes beside a map of them: each price on its pin, rentals in blue, crowded pins as one bubble with their count. A pin lights its row and a row its pin; the search and the homes chosen are the same in both.',
+    howTo: [
+      'Point at a row: its pin lights up on the map. Point at a pin: its row lights up.',
+      'Click a pin: its card opens with the picture and the price. Tick Choose: its row is chosen too, and Add to shortlist appears.',
+      'Click a bubble: the map zooms in until its pins part.',
+      'Move the map over Maadi and press Search this area: the list keeps only the homes there, and “In this area” joins the search bar.',
+      'Pick For rent from the search menu: the map keeps only the rentals.',
+      'Press Map or List over the records to see one alone.',
+    ],
+  },
+  {
+    id: 'map-couriers',
+    name: 'Couriers on a map',
+    category: 'lists',
+    query: 'page=map-couriers&skin=outlined',
+    blurb: 'Couriers as icons: a car, a scooter or a bike by each record, facing the way it goes, green when free and amber when delivering. The page says it all, with no code for the pins.',
+    howTo: [
+      'Tab to the map, then on through the couriers: each is read out by name. Enter opens their card; Escape closes it.',
+      'Ctrl-click (⌘-click) a courier: they are chosen, a tick on their icon.',
+      'Press List to see the same couriers as a table, and Map to come back.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',

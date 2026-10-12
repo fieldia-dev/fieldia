@@ -1,0 +1,237 @@
+{
+  "fieldia": "0.1",
+  "id": "map-home",
+  "title": "Home",
+  "description": "One home of the list: its details, its picture and its place on the map.",
+  "data": {
+    "kind": "record",
+    "model": "home"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Home"
+    },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        {
+          "value": "flat",
+          "label": "Flat"
+        },
+        {
+          "value": "duplex",
+          "label": "Duplex"
+        },
+        {
+          "value": "penthouse",
+          "label": "Penthouse"
+        },
+        {
+          "value": "villa",
+          "label": "Villa"
+        }
+      ]
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        {
+          "value": "sale",
+          "label": "For sale"
+        },
+        {
+          "value": "rent",
+          "label": "For rent, a month"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms"
+    },
+    "area_m2": {
+      "type": "integer",
+      "label": "Area, m²"
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        },
+        {
+          "value": "october",
+          "label": "6th of October"
+        }
+      ]
+    },
+    "lat": {
+      "type": "float",
+      "label": "Latitude"
+    },
+    "lng": {
+      "type": "float",
+      "label": "Longitude"
+    },
+    "photo": {
+      "type": "image",
+      "label": "Photo"
+    },
+    "listed_on": {
+      "type": "date",
+      "label": "Listed on"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "avatarField": "photo"
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-kind",
+            "field": "kind"
+          },
+          {
+            "type": "field",
+            "id": "f-offer",
+            "field": "offer"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms"
+          },
+          {
+            "type": "field",
+            "id": "f-area",
+            "field": "area_m2"
+          },
+          {
+            "type": "field",
+            "id": "f-listed",
+            "field": "listed_on"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Where",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-place",
+            "field": "lat",
+            "label": "Place",
+            "colspan": 2,
+            "widget": "place",
+            "options": {
+              "longitudeField": "lng",
+              "search": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Home": "المنزل",
+      "Type": "النوع",
+      "Flat": "شقة",
+      "Duplex": "دوبلكس",
+      "Penthouse": "بنتهاوس",
+      "Villa": "فيلا",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "For rent, a month": "للإيجار، شهريًا",
+      "Price": "السعر",
+      "Bedrooms": "غرف النوم",
+      "Area, m²": "المساحة، م²",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Garden City": "جاردن سيتي",
+      "Dokki": "الدقي",
+      "Mohandessin": "المهندسين",
+      "Maadi": "المعادي",
+      "Heliopolis": "مصر الجديدة",
+      "Nasr City": "مدينة نصر",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "6th of October": "السادس من أكتوبر",
+      "Latitude": "خط العرض",
+      "Longitude": "خط الطول",
+      "Photo": "الصورة",
+      "Listed on": "تاريخ العرض",
+      "One home of the list: its details, its picture and its place on the map.": "منزل من القائمة: تفاصيله وصورته ومكانه على الخريطة.",
+      "Where": "المكان",
+      "Place": "الموقع"
+    }
+  }
+}

@@ -13,10 +13,10 @@ export const LIST_STYLES = `
 .fd-list-records { display: grid; gap: 10px; min-width: 0; align-content: start; }
 .fd-list[data-view="list"] .fd-list-map { display: none; }
 .fd-list[data-view="map"] .fd-list-records, .fd-list[data-view="map"] .fd-pager { display: none; }
-.fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; }
 .fd-list[data-view="both"] .fd-list-map { position: sticky; top: 8px; }
 /* Too narrow for two: the map over the table. */
-@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr); } .fd-list[data-view="both"] .fd-list-map { position: static; } }
+@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr); } .fd-list[data-view="both"] .fd-list-map { position: static; order: -1; } }
 .fd-list-row.fd-list-hot > td { background: var(--fd-accent-soft); }
 .fd-search { position: relative; flex: 1 1 360px; max-width: 680px; min-width: 0; container: fd-search / inline-size; }
 .fd-search-field { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 34px; box-sizing: border-box; padding: 2px 2px 2px 8px; padding-inline: 8px 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }

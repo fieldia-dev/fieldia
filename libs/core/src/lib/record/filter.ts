@@ -86,7 +86,9 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
       if (!Array.isArray(coordinates)) return false;
       const [lng, lat] = coordinates as number[];
       const box = expected as Record<string, number>;
-      return typeof lat === 'number' && typeof lng === 'number' && lat >= box['south'] && lat <= box['north'] && lng >= box['west'] && lng <= box['east'];
+      if (typeof lat !== 'number' || typeof lng !== 'number' || lat < box['south'] || lat > box['north']) return false;
+      // A west beyond its east: the box crosses the antimeridian, as a map over the Pacific does.
+      return box['west'] <= box['east'] ? lng >= box['west'] && lng <= box['east'] : lng >= box['west'] || lng <= box['east'];
     }
   }
 }

@@ -9,7 +9,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import { demoMapWidgets } from '../shared/maps';
+import { demoListViews, demoMapWidgets } from '../shared/maps';
 import type { ActionRequest, Form, FormState, Locale, RecordId, Theme, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
@@ -96,6 +96,7 @@ class NoteComponent implements OnInit {
     [locale]="locale"
     [fieldTypes]="fieldTypes"
     [widgets]="widgets"
+    [listViews]="listViews"
     [pages]="pages"
     [keys]="options.keys"
     [showValid]="options.showValid ?? false"
@@ -127,6 +128,7 @@ class DemoComponent {
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets, ...demoMapWidgets };
+  readonly listViews = demoListViews;
   readonly pages = appPages;
   readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
