@@ -256,7 +256,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const element = card.element;
     // The quiet look as the form will wear it: the field's own word, else its group's, else the page's skin.
     const skin = page.look?.skin ?? (page.look?.theme ? THEME_SKINS[page.look.theme] : (options.skin ?? 'outlined'));
-    element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && (node.quiet ?? quietAround ?? skin === 'quiet'));
+    const quietPlace = node.quiet ?? quietAround ?? skin === 'quiet';
+    element.toggleAttribute('data-in-quiet', quietPlace);
+    element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && quietPlace);
     // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
     const isPicked = picked.includes(node.id) && picked.length > 1;
     const was = card.drawn;

@@ -166,6 +166,8 @@ export const panel: DesignerWords['panel'] = {
   requiredOnlyWhen: 'مطلوب فقط عندما…',
   onlyWhen: 'فقط عندما…',
   readonlyWhen: 'للقراءة فقط عندما…',
+  readonlyReason: 'السبب',
+  readonlyReasonHint: 'يضبطه سير العمل عند الحل',
   showOnlyWhen: 'الإظهار فقط عندما…',
   noRulesField: 'دائمًا. تحتاج القاعدة إلى حقل آخر يحمل عنصرًا من قائمة، أو نعم أو لا.',
   whenItShows: 'متى يظهر',

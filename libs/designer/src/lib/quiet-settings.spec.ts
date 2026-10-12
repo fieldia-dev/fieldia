@@ -1,5 +1,5 @@
 import { blankPage, createDesigner } from './designer';
-import { mount, openTab } from './test-editor';
+import { mount, openTab, type } from './test-editor';
 import { employeeDesigner, expectValid, nodeOf } from './test-layout';
 
 /**
@@ -77,5 +77,26 @@ describe('the Layout tab’s Quiet, for a group and a field', () => {
     press('Quiet');
     expect(nodeOf(designer.getPage(), 'section-1')?.['quiet']).toBe(true);
     expect(card().hasAttribute('data-quiet')).toBe(true);
+  });
+});
+
+describe('why a field is locked', () => {
+  it('is said in a box under its read-only rule, there only while it has one, and taken off when emptied', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit') });
+    const closed = designer.addQuestion('yes-no', { parent: 'section-1' }) as string;
+    const field = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    const { host } = mount(designer, { mode: 'advanced' });
+    openTab(host, 'Rules');
+    const why = () => host.querySelector('.fd-properties [role="tabpanel"]:not([hidden]) .fd-q-reason') as HTMLElement;
+    expect(why().hidden).toBe(true);
+    designer.setRule(field, 'readonly', { field: String(nodeOf(designer.getPage(), closed)?.['field']), equals: true });
+    expect(why().hidden).toBe(false);
+    const box = why().querySelector('input') as HTMLInputElement;
+    expect(box.getAttribute('aria-label')).toBe('Why');
+    type(box, 'Set by the workflow');
+    expect(nodeOf(designer.getPage(), field)?.['readonlyReason']).toBe('Set by the workflow');
+    expectValid(designer.getPage());
+    type(box, '');
+    expect(nodeOf(designer.getPage(), field)).not.toHaveProperty('readonlyReason');
   });
 });

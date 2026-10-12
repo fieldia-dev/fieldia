@@ -89,6 +89,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const readonlyWhen = conditionEditor(el, designer, id, 'question', 'readonly');
   const readonlyOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.readonlyWhen);
   readonlyOnly.addEventListener('click', () => readonlyWhen.start());
+  // Why, in plain words, while its rule keeps it read-only: said by the lock by its label.
+  const readonlyReason = el('input', { class: 'fd-input', 'aria-label': w.readonlyReason, placeholder: w.readonlyReasonHint, autocomplete: 'off' }) as HTMLInputElement;
+  readonlyReason.addEventListener('input', () => designer.updateQuestion(id, { readonlyReason: readonlyReason.value }));
+  const readonlyReasonRow = el('label', { class: 'fd-q-reason' }, el('span', { class: 'fd-prop-name' }, w.readonlyReason), readonlyReason);
   // When it shows: rules on the other fields that hold one of a list, or yes or no.
   const when = conditionEditor(el, designer, id, 'question');
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
@@ -126,7 +130,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     ...labels.rows,
     setting(el, 'layout', 'Section', section, { words: w.section }),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, w.required)), requiredOnly), requiredWhen.element), 'rules', 'Required'),
-    onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
+    onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly, readonlyReasonRow), 'rules', 'Read-only'),
     whenBox,
     roles.element,
     shownWhile.element,
@@ -182,6 +186,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       requiredOnly.hidden = required.checked || !requiredWhen.element.hidden || !requiredWhen.canStart();
       readonlyWhen.update(page, others, found.node.readonly);
       readonlyOnly.hidden = !readonlyWhen.element.hidden || !readonlyWhen.canStart();
+      // Only a field a rule makes read-only has anything to say why.
+      readonlyReasonRow.hidden = found.node.readonly === undefined || found.node.readonly === false;
+      if (!focused(readonlyReason)) readonlyReason.value = found.node.readonlyReason ?? '';
       when.update(page, others, found.node.invisible);
       roles.update(page);
       shownWhile.update(page);

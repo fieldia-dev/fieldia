@@ -262,6 +262,8 @@ export interface QuestionPatch {
   placeholder?: string;
   /** Takes the focus as the record opens (the node's `focus`), as Flectra's default_focus. */
   focus?: boolean;
+  /** Why it is read-only while its rule holds, in plain words: said by its lock (the node's `readonlyReason`). Empty takes it off. */
+  readonlyReason?: string;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -874,14 +876,18 @@ export function createDesigner(options: {
     },
 
     updateQuestion(id, patch) {
-      const textOnly = Object.keys(patch).length === 1 && ('label' in patch || 'help' in patch || 'placeholder' in patch);
+      const textOnly = Object.keys(patch).length === 1 && ('label' in patch || 'help' in patch || 'placeholder' in patch || 'readonlyReason' in patch);
       return apply(
         (draft) => {
           const node = fieldNode(draft, id);
-          // Where the focus goes as the record opens is the place's, whatever the field.
+          // Where the focus goes as the record opens is the place's, whatever the field; and why the place keeps it read-only.
           if (patch.focus !== undefined) {
             if (patch.focus) node.focus = true;
             else delete node.focus;
+          }
+          if (patch.readonlyReason !== undefined) {
+            if (patch.readonlyReason.trim()) node.readonlyReason = patch.readonlyReason;
+            else delete node.readonlyReason;
           }
           if (fromModel(node.field)) {
             // The backend's definition stays as it is: what this page says goes on the field's place on it.

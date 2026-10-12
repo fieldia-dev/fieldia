@@ -79,6 +79,8 @@ export const panel = {
   requiredOnlyWhen: 'Required only when…',
   onlyWhen: 'Only when…',
   readonlyWhen: 'Read-only when…',
+  readonlyReason: 'Why',
+  readonlyReasonHint: 'Set by the workflow when it is resolved',
   showOnlyWhen: 'Show only when…',
   noRulesField: 'Always. A rule needs another field that holds one of a list, or yes or no.',
   whenItShows: 'When it shows',
