@@ -1,8 +1,9 @@
 # @fieldia/map
 
 [Fieldia](https://fieldia.dev)'s maps: a **place** and an **area** as fields of a
-form, and a **list's records on a map**, on the map provider you choose. Built
-on [Leaflet](https://leafletjs.com), loaded only when a map is shown.
+form, a **list's records on a map**, and a **map on a form** with its layers,
+places that move and routes along the roads, on the map provider you choose.
+Built on [Leaflet](https://leafletjs.com), loaded only when a map is shown.
 
 ```sh
 npm install @fieldia/map
@@ -104,6 +105,37 @@ query.
 A form with only a place or an area never carries the list map's code, its
 styles or its words.
 
+A card offers the list's own buttons too, each pressed for its record alone
+("Assign", for this driver).
+
+## A map on a form
+
+A part of type `map` shows the record's places as layers: the record's own
+place (`point`, or `latitude` and `longitude`), a place for each of its lines
+(`lines`, read from the line's fields), a `route` between them, or the
+reader's own place (`myLocation`). Give the viewer `maps: mapParts(settings)`.
+
+```json
+{ "type": "map", "id": "order-map", "label": "Where your order is", "layers": [
+  { "id": "door", "label": "Your door", "point": "door", "pin": { "look": "icon", "icon": "home" } },
+  { "id": "courier", "label": "Courier", "latitude": "courier_lat", "longitude": "courier_lng",
+    "pin": { "look": "photo", "image": "courier_photo", "label": "eta_text" },
+    "live": { "staleAfter": 60, "follow": true } },
+  { "id": "way", "route": { "from": "courier", "to": "door", "progress": true,
+    "write": { "seconds": "eta_seconds", "metres": "distance_m", "line": "route_line" } } }
+] }
+```
+
+A place that moves glides to each new place its fields are given (along its
+route when on it), greys and says when it was last seen after `staleAfter`
+seconds without news, and with `follow` is kept in view until the person moves
+the map. A route runs `from` a place `to` another or `through` a layer of
+lines, by `car`, `bike` or `foot`; with `progress` the part travelled fades and
+the time and distance left are kept up to date; `write` names the fields its
+seconds, metres and line go into. Routes come from the provider (`route`),
+loaded the first time one is asked for, or from the app's own `route` in the
+settings.
+
 ## Without a mouse
 
 Tab reaches the map, which shows a cross at its centre: the arrow keys move the
@@ -120,13 +152,13 @@ zooms into a bubble, and Escape closes the card, back on its pin.
 
 ## Providers
 
-| Provider | Road | Dark | Satellite | Address search |
-| --- | --- | --- | --- | --- |
-| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, as people type |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | the app's own (`search`) |
-| `mapbox({ token })` | yes | yes | yes | yes, as people type |
-| `tiles({ url, credit })` | the app's own map images | | | the app's own |
-| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) |
+| Provider | Road | Dark | Satellite | Address search | Routes |
+| --- | --- | --- | --- | --- | --- |
+| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, as people type | car, foot |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | Places API, as people type | car, bike, foot (Routes API) |
+| `mapbox({ token })` | yes | yes | yes | yes, as people type | car (traffic), bike, foot |
+| `tiles({ url, credit, route })` | the app's own map images | | | the app's own | the app's own |
+| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) |
 
 Keys never live in Fieldia: pass one restricted to your sites, or a function
 fetching a short-lived token from your server. Each provider's credits are shown
@@ -153,7 +185,8 @@ their settings (a place's address search, "My location", the field its address
 goes into, the map's height; an area's shapes); pass the map widgets to the
 designer and its editors too. A list page's panel has its Map: where each
 record is, its pins, its card, and how the list opens. Give the screen editor
-`listViews` (and `sampleCentre`, where its made-up records are) and Try it shows
-the map too.
+`listViews` and `maps` (and `sampleCentre`, where its made-up records and
+places are) and Try it shows the maps; with `maps` it offers a Map among its
+blocks, whose panel sets its layers and the routes between them.
 
 MIT. Leaflet is BSD-2-Clause; its stylesheet is included with its licence.

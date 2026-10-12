@@ -280,6 +280,18 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-round',
+    name: 'A delivery round',
+    category: 'records',
+    query: 'page=map-round&skin=outlined',
+    blurb: 'A map with a place for each line of the record: a van’s stops, numbered on the map in their order and greyed once delivered, and the way from the van through them.',
+    howTo: [
+      'Tick Delivered on the third stop in the table: its number greys on the map.',
+      'Delete the fourth stop from the table: it leaves the map, and the way is found again without it.',
+      'Tab through the stops on the map and press Enter for one’s card.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',

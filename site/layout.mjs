@@ -9,6 +9,7 @@ export const DOCS = [
   { path: '/actions/', title: 'Actions and events' },
   { path: '/record/', title: 'Around a record' },
   { path: '/lists/', title: 'Lists and search' },
+  { path: '/maps/', title: 'Maps' },
   { path: '/chatter/', title: 'Chatter' },
   { path: '/look/', title: 'Themes and languages' },
 ];

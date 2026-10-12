@@ -121,6 +121,30 @@ export function sampleOrder(): Values {
   };
 }
 
+/** A van's round from Tahrir Square through five stops in Zamalek and Dokki, two of them done. */
+export function sampleRound(): Values {
+  const stop = (sequence: number, name: string, address: string, lng: number, lat: number, done: boolean) => ({
+    key: `s${sequence}`,
+    id: sequence,
+    values: { sequence, name, address, place: { type: 'Point', coordinates: [lng, lat] }, done },
+  });
+  return {
+    name: 'Round 14 · Zamalek and Dokki',
+    driver: 'Karim Samir',
+    van_lat: 30.0443,
+    van_lng: 31.2353,
+    seconds: null,
+    distance_m: null,
+    stop_ids: [
+      stop(1, 'Nile Traders', '12 Abu El Feda, Zamalek', 31.2218, 30.0659, true),
+      stop(2, 'Zamalek Studio', '4 Hassan Sabry, Zamalek', 31.2165, 30.0606, true),
+      stop(3, 'Bayt Interiors', '19 Shagaret El Dor, Zamalek', 31.2197, 30.0626, false),
+      stop(4, 'Delta Foods', '33 Mossadak, Dokki', 31.2091, 30.0389, false),
+      stop(5, 'Amira Clinics', '7 Tahrir Street, Dokki', 31.2143, 30.0377, false),
+    ],
+  };
+}
+
 /** Eighteen couriers out across the city, each on a car, a scooter or a bike, facing the way they go. */
 export function sampleCouriers(): Record<number, Values> {
   const random = seeded(77);

@@ -246,6 +246,42 @@ test('axe finds nothing on the order and its map, a card open', async ({ page })
   expect(await axeFindings(page, 'order map, a card open')).toEqual([]);
 });
 
+const ROUND = 'page=map-round&skin=outlined';
+const stops = (page: Page) => page.locator('.fd-map-form .fd-map-mark').filter({ has: page.locator('.fd-map-face[data-look="label"]') });
+
+test('a place for each line: a round’s stops numbered in their order, greyed once done, and the way through them', async ({ page }) => {
+  await stubMaps(page);
+  const routes = await stubRoutes(page);
+  const { problems } = await open(page, 'plain', ROUND);
+  await mapReady(theMap(page));
+  await expect(stops(page)).toHaveCount(5);
+  await expect(stops(page).locator('.fd-map-face-text')).toHaveText(['1', '2', '3', '4', '5']);
+  // Named by the layer's words, the stop's customer and its number.
+  await expect(stops(page).nth(2)).toHaveAttribute('aria-label', 'Stop, Bayt Interiors, 3');
+  await expect(stops(page).nth(0).locator('.fd-map-face')).toHaveAttribute('data-tone', 'muted');
+  await expect(stops(page).nth(2).locator('.fd-map-face')).not.toHaveAttribute('data-tone', /.*/);
+  // The way from the van through each stop, in order, longitude first.
+  await expect(route(page)).toHaveCount(1);
+  expect(routes[0]).toContain('/route/v1/driving/31.2353,30.0443;31.2218,30.0659;31.2165,30.0606;31.2197,30.0626;31.2091,30.0389;31.2143,30.0377?');
+  await expect.poll(async () => (await values(page))['distance_m']).toBeGreaterThan(0);
+  // A stop ticked done in the table greys on the map.
+  const third = page.locator('[data-node="f-stops"] tbody tr').nth(2);
+  await third.getByRole('checkbox').check();
+  await expect(stops(page).nth(2).locator('.fd-map-face')).toHaveAttribute('data-tone', 'muted');
+  await screen(page, 'map-form-round');
+  // A stop taken off the round: off the map, and the way asked for again without it.
+  await page.locator('[data-node="f-stops"] tbody tr').nth(3).getByRole('button', { name: /Delete|Remove/ }).click();
+  await expect(stops(page)).toHaveCount(4);
+  await expect.poll(() => routes.length).toBe(2);
+  expect(routes[1]).not.toContain('31.2091,30.0389');
+  // A stop's card, from its pin.
+  await stops(page).nth(0).locator('.fd-map-face').click();
+  const card = page.locator('.fd-map-form .fd-map-card');
+  await expect(card.locator('.fd-map-card-title')).toHaveText('Nile Traders');
+  await expect(card.locator('dt')).toHaveText(['Address', 'Delivered']);
+  expect(problems).toEqual([]);
+});
+
 for (const variant of ['react', 'vue', 'angular']) {
   test(`${variant}: the order’s map, its three places and the way to the door`, async ({ page }) => {
     await stubMaps(page);

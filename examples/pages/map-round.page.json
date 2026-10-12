@@ -1,0 +1,80 @@
+{
+  "fieldia": "0.1",
+  "id": "map-round",
+  "title": "Today’s round",
+  "description": "A delivery round: its stops in order, each numbered on the map and greyed once done, and the way from the van through them.",
+  "data": { "kind": "record", "model": "delivery.round" },
+  "fields": {
+    "name": { "type": "char", "label": "Round" },
+    "driver": { "type": "char", "label": "Driver" },
+    "van_lat": { "type": "float", "label": "Van latitude" },
+    "van_lng": { "type": "float", "label": "Van longitude" },
+    "seconds": { "type": "integer", "label": "Seconds on the road" },
+    "distance_m": { "type": "integer", "label": "Metres on the road" },
+    "stop_ids": {
+      "type": "one2many",
+      "label": "Stops",
+      "relation": "delivery.stop",
+      "fields": {
+        "sequence": { "type": "integer", "label": "No." },
+        "name": { "type": "char", "label": "Customer" },
+        "address": { "type": "char", "label": "Address" },
+        "place": { "type": "json", "label": "Place" },
+        "done": { "type": "boolean", "label": "Delivered" }
+      }
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "round",
+    "title": { "field": "name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "today",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-driver", "field": "driver" },
+          { "type": "field", "id": "f-distance", "field": "distance_m", "readonly": true },
+          {
+            "type": "map",
+            "id": "round-map",
+            "label": "The round",
+            "layers": [
+              { "id": "van", "label": "Van", "latitude": "van_lat", "longitude": "van_lng", "pin": { "look": "icon", "icon": "truck" } },
+              {
+                "id": "stops",
+                "label": "Stop",
+                "lines": "stop_ids",
+                "point": "place",
+                "pin": { "look": "label", "label": "sequence", "tones": [{ "tone": "muted", "when": "done" }] },
+                "card": { "title": "name", "fields": ["address", "done"] }
+              },
+              { "id": "way", "route": { "from": "van", "through": "stops", "mode": "car", "write": { "seconds": "seconds", "metres": "distance_m" } } }
+            ]
+          },
+          { "type": "field", "id": "f-stops", "field": "stop_ids", "colspan": 2, "columns": ["sequence", "name", "address", "done"] }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Today’s round": "جولة اليوم",
+      "A delivery round: its stops in order, each numbered on the map and greyed once done, and the way from the van through them.": "جولة توصيل: محطاتها بالترتيب، كلٌّ مرقّمة على الخريطة وتصير رمادية بعد إتمامها، والطريق من الشاحنة عبرها.",
+      "Round": "الجولة",
+      "Driver": "السائق",
+      "Stops": "المحطات",
+      "No.": "رقم",
+      "Customer": "العميل",
+      "Address": "العنوان",
+      "Place": "المكان",
+      "Delivered": "تم التوصيل",
+      "The round": "الجولة",
+      "Van": "الشاحنة",
+      "Stop": "محطة",
+      "Seconds on the road": "الثواني على الطريق",
+      "Metres on the road": "الأمتار على الطريق"
+    }
+  }
+}
