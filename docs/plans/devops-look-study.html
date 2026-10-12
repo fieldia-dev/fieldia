@@ -385,7 +385,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </div>
 
   <h2 id="v019">0.19, being built now</h2>
-  <p>Agreed on 12 October: Dawarly moves its property map onto Fieldia's once these are in, so they come first, with the address field and the quiet look beside them. Four parts are built side by side, each in its own branch, then joined, tested as a whole and released together.</p>
+  <p>Agreed on 12 October: Dawarly moves its property map onto Fieldia's once these are in, so they come first, with the address field and the quiet look beside them. Four parts are built side by side, each in its own branch, then joined, tested as a whole and released together. <b>Built</b> means finished and tested in its own part, and joined into the release branch.</p>
 
   <div class="lanes">
     <div><b>Map in any page</b><p>Items 1, 2, 3, 8 and 9.</p></div>
@@ -399,20 +399,20 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
       <thead><tr><th>#</th><th>What</th><th>Why</th><th>Status</th></tr></thead>
       <tbody>
         <tr class="group"><td colspan="4">Dawarly's map: needed before it can switch</td></tr>
-        <tr><td>1</td><td>A map any page can place</td><td>Today Fieldia's map only comes inside a Fieldia list. Dawarly hands over its properties and gets just the map, with its own base styles, so the site's styles and the map never break each other.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>2</td><td>Height and fill</td><td>The map is fixed at 320 to 640 px tall. Dawarly's fills the space beside the results.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>3</td><td>The map takes every touch and scroll</td><td>On the map page one finger moves the map and the wheel zooms, instead of scrolling the page.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>4</td><td>Card options</td><td>No Choose box, since visitors don't select properties. The title and photo are a real link to the property page. Lines without a label: "3 beds · 2 baths".</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>5</td><td>Each text in its own direction</td><td>An English property name on an Arabic page still reads left to right; "50 m²" never turns into "m² 50".</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>6</td><td>Price on the pin</td><td>Short ("13.9M"), the currency named only when it is not the firm's own ("$ 450K"), "/month" on rentals.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>7</td><td>How money is shown</td><td>"1,610,000 EGP" as Dawarly writes it, not "E£ 1,610,000"; the code or the symbol, before or after, and a short form. For every form, not only the map.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>8</td><td>A zoom limit, and the starting view from the link</td><td>One property does not zoom in to street level; a shared link opens on the same spot and zoom.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>9</td><td>Telling the page when the map moves, and a count on the button</td><td>Dawarly updates its address bar and results as the map moves; the button reads "Search this area (24)".</td><td><span class="pill part">Building</span></td></tr>
+        <tr><td>1</td><td>A map any page can place</td><td>Today Fieldia's map only comes inside a Fieldia list. Dawarly hands over its properties and gets just the map, with its own base styles, so the site's styles and the map never break each other.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>2</td><td>Height and fill</td><td>The map is fixed at 320 to 640 px tall. Dawarly's fills the space beside the results.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>3</td><td>The map takes every touch and scroll</td><td>On the map page one finger moves the map and the wheel zooms, instead of scrolling the page.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>4</td><td>Card options</td><td>No Choose box, since visitors don't select properties. The title and photo are a real link to the property page. Lines without a label: "3 beds · 2 baths".</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>5</td><td>Each text in its own direction</td><td>An English property name on an Arabic page still reads left to right; "50 m²" never turns into "m² 50".</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>6</td><td>Price on the pin</td><td>Short ("13.9M"), the currency named only when it is not the firm's own ("$ 450K"), "/month" on rentals.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>7</td><td>How money is shown</td><td>"1,610,000 EGP" as Dawarly writes it, not "E£ 1,610,000"; the code or the symbol, before or after, and a short form. For every form, not only the map.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>8</td><td>A zoom limit, and the starting view from the link</td><td>One property does not zoom in to street level; a shared link opens on the same spot and zoom.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>9</td><td>Telling the page when the map moves, and a count on the button</td><td>Dawarly updates its address bar and results as the map moves; the button reads "Search this area (24)".</td><td><span class="pill ok">Built</span></td></tr>
         <tr class="group"><td colspan="4">Later, not blocking the switch</td></tr>
         <tr><td>10</td><td>Clusters counted by the server</td><td>For markets with thousands of properties, the server sends a count per area instead of every pin.</td><td><span class="pill else">Later</span></td></tr>
         <tr class="group"><td colspan="4">For every form</td></tr>
-        <tr><td>11</td><td>An address field with suggestions</td><td>One line of text that suggests addresses as you type, with no map. Picking one can also fill a place field with the point and an address field with its parts.</td><td><span class="pill part">Building</span></td></tr>
-        <tr><td>12</td><td>The quiet look</td><td>Proposal 1: fields read as text, show a box under the pointer and the editor when entered. For a whole page, a section or one field.</td><td><span class="pill part">Building</span></td></tr>
+        <tr><td>11</td><td>An address field with suggestions</td><td>One line of text that suggests addresses as you type, with no map. Picking one can also fill a place field with the point and an address field with its parts.</td><td><span class="pill ok">Built</span></td></tr>
+        <tr><td>12</td><td>The quiet look</td><td>Proposal 1: fields read as text, show a box under the pointer and the editor when entered. For a whole page, a section or one field.</td><td><span class="pill ok">Built</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -450,6 +450,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
       <li>"beds" shows in English on Arabic pages.</li>
       <li>The address search asks Azure for "ar-EG".</li>
       <li>A firm with only rentals gets an empty map area.</li>
+      <li>When it switches: the pin should name a foreign currency by its symbol ("$ 450K") while the card says "USD"; in Arabic, Intl writes dollars as "US$", not "$".</li>
     </ul>
   </div>
 
