@@ -41,6 +41,8 @@ describe('Monaco’s theme from Fieldia’s tokens', () => {
     expect(theme.colors['editorGutter.background']).toBe('#f2f3f5');
     expect(theme.colors['editorLineNumber.foreground']).toBe('#636976');
     expect(theme.colors['editorCursor.foreground']).toBe('#212529');
+    // A placeholder in the muted colour, as a text box's is.
+    expect(theme.colors['editor.placeholder.foreground']).toBe('#636976');
     expect(theme.colors['focusBorder']).toBe('#002855');
     // Chosen text in the accent, see-through, so the words stay readable over it.
     expect(theme.colors['editor.selectionBackground']).toMatch(/^#002855[0-9a-f]{2}$/);

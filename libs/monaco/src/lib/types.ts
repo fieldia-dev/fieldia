@@ -9,10 +9,49 @@ export interface MonacoDisposable {
   dispose(): void;
 }
 
+/** A place in the text: its line and column, each from 1. */
+export interface MonacoPosition {
+  lineNumber: number;
+  column: number;
+}
+
+/** A stretch of the text, from one place to another. */
+export interface MonacoRange {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+}
+
+/** What is chosen: from where it starts to where the cursor is. */
+export interface MonacoSelection {
+  selectionStartLineNumber: number;
+  selectionStartColumn: number;
+  positionLineNumber: number;
+  positionColumn: number;
+}
+
+/** A change to the text, as Monaco tells of it: what each edit put in, and whether Undo or Redo made it. */
+export interface MonacoContentChange {
+  changes: readonly { text: string }[];
+  isUndoing: boolean;
+  isRedoing: boolean;
+}
+
+/** A key bound to a command, or to none (`null`: Monaco does nothing, and leaves the key to the page), where `when` holds. */
+export interface MonacoKeybindingRule {
+  keybinding: number;
+  command: string | null;
+  when?: string;
+}
+
 export interface MonacoModel extends MonacoDisposable {
   getValue(): string;
   setValue(value: string): void;
   getLanguageId(): string;
+  getLineCount(): number;
+  getFullModelRange(): MonacoRange;
+  getOffsetAt(position: MonacoPosition): number;
 }
 
 export interface MonacoEditor extends MonacoDisposable {
@@ -22,8 +61,15 @@ export interface MonacoEditor extends MonacoDisposable {
   hasTextFocus(): boolean;
   layout(): void;
   getContentHeight(): number;
-  onDidChangeModelContent(listener: () => void): MonacoDisposable;
+  getPosition(): MonacoPosition | null;
+  onDidChangeModelContent(listener: (event: MonacoContentChange) => void): MonacoDisposable;
   onDidContentSizeChange(listener: (event: { contentHeight: number }) => void): MonacoDisposable;
+  /** Edits made as one step of Undo, the cursor left where `endCursorState` says. */
+  executeEdits(source: string, edits: { range: MonacoRange; text: string }[], endCursorState?: MonacoSelection[]): boolean;
+  /** One of the editor's own actions, as the keyboard runs it: `paste` with its text, `undo`, `redo`. */
+  trigger(source: string, handlerId: string, payload: unknown): void;
+  /** A key this editor alone has, for keybinding rules to name in their `when`. */
+  createContextKey(key: string, defaultValue: boolean): { set(value: boolean): void };
 }
 
 /** A theme as Monaco defines one: its base, rules for tokens and colours for the editor's parts. */
@@ -40,6 +86,7 @@ export interface MonacoApi {
     createModel(value: string, language?: string): MonacoModel;
     defineTheme(name: string, theme: MonacoThemeData): void;
     setTheme(name: string): void;
+    addKeybindingRules(rules: MonacoKeybindingRule[]): MonacoDisposable;
   };
   languages: {
     register(language: { id: string; extensions?: string[]; aliases?: string[] }): void;

@@ -104,6 +104,7 @@ export function monacoTheme(given: FieldiaColours): MonacoThemeData {
       'editorLineNumber.foreground': c.muted,
       'editorLineNumber.activeForeground': c.text,
       'editorCursor.foreground': c.text,
+      'editor.placeholder.foreground': c.muted,
       'editor.selectionBackground': see('accent', '40'),
       'editor.inactiveSelectionBackground': see('accent', '26'),
       'editor.selectionHighlightBackground': see('accent', '1f'),

@@ -1,7 +1,7 @@
 import { createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
-import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
+import { mountViewer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import { createMonacoWidgets, monacoWidgets } from './monaco';
-import type { MonacoApi, MonacoEditor, MonacoLoader, MonacoModel, MonacoThemeData } from './types';
+import type { MonacoApi, MonacoContentChange, MonacoEditor, MonacoKeybindingRule, MonacoLoader, MonacoModel, MonacoPosition, MonacoRange, MonacoSelection, MonacoThemeData } from './types';
 
 /**
  * Monaco itself is driven in the browser gates (e2e/code-editors.spec.ts);
@@ -10,13 +10,25 @@ import type { MonacoApi, MonacoEditor, MonacoLoader, MonacoModel, MonacoThemeDat
  */
 class FakeModel implements MonacoModel {
   disposed = false;
-  listeners: (() => void)[] = [];
+  listeners: ((event: MonacoContentChange) => void)[] = [];
   constructor(public value: string, public language: string) {}
   getValue = () => this.value;
   getLanguageId = () => this.language;
+  getLineCount = () => this.value.split('\n').length;
+  getFullModelRange(): MonacoRange {
+    const lines = this.value.split('\n');
+    return { startLineNumber: 1, startColumn: 1, endLineNumber: lines.length, endColumn: lines[lines.length - 1].length + 1 };
+  }
+  getOffsetAt({ lineNumber, column }: MonacoPosition) {
+    return this.value.split('\n').slice(0, lineNumber - 1).reduce((sum, line) => sum + line.length + 1, 0) + column - 1;
+  }
   setValue(value: string) {
+    this.change(value);
+  }
+  /** The text changed, as Monaco tells of it: what was put in, and whether by Undo or Redo. */
+  change(value: string, how: Partial<MonacoContentChange> = {}) {
     this.value = value;
-    for (const listener of this.listeners) listener();
+    for (const listener of this.listeners) listener({ changes: [{ text: value }], isUndoing: false, isRedoing: false, ...how });
   }
   dispose() {
     this.disposed = true;
@@ -30,11 +42,21 @@ class FakeEditor implements MonacoEditor {
   sizeListeners: ((event: { contentHeight: number }) => void)[] = [];
   /** Monaco's own input, where the keyboard's typing lands. */
   input: HTMLTextAreaElement;
+  /** The context keys the widget made, with their values. */
+  contextKeys = new Map<string, boolean>();
+  /** What the widget asked the editor to do: a paste, an undo, edits of its own. */
+  triggered: { source: string; handlerId: string; payload: unknown }[] = [];
+  edits: { source: string; edits: { range: MonacoRange; text: string }[]; end?: MonacoSelection[] }[] = [];
+  /** Where the cursor is, as an offset in the text: at its end after typing. */
+  at = 0;
   constructor(public element: HTMLElement, public options: Record<string, unknown>) {
     this.input = element.ownerDocument.createElement('textarea');
     this.input.className = 'inputarea';
     this.input.setAttribute('aria-label', 'Editor content');
+    // Monaco says its input takes several lines.
+    this.input.setAttribute('aria-multiline', 'true');
     element.append(this.input);
+    this.at = this.model.value.length;
   }
   get model() {
     return this.options['model'] as FakeModel;
@@ -52,9 +74,39 @@ class FakeEditor implements MonacoEditor {
     this.layouts++;
   }
   getContentHeight = () => 19 * this.model.value.split('\n').length;
-  onDidChangeModelContent(listener: () => void) {
+  onDidChangeModelContent(listener: (event: MonacoContentChange) => void) {
     this.model.listeners.push(listener);
     return { dispose: () => (this.model.listeners = this.model.listeners.filter((l) => l !== listener)) };
+  }
+  getPosition(): MonacoPosition {
+    const before = this.model.value.slice(0, this.at).split('\n');
+    return { lineNumber: before.length, column: before[before.length - 1].length + 1 };
+  }
+  executeEdits(source: string, edits: { range: MonacoRange; text: string }[], end?: MonacoSelection[]) {
+    this.edits.push({ source, edits, end });
+    let value = this.model.value;
+    for (const { range, text } of edits) {
+      const from = this.model.getOffsetAt({ lineNumber: range.startLineNumber, column: range.startColumn });
+      const to = this.model.getOffsetAt({ lineNumber: range.endLineNumber, column: range.endColumn });
+      value = value.slice(0, from) + text + value.slice(to);
+    }
+    this.model.change(value);
+    if (end?.[0]) this.at = this.model.getOffsetAt({ lineNumber: end[0].positionLineNumber, column: end[0].positionColumn });
+    return true;
+  }
+  trigger(source: string, handlerId: string, payload: unknown) {
+    this.triggered.push({ source, handlerId, payload });
+    // A paste puts its text in at the cursor, as Monaco's does.
+    if (handlerId === 'paste') {
+      const { text } = payload as { text: string };
+      const value = this.model.value.slice(0, this.at) + text + this.model.value.slice(this.at);
+      this.at += text.length;
+      this.model.change(value);
+    }
+  }
+  createContextKey(key: string, value: boolean) {
+    this.contextKeys.set(key, value);
+    return { set: (next: boolean) => void this.contextKeys.set(key, next) };
   }
   onDidContentSizeChange(listener: (event: { contentHeight: number }) => void) {
     this.sizeListeners.push(listener);
@@ -66,6 +118,7 @@ class FakeEditor implements MonacoEditor {
   }
   /** A person typing over the whole text. */
   type(text: string) {
+    this.at = text.length;
     this.model.setValue(text);
     for (const listener of this.sizeListeners) listener({ contentHeight: this.getContentHeight() });
   }
@@ -79,6 +132,7 @@ function fakeMonaco() {
     theme: null as string | null,
     languages: new Set<string>(),
     tokenizers: new Map<string, unknown>(),
+    rules: [] as MonacoKeybindingRule[],
   };
   const api: MonacoApi = {
     editor: {
@@ -94,6 +148,10 @@ function fakeMonaco() {
       },
       defineTheme: (name, theme) => void seen.themes.set(name, theme),
       setTheme: (name) => void (seen.theme = name),
+      addKeybindingRules(rules) {
+        seen.rules.push(...rules);
+        return { dispose: () => (seen.rules = seen.rules.filter((rule) => !rules.includes(rule))) };
+      },
     },
     languages: {
       register: ({ id }) => void seen.languages.add(id),
@@ -139,17 +197,26 @@ function fakeMonaco() {
   };
 }
 
-function pageWith(type: 'text' | 'json', options: FieldNode['options'] = {}, node: Partial<FieldNode> = {}, field: Partial<Field> = {}): Page {
+function pageWith(type: 'text' | 'json' | 'char', options: FieldNode['options'] = {}, node: Partial<FieldNode> = {}, field: Partial<Field> = {}): Page {
   return {
     fieldia: '0.1',
     id: 'job',
     title: 'Job',
     data: { kind: 'record', model: 'job' },
-    fields: { script: { type, label: 'Cleanup script', ...field } as Field, locked: { type: 'boolean', label: 'Locked' } },
+    fields: { script: { type, label: 'Cleanup script', ...field } as Field, locked: { type: 'boolean', label: 'Locked' }, owner: { type: 'char', label: 'Owner' } },
     layout: {
       type: 'sections',
       id: 'root',
-      children: [{ type: 'section', id: 'main', children: [{ type: 'field', id: 'f-script', field: 'script', widget: 'monaco', options, ...node }] }],
+      children: [
+        {
+          type: 'section',
+          id: 'main',
+          children: [
+            { type: 'field', id: 'f-script', field: 'script', widget: 'monaco', options, ...node },
+            { type: 'field', id: 'f-owner', field: 'owner' },
+          ],
+        },
+      ],
     },
   };
 }
@@ -167,20 +234,33 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-async function mount(page: Page, script: unknown = 'def total():\n    return 1', options: Parameters<typeof createMonacoWidgets>[0] = {}, fake = fakeMonaco()) {
+async function mount(page: Page, script: unknown = 'def total():\n    return 1', options: Parameters<typeof createMonacoWidgets>[0] = {}, fake = fakeMonaco(), viewer: Partial<ViewerOptions> = {}) {
   const host = document.createElement('div');
   document.body.append(host);
-  const dataSource = createMemoryDataSource({ records: { job: { 1: { script: script as never } } } });
-  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: createMonacoWidgets({ loader: fake.loader, ...options }) });
+  const dataSource = createMemoryDataSource({ records: { job: { 1: { script: script as never, owner: 'Ops' } } } });
+  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: createMonacoWidgets({ loader: fake.loader, ...options }), ...viewer });
   await handle.form.settled();
   const box = host.querySelector('[data-node="f-script"]') as HTMLElement;
   const label = box.querySelector('label') as HTMLLabelElement;
-  return { ...fake, host, box, label, form: handle.form, editor: () => fake.seen.editors[0] };
+  return { ...fake, host, box, label, dataSource, form: handle.form, editor: () => fake.seen.editors[0] };
+}
+/** A key pressed in an element, as the keyboard sends it: whether something took it is on the event. */
+function press(target: Element, key: string, init: KeyboardEventInit = {}) {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+  target.dispatchEvent(event);
+  return event;
+}
+/** Text pasted into an element, as the clipboard hands it over. */
+function paste(target: Element, text: string) {
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', { value: { getData: (type: string) => (type === 'text/plain' ? text : '') } });
+  target.dispatchEvent(event);
+  return event;
 }
 
 describe('text in VS Code’s editor', () => {
-  it('is offered for text and json fields', () => {
-    expect(Object.keys(monacoWidgets).sort()).toEqual(['json.monaco', 'text.monaco']);
+  it('is offered for text, char and json fields', () => {
+    expect(Object.keys(monacoWidgets).sort()).toEqual(['char.monaco', 'json.monaco', 'text.monaco']);
   });
 
   it('shows a plain box at once, named by the label, while Monaco loads; then Monaco, which the label points at', async () => {
@@ -334,6 +414,186 @@ describe('text in VS Code’s editor', () => {
     plain.dispatchEvent(new Event('input'));
     expect(form.getState().values['script']).toBe('y = 1');
     expect(errors).not.toHaveBeenCalled();
+  });
+});
+
+describe('a one-line field in VS Code’s editor', () => {
+  const condition = (options: FieldNode['options'] = { language: 'javascript' }, node: Partial<FieldNode> = {}, field: Partial<Field> = {}) => pageWith('char', options, node, field);
+
+  it('is a plain one-line box while Monaco loads, named by the label, with the placeholder', async () => {
+    const { box, label, seen, asked } = await mount(condition({ language: 'javascript' }, { placeholder: 'order.total > 100' }), 'a > 1');
+    const plain = box.querySelector('input') as HTMLInputElement;
+    // Monaco asked for, and not here yet.
+    expect(asked.monaco).toEqual([false]);
+    expect(seen.editors).toHaveLength(0);
+    expect(plain.classList.contains('fd-monaco-plain')).toBe(true);
+    expect(plain.type).toBe('text');
+    expect(plain.id).toBe(label.htmlFor);
+    expect(plain.value).toBe('a > 1');
+    expect(plain.placeholder).toBe('order.total > 100');
+    expect(box.querySelector('textarea')).toBeNull();
+  });
+
+  it('is then one line, as tall as a text box: no line numbers, minimap, folding or scroll bars, and it does not grow', async () => {
+    const { box, label, arrive, editor } = await mount(condition({ language: 'javascript' }, { placeholder: 'order.total > 100' }), 'a > 1');
+    await arrive();
+    expect(box.querySelector('.fd-monaco')?.classList.contains('fd-monaco-line')).toBe(true);
+    expect(editor().options).toMatchObject({ lineNumbers: 'off', glyphMargin: false, folding: false, minimap: { enabled: false }, lineDecorationsWidth: 0, renderLineHighlight: 'none', placeholder: 'order.total > 100' });
+    expect(editor().options['scrollbar']).toMatchObject({ vertical: 'hidden', horizontal: 'hidden', alwaysConsumeMouseWheel: false });
+    // Tab still moves on, as from any box.
+    expect(editor().options).toMatchObject({ tabFocusMode: true });
+    expect(editor().input.id).toBe(label.htmlFor);
+    expect(editor().input.getAttribute('aria-labelledby')).toBe(label.id);
+    // Said to be one line, to assistive technology and to the form.
+    expect(editor().input.getAttribute('aria-multiline')).toBe('false');
+    expect(box.querySelector('input')).toBeNull();
+    // Its height is the text box's, kept by its frame: typing never grows it.
+    const frame = box.querySelector('.fd-monaco-frame') as HTMLElement;
+    expect(frame.contains(editor().element)).toBe(true);
+    editor().type('a');
+    expect((box.querySelector('.fd-monaco-box') as HTMLElement).style.height).toBe('');
+  });
+
+  it('writes what is typed to the form as text, and an empty editor as nothing', async () => {
+    const { arrive, editor, form } = await mount(condition(), 'a > 1');
+    await arrive();
+    editor().type('order.paid');
+    expect(form.getState().values['script']).toBe('order.paid');
+    editor().type('');
+    expect(form.getState().values['script']).toBeNull();
+  });
+
+  it('adds no line on Enter, and Enter does nothing else unless the page asks it to move on', async () => {
+    const { arrive, editor, form, host } = await mount(condition(), 'a > 1');
+    await arrive();
+    editor().focus();
+    for (const init of [{}, { shiftKey: true }, { altKey: true }]) {
+      expect(press(editor().input, 'Enter', init).defaultPrevented).toBe(true);
+    }
+    expect(editor().model.getValue()).toBe('a > 1');
+    expect(form.getState().values['script']).toBe('a > 1');
+    expect(document.activeElement).toBe(editor().input);
+    expect(host.querySelector('[data-node="f-owner"] input')).not.toBe(document.activeElement);
+  });
+
+  it('moves on to the next field on Enter when the page asks, as a text box does', async () => {
+    const { arrive, editor, host } = await mount(condition(), 'a > 1', {}, fakeMonaco(), { keys: { enterMovesToNext: true } });
+    await arrive();
+    editor().focus();
+    press(editor().input, 'Enter');
+    expect(document.activeElement).toBe(host.querySelector('[data-node="f-owner"] input'));
+    expect(editor().model.getValue()).toBe('a > 1');
+  });
+
+  it('leaves a key being composed to the input method, Enter too', async () => {
+    const { arrive, editor } = await mount(condition(), 'a > 1');
+    await arrive();
+    expect(press(editor().input, 'Enter', { isComposing: true }).defaultPrevented).toBe(false);
+  });
+
+  it('turns Monaco’s keys that add a line off in it alone: Ctrl+Enter is left to the form, which saves', async () => {
+    const { arrive, editor, seen, dataSource, form } = await mount(condition(), 'a > 1');
+    await arrive();
+    // Ctrl+Enter and Ctrl+Shift+Enter (Cmd on a Mac), bound to nothing where the one-line key is set.
+    const key = [...editor().contextKeys].find(([, on]) => on)?.[0] as string;
+    expect(key).toBeTruthy();
+    const ctrlCmd = 2048, shift = 1024, enter = 3;
+    for (const keybinding of [ctrlCmd | enter, ctrlCmd | shift | enter]) {
+      expect(seen.rules).toContainEqual(expect.objectContaining({ keybinding, command: null, when: expect.stringContaining(key) }));
+    }
+    // A second field adds no rules: they are Monaco's, made once.
+    const rules = seen.rules.length;
+    const second = createMonacoWidgets({ loader: fakeMonaco().loader });
+    expect(second['char.monaco']).toBeDefined();
+    expect(seen.rules).toHaveLength(rules);
+    editor().type('a > 2');
+    editor().focus();
+    press(editor().input, 'Enter', { ctrlKey: true });
+    await form.settled();
+    expect(dataSource.records['job'][1]['script']).toBe('a > 2');
+  });
+
+  it('joins pasted lines into one, as a text box does, in one paste; a paste of only line breaks adds nothing', async () => {
+    const { arrive, editor, form } = await mount(condition(), 'a > 1');
+    await arrive();
+    const joined = paste(editor().input, '\n&& b\r\n  && c\n');
+    expect(joined.defaultPrevented).toBe(true);
+    expect(editor().triggered).toEqual([{ source: 'keyboard', handlerId: 'paste', payload: { text: ' && b && c ' } }]);
+    expect(editor().model.getValue()).toBe('a > 1 && b && c ');
+    expect(form.getState().values['script']).toBe('a > 1 && b && c ');
+    const blank = paste(editor().input, '\n \n');
+    expect(blank.defaultPrevented).toBe(true);
+    expect(editor().triggered).toHaveLength(1);
+    // One line already: Monaco pastes it, as it does.
+    expect(paste(editor().input, ' && d').defaultPrevented).toBe(false);
+    expect(editor().triggered).toHaveLength(1);
+  });
+
+  it('joins a line break that gets in some other way at once, a line copied down, say; Undo steps back over the join with it', async () => {
+    const { arrive, editor, form } = await mount(condition(), 'a > 1');
+    await arrive();
+    editor().type('a > 1\na > 1');
+    // The form never holds the line break.
+    expect(form.getState().values['script']).toBe('a > 1 a > 1');
+    await Promise.resolve();
+    expect(editor().model.getValue()).toBe('a > 1 a > 1');
+    expect(editor().edits).toHaveLength(1);
+    expect(editor().edits[0].end).toEqual([{ selectionStartLineNumber: 1, selectionStartColumn: 12, positionLineNumber: 1, positionColumn: 12 }]);
+    // Undo takes the join away, and goes on to take away what brought the line break.
+    editor().model.change('a > 1\na > 1', { isUndoing: true });
+    await Promise.resolve();
+    expect(editor().triggered.map((t) => t.handlerId)).toEqual(['undo']);
+    editor().model.change('a > 1\na > 1', { isRedoing: true });
+    await Promise.resolve();
+    expect(editor().triggered.map((t) => t.handlerId)).toEqual(['undo', 'redo']);
+    expect(editor().edits).toHaveLength(1);
+  });
+
+  it('shows a value from elsewhere whole, line breaks and all, and joins nothing of it, typed in or not', async () => {
+    const { arrive, editor, form } = await mount(condition(), 'a > 1');
+    await arrive();
+    form.setValue('script', 'a\nb', { by: 'app' });
+    await Promise.resolve();
+    expect(editor().model.getValue()).toBe('a\nb');
+    // A letter typed in it brings no line break: the text reaches the form as the editor shows it.
+    editor().model.change('a\nbc', { changes: [{ text: 'c' }] });
+    await Promise.resolve();
+    expect(form.getState().values['script']).toBe('a\nbc');
+    expect(editor().model.getValue()).toBe('a\nbc');
+    expect(editor().edits).toHaveLength(0);
+  });
+
+  it('cannot be edited when read-only, its paste left to Monaco, which refuses it', async () => {
+    const { box, arrive, editor, form } = await mount(condition({ language: 'javascript' }, { readonly: 'locked' }), 'a > 1');
+    form.setValue('locked', true);
+    expect((box.querySelector('input') as HTMLInputElement).readOnly).toBe(true);
+    await arrive();
+    expect(editor().options).toMatchObject({ readOnly: true, domReadOnly: true });
+    expect(box.querySelector('.fd-monaco')?.hasAttribute('data-readonly')).toBe(true);
+    expect(paste(editor().input, 'x\ny').defaultPrevented).toBe(false);
+    expect(editor().triggered).toEqual([]);
+  });
+
+  it('says it is required, invalid and where the message is, on Monaco’s input', async () => {
+    const { arrive, editor, form } = await mount(condition({ language: 'javascript' }, {}, { required: true }), null);
+    await arrive();
+    expect(editor().options['ariaRequired']).toBe(true);
+    form.validate();
+    await form.settled();
+    expect(editor().input.getAttribute('aria-invalid')).toBe('true');
+    const described = editor().input.getAttribute('aria-describedby') ?? '';
+    expect(described).not.toBe('');
+    for (const id of described.split(' ')) expect(document.getElementById(id)).not.toBeNull();
+  });
+
+  it('takes the focus at a press on its frame, round the code, as a text box does', async () => {
+    const { box, arrive, editor } = await mount(condition(), 'a > 1');
+    await arrive();
+    const frame = box.querySelector('.fd-monaco-frame') as HTMLElement;
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    frame.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    expect(editor().focused).toBe(true);
   });
 });
 

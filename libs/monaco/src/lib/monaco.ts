@@ -4,16 +4,17 @@ import { MONACO_SERVICES, serviceOf, type MonacoService } from './languages';
 import { defaultLoader } from './loader';
 import { installMonacoStyles } from './styles';
 import { monacoTheme, readColours } from './theme';
-import type { MonacoApi, MonacoEditor, MonacoLoader, MonacoModel } from './types';
+import type { MonacoApi, MonacoContentChange, MonacoEditor, MonacoLoader, MonacoModel } from './types';
 
 /**
- * Text and JSON fields in VS Code's editor, Monaco: `"widget": "monaco"`,
- * with `"options": { "language": "python" }` on a text field. Until Monaco
- * has loaded — it is large, and loads only when a page has such a field —
- * the field is a plain text box that works as one; if Monaco cannot be
- * loaded, it stays one. Tab moves on to the next field, as in every field
- * (Ctrl+] and Ctrl+[ indent). The editor wears a theme made from the page's
- * tokens, and reads left to right on an Arabic page too.
+ * Text, char and JSON fields in VS Code's editor, Monaco: `"widget": "monaco"`,
+ * with `"options": { "language": "python" }` on a text or char field. Until
+ * Monaco has loaded — it is large, and loads only when a page has such a
+ * field — the field is a plain text box that works as one; if Monaco cannot
+ * be loaded, it stays one. Tab moves on to the next field, as in every field
+ * (Ctrl+] and Ctrl+[ indent). A char field is one line, as tall as a text
+ * box. The editor wears a theme made from the page's tokens, and reads left to
+ * right on an Arabic page too.
  */
 
 export interface MonacoWidgetsOptions {
@@ -59,9 +60,49 @@ const EDITOR_OPTIONS = {
   renderLineHighlightOnlyWhenFocus: true,
 };
 
+/**
+ * A char field's editor: one line, as tall as a text box (its frame drawn as
+ * one), nothing beside the code, scrolled sideways by the caret as a text box is.
+ */
+const LINE_OPTIONS = {
+  lineNumbers: 'off',
+  glyphMargin: false,
+  folding: false,
+  lineDecorationsWidth: 0,
+  lineNumbersMinChars: 0,
+  renderLineHighlight: 'none',
+  scrollBeyondLastColumn: 0,
+  padding: { top: 0, bottom: 0 },
+  scrollbar: { vertical: 'hidden', horizontal: 'hidden', alwaysConsumeMouseWheel: false, useShadows: false },
+};
+
 /** Between a few lines and a screenful, as the field's text grows. */
 const LEAST = 96;
 const MOST = 360;
+
+/** The context key a one-line editor sets, for the keys turned off in it alone. */
+const ONE_LINE = 'fieldiaOneLine';
+/** Each Monaco whose keys that add a line are turned off in one-line editors: once each. */
+const LINE_KEYS = new WeakSet<MonacoApi>();
+
+/**
+ * Ctrl+Enter and Ctrl+Shift+Enter (Cmd on a Mac) add a line in Monaco. In a
+ * one-line editor they are bound to nothing, and left to the page, as a text
+ * box leaves them: Ctrl+Enter saves the form.
+ */
+function lineKeys(monaco: MonacoApi) {
+  if (LINE_KEYS.has(monaco)) return;
+  LINE_KEYS.add(monaco);
+  // Monaco's numbers for the keys: Ctrl (Cmd on a Mac), Shift, Enter.
+  const ctrlCmd = 2048;
+  const shift = 1024;
+  const enter = 3;
+  monaco.editor.addKeybindingRules([ctrlCmd | enter, ctrlCmd | shift | enter].map((keybinding) => ({ keybinding, command: null, when: `${ONE_LINE} && editorTextFocus` })));
+}
+
+/** Text as one line, as a text box takes it: each line break, and the spaces round it, one space. */
+const oneLineOf = (text: string) => text.replace(/\s*[\r\n]+\s*/g, ' ');
+const BREAK = /[\r\n]/;
 
 /** Each Monaco's themes defined so far, by name: one is defined once, and worn by any editor that wants it. */
 const THEMES = new WeakMap<MonacoApi, Set<string>>();
@@ -92,14 +133,16 @@ function readJson(text: string): JsonValue | undefined {
 }
 
 function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoader, { getWorker, services: named = MONACO_SERVICES }: MonacoWidgetsOptions) {
-  const { form, name, node, id, document, labels = WIDGET_LABELS.en } = context;
+  const { form, name, field, node, id, document, labels = WIDGET_LABELS.en } = context;
   installMonacoStyles(document);
   const language = json ? 'json' : node.options?.['language'];
+  // A char field is one line.
+  const line = !json && field.type === 'char';
   // This field's language service, when it has one and the app gives a worker for it.
   const service = serviceOf(language);
   const services = typeof getWorker === 'function' && service !== null && named.includes(service);
   const element = document.createElement('div');
-  element.className = 'fd-monaco';
+  element.className = line ? 'fd-monaco fd-monaco-line' : 'fd-monaco';
   element.dir = 'ltr';
 
   /** The value as text, as the editor shows it. */
@@ -108,10 +151,9 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   const keyOf = (value: Value | undefined) => (json ? JSON.stringify(value ?? null) : textOf(value));
 
   // Until Monaco is here, and for good if it cannot be loaded: a plain box that works as one.
-  const plain = document.createElement('textarea');
+  const plain = line ? Object.assign(document.createElement('input'), { type: 'text' }) : Object.assign(document.createElement('textarea'), { rows: 4 });
   plain.id = id;
-  plain.className = 'fd-input fd-textarea fd-code fd-monaco-plain';
-  plain.rows = 4;
+  plain.className = line ? 'fd-input fd-monaco-plain' : 'fd-input fd-textarea fd-code fd-monaco-plain';
   plain.spellcheck = false;
   if (node.placeholder) plain.placeholder = node.placeholder;
   plain.value = show(form.getState().values[name]);
@@ -135,6 +177,8 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   let editor: MonacoEditor | null = null;
   let model: MonacoModel | null = null;
   let box: HTMLElement | null = null;
+  /** A one-line editor's frame, drawn as a text box is. */
+  let frame: HTMLElement | null = null;
   let worn = '';
   const leave: (() => void)[] = [];
 
@@ -201,6 +245,48 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     }
   }
 
+  /** Monaco's own input, which the event is for: not a box of its find, say. */
+  const forInput = (event: Event) => !!editor && !!(event.target as Element | null)?.classList?.contains('inputarea');
+
+  /**
+   * In one line, Enter adds none, with Shift, Alt or Ctrl too. The key is left
+   * to the form, as a text box leaves it: Ctrl+Enter saves, and Enter moves on
+   * where the page asks it to (`enterMovesToNext`). A key being composed is
+   * the input method's.
+   */
+  function enter(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229 || !forInput(event)) return;
+    event.preventDefault();
+  }
+
+  /** Lines pasted into one line are joined, as a text box joins them, in one paste; line breaks alone paste nothing. */
+  function pasted(event: ClipboardEvent) {
+    if (!forInput(event) || last?.readonly) return;
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    if (!BREAK.test(text)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (text.trim() !== '') editor?.trigger('keyboard', 'paste', { text: oneLineOf(text) });
+  }
+
+  /**
+   * A line break that came in some other way — a line copied down, a
+   * suggestion of several lines — is joined at once. Undo and Redo step over
+   * the join together with what brought the line break.
+   */
+  function rejoin({ isUndoing, isRedoing }: MonacoContentChange) {
+    if (gone || !editor || !model || model.getLineCount() < 2) return;
+    if (isUndoing || isRedoing) {
+      editor.trigger('fieldia', isUndoing ? 'undo' : 'redo', null);
+      return;
+    }
+    const text = model.getValue();
+    const joined = oneLineOf(text);
+    const before = oneLineOf(text.slice(0, model.getOffsetAt(editor.getPosition() ?? { lineNumber: 1, column: 1 })));
+    const column = Math.min(before.length, joined.length) + 1;
+    editor.executeEdits('fieldia', [{ range: model.getFullModelRange(), text: joined }], [{ selectionStartLineNumber: 1, selectionStartColumn: column, positionLineNumber: 1, positionColumn: column }]);
+  }
+
   function fit(contentHeight: number) {
     if (!box || !editor) return;
     box.style.height = `${Math.min(MOST, Math.max(LEAST, contentHeight + 2))}px`;
@@ -215,11 +301,26 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     monaco = loaded;
     box = document.createElement('div');
     box.className = 'fd-monaco-box';
-    element.insertBefore(box, plain);
+    if (line) {
+      frame = document.createElement('div');
+      frame.className = 'fd-monaco-frame';
+      frame.append(box);
+      // A press on the frame, round the code, goes into it, as one on a text box's edge does.
+      frame.addEventListener('mousedown', (event) => {
+        if (event.target !== frame || !editor) return;
+        event.preventDefault();
+        editor.focus();
+      });
+      element.addEventListener('keydown', enter, true);
+      element.addEventListener('paste', pasted, true);
+      lineKeys(monaco);
+    }
+    element.insertBefore(frame ?? box, plain);
     const focused = document.activeElement === plain;
     model = monaco.editor.createModel(plain.value, monacoId);
     editor = monaco.editor.create(box, {
       ...EDITOR_OPTIONS,
+      ...(line ? LINE_OPTIONS : {}),
       model,
       readOnly: !!last?.readonly,
       domReadOnly: !!last?.readonly,
@@ -236,13 +337,24 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     const area = input();
     area.id = id;
     area.setAttribute('aria-labelledby', `${id}-label`);
+    if (line) {
+      // One line, said to assistive technology, and to the form, which moves on from it at Enter as from a text box.
+      area.setAttribute('aria-multiline', 'false');
+      editor.createContextKey(ONE_LINE, true);
+    }
     describe();
     const current = model;
-    editor.onDidChangeModelContent(() => {
-      if (!writing) typed(current.getValue());
+    editor.onDidChangeModelContent((change) => {
+      if (writing) return;
+      // A line break typed into one line: joined in a moment, and never in the form.
+      const broken = line && change.changes.some(({ text }) => BREAK.test(text));
+      if (broken) queueMicrotask(() => rejoin(change));
+      typed(broken ? oneLineOf(current.getValue()) : current.getValue());
     });
-    editor.onDidContentSizeChange(({ contentHeight }) => fit(contentHeight));
-    fit(editor.getContentHeight());
+    if (!line) {
+      editor.onDidContentSizeChange(({ contentHeight }) => fit(contentHeight));
+      fit(editor.getContentHeight());
+    }
     if (focused) editor.focus();
   }
   // Monaco not loaded: the plain box stays, and works.
@@ -253,6 +365,8 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     focus: () => (editor ? editor.focus() : plain.focus()),
     destroy() {
       gone = true;
+      element.removeEventListener('keydown', enter, true);
+      element.removeEventListener('paste', pasted, true);
       for (const stop of leave.splice(0)) stop();
       editor?.dispose();
       model?.dispose();
@@ -283,12 +397,14 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
 
 /**
  * The widgets, made with the app's choices: `text.monaco` for text in a
- * language, `json.monaco` for JSON. Pass them to the viewer (`widgets`).
+ * language, `char.monaco` for one line of it, `json.monaco` for JSON. Pass
+ * them to the viewer (`widgets`).
  */
 export function createMonacoWidgets(options: MonacoWidgetsOptions = {}): Record<string, WidgetFactory> {
   const loader = options.loader ?? defaultLoader;
   const factory = (json: boolean): WidgetFactory => (context) => monacoWidget(context, json, loader, options);
-  return { 'text.monaco': factory(false), 'json.monaco': factory(true) };
+  const text = factory(false);
+  return { 'text.monaco': text, 'char.monaco': text, 'json.monaco': factory(true) };
 }
 
 /** The widgets with no language services: code coloured, no worker started. */
