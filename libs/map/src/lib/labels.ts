@@ -494,10 +494,10 @@ export interface AddressLabels {
 }
 
 export const ADDRESS_LABELS: Record<Locale, AddressLabels> = {
-  en: { suggested: 'Suggestions: {n}', addressKind: 'Address with suggestions', settingPlace: 'Place goes into', settingParts: 'Parts go into', settingCountry: 'Addresses in', anywhere: 'Any country' },
-  ar: { suggested: 'الاقتراحات: {n}', addressKind: 'عنوان مع اقتراحات', settingPlace: 'يُكتب المكان في', settingParts: 'تُكتب أجزاؤه في', settingCountry: 'العناوين في', anywhere: 'أي بلد' },
-  fr: { suggested: 'Suggestions : {n}', addressKind: 'Adresse avec suggestions', settingPlace: 'Le lieu va dans', settingParts: 'Ses parties vont dans', settingCountry: 'Pays des adresses', anywhere: 'Tous les pays' },
-  de: { suggested: 'Vorschläge: {n}', addressKind: 'Adresse mit Vorschlägen', settingPlace: 'Ort kommt in', settingParts: 'Teile kommen in', settingCountry: 'Land der Adressen', anywhere: 'Alle Länder' },
+  en: { suggested: 'Suggestions: {n}', addressKind: 'Address search', settingPlace: 'Place goes into', settingParts: 'Parts go into', settingCountry: 'Addresses in', anywhere: 'Any country' },
+  ar: { suggested: 'الاقتراحات: {n}', addressKind: 'بحث عن عنوان', settingPlace: 'يُكتب المكان في', settingParts: 'تُكتب أجزاؤه في', settingCountry: 'العناوين في', anywhere: 'أي بلد' },
+  fr: { suggested: 'Suggestions : {n}', addressKind: 'Recherche d’adresse', settingPlace: 'Le lieu va dans', settingParts: 'Ses parties vont dans', settingCountry: 'Pays des adresses', anywhere: 'Tous les pays' },
+  de: { suggested: 'Vorschläge: {n}', addressKind: 'Adresssuche', settingPlace: 'Ort kommt in', settingParts: 'Teile kommen in', settingCountry: 'Land der Adressen', anywhere: 'Alle Länder' },
 };
 
 /** An address field's words for a page's language, the maps' own with them, and the app's own over both. */

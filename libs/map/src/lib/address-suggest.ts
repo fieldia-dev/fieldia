@@ -67,7 +67,11 @@ export function suggest({ settings, context, search, element, input, searchBox }
   status.className = 'fd-sr-only';
   status.setAttribute('role', 'status');
   /** Said to screen readers alone: how many suggestions came, or why none did. A typed address needs none to be an answer. */
-  const say = (said: string | null) => (status.textContent = said ?? (box.list.hidden ? '' : fill(words.suggested, { n: box.list.children.length })));
+  const say = (said: string | null) => {
+    status.textContent = said ?? (box.list.hidden ? '' : fill(words.suggested, { n: box.list.children.length }));
+    // Suggestions come: all of them in sight, as near the bottom of a phone's screen as the box is.
+    if (!box.list.hidden) popup.scrollIntoView?.({ block: 'nearest' });
+  };
   const write = (text: string) => {
     input.value = text;
     form.setValue(name, text || null);
@@ -130,7 +134,12 @@ export function suggest({ settings, context, search, element, input, searchBox }
       const img = doc.createElement('img');
       Object.assign(img, { src: image, alt: mark.text });
       credit.append(img);
-    } else credit.textContent = mark.text;
+    } else {
+      // Its own words in their own direction: "© OpenStreetMap contributors" in an Arabic page too.
+      const text = doc.createElement('bdi');
+      text.textContent = mark.text;
+      credit.append(text);
+    }
     popup.append(credit);
   }
   // A press on it keeps the box's focus, so the list stays open and a credit's link opens.

@@ -181,6 +181,8 @@ function addressKind(options: { locale?: Locale; labels?: Partial<MapLabels & Ad
       const [place, parts, country] = ['placeField', 'partsField', 'countries'].map((key) => {
         const select = doc.createElement('select');
         select.className = 'fd-inline-select';
+        // As wide as a field's name, not as the longest country's.
+        select.style.maxWidth = '16em';
         select.addEventListener('change', () => set({ [key]: select.value || null }));
         return select;
       });

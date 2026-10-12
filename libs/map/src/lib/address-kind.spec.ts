@@ -27,7 +27,7 @@ const choose = (select: HTMLSelectElement, value: string) => {
 describe('an address with suggestions, in the designer', () => {
   it('is a char field drawn by address-search, among the maps', () => {
     const address = kind();
-    expect([address.label, address.group, address.widget, address.field('Address').type]).toEqual(['Address with suggestions', 'Maps', 'address-search', 'char']);
+    expect([address.label, address.group, address.widget, address.field('Address').type]).toEqual(['Address search', 'Maps', 'address-search', 'char']);
     expect([address.fits({ type: 'char', label: 'x' }), address.fits({ type: 'text', label: 'x' })]).toEqual([true, false]);
   });
 
@@ -58,7 +58,7 @@ describe('an address with suggestions, in the designer', () => {
   it('is in the designer’s language', () => {
     const settings = kind('ar').settings({ document, set: () => true });
     settings.refresh(page, { type: 'field', id: 'address', field: 'address', widget: 'address-search' });
-    expect(kind('ar').label).toBe('عنوان مع اقتراحات');
+    expect(kind('ar').label).toBe('بحث عن عنوان');
     expect(settings.element.textContent).toContain('يُكتب المكان في');
     expect(setting(settings.element, 'العناوين في').options[0].textContent).toBe('أي بلد');
   });
