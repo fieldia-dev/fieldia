@@ -188,7 +188,7 @@ test.describe('2.5.8 targets 24 by 24, or room round them', () => {
       });
     }
   }
-  for (const url of ['/plain/?page=fields&skin=outlined', '/plain/?page=customer&skin=underline', '/plain/?page=customers&skin=underline', '/plain/?page=kinds&skin=outlined']) {
+  for (const url of ['/plain/?page=fields&skin=outlined', '/plain/?page=customer&skin=underline', '/plain/?page=customers&skin=underline', '/plain/?page=kinds&skin=outlined', '/plain/?page=work-item&skin=quiet', '/plain/?page=fields&skin=quiet']) {
     test(`${url} · phone`, async ({ page }) => {
       await page.setViewportSize(PHONE);
       await page.goto(url);
