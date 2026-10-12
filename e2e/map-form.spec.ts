@@ -438,6 +438,12 @@ test('a round’s stops that crowd become a bubble, and the way still goes throu
   expect(routes[1]).toContain('31.2091,30.0389;31.2094,30.0391?');
   await screen(page, 'map-form-round-crowd');
   expect(await axeFindings(page, 'round map, two stops crowding')).toEqual([]);
+  // Drawn again, as any change to the record draws it: the same bubble, and the keys stay on it.
+  await bubble.focus();
+  const same = await bubble.evaluate((element) => ((element as HTMLElement & { seen?: boolean }).seen = true));
+  await page.evaluate(() => (window as unknown as Demo).fieldiaDemo.handle.form.setValues({ driver: 'Hana Wael' }));
+  await expect(bubble).toBeFocused();
+  expect(await bubble.evaluate((element) => (element as HTMLElement & { seen?: boolean }).seen)).toBe(same);
   // Pressed: closer, until they part.
   await bubble.click();
   await expect(stops(page).filter({ visible: true })).toHaveCount(5);

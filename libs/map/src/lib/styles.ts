@@ -228,9 +228,8 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow: auto; }
 .fd-map-crowd-item { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; text-align: start; background: transparent; color: var(--fd-text); font: inherit; font-size: 13px; cursor: pointer; }
-.fd-map-crowd-item:hover { background: var(--fd-accent-soft); }
+button.fd-map-crowd-item:hover { background: var(--fd-accent-soft); }
 span.fd-map-crowd-item { display: block; cursor: default; }
-span.fd-map-crowd-item:hover { background: transparent; }
 .fd-map-here {
   position: absolute; top: 10px; left: 50%; translate: -50% 0; z-index: 1000; padding: 7px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer;
   border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-text); font: inherit; font-size: 13.5px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);

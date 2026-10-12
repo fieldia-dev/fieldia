@@ -336,8 +336,8 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
 
   // ---- pins that crowd -----------------------------------------------------------------
 
-  /** The bubbles of pins that crowd with no place that moves among them, drawn again at each zoom and each change. */
-  let bubbles: Leaflet.LayerGroup | null = null;
+  /** The bubbles of pins that crowd with no place that moves among them, by the places they hold: the same bubble while it holds the same. */
+  const bubbles = new Map<string, Leaflet.Marker>();
   const number = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
   /** What a gathering says: how many, and whose, in the map's order. */
   const crowdWords = (keys: string[]) => fill(labels.crowdHere, { n: number(keys.length), names: keys.map((key) => marks.get(key)?.short).join(comma(locale)) });
@@ -358,9 +358,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
    */
   function gather(map: Leaflet.Map, L: LeafletModule) {
     const focused = doc.activeElement;
-    const before = [...marks].find(([, mark]) => mark.marker.getElement() === focused)?.[0] ?? (focused as HTMLElement | null)?.dataset?.['crowd']?.split(' ')[0];
-    bubbles ??= L.layerGroup().addTo(map);
-    bubbles.clearLayers();
+    const before = [...marks].find(([, mark]) => mark.marker.getElement() === focused)?.[0] ?? (focused as HTMLElement | null)?.dataset?.['crowd']?.split('\n')[0];
     const rank = (mark: Mark) => (mark.layer.live ? (mark.layer.live.follow ? 2 : 1) : 0);
     const all = [...marks].sort(([, a], [, b]) => rank(b) - rank(a) || a.order - b.order);
     const zoom = map.getZoom();
@@ -372,6 +370,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
       CROWD
     );
     const holders = new Map<string, HTMLElement | undefined>();
+    const still = new Set<string>();
     for (const group of groups) {
       const members = group.map((i) => all[i]);
       // Places that move come first, so a gathering with one is led by it.
@@ -383,8 +382,13 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
         const icon = mark.marker.getElement();
         if (icon) icon.style.display = stands ? '' : 'none';
       }
-      const holder = keys && !lead ? bubble(map, L, keys) : (lead ?? members[0][1]).marker.getElement();
+      const holder = keys && !lead ? bubble(map, L, keys, still) : (lead ?? members[0][1]).marker.getElement();
       for (const [key] of members) holders.set(key, holder);
+    }
+    for (const [id, marker] of bubbles) {
+      if (still.has(id)) continue;
+      marker.remove();
+      bubbles.delete(id);
     }
     for (const mark of marks.values()) dress(mark);
     // The keys stay where they were: on what now holds the place they were on.
@@ -392,18 +396,23 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     if (holder && holder !== focused) holder.focus({ preventScroll: true });
   }
 
-  /** A gathering of pins with no place that moves among them: a bubble in their middle. */
-  function bubble(map: Leaflet.Map, L: LeafletModule, keys: string[]) {
+  /** A gathering of pins with no place that moves among them: a bubble in their middle, kept while it holds the same places. */
+  function bubble(map: Leaflet.Map, L: LeafletModule, keys: string[], still: Set<string>) {
+    const id = keys.join('\n');
+    still.add(id);
     const spots = keys.map((key) => marks.get(key)!.at);
-    const at = { lat: spots.reduce((sum, p) => sum + p.lat, 0) / spots.length, lng: spots.reduce((sum, p) => sum + p.lng, 0) / spots.length };
-    const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: bubbleFace(doc, keys.length, locale), iconSize: SIZED_BY_FACE });
-    const marker = L.marker([at.lat, at.lng], { icon, keyboard: true, riseOnHover: true }).addTo(bubbles!);
-    const element = marker.getElement();
-    if (element) {
-      element.setAttribute('aria-label', crowdWords(keys));
-      element.dataset['crowd'] = keys.join(' ');
+    const at: [number, number] = [spots.reduce((sum, p) => sum + p.lat, 0) / spots.length, spots.reduce((sum, p) => sum + p.lng, 0) / spots.length];
+    let marker = bubbles.get(id);
+    if (marker) marker.setLatLng(at);
+    else {
+      const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: bubbleFace(doc, keys.length, locale), iconSize: SIZED_BY_FACE });
+      const made = (marker = L.marker(at, { icon, keyboard: true, riseOnHover: true }).addTo(map));
+      bubbles.set(id, made);
+      onPress(made, (event) => pressCrowd(map, L, keys, made.getLatLng(), 20, made.getElement() ?? null, event));
     }
-    onPress(marker, (event) => pressCrowd(map, L, keys, at, 20, element ?? null, event));
+    const element = marker.getElement();
+    element?.setAttribute('aria-label', crowdWords(keys));
+    if (element) element.dataset['crowd'] = id;
     return element;
   }
 
