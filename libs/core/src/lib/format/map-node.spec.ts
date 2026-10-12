@@ -128,8 +128,8 @@ describe('a map on a form', () => {
     expect(problems([courier], { fences: [{ layer: 'courier', area: 'zone', when: 'near', steps: tell }] })).not.toEqual([]);
   });
 
-  it('offers the tools a form’s map has: satellite, full screen, measuring; nearest first is a list’s', () => {
-    expect(problems(LAYERS, { tools: ['satellite', 'fullscreen', 'measure'] })).toEqual([]);
+  it('offers the tools a form’s map has: satellite, traffic, full screen, measuring; nearest first is a list’s', () => {
+    expect(problems(LAYERS, { tools: ['satellite', 'traffic', 'fullscreen', 'measure'] })).toEqual([]);
     expect(problems(LAYERS, { tools: ['nearest'] })).not.toEqual([]);
   });
 

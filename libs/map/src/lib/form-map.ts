@@ -1,12 +1,13 @@
 import type * as Leaflet from 'leaflet';
 import { compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
-import { drawCard } from './card';
+import { drawCard, drawCrowd, type Card } from './card';
+import { clusterPoints } from './cluster';
 import { readPoint, type LatLng } from './geo';
 import { fill, formMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox, warnOnce } from './map-core';
-import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
+import { anchor, bubbleFace, byKeys, CROWD, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE, zoomToPart } from './marks';
 import { comma, makePins, shown, type MapRecord, type Pins } from './pins';
 import type { RouteFound } from './providers';
 import { nearestOnLine, pointAlong, routeLine, splitLine, type RouteLine } from './route-line';
@@ -18,7 +19,8 @@ import { installFormMapStyles } from './styles';
  * places as layers. A layer is the record's own place (a kitchen, a door, a
  * courier), a place for each of its lines (a round's stops), a route along
  * the roads between them, or the reader's own place. Pins are drawn as a
- * list's map draws them. A place that moves glides to each new position —
+ * list's map draws them, and gathered as it gathers them when they crowd. A
+ * place that moves glides to each new position —
  * along its route when it is on one — says when it was last seen once its
  * news is old, and is followed until the person moves the map. A route's
  * part already travelled fades, and its time and distance left are written
@@ -55,6 +57,16 @@ interface Mark {
   at: LatLng;
   html: string;
   name: string;
+  /** Its name among others gathered with it: its layer's words, or a line's own ("Kitchen", "Delta Foods"). */
+  short: string;
+  /** Where it stands among the map's places: their names are said in this order. */
+  order: number;
+  /** How tall its face stands over its point, in pixels: a card opens above it. */
+  height: number;
+  /** When its news is old, when it was last seen ("Last seen 3 minutes ago"). */
+  stale?: string;
+  /** The places gathered under it while they crowd it, itself among them. */
+  crowd?: string[];
   movedAt: number;
   glide?: number;
 }
@@ -160,6 +172,13 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     return [place.layer.label, title, said].filter(Boolean).join(comma(locale)) || place.layer.id;
   }
 
+  /** A pin's name among others gathered with it: its layer's words for a place of its own; a line's title, or its layer's words and what it says ("Stop 4"). */
+  function shortOf(place: Place, name: string): string {
+    const scope = pinsOf.get(place.layer.id)!.scope;
+    const own = (field?: string) => (field ? shown(scope, field, place.record.values, locale) : '');
+    return (place.layer.lines ? own(place.layer.card?.title) || [place.layer.label, own(place.layer.pin?.label)].filter(Boolean).join(' ') : place.layer.label) || name;
+  }
+
   // ---- the person's own moves, after which a followed place is followed no more -------
 
   let moving = false;
@@ -194,26 +213,24 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
   function draw(map: Leaflet.Map, L: LeafletModule) {
     const now = placesNow(values);
     const seen = new Set<string>();
-    for (const place of now) {
+    for (const [order, place] of now.entries()) {
       seen.add(place.key);
       const face = pinsOf.get(place.layer.id)!.pins.face(place.record);
       const html = face.element.outerHTML;
       const name = nameOf(place);
+      const named = { name, short: shortOf(place, name), order, height: face.stands === 'foot' ? face.height : face.height / 2 };
       const mark = marks.get(place.key);
       if (!mark) {
         const marker = L.marker([place.at.lat, place.at.lng], { icon: L.divIcon({ className: `fd-map-mark ${anchor(face)}`, html: face.element, iconSize: SIZED_BY_FACE }), keyboard: true, riseOnHover: true }).addTo(map);
-        const made: Mark = { marker, layer: place.layer, at: place.at, html, name, movedAt: Date.now() };
-        marks.set(place.key, made);
-        marker.getElement()?.setAttribute('aria-label', name);
-        const height = face.stands === 'foot' ? face.height : face.height / 2;
-        if (place.layer.card) onPress(marker, (event) => showCard(map, L, place.key, height, byKeys(event)));
+        marks.set(place.key, { marker, layer: place.layer, at: place.at, html, movedAt: Date.now(), ...named });
+        onPress(marker, (event) => press(map, L, place.key, event));
         continue;
       }
       if (html !== mark.html) {
         mark.marker.setIcon(L.divIcon({ className: `fd-map-mark ${anchor(face)}`, html: face.element, iconSize: SIZED_BY_FACE }));
         mark.html = html;
       }
-      mark.name = name;
+      Object.assign(mark, named);
       if (mark.at.lat !== place.at.lat || mark.at.lng !== place.at.lng) {
         mark.at = place.at;
         mark.movedAt = Date.now();
@@ -230,6 +247,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
       mark.marker.remove();
       marks.delete(key);
     }
+    gather(map, L);
     restale();
     drawRoutes(map, L);
     drawAreas(map, L);
@@ -291,16 +309,16 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const words = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
     for (const mark of marks.values()) {
       const after = mark.layer.live?.staleAfter;
-      const icon = mark.marker.getElement();
-      const face = icon?.querySelector<HTMLElement>('.fd-map-face');
-      if (!after || !icon || !face) continue;
+      const face = mark.marker.getElement()?.querySelector<HTMLElement>('.fd-map-face');
+      if (!after || !face) continue;
       const seconds = (Date.now() - mark.movedAt) / 1000;
       const stale = seconds > after;
       face.toggleAttribute('data-stale', stale);
       let badge = face.querySelector<HTMLElement>('.fd-map-face-stale');
+      mark.stale = undefined;
       if (!stale) {
         badge?.remove();
-        icon.setAttribute('aria-label', mark.name);
+        dress(mark);
         continue;
       }
       const minutes = Math.max(1, Math.round(seconds / 60));
@@ -310,11 +328,135 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
         badge.className = 'fd-map-face-stale';
         face.append(badge);
       }
-      badge.textContent = fill(labels.lastSeen, { time });
-      icon.setAttribute('aria-label', `${mark.name}${comma(locale)}${badge.textContent}`);
+      mark.stale = badge.textContent = fill(labels.lastSeen, { time });
+      dress(mark);
     }
   }
   const staleTimer = setInterval(restale, 15_000);
+
+  // ---- pins that crowd -----------------------------------------------------------------
+
+  /** The bubbles of pins that crowd with no place that moves among them, by the places they hold: the same bubble while it holds the same. */
+  const bubbles = new Map<string, Leaflet.Marker>();
+  const number = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
+  /** What a gathering says: how many, and whose, in the map's order. */
+  const crowdWords = (keys: string[]) => fill(labels.crowdHere, { n: number(keys.length), names: keys.map((key) => marks.get(key)?.short).join(comma(locale)) });
+  /** A pin's own words: its name, and when it was last seen once its news is old. */
+  const said = (mark: Mark) => (mark.stale ? `${mark.name}${comma(locale)}${mark.stale}` : mark.name);
+
+  /**
+   * Pins that crowd, gathered as a list's map gathers them, again at each
+   * zoom: no pin stands on another, where the one under it could be neither
+   * seen nor pressed. A bubble with their count stands in their middle. A
+   * place that moves is never hidden in one: the person watching a courier
+   * sees them glide, sees when their news is old, and the map follows them,
+   * gathered or not. The pins that crowd it are gathered under it instead: it
+   * wears their count, says whose they are, and a press on it is a bubble's.
+   * Of several that move, the one followed leads. Each mark keeps its own
+   * place: routes, reachable areas and fences read where places are, never
+   * where a bubble stands.
+   */
+  function gather(map: Leaflet.Map, L: LeafletModule) {
+    const focused = doc.activeElement;
+    const before = [...marks].find(([, mark]) => mark.marker.getElement() === focused)?.[0] ?? (focused as HTMLElement | null)?.dataset?.['crowd']?.split('\n')[0];
+    const rank = (mark: Mark) => (mark.layer.live ? (mark.layer.live.follow ? 2 : 1) : 0);
+    const all = [...marks].sort(([, a], [, b]) => rank(b) - rank(a) || a.order - b.order);
+    const zoom = map.getZoom();
+    const groups = clusterPoints(
+      all.map(([, mark]) => {
+        const at = map.project([mark.at.lat, mark.at.lng], zoom);
+        return { x: at.x, y: at.y, leads: !!mark.layer.live };
+      }),
+      CROWD
+    );
+    const holders = new Map<string, HTMLElement | undefined>();
+    const still = new Set<string>();
+    for (const group of groups) {
+      const members = group.map((i) => all[i]);
+      // Places that move come first, so a gathering with one is led by it.
+      const lead = members[0][1].layer.live ? members[0][1] : null;
+      const keys = members.length > 1 ? members.map(([key]) => key).sort((a, b) => marks.get(a)!.order - marks.get(b)!.order) : undefined;
+      for (const [, mark] of members) {
+        const stands = !keys || mark === lead;
+        mark.crowd = stands ? keys : undefined;
+        const icon = mark.marker.getElement();
+        if (icon) icon.style.display = stands ? '' : 'none';
+      }
+      const holder = keys && !lead ? bubble(map, L, keys, still) : (lead ?? members[0][1]).marker.getElement();
+      for (const [key] of members) holders.set(key, holder);
+    }
+    for (const [id, marker] of bubbles) {
+      if (still.has(id)) continue;
+      marker.remove();
+      bubbles.delete(id);
+    }
+    for (const mark of marks.values()) dress(mark);
+    // The keys stay where they were: on what now holds the place they were on.
+    const holder = before === undefined ? undefined : holders.get(before);
+    if (holder && holder !== focused) holder.focus({ preventScroll: true });
+  }
+
+  /** A gathering of pins with no place that moves among them: a bubble in their middle, kept while it holds the same places. */
+  function bubble(map: Leaflet.Map, L: LeafletModule, keys: string[], still: Set<string>) {
+    const id = keys.join('\n');
+    still.add(id);
+    const spots = keys.map((key) => marks.get(key)!.at);
+    const at: [number, number] = [spots.reduce((sum, p) => sum + p.lat, 0) / spots.length, spots.reduce((sum, p) => sum + p.lng, 0) / spots.length];
+    let marker = bubbles.get(id);
+    if (marker) marker.setLatLng(at);
+    else {
+      const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: bubbleFace(doc, keys.length, locale), iconSize: SIZED_BY_FACE });
+      const made = (marker = L.marker(at, { icon, keyboard: true, riseOnHover: true }).addTo(map));
+      bubbles.set(id, made);
+      onPress(made, (event) => pressCrowd(map, L, keys, made.getLatLng(), 20, made.getElement() ?? null, event));
+    }
+    const element = marker.getElement();
+    element?.setAttribute('aria-label', crowdWords(keys));
+    if (element) element.dataset['crowd'] = id;
+    return element;
+  }
+
+  /** A pin's words for assistive technology and, while others are gathered under it, their count at its shoulder. */
+  function dress(mark: Mark) {
+    const icon = mark.marker.getElement();
+    if (!icon) return;
+    let count = icon.querySelector<HTMLElement>(':scope > .fd-map-count');
+    if (mark.crowd && !count) {
+      count = doc.createElement('span');
+      count.className = 'fd-map-count';
+      count.setAttribute('aria-hidden', 'true');
+      icon.append(count);
+    }
+    if (mark.crowd) count!.textContent = number(mark.crowd.length);
+    else count?.remove();
+    icon.setAttribute('aria-label', mark.crowd ? crowdWords(mark.crowd) : said(mark));
+  }
+
+  /** A pin pressed: its card; or, while others are gathered under it, as a bubble is pressed. */
+  function press(map: Leaflet.Map, L: LeafletModule, key: string, event: MouseEvent | KeyboardEvent | undefined) {
+    const mark = marks.get(key);
+    if (mark?.crowd) pressCrowd(map, L, mark.crowd, mark.at, mark.height, mark.marker.getElement() ?? null, event);
+    else if (mark?.layer.card) showCard(map, L, key, byKeys(event));
+  }
+
+  /**
+   * Pins gathered, pressed: the map closer, until they part (the keys stay
+   * with the first of them: gather). On one spot that no zoom parts, a list
+   * of them, each opening its own card.
+   */
+  function pressCrowd(map: Leaflet.Map, L: LeafletModule, keys: string[], at: LatLng, height: number, back: HTMLElement | null, event: MouseEvent | KeyboardEvent | undefined) {
+    const members = keys.filter((key) => marks.has(key));
+    if (zoomToPart(map, L, members.map((key) => marks.get(key)!.at), ROOM)) return;
+    const list = drawCrowd({
+      document: doc,
+      labels,
+      dir: dir(),
+      records: members.map((key) => ({ record: { id: key, values: {} }, name: said(marks.get(key)!), plain: !marks.get(key)!.layer.card })),
+      pick: (record) => showCard(map, L, String(record.id), true, { at, height, back }),
+      close: () => closeCard(map, true),
+    });
+    openOver(map, L, { at, height, back }, list, byKeys(event));
+  }
 
   // ---- routes ------------------------------------------------------------------------
 
@@ -428,26 +570,33 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
 
   // ---- a card, the reader's own place, and the words over the map ----------------------
 
-  function showCard(map: Leaflet.Map, L: LeafletModule, key: string, height: number, focus: boolean) {
+  const dir = (): 'ltr' | 'rtl' => (doc.defaultView?.getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr');
+
+  /** A place's card, over its pin; or, picked from a list of pins on one spot, over the pin that lists them. */
+  function showCard(map: Leaflet.Map, L: LeafletModule, key: string, focus: boolean, over?: { at: LatLng; height: number; back: HTMLElement | null }) {
     const mark = marks.get(key);
     const place = placesNow(values).find((p) => p.key === key);
     if (!mark || !place?.layer.card) return;
-    closeCard(map, false);
     const scope = pinsOf.get(place.layer.id)!.scope;
     const card = drawCard({
       document: doc,
       page: scope,
       locale,
       labels,
-      dir: doc.defaultView?.getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr',
+      dir: dir(),
       card: { ...place.layer.card, open: false },
       title: place.layer.card.title ?? '',
       fields: place.layer.card.fields ?? [],
       record: place.record,
       close: () => closeCard(map, true),
     });
-    const back = mark.marker.getElement() ?? null;
-    openCard = { popup: popCard(map, L, { at: mark.at, height, card, focus, escape: () => closeCard(map, true) }), back };
+    openOver(map, L, over ?? { at: mark.at, height: mark.height, back: mark.marker.getElement() ?? null }, card, focus);
+  }
+
+  /** A card over the map at a pin: Escape and its close button go back to the pin. */
+  function openOver(map: Leaflet.Map, L: LeafletModule, over: { at: LatLng; height: number; back: HTMLElement | null }, card: Card, focus: boolean) {
+    closeCard(map, false);
+    openCard = { popup: popCard(map, L, { at: over.at, height: over.height, card, focus, escape: () => closeCard(map, true) }), back: over.back };
   }
 
   function closeCard(map: Leaflet.Map, back: boolean) {
@@ -583,6 +732,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     map.on('popupclose', (event: Leaflet.PopupEvent) => {
       if (openCard?.popup === event.popup) openCard = null;
     });
+    map.on('zoomend', () => gather(map, L));
     draw(map, L);
   });
 

@@ -1,0 +1,28 @@
+{
+ "asked": "https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.traffic.relative.main&zoom=12&x=2403&y=1689&tileSize=256, the key taken out: central Cairo, 12 Oct 2026 at 15:13 UTC",
+ "status": 200,
+ "headers": {
+  "content-type": "image/png",
+  "cache-control": "public, max-age=239",
+  "copyright": "2026 TomTom"
+ },
+ "image": "azure-traffic-tile.png",
+ "statusByZoom": {
+  "0": 204,
+  "3": 204,
+  "4": 204,
+  "5": 204,
+  "6": 200,
+  "7": 200,
+  "12": 200,
+  "18": 200,
+  "20": 200,
+  "21": 200,
+  "22": 204
+ },
+ "attribution": {
+  "copyrights": [
+   "<a data-azure-maps-attribution-dynamic=\"true\" data-azure-maps-attribution-tileset=\"microsoft.core.raster.traffic\">&copy;2026 TomTom</a>"
+  ]
+ }
+}

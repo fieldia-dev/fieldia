@@ -40,6 +40,7 @@ function overlapped(layer: Leaflet.TileLayer, size: number): Leaflet.TileLayer {
 function makeLayer(L: LeafletModule, spec: TileSpec): Leaflet.TileLayer {
   const options: Leaflet.TileLayerOptions = {
     maxZoom: spec.maxZoom,
+    ...(spec.minZoom ? { minZoom: spec.minZoom } : {}),
     ...(spec.tileSize ? { tileSize: spec.tileSize } : {}),
     ...(spec.zoomOffset ? { zoomOffset: spec.zoomOffset } : {}),
     crossOrigin: true,

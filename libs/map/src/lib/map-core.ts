@@ -30,16 +30,16 @@ export interface MapBoxOptions {
   zoom?: number;
   /** Height in pixels, or as CSS says it (`clamp(…)`); 280 pixels unless said. */
   height?: number | string;
-  /** Tools under the zoom: the satellite's images, full screen, measuring a distance. */
+  /** Tools under the zoom: the satellite's images, live traffic, full screen, measuring a distance. */
   tools?: readonly MapTool[];
 }
 
 /** A tool a map can have under its zoom. */
-export type MapTool = 'satellite' | 'fullscreen' | 'measure';
+export type MapTool = 'satellite' | 'traffic' | 'fullscreen' | 'measure';
 
 /** The tools a field's `tools` option names, those a field's map can have; anything else is passed over. */
 export function mapTools(value: unknown): MapTool[] {
-  return Array.isArray(value) ? value.filter((tool): tool is MapTool => tool === 'satellite' || tool === 'fullscreen' || tool === 'measure') : [];
+  return Array.isArray(value) ? value.filter((tool): tool is MapTool => tool === 'satellite' || tool === 'traffic' || tool === 'fullscreen' || tool === 'measure') : [];
 }
 
 export interface MapBox {
@@ -153,6 +153,8 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   let baseMap: BaseMap | null = null;
   /** The satellite's images, by the person's choice; the scheme's own otherwise. */
   let satellite = false;
+  /** Live traffic over them, by the person's choice: its credits are said with theirs. */
+  let traffic = false;
   let baseLayer: Leaflet.TileLayer | null = null;
   let creditsAsked = 0;
   let creditsTimer: ReturnType<typeof setTimeout> | undefined;
@@ -207,9 +209,10 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       if (!map || !baseMap) return;
       const asked = ++creditsAsked;
       const b = map.getBounds();
-      provider
-        .credits(baseMap, { zoom: map.getZoom(), bounds: { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() } }, locale)
-        .then((list) => asked === creditsAsked && showCredits(list))
+      const view = { zoom: map.getZoom(), bounds: { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() } };
+      Promise.all([baseMap, ...(traffic ? (['traffic'] as const) : [])].map((kind) => provider.credits(kind, view, locale)))
+        // Each said once: Azure's traffic is TomTom's, as its road map is.
+        .then((lists) => asked === creditsAsked && showCredits(lists.flat().filter((credit, i, all) => all.findIndex((c) => c.text === credit.text) === i)))
         .catch(() => undefined);
     }, 300);
   }
@@ -347,7 +350,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     if (tools.size)
       void import('./tools').then(({ wireTools }) => {
         if (destroyed || !map) return;
-        wireTools({ tools, box: api, map, L: leaflet, document: doc, labels, locale, provider, satellite: (on) => ((satellite = on), refresh()), cleanup: (done) => cleanups.push(done) });
+        wireTools({ tools, box: api, map, L: leaflet, document: doc, labels, locale, provider, satellite: (on) => ((satellite = on), refresh()), traffic: (on) => ((traffic = on), askCredits()), cleanup: (done) => cleanups.push(done) });
       });
     map.on('moveend', askCredits);
     // Shown at last in a tab or a dialog: the map measures itself again.

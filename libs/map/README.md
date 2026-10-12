@@ -136,6 +136,14 @@ seconds, metres and line go into. Routes come from the provider (`route`),
 loaded the first time one is asked for, or from the app's own `route` in the
 settings.
 
+Pins that crowd are gathered as a list's map gathers them, again at each zoom:
+a bubble with their count ("2 here: Delta Foods, Amira Clinics. Zoom in to see
+them."), pressed to zoom in until they part, or to list them when they stand on
+one spot. A place that moves is never hidden in a bubble: the pins that crowd
+it are gathered under it, and it wears their count, still gliding, greying and
+followed. Routes, reachable areas and fences read where places are, never where
+a bubble stands.
+
 ## Areas by colour, reach and fences
 
 Districts, zones or municipalities shaded in up to five steps of the page's
@@ -163,8 +171,10 @@ the browser showing the map: what must happen once, your server watches.
 
 A list's map with `heat` shows its records as a heat map from afar (each
 weighing one, or `weight`), their pins back at the streets. Any map takes
-`tools`: `satellite`, `fullscreen`, `measure`, and on a list's map `nearest`
-(its records nearest the reader first, the data source sorting by `near`).
+`tools`: `satellite`, `traffic` (the provider's live traffic over the map),
+`fullscreen`, `measure`, and on a list's map `nearest` (its records nearest the
+reader first, the data source sorting by `near`). A provider with no satellite
+images or no traffic shows no button for them.
 Areas, reach, fences, the heat map and the tools each load with the first map
 that has them.
 
@@ -180,17 +190,19 @@ move the map.
 
 On a list's map, Tab goes from the map to each pin and bubble by its name;
 Enter or Space opens a pin's card (Ctrl or ⌘ with it chooses the record) or
-zooms into a bubble, and Escape closes the card, back on its pin.
+zooms into a bubble, and Escape closes the card, back on its pin. A form's map
+does the same, its bubbles saying whose pins they hold; the keys stay on the
+pin, or the bubble, that holds the place they were on.
 
 ## Providers
 
-| Provider | Road | Dark | Satellite | Address search | Routes | Reachable area |
-| --- | --- | --- | --- | --- | --- | --- |
-| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, as people type | car, foot | car |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | Places API, as people type | car, bike, foot (Routes API) | no |
-| `mapbox({ token })` | yes | yes | yes | yes, as people type | car (traffic), bike, foot | car, bike, foot |
-| `tiles({ url, credit, route, reach })` | the app's own map images | | | the app's own | the app's own | the app's own |
-| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
+| Provider | Road | Dark | Satellite | Traffic | Address search | Routes | Reachable area |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, from zoom 6, in dark colours on the dark map, drawn again every four minutes | yes, as people type | car, foot | car |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car, bike, foot (Routes API) | no |
+| `mapbox({ token, trafficStyle })` | yes | yes | yes | from `trafficStyle`, a style of yours with Mapbox Traffic's lines alone | yes, as people type | car (traffic), bike, foot | car, bike, foot |
+| `tiles({ url, credit, trafficUrl, route, reach })` | the app's own map images | | | the app's own (`trafficUrl`) | the app's own | the app's own | the app's own |
+| `openStreetMap()` | yes, **for demos only** | no | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
 
 Keys never live in Fieldia: pass one restricted to your sites, or a function
 fetching a short-lived token from your server. Each provider's credits are shown

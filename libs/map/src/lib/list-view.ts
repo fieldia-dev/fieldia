@@ -9,7 +9,7 @@ import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { HeatLayer } from './heat';
 import { createMapBox, type MapTool } from './map-core';
-import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
+import { anchor, bubbleFace, byKeys, CROWD, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE, zoomToPart } from './marks';
 import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
 import type { MapSettings } from './settings';
@@ -28,8 +28,6 @@ export function mapListViews(settings: MapSettings): Record<string, ListViewFact
   return { map: (context) => listMap(settings, context) };
 }
 
-/** Pins nearer than this, in pixels, become one bubble. */
-const CROWD = 48;
 /** Room kept around the records when the map fits them, in pixels. */
 const ROOM = 40;
 /** The zoom from which a heat map gives way to the records' pins: the streets. */
@@ -433,25 +431,20 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
 
   function bubble(map: Leaflet.Map, L: LeafletModule, members: { record: MapRecord; at: LatLng }[]) {
     const n = members.length;
-    const face = doc.createElement('div');
-    face.className = 'fd-map-bubble';
-    face.dataset['size'] = n < 10 ? 's' : n < 100 ? 'm' : 'l';
-    face.textContent = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn' }).format(n);
+    const face = bubbleFace(doc, n, locale);
     const centre: LatLng = { lat: members.reduce((sum, p) => sum + p.at.lat, 0) / n, lng: members.reduce((sum, p) => sum + p.at.lng, 0) / n };
     const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: face, iconSize: SIZED_BY_FACE });
     const marker = L.marker([centre.lat, centre.lng], { icon, keyboard: true, riseOnHover: true }).addTo(layer as Leaflet.LayerGroup);
     const element = mark({ marker, face, ids: members.map((p) => p.record.id) }, fill(labels.cluster, { n: count(n) }));
-    const bounds = L.latLngBounds(members.map((p) => [p.at.lat, p.at.lng] as [number, number]));
     onPress(marker, (event) => {
       const fromKeys = byKeys(event);
-      const most = Math.min(map.getMaxZoom(), 19);
-      // Closer, until they part; on one spot (a tower's flats), a list of them.
-      if (map.getZoom() < most && !bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) {
-        moving = true;
-        map.fitBounds(bounds, { padding: [ROOM, ROOM], maxZoom: most });
+      // Closer, until they part (the person's own move); on one spot (a tower's flats), a list of them.
+      moving = true;
+      if (zoomToPart(map, L, members.map((p) => p.at), ROOM)) {
         if (fromKeys) box.element.focus();
         return;
       }
+      moving = false;
       const crowd = drawCrowd({
         document: doc,
         labels,

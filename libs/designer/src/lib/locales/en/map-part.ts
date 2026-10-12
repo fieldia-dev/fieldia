@@ -42,7 +42,7 @@ export const mapPart = {
   noRegions: 'This app gives its maps no areas to shade.',
   noReach: 'A reachable area is worked out from a place: add a place first.',
   toolsName: 'Tools',
-  tools: { satellite: 'Satellite', fullscreen: 'Full screen', measure: 'Measure a distance' },
+  tools: { satellite: 'Satellite', traffic: 'Traffic', fullscreen: 'Full screen', measure: 'Measure a distance' },
   borders: 'Areas',
   knownBy: 'Each known by',
   namedBy: 'Each named by',

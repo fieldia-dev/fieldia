@@ -76,7 +76,7 @@ describe('a list on a map', () => {
           point: 'spot',
           regions: { from: 'cairo', key: 'code', name: 'name', field: 'district', shade: 'count', legend: true },
           heat: { weight: 'price' },
-          tools: ['satellite', 'fullscreen', 'measure', 'nearest'],
+          tools: ['satellite', 'traffic', 'fullscreen', 'measure', 'nearest'],
         })
       )
     ).toEqual([]);

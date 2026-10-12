@@ -437,8 +437,8 @@ export interface MapLayer {
   invisible?: Modifier;
 }
 
-/** A tool a map offers under its zoom: the satellite's images, full screen, measuring a way; on a list's map, its records nearest first. */
-export type MapTool = 'satellite' | 'fullscreen' | 'measure' | 'nearest';
+/** A tool a map offers under its zoom: the satellite's images, live traffic, full screen, measuring a way; on a list's map, its records nearest first. */
+export type MapTool = 'satellite' | 'traffic' | 'fullscreen' | 'measure' | 'nearest';
 
 /**
  * Areas shaded by colour: districts, zones, municipalities. Their borders come
@@ -491,7 +491,7 @@ export interface MapNode {
   layers: MapLayer[];
   /** Height in pixels: 360 unless said. */
   height?: number;
-  /** The tools under its zoom: satellite, fullscreen, measure. */
+  /** The tools under its zoom: satellite, traffic, fullscreen, measure. */
   tools?: Exclude<MapTool, 'nearest'>[];
   /** Steps run when a layer's place goes into an area or comes out of it. */
   fences?: MapFence[];
@@ -920,7 +920,7 @@ export interface ListMap {
   view?: 'list' | 'map' | 'both';
   /** How many records the map shows at most: 500 unless said. */
   limit?: number;
-  /** The tools under its zoom: satellite, fullscreen, measure, nearest (the records nearest the reader first). */
+  /** The tools under its zoom: satellite, traffic, fullscreen, measure, nearest (the records nearest the reader first). */
   tools?: MapTool[];
   /** Areas shaded by their records (or a number of their own); `field` is the records' field holding an area's key. A click on one searches for its records. */
   regions?: MapRegions & { field: string };
@@ -1134,7 +1134,7 @@ export const MapRouteSchema = z
   })
   .meta({ id: 'MapRoute' });
 
-const mapTools = ['satellite', 'fullscreen', 'measure'] as const;
+const mapTools = ['satellite', 'traffic', 'fullscreen', 'measure'] as const;
 
 /** Areas shaded by colour, their borders from the app's set by name, each known by a property of its own. */
 export const MapRegionsSchema = z

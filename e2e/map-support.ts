@@ -146,7 +146,8 @@ export const ROUTE_LINE: { lat: number; lng: number }[] = (
 /**
  * Every map server a demo can call, answered by stand-ins for a whole
  * browser context, so no test ever reaches a real one: map images
- * (OpenStreetMap's), address search (Photon, Nominatim) and routes (OSRM).
+ * (OpenStreetMap's, and Azure Maps' for `?maps=azure`), address search
+ * (Photon, Nominatim) and routes (OSRM).
  * Each test gets them from e2e/fixtures.ts; a test's own `stubMaps` or
  * `stubRoutes`, set on its page, still wins.
  */
@@ -157,4 +158,35 @@ export async function quietMapServers(context: BrowserContext) {
   await context.route('https://photon.komoot.io/**', (r) => r.fulfill(json({ type: 'FeatureCollection', features: [] })));
   await context.route('https://nominatim.openstreetmap.org/**', (r) => r.fulfill(json(r.request().url().includes('/reverse') ? {} : [])));
   await context.route('https://router.project-osrm.org/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: route, headers: { 'access-control-allow-origin': '*' } }));
+  // Azure Maps, for the demos' `?maps=azure`: its map images the grid, its credits as it gave them.
+  const answers = JSON.parse(readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/azure-answers.json'), 'utf8'));
+  await context.route('https://atlas.microsoft.com/**', (r) =>
+    r.request().url().includes('/map/attribution')
+      ? r.fulfill(json(answers.attribution ?? {}))
+      : r.fulfill({ status: 200, contentType: 'image/png', body: TILE, headers: { 'access-control-allow-origin': '*' } })
+  );
+}
+
+/**
+ * Azure Maps, answered as it answers (its recorded answers, map-support's
+ * grid for its map images): its traffic over Cairo is a real image of it,
+ * and its credits its own. Every request kept.
+ */
+export async function stubAzure(page: Page) {
+  const asked: string[] = [];
+  const fixtures = join(__dirname, '../libs/map/src/lib/fixtures');
+  const traffic = readFileSync(join(fixtures, 'azure-traffic-tile.png'));
+  const answers = JSON.parse(readFileSync(join(fixtures, 'azure-answers.json'), 'utf8'));
+  const trafficAnswers = JSON.parse(readFileSync(join(fixtures, 'azure-traffic.json'), 'utf8'));
+  await page.route('https://atlas.microsoft.com/**', (route) => {
+    const url = route.request().url();
+    asked.push(url);
+    const headers = { 'access-control-allow-origin': '*' };
+    if (url.includes('/map/attribution')) {
+      const body = JSON.stringify(url.includes('.traffic.') ? trafficAnswers.attribution : answers.attribution);
+      return route.fulfill({ status: 200, contentType: 'application/json', body, headers });
+    }
+    return route.fulfill({ status: 200, contentType: 'image/png', body: url.includes('.traffic.') ? traffic : TILE, headers });
+  });
+  return asked;
 }

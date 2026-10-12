@@ -60,6 +60,7 @@ export interface MapLabels {
   settingNowhere: string;
   /** The tools under the zoom. */
   satellite: string;
+  traffic: string;
   fullScreen: string;
   leaveFullScreen: string;
   measure: string;
@@ -128,6 +129,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'Address goes into',
     settingNowhere: 'Nowhere',
     satellite: 'Satellite',
+    traffic: 'Traffic',
     fullScreen: 'Full screen',
     leaveFullScreen: 'Leave full screen',
     measure: 'Measure a distance',
@@ -191,6 +193,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'يُكتب العنوان في',
     settingNowhere: 'لا مكان',
     satellite: 'القمر الصناعي',
+    traffic: 'حركة المرور',
     fullScreen: 'ملء الشاشة',
     leaveFullScreen: 'الخروج من ملء الشاشة',
     measure: 'قِس مسافة',
@@ -254,6 +257,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'L’adresse va dans',
     settingNowhere: 'Nulle part',
     satellite: 'Satellite',
+    traffic: 'Trafic',
     fullScreen: 'Plein écran',
     leaveFullScreen: 'Quitter le plein écran',
     measure: 'Mesurer une distance',
@@ -317,6 +321,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingAddress: 'Adresse kommt in',
     settingNowhere: 'Nirgends',
     satellite: 'Satellit',
+    traffic: 'Verkehr',
     fullScreen: 'Vollbild',
     leaveFullScreen: 'Vollbild verlassen',
     measure: 'Entfernung messen',
@@ -446,13 +451,15 @@ export interface FormMapLabels {
   /** Back to following a place that moves, after the person moved the map away. */
   follow: string;
   routeFailed: string;
+  /** Pins gathered: `{n}` how many, `{names}` whose ("2 here: Kitchen, Courier"). */
+  crowdHere: string;
 }
 
 export const FORM_MAP_LABELS: Record<Locale, FormMapLabels> = {
-  en: { map: 'Map', lastSeen: 'Last seen {time}', follow: 'Follow', routeFailed: 'The way could not be found.' },
-  ar: { map: 'خريطة', lastSeen: 'آخر ظهور {time}', follow: 'تتبّع', routeFailed: 'تعذّر إيجاد الطريق.' },
-  fr: { map: 'Carte', lastSeen: 'Vu pour la dernière fois {time}', follow: 'Suivre', routeFailed: 'Le trajet est introuvable.' },
-  de: { map: 'Karte', lastSeen: 'Zuletzt gesehen {time}', follow: 'Folgen', routeFailed: 'Der Weg wurde nicht gefunden.' },
+  en: { map: 'Map', lastSeen: 'Last seen {time}', follow: 'Follow', routeFailed: 'The way could not be found.', crowdHere: '{n} here: {names}. Zoom in to see them.' },
+  ar: { map: 'خريطة', lastSeen: 'آخر ظهور {time}', follow: 'تتبّع', routeFailed: 'تعذّر إيجاد الطريق.', crowdHere: '{n} هنا: {names}. كبّر الخريطة لرؤيتها.' },
+  fr: { map: 'Carte', lastSeen: 'Vu pour la dernière fois {time}', follow: 'Suivre', routeFailed: 'Le trajet est introuvable.', crowdHere: '{n} ici : {names}. Zoomez pour les voir.' },
+  de: { map: 'Karte', lastSeen: 'Zuletzt gesehen {time}', follow: 'Folgen', routeFailed: 'Der Weg wurde nicht gefunden.', crowdHere: '{n} hier: {names}. Hineinzoomen, um sie zu sehen.' },
 };
 
 /** The words for a page's language, with the app's own over them. */

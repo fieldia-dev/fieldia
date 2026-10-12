@@ -57,7 +57,7 @@ export const list: DesignerWords['list'] = {
   opensAsChoices: { list: 'القائمة', map: 'الخريطة', both: 'القائمة والخريطة' },
   bubbles: 'تتجمع الدبابيس المتقاربة في فقاعة',
   mapTools: 'الأدوات تحت التكبير',
-  mapToolNames: { nearest: 'الأقرب أولًا', satellite: 'القمر الصناعي', fullscreen: 'ملء الشاشة', measure: 'قياس مسافة' },
+  mapToolNames: { nearest: 'الأقرب أولًا', satellite: 'القمر الصناعي', traffic: 'حركة المرور', fullscreen: 'ملء الشاشة', measure: 'قياس مسافة' },
   heat: 'خريطة حرارية من بعيد',
   heatWeight: 'وزن كل منها',
   eachOne: 'واحد',

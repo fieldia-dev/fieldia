@@ -162,6 +162,7 @@
             "height": 440,
             "colspan": 12,
             "tools": [
+              "traffic",
               "fullscreen",
               "measure"
             ],

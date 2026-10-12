@@ -4,15 +4,21 @@
  * its points, so two bubbles' middles can fall near each other: those are
  * gathered again, until no two lie nearer than `radius`. Points are looked
  * up in a grid of `radius` squares, nine squares around each: thousands in a
- * few milliseconds. Returns the groups as indexes into `points`, each in order.
+ * few milliseconds. A point that `leads` (a place that moves, on a form's
+ * map) keeps its own spot: a group with one stands where it stands, not in
+ * the middle, and is gathered again from there; put it first, so the points
+ * round it gather to it. Returns the groups as indexes into `points`, each in
+ * order.
  */
-export function clusterPoints(points: readonly { x: number; y: number }[], radius: number): number[][] {
+export function clusterPoints(points: readonly { x: number; y: number; leads?: boolean }[], radius: number): number[][] {
   let groups = gather(points, radius);
   for (;;) {
-    const middles = groups.map((group) => ({
-      x: group.reduce((sum, i) => sum + points[i].x, 0) / group.length,
-      y: group.reduce((sum, i) => sum + points[i].y, 0) / group.length,
-    }));
+    const middles = groups.map((group) => {
+      const lead = group.find((i) => points[i].leads);
+      return lead === undefined
+        ? { x: group.reduce((sum, i) => sum + points[i].x, 0) / group.length, y: group.reduce((sum, i) => sum + points[i].y, 0) / group.length }
+        : points[lead];
+    });
     const merged = gather(middles, radius);
     if (merged.length === groups.length) return groups;
     groups = merged.map((parts) => parts.flatMap((part) => groups[part]).sort((a, b) => a - b)).sort((a, b) => a[0] - b[0]);

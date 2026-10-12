@@ -164,9 +164,10 @@ test('a kitchen’s map in the screen designer: its areas from the app’s borde
   // Its tools, ticked as the page has them.
   const tools = page.getByRole('group', { name: 'Tools' });
   await expect(tools.getByLabel('Full screen')).toBeChecked();
+  await expect(tools.getByLabel('Traffic')).toBeChecked();
   await expect(tools.getByLabel('Satellite')).not.toBeChecked();
   await tools.getByLabel('Satellite').check();
-  await expect.poll(async () => (mapsOn((await page_(page)).layout)[0] as { tools?: string[] }).tools).toEqual(['satellite', 'fullscreen', 'measure']);
+  await expect.poll(async () => (mapsOn((await page_(page)).layout)[0] as { tools?: string[] }).tools).toEqual(['satellite', 'traffic', 'fullscreen', 'measure']);
   // Its fences, named in words, each with its steps as a button's are set.
   const fences = page.locator('.fd-map-fence');
   await expect(fences).toHaveCount(2);

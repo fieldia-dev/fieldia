@@ -58,7 +58,7 @@ export const list = {
   opensAsChoices: { list: 'The list', map: 'The map', both: 'The list and the map' },
   bubbles: 'Pins that crowd become a bubble',
   mapTools: 'Tools under the zoom',
-  mapToolNames: { nearest: 'Nearest first', satellite: 'Satellite', fullscreen: 'Full screen', measure: 'Measure a distance' },
+  mapToolNames: { nearest: 'Nearest first', satellite: 'Satellite', traffic: 'Traffic', fullscreen: 'Full screen', measure: 'Measure a distance' },
   heat: 'A heat map from afar',
   heatWeight: 'Each weighs',
   eachOne: 'One',

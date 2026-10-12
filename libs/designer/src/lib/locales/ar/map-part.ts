@@ -43,7 +43,7 @@ export const mapPart: DesignerWords['mapPart'] = {
   noRegions: 'لا يعطي هذا التطبيق خرائطه مناطق لتلوينها.',
   noReach: 'تُحسب المنطقة الممكن بلوغها من مكان: أضف مكانًا أولًا.',
   toolsName: 'الأدوات',
-  tools: { satellite: 'القمر الصناعي', fullscreen: 'ملء الشاشة', measure: 'قياس مسافة' },
+  tools: { satellite: 'القمر الصناعي', traffic: 'حركة المرور', fullscreen: 'ملء الشاشة', measure: 'قياس مسافة' },
   borders: 'المناطق',
   knownBy: 'تُعرف كل منها بـ',
   namedBy: 'تُسمّى كل منها بـ',

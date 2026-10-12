@@ -62,6 +62,7 @@ ${code(
     <tr><td>${c('invisible')}</td><td>A condition, as any part's: no route while an order is still being made.</td></tr>
   </tbody>
 </table>
+<p>Pins that crowd are gathered as a list's map gathers them, again at each zoom: a bubble with their count, named for a screen reader by whose they are (“2 here: Delta Foods, Amira Clinics. Zoom in to see them.”), pressed to zoom in until they part, or to list them when they stand on one spot. A place that moves is never hidden in a bubble: the pins that crowd it are gathered under it, and it wears their count. Routes, reachable areas and fences read where the places are, never where a bubble stands.</p>
 <p><a href="/demos/plain/?page=map-order&skin=outlined&readonly=1">Try the order on its way</a> · <a href="/demos/plain/?page=map-round&skin=outlined">try a delivery round</a>.</p>
 
 <h2 id="live">Places that move</h2>
@@ -136,7 +137,17 @@ ${code(
 <p>A fence runs in the browser that shows the map: for something that must happen once, whoever is looking, your server watches the place instead.</p>
 
 <h2 id="tools">Tools under the zoom</h2>
-<p>Any map, a field's, a list's or a form's, takes ${c('tools')}: ${c('satellite')} (no button where the provider has no satellite images), ${c('fullscreen')} (filling the window where the browser refuses the screen), ${c('measure')} (points clicked, or put at the cross with Space; its length said as it grows) and, on a list's map, ${c('nearest')}. Their code comes with the first map that has them.</p>
+<p>Any map, a field's, a list's or a form's, takes ${c('tools')}: ${c('satellite')} (no button where the provider has no satellite images), ${c('traffic')} (the provider's live traffic over the map, under its pins; no button where the provider has none), ${c('fullscreen')} (filling the window where the browser refuses the screen), ${c('measure')} (points clicked, or put at the cross with Space; its length said as it grows) and, on a list's map, ${c('nearest')}. Their code comes with the first map that has them.</p>
+<table>
+  <thead><tr><th>Provider</th><th>Live traffic</th></tr></thead>
+  <tbody>
+    <tr><td>${c('azureMaps')}</td><td>How each road flows against its free flow, from zoom 6, in darker colours on the dark map; drawn again every four minutes, as Azure's images go out of date.</td></tr>
+    <tr><td>${c('googleMaps')}</td><td>Its traffic layer, a Map Tiles session of its own.</td></tr>
+    <tr><td>${c('mapbox')}</td><td>From ${c('trafficStyle')}: a style of yours that draws Mapbox Traffic's lines and nothing else. Mapbox has no such style of its own to draw as images.</td></tr>
+    <tr><td>${c('tiles')}</td><td>The app's own, from ${c('trafficUrl')}.</td></tr>
+    <tr><td>${c('openStreetMap')}</td><td>None.</td></tr>
+  </tbody>
+</table>
 
 <h2 id="designer">In the designer</h2>
 <p>The screen editor offers a Map among its blocks when it is given ${c('maps')}: its panel sets its name, its height, its tools and its layers, each with the fields it reads, adds a route between two of them, areas by colour from the app's borders (${c('regionSets')}), the area within some minutes, and fences, each with the steps it runs, set as a button's are. A list's panel sets its map's tools, a heat map and its areas by colour. Try it draws the map, its places made up around the middle the app gives (${c('sampleCentre')}).</p>
