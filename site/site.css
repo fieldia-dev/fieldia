@@ -91,14 +91,22 @@ main#main { display: block; }
 .prose p, .prose li { color: #353c45; }
 .prose ul { padding-inline-start: 22px; }
 .prose li { margin-bottom: 6px; }
-/* Code's colours, each at least 4.5:1 on --code-bg (demos/highlight.mjs; the demos' Code drawer shares them). */
-.code .tok-keyword { color: #cf222e; }
-.code .tok-string { color: #0a3069; }
-.code .tok-number, .code .tok-literal { color: #0550ae; }
-.code .tok-key { color: #953800; }
-.code .tok-comment { color: #59636e; font-style: italic; }
-.code .tok-tag { color: #116329; }
-.code .tok-attr { color: #6639ba; }
+/*
+ * Code's colours (demos/highlight.mjs), each at least 4.5:1 on --code-bg; a
+ * code block on a dark ground sets its own (home.css, features.css), as
+ * the demos' Code drawer does on its light one.
+ */
+.code {
+  --tok-keyword: #cf222e; --tok-string: #0a3069; --tok-number: #0550ae; --tok-key: #953800;
+  --tok-comment: #59636e; --tok-tag: #116329; --tok-attr: #6639ba;
+}
+.code .tok-keyword { color: var(--tok-keyword); }
+.code .tok-string { color: var(--tok-string); }
+.code .tok-number, .code .tok-literal { color: var(--tok-number); }
+.code .tok-key { color: var(--tok-key); }
+.code .tok-comment { color: var(--tok-comment); font-style: italic; }
+.code .tok-tag { color: var(--tok-tag); }
+.code .tok-attr { color: var(--tok-attr); }
 .code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font: 13.5px/1.55 var(--mono); margin: 14px 0 18px; }
 .code code { background: none; padding: 0; font-size: inherit; }
 table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 15px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }

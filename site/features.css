@@ -17,6 +17,11 @@
 .feature-page .chapter-stack .chapter-copy > .feature-links { grid-column: 1; }
 /* A part shown in code rather than a picture, and an opening that is code: the stage's own navy. */
 .feature-code { min-width: 0; }
+.feature-code pre.code, .feature-stage-code pre.code {
+  /* Code's colours on the navy, each at least 8:1 on it. */
+  --tok-keyword: #ff9bb0; --tok-string: var(--j-str); --tok-number: var(--j-lit); --tok-key: var(--j-key);
+  --tok-comment: var(--h-stage-muted); --tok-tag: #7ee2a8; --tok-attr: #c9a7ff;
+}
 .feature-code pre.code, .feature-stage-code pre.code { margin: 0; padding: 22px 24px; border: 0; border-radius: 14px; background: var(--h-stage); color: var(--h-stage-ink); font: 13.5px/1.65 var(--h-mono); overflow-x: auto; }
 .feature-code pre.code code, .feature-stage-code pre.code code { background: none; padding: 0; color: inherit; font-size: inherit; }
 .feature-stage-code { padding: 0; }

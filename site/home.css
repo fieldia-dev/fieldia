@@ -126,6 +126,11 @@
 .tabs [role="tab"] { font: 600 15px/1 var(--font); padding: 11px 16px; border: 0; border-radius: 8px; background: transparent; color: var(--h-muted); cursor: pointer; }
 .tabs [role="tab"][aria-selected="true"] { background: var(--h-surface); color: var(--h-ink); box-shadow: 0 2px 8px rgba(16, 25, 43, 0.1); }
 .tab-panels { min-width: 0; }
+.tab-panels pre.code {
+  /* Code's colours on the navy, each at least 8:1 on it. */
+  --tok-keyword: #ff9bb0; --tok-string: var(--j-str); --tok-number: var(--j-lit); --tok-key: var(--j-key);
+  --tok-comment: var(--h-stage-muted); --tok-tag: #7ee2a8; --tok-attr: #c9a7ff;
+}
 .tab-panels pre.code { margin: 0; padding: 22px 24px; border-radius: 14px; background: var(--h-stage); color: var(--h-stage-ink); font: 14px/1.65 var(--h-mono); overflow-x: auto; animation: rise 0.35s ease both; }
 .tab-panels pre.code code { background: none; padding: 0; color: inherit; font-size: inherit; }
 @keyframes rise { from { transform: translateY(8px); opacity: 0.4; } to { transform: none; opacity: 1; } }
