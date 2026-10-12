@@ -59,12 +59,17 @@ describe('the Layout tab’s Quiet, for a group and a field', () => {
     const { designer, host, field, press, card, quietRow } = screenEditor();
     openTab(host, 'Layout');
     expect([...quietRow().querySelectorAll('button')].map((b) => b.textContent)).toEqual(['As group', 'Quiet', 'In boxes']);
+    const drawn = (card().querySelector('.fd-canvas-widget input') as HTMLInputElement).placeholder;
     press('Quiet');
     expect(nodeOf(designer.getPage(), field)?.['quiet']).toBe(true);
     expect(card().hasAttribute('data-quiet')).toBe(true);
+    // Empty, it says what to add, as the form will.
+    const label = String(designer.getPage().fields[String(nodeOf(designer.getPage(), field)?.['field'])].label);
+    expect((card().querySelector('.fd-canvas-widget input') as HTMLInputElement).placeholder).toBe(`Add ${label[0].toLowerCase()}${label.slice(1)}`);
     designer.setLook({ skin: 'quiet' });
     press('In boxes');
     expect(card().hasAttribute('data-quiet')).toBe(false);
+    expect((card().querySelector('.fd-canvas-widget input') as HTMLInputElement).placeholder).toBe(drawn);
     press('As group');
     expect(nodeOf(designer.getPage(), field)).not.toHaveProperty('quiet');
     expect(card().hasAttribute('data-quiet')).toBe(true);

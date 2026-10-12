@@ -1,5 +1,5 @@
 import { createForm, type Field, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
-import { applyLook, labelPlace, planSection, THEME_SKINS, type Place } from '@fieldia/viewer';
+import { applyLook, labelPlace, planSection, quietHint, THEME_SKINS, type Place } from '@fieldia/viewer';
 import { createWidget, wearsQuiet, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
@@ -259,6 +259,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const quietPlace = node.quiet ?? quietAround ?? skin === 'quiet';
     element.toggleAttribute('data-in-quiet', quietPlace);
     element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && quietPlace);
+    hint(card, node);
     // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
     const isPicked = picked.includes(node.id) && picked.length > 1;
     const was = card.drawn;
@@ -296,8 +297,22 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       card.help.textContent = helpText;
       card.help.hidden = !helpText;
     }
-    if (!card.options) paint(card, node);
+    if (!card.options) {
+      paint(card, node);
+      hint(card, node);
+    }
     return element;
+  }
+
+  /** An empty quiet field says what to add, as the form will: its own words, else "Add story points". */
+  function hint(card: Card, node: FieldNode) {
+    const box = card.widgetBox.querySelector<HTMLInputElement | HTMLTextAreaElement>('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea');
+    const def = page.fields[node.field];
+    if (!box || !def || node.placeholder || node.labels === 'hidden' || def.type === 'json' || def.type === 'properties') return;
+    box.dataset['drawn'] ??= box.placeholder;
+    // Written only when it changes: a card drawn again as it was is left alone.
+    const words = card.element.hasAttribute('data-quiet') ? quietHint(node.label ?? def.label, widgetWords(page).locale) : box.dataset['drawn'];
+    if (box.placeholder !== words) box.placeholder = words;
   }
 
   /** The field's real widget, inert: on the canvas it is looked at and moved, not typed in. */
