@@ -204,8 +204,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // layers checked: places, lines, routes, the reader's own place) — 3.3 more, to 455.5; a list's buttons on its map's
 // cards — 0.6 more, to 456.1; a map's areas by colour, reachable areas, fences and tools checked on a page, and a
 // list put nearest a place first — 1.1 more, to 457.2; Enter moving on from a one-line code editor, as from a
-// text box — 0.1 more, to 457.3.
-const BUDGET_KB = 457.3;
+// text box — 0.1 more, to 457.3; an amount's money look (its currency by code, after it, short, the home one
+// unsaid, "/month" on a rent) in every list, field and card, a map card's lines, units and link checked on a
+// page and translated with it — 2.7 more, to 460.0.
+const BUDGET_KB = 460.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -234,7 +236,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a list's records on a map (the view switch, the map beside the table, its page checks), 1.4 more, to 137.5;
 // a map on a form, its layers checked, 0.8 more, to 138.3.
 // a map's areas, reachable areas, fences and tools checked, a list nearest a place first, 0.8 more, to 139.1.
-const GZIP_BUDGET_KB = 139.1;
+// an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
+const GZIP_BUDGET_KB = 139.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -255,7 +258,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // What sits around a record — the gear menu's and its built-ins' words, the trail, the pager, the attachment,
 // and what Archive and Delete ask — eighteen words in each, a little more again.
 // A list's switch between its table and its map, four words in each: Arabic's to 23.
-const ADD_ON_BUDGET_KB = { ar: [23.0, 4.8], de: [9.8, 4.1], fr: [9.9, 4.1] };
+// What an amount is for — /day, /night, /week, /month, /year — five words in each: Arabic's to 23.1, German's
+// to 9.9 (4.2 gzipped) and French's to 10.0.
+const ADD_ON_BUDGET_KB = { ar: [23.1, 4.8], de: [9.9, 4.2], fr: [10.0, 4.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

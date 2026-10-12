@@ -44,7 +44,7 @@ import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
-import { allIds, containers, findContainer, findNode, findTab, firstSection, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
+import { allIds, containers, findContainer, findNode, findTab, firstSection, fieldReads, keptFields, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
 import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
@@ -821,8 +821,9 @@ export function createDesigner(options: {
       const ok = apply((draft) => {
         if (!fromModel(name)) throw new Refusal((w) => w.refusals.noModelField(name));
         if (shownFields(draft).has(name)) throw new Refusal((w) => w.refusals.onThePageAlready(model[name].label));
-        // A definition the page already keeps for it stays; otherwise the model's.
+        // A definition the page already keeps for it stays; otherwise the model's, with what its words read (an amount's currency).
         draft.fields[name] = draft.fields[name] ?? clone(model[name]);
+        for (const read of fieldReads(draft.fields[name])) if (!draft.fields[read] && model[read]) draft.fields[read] = clone(model[read]);
         const ids = allIds(draft);
         created = nextName((id) => ids.has(id), 'q', '-');
         placeAfter(draft, { type: 'field', id: created, field: name }, where);
@@ -1052,9 +1053,9 @@ export function createDesigner(options: {
             if (holder) holder.parent.children.splice(holder.index, 1);
           }
         } else throw new Refusal((w) => w.refusals.noElement(id));
-        // Drop the fields nothing shows any more.
-        const shown = shownFields(draft);
-        for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
+        // Drop the fields nothing shows any more, but for what a shown amount reads.
+        const kept = keptFields(draft);
+        for (const name of Object.keys(draft.fields)) if (!kept.has(name)) delete draft.fields[name];
       }, null, () => {
         if (selected === id) selected = null;
       });

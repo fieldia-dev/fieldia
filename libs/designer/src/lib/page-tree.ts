@@ -1,4 +1,4 @@
-import { cardLineFields, compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -124,6 +124,28 @@ export function shownFields(page: Page): Set<string> {
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
   }
   return shown;
+}
+
+/** The fields a page keeps: those it shows, and what a shown amount reads — its currency's field, its money look's conditions' fields. */
+export function keptFields(page: Page): Set<string> {
+  const kept = shownFields(page);
+  for (const name of [...kept]) for (const read of fieldReads(page.fields[name])) kept.add(read);
+  return kept;
+}
+
+/** The fields a field's own words read: an amount's currency's field, and those its money look's conditions read ("/month" on a rent). */
+export function fieldReads(def: Field | undefined): string[] {
+  if (def?.type !== 'monetary') return [];
+  const reads = def.currencyField && !def.currencyField.startsWith('parent.') ? [def.currencyField] : [];
+  for (const item of def.money?.per ?? []) {
+    if (item.when === undefined) continue;
+    try {
+      reads.push(...compileModifier(item.when).fields);
+    } catch {
+      // A condition that does not read is the page's checks' to say.
+    }
+  }
+  return reads;
 }
 
 /** The record's fields a form's map names: each layer's place, pin and card, a layer's lines, where a route's numbers are written, the field an area is chosen into, and the areas its fences watch. */

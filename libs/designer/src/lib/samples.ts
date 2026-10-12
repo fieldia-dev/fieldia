@@ -21,7 +21,9 @@ export function sampleValue(name: string, field: Field, row: number): Value {
     case 'char':
       if (/mail/.test(words)) return `hello@${handle(row)}.example`;
       if (/phone|mobile/.test(words)) return `+1 555 ${String(1000 + ((row * 137) % 9000))}`;
-      if (/web|site|url/.test(words)) return `https://${handle(row)}.example`;
+      if (/web|site|url|link/.test(words)) return `https://${handle(row)}.example`;
+      // A currency, by its code: mostly one, now and then another.
+      if (/currenc/.test(words)) return row % 4 === 3 ? 'USD' : 'EGP';
       if (/city|town/.test(words)) return pick(CITIES, row);
       if (/contact|person|owner|manager/.test(words)) return pick(PEOPLE, row);
       // Past the names there are, the same again with a number: still one name to a record.

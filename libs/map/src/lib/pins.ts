@@ -146,12 +146,12 @@ export function makePins(options: PinsOptions): Pins {
     return { element, stands: 'middle', height: 16 };
   }
 
-  // Said in full to a screen reader, its currency always named, and what it is for.
-  const { home: _, ...spoken } = money ?? {};
+  // Said to a screen reader as the card says it: in full, as its field writes it, and what the pin says it is for.
   const say = (name: string, values: Values) => {
     const def = page.fields[name];
     const value = values[name];
-    return money && def?.type === 'monetary' && typeof value === 'number' ? writeMoney(value, currencyOf(def as LineField, values), def.digits?.[1] ?? 2, locale, { ...spoken, short: false }, values) : shown(page, name, values, locale);
+    if (!pin.money?.per || def?.type !== 'monetary' || typeof value !== 'number') return shown(page, name, values, locale);
+    return writeMoney(value, currencyOf(def as LineField, values), def.digits?.[1] ?? 2, locale, { ...def.money, per: pin.money.per }, values);
   };
 
   function name(record: MapRecord): string {

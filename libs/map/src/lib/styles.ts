@@ -221,17 +221,15 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-card-fields div { display: flex; justify-content: space-between; gap: 10px; }
 .fd-map-card-fields dt { color: var(--fd-muted); }
 .fd-map-card-fields dd { margin: 0; text-align: end; font-weight: 600; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-/* A title and a picture that link to the record's own address: a link a person can open in a new tab, or copy. */
-.fd-map-card-link { color: inherit; text-decoration: none; }
-.fd-map-card-link:hover { color: var(--fd-accent); text-decoration: underline; text-underline-offset: 2px; }
+/* A title linking to the record's page; bare lines, their labels for a screen reader alone; the first line leading. */
+.fd-map-card .fd-map-card-link { color: inherit; text-decoration: none; }
+.fd-map-card .fd-map-card-link:hover { color: var(--fd-accent); text-decoration: underline; }
 .fd-map-card-picture { display: block; }
-/* Bare lines ("13,900,000 EGP", "Sheikh Zayed · 4 beds · 280 m²"): their labels for a screen reader alone. */
-.fd-map-card-fields[data-labels="hidden"] div { display: block; }
-.fd-map-card-fields[data-labels="hidden"] dt { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.fd-map-card-fields[data-labels="hidden"] dd { text-align: start; font-weight: 400; }
-/* The first line leads, as a home's price heads its card; bare, the lines under it are quieter. */
+.fd-map-card-fields[data-labels] div { display: block; }
+.fd-map-card-fields[data-labels] dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-map-card-fields[data-labels] dd { text-align: start; font-weight: 400; }
 .fd-map-card-fields[data-lead] > div:first-child dd { font-size: 15.5px; font-weight: 700; color: var(--fd-text); }
-.fd-map-card-fields[data-lead][data-labels="hidden"] > div + div dd { color: var(--fd-muted); }
+.fd-map-card-fields[data-lead][data-labels] > div + div dd { color: var(--fd-muted); }
 .fd-map-card-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .fd-map-card-choose { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-inline-end: auto; }
 .fd-map-card-choose input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }

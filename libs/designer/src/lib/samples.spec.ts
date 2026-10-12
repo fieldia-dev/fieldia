@@ -24,6 +24,12 @@ describe('sample values', () => {
     expect(Number.isInteger(sampleValue('visits', fields['visits'], 2))).toBe(true);
   });
 
+  it('gives a currency a code, and a link an address', () => {
+    const currency: Field = { type: 'char', label: 'Currency' };
+    expect([0, 1, 2, 3].map((row) => sampleValue('currency', currency, row))).toEqual(['EGP', 'EGP', 'EGP', 'USD']);
+    expect(sampleValue('link', { type: 'char', label: 'Link' }, 0)).toBe('https://acme.example');
+  });
+
   it('gives different rows different values, the same every time', () => {
     const rows = sampleRows(fields, ['name', 'email', 'state'], 5);
     expect(rows).toHaveLength(5);

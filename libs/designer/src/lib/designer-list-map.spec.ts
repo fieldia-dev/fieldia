@@ -20,8 +20,8 @@ describe('a list page on a map', () => {
     const designer = createDesigner({ page: homes, model });
     expect(designer.removeColumn('bedrooms')).toBe(true);
     expect(designer.setListOptions({ searchFields: [], groupBy: [] })).toBe(true);
-    // Where each home is, its pin's price, its card's picture and lines, and what its pin's tone reads.
-    for (const name of ['lat', 'lng', 'price', 'photo', 'bedrooms', 'area_m2', 'district', 'offer']) expect([name, name in designer.getPage().fields]).toEqual([name, true]);
+    // Where each home is, its pin's price, its card's picture, lines and link, and what its pin's tone reads; and what the price reads, its currency.
+    for (const name of ['lat', 'lng', 'price', 'photo', 'bedrooms', 'area_m2', 'district', 'offer', 'link', 'currency']) expect([name, name in designer.getPage().fields]).toEqual([name, true]);
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
@@ -31,6 +31,9 @@ describe('a list page on a map', () => {
     expect(list(designer).map).toEqual({ latitude: 'lat', longitude: 'lng', pin: { label: 'price' }, view: 'both' });
     expect(designer.getPage().fields['lat']).toEqual(model['lat']);
     expect(designer.getPage().fields['price']).toEqual(model['price']);
+    // An amount comes with what its words read: its currency's field, and its rent's condition's.
+    expect(designer.getPage().fields['currency']).toEqual(model['currency']);
+    expect(designer.getPage().fields['offer']).toEqual(model['offer']);
     expect(validatePage(designer.getPage()).ok).toBe(true);
     // One GeoJSON point instead: the two numbers leave.
     expect(designer.setListOptions({ map: { point: 'spot', view: 'map' } })).toBe(true);
