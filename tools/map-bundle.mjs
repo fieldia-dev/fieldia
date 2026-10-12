@@ -26,9 +26,15 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * colour, a heat map, reachable areas and fences when a map has them — 1.8
  * more for a place and an area, to 23.4; with a list's map and a form's,
  * Nearest first, the heat map's place and the list's words too — 3.1 more,
- * to 38.5.
+ * to 38.5. Live traffic: each provider's traffic (Azure's, Google's own
+ * session, Mapbox's and any map images' from the app's style or address),
+ * its credits said with the map's, its word in four languages (its button is
+ * in the tools' chunk) — 0.3 more, to 23.8. A form's map gathering pins that
+ * crowd (its bubbles, a place that moves leading the pins round it, the
+ * keys kept where they were, a list of pins on one spot), their count's
+ * style and their words — with the traffic, 1.3 more, to 39.8.
  */
-const BUDGET = { fields: 23.4, all: 38.5, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.8, all: 39.8, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
