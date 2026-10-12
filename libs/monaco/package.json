@@ -1,7 +1,7 @@
 {
   "name": "@fieldia/monaco",
   "version": "0.17.0",
-  "description": "Fieldia text and JSON fields in VS Code’s editor (Monaco), coloured in the language a page names, following Fieldia’s themes.",
+  "description": "Fieldia text, one-line and JSON fields in VS Code’s editor (Monaco), coloured in the language a page names, following Fieldia’s themes.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
   "type": "commonjs",
