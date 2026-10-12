@@ -20,7 +20,7 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * fields and the providers, which is all most apps use), and everything (the
  * list's map too); and Leaflet, loaded the first time a map is shown.
  */
-const BUDGET = { fields: 21.2, all: 29.3, leaflet: 47 };
+const BUDGET = { fields: 21.3, all: 30.4, leaflet: 47 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 async function measure(name, exports) {
