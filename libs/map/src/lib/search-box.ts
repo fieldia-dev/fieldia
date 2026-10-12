@@ -8,7 +8,8 @@ import type { AddressSearch, PlaceFound } from './providers';
  * An address search over a map: a combobox (ARIA's), its places in a list
  * under it. As people type, when the provider's terms allow it; otherwise
  * when Enter is pressed. The arrow keys move through the places, Enter picks
- * one, Escape closes the list and then empties the box.
+ * one, Escape closes the list and then empties the box (unless what is typed
+ * is an answer itself: `freeText`). Read-only, it searches nothing.
  */
 
 export interface SearchBoxOptions {
@@ -25,20 +26,26 @@ export interface SearchBoxOptions {
   pick: (place: PlaceFound) => void | Promise<void>;
   /** Says how the search is going, under the map. */
   say: (words: string | null, tone?: 'error') => void;
+  /** What is typed is an answer too, as an address field's is: Escape only closes the list. */
+  freeText?: boolean;
+  /** A field's own box to search from, in place of one of its own: the list is made for it, and placed by the field. */
+  input?: HTMLInputElement;
 }
 
 export function searchBox(options: SearchBoxOptions) {
   const { document: doc, labels } = options;
   const element = doc.createElement('div');
   element.className = 'fd-map-search';
-  const input = doc.createElement('input');
-  input.className = 'fd-input';
-  input.id = options.id;
-  input.type = 'text';
-  input.placeholder = labels.search;
-  input.autocomplete = 'off';
-  input.spellcheck = false;
-  input.enterKeyHint = 'search';
+  const input = options.input ?? doc.createElement('input');
+  if (!options.input) {
+    input.className = 'fd-input';
+    input.id = options.id;
+    input.type = 'text';
+    input.placeholder = labels.search;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.enterKeyHint = 'search';
+  }
   const listId = `${options.id}-places`;
   input.setAttribute('role', 'combobox');
   input.setAttribute('aria-autocomplete', 'list');
@@ -50,7 +57,7 @@ export function searchBox(options: SearchBoxOptions) {
   list.setAttribute('role', 'listbox');
   list.setAttribute('aria-label', labels.search);
   list.hidden = true;
-  element.append(input, list);
+  element.append(...(options.input ? [] : [input]), list);
 
   let places: PlaceFound[] = [];
   let active = -1;
@@ -145,6 +152,7 @@ export function searchBox(options: SearchBoxOptions) {
     timer = setTimeout(run, 250);
   });
   input.addEventListener('keydown', (event) => {
+    if (input.readOnly) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       if (list.hidden) return;
       event.preventDefault();
@@ -160,7 +168,7 @@ export function searchBox(options: SearchBoxOptions) {
       if (!list.hidden) {
         event.preventDefault();
         close();
-      } else if (input.value) {
+      } else if (input.value && !options.freeText) {
         event.preventDefault();
         input.value = '';
         options.say(null);
@@ -172,6 +180,7 @@ export function searchBox(options: SearchBoxOptions) {
   return {
     element,
     input,
+    list,
     destroy() {
       clearTimeout(timer);
       asking?.abort();

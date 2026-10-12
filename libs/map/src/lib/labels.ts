@@ -480,3 +480,27 @@ export const fill = (words: string, values: Record<string, string | number>) =>
 export function formMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels & FormMapLabels>): MapLabels & ListMapLabels & FormMapLabels {
   return { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...FORM_MAP_LABELS[locale ?? 'en'], ...own };
 }
+
+/** The words of an address field that suggests addresses (`char.address-search`), and of its kind in the designer: kept apart, as a list map's are. */
+export interface AddressLabels {
+  /** Said to screen readers as suggestions come: `{n}` how many. */
+  suggested: string;
+  addressKind: string;
+  /** The designer's settings: the field a picked address's place goes into, the field its parts go into, the country it keeps to. */
+  settingPlace: string;
+  settingParts: string;
+  settingCountry: string;
+  anywhere: string;
+}
+
+export const ADDRESS_LABELS: Record<Locale, AddressLabels> = {
+  en: { suggested: 'Suggestions: {n}', addressKind: 'Address with suggestions', settingPlace: 'Place goes into', settingParts: 'Parts go into', settingCountry: 'Addresses in', anywhere: 'Any country' },
+  ar: { suggested: 'الاقتراحات: {n}', addressKind: 'عنوان مع اقتراحات', settingPlace: 'يُكتب المكان في', settingParts: 'تُكتب أجزاؤه في', settingCountry: 'العناوين في', anywhere: 'أي بلد' },
+  fr: { suggested: 'Suggestions : {n}', addressKind: 'Adresse avec suggestions', settingPlace: 'Le lieu va dans', settingParts: 'Ses parties vont dans', settingCountry: 'Pays des adresses', anywhere: 'Tous les pays' },
+  de: { suggested: 'Vorschläge: {n}', addressKind: 'Adresse mit Vorschlägen', settingPlace: 'Ort kommt in', settingParts: 'Teile kommen in', settingCountry: 'Land der Adressen', anywhere: 'Alle Länder' },
+};
+
+/** An address field's words for a page's language, the maps' own with them, and the app's own over both. */
+export function addressLabels(locale: Locale | undefined, own?: Partial<MapLabels & AddressLabels>): MapLabels & AddressLabels {
+  return { ...MAP_LABELS[locale ?? 'en'], ...ADDRESS_LABELS[locale ?? 'en'], ...own };
+}

@@ -1,9 +1,11 @@
 import type { Field, FieldNode, Locale, Page } from '@fieldia/core';
-import { mapLabels, type MapLabels } from './labels';
+import { countriesIn } from '@fieldia/widgets';
+import { addressLabels, mapLabels, type AddressLabels, type MapLabels } from './labels';
 
 /**
- * The maps as kinds of field in Fieldia's designer: Place and Area in its
- * toolbox, each with its settings on the picked field. Pass them to the
+ * The maps as kinds of field in Fieldia's designer: Place, Area and an
+ * address with suggestions in its toolbox, each with its settings on the
+ * picked field. Pass them to the
  * designer as `kinds`, and the widgets as `widgets`, as an app does its own
  * kinds. Shaped as the designer's AppKind, without this package needing the
  * designer.
@@ -80,8 +82,8 @@ function previewOf(doc: Document, icon: string, words: string) {
   return element;
 }
 
-/** Place and Area for the designer, in its language. */
-export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels> } = {}): MapKind[] {
+/** Place, Area and an address with suggestions for the designer, in its language. */
+export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels & AddressLabels> } = {}): MapKind[] {
   const words = mapLabels(options.locale, options.labels);
   const place: MapKind = {
     id: 'map-place',
@@ -157,5 +159,55 @@ export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels>
     },
     preview: ({ document: doc }) => previewOf(doc, AREA_ICON, words.areaKind),
   };
-  return [place, area];
+  return [place, area, addressKind(options)];
+}
+
+// ---- an address with suggestions --------------------------------------------
+
+const ADDRESS_ICON = '<path d="M8 20s-4.5-4.4-4.5-8a4.5 4.5 0 0 1 9 0c0 3.6-4.5 8-4.5 8z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 8h6M15 12h6M15 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>';
+
+/** A text field the provider suggests addresses for, its settings the fields a picked one also fills and the country it keeps to. */
+function addressKind(options: { locale?: Locale; labels?: Partial<MapLabels & AddressLabels> }): MapKind {
+  const words = addressLabels(options.locale, options.labels);
+  return {
+    id: 'map-address',
+    label: words.addressKind,
+    group: words.mapsGroup,
+    icon: ADDRESS_ICON,
+    widget: 'address-search',
+    field: (label) => ({ type: 'char', label }) as Field,
+    fits: (field) => field.type === 'char',
+    settings({ document: doc, set }) {
+      const [place, parts, country] = ['placeField', 'partsField', 'countries'].map((key) => {
+        const select = doc.createElement('select');
+        select.className = 'fd-inline-select';
+        select.addEventListener('change', () => set({ [key]: select.value || null }));
+        return select;
+      });
+      const element = settingsRow(doc);
+      element.append(row(doc, words.settingPlace, place), row(doc, words.settingParts, parts), row(doc, words.settingCountry, country));
+      return {
+        element,
+        refresh(page, node) {
+          // A place and an address's parts are kept in json fields: a place's, an address's.
+          const json = Object.entries(page.fields).filter(([, field]) => field.type === 'json');
+          for (const [select, key] of [[place, 'placeField'], [parts, 'partsField']] as const) {
+            select.replaceChildren(new Option(words.settingNowhere, ''), ...json.map(([name, field]) => new Option(field.label, name)));
+            select.value = String(node.options?.[key] ?? '');
+          }
+          // One country here; several, written on the page, are kept as they are.
+          const kept = node.options?.['countries'];
+          const codes = Array.isArray(kept) ? kept.join(',') : typeof kept === 'string' ? kept : '';
+          const listed = countriesIn(options.locale ?? 'en');
+          country.replaceChildren(
+            new Option(words.anywhere, ''),
+            ...(codes && !listed.some(([code]) => code === codes) ? [new Option(codes, codes)] : []),
+            ...listed.map(([code, name]) => new Option(name, code))
+          );
+          country.value = codes;
+        },
+      };
+    },
+    preview: ({ document: doc }) => previewOf(doc, ADDRESS_ICON, words.addressKind),
+  };
 }
