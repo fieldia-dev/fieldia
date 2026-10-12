@@ -5,10 +5,10 @@ export default featurePage({
   path: '/features/looks/',
   folder: 'looks',
   title: 'Looks and languages',
-  description: 'Looks and languages with Fieldia: eight themes, two skins, light and dark, your own colours, and English, Arabic, German and French right to left, with your app’s own words.',
+  description: 'Looks and languages with Fieldia: eight themes, three skins, light and dark, your own colours, and English, Arabic, German and French right to left, with your app’s own words.',
   kicker: 'Looks and languages',
   headline: ['Your product’s look.', 'Your readers’ language.'],
-  lede: 'Eight themes in the styles people know, two skins, light and dark, your own colours on top, and four languages built in with Arabic right to left in full. This record is live, in Arabic and dark.',
+  lede: 'Eight themes in the styles people know, three skins, light and dark, your own colours on top, and four languages built in with Arabic right to left in full. This record is live, in Arabic and dark.',
   opening: { frame: 'page=customer&skin=underline&scheme=dark&locale=ar&dir=rtl', title: 'A live customer record, in Arabic and dark' },
   parts: [
     {
