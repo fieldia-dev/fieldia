@@ -14,7 +14,14 @@
         { "value": "rent", "label": "To rent, a month" }
       ]
     },
-    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [12, 0] },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currencyField": "currency",
+      "digits": [12, 0],
+      "money": { "currency": "code", "at": "after", "per": [{ "period": "month", "when": "offer == 'rent'" }] }
+    },
+    "currency": { "type": "char", "label": "Currency" },
     "bedrooms": { "type": "integer", "label": "Bedrooms" },
     "area_m2": { "type": "integer", "label": "Area, m²" },
     "district": {
@@ -44,8 +51,18 @@
     "map": {
       "latitude": "lat",
       "longitude": "lng",
-      "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
-      "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms", "area_m2", "district"] },
+      "pin": { "label": "price", "money": { "home": "EGP", "currency": "symbol", "at": "before" }, "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
+      "card": {
+        "title": "name",
+        "image": "photo",
+        "labels": false,
+        "lead": true,
+        "choose": false,
+        "fields": [
+          "price",
+          ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }, { "field": "area_m2", "unit": "m²" }]
+        ]
+      },
       "height": "fill",
       "gestures": "all",
       "fitZoom": 14
@@ -62,6 +79,10 @@
       "Bedrooms": "غرف النوم",
       "Area, m²": "المساحة، م²",
       "District": "الحي",
+      "Currency": "العملة",
+      "bedroom": "غرفة نوم",
+      "bedrooms": "غرف نوم",
+      "m²": "م²",
       "Zamalek": "الزمالك",
       "Garden City": "جاردن سيتي",
       "Dokki": "الدقي",

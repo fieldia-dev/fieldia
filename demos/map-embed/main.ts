@@ -52,7 +52,19 @@ const WORDS = {
 }[locale];
 const rules = new Intl.PluralRules(locale);
 const counted = (forms: Plural, n: number) => (forms[rules.select(n)] ?? forms.other).replace('#', String(n));
-const money = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 });
+/** A price in the home's own currency: most in pounds, a few in dollars, as their owners ask. */
+const formats = new Map<string, Intl.NumberFormat>();
+const money = (amount: number, currency: string) => {
+  let format = formats.get(currency);
+  if (!format) formats.set(currency, (format = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en', { style: 'currency', currency, maximumFractionDigits: 0 })));
+  // A symbol kept whole on a right-to-left page, in its own first letter's direction: "US$", never "$US".
+  return format
+    .formatToParts(amount)
+    .map((part) => (part.type === 'currency' && locale === 'ar' ? `\u2068${part.value}\u2069` : part.value))
+    .join('');
+};
+/** About fifty pounds to the dollar, as the sample prices its homes: the page's own list, cheapest first, across both. */
+const inPounds = (values: Values) => Number(values['price']) * (values['currency'] === 'USD' ? 50 : 1);
 // The districts' names in the page's language, as the page keeps them.
 const districts = (localizePage(page, locale).fields['district'] as SelectionField).options ?? [];
 
@@ -158,16 +170,17 @@ async function findHomes(first = false) {
   for (const button of offers) button.setAttribute('aria-pressed', String(button.dataset['offer'] === offer));
   title.textContent = WORDS.title[offer];
   drawChips();
-  const found = await dataSource.list({ model: 'home', fields: ['name', 'offer', 'price', 'bedrooms', 'area_m2', 'district', 'photo'], filter: filter(), sort, offset: 0, limit: 200 });
+  const found = await dataSource.list({ model: 'home', fields: ['name', 'offer', 'price', 'currency', 'bedrooms', 'area_m2', 'district', 'photo'], filter: filter(), sort, offset: 0, limit: 200 });
+  const records = [...found.records].sort((a, b) => inPounds(a.values) - inPounds(b.values));
   count.textContent = counted(WORDS.homes, found.total);
-  list.replaceChildren(...found.records.map(({ id, values }) => row(id, values)));
-  if (!found.records.length) list.append(el('li', { class: 'hs-empty' }, WORDS.empty));
+  list.replaceChildren(...records.map(({ id, values }) => row(id, values)));
+  if (!records.length) list.append(el('li', { class: 'hs-empty' }, WORDS.empty));
   if (!first) await map.reload();
 }
 
 function row(id: RecordId, values: Values) {
   const photo = values['photo'] as { url?: string } | null;
-  const price = money.format(Number(values['price'])) + (values['offer'] === 'rent' ? ` ${WORDS.perMonth}` : '');
+  const price = money(Number(values['price']), String(values['currency'] ?? 'EGP')) + (values['offer'] === 'rent' ? ` ${WORDS.perMonth}` : '');
   const district = districts.find((option) => option.value === values['district'])?.label ?? '';
   // A home's name in its own direction, as it was written: an English name reads as typed on an Arabic page.
   const name = el('a', { href: `#home-${id}`, dir: 'auto' }, String(values['name']));

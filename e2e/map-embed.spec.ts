@@ -228,8 +228,23 @@ test('where the map stands is kept in the address: a reload opens there and fits
 
 test('the page’s list and the map light each other, and a card’s Open marks the home in the list', async ({ page }) => {
   const problems = await openEmbed(page, ZAMALEK);
+  // Zamalek's homes may crowd into a bubble at the page's first zoom: pressed, it zooms in until they part.
+  const bubbles = page.locator('.fd-map-embed .fd-map-bubble');
+  for (let i = 0; i < 4 && (await bubbles.count()); i++) {
+    const before = await zoomOf(theMap(page));
+    await bubbles.first().click();
+    await expect.poll(() => zoomOf(theMap(page))).toBeGreaterThan(before);
+  }
   await expect.poll(() => pins(page).count()).toBeGreaterThan(1);
-  const pin = pins(page).first();
+  // A pin whole inside the map, clear of its buttons.
+  const map = (await theMap(page).boundingBox())!;
+  let at = -1;
+  await expect(async () => {
+    const boxes = await pins(page).evaluateAll((all) => all.map((p) => (p.querySelector('.fd-map-face') ?? p).getBoundingClientRect().toJSON() as DOMRect));
+    at = boxes.findIndex((b) => b.x > map.x + 60 && b.x + b.width < map.x + map.width - 60 && b.y > map.y + 60 && b.y + b.height < map.y + map.height - 30);
+    expect(at, 'no pin inside the map').toBeGreaterThanOrEqual(0);
+  }).toPass();
+  const pin = pins(page).nth(at);
   const id = (await pin.getAttribute('data-id'))!;
   await pin.hover();
   await expect(homeOf(page, id)).toHaveClass(/is-lit/);
