@@ -120,7 +120,8 @@ export const QUIET_CSS = /* css */ `
 .fd-form .fd-field[data-quiet] .fd-richtext { min-height: 64px; }
 .fd-form .fd-field[data-quiet] .fd-richtext[contenteditable="false"] { min-height: 0; }
 /* Its paragraphs read their own way, as a value read as words does: English on an Arabic page keeps its full stop at its end. */
-.fd-form .fd-field[data-quiet] .fd-richtext > * { unicode-bidi: plaintext; text-align: match-parent; }
+.fd-form .fd-field[data-quiet] .fd-richtext > * { unicode-bidi: plaintext; text-align: left; }
+.fd-form .fd-field[data-quiet] .fd-richtext > :dir(rtl) { text-align: right; }
 .fd-form .fd-field[data-quiet] .fd-richtext-box:not(:focus-within) > :is(.fd-richtext-bar, .fd-link-row) { display: none; }
 .fd-form .fd-field[data-quiet] .fd-richtext-box > :is(.fd-richtext-bar, .fd-link-row) {
   position: absolute; inset-inline: 0; z-index: 25; border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);

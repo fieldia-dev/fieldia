@@ -207,9 +207,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // text box — 0.1 more, to 457.3. The quiet look, a third skin (each value plain words until pointed at or entered,
 // as Azure DevOps draws a work item: its stylesheet of rest, hover and editing for every kind of field that wears it,
 // a state's dot with its words and a tick, a date opened at a click, the empty field's words, Escape putting a value
-// back, the lock of a field locked by a rule with why, a choice's chevron and a date's calendar right to left) — 12 more,
-// to 469.3: two thirds of it the stylesheet, whose rules each name the quiet field to win over the themes' own shapes.
-const BUDGET_KB = 469.3;
+// back, the lock of a field locked by a rule with why, a choice's chevron and a date's calendar right to left) — 12.2
+// more, to 469.5: two thirds of it the stylesheet, whose rules each name the quiet field to win over the themes' own shapes.
+const BUDGET_KB = 469.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -238,8 +238,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a list's records on a map (the view switch, the map beside the table, its page checks), 1.4 more, to 137.5;
 // a map on a form, its layers checked, 0.8 more, to 138.3.
 // a map's areas, reachable areas, fences and tools checked, a list nearest a place first, 0.8 more, to 139.1.
-// the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.3 more, to 141.4.
-const GZIP_BUDGET_KB = 141.4;
+// the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
+const GZIP_BUDGET_KB = 141.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
