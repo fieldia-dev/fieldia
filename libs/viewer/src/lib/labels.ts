@@ -50,6 +50,11 @@ export interface ViewerLabels {
   selected: string;
   clearSelection: string;
   selectAll: string;
+  /** A list that is also a map: the switch between them, and its name. */
+  showAs: string;
+  viewList: string;
+  viewMap: string;
+  viewBoth: string;
   selectRecord: string;
   noRecords: string;
   loadFailed: string;
@@ -164,6 +169,10 @@ const en: ViewerLabels = {
   selected: '{n} selected',
   clearSelection: 'Clear',
   selectAll: 'Select all',
+  showAs: 'Show as',
+  viewList: 'List',
+  viewMap: 'Map',
+  viewBoth: 'List and map',
   selectRecord: 'Select {name}',
   noRecords: 'No records match.',
   loadFailed: 'Could not load the records.',

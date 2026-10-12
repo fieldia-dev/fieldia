@@ -24,7 +24,7 @@ import {
   type Type,
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, skinFor, type ListViewFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -90,6 +90,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly locale = input<Locale | undefined>(undefined);
   readonly labels = input<Partial<ViewerLabels> | undefined>(undefined);
   readonly widgets = input<Record<string, WidgetFactory> | undefined>(undefined);
+  /** Other ways a list shows its records: `map` from @fieldia/map's `mapListViews`. */
+  readonly listViews = input<Record<string, ListViewFactory> | undefined>(undefined);
   /** Custom fields as Angular components, by `type.widget` or `type`. They receive the inputs they declare. */
   readonly fieldTypes = input<Record<string, Type<unknown>> | undefined>(undefined);
   readonly drafts = input<{ store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number } | undefined>(undefined);
@@ -270,6 +272,7 @@ export class FieldiaFormComponent implements OnDestroy {
       locale: options.locale,
       labels: options.labels,
       widgets,
+      listViews: this.listViews(),
       slots,
       drafts: this.drafts(),
       autosave: this.autosave(),

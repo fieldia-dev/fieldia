@@ -42,7 +42,7 @@ import {
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
-import { listView } from './list';
+import { listView, type ListViewFactory } from './list';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
@@ -83,6 +83,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   tokens?: Tokens;
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
+  /** Other ways a list shows its records, by name: `map` (from @fieldia/map's `mapListViews`) for a list with `map`. */
+  listViews?: Record<string, ListViewFactory>;
   slots?: Record<string, SlotRenderer>;
   /**
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
@@ -1488,6 +1490,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       preferences,
       onOpenRecord: options.onOpenRecord,
       ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
+      ...(options.listViews ? { views: options.listViews } : {}),
     });
     cleanups.push(list.destroy);
     body = list.element;

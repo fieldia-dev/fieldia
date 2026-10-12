@@ -3,6 +3,21 @@ export const LIST_STYLES = `
 .fd-list { display: grid; gap: 10px; min-width: 0; }
 .fd-list [hidden] { display: none !important; }
 .fd-list-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 34px; }
+/* A list that is also a map: List, Map, or both side by side; the map's part is drawn by @fieldia/map. */
+.fd-list { container: fd-list / inline-size; }
+.fd-list-views { display: inline-flex; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); overflow: hidden; }
+.fd-list-views .fd-button { border: 0; border-radius: 0; min-height: 32px; padding-inline: 12px; }
+.fd-list-views .fd-button + .fd-button { border-inline-start: 1px solid var(--fd-border); }
+.fd-list-views .fd-button[aria-pressed="true"] { background: var(--fd-accent-soft); color: var(--fd-accent); font-weight: 600; }
+.fd-list-body { display: grid; gap: 16px; min-width: 0; }
+.fd-list-records { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.fd-list[data-view="list"] .fd-list-map { display: none; }
+.fd-list[data-view="map"] .fd-list-records, .fd-list[data-view="map"] .fd-pager { display: none; }
+.fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.fd-list[data-view="both"] .fd-list-map { position: sticky; top: 8px; }
+/* Too narrow for two: the map over the table. */
+@container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr); } .fd-list[data-view="both"] .fd-list-map { position: static; } }
+.fd-list-row.fd-list-hot > td { background: var(--fd-accent-soft); }
 .fd-search { position: relative; flex: 1 1 360px; max-width: 680px; min-width: 0; container: fd-search / inline-size; }
 .fd-search-field { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 34px; box-sizing: border-box; padding: 2px 2px 2px 8px; padding-inline: 8px 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }
 .fd-search-field:focus-within { border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }

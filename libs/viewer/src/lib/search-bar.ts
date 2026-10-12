@@ -226,6 +226,11 @@ export function searchBar(context: SearchContext) {
   drawPanel();
   return {
     element,
+    /** A search put in from outside, as a person's own: one with the same words takes its place, as a map's "In this area" does. */
+    add(facet: Facet) {
+      const words = facet.kind === 'custom' ? facet.label : null;
+      change([...facets.filter((f) => !(words !== null && f.kind === 'custom' && f.label === words)), facet]);
+    },
     destroy: () => doc.removeEventListener('pointerdown', outside),
   };
 }

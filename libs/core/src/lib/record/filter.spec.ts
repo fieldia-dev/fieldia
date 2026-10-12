@@ -106,3 +106,33 @@ describe('resolveFilter', () => {
     ]);
   });
 });
+
+describe('a place inside a box on the map: within', () => {
+  const box = { south: 30, west: 31, north: 30.1, east: 31.3 };
+  const at = (lng: number, lat: number) => ({ spot: { type: 'Point', coordinates: [lng, lat] } });
+
+  it('holds for a GeoJSON point inside the box, edges included, and not for one outside or none', () => {
+    const within: ResolvedFilter[] = [{ field: 'spot', op: 'within', value: box }];
+    expect(matchesFilter(at(31.2, 30.05), within)).toBe(true);
+    expect(matchesFilter(at(31, 30), within)).toBe(true);
+    expect(matchesFilter(at(31.4, 30.05), within)).toBe(false);
+    expect(matchesFilter(at(31.2, 29.9), within)).toBe(false);
+    expect(matchesFilter({ spot: null }, within)).toBe(false);
+    // A Feature holding a point counts as its point.
+    expect(matchesFilter({ spot: { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [31.2, 30.05] } } }, within)).toBe(true);
+  });
+
+  it('is a condition a page may write, its box four numbers', async () => {
+    const { validatePage } = await import('../../index');
+    const page = (value: unknown) => ({
+      fieldia: '0.1',
+      id: 'p',
+      data: { kind: 'record', model: 'site' },
+      fields: { spot: { type: 'json', label: 'Place' } },
+      layout: { type: 'list', id: 'l', columns: ['spot'], filters: [{ id: 'cairo', label: 'In Cairo', filter: [{ field: 'spot', op: 'within', value }] }] },
+    });
+    expect(validatePage(page(box)).ok).toBe(true);
+    expect(validatePage(page({ south: 30, west: 31 })).ok).toBe(false);
+    expect(validatePage(page([30, 31])).ok).toBe(false);
+  });
+});

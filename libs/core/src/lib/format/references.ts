@@ -464,6 +464,37 @@ export class ReferenceCheck {
       this.claim(button.id, `${path}.actions[${i}]`);
       this.checkPress(button, `${path}.actions[${i}]`);
     });
+    if (list.map) this.walkListMap(list.map, `${path}.map`);
+  }
+
+  /** A list's map: where each record is, and the fields its pin and its card show, each of a type that can. */
+  private walkListMap(map: NonNullable<ListNode['map']>, path: string) {
+    const typed = (name: string | undefined, at: string, ok: (type: string) => boolean, says: string) => {
+      if (name === undefined) return;
+      const def = this.need(name, at);
+      if (def && !ok(def.type)) this.report(at, `"${name}" is a ${def.type}; ${says}`);
+    };
+    const number = (type: string) => type === 'float' || type === 'integer';
+    const pair = map.latitude !== undefined || map.longitude !== undefined;
+    if (map.point !== undefined && pair) this.report(path, 'a map takes point, or latitude and longitude, not both');
+    else if (map.point === undefined && (map.latitude === undefined || map.longitude === undefined)) this.report(path, 'a map needs where each record is: point, or latitude and longitude');
+    typed(map.point, `${path}.point`, (type) => type === 'json', 'a point is kept in a json field');
+    typed(map.latitude, `${path}.latitude`, number, 'a latitude is a number field (float or integer)');
+    typed(map.longitude, `${path}.longitude`, number, 'a longitude is a number field (float or integer)');
+    const pin = map.pin;
+    if (pin) {
+      typed(pin.image, `${path}.pin.image`, (type) => type === 'image' || type === 'binary', "a pin's photo is an image or binary field");
+      typed(pin.turn, `${path}.pin.turn`, number, 'a turn is a number field, in degrees');
+      if (pin.iconField !== undefined) this.need(pin.iconField, `${path}.pin.iconField`);
+      if (pin.label !== undefined) this.need(pin.label, `${path}.pin.label`);
+      pin.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.pin.tones[${i}]`, ['when']));
+    }
+    const card = map.card;
+    if (card) {
+      if (card.title !== undefined) this.need(card.title, `${path}.card.title`);
+      typed(card.image, `${path}.card.image`, (type) => type === 'image' || type === 'binary', "a card's picture is an image or binary field");
+      card.fields?.forEach((name, i) => this.need(name, `${path}.card.fields[${i}]`));
+    }
   }
 
   private walkChildren(children: LayoutNode[], path: string) {

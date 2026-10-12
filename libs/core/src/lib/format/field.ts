@@ -54,7 +54,7 @@ const VALUE_FROM = /^((parent|user|context)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 export const FilterConditionSchema = z
   .object({
     field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?']),
+    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?', 'within']),
     value: JsonValueSchema.optional(),
     valueFrom: z.string().regex(VALUE_FROM).optional(),
   })
@@ -65,6 +65,15 @@ export const FilterConditionSchema = z
   .refine((c) => c.op !== 'between' || c.valueFrom !== undefined || (Array.isArray(c.value) && c.value.length === 2), {
     message: 'between takes value: [low, high]',
   })
+  // A place (a GeoJSON point in a json field) inside a box on the map, as a map's "In this area" asks.
+  .refine(
+    (c) => {
+      if (c.op !== 'within' || c.valueFrom !== undefined) return true;
+      const box = c.value as Record<string, unknown> | undefined;
+      return !!box && typeof box === 'object' && !Array.isArray(box) && ['south', 'west', 'north', 'east'].every((side) => typeof box[side] === 'number');
+    },
+    { message: 'within takes value: { south, west, north, east }, in degrees' }
+  )
   .meta({ id: 'FilterCondition' });
 
 export type FilterCondition = z.infer<typeof FilterConditionSchema>;

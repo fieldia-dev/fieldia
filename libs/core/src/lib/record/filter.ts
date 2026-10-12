@@ -79,6 +79,15 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
       const [low, high] = expected as (number | string)[];
       return (actual as number | string) >= low && (actual as number | string) <= high;
     }
+    case 'within': {
+      // A GeoJSON point (or a Feature holding one), longitude first, inside the box.
+      const geometry = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && (raw as Record<string, unknown>)['type'] === 'Feature' ? (raw as Record<string, unknown>)['geometry'] : raw;
+      const coordinates = geometry !== null && typeof geometry === 'object' && (geometry as Record<string, unknown>)['type'] === 'Point' ? (geometry as Record<string, unknown>)['coordinates'] : null;
+      if (!Array.isArray(coordinates)) return false;
+      const [lng, lat] = coordinates as number[];
+      const box = expected as Record<string, number>;
+      return typeof lat === 'number' && typeof lng === 'number' && lat >= box['south'] && lat <= box['north'] && lng >= box['west'] && lng <= box['east'];
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, skinFor, type ListViewFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   defineComponent,
@@ -81,6 +81,8 @@ export const FieldiaForm = defineComponent({
     locale: { type: String as PropType<Locale>, default: undefined },
     labels: { type: Object as PropType<Partial<ViewerLabels>>, default: undefined },
     widgets: { type: Object as PropType<Record<string, WidgetFactory>>, default: undefined },
+    /** Other ways a list shows its records: `map` from @fieldia/map's `mapListViews`. */
+    listViews: { type: Object as PropType<Record<string, ListViewFactory>>, default: undefined },
     fieldTypes: { type: Object as PropType<Record<string, Component>>, default: undefined },
     drafts: { type: Object as PropType<{ store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number }>, default: undefined },
     autosave: { type: Object as PropType<{ delayMs: number }>, default: undefined },
@@ -198,6 +200,7 @@ export const FieldiaForm = defineComponent({
         locale: props.locale,
         labels: props.labels,
         widgets,
+        listViews: props.listViews ? toRaw(props.listViews) : undefined,
         slots: slotRenderers,
         drafts: props.drafts,
         autosave: props.autosave,

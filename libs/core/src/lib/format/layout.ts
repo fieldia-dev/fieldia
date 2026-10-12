@@ -757,6 +757,55 @@ export interface ListNode {
   groupBy?: string[];
   /** Buttons for the records selected. */
   actions?: ButtonNode[];
+  /** The records on a map, beside the table or instead of it (drawn by @fieldia/map). */
+  map?: ListMap;
+}
+
+/**
+ * What a pin on a map shows, from its record's fields: a pin, an icon (a
+ * fixed one, or the one a field names), a round photo, words alone, or a dot.
+ */
+export interface Pin {
+  look?: 'pin' | 'icon' | 'photo' | 'label' | 'dot';
+  /** An icon by name: Fieldia's own and the map's (car, scooter, bike, shop, food…), or the app's. */
+  icon?: string;
+  /** A field whose value names the icon: a car, a scooter or a bike, record by record. */
+  iconField?: string;
+  /** An image field: the round photo, such as a driver's face. */
+  image?: string;
+  /** A field whose value is written on the pin: a price, a name, minutes away. */
+  label?: string;
+  /** The pin's colour while a condition holds on its record, the first that holds. */
+  tones?: ToneWhen[];
+  /** A number field, in degrees: which way the pin faces, as a car on a road. */
+  turn?: string;
+  /** The app's own widget for the pin, by name, drawn from the record. */
+  widget?: string;
+}
+
+/** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
+export interface MapCard {
+  title?: string;
+  image?: string;
+  fields?: string[];
+  /** A button to open the record; on unless false. */
+  open?: boolean;
+}
+
+/** A list's records on a map: where each one is, its pin and its card. */
+export interface ListMap {
+  /** A json field holding a GeoJSON Point; or `latitude` and `longitude`, two number fields. */
+  point?: string;
+  latitude?: string;
+  longitude?: string;
+  pin?: Pin;
+  card?: MapCard;
+  /** Pins that crowd as one bubble with their count; on unless false. */
+  cluster?: boolean;
+  /** How the list opens: the table, the map, or both side by side on a wide screen. */
+  view?: 'list' | 'map' | 'both';
+  /** How many records the map shows at most: 500 unless said. */
+  limit?: number;
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
@@ -1124,6 +1173,53 @@ export const SheetNodeSchema = z.strictObject({
   footer: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'SheetNode' });
 
+/**
+ * What a pin on a map shows, from its record's fields: a pin, an icon (a
+ * fixed one or one a field names), a round photo, words alone, or a dot; its
+ * words; its colour by condition; its turn, for a car facing its way; or the
+ * app's own widget, which draws it from the record.
+ */
+export const PinSchema = z
+  .strictObject({
+    look: z.enum(['pin', 'icon', 'photo', 'label', 'dot']).optional(),
+    icon: z.string().min(1).optional(),
+    iconField: fieldName.optional(),
+    image: fieldName.optional(),
+    label: fieldName.optional(),
+    tones: z.array(ToneWhenSchema).min(1).optional(),
+    turn: fieldName.optional(),
+    widget: z.string().min(1).optional(),
+  })
+  .meta({ id: 'Pin' });
+
+/** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
+export const MapCardSchema = z
+  .strictObject({
+    title: fieldName.optional(),
+    image: fieldName.optional(),
+    fields: z.array(fieldName).min(1).optional(),
+    /** A button to open the record (on unless false). */
+    open: z.boolean().optional(),
+  })
+  .meta({ id: 'MapCard' });
+
+/** A list's records on a map, beside it or instead of it: where each is (a point, or a latitude and a longitude), its pin, its card. */
+export const ListMapSchema = z
+  .strictObject({
+    point: fieldName.optional(),
+    latitude: fieldName.optional(),
+    longitude: fieldName.optional(),
+    pin: PinSchema.optional(),
+    card: MapCardSchema.optional(),
+    /** Pins that crowd as one bubble with their count (on unless false). */
+    cluster: z.boolean().optional(),
+    /** How the list opens: the table, the map, or both side by side on a wide screen. */
+    view: z.enum(['list', 'map', 'both']).optional(),
+    /** How many records the map shows at most: 500 unless said. */
+    limit: z.int().min(1).max(5000).optional(),
+  })
+  .meta({ id: 'ListMap' });
+
 export const ListNodeSchema = z.strictObject({
   type: z.literal('list'),
   id,
@@ -1135,6 +1231,7 @@ export const ListNodeSchema = z.strictObject({
   defaultFilters: z.array(id).optional(),
   groupBy: z.array(fieldName).optional(),
   actions: z.array(ButtonNodeSchema).optional(),
+  map: ListMapSchema.optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

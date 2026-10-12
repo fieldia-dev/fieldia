@@ -8,6 +8,7 @@ import {
   type LineField,
   type ListNode,
   type Locale,
+  type ResolvedFilter as Resolved,
   type Page,
   type RecordId,
   type ResolvedFilter,
@@ -43,7 +44,49 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId) => void;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
+  /** Other ways of showing the records, by name: `map` for a list with `map`. */
+  views?: Record<string, ListViewFactory>;
 }
+
+/**
+ * What another way of showing a list's records is given, such as the map
+ * @fieldia/map draws beside the table: the records the search bar asks for,
+ * the records chosen (shared with the table and its buttons), a way to open
+ * one, to light its row, and to put a search into the search bar.
+ */
+export interface ListViewContext {
+  page: Page;
+  node: ListNode;
+  dataSource: DataSource | undefined;
+  document: Document;
+  locale: Locale;
+  icons?: IconSet;
+  /** What the search bar and the list's own conditions ask for now. */
+  filter(): Resolved[];
+  isChosen(id: RecordId): boolean;
+  choose(id: RecordId, on: boolean): void;
+  open?: (id: RecordId) => void;
+  /** Light a record's row in the table; null lights none. */
+  highlight(id: RecordId | null): void;
+  /** Put a search into the search bar, as a person's own: "In this area". */
+  addSearch(search: { label: string; filter: Resolved[] }): void;
+}
+
+/** Another way of showing the list's records, made by a ListViewFactory. */
+export interface ListViewPart {
+  element: HTMLElement;
+  /** Ask for the records again: the search changed, or a button changed them. */
+  reload(): Promise<void>;
+  /** Light a record (its row is under the pointer or the focus); null lights none. */
+  highlight(id: RecordId | null): void;
+  /** The records chosen changed, in the table or here. */
+  chosenChanged(): void;
+  /** Shown after being hidden: measure again. */
+  shown(): void;
+  destroy(): void;
+}
+
+export type ListViewFactory = (context: ListViewContext) => ListViewPart;
 
 export interface ListView {
   element: HTMLElement;
@@ -130,6 +173,7 @@ export function listView(context: ListContext): ListView {
       if (box.checked) chosen.add(record.id);
       else chosen.delete(record.id);
       drawChoice();
+      mapPart?.chosenChanged();
     });
     const tr = el(
       'tr',
@@ -161,6 +205,10 @@ export function listView(context: ListContext): ListView {
         (next as HTMLElement | null)?.focus();
       }
     });
+    // Under the pointer or the focus: its pin on the map lights up.
+    tr.addEventListener('mouseenter', () => mapPart?.highlight(record.id));
+    tr.addEventListener('mouseleave', () => mapPart?.highlight(null));
+    tr.addEventListener('focus', () => mapPart?.highlight(record.id));
     recordOf.set(tr, record);
     return tr;
   }
@@ -175,7 +223,7 @@ export function listView(context: ListContext): ListView {
     button.addEventListener('click', () =>
       void context.press(button, async () => {
         const result = await form.runAction(action.id, { recordIds: [...chosen] });
-        await load();
+        await Promise.all([load(), mapPart?.reload()]);
         return result;
       })
     );
@@ -240,11 +288,15 @@ export function listView(context: ListContext): ListView {
 
   // ---- asking for the records ------------------------------------------------------
 
-  /** Rows came or went: what is chosen keeps to the records on show. */
+  /** Rows came or went: what is chosen keeps to the records on show, the table's or the map's. */
   function changed() {
-    const shown = new Set(visible().map((record) => record.id));
-    for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
+    // On a map, a record chosen may be one the table's page does not hold.
+    if (view === 'list') {
+      const shown = new Set(visible().map((record) => record.id));
+      for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
+    }
     drawChoice();
+    mapPart?.chosenChanged();
   }
 
   const grouped = (source: DataSource): GroupContext => ({
@@ -319,25 +371,91 @@ export function listView(context: ListContext): ListView {
       facets = next;
       offset = 0;
       void load();
+      void mapPart?.reload();
     },
   });
+
+  // ---- the map, beside the table or instead of it ----------------------------------
+
+  const mapFactory = node.map ? context.views?.['map'] : undefined;
+  let view: 'list' | 'map' | 'both' = mapFactory ? (node.map?.view ?? 'list') : 'list';
+  let mapPart: ListViewPart | null = null;
+  const mapHolder = el('div', { class: 'fd-list-map' });
+  const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node)];
+
+  function makeMap() {
+    if (mapPart || !mapFactory) return;
+    mapPart = mapFactory({
+      page,
+      node,
+      dataSource: context.dataSource,
+      document: doc,
+      locale,
+      icons: context.icons,
+      filter: currentFilter,
+      isChosen: (id) => chosen.has(id),
+      choose(id, on) {
+        if (on) chosen.add(id);
+        else chosen.delete(id);
+        for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
+          if (tr.dataset['id'] !== String(id)) continue;
+          const box = tr.querySelector<HTMLInputElement>('.fd-list-checkbox');
+          if (box) box.checked = on;
+        }
+        drawChoice();
+        mapPart?.chosenChanged();
+      },
+      ...(context.onOpenRecord ? { open: context.onOpenRecord } : {}),
+      highlight(id) {
+        for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
+          const hot = id !== null && tr.dataset['id'] === String(id);
+          tr.classList.toggle('fd-list-hot', hot);
+          if (hot && view === 'both') tr.scrollIntoView({ block: 'nearest' });
+        }
+      },
+      addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),
+    });
+    mapHolder.append(mapPart.element);
+    void mapPart.reload();
+  }
+
+  const viewButtons = (['list', 'map', 'both'] as const).map((name) => {
+    const button = el('button', { type: 'button', class: 'fd-button fd-list-view', 'data-view': name, 'aria-pressed': 'false' }, name === 'list' ? labels.viewList : name === 'map' ? labels.viewMap : labels.viewBoth);
+    button.addEventListener('click', () => showAs(name));
+    return button;
+  });
+  const views = el('div', { class: 'fd-list-views', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
+  views.hidden = !mapFactory;
+
+  function showAs(next: typeof view) {
+    view = next;
+    element.dataset['view'] = view;
+    for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset['view'] === view));
+    if (view !== 'list') {
+      makeMap();
+      mapPart?.shown();
+    }
+  }
+
   const element = el(
     'div',
     { class: 'fd-list', 'data-node': node.id },
-    el('div', { class: 'fd-list-bar' }, search.element, pager),
+    el('div', { class: 'fd-list-bar' }, search.element, views, pager),
     selection,
-    el('div', { class: 'fd-list-scroll' }, table),
-    empty,
-    failed
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed), mapHolder)
   );
+  showAs(view);
   void load();
 
   return {
     element,
-    reload: load,
+    reload: async () => {
+      await Promise.all([load(), mapPart?.reload()]);
+    },
     destroy() {
       destroyed = true;
       search.destroy();
+      mapPart?.destroy();
     },
   };
 }
