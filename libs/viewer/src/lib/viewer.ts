@@ -29,6 +29,7 @@ import {
   type SpacerNode,
   type ImageNode,
   type FormNode,
+  type MapNode,
   type WizardNode,
   type LabelPlace,
   type LineField,
@@ -43,6 +44,7 @@ import {
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView, type ListViewFactory } from './list';
+import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
@@ -85,6 +87,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   widgets?: Record<string, WidgetFactory>;
   /** Other ways a list shows its records, by name: `map` (from @fieldia/map's `mapListViews`) for a list with `map`. */
   listViews?: Record<string, ListViewFactory>;
+  /** Draws a page's maps (`type: "map"`): @fieldia/map's `mapParts`. Without it a map shows nothing. */
+  maps?: MapPartFactory;
   slots?: Record<string, SlotRenderer>;
   /**
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
@@ -292,6 +296,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   let sink: Updater[] = updaters;
   const cleanups: (() => void)[] = [];
+  /** A map without the app's maps to draw it: said once to the developer. */
+  let warnedMaps = false;
   const ownUid = (id: string) => `${prefix}-${id.replace(/[^A-Za-z0-9_-]/g, '_')}`;
   const uid = ownUid;
   const fill = (template: string, values: Record<string, string | number>) =>
@@ -823,7 +829,27 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           return blockItem(node);
         case 'form':
           return formItem(node, place);
+        case 'map':
+          return mapItem(node);
       }
+    }
+
+    /** A map of the record's places, drawn by the app's maps; told of each change to the form. */
+    function mapItem(node: MapNode): HTMLElement {
+      if (!options.maps) {
+        if (!warnedMaps) console.warn('[Fieldia] This page has a map: give the viewer `maps` (mapParts from @fieldia/map) to draw it.');
+        warnedMaps = true;
+        return el('div', { class: 'fd-map-part', 'data-node': node.id, hidden: '' });
+      }
+      const part = options.maps({ node, page, form, document: doc, locale, icons: options.icons });
+      part.element.classList.add('fd-map-part');
+      part.element.dataset['node'] = node.id;
+      // The whole row unless its page says: a map is read across.
+      spans(part.element, node.colspan ?? 12);
+      watch((state) => part.update(state));
+      if (part.destroy) cleanups.push(() => part.destroy?.());
+      hideWhen(part.element, node.id);
+      return part.element;
     }
 
     /** A line across the row, empty room, or a picture: shown and hidden by its rule like any part. */

@@ -1,0 +1,96 @@
+{
+  "fieldia": "0.1",
+  "id": "map-order",
+  "title": "Your order",
+  "description": "An order on its way: the kitchen, your door, and the courier coming along the road, the minutes left counting down.",
+  "data": { "kind": "record", "model": "food.order" },
+  "fields": {
+    "name": { "type": "char", "label": "Order" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "preparing", "label": "Preparing" },
+        { "value": "on_the_way", "label": "On the way" },
+        { "value": "delivered", "label": "Delivered" }
+      ]
+    },
+    "restaurant": { "type": "char", "label": "From" },
+    "kitchen_lat": { "type": "float", "label": "Kitchen latitude" },
+    "kitchen_lng": { "type": "float", "label": "Kitchen longitude" },
+    "door": { "type": "json", "label": "Deliver to" },
+    "address": { "type": "char", "label": "Address" },
+    "courier": { "type": "char", "label": "Courier" },
+    "courier_photo": { "type": "image", "label": "Courier’s photo" },
+    "courier_lat": { "type": "float", "label": "Courier latitude" },
+    "courier_lng": { "type": "float", "label": "Courier longitude" },
+    "courier_heading": { "type": "integer", "label": "Heading" },
+    "eta_seconds": { "type": "integer", "label": "Seconds left" },
+    "eta_text": { "type": "char", "label": "Arrives in", "compute": "round(eta_seconds / 60) + ' min'" },
+    "distance_m": { "type": "integer", "label": "Metres left" },
+    "route_line": { "type": "json", "label": "Route" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "order",
+    "title": { "field": "name" },
+    "statusbar": { "field": "state" },
+    "children": [
+      {
+        "type": "section",
+        "id": "on-the-way",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-restaurant", "field": "restaurant", "readonly": true },
+          { "type": "field", "id": "f-address", "field": "address", "readonly": true },
+          { "type": "field", "id": "f-courier", "field": "courier", "readonly": true },
+          { "type": "field", "id": "f-eta", "field": "eta_text", "readonly": true },
+          {
+            "type": "map",
+            "id": "order-map",
+            "label": "Where your order is",
+            "height": 420,
+            "layers": [
+              { "id": "kitchen", "label": "Kitchen", "latitude": "kitchen_lat", "longitude": "kitchen_lng", "pin": { "look": "icon", "icon": "food" }, "card": { "title": "restaurant" } },
+              { "id": "door", "label": "Your door", "point": "door", "pin": { "look": "icon", "icon": "home", "tones": [{ "tone": "success", "when": "state == 'delivered'" }] }, "card": { "title": "address" } },
+              {
+                "id": "courier",
+                "label": "Courier",
+                "latitude": "courier_lat",
+                "longitude": "courier_lng",
+                "pin": { "look": "photo", "image": "courier_photo", "label": "eta_text" },
+                "card": { "title": "courier", "fields": ["eta_text", "distance_m"] },
+                "live": { "staleAfter": 60, "follow": true },
+                "invisible": "state == 'delivered'"
+              },
+              { "id": "way", "route": { "from": "courier", "to": "door", "mode": "car", "progress": true, "write": { "seconds": "eta_seconds", "metres": "distance_m", "line": "route_line" } }, "invisible": "state == 'delivered'" },
+              { "id": "me", "label": "You", "myLocation": true }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Your order": "طلبك",
+      "An order on its way: the kitchen, your door, and the courier coming along the road, the minutes left counting down.": "طلب في الطريق: المطبخ وبابك والمندوب قادم على الطريق، والدقائق الباقية تتناقص.",
+      "Order": "الطلب",
+      "Status": "الحالة",
+      "Preparing": "قيد التحضير",
+      "On the way": "في الطريق",
+      "Delivered": "تم التوصيل",
+      "From": "من",
+      "Deliver to": "التوصيل إلى",
+      "Address": "العنوان",
+      "Courier": "المندوب",
+      "Courier’s photo": "صورة المندوب",
+      "Arrives in": "يصل خلال",
+      "Metres left": "الأمتار الباقية",
+      "Where your order is": "أين طلبك",
+      "Kitchen": "المطبخ",
+      "Your door": "بابك",
+      "You": "أنت"
+    }
+  }
+}

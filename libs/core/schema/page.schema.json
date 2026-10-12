@@ -6902,6 +6902,9 @@
             "name"
           ],
           "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/MapNode"
         }
       ]
     },
@@ -7109,6 +7112,241 @@
         "id",
         "label",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "MapNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "map"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "layers": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MapLayer"
+          }
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 160,
+          "maximum": 1200
+        },
+        "colspan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
+        },
+        "hideOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScreenWidth"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "layers"
+      ],
+      "additionalProperties": false
+    },
+    "MapLayer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "point": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "latitude": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "longitude": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "lines": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "pin": {
+          "$ref": "#/$defs/Pin"
+        },
+        "card": {
+          "$ref": "#/$defs/MapCard"
+        },
+        "live": {
+          "type": "object",
+          "properties": {
+            "staleAfter": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 86400
+            },
+            "follow": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "route": {
+          "$ref": "#/$defs/MapRoute"
+        },
+        "myLocation": {
+          "type": "boolean"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "Pin": {
+      "type": "object",
+      "properties": {
+        "look": {
+          "type": "string",
+          "enum": [
+            "pin",
+            "icon",
+            "photo",
+            "label",
+            "dot"
+          ]
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iconField": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "label": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "tones": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToneWhen"
+          }
+        },
+        "turn": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "widget": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "MapCard": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "open": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MapRoute": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "through": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "car",
+            "bike",
+            "foot"
+          ]
+        },
+        "progress": {
+          "type": "boolean"
+        },
+        "write": {
+          "type": "object",
+          "properties": {
+            "seconds": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "metres": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "line": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "from"
       ],
       "additionalProperties": false
     },
@@ -7667,78 +7905,6 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 5000
-        }
-      },
-      "additionalProperties": false
-    },
-    "Pin": {
-      "type": "object",
-      "properties": {
-        "look": {
-          "type": "string",
-          "enum": [
-            "pin",
-            "icon",
-            "photo",
-            "label",
-            "dot"
-          ]
-        },
-        "icon": {
-          "type": "string",
-          "minLength": 1
-        },
-        "iconField": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "image": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "label": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "tones": {
-          "minItems": 1,
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ToneWhen"
-          }
-        },
-        "turn": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "widget": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false
-    },
-    "MapCard": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "image": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-        },
-        "fields": {
-          "minItems": 1,
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-          }
-        },
-        "open": {
-          "type": "boolean"
         }
       },
       "additionalProperties": false

@@ -369,6 +369,24 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
   },
 };
 
+/** The words a form's map shows, besides the maps' own and a list map's: kept apart, as theirs are. */
+export interface FormMapLabels {
+  /** A map's name when its page gives none. */
+  map: string;
+  /** A place whose news is old: `{time}` is how long ago, in the page's language ("3 minutes ago"). */
+  lastSeen: string;
+  /** Back to following a place that moves, after the person moved the map away. */
+  follow: string;
+  routeFailed: string;
+}
+
+export const FORM_MAP_LABELS: Record<Locale, FormMapLabels> = {
+  en: { map: 'Map', lastSeen: 'Last seen {time}', follow: 'Follow', routeFailed: 'The way could not be found.' },
+  ar: { map: 'خريطة', lastSeen: 'آخر ظهور {time}', follow: 'تتبّع', routeFailed: 'تعذّر إيجاد الطريق.' },
+  fr: { map: 'Carte', lastSeen: 'Vu pour la dernière fois {time}', follow: 'Suivre', routeFailed: 'Le trajet est introuvable.' },
+  de: { map: 'Karte', lastSeen: 'Zuletzt gesehen {time}', follow: 'Folgen', routeFailed: 'Der Weg wurde nicht gefunden.' },
+};
+
 /** The words for a page's language, with the app's own over them. */
 export function mapLabels(locale: Locale | undefined, own?: Partial<MapLabels>): MapLabels {
   return { ...MAP_LABELS[locale ?? 'en'], ...own };
@@ -382,3 +400,8 @@ export function listMapLabels(locale: Locale | undefined, own?: Partial<MapLabel
 /** A word with its `{name}`s filled in. */
 export const fill = (words: string, values: Record<string, string | number>) =>
   words.replace(/\{(\w+)\}/g, (all, key: string) => (key in values ? String(values[key]) : all));
+
+/** A form's map's words for a page's language: the maps' own, a list map's (its pins and cards), its own, the app's over all. */
+export function formMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels & FormMapLabels>): MapLabels & ListMapLabels & FormMapLabels {
+  return { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...FORM_MAP_LABELS[locale ?? 'en'], ...own };
+}

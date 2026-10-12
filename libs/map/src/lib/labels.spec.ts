@@ -1,10 +1,10 @@
-import { fill, LIST_MAP_LABELS, listMapLabels, MAP_LABELS, mapLabels } from './labels';
+import { fill, FORM_MAP_LABELS, LIST_MAP_LABELS, listMapLabels, MAP_LABELS, mapLabels } from './labels';
 
 describe('the maps’ words', () => {
   const english = MAP_LABELS.en;
 
   it('are all there, in every language, with the same blanks: the maps’ own and a list map’s', () => {
-    for (const table of [MAP_LABELS, LIST_MAP_LABELS] as unknown as Record<string, Record<string, string>>[]) {
+    for (const table of [MAP_LABELS, LIST_MAP_LABELS, FORM_MAP_LABELS] as unknown as Record<string, Record<string, string>>[]) {
       const first = table['en'];
       for (const [locale, words] of Object.entries(table)) {
         expect([locale, Object.keys(words).sort()]).toEqual([locale, Object.keys(first).sort()]);

@@ -13,9 +13,14 @@ const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder
  * data is, and the page's translations themselves; and the maps by field name
  * — a table's optional columns, a step's values and answers, a call's params —
  * where a field may well be called `description` or `title`; and a list's
- * map, whose pin `label` and card `title` name fields.
+ * map, whose pin `label` and card `title` name fields (a map's layers too,
+ * but for each layer's own `label`, which is words).
  */
 const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map']);
+
+/** A map's layer: its own label is words; the rest names fields and layers, and stays as it is. */
+const wordsOfLayer = (text: (words: string) => string) => (layer: unknown) =>
+  layer !== null && typeof layer === 'object' && typeof (layer as { label?: unknown }).label === 'string' ? { ...layer, label: text((layer as { label: string }).label) } : layer;
 
 /**
  * Every word a person reads in `value` passed through `text`, the rest copied
@@ -30,7 +35,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
   const out: Record<string, unknown> = {};
   for (const [name, inner] of Object.entries(value)) {
     // A field node's `options` are its widget's settings, not a list of choices.
-    out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
+    if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
+    else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
   }
   return out;
 }

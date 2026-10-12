@@ -1,5 +1,5 @@
 import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
-import { mountViewer, type ListViewFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
+import { mountViewer, type ListViewFactory, type MapPartFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -30,6 +30,8 @@ export interface TryItOptions {
   widgets?: Record<string, WidgetFactory>;
   /** The app's other ways of showing a list's records, as the viewer takes them: a map with @fieldia/map's mapListViews. */
   listViews?: Record<string, ListViewFactory>;
+  /** Draws a page's maps (`type: "map"`): @fieldia/map's mapParts. */
+  maps?: MapPartFactory;
   /** Where the made-up records are, on a list's map: the middle of the app's maps. Near 0, 0 unless said. */
   sampleCentre?: { lat: number; lng: number };
 }
@@ -129,6 +131,7 @@ export function tryIt(options: TryItOptions): TryIt {
       skin: options.skin,
       widgets: options.widgets,
       ...(options.listViews ? { listViews: options.listViews } : {}),
+      ...(options.maps ? { maps: options.maps } : {}),
       ...language.viewerOptions(direction),
     });
     tryDrawer(el, frame, viewer, designer.words);

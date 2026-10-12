@@ -21,6 +21,8 @@ export const canvas: DesignerWords['canvas'] = {
   addTab: 'إضافة علامة تبويب',
   untitledTab: 'علامة تبويب بلا عنوان',
   emptyRoom: 'مساحة فارغة',
+  map: 'خريطة',
+  mapLayers: (ids) => `الطبقات: ${ids.join('، ')}. تظهر الخريطة نفسها في «تجربة».`,
   foldsFolded: 'يُطوى، ويبدأ مطويًا',
   foldsOpen: 'يُطوى، ويبدأ مفتوحًا',
   addButton: 'إضافة زر',

@@ -241,3 +241,77 @@ describe('any map images', () => {
     expect(await own.credits('road', view, 'en')).toEqual([{ text: '© Example' }]);
   });
 });
+
+describe('routes along the roads', () => {
+  const TAHRIR = { lat: 30.0444, lng: 31.2357 };
+  const ZAMALEK = { lat: 30.0626, lng: 31.2197 };
+  /** Their answers for this route, as each gave them on 12 Oct 2026: Azure's (the key taken out) and OSRM's. */
+  const AZURE_ROUTE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-route.json'), 'utf8'));
+  const OSRM_ROUTE = JSON.parse(readFileSync(join(__dirname, 'fixtures/osrm-route.json'), 'utf8'));
+
+  it('asks Azure Maps for its route path, a GeoJSON of the points in order, and reads its line, metres and seconds', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/route/directions': AZURE_ROUTE });
+    const route = await azureMaps({ key: 'k', fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' });
+    expect(route.metres).toBe(3311);
+    expect(route.seconds).toBe(489);
+    expect(route.line).toHaveLength(110);
+    expect(route.line[0]).toEqual({ lat: 30.04405, lng: 31.2358 });
+    expect(asked[0].url).toBe('https://atlas.microsoft.com/route/directions?api-version=2025-01-01&subscription-key=k');
+    const body = JSON.parse(String(asked[0].init?.body));
+    expect(body.features.map((f: { geometry: { coordinates: number[] } }) => f.geometry.coordinates)).toEqual([[31.2357, 30.0444], [31.2197, 30.0626]]);
+    expect(body).toMatchObject({ travelMode: 'driving', routeOutputOptions: ['routePath'] });
+    // A stop on the way is passed through, not stopped at.
+    await azureMaps({ key: 'k', fetch }).route!({ points: [TAHRIR, { lat: 30.05, lng: 31.23 }, ZAMALEK], mode: 'foot', locale: 'en' });
+    const via = JSON.parse(String(asked[1].init?.body));
+    expect(via.features.map((f: { properties: { pointType: string } }) => f.properties.pointType)).toEqual(['waypoint', 'viaWaypoint', 'waypoint']);
+    expect(via.travelMode).toBe('walking');
+    // The time with traffic, when it gives one.
+    const busy = structuredClone(AZURE_ROUTE);
+    busy.features.find((f: { properties: { type: string } }) => f.properties.type === 'RoutePath').properties.durationTrafficInSeconds = 612;
+    const slow = network({ 'https://atlas.microsoft.com/route/directions': busy });
+    expect((await azureMaps({ key: 'k', fetch: slow.fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' })).seconds).toBe(612);
+  });
+
+  it('says plainly that Azure Maps has no routes by bike, and what a route-less answer is', async () => {
+    const { fetch } = network({ 'https://atlas.microsoft.com/route/directions': { type: 'FeatureCollection', features: [] } });
+    await expect(azureMaps({ key: 'k', fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'bike', locale: 'en' })).rejects.toThrow('Azure Maps finds routes by car or on foot, not by bike');
+    await expect(azureMaps({ key: 'k', fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' })).rejects.toThrow('Azure Maps found no route');
+  });
+
+  it('asks OSRM by its profile, the points longitude first', async () => {
+    const { fetch, asked } = network({ 'https://router.project-osrm.org/route/v1/': OSRM_ROUTE, 'https://osrm.example.test/route/v1/': OSRM_ROUTE });
+    const route = await openStreetMap({ fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' });
+    expect(asked[0].url).toBe('https://router.project-osrm.org/route/v1/driving/31.2357,30.0444;31.2197,30.0626?overview=full&geometries=geojson');
+    expect([route.metres, route.seconds, route.line.length]).toEqual([3380.8, 242.9, 139]);
+    await openStreetMap({ fetch, osrmUrl: 'https://osrm.example.test/' }).route!({ points: [TAHRIR, ZAMALEK], mode: 'bike', locale: 'en' });
+    expect(asked[1].url.startsWith('https://osrm.example.test/route/v1/cycling/')).toBe(true);
+  });
+
+  it('asks Google’s Routes API for only the fields it reads, and decodes its line', async () => {
+    // The answer as Google's reference shows it; its polyline the documented example.
+    const { fetch, asked } = network({ 'https://routes.googleapis.com/directions/v2:computeRoutes': { routes: [{ distanceMeters: 3380, duration: '512s', polyline: { encodedPolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@' } }] } });
+    const route = await googleMaps({ key: 'g', fetch }).route!({ points: [TAHRIR, { lat: 30.05, lng: 31.23 }, ZAMALEK], mode: 'bike', locale: 'ar' });
+    expect(route).toEqual({ metres: 3380, seconds: 512, line: [{ lat: 38.5, lng: -120.2 }, { lat: 40.7, lng: -120.95 }, { lat: 43.252, lng: -126.453 }] });
+    const sent = asked[0].init!;
+    expect((sent.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline');
+    expect(JSON.parse(String(sent.body))).toEqual({
+      origin: { location: { latLng: { latitude: 30.0444, longitude: 31.2357 } } },
+      destination: { location: { latLng: { latitude: 30.0626, longitude: 31.2197 } } },
+      intermediates: [{ location: { latLng: { latitude: 30.05, longitude: 31.23 } } }],
+      travelMode: 'BICYCLE',
+    });
+  });
+
+  it('asks Mapbox by its profile, traffic for a car', async () => {
+    const { fetch, asked } = network({ 'https://api.mapbox.com/directions/v5/': { routes: [{ distance: 3400.5, duration: 300.2, geometry: { type: 'LineString', coordinates: [[31.2357, 30.0444], [31.2197, 30.0626]] } }] } });
+    const route = await mapbox({ token: 't', fetch }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' });
+    expect(asked[0].url).toBe('https://api.mapbox.com/directions/v5/mapbox/driving-traffic/31.2357,30.0444;31.2197,30.0626?geometries=geojson&overview=full&access_token=t');
+    expect(route).toEqual({ metres: 3400.5, seconds: 300.2, line: [TAHRIR, ZAMALEK] });
+  });
+
+  it('takes the app’s own routes with its own map images', async () => {
+    const own = jest.fn(async () => ({ line: [TAHRIR, ZAMALEK], metres: 1, seconds: 2 }));
+    expect(await tiles({ url: 'https://x.test/{z}/{x}/{y}.png', credit: { text: 'x' }, route: own }).route!({ points: [TAHRIR, ZAMALEK], mode: 'car', locale: 'en' })).toEqual({ line: [TAHRIR, ZAMALEK], metres: 1, seconds: 2 });
+    expect(tiles({ url: 'https://x.test/{z}/{x}/{y}.png', credit: { text: 'x' } }).route).toBeUndefined();
+  });
+});

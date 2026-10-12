@@ -1,5 +1,5 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
-import type { ListViewFactory, Skin } from '@fieldia/viewer';
+import type { ListViewFactory, MapPartFactory, Skin } from '@fieldia/viewer';
 import { installStyles, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
@@ -50,6 +50,8 @@ export interface ScreenEditorOptions {
   widgets?: Record<string, WidgetFactory>;
   /** The app's other ways of showing a list's records, for Try it: a map with @fieldia/map's mapListViews. */
   listViews?: Record<string, ListViewFactory>;
+  /** Draws a page's maps in Try it (`type: "map"`): @fieldia/map's mapParts. */
+  maps?: MapPartFactory;
   /** Where Try it's made-up records are, on a list's map: the middle of the app's maps. */
   sampleCentre?: { lat: number; lng: number };
   /** The app's own templates for a blank screen, after the designer's. */
@@ -75,7 +77,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const skin = options.skin ?? 'outlined';
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
-  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, listViews: options.listViews, sampleCentre: options.sampleCentre, onChange: (trying) => (body.hidden = trying) });
+  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, listViews: options.listViews, maps: options.maps, sampleCentre: options.sampleCentre, onChange: (trying) => (body.hidden = trying) });
   /** Every kind of field, then the app's own. */
   const kinds = [...QUESTION_KINDS, ...SCREEN_KINDS, ...designer.appKinds()];
   // Simple or Advanced: the person's preference, kept in this browser, never in the page.

@@ -4,7 +4,7 @@ import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { createMonacoWidgets, monacoWidgets } from '@fieldia/monaco';
-import { demoListViews, demoMapWidgets } from '../shared/maps';
+import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
@@ -78,6 +78,8 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // A list with `map` shows its records on one too.
   listViews: demoListViews,
+  // A page's own maps, with their layers: the order coming to its door.
+  maps: demoMaps,
   pages: appPages,
   ...optionsFromQuery(params),
   slots: {

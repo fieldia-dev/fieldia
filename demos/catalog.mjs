@@ -267,6 +267,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-order',
+    name: 'An order on its way',
+    category: 'records',
+    query: 'page=map-order&skin=outlined&readonly=1',
+    blurb: 'A map on an order’s page, its layers named by the page: the kitchen, your door, and the courier with the minutes left under their photo, gliding along the road as their place comes in, the road behind them fading.',
+    howTo: [
+      'Watch the courier: a new place every two seconds, the pin gliding along the road, Arrives in counting down.',
+      'Drag the map away: it stops following the courier, and Follow brings it back.',
+      'Press My location at the map’s corner: once you allow it, a dot shows where you are.',
+      'Tab to the courier’s pin and press Enter: their card says how far they are.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',

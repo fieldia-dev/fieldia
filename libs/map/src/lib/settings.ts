@@ -1,8 +1,8 @@
 import type { Locale } from '@fieldia/core';
 import type { LatLng } from './geo';
-import type { ListMapLabels, MapLabels } from './labels';
+import type { FormMapLabels, ListMapLabels, MapLabels } from './labels';
 import type { PinDrawer } from './pins';
-import type { AddressSearch, MapProvider, ReverseSearch } from './providers';
+import type { AddressSearch, MapProvider, ReverseSearch, RouteFinder } from './providers';
 
 /** What every map of an app shares: given once to `mapWidgets`. */
 export interface MapSettings {
@@ -16,8 +16,10 @@ export interface MapSettings {
   /** Where an empty map opens, and how close. */
   center?: LatLng;
   zoom?: number;
+  /** The app's own routes, instead of the provider's. */
+  route?: RouteFinder;
   /** The app's own pins for a list's map, by the name a page's `pin.widget` gives. */
   pins?: Record<string, PinDrawer>;
   /** The app's own words over the maps', by language. */
-  labels?: Partial<Record<Locale, Partial<MapLabels & ListMapLabels>>>;
+  labels?: Partial<Record<Locale, Partial<MapLabels & ListMapLabels & FormMapLabels>>>;
 }

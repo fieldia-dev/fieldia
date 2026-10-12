@@ -1,8 +1,9 @@
 /**
  * @fieldia/map's size, as an app's bundler would make it: the package's own
  * code (loaded with the page), for a form with a place or an area and for
- * everything with a list's map, and Leaflet (loaded the first time a map is
- * shown, in a chunk of its own), each against its budget. Fieldia's own
+ * everything with a list's map and a form's, Leaflet (loaded the first time
+ * a map is shown, in a chunk of its own), and the routes (loaded the first
+ * time a route is asked for), each against its budget. Fieldia's own
  * packages are left out: an app has them already.
  *
  *   node tools/map-bundle.mjs
@@ -20,9 +21,10 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * fields and the providers, which is all most apps use), and everything (the
  * list's map too); and Leaflet, loaded the first time a map is shown.
  */
-const BUDGET = { fields: 21.2, all: 29.3, leaflet: 47 };
+const BUDGET = { fields: 21.6, all: 35.4, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
+const metafiles = {};
 async function measure(name, exports) {
   const dir = join(OUT, name);
   rmSync(dir, { recursive: true, force: true });
@@ -40,17 +42,30 @@ async function measure(name, exports) {
     tsconfig: join(WORKSPACE, 'tsconfig.base.json'),
     external: ['@fieldia/core', '@fieldia/widgets', '@fieldia/viewer', 'tslib'],
     logLevel: 'warning',
+    metafile: true,
+  }).then((result) => (metafiles[name] = result.metafile));
+  // What loads with the page: map.js and the chunks it imports outright; the rest waits for an `import()`.
+  const outputs = metafiles[name].outputs;
+  const withPage = new Set();
+  const reach = (path) => {
+    if (withPage.has(path)) return;
+    withPage.add(path);
+    for (const used of outputs[path]?.imports ?? []) if (used.kind === 'import-statement') reach(used.path);
+  };
+  reach(Object.keys(outputs).find((path) => path.endsWith('/map.js')));
+  const sizes = Object.keys(outputs).filter((path) => path.endsWith('.js')).map((path) => {
+    const text = readFileSync(path);
+    const file = path.split('/').pop();
+    const leaflet = !withPage.has(path) && /Leaflet|leaflet-container/.test(String(text));
+    const routes = !withPage.has(path) && !leaflet && /route\/v1|computeRoutes|route\/directions/.test(String(text));
+    return { file, raw: text.length, gzip: gzipSync(text).length, leaflet, routes, later: !withPage.has(path) };
   });
-  const files = readdirSync(join(dir, 'out')).filter((file) => file.endsWith('.js'));
-  const sizes = files.map((file) => {
-    const text = readFileSync(join(dir, 'out', file));
-    return { file, raw: text.length, gzip: gzipSync(text).length, leaflet: file !== 'map.js' && /Leaflet|leaflet-container/.test(String(text)) };
-  });
-  for (const s of sizes) console.log(`${name} · ${s.file}: ${(s.raw / 1024).toFixed(1)} KB, ${(s.gzip / 1024).toFixed(1)} KB gzipped${s.leaflet ? ' (Leaflet, loaded with the first map)' : ''}`);
+  for (const s of sizes) console.log(`${name} · ${s.file}: ${(s.raw / 1024).toFixed(1)} KB, ${(s.gzip / 1024).toFixed(1)} KB gzipped${s.leaflet ? ' (Leaflet, loaded with the first map)' : s.routes ? ' (routes, loaded with the first route)' : s.later ? ' (loaded when first needed)' : ''}`);
   if (!sizes.some((s) => s.leaflet)) throw new Error('Leaflet is not in a chunk of its own: a page without a map would load it');
   return {
-    own: sizes.filter((s) => !s.leaflet).reduce((sum, s) => sum + s.gzip, 0),
+    own: sizes.filter((s) => !s.later).reduce((sum, s) => sum + s.gzip, 0),
     leaflet: sizes.filter((s) => s.leaflet).reduce((sum, s) => sum + s.gzip, 0),
+    routes: sizes.filter((s) => s.routes).reduce((sum, s) => sum + s.gzip, 0),
   };
 }
 
@@ -60,4 +75,6 @@ const kb = (n) => (n / 1024).toFixed(1);
 if (fields.own > BUDGET.fields * 1024) throw new Error(`@fieldia/map for a place and an area is ${kb(fields.own)} KB gzipped, over its ${BUDGET.fields} KB budget`);
 if (all.own > BUDGET.all * 1024) throw new Error(`@fieldia/map with a list's map is ${kb(all.own)} KB gzipped, over its ${BUDGET.all} KB budget`);
 if (all.leaflet > BUDGET.leaflet * 1024) throw new Error(`Leaflet's chunk is ${kb(all.leaflet)} KB gzipped, over its ${BUDGET.leaflet} KB budget`);
-console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map (budget ${BUDGET.all}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet})`);
+if (!all.routes) throw new Error('The routes are not in a chunk of their own: every map would carry them');
+if (all.routes > BUDGET.routes * 1024) throw new Error(`The routes' chunk is ${kb(all.routes)} KB gzipped, over its ${BUDGET.routes} KB budget`);
+console.log(`@fieldia/map: ${kb(fields.own)} KB gzipped for a place and an area (budget ${BUDGET.fields}), ${kb(all.own)} KB with a list's map and a form's (budget ${BUDGET.all}); Leaflet ${kb(all.leaflet)} KB with the first map (budget ${BUDGET.leaflet}); routes ${kb(all.routes)} KB with the first route (budget ${BUDGET.routes})`);

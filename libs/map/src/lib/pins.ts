@@ -146,11 +146,14 @@ export function makePins(options: PinsOptions): Pins {
   function name(record: MapRecord): string {
     const title = shown(page, options.title, record.values, locale);
     const said = pin.label && pin.label !== options.title ? shown(page, pin.label, record.values, locale) : '';
-    return [title, said].filter(Boolean).join(', ') || String(record.id);
+    return [title, said].filter(Boolean).join(comma(locale)) || String(record.id);
   }
 
   return { face, name, fields };
 }
+
+/** The comma between a name's parts, in the page's language. */
+export const comma = (locale: Locale) => (locale === 'ar' ? '، ' : ', ');
 
 /** A field, and the field its amount's currency is in. */
 export function withCurrency(page: Page, name: string): string[] {

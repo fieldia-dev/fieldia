@@ -1,4 +1,4 @@
-import { compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -101,6 +101,8 @@ export function shownFields(page: Page): Set<string> {
   const shown = new Set(containers(page).flatMap((c) => c.children.filter((n): n is FieldNode => n.type === 'field').map((n) => n.field)));
   // Words that show a field's value, among the parts.
   for (const c of containers(page)) for (const n of c.children) if (n.type === 'text') for (const name of valuesIn(n.text)) shown.add(name);
+  // A map names the record's fields: its places, its pins' and cards', a layer's lines, where a route's numbers go.
+  for (const c of containers(page)) for (const n of c.children) if (n.type === 'map') for (const name of mapNodeFields(n)) shown.add(name);
   const root = page.layout;
   if (root.type === 'sheet') {
     const title = root.title;
@@ -122,6 +124,20 @@ export function shownFields(page: Page): Set<string> {
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
   }
   return shown;
+}
+
+/** The record's fields a form's map names: each layer's place, pin and card, a layer's lines, and where a route's numbers are written. */
+export function mapNodeFields(node: MapNode): string[] {
+  return [
+    ...new Set(
+      node.layers.flatMap((layer) => {
+        // A layer of lines names its line's fields inside the field of lines: that field is the record's.
+        if (layer.lines) return [layer.lines];
+        const write = layer.route?.write;
+        return [...listMapFields(layer), write?.seconds, write?.metres, write?.line].filter((name): name is string => !!name);
+      })
+    ),
+  ];
 }
 
 /** The fields a list's map names: where each record is, what its pin and its card show, and what its pin's tones read. */

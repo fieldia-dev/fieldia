@@ -1,0 +1,56 @@
+import type * as Leaflet from 'leaflet';
+import type { Card } from './card';
+import type { LatLng } from './geo';
+import type { LeafletModule } from './leaflet';
+import type { PinFace } from './pins';
+
+/**
+ * What every map of records does with its marks: each as large as its face
+ * and stood on its point; pressed by a click, or by Enter or Space when it
+ * has the focus; and the card it opens, over the map at its place.
+ */
+
+/** The keys that move a map: on a card they stay with the card. */
+export const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '+', '-', '=', '_']);
+
+/** No size for a mark: Leaflet then sets none, and the mark is as large as its face (its types leave null out; its code takes it). */
+export const SIZED_BY_FACE = null as unknown as Leaflet.PointExpression;
+
+/** How a mark stands on its point: its size is its face's, so CSS stands it there. */
+export const anchor = (face: PinFace) => (face.element.dataset['look'] === 'label' ? 'fd-map-tail' : face.stands === 'foot' ? 'fd-map-foot' : 'fd-map-middle');
+
+/**
+ * A mark pressed: clicked, or Enter or Space while it has the focus. Leaflet
+ * makes a mark a button to the keyboard but clicks it only for a popup of its own.
+ */
+export function onPress(marker: Leaflet.Marker, act: (event: MouseEvent | KeyboardEvent | undefined) => void) {
+  marker.on('click', (event: Leaflet.LeafletMouseEvent) => act(event.originalEvent));
+  marker.on('keydown', (event: Leaflet.LeafletKeyboardEvent) => {
+    const key = event.originalEvent;
+    if (key.key !== 'Enter' && key.key !== ' ') return;
+    key.preventDefault();
+    act(key);
+  });
+}
+
+/** Whether a press came from the keys: then its card takes the focus. */
+export const byKeys = (event: Event | undefined) => !!event && event.type.startsWith('key');
+
+/**
+ * A card over the map, its tip on a mark `height` pixels tall: Escape closes
+ * it (back to its mark), and the arrows stay with the card, not the map.
+ */
+export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLng; height: number; card: Card; focus: boolean; escape(): void }): Leaflet.Popup {
+  options.card.element.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      options.escape();
+    } else if (MOVE_KEYS.has(event.key)) event.stopPropagation();
+  });
+  const popup = L.popup({ closeButton: false, autoPanPadding: [16, 16], className: 'fd-map-card-popup', minWidth: 220, maxWidth: 280, offset: [0, 4 - options.height] })
+    .setLatLng([options.at.lat, options.at.lng])
+    .setContent(options.card.element);
+  popup.openOn(map);
+  if (options.focus) options.card.focus();
+  return popup;
+}

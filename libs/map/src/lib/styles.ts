@@ -261,3 +261,42 @@ export function installListMapStyles(doc: Document) {
   own.textContent = LIST_MAP_CSS;
   doc.getElementById('fieldia-map-styles')?.after(own);
 }
+
+/**
+ * A form's map, on top of a list map's pins and cards: its label, a route
+ * (the part travelled faded), a place whose news is old, the Follow button,
+ * and the reader's own place with its button.
+ */
+export const FORM_MAP_CSS = `
+.fd-map-form { display: grid; gap: 6px; min-width: 0; }
+.fd-map-form-label { margin: 0; font-weight: 600; color: var(--fd-text); }
+path.fd-map-route { stroke: var(--fd-accent); stroke-width: 5; stroke-opacity: 0.85; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+path.fd-map-route-done { stroke: var(--fd-muted); stroke-width: 4; stroke-opacity: 0.55; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 8; }
+.fd-map-face[data-stale] { filter: grayscale(1); opacity: 0.75; }
+.fd-map-face-stale {
+  position: absolute; top: calc(100% + 4px); left: 50%; translate: -50% 0; z-index: 1; padding: 1px 6px; border-radius: 999px; white-space: nowrap;
+  font-size: 11.5px; font-weight: 600; background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.fd-map-face[data-look="photo"] .fd-map-face-stale { top: calc(100% + 26px); }
+.fd-map-here.fd-map-follow { top: auto; bottom: 28px; }
+.fd-map-locate {
+  position: absolute; top: 8px; left: 8px; z-index: 1000; width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.fd-map-box[data-side="left"] .fd-map-locate { left: auto; right: 8px; }
+.fd-map-locate svg { width: 18px; height: 18px; }
+.fd-map-locate:hover, .fd-map-locate[aria-pressed="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-map-locate[aria-pressed="true"] { background: var(--fd-accent-soft); }
+.fd-map-locate:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-map-me { box-sizing: border-box; border-radius: 50%; background: var(--fd-info); border: 3px solid var(--fd-surface); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.3); }
+`;
+
+/** A form's map's stylesheet, once per document, after a list map's. */
+export function installFormMapStyles(doc: Document) {
+  installListMapStyles(doc);
+  if (doc.getElementById('fieldia-form-map-styles')) return;
+  const own = doc.createElement('style');
+  own.id = 'fieldia-form-map-styles';
+  own.textContent = FORM_MAP_CSS;
+  doc.getElementById('fieldia-list-map-styles')?.after(own);
+}

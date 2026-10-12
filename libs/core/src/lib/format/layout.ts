@@ -389,6 +389,67 @@ export interface FormNode {
   readonly?: Modifier;
 }
 
+/** A line along the roads between a map's layers: from one place to another, or through a layer's lines in their order. */
+export interface MapRoute {
+  /** The layer it starts at: a place, or the reader's own. */
+  from: string;
+  /** The layer it ends at. */
+  to?: string;
+  /** A layer of lines it goes through, in their order: a delivery round's stops. */
+  through?: string;
+  /** How it is travelled: by car unless said. */
+  mode?: 'car' | 'bike' | 'foot';
+  /** The part already travelled fades as `from` moves along it, and the time and distance left are kept up to date. */
+  progress?: boolean;
+  /** Fields of the record its numbers go into: the seconds and metres left, and its line as GeoJSON. */
+  write?: { seconds?: string; metres?: string; line?: string };
+}
+
+/**
+ * One layer of a form's map: the record's own place (`point`, or `latitude`
+ * and `longitude`), a place for each of its lines (`lines`, the place in the
+ * line's fields), a route between layers, or the reader's own place.
+ */
+export interface MapLayer {
+  id: string;
+  /** What it is, in words: its pins are named by it ("Courier, 4 min"). */
+  label?: string;
+  point?: string;
+  latitude?: string;
+  longitude?: string;
+  /** A field of lines (one2many): a pin for each line. */
+  lines?: string;
+  pin?: Pin;
+  card?: MapCard;
+  /**
+   * A place that moves as its fields change: its pin glides there. Without
+   * news for `staleAfter` seconds it says when it was last seen; `follow`
+   * keeps it in view until the person moves the map.
+   */
+  live?: { staleAfter?: number; follow?: boolean };
+  route?: MapRoute;
+  /** The reader's own place, from the browser once they allow it. */
+  myLocation?: boolean;
+  invisible?: Modifier;
+}
+
+/** A map on a form: the record's places, its lines' places, the routes between them, and the reader's own place, as layers. */
+export interface MapNode {
+  type: 'map';
+  id: string;
+  /** Its name, over it and for a screen reader. */
+  label?: string;
+  layers: MapLayer[];
+  /** Height in pixels: 360 unless said. */
+  height?: number;
+  /** Grid columns it spans inside a section. */
+  colspan?: number;
+  invisible?: Modifier;
+  roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
+}
+
 /** A named place the app fills with its own content, such as an activity feed. */
 export interface SlotNode {
   type: 'slot';
@@ -809,7 +870,7 @@ export interface ListMap {
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
-export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode | FormNode;
+export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode | FormNode | MapNode;
 
 /** What a page's `layout` can be: the four page layouts. */
 export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | ListNode;
@@ -972,6 +1033,78 @@ export const ImageNodeSchema = z.strictObject({
   invisible, roles, hideOn,
 });
 
+/**
+ * What a pin on a map shows, from its record's fields: a pin, an icon (a
+ * fixed one or one a field names), a round photo, words alone, or a dot; its
+ * words; its colour by condition; its turn, for a car facing its way; or the
+ * app's own widget, which draws it from the record.
+ */
+export const PinSchema = z
+  .strictObject({
+    look: z.enum(['pin', 'icon', 'photo', 'label', 'dot']).optional(),
+    icon: z.string().min(1).optional(),
+    iconField: fieldName.optional(),
+    image: fieldName.optional(),
+    label: fieldName.optional(),
+    tones: z.array(ToneWhenSchema).min(1).optional(),
+    turn: fieldName.optional(),
+    widget: z.string().min(1).optional(),
+  })
+  .meta({ id: 'Pin' });
+
+/** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
+export const MapCardSchema = z
+  .strictObject({
+    title: fieldName.optional(),
+    image: fieldName.optional(),
+    fields: z.array(fieldName).min(1).optional(),
+    /** A button to open the record (on unless false). */
+    open: z.boolean().optional(),
+  })
+  .meta({ id: 'MapCard' });
+
+/** A line along the roads between a map's layers: from one place to another, through a layer's lines in their order. */
+export const MapRouteSchema = z
+  .strictObject({
+    from: id,
+    to: id.optional(),
+    through: id.optional(),
+    mode: z.enum(['car', 'bike', 'foot']).optional(),
+    progress: z.boolean().optional(),
+    write: z.strictObject({ seconds: fieldName.optional(), metres: fieldName.optional(), line: fieldName.optional() }).optional(),
+  })
+  .meta({ id: 'MapRoute' });
+
+/** One layer of a form's map: the record's own place, a place for each of its lines, a route, or the reader's own place. */
+export const MapLayerSchema = z
+  .strictObject({
+    id,
+    label: z.string().optional(),
+    point: fieldName.optional(),
+    latitude: fieldName.optional(),
+    longitude: fieldName.optional(),
+    lines: fieldName.optional(),
+    pin: PinSchema.optional(),
+    card: MapCardSchema.optional(),
+    live: z.strictObject({ staleAfter: z.int().min(5).max(86400).optional(), follow: z.boolean().optional() }).optional(),
+    route: MapRouteSchema.optional(),
+    myLocation: z.boolean().optional(),
+    invisible,
+  })
+  .meta({ id: 'MapLayer' });
+
+export const MapNodeSchema = z
+  .strictObject({
+    type: z.literal('map'),
+    id,
+    label: z.string().optional(),
+    layers: z.array(MapLayerSchema).min(1),
+    height: z.int().min(160).max(1200).optional(),
+    colspan: span,
+    invisible, roles, hideOn,
+  })
+  .meta({ id: 'MapNode' });
+
 export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible, roles, hideOn });
 
 export const FormNodeSchema = z.strictObject({
@@ -1038,6 +1171,7 @@ export const LayoutNodeSchema = z
     SpacerNodeSchema,
     ImageNodeSchema,
     FormNodeSchema,
+    MapNodeSchema,
   ])
   .meta({ id: 'LayoutNode' });
 
@@ -1172,36 +1306,6 @@ export const SheetNodeSchema = z.strictObject({
   attachmentPreview: z.strictObject({ field: fieldName.optional(), invisible, roles }).optional(),
   footer: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'SheetNode' });
-
-/**
- * What a pin on a map shows, from its record's fields: a pin, an icon (a
- * fixed one or one a field names), a round photo, words alone, or a dot; its
- * words; its colour by condition; its turn, for a car facing its way; or the
- * app's own widget, which draws it from the record.
- */
-export const PinSchema = z
-  .strictObject({
-    look: z.enum(['pin', 'icon', 'photo', 'label', 'dot']).optional(),
-    icon: z.string().min(1).optional(),
-    iconField: fieldName.optional(),
-    image: fieldName.optional(),
-    label: fieldName.optional(),
-    tones: z.array(ToneWhenSchema).min(1).optional(),
-    turn: fieldName.optional(),
-    widget: z.string().min(1).optional(),
-  })
-  .meta({ id: 'Pin' });
-
-/** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
-export const MapCardSchema = z
-  .strictObject({
-    title: fieldName.optional(),
-    image: fieldName.optional(),
-    fields: z.array(fieldName).min(1).optional(),
-    /** A button to open the record (on unless false). */
-    open: z.boolean().optional(),
-  })
-  .meta({ id: 'MapCard' });
 
 /** A list's records on a map, beside it or instead of it: where each is (a point, or a latitude and a longitude), its pin, its card. */
 export const ListMapSchema = z

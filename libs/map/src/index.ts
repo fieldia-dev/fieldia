@@ -1,5 +1,6 @@
 export { mapWidgets } from './lib/widgets';
 export { mapListViews } from './lib/list-view';
+export { mapParts } from './lib/form-map';
 export { MAP_ICONS } from './lib/map-icons';
 export type { MapRecord, PinDrawer } from './lib/pins';
 export { mapKinds, type MapKind, type MapKindContext } from './lib/kinds';
@@ -21,6 +22,10 @@ export {
   type OpenStreetMapOptions,
   type PlaceFound,
   type ReverseSearch,
+  type RouteFinder,
+  type RouteFound,
+  type RouteRequest,
+  type TravelMode,
   type SearchRequest,
   type TileSpec,
   type TilesOptions,

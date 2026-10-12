@@ -8,8 +8,9 @@ import { readPoint, type Area, type LatLng, type Shape } from './geo';
 import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox } from './map-core';
+import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
 import { installListMapStyles } from './styles';
-import { makePins, withCurrency, type MapRecord, type PinFace } from './pins';
+import { makePins, withCurrency, type MapRecord } from './pins';
 import type { MapSettings } from './settings';
 
 /**
@@ -30,13 +31,7 @@ export function mapListViews(settings: MapSettings): Record<string, ListViewFact
 const CROWD = 48;
 /** Room kept around the records when the map fits them, in pixels. */
 const ROOM = 40;
-/** Moves the person makes; a fit, a card's own pan and a resize are not. */
-const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '+', '-', '=', '_']);
-
-/** No size for a mark: Leaflet then sets none, and the mark is as large as its face (its types leave null out; its code takes it). */
-const SIZED_BY_FACE = null as unknown as Leaflet.PointExpression;
-/** How a mark stands on its point: its size is its face's, so CSS stands it there. */
-const anchor = (face: PinFace) => (face.element.dataset['look'] === 'label' ? 'fd-map-tail' : face.stands === 'foot' ? 'fd-map-foot' : 'fd-map-middle');
+/** Moves the person makes; a fit, a card's own pan and a resize are not: MOVE_KEYS. */
 
 interface Drawn {
   marker: Leaflet.Marker;
@@ -143,7 +138,6 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   let moving = false;
 
   const dir = (): 'ltr' | 'rtl' => (doc.defaultView?.getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr');
-  const isKeys = (event: Event | undefined) => !!event && event.type.startsWith('key');
   const placeOf = (values: Values): LatLng | null => {
     if (spec.point) return readPoint(values[spec.point]);
     const lat = values[spec.latitude as string];
@@ -225,24 +219,13 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     if (back) to?.focus();
   }
 
-  function showCard(map: Leaflet.Map, L: LeafletModule, at: LatLng, height: number, card: Card, id: RecordId | null, back: HTMLElement | null, byKeys: boolean) {
+  function showCard(map: Leaflet.Map, L: LeafletModule, at: LatLng, height: number, card: Card, id: RecordId | null, back: HTMLElement | null, keys: boolean) {
     closeCard(map, false);
-    // Escape closes the card and goes back to its pin; the arrows stay with the card, not the map.
-    card.element.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        closeCard(map, true);
-      } else if (MOVE_KEYS.has(event.key)) event.stopPropagation();
-    });
-    const popup = L.popup({ closeButton: false, autoPanPadding: [16, 16], className: 'fd-map-card-popup', minWidth: 220, maxWidth: 280, offset: [0, 4 - height] })
-      .setLatLng([at.lat, at.lng])
-      .setContent(card.element);
+    const popup = popCard(map, L, { at, height, card, focus: keys, escape: () => closeCard(map, true) });
     open = { id, card, popup, back };
-    popup.openOn(map);
-    if (byKeys) card.focus();
   }
 
-  function openCard(map: Leaflet.Map, L: LeafletModule, record: MapRecord, at: LatLng, height: number, back: HTMLElement | null, byKeys: boolean) {
+  function openCard(map: Leaflet.Map, L: LeafletModule, record: MapRecord, at: LatLng, height: number, back: HTMLElement | null, keys: boolean) {
     const card = drawCard({
       document: doc,
       page,
@@ -258,7 +241,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
       ...(context.open ? { open: () => context.open?.(record.id) } : {}),
       close: () => closeCard(map, true),
     });
-    showCard(map, L, at, height, card, record.id, back, byKeys);
+    showCard(map, L, at, height, card, record.id, back, keys);
   }
 
   // ---- the pins -------------------------------------------------------------------
@@ -285,20 +268,6 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     light(map, L);
   }
 
-  /**
-   * A mark pressed: clicked, or Enter or Space while it has the focus. Leaflet
-   * makes a mark a button to the keyboard but clicks it only for a popup of its own.
-   */
-  function onPress(marker: Leaflet.Marker, act: (event: MouseEvent | KeyboardEvent | undefined) => void) {
-    marker.on('click', (event: Leaflet.LeafletMouseEvent) => act(event.originalEvent));
-    marker.on('keydown', (event: Leaflet.LeafletKeyboardEvent) => {
-      const key = event.originalEvent;
-      if (key.key !== 'Enter' && key.key !== ' ') return;
-      key.preventDefault();
-      act(key);
-    });
-  }
-
   function mark(entry: Drawn, name: string) {
     const element = entry.marker.getElement();
     element?.setAttribute('aria-label', name);
@@ -317,7 +286,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     onPress(marker, (event) => {
       // Ctrl (⌘) and a click chooses the record, as in a list of files.
       if (event && (event.ctrlKey || event.metaKey)) context.choose(record.id, !context.isChosen(record.id));
-      else openCard(map, L, record, at, height, element ?? null, isKeys(event));
+      else openCard(map, L, record, at, height, element ?? null, byKeys(event));
     });
     marker.on('mouseover', () => context.highlight(record.id));
     marker.on('mouseout', () => context.highlight(null));
@@ -337,13 +306,13 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const element = mark({ marker, face, ids: members.map((p) => p.record.id) }, fill(labels.cluster, { n: count(n) }));
     const bounds = L.latLngBounds(members.map((p) => [p.at.lat, p.at.lng] as [number, number]));
     onPress(marker, (event) => {
-      const byKeys = isKeys(event);
+      const fromKeys = byKeys(event);
       const most = Math.min(map.getMaxZoom(), 19);
       // Closer, until they part; on one spot (a tower's flats), a list of them.
       if (map.getZoom() < most && !bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) {
         moving = true;
         map.fitBounds(bounds, { padding: [ROOM, ROOM], maxZoom: most });
-        if (byKeys) box.element.focus();
+        if (fromKeys) box.element.focus();
         return;
       }
       const crowd = drawCrowd({
@@ -357,7 +326,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
         },
         close: () => closeCard(map, true),
       });
-      showCard(map, L, centre, 20, crowd, null, element ?? null, byKeys);
+      showCard(map, L, centre, 20, crowd, null, element ?? null, fromKeys);
     });
   }
 

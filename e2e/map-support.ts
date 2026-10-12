@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { expect, type Locator, type Page } from '@playwright/test';
 
@@ -124,3 +126,19 @@ export async function fingerDrag(page: Page, target: Locator, from: { x: number;
     { from, to, steps }
   );
 }
+
+/** OSRM's routes, answered with one line recorded from Tahrir to Zamalek, whatever is asked: every request kept. */
+export async function stubRoutes(page: Page) {
+  const asked: string[] = [];
+  const answer = readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/osrm-route.json'), 'utf8');
+  await page.route('https://router.project-osrm.org/**', (route) => {
+    asked.push(route.request().url());
+    return route.fulfill({ status: 200, contentType: 'application/json', body: answer, headers: { 'access-control-allow-origin': '*' } });
+  });
+  return asked;
+}
+
+/** The recorded route's line, latitude first, to place a courier on it. */
+export const ROUTE_LINE: { lat: number; lng: number }[] = (
+  JSON.parse(readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/osrm-route.json'), 'utf8')).routes[0].geometry.coordinates as [number, number][]
+).map(([lng, lat]) => ({ lat, lng }));

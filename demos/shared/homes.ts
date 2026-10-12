@@ -100,6 +100,27 @@ function face(hue: number, initials: string): FileValue {
 
 const COURIERS = ['Ahmed Fathy', 'Mona Adel', 'Karim Samir', 'Youssef Nabil', 'Salma Hany', 'Omar Tarek', 'Nour Hassan', 'Hassan Ali', 'Laila Mostafa', 'Tamer Said', 'Mariam Ezz', 'Ziad Kamal', 'Hana Wael', 'Mahmoud Reda', 'Dina Sherif', 'Amr Gamal', 'Rana Fouad', 'Sherif Emad'];
 
+/** An order on its way from a kitchen near Tahrir Square to a door in Zamalek, its courier a few streets along. */
+export function sampleOrder(): Values {
+  return {
+    name: 'Order 2048',
+    state: 'on_the_way',
+    restaurant: 'Koshary Tahrir',
+    kitchen_lat: 30.0443,
+    kitchen_lng: 31.2353,
+    door: { type: 'Point', coordinates: [31.21971, 30.06259] },
+    address: '14 Shagaret El Dor, Zamalek',
+    courier: 'Mona Adel',
+    courier_photo: face(28, 'MA'),
+    courier_lat: 30.04506,
+    courier_lng: 31.23592,
+    courier_heading: 330,
+    eta_seconds: null,
+    distance_m: null,
+    route_line: null,
+  };
+}
+
 /** Eighteen couriers out across the city, each on a car, a scooter or a bike, facing the way they go. */
 export function sampleCouriers(): Record<number, Values> {
   const random = seeded(77);

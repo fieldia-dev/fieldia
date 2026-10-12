@@ -1,7 +1,7 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import { demoListViews, demoMapWidgets } from '../shared/maps';
+import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import type { ActionRequest, Form, Locale, Theme, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue';
@@ -87,6 +87,7 @@ createApp({
         fieldTypes: { 'char.shout': Shout },
         widgets: { ...gridWidgets, ...codeWidgets, ...demoMapWidgets },
         listViews: demoListViews,
+        maps: demoMaps,
         pages: appPages,
         ...optionsFromQuery(params),
         // `@action` in a template: what it returns — here the shop's answers to the pages' steps — the form takes.

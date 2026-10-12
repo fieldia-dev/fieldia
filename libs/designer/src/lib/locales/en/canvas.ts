@@ -17,6 +17,8 @@ export const canvas = {
   addTab: 'Add a tab',
   untitledTab: 'Untitled tab',
   emptyRoom: 'Empty room',
+  map: 'Map',
+  mapLayers: (ids: string[]): string => `Layers: ${ids.join(', ')}. The map itself shows in Try it.`,
   foldsFolded: 'Folds, starting folded',
   foldsOpen: 'Folds, starting open',
   // ---- a sheet's header

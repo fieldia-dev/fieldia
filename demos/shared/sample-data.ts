@@ -8,6 +8,7 @@ import mapHomes from '../../examples/pages/map-homes.page.json';
 import mapHome from '../../examples/pages/map-home.page.json';
 import mapCouriers from '../../examples/pages/map-couriers.page.json';
 import mapCourier from '../../examples/pages/map-courier.page.json';
+import mapOrder from '../../examples/pages/map-order.page.json';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
@@ -28,7 +29,7 @@ import { real } from './real';
 import { businessData, businessPage } from './business';
 import { codeData, codePage } from './code-page';
 import { templatePages } from './templates';
-import { sampleCouriers, sampleHomes } from './homes';
+import { sampleCouriers, sampleHomes, sampleOrder } from './homes';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -59,6 +60,8 @@ export const pages: Record<string, Page> = {
   'map-home': mapHome as Page,
   'map-couriers': mapCouriers as Page,
   'map-courier': mapCourier as Page,
+  // A form's map: an order coming to its door, the courier on the way (shared/courier-ride.ts).
+  'map-order': mapOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
@@ -266,6 +269,7 @@ export function sampleDataSource() {
       'account.move': BILLS,
       home: sampleHomes(),
       courier: sampleCouriers(),
+      'food.order': { 1: sampleOrder() },
       partner: {
         1: {
           name: 'Nile Traders',

@@ -44,6 +44,13 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-q-preview-under { font-size: 12.5px; color: var(--fd-muted); }
 /* A picture block on the canvas, as wide as the form draws it. */
 .fd-canvas-block.fd-image:not(.fd-figure) { width: var(--fd-image-width, auto); }
+/* A map on the canvas: its name and layers over a faint grid; the map itself is drawn in Try it. */
+.fd-map-preview.fd-canvas-block {
+  display: grid; align-content: center; justify-items: center; gap: 4px; padding: 12px 16px; text-align: center; box-sizing: border-box;
+  border: 1px dashed var(--fd-border); border-radius: var(--fd-control-radius); color: var(--fd-muted); font-size: 13px;
+  background: repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), repeating-linear-gradient(90deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), var(--fd-fill);
+}
+.fd-map-preview.fd-canvas-block strong { color: var(--fd-text); font-size: 14px; }
 /* A table's columns: each one's name, Add up for a number, and whether people may hide it. */
 .fd-line-columns { display: grid; gap: 6px; width: 100%; margin: 0; padding: 0; list-style: none; }
 .fd-line-column { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 11em); gap: 8px; align-items: center; }

@@ -21,8 +21,9 @@ export interface CardOptions {
   /** The fields the card shows, in order. */
   fields: string[];
   record: MapRecord;
-  chosen: boolean;
-  choose(on: boolean): void;
+  /** A box to choose the record, as its row's is: a list's map has one, a form's does not. */
+  chosen?: boolean;
+  choose?(on: boolean): void;
   open?: () => void;
   close(): void;
 }
@@ -78,9 +79,9 @@ export function drawCard(options: CardOptions): Card {
 
   const box = make(doc, 'input', 'fd-map-card-check');
   box.type = 'checkbox';
-  box.checked = options.chosen;
-  box.addEventListener('change', () => options.choose(box.checked));
-  const actions = make(doc, 'div', 'fd-map-card-actions', make(doc, 'label', 'fd-map-card-choose', box, labels.choose));
+  box.checked = !!options.chosen;
+  box.addEventListener('change', () => options.choose?.(box.checked));
+  const actions = make(doc, 'div', 'fd-map-card-actions', ...(options.choose ? [make(doc, 'label', 'fd-map-card-choose', box, labels.choose)] : []));
   let first: HTMLElement = close;
   if (options.open && options.card.open !== false) {
     const open = make(doc, 'button', 'fd-button fd-button-primary fd-map-card-open', labels.openRecord);
@@ -89,7 +90,7 @@ export function drawCard(options: CardOptions): Card {
     actions.append(open);
     first = open;
   }
-  body.append(actions);
+  if (actions.childElementCount) body.append(actions);
   element.append(body);
   return {
     element,

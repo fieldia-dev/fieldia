@@ -1,8 +1,9 @@
 import type { Locale } from '@fieldia/core';
+import { getJson, pathOf, type Fetch } from './answers';
 import type { Bounds, LatLng } from './geo';
 
 /**
- * Where a map's images, credits and address search come from. Every map in
+ * Where a map's images, credits, address search and routes come from. Every map in
  * the package draws through one of these, so an app changes provider in one
  * place and nothing else moves. Keys never live in Fieldia: the app passes
  * them, or a function that fetches a short-lived token from its own server.
@@ -55,6 +56,28 @@ export interface SearchRequest {
 export type AddressSearch = (request: SearchRequest) => Promise<PlaceFound[]>;
 export type ReverseSearch = (at: LatLng & { locale: Locale; signal?: AbortSignal }) => Promise<string | null>;
 
+export type TravelMode = 'car' | 'bike' | 'foot';
+
+export interface RouteRequest {
+  /** Where it starts, the places it passes in order, and where it ends. */
+  points: LatLng[];
+  mode: TravelMode;
+  locale: Locale;
+  signal?: AbortSignal;
+}
+
+/** A route along the roads: its line, how long it is, and how long it takes. */
+export interface RouteFound {
+  line: LatLng[];
+  metres: number;
+  seconds: number;
+}
+
+export type RouteFinder = (request: RouteRequest) => Promise<RouteFound>;
+
+/** The providers' routes, loaded the first time one is asked for: a form with only a place or an area never carries them. */
+const routes = () => import('./routes');
+
 export interface MapProvider {
   readonly id: string;
   /** The map images of a kind, or null when the provider has none of it. */
@@ -69,31 +92,16 @@ export interface MapProvider {
   readonly searchAsYouType?: boolean;
   /** Free for trying things out, not for an app in use: a warning says so once. */
   readonly demoOnly?: boolean;
+  /** A route along the roads, for a map's routes. */
+  readonly route?: RouteFinder;
 }
 
-type Fetch = typeof globalThis.fetch;
 const query = (params: Record<string, string | number | undefined>) =>
   Object.entries(params)
     .filter(([, value]) => value !== undefined)
     .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
     .join('&');
 
-/**
- * A provider's answer, or its refusal in its own words: "Places API (New) has
- * not been used in project … or it is disabled" says what to do; a bare 403
- * does not.
- */
-async function getJson(fetchWith: Fetch, url: string, init?: RequestInit): Promise<unknown> {
-  const response = await fetchWith(url, init);
-  if (response.ok) return response.json();
-  const body = await response.json().catch(() => null);
-  const said = pathOf(body, 'error', 'message') ?? pathOf(body, 'error_message') ?? pathOf(body, 'message');
-  throw new Error(`${url.split('?')[0]} answered ${response.status}${typeof said === 'string' && said ? `: ${said}` : ''}`);
-}
-
-type Json = { [key: string]: unknown };
-const isObject = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
-const pathOf = (value: unknown, ...path: string[]): unknown => path.reduce<unknown>((at, key) => (isObject(at) ? at[key] : undefined), value);
 
 /** A provider's words, without the direction marks and embeddings Azure and Google put in Arabic: unseen, they would stay in an address field and its searches. */
 const clean = (value: unknown) => (typeof value === 'string' ? value.replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/g, '').trim() : '');
@@ -139,6 +147,12 @@ export interface OpenStreetMapOptions {
   search?: 'photon' | 'nominatim';
   /** Photon's address, for a copy of it the app runs: `https://photon.komoot.io` unless said. */
   photonUrl?: string;
+  /**
+   * OSRM's address, for routes: its public demo server unless said, which
+   * routes by car alone and is for trying things out. A copy the app runs
+   * routes by the profiles it was built with (`driving`, `cycling`, `walking`).
+   */
+  osrmUrl?: string;
   fetch?: Fetch;
 }
 
@@ -169,9 +183,13 @@ function photonPlaces(found: unknown): PlaceFound[] {
 export function openStreetMap(options: OpenStreetMapOptions = {}): MapProvider {
   const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const photon = (options.photonUrl ?? 'https://photon.komoot.io').replace(/\/$/, '');
+  const osrm = (options.osrmUrl ?? 'https://router.project-osrm.org').replace(/\/$/, '');
   const base = {
     id: 'openstreetmap',
     demoOnly: true,
+    async route(request: RouteRequest): Promise<RouteFound> {
+      return (await routes()).osrmRoute(fetchWith, osrm, request);
+    },
     async tiles(kind: BaseMap) {
       return kind === 'road' ? { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 19 } : null;
     },
@@ -292,6 +310,9 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
       const features = pathOf(found, 'features');
       const formatted = Array.isArray(features) ? clean(pathOf(features[0], 'properties', 'address', 'formattedAddress')) : '';
       return formatted || null;
+    },
+    async route(request) {
+      return (await routes()).azureRoute({ fetchWith, auth, headers }, request);
     },
   };
 }
@@ -435,6 +456,9 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
       const named = Array.isArray(results) ? clean(pathOf(results[0], 'formatted_address')) : '';
       return named || null;
     },
+    async route(request) {
+      return (await routes()).googleRoute({ fetchWith, key: options.key }, request);
+    },
     async tiles(kind, locale) {
       if (!GOOGLE_MAP_TYPE[kind]) return null;
       const { session: id } = await session(kind, locale);
@@ -505,6 +529,9 @@ export function mapbox(options: MapboxOptions): MapProvider {
     async reverse({ lat, lng, locale, signal }) {
       return placesFrom(await ask('reverse', { longitude: lng, latitude: lat, language: locale, limit: 1 }, signal), [['properties', 'full_address'], ['properties', 'name']])[0]?.label ?? null;
     },
+    async route(request) {
+      return (await routes()).mapboxRoute({ fetchWith, token }, request);
+    },
   };
 }
 
@@ -522,6 +549,8 @@ export interface TilesOptions {
   search?: AddressSearch;
   reverse?: ReverseSearch;
   searchAsYouType?: boolean;
+  /** The app's own routes. */
+  route?: RouteFinder;
 }
 
 /** Map images from any address, such as the app's own server, with their credit. */
@@ -532,6 +561,7 @@ export function tiles(options: TilesOptions): MapProvider {
     id: 'tiles',
     search: options.search,
     reverse: options.reverse,
+    route: options.route,
     searchAsYouType: options.searchAsYouType ?? !!options.search,
     async tiles(kind) {
       const url = urls[kind];

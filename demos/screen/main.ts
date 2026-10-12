@@ -4,7 +4,7 @@ import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import { codeWidgets } from '@fieldia/code';
 import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
-import { demoListViews } from '../shared/maps';
+import { demoListViews, demoMaps } from '../shared/maps';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
@@ -160,7 +160,7 @@ const app = document.getElementById('app') as HTMLElement;
 /** The app's own widgets, and the code editor for the Code kind's fields, on the canvas and in Try it. */
 const widgets = { ...APP_WIDGETS, ...codeWidgets };
 /** A list's records on the demos' maps in Try it, made-up homes around Cairo, where the demos' shop is. */
-const onMaps = { listViews: demoListViews, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
+const onMaps = { listViews: demoListViews, maps: demoMaps, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
 const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant, ...onMaps }), reopen };
 opened();
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */

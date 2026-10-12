@@ -1,15 +1,16 @@
-import type { ButtonNode, DividerNode, ImageNode, SlotNode, SpacerNode, TextNode } from '@fieldia/core';
+import type { ButtonNode, DividerNode, ImageNode, MapNode, SlotNode, SpacerNode, TextNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 
 /**
  * The blocks between fields on the canvas — words, a button, a line, room, a
- * picture, a slot the app fills — drawn as the viewer draws them, so they sit
+ * picture, a slot the app fills, a map (its name and layers: the map itself
+ * is in Try it) — drawn as the viewer draws them, so they sit
  * in the grid exactly where they will. Picked, words and a button's label are
  * typed in where they stand; a run of typing is one undo step.
  */
 
-export type BlockNode = TextNode | ButtonNode | DividerNode | SpacerNode | ImageNode | SlotNode;
+export type BlockNode = TextNode | ButtonNode | DividerNode | SpacerNode | ImageNode | SlotNode | MapNode;
 
 export interface BlockViews {
   /** The block's element, made or patched; `picked` opens its words to typing. */
@@ -52,6 +53,8 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
         return el('img', { class: 'fd-block fd-image fd-canvas-block', 'data-node': id, alt: '' });
       case 'slot':
         return el('div', { class: 'fd-slot fd-canvas-block', 'data-node': id });
+      case 'map':
+        return el('div', { class: 'fd-map-preview fd-canvas-block', 'data-node': id });
     }
   }
 
@@ -81,7 +84,12 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
         element.style.setProperty('--fd-image-width', width || null);
         element.style.justifySelf = node.align ?? '';
       } else if (node.type === 'slot') element.textContent = node.name;
-      const span = node.type === 'divider' ? undefined : (node as { colspan?: number }).colspan;
+      else if (node.type === 'map') {
+        const w = designer.words.canvas;
+        element.replaceChildren(el('strong', {}, node.label || w.map), el('span', {}, w.mapLayers(node.layers.map((layer) => layer.id))));
+        element.style.minHeight = `${Math.round((node.height ?? 360) / 2)}px`;
+      }
+      const span = node.type === 'divider' ? undefined : node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan;
       if (span) element.style.setProperty('--fd-span', String(span));
       else element.style.removeProperty('--fd-span');
       element.classList.toggle('fd-hidden-sometimes', node.invisible !== undefined);
