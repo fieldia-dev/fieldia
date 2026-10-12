@@ -1,11 +1,12 @@
-import type { ActionStep, Page } from '@fieldia/core';
+import type { ActionStep, MapNode, Page } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { containers } from './page-tree';
 import { shownTitle } from './saved-forms';
 import { formulaInWords } from './rules-formula';
 import { setValueInWords } from './rules-words';
-import { eachStep, everyPlace, fieldsNamed, fieldsRead, pressOf, showTargets, type StepsPlace } from './steps-places';
+import { locate } from './layout-tree';
+import { eachStep, everyPlace, fenceOf, fieldsNamed, fieldsRead, pressOf, showTargets, type StepsPlace } from './steps-places';
 
 /**
  * Steps as a person reads them: "Open Customer in a panel from the left, then
@@ -121,6 +122,16 @@ export function placeName(page: Page, place: StepsPlace, words: DesignerWords = 
   }
   if ('change' in place) return labelOf(page, place.change);
   if ('moment' in place) return w.momentNames[place.moment];
+  if ('fence' in place) {
+    const node = locate(page, place.fence.map)?.node as MapNode | undefined;
+    const fence = fenceOf(page, place.fence);
+    const layer = (layerId: string | undefined) => {
+      const found = node?.layers.find((l) => l.id === layerId);
+      return found?.label || layerId || '';
+    };
+    const area = fence?.area !== undefined ? labelOf(page, fence.area) : layer(fence?.within);
+    return w.fenceName(layer(fence?.layer), fence?.when ?? 'enter', area);
+  }
   return w.whenShown(showTargets(page).find((t) => t.id === place.show)?.label || place.show);
 }
 
@@ -146,7 +157,7 @@ export interface StepsEntry {
 export function pageSteps(page: Page, words: DesignerWords = en, saved?: SavedPageOf): StepsEntry[] {
   return everyPlace(page).map(({ place, steps }) => {
     const group: StepsGroup = 'press' in place ? 'clicked' : 'change' in place ? 'changes' : 'moments';
-    const part = 'press' in place ? place.press : 'change' in place ? fieldPlace(page, place.change) : null;
+    const part = 'press' in place ? place.press : 'change' in place ? fieldPlace(page, place.change) : 'fence' in place ? place.fence.map : null;
     const reads = [...new Set(eachStep(steps).flatMap(({ step }) => [...fieldsNamed(step), ...fieldsRead(step)]))];
     const codes = [...new Set(eachStep(steps).flatMap(({ step }) => (step.do === 'call' ? [step.action] : step.do === 'open' && !saved?.(step.page) ? [step.page] : [])))];
     return { place, group, part, name: placeName(page, place, words), lines: stepsLines(page, steps, words, saved), reads, codes };

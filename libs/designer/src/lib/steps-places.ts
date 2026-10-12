@@ -1,4 +1,4 @@
-import type { ActionStep, ButtonNode, CallStep, MenuItem, Page, PageEvents, StatButton } from '@fieldia/core';
+import type { ActionStep, ButtonNode, CallStep, MapFence, MapNode, MenuItem, Page, PageEvents, StatButton } from '@fieldia/core';
 import { findHeaderPart } from './header-commands';
 import { locate } from './layout-tree';
 import { containers, tabsNodes } from './page-tree';
@@ -8,7 +8,8 @@ import { fieldsReadBy } from './rules-formula';
 /**
  * Where steps are kept, as the designer edits them: a press — a button in
  * the body, in a record's header, a counter, a list's button — a field's
- * change, one of the form's moments, or a tab or wizard step shown. No DOM.
+ * change, one of the form's moments, a tab or wizard step shown, or a map's
+ * fence crossed. No DOM.
  *
  * A press is edited as one list: its `steps`, then its app `action` as the
  * `call` step it is run as. A button with only an action shows as that one
@@ -19,7 +20,7 @@ import { fieldsReadBy } from './rules-formula';
 export type Moment = 'open' | 'beforeSave' | 'afterSave';
 
 /** A list of steps, by where it is. */
-export type StepsPlace = { press: string } | { change: string } | { moment: Moment } | { show: string };
+export type StepsPlace = { press: string } | { change: string } | { moment: Moment } | { show: string } | { fence: { map: string; at: number } };
 
 /** A step by its place: `[1]` the second step, `[1, 0]` the first of its `then`. */
 export type StepPath = number[];
@@ -30,6 +31,7 @@ export function placeKey(place: StepsPlace): string {
   if ('press' in place) return `press:${place.press}`;
   if ('change' in place) return `change:${place.change}`;
   if ('moment' in place) return `moment:${place.moment}`;
+  if ('fence' in place) return `fence:${place.fence.map}:${place.fence.at}`;
   return `show:${place.show}`;
 }
 
@@ -53,8 +55,15 @@ function actionStep(press: ButtonNode | StatButton | MenuItem): CallStep | null 
   return { do: 'call', action: press.action, ...(params ? { params } : {}) };
 }
 
+/** A map's fence, by the map's id and its place among the map's fences. */
+export function fenceOf(page: Page, place: { map: string; at: number }): MapFence | null {
+  const node = locate(page, place.map)?.node as MapNode | undefined;
+  return node?.type === 'map' ? (node.fences?.[place.at] ?? null) : null;
+}
+
 /** The steps kept at a place, as the editor shows them; none where there are none, or no such place. */
 export function stepsAt(page: Page, place: StepsPlace): ActionStep[] {
+  if ('fence' in place) return fenceOf(page, place.fence)?.steps ?? [];
   if ('press' in place) {
     const press = pressOf(page, place.press);
     if (!press) return [];
@@ -76,6 +85,7 @@ export function placeIsThere(page: Page, place: StepsPlace): boolean {
   if ('press' in place) return pressOf(page, place.press) !== null;
   if ('change' in place) return !!page.fields[place.change];
   if ('show' in place) return showTargets(page).some((t) => t.id === place.show);
+  if ('fence' in place) return fenceOf(page, place.fence) !== null;
   return true;
 }
 
@@ -86,6 +96,14 @@ export function placeIsThere(page: Page, place: StepsPlace): boolean {
  * with it once it holds nothing.
  */
 export function writeSteps(draft: Page, place: StepsPlace, steps: ActionStep[]): void {
+  // A fence runs something, as a press does: the fence itself goes with the map's panel.
+  if ('fence' in place) {
+    const fence = fenceOf(draft, place.fence);
+    if (!fence) throw new Refusal((w) => w.steps.noPlace);
+    if (!steps.length) throw new Refusal((w) => w.steps.fenceNeedsSomething);
+    fence.steps = steps;
+    return;
+  }
   if ('press' in place) {
     const press = pressOf(draft, place.press);
     if (!press) throw new Refusal((w) => w.steps.noPlace);
@@ -185,6 +203,8 @@ export function everyPlace(page: Page): { place: StepsPlace; steps: ActionStep[]
   if (root.type === 'sheet') [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.toolbar?.menu ?? [])].forEach(press);
   if (root.type === 'list') (root.actions ?? []).forEach(press);
   for (const c of containers(page)) for (const node of c.children) if (node.type === 'button') press(node);
+  for (const c of containers(page))
+    for (const node of c.children) if (node.type === 'map') node.fences?.forEach((fence, at) => out.push({ place: { fence: { map: node.id, at } }, steps: fence.steps }));
   const on = page.on ?? {};
   for (const [field, steps] of Object.entries(on.change ?? {})) out.push({ place: { change: field }, steps });
   for (const moment of MOMENTS) if (on[moment]?.length) out.push({ place: { moment }, steps: on[moment] as ActionStep[] });

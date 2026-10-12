@@ -40,6 +40,10 @@ function stepsPath(value: unknown, action: StepFix): string | null {
   if ('moment' in place) return under(`on.${place.moment}`);
   if ('change' in place) return under(`on.change.${place.change}`);
   if ('show' in place) return under(`on.show.${place.show}`);
+  if ('fence' in place) {
+    const map = pathTo(value, isNode(place.fence.map));
+    return map === null ? null : under(`${map}.fences.${place.fence.at}.steps`);
+  }
   const part = pathTo(value, isNode(place.press));
   return part === null ? null : under(`${part}.steps`);
 }

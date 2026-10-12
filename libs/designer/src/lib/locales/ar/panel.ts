@@ -71,6 +71,8 @@ const NAMES: Record<string, string> = {
   Name: 'الاسم',
   Height: 'الارتفاع',
   Layers: 'الطبقات',
+  Tools: 'الأدوات',
+  Fences: 'الأسوار',
   'Reads as': 'يُقرأ على أنه',
   'Alert colour': 'لون التنبيه',
   'Button words': 'نص الزر',

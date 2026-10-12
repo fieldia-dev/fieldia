@@ -236,6 +236,11 @@
                     "do": "set",
                     "field": "arriving",
                     "value": "false"
+                  },
+                  {
+                    "do": "say",
+                    "message": "The courier has left the drop-off zone.",
+                    "tone": "warning"
                   }
                 ]
               }

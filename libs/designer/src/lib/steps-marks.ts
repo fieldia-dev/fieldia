@@ -1,7 +1,7 @@
 import type { Page } from '@fieldia/core';
 import type { Designer } from './designer';
 import { pressOf, showTargets, stepsAt, type StepsPlace } from './steps-places';
-import { fieldPlace, pageSteps } from './steps-words';
+import { fieldPlace, pageSteps, placeName } from './steps-words';
 
 /**
  * What the canvas says of a part that does something, and going to it. A
@@ -61,18 +61,19 @@ export function changeMarks(page: Page, designer: Designer): Map<string, string[
 /** Go to a place's steps: its part picked, its list brought forward on the panel, the cursor on its first step. */
 export function openSteps(root: HTMLElement, designer: Designer, place: StepsPlace): void {
   const page = designer.getPage();
-  const part = 'press' in place ? place.press : 'change' in place ? fieldPlace(page, place.change) : null;
+  const part = 'press' in place ? place.press : 'change' in place ? fieldPlace(page, place.change) : 'fence' in place ? place.fence.map : null;
   designer.select(part);
   const panel = root.querySelector('.fd-properties');
-  const tab = 'press' in place ? 'content' : 'rules';
+  const tab = 'press' in place || 'fence' in place ? 'content' : 'rules';
   panel?.querySelector<HTMLButtonElement>(`[role="tab"][data-tab="${tab}"]`)?.click();
-  const setting = 'press' in place ? 'When clicked' : 'change' in place ? 'When it changes' : 'When…';
+  const setting = 'press' in place ? 'When clicked' : 'change' in place ? 'When it changes' : 'fence' in place ? 'Fences' : 'When…';
   const row = panel?.querySelector<HTMLElement>(`[data-setting="${setting}"]`);
   if (!row) return;
   // A moment's own list, or a tab's: the one asked for.
   const lists = [...row.querySelectorAll<HTMLElement>('.fd-do')];
   const w = designer.words.steps;
-  const label = 'moment' in place ? w.momentNames[place.moment] : 'show' in place ? w.whenShown(showTargets(page).find((t) => t.id === place.show)?.label || place.show) : null;
+  const label =
+    'moment' in place ? w.momentNames[place.moment] : 'show' in place ? w.whenShown(showTargets(page).find((t) => t.id === place.show)?.label || place.show) : 'fence' in place ? placeName(page, place, designer.words) : null;
   const list = label === null ? lists[0] : lists.find((l) => l.getAttribute('aria-label') === label);
   const hand = (list ?? row).querySelector<HTMLElement>('.fd-do-say, .fd-do-add');
   hand?.focus();

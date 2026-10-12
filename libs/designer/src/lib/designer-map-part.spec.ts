@@ -1,4 +1,5 @@
 import { validatePage, type Field, type MapNode, type SectionNode } from '@fieldia/core';
+import { pageSteps } from './steps-words';
 import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
 import { mapContent } from './panel-map';
@@ -17,11 +18,16 @@ const model: Record<string, Field> = {
   courier_photo: { type: 'image', label: 'Courier' },
   eta_seconds: { type: 'integer', label: 'Seconds left' },
   route_line: { type: 'json', label: 'Route' },
+  zone: { type: 'json', label: 'Drop-off zone' },
+  district: { type: 'selection', label: 'District', options: [{ value: 'zam', label: 'Zamalek' }] },
+  arriving: { type: 'boolean', label: 'Arriving' },
   stop_ids: { type: 'one2many', label: 'Stops', relation: 'stop', fields: { name: { type: 'char', label: 'Stop' }, place: { type: 'json', label: 'Place' } } },
 };
 
-function withMap() {
-  const designer = createDesigner({ page: blankPage('sheet', 'Order'), model });
+const DISTRICTS = { name: 'cairo-districts', key: 'code', nameKey: 'name', numbers: ['fee', 'homes'] };
+
+function withMap(regionSets = [DISTRICTS]) {
+  const designer = createDesigner({ page: blankPage('sheet', 'Order'), model, regionSets });
   const id = designer.addBlock('map') as string;
   const map = () => {
     const sections = (designer.getPage().layout as { children: SectionNode[] }).children;
@@ -62,8 +68,8 @@ describe('a map on a page, in the designer', () => {
 });
 
 describe('a map’s panel', () => {
-  function mount() {
-    const made = withMap();
+  function mount(regionSets = [DISTRICTS]) {
+    const made = withMap(regionSets);
     const content = mapContent(elementFactory(document), made.designer, made.id);
     const host = document.createElement('div');
     host.append(...content.rows);
@@ -91,7 +97,7 @@ describe('a map’s panel', () => {
     expect(map().layers[1]).toEqual({ id: 'place', label: 'A place', point: 'door' });
     const place = layer('place');
     const where = control<HTMLSelectElement>(place, 'Where it is');
-    expect([...where.options].map((o) => o.textContent)).toEqual(['Deliver to, one point', 'Route, one point', 'A latitude and a longitude']);
+    expect([...where.options].map((o) => o.textContent)).toEqual(['Deliver to, one point', 'Route, one point', 'Drop-off zone, one point', 'A latitude and a longitude']);
     change(where, 'latlng');
     expect(map().layers[1]).toEqual({ id: 'place', label: 'A place', latitude: 'kitchen_lat', longitude: 'kitchen_lng' });
     change(control<HTMLInputElement>(place, 'Words'), 'Kitchen');
@@ -134,6 +140,97 @@ describe('a map’s panel', () => {
     const { add, host } = mount();
     add('The reader’s own place');
     expect(host.querySelector('[role="status"]')!.textContent).toBe('The map has the reader’s own place already.');
+  });
+
+  it('adds areas by colour from the app’s borders, shaded by one of their numbers, a press choosing into a field', () => {
+    const { add, layer, control, change, map, designer } = mount();
+    add('Areas by colour');
+    expect(map().layers[1]).toEqual({ id: 'areas', label: 'Areas by colour', regions: { from: 'cairo-districts', key: 'code', name: 'name' } });
+    const areas = layer('areas');
+    expect([...control<HTMLSelectElement>(areas, 'Shaded by').options].map((o) => o.textContent)).toEqual(['Nothing', 'fee', 'homes']);
+    change(control<HTMLSelectElement>(areas, 'Shaded by'), 'fee');
+    change(control<HTMLSelectElement>(areas, 'A press chooses it into'), 'district');
+    expect(map().layers[1].regions).toEqual({ from: 'cairo-districts', key: 'code', name: 'name', shade: 'fee', choose: 'district' });
+    // The field it chooses into comes onto the page.
+    expect(designer.getPage().fields['district']).toEqual(model['district']);
+    const legend = [...areas.querySelectorAll('label')].find((l) => l.textContent === 'A legend of the shades')!.querySelector('input')!;
+    expect(legend.checked).toBe(true);
+    legend.checked = false;
+    legend.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(map().layers[1].regions?.legend).toBe(false);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('says so when the app gives no borders', () => {
+    const { add, host, map } = mount([]);
+    add('Areas by colour');
+    expect(host.querySelector('[role="status"]')!.textContent).toBe('This app gives its maps no areas to shade.');
+    expect(map().layers).toHaveLength(1);
+  });
+
+  it('adds the area within some minutes of a place, by car unless said', () => {
+    const { add, layer, control, change, map, host, designer } = mount();
+    // From the reader's own place, the only one there.
+    add('The area within some minutes');
+    expect(map().layers[1]).toEqual({ id: 'reach', label: 'The area within some minutes', reachable: { from: 'me', minutes: 15 } });
+    change(control<HTMLInputElement>(layer('reach'), 'Minutes'), '10');
+    change(control<HTMLSelectElement>(layer('reach'), 'By'), 'bike');
+    expect(map().layers[1].reachable).toEqual({ from: 'me', minutes: 10, mode: 'bike' });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    // Without any place: said why.
+    designer.updateMap(map().id, { layers: [{ id: 'way', route: { from: 'a', to: 'b' } }] });
+    expect(map().layers).toHaveLength(2);
+    void host;
+  });
+
+  it('ticks the tools under the map’s zoom', () => {
+    const { host, map } = mount();
+    const tool = (name: string) => [...host.querySelectorAll('.fd-map-tools label')].find((l) => l.textContent === name)!.querySelector('input')!;
+    tool('Full screen').checked = true;
+    tool('Full screen').dispatchEvent(new Event('change', { bubbles: true }));
+    tool('Measure a distance').checked = true;
+    tool('Measure a distance').dispatchEvent(new Event('change', { bubbles: true }));
+    expect(map().tools).toEqual(['fullscreen', 'measure']);
+    tool('Full screen').checked = false;
+    tool('Full screen').dispatchEvent(new Event('change', { bubbles: true }));
+    tool('Measure a distance').checked = false;
+    tool('Measure a distance').dispatchEvent(new Event('change', { bubbles: true }));
+    expect(map().tools).toBeUndefined();
+  });
+
+  it('adds a fence on a place that moves and an area, its steps set as a button’s, named in words', () => {
+    const { add, layer, change, host, map, designer } = mount();
+    const addFence = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Add a fence')!.click();
+    const said = () => host.querySelectorAll('[role="status"]')[1]?.textContent;
+    // The reader's own place moves; an area is wanted.
+    designer.updateMap(map().id, { layers: [{ id: 'kitchen', label: 'Kitchen', latitude: 'kitchen_lat', longitude: 'kitchen_lng' }] });
+    addFence();
+    expect(said()).toBe('A fence watches a place that moves: tick “It moves” on a place, or add the reader’s own place.');
+    const moves = [...layer('kitchen').querySelectorAll('label')].find((l) => l.textContent?.startsWith('It moves'))!.querySelector('input')!;
+    moves.checked = true;
+    moves.dispatchEvent(new Event('change', { bubbles: true }));
+    addFence();
+    // A JSON field the model has holds the area: the first, Deliver to.
+    expect(map().fences).toEqual([{ layer: 'kitchen', area: 'door', when: 'enter', steps: [{ do: 'say', message: 'Kitchen is in Deliver to.' }] }]);
+    const fence = host.querySelector<HTMLElement>('[data-fence="0"]')!;
+    change(fence.querySelector<HTMLSelectElement>('[aria-label="The area"]')!, 'area:zone');
+    change(fence.querySelector<HTMLSelectElement>('[aria-label="When it"]')!, 'leave');
+    expect(map().fences![0]).toMatchObject({ layer: 'kitchen', area: 'zone', when: 'leave' });
+    expect(fence.querySelector('.fd-map-layer-head strong')!.textContent).toBe('When Kitchen comes out of Drop-off zone');
+    // Its steps: the same editor as a button's, named by the fence.
+    expect(fence.querySelector('.fd-do')!.getAttribute('aria-label')).toBe('When Kitchen comes out of Drop-off zone');
+    expect(designer.addStep({ fence: { map: map().id, at: 0 } }, { do: 'say', message: 'Out of the zone', tone: 'warning' })).toEqual([1]);
+    expect(map().fences![0].steps).toEqual([{ do: 'say', message: 'Kitchen is in Deliver to.' }, { do: 'say', message: 'Out of the zone', tone: 'warning' }]);
+    // The Rules view lists it among the moments, by its words.
+    expect(pageSteps(designer.getPage()).map((e) => [e.group, e.name, e.lines.length])).toEqual([['moments', 'When Kitchen comes out of Drop-off zone', 2]]);
+    // Its last step kept: a fence runs something.
+    expect(designer.removeStep({ fence: { map: map().id, at: 0 } }, [1])).toBe(true);
+    expect(designer.removeStep({ fence: { map: map().id, at: 0 } }, [0])).toBe(false);
+    expect(designer.getState().issues).toEqual(['A fence needs something to do: add another step before taking this one away, or remove the fence.']);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    // Taken away.
+    fence.querySelector<HTMLButtonElement>('[aria-label^="Remove the fence"]')!.click();
+    expect(map().fences).toBeUndefined();
   });
 });
 

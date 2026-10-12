@@ -55,8 +55,8 @@ describe('a list page on a map', () => {
 });
 
 describe('the list’s Map, in its panel', () => {
-  function mount(page: Page, fields: Record<string, Field> = model) {
-    const designer = createDesigner({ page, model: fields });
+  function mount(page: Page, fields: Record<string, Field> = model, regionSets = [{ name: 'cairo-districts', key: 'code', nameKey: 'name' }]) {
+    const designer = createDesigner({ page, model: fields, regionSets });
     const panel = listProperties(elementFactory(document), designer);
     document.body.replaceChildren(panel.element);
     const update = () => panel.update(designer.getPage());
@@ -119,6 +119,42 @@ describe('the list’s Map, in its panel', () => {
     map.querySelector<HTMLButtonElement>('[aria-label="Take Price off the card"]')!.click();
     expect(list(designer).map?.card).toEqual({ image: 'photo', fields: ['district'] });
     expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('ticks its tools, a heat map weighed by a number, and areas by colour from the app’s borders', () => {
+    const { designer, control, shown, map } = mount(blankPage('list', 'Homes'));
+    designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng' } });
+    const tick = (name: string) => [...map.querySelectorAll('label')].find((l) => l.textContent === name)!.querySelector('input')!;
+    change(tick('Nearest first'));
+    change(tick('Full screen'));
+    expect(list(designer).map?.tools).toEqual(['nearest', 'fullscreen']);
+    change(tick('Nearest first'));
+    change(tick('Full screen'));
+    expect(list(designer).map?.tools).toBeUndefined();
+    // A heat map: each record weighing one, or a number of its own.
+    expect(shown(control('Each weighs'))).toBe(false);
+    change(tick('A heat map from afar'));
+    expect(list(designer).map?.heat).toBe(true);
+    change(control<HTMLSelectElement>('Each weighs'), 'price');
+    expect(list(designer).map?.heat).toEqual({ weight: 'price' });
+    change(control<HTMLSelectElement>('Each weighs'), '');
+    expect(list(designer).map?.heat).toBe(true);
+    // Areas by colour: the app's borders, each record's area in a field that can hold its key.
+    expect(shown(control('Each record’s area is in'))).toBe(false);
+    change(control<HTMLSelectElement>('Areas by colour'), 'cairo-districts');
+    expect(list(designer).map?.regions).toEqual({ from: 'cairo-districts', key: 'code', name: 'name', field: expect.any(String) });
+    change(control<HTMLSelectElement>('Each record’s area is in'), 'district');
+    expect(list(designer).map?.regions?.field).toBe('district');
+    expect(designer.getPage().fields['district']).toEqual(model['district']);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    change(control<HTMLSelectElement>('Areas by colour'), '');
+    expect(list(designer).map?.regions).toBeUndefined();
+  });
+
+  it('offers no areas when the app gives no borders', () => {
+    const { designer, control, shown } = mount(blankPage('list', 'Homes'), model, []);
+    designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng' } });
+    expect(shown(control('Areas by colour'))).toBe(false);
   });
 
   it('says why there can be no map, and offers none, when no field can hold a place', () => {

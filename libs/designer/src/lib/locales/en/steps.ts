@@ -19,6 +19,7 @@ export const steps = {
   momentNames: { open: 'When the form opens', beforeSave: 'Before it’s saved or sent', afterSave: 'After it’s saved or sent', show: 'When a tab or step is shown' },
   beforeSaveHint: 'A step that stops — a check that finds problems, No to a question — keeps it unsaved.',
   whenShown: (name: string) => `When ${name} is shown`,
+  fenceName: (layer: string, when: 'enter' | 'leave', area: string) => (when === 'enter' ? `When ${layer} goes into ${area}` : `When ${layer} comes out of ${area}`),
   stepsForATab: 'Steps for a tab or step…',
   noTabs: 'The page has no tabs or wizard steps yet.',
   // ---- the list
@@ -196,6 +197,7 @@ export const steps = {
   noPlace: 'There is nothing here to give steps to.',
   noStep: (n: number) => `There is no step ${n} here.`,
   needsSomething: (name: string) => `“${name}” needs something to do: add another step before taking this one away.`,
+  fenceNeedsSomething: 'A fence needs something to do: add another step before taking this one away, or remove the fence.',
   onlyOpenThen: 'Only a step that opens a page has steps once it is saved.',
   cannotMoveFurther: 'It cannot move further.',
   // ---- what changed

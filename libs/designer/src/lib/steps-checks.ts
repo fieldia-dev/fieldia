@@ -31,14 +31,15 @@ export function fixStepCheck(designer: StepFixer, fix: StepFix): boolean {
 /** A step's place among its list as a person counts it: "2", "2.1" for the first step once the second's page is saved. */
 const numbered = (path: StepPath) => path.map((i) => i + 1).join('.');
 
-/** Whether a step can be taken away: not a button's only one. */
-const removable = (page: Page, place: StepsPlace, path: StepPath) => !('press' in place) || path.length > 1 || stepsAt(page, place).length > 1;
+/** Whether a step can be taken away: not a button's only one, nor a fence's. */
+const removable = (page: Page, place: StepsPlace, path: StepPath) => !('press' in place || 'fence' in place) || path.length > 1 || stepsAt(page, place).length > 1;
 
 /** Where each list of steps is in the page, as the page's own check names it, and the place it is. */
 function placePaths(page: Page): { at: string; place: StepsPlace }[] {
   const out: { at: string; place: StepsPlace }[] = [];
   const walk = (node: { id?: string; type?: string; children?: unknown[] }, path: string) => {
     if (node.type === 'button' && node.id) out.push({ at: path, place: { press: node.id } });
+    if (node.type === 'map' && node.id) (node as { fences?: unknown[] }).fences?.forEach((_, at) => out.push({ at: `${path}.fences[${at}]`, place: { fence: { map: node.id as string, at } } }));
     node.children?.forEach((child, i) => walk(child as typeof node, `${path}.children[${i}]`));
   };
   const root = page.layout as unknown as { buttons?: { id: string }[]; statButtons?: { id: string }[]; actions?: { id: string }[]; children?: unknown[] };
@@ -62,7 +63,7 @@ export function stepChecks(page: Page, issues: readonly PageIssue[], words: Desi
   const w = words.steps;
   const checks: PageCheck[] = [];
   const covered: string[] = [];
-  const partOf = (place: StepsPlace) => ('press' in place ? place.press : null);
+  const partOf = (place: StepsPlace) => ('press' in place ? place.press : 'fence' in place ? place.fence.map : null);
 
   // A page written by hand: the page's own check, said by part and step.
   const places = placePaths(page).sort((a, b) => b.at.length - a.at.length);
@@ -78,7 +79,7 @@ export function stepChecks(page: Page, issues: readonly PageIssue[], words: Desi
       text: path.length ? w.stepWrong(name, numbered(path), issue.message) : w.placeWrong(name, issue.message),
       ...(path.length && removable(page, found.place, path)
         ? { fix: { label: w.removeTheStep, action: { kind: 'remove-step', place: found.place, path } as StepFix } }
-        : !path.length && !('press' in found.place)
+        : !path.length && !('press' in found.place) && !('fence' in found.place)
           ? { fix: { label: w.removeTheSteps, action: { kind: 'remove-steps', place: found.place } as StepFix } }
           : {}),
     });

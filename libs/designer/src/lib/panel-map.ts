@@ -1,20 +1,28 @@
-import type { Field, MapLayer, MapNode, Page, Pin } from '@fieldia/core';
+import type { Field, MapFence, MapLayer, MapNode, MapTool, Page, Pin } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { locate } from './layout-tree';
 import { openMenu } from './menu';
 import type { BlockContent } from './panel-block';
 import { segmented, setting } from './panel-controls';
+import { stepsEditor, type StepsEditor } from './steps-editor';
+import { placeName } from './steps-words';
 
 /**
- * A map's own settings, on the Content tab: its name and height, and its
- * layers — the record's places, a place for each of its lines, routes
- * between them, the reader's own place — each with the fields it reads, as a
- * list's map is set. The map itself is drawn in Try it.
+ * A map's own settings, on the Content tab: its name and height, the tools
+ * under its zoom, its layers — the record's places, a place for each of its
+ * lines, routes between them, the reader's own place, areas by colour, the
+ * area within some minutes — each with the fields it reads, as a list's map
+ * is set; and its fences, each with the steps it runs. The map itself is
+ * drawn in Try it.
  */
 
-type LayerKind = 'place' | 'lines' | 'route' | 'me';
-const kindOf = (layer: MapLayer): LayerKind => (layer.route ? 'route' : layer.myLocation ? 'me' : layer.lines ? 'lines' : 'place');
+type LayerKind = 'place' | 'lines' | 'route' | 'me' | 'regions' | 'reach';
+const kindOf = (layer: MapLayer): LayerKind =>
+  layer.route ? 'route' : layer.myLocation ? 'me' : layer.regions ? 'regions' : layer.reachable ? 'reach' : layer.lines ? 'lines' : 'place';
+const TOOLS = ['satellite', 'fullscreen', 'measure'] as const;
+/** A field a press on an area can write its key into. */
+const KEYS = new Set(['char', 'selection', 'integer', 'many2one']);
 
 const NUMBERS = new Set(['float', 'integer']);
 const PICTURES = new Set(['image', 'binary']);
@@ -37,6 +45,23 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
   const layersBox = el('div', { class: 'fd-map-layers' });
   const add = el('button', { type: 'button', class: 'fd-button' }, w.addLayer);
   const why = el('p', { class: 'fd-properties-hint', role: 'status', hidden: '' });
+  // The tools under its zoom.
+  const toolTicks = TOOLS.map((tool) => {
+    const box = el('input', { type: 'checkbox' }) as HTMLInputElement;
+    box.addEventListener('change', () => {
+      const node = nodeOf(designer.getPage());
+      const on = new Set(node?.tools ?? []);
+      if (box.checked) on.add(tool);
+      else on.delete(tool);
+      designer.updateMap(id, { tools: TOOLS.filter((t) => on.has(t)) });
+    });
+    return { tool, box, row: el('label', { class: 'fd-q-required' }, box, el('span', {}, w.tools[tool])) };
+  });
+  const toolsBox = el('div', { class: 'fd-map-tools', role: 'group', 'aria-label': w.toolsName }, ...toolTicks.map((t) => t.row));
+  // Its fences.
+  const fencesBox = el('div', { class: 'fd-map-fences' });
+  const addFence = el('button', { type: 'button', class: 'fd-button' }, w.addFence);
+  const fenceWhy = el('p', { class: 'fd-properties-hint', role: 'status', hidden: '' });
 
   const nodeOf = (page: Page) => locate(page, id)?.node as MapNode | undefined;
   /** The page's fields, then the model's not on it yet. */
@@ -112,6 +137,14 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
       const to = places.find((l) => l.id !== from?.id);
       if (from && to) layer = { id: fresh('route'), label: w.kinds.route, route: { from: from.id, to: to.id } };
       else say(w.noRoute);
+    } else if (kind === 'regions') {
+      const set = designer.regionSets()[0];
+      if (set) layer = { id: fresh('areas'), label: w.kinds.regions, regions: { from: set.name, key: set.key, ...(set.nameKey ? { name: set.nameKey } : {}) } };
+      else say(w.noRegions);
+    } else if (kind === 'reach') {
+      const from = node.layers.find((l) => (kindOf(l) === 'place' || kindOf(l) === 'me') && !l.lines);
+      if (from) layer = { id: fresh('reach'), label: w.kinds.reach, reachable: { from: from.id, minutes: 15 } };
+      else say(w.noReach);
     } else if (node.layers.some((l) => l.myLocation)) say(w.oneMe);
     else layer = { id: fresh('me'), label: designer.words.defaults.you, myLocation: true };
     if (layer) {
@@ -128,7 +161,7 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
       el,
       anchor: add,
       title: w.addLayer,
-      items: (['place', 'lines', 'route', 'me'] as const).map((kind) => ({ id: kind, label: w.kinds[kind] })),
+      items: (['place', 'lines', 'route', 'me', 'regions', 'reach'] as const).map((kind) => ({ id: kind, label: w.kinds[kind] })),
       onPick: (kind) => addLayer(kind as LayerKind),
     })
   );
@@ -320,6 +353,88 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
       });
     }
 
+    if (kind === 'regions') {
+      const from = control<HTMLSelectElement>('select', w.borders);
+      const key = control<HTMLInputElement>('input', w.knownBy, { autocomplete: 'off' });
+      const named = control<HTMLInputElement>('input', w.namedBy, { autocomplete: 'off' });
+      const shade = control<HTMLSelectElement>('select', w.shadedBy);
+      const choose = control<HTMLSelectElement>('select', w.pressChooses);
+      const legend = tick(w.legend);
+      const regions = (l: MapLayer) => (l.regions ??= { from: '', key: '' });
+      from.addEventListener('change', () => {
+        const set = designer.regionSets().find((s) => s.name === from.value);
+        change(layerId, (l) => {
+          // Another set: its own key and name, and no number of the last one's.
+          l.regions = { ...regions(l), from: from.value, ...(set ? { key: set.key } : {}) };
+          if (set?.nameKey) l.regions.name = set.nameKey;
+          else delete l.regions.name;
+          delete l.regions.shade;
+        });
+      });
+      key.addEventListener('change', () => key.value.trim() && change(layerId, (l) => (regions(l).key = key.value.trim())));
+      named.addEventListener('change', () =>
+        change(layerId, (l) => {
+          if (named.value.trim()) regions(l).name = named.value.trim();
+          else delete regions(l).name;
+        })
+      );
+      shade.addEventListener('change', () =>
+        change(layerId, (l) => {
+          if (shade.value) regions(l).shade = shade.value;
+          else delete regions(l).shade;
+        })
+      );
+      choose.addEventListener('change', () =>
+        change(layerId, (l) => {
+          if (choose.value) regions(l).choose = choose.value;
+          else delete regions(l).choose;
+        })
+      );
+      legend.box.addEventListener('change', () =>
+        change(layerId, (l) => {
+          if (legend.box.checked) delete regions(l).legend;
+          else regions(l).legend = false;
+        })
+      );
+      const legendRow = legend.row;
+      body.append(row(w.borders, from), row(w.knownBy, key), row(w.namedBy, named), row(w.shadedBy, shade), legendRow, row(w.pressChooses, choose));
+      updates.push((page, layer) => {
+        const r = layer.regions ?? { from: '', key: '' };
+        const sets = designer.regionSets();
+        // A set the page names that the app did not list stays offered, as it is.
+        fill(from, [...sets.map((s) => ({ value: s.name, label: s.name })), ...(sets.some((s) => s.name === r.from) ? [] : [{ value: r.from, label: r.from }])]);
+        from.value = r.from;
+        if (!focused(key)) key.value = r.key;
+        if (!focused(named)) named.value = r.name ?? '';
+        const numbers = sets.find((s) => s.name === r.from)?.numbers ?? [];
+        fill(shade, [...numbers.map((n) => ({ value: n, label: n })), ...(r.shade && !numbers.includes(r.shade) ? [{ value: r.shade, label: r.shade }] : [])], w.nothing);
+        shade.value = r.shade ?? '';
+        legend.box.checked = r.legend !== false;
+        legendRow.hidden = !r.shade;
+        fill(choose, asChoices(fieldsOf(page, (f) => KEYS.has(f.type))), w.none);
+        choose.value = r.choose ?? '';
+      });
+    }
+
+    if (kind === 'reach') {
+      const from = control<HTMLSelectElement>('select', w.from);
+      const minutes = control<HTMLInputElement>('input', w.minutes, { type: 'number', min: '1', max: '120', step: '1' });
+      const mode = control<HTMLSelectElement>('select', w.mode);
+      fill(mode, (['car', 'bike', 'foot'] as const).map((value) => ({ value, label: w.modes[value] })));
+      const reach = (l: MapLayer) => (l.reachable ??= { from: '', minutes: 15 });
+      from.addEventListener('change', () => change(layerId, (l) => (reach(l).from = from.value)));
+      minutes.addEventListener('input', () => Number(minutes.value) > 0 && change(layerId, (l) => (reach(l).minutes = Math.min(120, Number(minutes.value)))));
+      mode.addEventListener('change', () => change(layerId, (l) => (reach(l).mode = mode.value === 'car' ? undefined : (mode.value as 'bike' | 'foot'))));
+      body.append(row(w.from, from), row(w.minutes, minutes), row(w.mode, mode));
+      updates.push((_page, layer, node) => {
+        const r = layer.reachable ?? { from: '', minutes: 15 };
+        fill(from, node.layers.filter((l) => (kindOf(l) === 'place' || kindOf(l) === 'me') && !l.lines).map((l) => ({ value: l.id, label: l.label || l.id })));
+        from.value = r.from;
+        if (!focused(minutes)) minutes.value = String(r.minutes);
+        mode.value = r.mode ?? 'car';
+      });
+    }
+
     return {
       kind,
       element,
@@ -329,11 +444,101 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
     };
   }
 
+  // ---- fences ---------------------------------------------------------------------------
+
+  /** A fence's watched layers (those that move) and its areas (an area field, or a reachable area of the map), as the selects offer them. */
+  const watchable = (node: MapNode) => node.layers.filter((l) => l.live || l.myLocation);
+  const areasOf = (page: Page, node: MapNode) => [
+    ...fieldsOf(page, (f) => f.type === 'json').map(({ name, field }) => ({ value: `area:${name}`, label: field.label })),
+    ...node.layers.filter((l) => l.reachable).map((l) => ({ value: `within:${l.id}`, label: l.label || l.id })),
+  ];
+  function changeFences(edit: (fences: MapFence[]) => void) {
+    const node = nodeOf(designer.getPage());
+    if (!node) return;
+    const fences = JSON.parse(JSON.stringify(node.fences ?? [])) as MapFence[];
+    edit(fences);
+    designer.updateMap(id, { fences });
+  }
+  addFence.addEventListener('click', () => {
+    const page = designer.getPage();
+    const node = nodeOf(page);
+    if (!node) return;
+    const layer = watchable(node)[0];
+    const area = areasOf(page, node)[0];
+    if (!layer || !area) return sayFence(!layer ? w.noFenceLayer : w.noFenceArea);
+    sayFence('');
+    const [key, name] = [area.value.slice(0, area.value.indexOf(':')), area.value.slice(area.value.indexOf(':') + 1)];
+    // It starts by saying so; the steps are then the person's to set.
+    const fence: MapFence = { layer: layer.id, ...(key === 'area' ? { area: name } : { within: name }), when: 'enter', steps: [{ do: 'say', message: w.fenceSays(layer.label || layer.id, area.label) }] };
+    changeFences((fences) => fences.push(fence));
+  });
+  function sayFence(words: string) {
+    fenceWhy.textContent = words;
+    fenceWhy.hidden = !words;
+  }
+
+  interface FenceView {
+    element: HTMLElement;
+    update(page: Page, node: MapNode, fence: MapFence): void;
+  }
+  const fenceViews: FenceView[] = [];
+  function fenceView(at: number): FenceView {
+    const watch = control<HTMLSelectElement>('select', w.fenceWatch);
+    const when = control<HTMLSelectElement>('select', w.fenceWhen);
+    fill(when, [{ value: 'enter', label: w.fenceWhens.enter }, { value: 'leave', label: w.fenceWhens.leave }]);
+    const area = control<HTMLSelectElement>('select', w.fenceArea);
+    const remove = el('button', { type: 'button', class: 'fd-button fd-button-link fd-button-danger' }, '×');
+    watch.addEventListener('change', () => changeFences((fences) => (fences[at].layer = watch.value)));
+    when.addEventListener('change', () => changeFences((fences) => (fences[at].when = when.value as MapFence['when'])));
+    area.addEventListener('change', () =>
+      changeFences((fences) => {
+        const [key, name] = [area.value.slice(0, area.value.indexOf(':')), area.value.slice(area.value.indexOf(':') + 1)];
+        delete fences[at].area;
+        delete fences[at].within;
+        if (key === 'area') fences[at].area = name;
+        else fences[at].within = name;
+      })
+    );
+    remove.addEventListener('click', () => changeFences((fences) => fences.splice(at, 1)));
+    const name = el('strong', {});
+    let steps: StepsEditor | null = null;
+    const stepsHolder = el('div', {});
+    const element = el(
+      'div',
+      { class: 'fd-map-layer fd-map-fence', 'data-fence': String(at) },
+      el('div', { class: 'fd-map-layer-head' }, name, remove),
+      el('div', { class: 'fd-props' }, row(w.fenceWatch, watch), row(w.fenceWhen, when), row(w.fenceArea, area)),
+      stepsHolder
+    );
+    return {
+      element,
+      update(page, node, fence) {
+        const said = placeName(page, { fence: { map: id, at } }, designer.words);
+        name.textContent = said;
+        remove.setAttribute('aria-label', w.removeFence(said));
+        fill(watch, watchable(node).map((l) => ({ value: l.id, label: l.label || l.id })));
+        watch.value = fence.layer;
+        when.value = fence.when;
+        fill(area, areasOf(page, node));
+        area.value = fence.area !== undefined ? `area:${fence.area}` : `within:${fence.within}`;
+        // Its steps, as a button's are set: the same editor, named by what the fence watches.
+        if (!steps) {
+          steps = stepsEditor(el, designer, { fence: { map: id, at } }, { label: said });
+          stepsHolder.append(steps.element);
+        }
+        steps.element.setAttribute('aria-label', said);
+        steps.update(page);
+      },
+    };
+  }
+
   return {
     rows: [
       setting(el, 'content', 'Name', name, { words: w.name }),
       setting(el, 'content', 'Height', height.element, { words: w.height }),
+      setting(el, 'content', 'Tools', toolsBox, { words: w.toolsName }),
       setting(el, 'content', 'Layers', [layersBox, add, why], { words: w.layers, hint: w.note }),
+      setting(el, 'content', 'Fences', [fencesBox, addFence, fenceWhy], { words: w.fences, hint: w.fencesHint }),
     ],
     update(page) {
       const node = nodeOf(page);
@@ -349,6 +554,13 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
         return view.element;
       });
       layersBox.replaceChildren(...drawn);
+      for (const t of toolTicks) t.box.checked = !!node.tools?.includes(t.tool as Exclude<MapTool, 'nearest'>);
+      // A fence's editor by its place among the fences: one taken away, and those after it are drawn again.
+      const fences = node.fences ?? [];
+      while (fenceViews.length > fences.length) fenceViews.pop();
+      for (let at = fenceViews.length; at < fences.length; at++) fenceViews.push(fenceView(at));
+      fences.forEach((fence, at) => fenceViews[at].update(page, node, fence));
+      fencesBox.replaceChildren(...fenceViews.map((v) => v.element));
     },
   };
 }

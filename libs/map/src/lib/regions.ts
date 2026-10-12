@@ -218,9 +218,8 @@ export function drawRegions(options: {
     if (at === -1) return;
     const step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
     if (step || event.key === 'Home' || event.key === 'End') {
+      // The page does not scroll; the map pans by its arrows only while it has the keys itself.
       event.preventDefault();
-      // The map's own arrows pan it: not while an area has the keys.
-      event.stopPropagation();
       current = event.key === 'Home' ? 0 : event.key === 'End' ? ordered.length - 1 : (at + step + ordered.length) % ordered.length;
       roving();
       const element = elementOf(ordered[current]);

@@ -117,8 +117,13 @@ test.describe('orders by district', () => {
     // Its words shown as the pointer would show them.
     await expect(page.locator('.leaflet-tooltip.fd-map-tip')).toBeVisible();
     const first = (await focused.getAttribute('aria-label'))!;
+    const pane = () => page.locator('.fd-map-list .leaflet-map-pane').getAttribute('style');
+    const before = await pane();
     await page.keyboard.press('ArrowRight');
     await expect(focused).not.toHaveAttribute('aria-label', first);
+    // The map stays put: the arrow was the districts', not the map's to pan by.
+    await page.waitForTimeout(300);
+    expect(await pane()).toBe(before);
     const name = (await focused.getAttribute('aria-label'))!.split(':')[0];
     await page.keyboard.press('Enter');
     await expect(chips(page)).toHaveText([`In ${name}`]);
@@ -181,7 +186,10 @@ test.describe('orders by district', () => {
   });
 
   test('measuring by the keys: Space puts a point at the cross, Backspace takes it back, Enter finishes', async ({ page }) => {
+    // Its code comes with the map, before the tool is pressed: a key pressed straight after the press is never lost.
+    const fetched = page.waitForResponse((r) => /\/chunks\/measure-[A-Z0-9]+\.js$/.test(r.url()), { timeout: 15_000 });
     await openMap(page, ZONES);
+    await fetched;
     const map = theMap(page);
     await tool(page, 'Measure a distance').press('Enter');
     await map.focus();
@@ -286,8 +294,10 @@ test.describe('a kitchen’s map', () => {
 
   test('a fence: the steps run as the courier goes into the drop-off zone, and again as they leave it; not at first sight', async ({ page }) => {
     await openMap(page, KITCHEN);
-    // At the kitchen, outside the zone: nothing ran.
+    // At the kitchen, outside the zone: first seen there, nothing ran, though "comes out of" holds.
+    await page.waitForTimeout(300);
     expect(await valueOf(page, 'arriving')).toBe(false);
+    await expect(page.getByText('The courier has left the drop-off zone.')).toHaveCount(0);
     await send(page, 30.0525, 31.2318);
     await page.waitForTimeout(300);
     expect(await valueOf(page, 'arriving')).toBe(false);
@@ -299,6 +309,7 @@ test.describe('a kitchen’s map', () => {
     await send(page, 30.0612, 31.2215);
     await send(page, 30.0525, 31.2318);
     await expect.poll(() => valueOf(page, 'arriving')).toBe(false);
+    await expect(page.getByText('The courier has left the drop-off zone.')).toBeVisible();
   });
 
   test('axe finds nothing on the kitchen’s map, a district focused', async ({ page }) => {

@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, ListMap, ListNode, Page, Pin } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, ListMap, ListNode, MapTool, Page, Pin } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
@@ -166,7 +166,11 @@ const PICTURES = new Set(['image', 'binary']);
 /** Fields a pin or a card can say in words. */
 const SAYABLE = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean']);
 
-/** A list's map: whether there is one, where each record is, its pins and its card, and how the list opens. */
+const LIST_TOOLS = ['nearest', 'satellite', 'fullscreen', 'measure'] as const satisfies readonly MapTool[];
+/** A field an area's key can be kept in. */
+const KEYS = new Set(['char', 'selection', 'integer', 'many2one']);
+
+/** A list's map: whether there is one, where each record is, its pins and its card, how the list opens, its tools, a heat map, and areas shaded by their records. */
 function mapSection(el: ElementFactory, designer: Designer) {
   const w = designer.words.list;
   const on = el('input', { type: 'checkbox' }) as HTMLInputElement;
@@ -187,6 +191,13 @@ function mapSection(el: ElementFactory, designer: Designer) {
   const addToCard = el('button', { type: 'button', class: 'fd-button' }, w.addToCard);
   const opens = select(el, w.opensAs, (['list', 'map', 'both'] as const).map((k) => [k, w.opensAsChoices[k]]));
   const bubbles = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const toolTicks = LIST_TOOLS.map((tool) => ({ tool, box: el('input', { type: 'checkbox' }) as HTMLInputElement }));
+  const tools = el('div', { class: 'fd-map-tools', role: 'group', 'aria-label': w.mapTools }, ...toolTicks.map(({ tool, box }) => el('label', { class: 'fd-q-required' }, box, el('span', {}, w.mapToolNames[tool]))));
+  const heat = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const weight = el('select', { class: 'fd-input fd-select', 'aria-label': w.heatWeight }) as HTMLSelectElement;
+  const areas = el('select', { class: 'fd-input fd-select', 'aria-label': w.areas }) as HTMLSelectElement;
+  const areaField = el('select', { class: 'fd-input fd-select', 'aria-label': w.areaField }) as HTMLSelectElement;
+  const areaWhy = el('p', { class: 'fd-properties-hint', role: 'status', hidden: '' }, w.noAreaField);
   const rows = {
     lat: prop(el, w.latitude, lat),
     lng: prop(el, w.longitude, lng),
@@ -194,6 +205,9 @@ function mapSection(el: ElementFactory, designer: Designer) {
     icon: prop(el, w.pinIcon, icon),
     iconFrom: prop(el, w.iconFrom, iconFrom),
     turn: prop(el, w.turnedBy, turn),
+    weight: prop(el, w.heatWeight, weight),
+    areaField: prop(el, w.areaField, areaField),
+    areas: prop(el, w.areas, areas),
   };
   const details = el(
     'div',
@@ -212,6 +226,12 @@ function mapSection(el: ElementFactory, designer: Designer) {
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.cardShows), cardFields, addToCard),
     prop(el, w.opensAs, opens),
     el('label', { class: 'fd-q-required' }, bubbles, el('span', {}, w.bubbles)),
+    el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.mapTools), tools),
+    el('label', { class: 'fd-q-required' }, heat, el('span', {}, w.heat)),
+    rows.weight,
+    rows.areas,
+    rows.areaField,
+    areaWhy,
     el('p', { class: 'fd-properties-hint' }, w.mapNote)
   );
   const element = el('div', { class: 'fd-prop', 'data-part': 'map' }, el('span', { class: 'fd-prop-name' }, w.map), onRow, noPlace, details);
@@ -277,6 +297,32 @@ function mapSection(el: ElementFactory, designer: Designer) {
       else map.cluster = false;
     })
   );
+  for (const { box } of toolTicks)
+    box.addEventListener('change', () =>
+      change((map) => {
+        const picked = toolTicks.filter((t) => t.box.checked).map((t) => t.tool);
+        if (picked.length) map.tools = picked;
+        else delete map.tools;
+      })
+    );
+  heat.addEventListener('change', () =>
+    change((map) => {
+      if (heat.checked) map.heat = true;
+      else delete map.heat;
+    })
+  );
+  weight.addEventListener('change', () => change((map) => (map.heat = weight.value ? { weight: weight.value } : true)));
+  areas.addEventListener('change', () => {
+    const set = designer.regionSets().find((s) => s.name === areas.value);
+    change((map) => {
+      if (!set) return void delete map.regions;
+      // The records' field holding an area's key: the one picked before, or the first that can.
+      const field = map.regions?.field ?? fieldsOf(designer.getPage(), (f) => KEYS.has(f.type))[0]?.name;
+      if (!field) return void (areaWhy.hidden = false);
+      map.regions = { from: set.name, key: set.key, ...(set.nameKey ? { name: set.nameKey } : {}), field };
+    });
+  });
+  areaField.addEventListener('change', () => change((map) => map.regions && (map.regions.field = areaField.value)));
   addToCard.addEventListener('click', () => {
     const page = designer.getPage();
     const shown = new Set(current()?.card?.fields ?? []);
@@ -338,6 +384,20 @@ function mapSection(el: ElementFactory, designer: Designer) {
       );
       opens.value = map.view ?? 'list';
       bubbles.checked = map.cluster !== false;
+      for (const { tool, box } of toolTicks) box.checked = !!map.tools?.includes(tool);
+      heat.checked = !!map.heat;
+      fill(weight, fieldsOf(page, (f) => NUMBERS.has(f.type) || f.type === 'monetary'), w.eachOne);
+      weight.value = typeof map.heat === 'object' ? (map.heat.weight ?? '') : '';
+      rows.weight.hidden = !map.heat;
+      // Areas by colour: the app's sets of borders, when it gives the designer some.
+      const sets = designer.regionSets();
+      areas.replaceChildren(el('option', { value: '' }, w.noAreas), ...sets.map((s) => el('option', { value: s.name }, s.name)), ...(map.regions && !sets.some((s) => s.name === map.regions?.from) ? [el('option', { value: map.regions.from }, map.regions.from)] : []));
+      areas.value = map.regions?.from ?? '';
+      rows.areas.hidden = !sets.length && !map.regions;
+      fill(areaField, fieldsOf(page, (f) => KEYS.has(f.type)));
+      areaField.value = map.regions?.field ?? '';
+      rows.areaField.hidden = !map.regions;
+      if (map.regions) areaWhy.hidden = true;
     },
   };
 }

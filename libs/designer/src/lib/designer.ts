@@ -13,7 +13,9 @@ import {
   type OptionsFrom,
   type PartLookKind,
   type HelpShown,
+  type MapFence,
   type MapLayer,
+  type MapNode,
   type Page,
   type PageLook,
   type SectionNode,
@@ -454,7 +456,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * A map's name, height and layers. The fields its layers name come onto the
    * page from the model; the page check says what else is wrong with them.
    */
-  updateMap(id: string, patch: { label?: string; height?: number | null; layers?: MapLayer[] }): boolean;
+  /** A map's name, height, layers, tools under its zoom, and fences; `null` takes a height, tools or fences away. Its fields come onto the page from the model. */
+  updateMap(id: string, patch: { label?: string; height?: number | null; layers?: MapLayer[]; tools?: NonNullable<MapNode['tools']> | null; fences?: MapFence[] | null }): boolean;
   /**
    * Several parts' widths as one edit: two trading width across the gutter
    * between them. With `twelfths`, widths are twelfths of their row, and a
@@ -525,6 +528,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   // embed lane
   /** Whether a saved form can be placed in the page: the app's store lists its saved forms (`PageStore.list`). */
   canPlaceForms(): boolean;
+  /** The sets of borders the app's maps know, for a map's areas by colour. */
+  regionSets(): readonly RegionSet[];
   /** The saved forms that can be placed in this page: the store's, this page itself left out. None without a store that lists them. */
   savedForms(): Promise<SavedFormRef[]>;
   /**
@@ -583,6 +588,8 @@ export function createDesigner(options: {
   locale?: DesignerLocale | (string & {});
   /** Open a saved form placed in the page where it is made, by its id: “Open it” on the canvas. Without one, it is not offered. */
   openForm?: (id: string) => void;
+  /** The sets of borders the app's maps know (their `regions`), offered for a map's areas by colour. Without them, a map has no areas to add. */
+  regionSets?: readonly RegionSet[];
 }): Designer {
   const store = options.store;
   const locale = designerLocale(options.locale);
@@ -1538,10 +1545,12 @@ export function createDesigner(options: {
         }
         if (patch.height === null) delete node.height;
         else if (patch.height !== undefined) node.height = patch.height;
-        if (patch.layers !== undefined) {
-          node.layers = clone(patch.layers);
-          for (const name of mapNodeFields(node)) if (!draft.fields[name] && model[name]) draft.fields[name] = model[name];
-        }
+        if (patch.tools === null || patch.tools?.length === 0) delete node.tools;
+        else if (patch.tools !== undefined) node.tools = [...patch.tools];
+        if (patch.fences === null || patch.fences?.length === 0) delete node.fences;
+        else if (patch.fences !== undefined) node.fences = clone(patch.fences);
+        if (patch.layers !== undefined) node.layers = clone(patch.layers);
+        if (patch.layers !== undefined || patch.fences !== undefined) for (const name of mapNodeFields(node)) if (!draft.fields[name] && model[name]) draft.fields[name] = model[name];
       }, `map:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
@@ -1591,6 +1600,7 @@ export function createDesigner(options: {
     setFold: (id, fold) => apply((draft) => setFold(draft, id, fold)),
     // embed lane
     canPlaceForms: () => typeof store?.list === 'function',
+    regionSets: () => options.regionSets ?? [],
     async savedForms() {
       if (!store?.list) return [];
       return (await store.list()).filter((ref) => ref.id !== page.id);
@@ -1628,16 +1638,28 @@ export function createDesigner(options: {
   return designer;
 }
 
+/**
+ * A set of borders an app's maps know, by the name its maps' `regions` give:
+ * the property that keys each border (what a record's field holds), the one
+ * that names it, and the numbers among its properties an area can be shaded by.
+ */
+export interface RegionSet {
+  name: string;
+  key: string;
+  nameKey?: string;
+  numbers?: readonly string[];
+}
+
 /** Open a page from a store: its latest draft, or else its latest version. */
 createDesigner.open = async (
   id: string,
   store: PageStore,
-  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}) } = {}
+  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}); regionSets?: readonly RegionSet[] } = {}
 ): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale, regionSets: options.regionSets });
 };
 
 /** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
