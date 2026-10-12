@@ -91,6 +91,8 @@ export const QUIET_CSS = /* css */ `
   .fd-form .fd-field[data-quiet] > .fd-input:not([readonly]):hover::-webkit-calendar-picker-indicator { opacity: 1; }
 }
 
+/* A link's lines under it start where its name does. */
+.fd-form .fd-field[data-quiet] .fd-link > .fd-link-details { padding-inline-start: calc(var(--fd-quiet-pad) + 1px); }
 /* Tags: the chips are the value, in one box round them and the words typed; no prompt beside chips at rest. */
 .fd-form .fd-field[data-quiet] .fd-tags { padding: 1px var(--fd-quiet-pad); min-height: var(--fd-control-height, 30px); }
 .fd-form .fd-field[data-quiet] .fd-tags .fd-input { border: 0; background-color: transparent; box-shadow: none; padding-inline-start: 0; }
