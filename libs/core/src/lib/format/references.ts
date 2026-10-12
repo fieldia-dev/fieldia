@@ -737,6 +737,24 @@ export class ReferenceCheck {
     }
   }
 
+  /** An address with suggestions: a char field, its place kept as a place field keeps one, its parts in a json field. */
+  private checkAddressSearch(node: FieldNode, def: Field | LineField | undefined, path: string) {
+    const options = node.options ?? {};
+    const kind = (key: string) => {
+      const name = options[key];
+      return typeof name === 'string' && has(this.page.fields, name) ? this.page.fields[name].type : undefined;
+    };
+    if (def && def.type !== 'char') this.report(`${path}.widget`, `address-search is for a char field; "${node.field}" is a ${def.type}`);
+    const place = kind('placeField');
+    if (place && place !== 'json' && place !== 'float') this.report(`${path}.options.placeField`, `"${options['placeField']}" is a ${place}; a place is kept in a json field, or in a float field (its latitude) with longitudeField`);
+    if (place === 'float' && options['longitudeField'] === undefined) this.report(`${path}.options.placeField`, `"${options['placeField']}" keeps a latitude: name the float field for its longitude in longitudeField`);
+    if (options['longitudeField'] !== undefined && place !== 'float') this.report(`${path}.options.longitudeField`, 'longitudeField goes with a placeField that is a float field, its latitude');
+    const longitude = kind('longitudeField');
+    if (longitude && longitude !== 'float') this.report(`${path}.options.longitudeField`, `"${options['longitudeField']}" is a ${longitude}; a longitude is kept in a float field`);
+    const parts = kind('partsField');
+    if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
+  }
+
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
     // Answer rules: each condition and rule across fields reads, each pattern is a regular expression.
@@ -776,6 +794,7 @@ export class ReferenceCheck {
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
+    if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order) {
       if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
