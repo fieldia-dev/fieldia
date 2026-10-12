@@ -39,6 +39,15 @@ export default featurePage({
       tryIt: ['Try the list', demo('page=customers&skin=underline')], docs: ['Lists and search, in the docs', '/lists/'],
     },
     {
+      id: 'map',
+      no: 'On a map',
+      title: 'Where each record is, beside the table',
+      body: 'Add a map to the list and its records are on it too: a price, a name or an icon on each pin, a card with the record’s picture, crowded pins as one bubble, and Search this area for where the map is.',
+      ticks: ['Pins that say something: a price, a name, a car, a face', 'A pin lights its row and a row its pin; one search, one choice', 'Search this area, once the map is moved', 'Any provider: Azure Maps, Google, Mapbox, your own'],
+      shot: 'map.jpg', alt: 'Homes in Cairo as a list beside their map: a price on each pin, a bubble of 48 homes, the first row’s price lifted over it', width: 1280, height: 700,
+      tryIt: ['Try the homes', demo('page=map-homes&skin=underline')], docs: ['Lists on a map, in the docs', '/lists/#map'],
+    },
+    {
       id: 'arabic',
       no: 'In any language',
       title: 'Right to left, from the search bar to the last column',

@@ -51,6 +51,7 @@ ${code(
     <tr><td>${c('filters')} · ${c('defaultFilters')}</td><td>Named filters for the menu, and the ones the list starts with. A filter compares with values, never with another field.</td></tr>
     <tr><td>${c('groupBy')}</td><td>The fields the menu offers to group by.</td></tr>
     <tr><td>${c('actions')}</td><td>Buttons for the records chosen. A ${c('confirm')} asks first.</td></tr>
+    <tr><td>${c('map')}</td><td>The records on a map too, beside the table or instead of it: see <a href="#map">on a map</a>.</td></tr>
   </tbody>
 </table>
 <p>A list shows records, so its page's ${c('data')} is a record's: the page check refuses a list of responses, and a column, a sort, a search field or a group that names no field.</p>
@@ -87,6 +88,44 @@ mountViewer(host, {
 });`
 )}
 <p>In React it is the ${c('onOpenRecord')} prop, in Vue the ${c('@open-record')} event, in Angular the ${c('(openRecord)')} output. After a button, the list asks for its records again.</p>
+
+<h2 id="map">On a map</h2>
+<p>With ${c('map')}, a list shows its records on a map as well, drawn by ${c('@fieldia/map')} on the provider the app chooses. The map and the table share one search and one choice: a pin lights its row and a row its pin, a home chosen on its card is ticked in the table, and the list's buttons act on it. A pin opens a card with the record's picture, a few of its fields, a box to choose it and a button to open it; pins that crowd become a bubble with their count. Once the map is moved, <em>Search this area</em> puts the area into the search bar as a search of its own.</p>
+${code(
+  'json',
+  `
+"map": {
+  "latitude": "lat",
+  "longitude": "lng",
+  "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
+  "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms", "district"] },
+  "view": "both"
+}`
+)}
+<table>
+  <thead><tr><th>Key</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>${c('point')} · ${c('latitude')} ${c('longitude')}</td><td>Where each record is: a ${c('json')} field holding a GeoJSON Point, or two number fields. A record with neither is left off the map, and the map says how many are.</td></tr>
+    <tr><td>${c('pin')}</td><td>Its ${c('look')} — ${c('pin')}, ${c('label')} (its words: a price, a name, minutes away), ${c('icon')} (a car, a scooter, a bike, a shop, Fieldia's own or the app's), ${c('photo')} (a round picture, a courier's face), ${c('dot')}; ${c('label')} the field it says, short as a pin needs (<em>E£9.5M</em>); ${c('icon')}, or ${c('iconField')} for each record's own; ${c('image')}; ${c('turn')}, a number field in degrees, which way it faces; ${c('tones')}, its colour while a condition holds, as a field's are; or ${c('widget')}, the app's own pin by name.</td></tr>
+    <tr><td>${c('card')}</td><td>Its ${c('title')} (the first column when left out), its ${c('image')}, the ${c('fields')} it shows, and ${c('open')}: a button to open the record unless ${c('false')}.</td></tr>
+    <tr><td>${c('cluster')}</td><td>Pins that crowd become a bubble, unless ${c('false')}.</td></tr>
+    <tr><td>${c('view')}</td><td>How the list opens: ${c('list')}, ${c('map')} or ${c('both')} side by side (the map over the table on a narrow screen). People switch between them over the records.</td></tr>
+    <tr><td>${c('limit')}</td><td>The most records the map shows, 500 when left out; past it, the map says how many it shows of how many.</td></tr>
+  </tbody>
+</table>
+<p>The app gives the list its map, as it gives the viewer widgets:</p>
+${code(
+  'ts',
+  `
+import { mapListViews, azureMaps } from '@fieldia/map';
+
+mountViewer(host, {
+  page: homes,
+  dataSource,
+  listViews: mapListViews({ provider: azureMaps({ key }), center: { lat: 30.04, lng: 31.24 } }),
+});`
+)}
+<p>An app's own pin is a function given by name, ${c("pins: { courier: (record, { document }) => element }")}, and drawn wherever a page says ${c('"widget": "courier"')}. <em>Search this area</em> asks the data source for the records within the map's view: ${c('between')} on a latitude and a longitude, or the ${c('within')} condition on a point, ${c('{ south, west, north, east }')} in degrees, which ${c('createMemoryDataSource()')} answers and a server's adapter turns into its own query. <a href="/demos/plain/?page=map-homes&skin=outlined">Try the homes</a> · <a href="/demos/plain/?page=map-couriers&skin=outlined">try the couriers</a>.</p>
 
 <h2 id="details">What it takes care of</h2>
 <ul>

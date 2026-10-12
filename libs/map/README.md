@@ -1,8 +1,8 @@
 # @fieldia/map
 
 [Fieldia](https://fieldia.dev)'s maps: a **place** and an **area** as fields of a
-form, on the map provider you choose. Built on [Leaflet](https://leafletjs.com),
-loaded only when a map is shown.
+form, and a **list's records on a map**, on the map provider you choose. Built
+on [Leaflet](https://leafletjs.com), loaded only when a map is shown.
 
 ```sh
 npm install @fieldia/map
@@ -53,6 +53,48 @@ the whole area drags to move it, and a point between two adds one.
 Options: `shapes` (any of polygon, box, circle), `areas` (named areas to choose
 instead of drawing), `height`.
 
+## A list on a map
+
+A list page with `map` shows its records on a map too, beside the table or
+instead of it, sharing its search and its records chosen: a pin lights its row
+and a row its pin, a pin opens a card (a picture, a few fields, Choose, Open),
+pins that crowd become a bubble with their count, and "Search this area" puts
+the map's view into the search bar.
+
+```ts
+import { mapListViews, azureMaps } from '@fieldia/map';
+
+mountViewer(host, { page, dataSource, listViews: mapListViews({ provider: azureMaps({ key }) }) });
+```
+
+```json
+"map": {
+  "latitude": "lat", "longitude": "lng",
+  "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
+  "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms"] },
+  "view": "both"
+}
+```
+
+Where each record is: `point` (a json field holding a GeoJSON Point), or
+`latitude` and `longitude`. A pin's `look` is `pin`, `label`, `icon`, `photo`
+or `dot`; `label` names the field it says (an amount or a number written short,
+"E£9.5M"), `icon` or `iconField` its icon (the map's own car, arrow, scooter,
+bike, bus, person, shop, food and flag, Fieldia's, or the app's `icons`),
+`image` its photo, `turn` a number field in degrees (a car seen from above
+turns whole; other icons keep upright, a pointer on their edge turning), and
+`tones` its colour by condition. `widget` names the app's own pin, given as
+`mapListViews({ pins: { name: (record, { document }) => element } })`. `card`
+takes `title`, `image`, `fields` and `open`; `cluster: false` keeps every pin
+apart; `view` is `list`, `map` or `both`; `limit` is 500 unless said.
+
+"Search this area" asks for `between` on a latitude and a longitude, or the
+`within` condition on a point: `{ south, west, north, east }` in degrees, west
+beyond east across the antimeridian.
+
+A form with only a place or an area never carries the list map's code, its
+styles or its words.
+
 ## Without a mouse
 
 Tab reaches the map, which shows a cross at its centre: the arrow keys move the
@@ -62,6 +104,10 @@ finishes, Backspace takes a point back, Escape stops; a grip moves with the
 arrow keys and leaves with Delete. A scroll passes over a map to the page
 unless Ctrl (⌘) is held, and on a phone one finger scrolls the page while two
 move the map.
+
+On a list's map, Tab goes from the map to each pin and bubble by its name;
+Enter or Space opens a pin's card (Ctrl or ⌘ with it chooses the record) or
+zooms into a bubble, and Escape closes the card, back on its pin.
 
 ## Providers
 
@@ -94,6 +140,11 @@ search with any provider.
 ## In the designer
 
 `mapKinds({ locale })` gives the designer Place and Area for its toolbox, with
-their settings; pass the map widgets to the designer and its editors too.
+their settings (a place's address search, "My location", the field its address
+goes into, the map's height; an area's shapes); pass the map widgets to the
+designer and its editors too. A list page's panel has its Map: where each
+record is, its pins, its card, and how the list opens. Give the screen editor
+`listViews` (and `sampleCentre`, where its made-up records are) and Try it shows
+the map too.
 
 MIT. Leaflet is BSD-2-Clause; its stylesheet is included with its licence.

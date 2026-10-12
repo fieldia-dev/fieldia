@@ -95,6 +95,13 @@ const SHOTS = [
       await page.waitForTimeout(300);
     } },
   { file: 'lists/arabic.png', query: 'page=customers&skin=underline&locale=ar&dir=rtl', width: 1280, height: 600 },
+  // The homes beside their map, a row pointed at: its price lifted over the bubble it is in. The map's images load from
+  // OpenStreetMap; a JPEG, as a map's pictures are a quarter the size that way.
+  { file: 'lists/map.jpg', query: 'page=map-homes&skin=underline', width: 1280, height: 700, settle: 2500, before: async (page) => {
+      await page.locator('.fd-map-list .leaflet-tile-loaded').first().waitFor();
+      await page.locator('.fd-list-row').first().hover();
+      await page.waitForTimeout(600);
+    } },
 
   // ---- looks and languages ----
   // The gallery's first two rows: four themes.
@@ -157,7 +164,7 @@ try {
       });
       await page.screenshot({ path, animations: 'disabled', fullPage: true, clip: { ...box, height: shot.maxHeight } });
     } else if (shot.node) await page.locator(shot.node).first().screenshot({ path, animations: 'disabled' });
-    else await page.screenshot({ path, animations: 'disabled' });
+    else await page.screenshot({ path, animations: 'disabled', ...(path.endsWith('.jpg') ? { quality: 86 } : {}) });
     console.log(`shot ${shot.file}`);
     await page.close();
   }
