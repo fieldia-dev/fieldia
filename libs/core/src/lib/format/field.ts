@@ -167,6 +167,35 @@ const Integer = z
 const Float = z
   .object({ type: z.literal('float'), ...common, min: z.number().optional(), max: z.number().optional(), digits })
   .strict();
+/** The spans of time an amount can be for: a rent's month, a holiday flat's night. */
+export const PERIODS = ['day', 'night', 'week', 'month', 'year'] as const;
+export type Period = (typeof PERIODS)[number];
+
+/**
+ * How an amount is written where it is read rather than typed — a list's
+ * cell, a field shown as words, a map's card and pins: its currency by its
+ * symbol ("E£", "$": the default) or by its code ("EGP"), before the amount
+ * or after it (where the page's language puts it, unless said), short
+ * ("13.9M", "13.9 مليون"); the home currency left unsaid, so only another
+ * is named; and what the amount is for while a condition holds on the
+ * record, the first that holds: "/month" on a rent. Digits stay Latin, as
+ * everywhere in Fieldia. Left out, an amount is written as it always was.
+ */
+export const MoneyLookSchema = z
+  .object({
+    currency: z.enum(['symbol', 'code']).optional(),
+    at: z.enum(['before', 'after']).optional(),
+    short: z.boolean().optional(),
+    home: z.string().regex(/^[A-Z]{3}$/, 'a home currency is a code of three capitals, such as EGP').optional(),
+    per: z
+      .array(z.object({ period: z.enum(PERIODS), when: z.string().min(1).optional() }).strict())
+      .min(1)
+      .optional(),
+  })
+  .strict()
+  .meta({ id: 'MoneyLook' });
+export type MoneyLook = z.infer<typeof MoneyLookSchema>;
+
 const Monetary = z
   .object({
     type: z.literal('monetary'),
@@ -178,6 +207,8 @@ const Monetary = z
     min: z.number().optional(),
     max: z.number().optional(),
     digits,
+    /** How the amount is written where it is read: see `MoneyLookSchema`. */
+    money: MoneyLookSchema.optional(),
   })
   .strict();
 const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict();

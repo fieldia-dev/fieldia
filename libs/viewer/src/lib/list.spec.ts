@@ -39,6 +39,16 @@ describe('a list of records', () => {
     expect(button(host, 'Next page')?.disabled).toBe(true);
   });
 
+  it('writes an amount as its field’s money look says, asking for the fields its condition reads though they are no column', async () => {
+    const credit = { ...customers.fields['credit_limit'], money: { currency: 'code', at: 'after', per: [{ period: 'month', when: "state == 'active'" }] } };
+    const page = { ...customers, fields: { ...customers.fields, credit_limit: credit }, layout: { ...customers.layout, columns: ['name', 'credit_limit'] } } as Page;
+    const host = await mount({}, page);
+    expect(rows(host).map(cells)).toEqual([
+      ['Amira Clinics', '50,000.00\u00a0EGP'],
+      ['Nile Traders', '250,000.00\u00a0EGP/month'],
+    ]);
+  });
+
   it('keeps each value in its own direction, so a phone number reads the same right to left', async () => {
     const host = await mount({ locale: 'ar' });
     const cell = rows(host)[0].querySelectorAll('td')[4];

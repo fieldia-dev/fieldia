@@ -1,6 +1,6 @@
 import type { Alert, Badge, ButtonNode, Field, MenuItem, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, nextName, shownFields } from './page-tree';
+import { allIds, keptFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 import { hotkeyFrom } from './hotkey-setting';
 
@@ -147,10 +147,10 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
     draft.fields[name] = own;
     return own;
   };
-  /** Drop the fields nothing on the page shows any more. */
+  /** Drop the fields nothing on the page shows any more, but for what a shown amount reads. */
   const prune = (draft: Page) => {
-    const shown = shownFields(draft);
-    for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
+    const kept = keptFields(draft);
+    for (const name of Object.keys(draft.fields)) if (!kept.has(name)) delete draft.fields[name];
   };
   const partOf = (draft: Page, id: string) => {
     let found = findHeaderPart(draft, id);

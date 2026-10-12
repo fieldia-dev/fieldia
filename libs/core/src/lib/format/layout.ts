@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
+import { FIELD_NAME, FilterItemSchema, MoneyLookSchema, type FilterItem, type MoneyLook } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
@@ -915,15 +915,47 @@ export interface Pin {
   turn?: string;
   /** The app's own widget for the pin, by name, drawn from the record. */
   widget?: string;
+  /**
+   * How an amount on the pin is written, over its field's own `money`: short
+   * unless `short` is false, the home currency left unsaid ("13.9M", "$ 450K")
+   * — the map's settings' `homeCurrency` unless this says — and what it is
+   * for while a condition holds ("/month" on a rent).
+   */
+  money?: MoneyLook;
 }
+
+/** Words after a number, in the plural it needs ("1 bed", "4 beds"): by the language's plural forms, `other` for any it lacks. */
+export interface PluralWords {
+  zero?: string;
+  one?: string;
+  two?: string;
+  few?: string;
+  many?: string;
+  other: string;
+}
+
+/** A part of a card's line: a field, or a field with words after its value ("280 m²", "4 beds"). */
+export type CardPart = string | { field: string; unit?: string | PluralWords };
+
+/** A line of a card: one part, or several on one line parted by a dot ("Sheikh Zayed · 4 beds · 280 m²"). */
+export type CardLine = CardPart | CardPart[];
 
 /** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
 export interface MapCard {
   title?: string;
   image?: string;
-  fields?: string[];
+  /** Its lines, in order: a field, a field with words after it, or several on one line. */
+  fields?: CardLine[];
   /** A button to open the record; on unless false. */
   open?: boolean;
+  /** Each line's label beside its value; shown unless false. Hidden, a screen reader still says them. */
+  labels?: boolean;
+  /** The first line leads: larger and bold, as a home's price heads its card. */
+  lead?: boolean;
+  /** A field holding the record's address on the web: its title and picture are links there, to open in a new tab or copy. */
+  href?: string;
+  /** A box to choose the record, as its row's; on unless false. A map people only look at, a buyer's, has none. */
+  choose?: boolean;
 }
 
 /** A list's records on a map: where each one is, its pin and its card. */
@@ -1148,17 +1180,31 @@ export const PinSchema = z
     tones: z.array(ToneWhenSchema).min(1).optional(),
     turn: fieldName.optional(),
     widget: z.string().min(1).optional(),
+    money: MoneyLookSchema.optional(),
   })
   .meta({ id: 'Pin' });
 
-/** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
+export const PluralWordsSchema = z
+  .strictObject({ zero: z.string().optional(), one: z.string().optional(), two: z.string().optional(), few: z.string().optional(), many: z.string().optional(), other: z.string() })
+  .meta({ id: 'PluralWords' });
+/** A part of a card's line: a field, or a field with words after its value. */
+export const CardPartSchema = z
+  .union([fieldName, z.strictObject({ field: fieldName, unit: z.union([z.string(), PluralWordsSchema]).optional() })])
+  .meta({ id: 'CardPart' });
+
+/** The card a pin opens: its record's title, a picture, its lines, a link, and ways to choose and open it. */
 export const MapCardSchema = z
   .strictObject({
     title: fieldName.optional(),
     image: fieldName.optional(),
-    fields: z.array(fieldName).min(1).optional(),
+    /** Its lines: a part, or several parts on one line. */
+    fields: z.array(z.union([CardPartSchema, z.array(CardPartSchema).min(1)])).min(1).optional(),
     /** A button to open the record (on unless false). */
     open: z.boolean().optional(),
+    labels: z.boolean().optional(),
+    lead: z.boolean().optional(),
+    href: fieldName.optional(),
+    choose: z.boolean().optional(),
   })
   .meta({ id: 'MapCard' });
 

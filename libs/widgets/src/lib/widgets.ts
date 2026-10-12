@@ -293,8 +293,9 @@ const numberWidget: WidgetFactory = (context) => {
       : null;
   if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
   if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
-  // Inside the box: the currency where the page's language writes it, unless the page says before or after; a number's unit (options.prefix, options.suffix).
-  const after = options['symbol'] ? options['symbol'] === 'after' : field.type === 'monetary' && currencySymbol(field.currency ?? 'USD', locale).after;
+  // Inside the box: the currency where the page's language writes it, unless the page says before or after (here, or in the field's money look); a number's unit (options.prefix, options.suffix).
+  const look = field.type === 'monetary' ? field.money : undefined;
+  const after = options['symbol'] ? options['symbol'] === 'after' : look?.at ? look.at === 'after' : field.type === 'monetary' && currencySymbol(field.currency ?? 'USD', locale).after;
   const unit = (text: string, n: number) => make(document, 'span', { class: `fd-unit${field.type === 'monetary' ? ' fd-currency' : ''}`, id: `${id}-unit${n}` }, text);
   const currency = field.type === 'monetary' && !picker ? unit('', 0) : null;
   const [prefix, suffix] = ['prefix', 'suffix'].map((key, n) => (typeof options[key] === 'string' && options[key] ? unit(options[key] as string, n + 1) : null));
@@ -325,7 +326,8 @@ const numberWidget: WidgetFactory = (context) => {
       }
       if (currency && field.type === 'monetary') {
         const code = currencyOf(field, state.values, state.parent) ?? '';
-        setText(currency, /^[A-Z]{3}$/.test(code) ? currencySymbol(code, locale).text : code);
+        // By its symbol, or its code when the field's money look says so.
+        setText(currency, /^[A-Z]{3}$/.test(code) && look?.currency !== 'code' ? currencySymbol(code, locale).text : code);
       }
       // Room in the box for its units, as wide as their words.
       for (const [u, side] of [[first, 'start'], [last, 'end']] as const) if (u && units.includes(u)) input.style.setProperty(`padding-inline-${side}`, `calc(var(--fd-pad-x) + ${u.textContent?.length ?? 0}ch + 4px)`);

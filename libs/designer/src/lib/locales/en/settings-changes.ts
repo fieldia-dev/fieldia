@@ -23,6 +23,9 @@ export const settingsChanges = {
   daysBefore: (n: number) => `${n} day${s(n)} before today`,
   usualDecimals: 'the usual decimals',
   decimals: (n: number) => `${n} decimal${s(n)}`,
+  /** How an amount is written where it is read, by an example: "written as 1,610,000 EGP". */
+  writtenAs: (example: string) => `written as ${example}`,
+  writtenAsUsual: 'written as usual',
   /** The days of the week, Monday first. */
   dayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as readonly string[],
   notOn: (days: readonly string[]) => `not on ${orList(days)}`,

@@ -1,5 +1,6 @@
 import type { LineField, Locale, Value } from '@fieldia/core';
 import { formatMoney, formatNumber } from './numbers';
+import { writeMoney } from './money';
 import { shownNumber } from './duration';
 import { distributionWords } from './distribution';
 
@@ -49,6 +50,8 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return number(Number(value), def.digits?.[1] ?? 2);
     case 'monetary': {
       const currency = currencyOf(def, values, parent);
+      // As the page's money look writes it, when it has one: by code, after, short, per month.
+      if (def.money) return writeMoney(Number(value), currency, def.digits?.[1] ?? 2, locale, def.money, values);
       // Its currency's symbol, as the amount's own box shows it.
       return currency ? formatMoney(Number(value), currency, def.digits?.[1] ?? 2, locale) : number(Number(value), def.digits?.[1] ?? 2);
     }

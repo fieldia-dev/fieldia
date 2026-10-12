@@ -21,6 +21,8 @@ export const settingsChanges: DesignerWords['settingsChanges'] = {
   daysBefore: (n) => `${days(n)} قبل اليوم`,
   usualDecimals: 'المنازل العشرية المعتادة',
   decimals: (n) => plural('ar', n, { zero: 'بلا منازل عشرية', one: 'منزلة عشرية واحدة', two: 'منزلتان عشريتان', few: '# منازل عشرية', many: '# منزلة عشرية', other: '# منزلة عشرية' }),
+  writtenAs: (example) => `يُكتب هكذا: ${example}`,
+  writtenAsUsual: 'يُكتب كالمعتاد',
   dayNames: ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'],
   notOn: (names) => `ليس يوم ${listOf('ar', names, 'or')}`,
   anyWeekday: 'أي يوم من الأسبوع',

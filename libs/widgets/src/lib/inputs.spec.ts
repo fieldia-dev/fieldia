@@ -173,6 +173,14 @@ describe('an amount’s currency', () => {
     const { el } = mountKind({ type: 'monetary' }, { options: {} });
     expect(unit(el).textContent).toBe('');
   });
+
+  it('follows the field’s money look: its code, where the look puts it; the box’s own option still wins', () => {
+    const code = mountKind({ type: 'monetary', currency: 'EGP', money: { currency: 'code', at: 'after' } }).el;
+    expect(unit(code).textContent).toBe('EGP');
+    expect(order(code)).toEqual(['INPUT', 'SPAN']);
+    expect(order(mountKind({ type: 'monetary', currency: 'EGP', money: { at: 'after' } }, { options: { symbol: 'before' } }).el)).toEqual(['SPAN', 'INPUT']);
+    expect(unit(mountKind({ type: 'monetary', currency: 'EGP', money: { short: true } }).el).textContent).toBe('E£');
+  });
 });
 
 describe('a rating’s look', () => {

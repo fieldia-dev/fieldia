@@ -20,8 +20,8 @@ describe('a list page on a map', () => {
     const designer = createDesigner({ page: homes, model });
     expect(designer.removeColumn('bedrooms')).toBe(true);
     expect(designer.setListOptions({ searchFields: [], groupBy: [] })).toBe(true);
-    // Where each home is, its pin's price, its card's picture and lines, and what its pin's tone reads.
-    for (const name of ['lat', 'lng', 'price', 'photo', 'bedrooms', 'area_m2', 'district', 'offer']) expect([name, name in designer.getPage().fields]).toEqual([name, true]);
+    // Where each home is, its pin's price, its card's picture, lines and link, and what its pin's tone reads; and what the price reads, its currency.
+    for (const name of ['lat', 'lng', 'price', 'photo', 'bedrooms', 'area_m2', 'district', 'offer', 'link', 'currency']) expect([name, name in designer.getPage().fields]).toEqual([name, true]);
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
@@ -31,6 +31,9 @@ describe('a list page on a map', () => {
     expect(list(designer).map).toEqual({ latitude: 'lat', longitude: 'lng', pin: { label: 'price' }, view: 'both' });
     expect(designer.getPage().fields['lat']).toEqual(model['lat']);
     expect(designer.getPage().fields['price']).toEqual(model['price']);
+    // An amount comes with what its words read: its currency's field, and its rent's condition's.
+    expect(designer.getPage().fields['currency']).toEqual(model['currency']);
+    expect(designer.getPage().fields['offer']).toEqual(model['offer']);
     expect(validatePage(designer.getPage()).ok).toBe(true);
     // One GeoJSON point instead: the two numbers leave.
     expect(designer.setListOptions({ map: { point: 'spot', view: 'map' } })).toBe(true);
@@ -68,6 +71,8 @@ describe('the list’s Map, in its panel', () => {
     const tick = map.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
     return { designer, map, control, shown, tick };
   }
+  /** A tick box by the words beside it. */
+  const ticked = (map: HTMLElement, words: string) => [...map.querySelectorAll('label')].find((l) => l.textContent === words)!.querySelector<HTMLInputElement>('input')!;
   const change = (input: HTMLInputElement | HTMLSelectElement, value?: string) => {
     if (value !== undefined) input.value = value;
     else if (input instanceof HTMLInputElement) input.checked = !input.checked;
@@ -112,13 +117,57 @@ describe('the list’s Map, in its panel', () => {
     expect(list(designer).map?.pin).toMatchObject({ look: 'icon', icon: 'car', turn: 'bedrooms' });
     change(control<HTMLSelectElement>('Card picture'), 'photo');
     change(control<HTMLSelectElement>('Opens as'), 'map');
-    change(map.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[1]);
+    change(ticked(map, 'Pins that crowd become a bubble'));
     expect(list(designer).map).toMatchObject({ card: { image: 'photo' }, view: 'map', cluster: false });
     // The card's fields, as chips taken off one by one.
     designer.setListOptions({ map: { ...list(designer).map!, card: { image: 'photo', fields: ['price', 'district'] } } });
     map.querySelector<HTMLButtonElement>('[aria-label="Take Price off the card"]')!.click();
     expect(list(designer).map?.card).toEqual({ image: 'photo', fields: ['district'] });
     expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('sets a card for a map people only look at: bare lines, the first leading, a link, no box to choose', () => {
+    const fields = { ...model, link: { type: 'char', label: 'Link' } } as Record<string, Field>;
+    const { designer, control, map } = mount(blankPage('list', 'Homes'), fields);
+    designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng', card: { fields: ['price', ['district', { field: 'bedrooms', unit: 'beds' }]] } } });
+    // Each line a chip, several fields on one line named together, and taken off whole.
+    expect([...map.querySelectorAll('.fd-chip')].map((c) => c.firstChild?.textContent)).toEqual(['Price', 'District · Bedrooms']);
+    expect(ticked(map, 'Labels beside the card’s lines').checked).toBe(true);
+    expect(ticked(map, 'A box on the card to choose the record').checked).toBe(true);
+    change(ticked(map, 'Labels beside the card’s lines'));
+    change(ticked(map, 'The first line large and bold'));
+    change(ticked(map, 'A box on the card to choose the record'));
+    change(control<HTMLSelectElement>('Card links to the address in'), 'link');
+    expect(list(designer).map?.card).toEqual({ fields: ['price', ['district', { field: 'bedrooms', unit: 'beds' }]], labels: false, lead: true, choose: false, href: 'link' });
+    expect(designer.getPage().fields['link']).toEqual(fields['link']);
+    map.querySelector<HTMLButtonElement>('[aria-label="Take District · Bedrooms off the card"]')!.click();
+    expect(list(designer).map?.card?.fields).toEqual(['price']);
+    // Back to the usual: said by leaving it out.
+    change(ticked(map, 'Labels beside the card’s lines'));
+    change(ticked(map, 'The first line large and bold'));
+    change(ticked(map, 'A box on the card to choose the record'));
+    change(control<HTMLSelectElement>('Card links to the address in'), '');
+    expect(list(designer).map?.card).toEqual({ fields: ['price'] });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('leaves a pin’s home currency unsaid, offered when the pin says an amount', () => {
+    const { designer, control, shown } = mount(blankPage('list', 'Homes'));
+    designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng', pin: { label: 'name' } } });
+    expect(shown(control('Home currency, unsaid on pins'))).toBe(false);
+    change(control<HTMLSelectElement>('Each pin shows'), 'price');
+    const home = control<HTMLInputElement>('Home currency, unsaid on pins');
+    expect(shown(home)).toBe(true);
+    // Saved once it is three letters; empty takes it away.
+    home.value = 'eg';
+    home.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(list(designer).map?.pin).toEqual({ label: 'price' });
+    home.value = 'egp';
+    home.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(list(designer).map?.pin).toEqual({ label: 'price', money: { home: 'EGP' } });
+    home.value = '';
+    home.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(list(designer).map?.pin).toEqual({ label: 'price' });
   });
 
   it('ticks its tools, a heat map weighed by a number, and areas by colour from the app’s borders', () => {

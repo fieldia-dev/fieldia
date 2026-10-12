@@ -6,7 +6,7 @@ const ROWS = [
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
   ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
-  ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits'],
+  ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
   ['date', 'A date', 'daterange', 'min, max, days'],
   ['datetime', 'A date and a time', 'daterange, timer', 'min, max, days'],
@@ -298,6 +298,12 @@ ${code(
   <li><strong>A column for some roles.</strong> A cell's ${c('roles')}, as a part's — ${c('["analytic.group_analytic_accounting"]')}, Flectra's ${c('groups=')} on a list's column — hides the whole column, as ${c('hidden')} does, from people holding none of them; their cells are asked nothing. The app names the person's roles (${c('user')}); its server still decides what they may do. In the designer: Line rules, Column shown only to.</li>
 </ul>
 <p>Both the plain table and the grid draw them; the form reads them, so your own widget can too, with ${c('form.lineState(node, key)')} and ${c('form.columnHidden(node, column)')}.</p>
+<p id="money">How an amount is written where it is read — a list's cell, a field shown as words, a map's card and pins — is its field's ${c('money')}: ${c('currency')} ${c('"code"')} writes <em>EGP</em> for <em>E£</em>; ${c('at')} ${c('"before"')} or ${c('"after"')} puts it there instead of where the page's language does; ${c('short')} writes <em>13.9M</em>, <em>13.9 مليون</em> in Arabic; ${c('home')}, a currency's code, leaves that one unsaid and names any other; and ${c('per')} says what the amount is for while a condition holds on the record, the first that holds — ${c('[{ "period": "month", "when": "offer == \'rent\'" }]')} writes <em>25,000 EGP/month</em>, in each of Fieldia's languages (${c('day')}, ${c('night')}, ${c('week')}, ${c('month')}, ${c('year')}). Digits stay Latin, as everywhere in Fieldia, and each amount keeps its own direction: <em>1,610,000 EGP</em> reads the same on an Arabic page, and a symbol such as <em>E£</em> is never turned round. Without ${c('money')}, an amount is written as it always was. The amount's own box follows its ${c('currency')} and ${c('at')}. In the designer: an amount's Currency as, Currency goes and Short.</p>
+${code('json', `
+"price": {
+  "type": "monetary", "label": "Price", "currencyField": "currency", "digits": [16, 0],
+  "money": { "currency": "code", "at": "after", "per": [{ "period": "month", "when": "offer == 'rent'" }] }
+}`)}
 <p>A line's money can be in the record's currency, as Flectra's related ${c('currency_id')}: ${c('"currencyField": "parent.currency_id"')} on a line's monetary field. Its cells, the total under them and the line's dialog follow the record's currency as it changes.</p>
 <p>An answer rule on a table, ${c('{ "distinct": "partner_id" }')}, refuses two lines with one value in that column — a split's payers, each once — as a model's constraint would: "Payer: Mona Adel is on more than one line of Split". Empty cells, sections and notes are left out.</p>
 

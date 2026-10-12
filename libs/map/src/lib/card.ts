@@ -1,12 +1,19 @@
-import type { Locale, MapCard, Page } from '@fieldia/core';
+import { cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
 import { fill, type ListMapLabels, type MapLabels } from './labels';
 import { imageSource, shown, type MapRecord } from './pins';
 
 /**
  * The card a pin opens on a list's map: the record's picture, its title,
- * the few fields the page names, a box to choose it (the same choice as its
+ * the lines the page names, a box to choose it (the same choice as its
  * row's) and a button to open it. Written in the page's direction, though
- * the map under it is left to right; every word goes in as text.
+ * the map under it is left to right; every word goes in as text, and each
+ * of the record's words in its own direction: an English name on an Arabic
+ * page reads as typed, "280 m²" stays "280 m²".
+ *
+ * A page may write its lines bare ("13,900,000 EGP", "Sheikh Zayed · 4 beds
+ * · 280 m²"), their labels kept for a screen reader; lead with the first;
+ * link the title and the picture to the record's own address; and leave the
+ * box to choose off a map people only look at.
  */
 
 export interface CardOptions {
@@ -18,8 +25,8 @@ export interface CardOptions {
   card: MapCard;
   /** The field that names the record. */
   title: string;
-  /** The fields the card shows, in order. */
-  fields: string[];
+  /** The lines the card shows, in order: a field, a field with its words, or several on one line. */
+  fields: CardLine[];
   record: MapRecord;
   /** A box to choose the record, as its row's is: a list's map has one, a form's does not. */
   chosen?: boolean;
@@ -54,31 +61,86 @@ function closeButton(doc: Document, labels: ListMapLabels, close: () => void) {
   return button;
 }
 
+/** A record's address on the web, when a link may go there: a web, mail or phone address, or a path of this site; never a script. */
+export function webAddress(value: Value | undefined): string {
+  const text = typeof value === 'string' ? value.trim() : '';
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(text)?.[1].toLowerCase();
+  return text && (!scheme || ['http', 'https', 'mailto', 'tel'].includes(scheme)) ? text : '';
+}
+
+const plurals = new Map<Locale, Intl.PluralRules>();
+/** The words after a number, in the plural form the page's language gives it: "1 bed", "4 beds". */
+function unitWords(unit: string | PluralWords, value: Value | undefined, locale: Locale): string {
+  if (typeof unit === 'string') return unit;
+  let rules = plurals.get(locale);
+  if (!rules) plurals.set(locale, (rules = new Intl.PluralRules(locale)));
+  const form = typeof value === 'number' ? (rules.select(value) as keyof PluralWords) : 'other';
+  return unit[form] ?? unit.other;
+}
+
+/** A part of a line as words: its value as the field shows it, and its own words after it, kept on one line with it. */
+function partWords(page: Page, part: CardLinePart, values: Values, locale: Locale): string {
+  const said = shown(page, part.field, values, locale);
+  if (said === '' || part.unit === undefined) return said;
+  const unit = unitWords(part.unit, values[part.field], locale);
+  return unit ? `${said}\u00a0${unit}` : said;
+}
+
 export function drawCard(options: CardOptions): Card {
-  const { document: doc, page, locale, labels, record } = options;
+  const { document: doc, page, locale, labels, record, card } = options;
   const title = shown(page, options.title, record.values, locale) || String(record.id);
   const element = make(doc, 'div', 'fd-map-card');
   element.dir = options.dir;
   element.setAttribute('role', 'group');
   element.setAttribute('aria-label', title);
   element.dataset['id'] = String(record.id);
+  const href = card.href ? webAddress(record.values[card.href]) : '';
+  /** A link to the record's own address: one a person can open in a new tab, or copy. */
+  const link = (className: string, ...children: Node[]) => {
+    const a = make(doc, 'a', className, ...children);
+    a.href = href;
+    return a;
+  };
 
-  const picture = options.card.image ? imageSource(record.values[options.card.image]) : '';
+  const picture = card.image ? imageSource(record.values[card.image]) : '';
   if (picture) {
     const img = make(doc, 'img', 'fd-map-card-image');
     img.alt = '';
     img.decoding = 'async';
     img.src = picture;
-    element.append(img);
+    // The picture goes where the title does; the title's link is the one the keys and a screen reader reach.
+    if (href) {
+      const to = link('fd-map-card-picture', img);
+      to.tabIndex = -1;
+      to.setAttribute('aria-hidden', 'true');
+      element.append(to);
+    } else element.append(img);
   }
   const body = make(doc, 'div', 'fd-map-card-body');
   const close = closeButton(doc, labels, options.close);
-  body.append(make(doc, 'div', 'fd-map-card-head', make(doc, 'strong', 'fd-map-card-title', title), close));
+  const name = make(doc, 'bdi', '', title);
+  body.append(make(doc, 'div', 'fd-map-card-head', make(doc, 'strong', 'fd-map-card-title', href ? link('fd-map-card-link', name) : name), close));
 
-  const lines = options.fields
-    .map((name) => [page.fields[name]?.label ?? name, shown(page, name, record.values, locale)] as const)
-    .filter(([, value]) => value !== '');
-  if (lines.length) body.append(make(doc, 'dl', 'fd-map-card-fields', ...lines.map(([label, value]) => make(doc, 'div', '', make(doc, 'dt', '', label), make(doc, 'dd', '', value)))));
+  // Each line: its label (or its parts' labels), and its parts, each a value in its own direction, parted by a dot.
+  const lines = cardLines({ fields: options.fields })
+    .map((parts) => parts.map((part) => ({ part, said: partWords(page, part, record.values, locale) })).filter(({ said }) => said !== ''))
+    .filter((parts) => parts.length);
+  if (lines.length) {
+    const list = make(
+      doc,
+      'dl',
+      'fd-map-card-fields',
+      ...lines.map((parts) => {
+        const label = parts.map(({ part }) => page.fields[part.field]?.label ?? part.field).join(' · ');
+        const value = make(doc, 'dd', '', ...parts.flatMap(({ said }, i) => [...(i ? [' · '] : []), make(doc, 'bdi', '', said)]));
+        return make(doc, 'div', '', make(doc, 'dt', '', label), value);
+      })
+    );
+    // Bare values, their labels said to a screen reader alone; the first line leading.
+    if (card.labels === false) list.dataset['labels'] = 'hidden';
+    if (card.lead) list.toggleAttribute('data-lead', true);
+    body.append(list);
+  }
 
   const box = make(doc, 'input', 'fd-map-card-check');
   box.type = 'checkbox';
@@ -94,7 +156,7 @@ export function drawCard(options: CardOptions): Card {
     actions.append(button);
     first = button;
   }
-  if (options.open && options.card.open !== false) {
+  if (options.open && card.open !== false) {
     const open = make(doc, 'button', 'fd-button fd-button-primary fd-map-card-open', labels.openRecord);
     open.type = 'button';
     open.addEventListener('click', () => options.open?.());
@@ -127,8 +189,8 @@ export function drawCrowd(options: {
   element.setAttribute('aria-label', heading);
   const close = closeButton(doc, labels, options.close);
   const items = options.records.map(({ record, name, plain }) => {
-    if (plain) return make(doc, 'li', '', make(doc, 'span', 'fd-map-crowd-item', name));
-    const button = make(doc, 'button', 'fd-map-crowd-item', name);
+    if (plain) return make(doc, 'li', '', make(doc, 'span', 'fd-map-crowd-item', make(doc, 'bdi', '', name)));
+    const button = make(doc, 'button', 'fd-map-crowd-item', make(doc, 'bdi', '', name));
     button.type = 'button';
     button.dataset['id'] = String(record.id);
     button.addEventListener('click', () => options.pick(record));

@@ -202,9 +202,11 @@ test('a pin opens its card: picture, title, fields, a Choose shared with its row
   await expect(card(page).locator('.fd-map-card-title')).toHaveText(name);
   await expect(card(page)).toHaveAttribute('aria-label', name);
   await expect(card(page).locator('img.fd-map-card-image')).toBeVisible();
-  await expect(card(page).locator('dt')).toHaveText(['Price', 'Bedrooms', 'Area, m²', 'District']);
-  await expect(card(page).locator('dd').first()).toHaveText(/^E£\s[\d,]+$/);
-  await expect(card(page).locator('dd').last()).toHaveText('Zamalek');
+  // Its lines bare, their labels kept for a screen reader: the price, then the district, bedrooms and size on one line.
+  await expect(card(page).locator('dt')).toHaveText(['Price', 'District · Bedrooms · Area, m²']);
+  await expect(card(page).locator('dt').first()).toHaveCSS('position', 'absolute');
+  await expect(card(page).locator('dd').first()).toHaveText(/^[\d,]+\s(EGP|USD)(\/month)?$/);
+  await expect(card(page).locator('dd').last()).toHaveText(/^Zamalek · \d\sbedrooms? · \d+\sm²$/);
   // The whole card inside the map: it moved the map to fit.
   const map = (await theMap(page).boundingBox())!;
   const drawn = (await card(page).boundingBox())!;
@@ -227,6 +229,54 @@ test('a pin opens its card: picture, title, fields, a Choose shared with its row
   await card(page).getByRole('button', { name: 'Open' }).click();
   await expect(page).toHaveURL(new RegExp(`page=map-home&.*record=${id}|record=${id}.*page=map-home`));
   await expect(page.locator('.fd-title input')).toHaveValue(name);
+});
+
+/** A home's pin by its id, and what it says. */
+const priceOn = (page: Page, id: number) => page.locator(`.fd-map-list .fd-map-mark[data-id="${id}"] .fd-map-face-text`);
+
+/** Zamalek's six homes, each a pin of its own: closer, until no two crowd into a bubble. */
+async function zamalekApart(page: Page) {
+  await zamalek(page);
+  for (let i = 0; i < 6 && (await bubbles(page).count()); i++) await openABubble(page);
+  await expect(pins(page)).toHaveCount(6);
+}
+
+/** A home's card, opened from its pin by the keys: the pin may stand past the map's edge once the map has zoomed in. */
+async function openCardOf(page: Page, id: number) {
+  await page.locator(`.fd-map-list .fd-map-mark[data-id="${id}"]`).focus();
+  await page.keyboard.press('Enter');
+  await cardShown(page);
+}
+
+test('a price on its pin, short: the pound unsaid, dollars named, a rent by the month; the card leads with it, its name a link to the home’s page', async ({ page }) => {
+  await openList(page);
+  await zamalekApart(page);
+  // Zamalek's six: flats in pounds, a duplex rented in pounds, and a villa and a flat whose owners ask in dollars.
+  await expect(priceOn(page, 2)).toHaveText('10.8M');
+  await expect(priceOn(page, 25)).toHaveText('47K/month');
+  await expect(priceOn(page, 15)).toHaveText('$ 460K');
+  await expect(priceOn(page, 6)).toHaveText('$ 4.6K/month');
+  await expect(priceOn(page, 6)).toHaveAttribute('dir', 'auto');
+  // The table says them in full, by their currency's code after them.
+  await expect(rowOf(page, '15').locator('td').nth(3)).toHaveText('460,000 USD');
+  await expect(rowOf(page, '6').locator('td').nth(3)).toHaveText('4,550 USD/month');
+  await screen(page, 'map-list-prices');
+
+  await openCardOf(page, 15);
+  await expect(card(page).locator('dd')).toHaveText(['460,000 USD', 'Zamalek · 4 bedrooms · 233 m²']);
+  // The price leads: larger and bolder than the line under it.
+  const [lead, next] = await card(page).locator('dd').evaluateAll((all) => all.map((dd) => ({ size: parseFloat(getComputedStyle(dd).fontSize), weight: Number(getComputedStyle(dd).fontWeight) })));
+  expect(lead.size).toBeGreaterThan(next.size);
+  expect(lead.weight).toBeGreaterThan(next.weight);
+  // The name and the picture link to the home's own page, keeping the demo's look: a link to open in a new tab, or copy.
+  const link = card(page).locator('.fd-map-card-title a');
+  await expect(link).toHaveAttribute('href', /^\?page=map-home&skin=outlined&record=15$/);
+  await expect(card(page).locator('a.fd-map-card-picture')).toHaveAttribute('href', /record=15$/);
+  await expect(card(page).locator('a.fd-map-card-picture')).toHaveAttribute('tabindex', '-1');
+  await screen(page, 'map-list-card-link');
+  await link.click();
+  await expect(page).toHaveURL(/page=map-home&skin=outlined&record=15$/);
+  await expect(page.locator('.fd-title input')).toHaveValue('4-bedroom flat in Zamalek');
 });
 
 test('Ctrl-click (⌘-click) chooses a home on the map, a tick on its pin; the close button closes a card', async ({ page }) => {
@@ -257,7 +307,8 @@ test('by the keyboard: Tab reaches each pin by its name, Enter opens its card at
     await expect(focused).toHaveAttribute('aria-label', /^\d+ here\. Zoom in to see them\.$/);
   }
   await expect(focused).toHaveAttribute('role', 'button');
-  await expect(focused).toHaveAttribute('aria-label', /in Zamalek, E£\s[\d,]+$/);
+  // Its name and its price, said in full as its card says it.
+  await expect(focused).toHaveAttribute('aria-label', /in Zamalek, [\d,]+\s(EGP|USD)(\/month)?$/);
   const id = (await focused.getAttribute('data-id'))!;
   // The focused pin lights its row too.
   await expect(rowOf(page, id)).toHaveClass(/fd-list-hot/);
@@ -433,6 +484,44 @@ test('in Arabic, right to left: the map’s words, a card written right to left,
   await expect(card(page).getByRole('button', { name: 'إغلاق' })).toBeVisible();
   await screen(page, 'map-list-arabic');
   expect(await axeFindings(page, 'list map, Arabic')).toEqual([]);
+});
+
+/** Where a text's first letter and its last are drawn: an English name reads left to right even on an Arabic page. */
+const ends = (element: Locator) =>
+  element.evaluate((node) => {
+    const text = node.firstChild as Text;
+    const range = document.createRange();
+    const x = (i: number) => (range.setStart(text, i), range.setEnd(text, i + 1), range.getBoundingClientRect().x);
+    return { first: x(0), last: x(text.length - 1) };
+  });
+
+test('in Arabic, each text in its own direction: an English name as typed, its line’s parts whole, prices in Arabic words with Latin digits', async ({ page }) => {
+  await openList(page, 'plain', `${HOMES}&locale=ar&dir=rtl`);
+  await zamalekApart(page);
+  await expect(priceOn(page, 2)).toHaveText('10.8 مليون');
+  await expect(priceOn(page, 25)).toHaveText('47 ألف/شهر');
+  // A symbol kept whole, isolated left to right: "US$", never "$US".
+  await expect.poll(() => priceOn(page, 6).evaluate((face) => face.textContent)).toBe('\u2066US$\u2069\u00a04.6\u00a0ألف/شهر');
+  // The table's amount reads left to right in its right-to-left row, as Dawarly writes prices.
+  const amount = rowOf(page, '15').locator('td').nth(3).locator('bdi');
+  await expect(amount).toHaveText('460,000 USD');
+  expect((await ends(amount)).first).toBeLessThan((await ends(amount)).last);
+
+  await openCardOf(page, 5);
+  await expect(card(page)).toHaveAttribute('dir', 'rtl');
+  const name = card(page).locator('.fd-map-card-title bdi');
+  await expect(name).toHaveText('3-bedroom flat in Zamalek');
+  // "3-bedroom flat in Zamalek", not "bedroom flat in Zamalek-3": its first letter at its left.
+  const drawn = await ends(name);
+  expect(drawn.first).toBeLessThan(drawn.last);
+  // Each part of the line in its own direction, in the card's order: "175 م²" whole, right to left.
+  const parts = card(page).locator('dd').last().locator('bdi');
+  await expect(parts).toHaveText(['الزمالك', '3 غرف نوم', '175 م²']);
+  const [district, , size] = await parts.evaluateAll((all) => all.map((b) => b.getBoundingClientRect().x));
+  expect(district).toBeGreaterThan(size);
+  await expect(card(page).locator('dd').first()).toHaveText('18,950,000 EGP');
+  await screen(page, 'map-list-arabic-card');
+  expect(await axeFindings(page, 'list map, Arabic, a card open')).toEqual([]);
 });
 
 test('axe finds nothing on the homes, their map and an open card', async ({ page }) => {

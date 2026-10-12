@@ -1,6 +1,6 @@
 import type { ButtonNode, Field, FilterCondition, FilterItem, ListMap, ListNode, Page } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, listMapFields, nextName, shownFields } from './page-tree';
+import { allIds, fieldReads, keptFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 
 /**
@@ -87,11 +87,13 @@ export function listCommands(context: {
     const own = draft.fields[name] ?? model[name];
     if (!own) throw new Refusal((w) => w.refusals.noField(name));
     draft.fields[name] = own;
+    // An amount comes with what its words read: its currency's field, its money look's conditions' fields.
+    for (const read of fieldReads(own)) if (!draft.fields[read] && model[read]) draft.fields[read] = model[read];
     return own;
   };
   const prune = (draft: Page) => {
-    const shown = shownFields(draft);
-    for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
+    const kept = keptFields(draft);
+    for (const name of Object.keys(draft.fields)) if (!kept.has(name)) delete draft.fields[name];
   };
   const filterOf = (list: ListNode, id: string) => {
     const at = (list.filters ?? []).findIndex((f) => f.id === id);

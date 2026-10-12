@@ -29,6 +29,12 @@ export interface MapSettings {
   regions?: Record<string, unknown | (() => unknown)>;
   /** The app's own pins for a list's map, by the name a page's `pin.widget` gives. */
   pins?: Record<string, PinDrawer>;
+  /**
+   * The currency the app's amounts are mostly in, by code ("EGP"): a pin
+   * leaves it unsaid ("13.9M") and names any other ("$ 450K"). A page's own
+   * `money.home`, on the pin or its field, wins over it.
+   */
+  homeCurrency?: string;
   /** The app's own words over the maps', by language. */
   labels?: Partial<Record<Locale, Partial<MapLabels & ListMapLabels & FormMapLabels & AddressLabels>>>;
   /**

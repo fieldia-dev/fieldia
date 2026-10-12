@@ -1,4 +1,5 @@
 import type { Field, FieldNode } from '@fieldia/core';
+import { writeMoney } from '@fieldia/widgets';
 import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import { kindOfField } from './kinds';
 import type { DesignerWords } from './designer-words';
@@ -48,6 +49,12 @@ const FIELD_WORDS: Record<string, Words> = {
   digits: (v, _now, _kind, w) => (v === undefined ? w.usualDecimals : w.decimals((v as number[])[1])),
   days: (v, _now, _kind, w) => (Array.isArray(v) ? w.notOn(w.dayNames.filter((_, i) => !v.includes(i + 1))) : w.anyWeekday),
   default: (v, now, _kind, w) => (now.field.type !== 'date' ? null : v === 'today' ? w.startsToday : w.startsEmpty),
+  // An amount's money look, by an example in its own currency: "written as 1,610,000 EGP".
+  money: (v, now, _kind, w) => {
+    if (!v || now.field.type !== 'monetary') return v ? null : w.writtenAsUsual;
+    const example = writeMoney(1_610_000, now.field.currency ?? 'EGP', now.field.digits?.[1] ?? 2, 'en', { ...(v as object), per: undefined, home: undefined });
+    return w.writtenAs(example.replace(/\u00a0/g, ' '));
+  },
 };
 
 const ICONS = ['heart', 'thumb', 'number'];

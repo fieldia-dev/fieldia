@@ -233,6 +233,13 @@ test.describe('orders by district', () => {
     const map = (await theMap(page).boundingBox())!;
     const zoom = (await tool(page, 'تكبير').boundingBox().catch(() => null)) ?? (await theMap(page).locator('.fd-map-zoom').boundingBox())!;
     expect(zoom.x).toBeLessThan(map.x + map.width / 2);
+    // A district's words over the map: in the page's direction, its name in its own, only ever as text.
+    const spot = await spotOf(page, region(page, 'Zamalek'));
+    await page.mouse.move(spot.x, spot.y);
+    const tip = page.locator('.leaflet-tooltip.fd-map-tip > span');
+    await expect(tip).toHaveAttribute('dir', 'rtl');
+    await expect(tip.locator('bdi')).toHaveText('Zamalek');
+    await expect(tip).toHaveText(/^Zamalek: \d+$/);
   });
 
   test('axe finds nothing with a district lit and the way measured', async ({ page }) => {
@@ -266,6 +273,27 @@ test.describe('orders as a heat map', () => {
     await expect(map.locator('.fd-map-mark').first()).toBeVisible();
     await expect(map.locator('canvas.fd-map-heat')).toBeHidden();
     await expect(map.locator('.fd-map-list-note')).toBeHidden();
+  });
+
+  test('in Arabic, an order’s total on its pin keeps its symbol whole: “E£”, never “£E”', async ({ page }) => {
+    await openMap(page, `${HEAT}&locale=ar&dir=rtl`);
+    for (let i = 0; i < 5; i++) {
+      await tool(page, 'تكبير').click();
+      await page.waitForTimeout(350);
+    }
+    const said = theMap(page).locator('.fd-map-mark .fd-map-face-text').first();
+    await expect(said).toBeVisible();
+    await expect(said).toHaveAttribute('dir', 'auto');
+    // Drawn: its "E" to the left of its "£", as the symbol is written.
+    const drawn = await said.evaluate((face) => {
+      const text = face.firstChild as Text;
+      const range = document.createRange();
+      const x = (i: number) => (range.setStart(text, i), range.setEnd(text, i + 1), range.getBoundingClientRect().x);
+      const at = text.data.indexOf('E£');
+      return { at, e: x(at), pound: x(at + 1) };
+    });
+    expect(drawn.at).toBeGreaterThan(-1);
+    expect(drawn.e).toBeLessThan(drawn.pound);
   });
 
   test('a provider with no satellite images: no Satellite button; Full screen and back', async ({ page }) => {

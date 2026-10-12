@@ -8,7 +8,8 @@ import type { InputLimits } from './input-commands';
  * The text, number and date kinds' settings, in the picked field itself
  * beside the rest of its kind's, and in the side panel the same way: the
  * most characters a box takes, a paragraph's rows and whether it grows; a
- * number's or an amount's range and decimals, and a number's unit; a
+ * number's or an amount's range and decimals, and a number's unit; how
+ * an amount is written where it is read (by code, after it, short); a
  * rating's look and the words at a rating's or a slider's ends; a linear
  * scale made NPS, and coloured as NPS; a date's earliest and latest day,
  * fixed or counted from today, its weekends and its start; a date and
@@ -85,6 +86,25 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
         show(from, own(def, 'min'));
         show(to, own(def, 'max'));
         show(decimals, def.type === 'float' || def.type === 'monetary' ? def.digits?.[1] : undefined);
+      },
+    };
+  }
+
+  /** How an amount is written where it is read: its currency by symbol or code, before or after it, and short ("4.5M"). */
+  function money(): Part {
+    const as = select(w.currencyShown, [['symbol', w.currencyAs.symbol], ['code', w.currencyAs.code]]);
+    as.addEventListener('change', () => designer.setMoneyLook(id, { currency: as.value === 'code' ? 'code' : null }));
+    const at = select(w.currencyGoes, [['', w.currencyWhere.usual], ['before', w.currencyWhere.before], ['after', w.currencyWhere.after]]);
+    at.addEventListener('change', () => designer.setMoneyLook(id, { at: (at.value || null) as 'before' | 'after' | null }));
+    const short = toggle(w.shortAmount, (on) => designer.setMoneyLook(id, { short: on || null }));
+    return {
+      element: row(word(w.currencyShown, as), word(w.currencyGoes, at), short.element),
+      refresh(page, node) {
+        const def = page.fields[node.field];
+        const look = def.type === 'monetary' ? def.money : undefined;
+        show(as, look?.currency ?? 'symbol');
+        show(at, look?.at);
+        short.button.setAttribute('aria-checked', String(!!look?.short));
       },
     };
   }
@@ -354,6 +374,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'number' || kind === 'amount') parts.push(range());
   if (kind === 'number') parts.push(units());
+  if (kind === 'amount') parts.push(money());
   if (kind === 'rating') parts.push(look());
   if (kind === 'rating' || kind === 'slider') parts.push(ends());
   if (kind === 'scale') parts.push(nps());

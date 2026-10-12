@@ -60,7 +60,11 @@ function picture(kind: string, hue: number): FileValue {
   return { name: `${kind}.svg`, type: 'image/svg+xml', size: svg.length, url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` };
 }
 
-/** Sixty-four homes: most with their place, two without one yet. */
+/**
+ * Sixty-four homes: most with their place, two without one yet. Priced in
+ * pounds, but for villas and the dearest homes in Zamalek and New Cairo,
+ * whose owners ask in dollars, as some do.
+ */
 export function sampleHomes(): Record<number, Values> {
   const random = seeded(2026);
   const names = Object.keys(DISTRICTS);
@@ -73,13 +77,17 @@ export function sampleHomes(): Record<number, Values> {
     const bedrooms = kind === 'villa' ? 4 + Math.floor(random() * 3) : 1 + Math.floor(random() * 4);
     const area = Math.round((kind === 'villa' ? 280 : 55) + bedrooms * (kind === 'villa' ? 45 : 32) + random() * 60);
     const perMetre = { zamalek: 95_000, garden_city: 80_000, new_cairo: 60_000, sheikh_zayed: 55_000 }[district] ?? 42_000;
-    const price = rent ? Math.round((area * perMetre) / 250 / 500) * 500 : Math.round((area * perMetre * (0.85 + random() * 0.3)) / 50_000) * 50_000;
+    const pounds = rent ? Math.round((area * perMetre) / 250 / 500) * 500 : Math.round((area * perMetre * (0.85 + random() * 0.3)) / 50_000) * 50_000;
+    const dollars = (district === 'zamalek' || district === 'new_cairo') && (kind === 'villa' || pounds > 20_000_000);
+    // About fifty pounds to the dollar, rounded as an owner rounds a price.
+    const price = dollars ? Math.round(pounds / 50 / (rent ? 50 : 5_000)) * (rent ? 50 : 5_000) : pounds;
     const placed = i !== 17 && i !== 41;
     homes[i + 1] = {
       name: `${bedrooms}-bedroom ${KIND_WORDS[kind]} in ${DISTRICT_LABELS[district]}`,
       kind,
       offer: rent ? 'rent' : 'sale',
       price,
+      currency: dollars ? 'USD' : 'EGP',
       bedrooms,
       area_m2: area,
       district,

@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import type { JsonValue, ListMap, ListRequest, ListResult, RecordId, ResolvedFilter, Values } from '@fieldia/core';
+import { cardLineFields, type JsonValue, type ListMap, type ListRequest, type ListResult, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -83,7 +83,9 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
   const model = page.data.kind === 'record' ? page.data.model : '';
   const title = spec.card?.title ?? node.columns[0];
   const cardFields = spec.card?.fields ?? node.columns.filter((name) => name !== title).slice(0, 4);
-  const pins = makePins({ document: doc, page, locale, pin: spec.pin ?? {}, title, icons: context.icons, drawers: settings.pins });
+  const pins = makePins({ document: doc, page, locale, pin: spec.pin ?? {}, title, icons: context.icons, drawers: settings.pins, homeCurrency: settings.homeCurrency });
+  // A map people only look at, a buyer's: no box on its cards, and a Ctrl-click opens a card as a click does.
+  const chooses = spec.card?.choose !== false;
   const where = spec.point ? [spec.point] : [spec.latitude as string, spec.longitude as string];
   const heatSpec = spec.heat ? (spec.heat === true ? {} : spec.heat) : null;
   const areaSpec = spec.regions;
@@ -92,7 +94,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       ...where,
       ...pins.fields,
       ...(spec.card?.image ? [spec.card.image] : []),
-      ...cardFields.flatMap((name) => withCurrency(page, name)),
+      ...(spec.card?.href ? [spec.card.href] : []),
+      ...cardLineFields({ fields: cardFields }).flatMap((name) => withCurrency(page, name)),
       ...(heatSpec?.weight ? [heatSpec.weight] : []),
       ...(areaSpec ? [areaSpec.field] : []),
     ]),
@@ -426,7 +429,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       fields: cardFields,
       record,
       chosen: context.isChosen(record.id),
-      choose: (on) => context.choose(record.id, on),
+      ...(chooses ? { choose: (on: boolean) => context.choose(record.id, on) } : {}),
       ...(context.open ? { open: () => context.open?.(record.id) } : {}),
       actions: context.actions,
       act: (id, button) => void context.act(id, [record.id], button),
@@ -484,7 +487,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
     const height = face.stands === 'foot' ? face.height : face.height / 2;
     onPress(marker, (event) => {
       // Ctrl (⌘) and a click chooses the record, as in a list of files.
-      if (event && (event.ctrlKey || event.metaKey)) context.choose(record.id, !context.isChosen(record.id));
+      if (chooses && event && (event.ctrlKey || event.metaKey)) context.choose(record.id, !context.isChosen(record.id));
       else openCard(map, L, record, at, height, element ?? null, byKeys(event));
     });
     marker.on('mouseover', () => context.highlight(record.id));

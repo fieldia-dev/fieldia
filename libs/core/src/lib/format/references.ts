@@ -341,6 +341,8 @@ export class ReferenceCheck {
     for (const [name, def] of Object.entries(fields as Record<string, Field | LineField>)) {
       const path = `${base}.${name}`;
       if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines, parent);
+      // What an amount is for, by a condition on the record it is on: "/month" on a rent.
+      if (def.type === 'monetary') def.money?.per?.forEach((item, i) => this.checkModifiers(item, `${path}.money.per[${i}]`, ['when'], scope));
       // A first value worked out, and what a record made from a link starts with: read where this field is.
       if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, scope);
       if ((def.type === 'many2one' || def.type === 'many2many') && def.createValues) {
@@ -501,11 +503,19 @@ export class ReferenceCheck {
       if (pin.iconField !== undefined) this.need(pin.iconField, `${path}.pin.iconField`, scope.fields);
       if (pin.label !== undefined) this.need(pin.label, `${path}.pin.label`, scope.fields);
       pin.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.pin.tones[${i}]`, ['when'], scope));
+      pin.money?.per?.forEach((item, i) => this.checkModifiers(item, `${path}.pin.money.per[${i}]`, ['when'], scope));
     }
     if (card) {
       if (card.title !== undefined) this.need(card.title, `${path}.card.title`, scope.fields);
       typed(card.image, `${path}.card.image`, picture, "a card's picture is an image or binary field");
-      card.fields?.forEach((name, i) => this.need(name, `${path}.card.fields[${i}]`, scope.fields));
+      // A line is a part, or several on one line; a part a field's name, or a field with its words.
+      card.fields?.forEach((line, i) =>
+        (Array.isArray(line) ? line : [line]).forEach((part, j) => {
+          const at = `${path}.card.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`;
+          this.need(typeof part === 'string' ? part : part.field, at, scope.fields);
+        })
+      );
+      typed(card.href, `${path}.card.href`, (type) => type === 'char' || type === 'text', "a card's link is a text field holding a web address");
     }
   }
 

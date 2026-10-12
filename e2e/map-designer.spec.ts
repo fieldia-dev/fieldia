@@ -83,7 +83,15 @@ test('a list on a map, in the screen designer: its Map in the list’s panel, an
   await expect(map.getByLabel('Show the records on a map too')).toBeChecked();
   await expect(map.getByLabel('Where each record is')).toHaveValue('latlng');
   await expect(map.getByLabel('Each pin shows')).toHaveValue('price');
-  await expect(map.locator('.fd-chip')).toHaveText(['Price×', 'Bedrooms×', 'Area, m²×', 'District×']);
+  await expect(map.locator('.fd-chip')).toHaveText(['Price×', 'District · Bedrooms · Area, m²×']);
+  // The card's lines bare, the first leading, its link, and the pins' home currency.
+  await expect(map.getByLabel('Labels beside the card’s lines')).not.toBeChecked();
+  await expect(map.getByLabel('The first line large and bold')).toBeChecked();
+  await expect(map.getByLabel('Card links to the address in')).toHaveValue('link');
+  await expect(map.getByLabel('Home currency, unsaid on pins')).toHaveValue('EGP');
+  await map.getByLabel('A box on the card to choose the record').uncheck();
+  expect((await page_(page)).layout.map.card.choose).toBe(false);
+  await map.getByLabel('A box on the card to choose the record').check();
   await map.getByLabel('Opens as').selectOption({ label: 'The map' });
   expect((await page_(page)).layout.map.view).toBe('map');
   // How it sits in its page: a height of its own, every gesture.

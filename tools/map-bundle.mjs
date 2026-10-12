@@ -53,11 +53,19 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * more, to 42.3. An app of the viewer's carries none of the page of its own:
  * its bundler leaves mountListMap out.
  * `embed`: a site's own page with mountListMap and the providers alone: 29.4.
- * The two together in 0.19 (the address's providers and line ride in the
- * page of its own too): 25.6 for a place and an area, 44.0 for all, 30.0
- * for the page of its own.
+ * A pin's
+ * price as a page says it (short, the home currency unsaid, "/month" on a
+ * rent, named in full to a screen reader), a card's bare lines, several
+ * fields on one line with their words in the plural they need, its lead
+ * line, its link and its box to choose left off, each word of a record in
+ * its own direction, an amount's symbol kept whole on an Arabic page ("E£",
+ * never "£E"), and an area's words given as text — 1.1 more, to 41.0.
+ * All three together in 0.19 (the address, the page of its own, the
+ * money look; the page of its own carries the card's and the pin's money
+ * too): 25.6 for a place and an area, 45.0 for all, 31.1 for the page of
+ * its own.
  */
-const BUDGET = { fields: 25.6, all: 44.0, embed: 30.0, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.6, all: 45.0, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

@@ -178,6 +178,12 @@ export interface WidgetLabels {
   add: string;
   cancel: string;
   loading: string;
+  /** What an amount is for, after it: a rent's "/month" (a money look's `per`). */
+  perDay: string;
+  perNight: string;
+  perWeek: string;
+  perMonth: string;
+  perYear: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -313,6 +319,11 @@ const en: WidgetLabels = {
   add: 'Add',
   cancel: 'Cancel',
   loading: 'Loading…',
+  perDay: '/day',
+  perNight: '/night',
+  perWeek: '/week',
+  perMonth: '/month',
+  perYear: '/year',
 };
 
 /**

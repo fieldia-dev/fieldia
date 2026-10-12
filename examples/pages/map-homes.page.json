@@ -2,7 +2,7 @@
   "fieldia": "0.1",
   "id": "map-homes",
   "title": "Homes in Cairo",
-  "description": "Homes for sale and to rent, as a list and on a map: each price on its pin, rentals in blue, a card for each with its picture.",
+  "description": "Homes for sale and to rent, as a list and on a map: each price on its pin, short, rentals in blue and by the month, a card for each with its picture and a link to its page.",
   "data": { "kind": "record", "model": "home" },
   "fields": {
     "name": { "type": "char", "label": "Home" },
@@ -21,10 +21,17 @@
       "label": "Offer",
       "options": [
         { "value": "sale", "label": "For sale" },
-        { "value": "rent", "label": "For rent, a month" }
+        { "value": "rent", "label": "For rent" }
       ]
     },
-    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [12, 0] },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currencyField": "currency",
+      "digits": [12, 0],
+      "money": { "currency": "code", "at": "after", "per": [{ "period": "month", "when": "offer == 'rent'" }] }
+    },
+    "currency": { "type": "char", "label": "Currency" },
     "bedrooms": { "type": "integer", "label": "Bedrooms" },
     "area_m2": { "type": "integer", "label": "Area, m²" },
     "district": {
@@ -46,6 +53,7 @@
     "lat": { "type": "float", "label": "Latitude" },
     "lng": { "type": "float", "label": "Longitude" },
     "photo": { "type": "image", "label": "Photo" },
+    "link": { "type": "char", "label": "Link" },
     "listed_on": { "type": "date", "label": "Listed on" }
   },
   "layout": {
@@ -65,15 +73,29 @@
     "map": {
       "latitude": "lat",
       "longitude": "lng",
-      "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
-      "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms", "area_m2", "district"] },
+      "pin": {
+        "label": "price",
+        "money": { "home": "EGP", "currency": "symbol", "at": "before" },
+        "tones": [{ "tone": "info", "when": "offer == 'rent'" }]
+      },
+      "card": {
+        "title": "name",
+        "image": "photo",
+        "href": "link",
+        "labels": false,
+        "lead": true,
+        "fields": [
+          "price",
+          ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }, { "field": "area_m2", "unit": "m²" }]
+        ]
+      },
       "view": "both"
     }
   },
   "translations": {
     "ar": {
       "Homes in Cairo": "منازل في القاهرة",
-      "Homes for sale and to rent, as a list and on a map: each price on its pin, rentals in blue, a card for each with its picture.": "منازل للبيع وللإيجار، في قائمة وعلى خريطة: سعر كل منزل على دبوسه، والإيجار بالأزرق، ولكل منزل بطاقة بصورته.",
+      "Homes for sale and to rent, as a list and on a map: each price on its pin, short, rentals in blue and by the month, a card for each with its picture and a link to its page.": "منازل للبيع وللإيجار، في قائمة وعلى خريطة: سعر كل منزل مختصرًا على دبوسه، والإيجار بالأزرق وبالشهر، ولكل منزل بطاقة بصورته ورابط إلى صفحته.",
       "Home": "المنزل",
       "Type": "النوع",
       "Flat": "شقة",
@@ -82,8 +104,12 @@
       "Villa": "فيلا",
       "Offer": "العرض",
       "For sale": "للبيع",
-      "For rent, a month": "للإيجار، شهريًا",
       "Price": "السعر",
+      "Currency": "العملة",
+      "Link": "الرابط",
+      "bedroom": "غرفة نوم",
+      "bedrooms": "غرف نوم",
+      "m²": "م²",
       "Bedrooms": "غرف النوم",
       "Area, m²": "المساحة، م²",
       "District": "الحي",

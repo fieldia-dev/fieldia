@@ -44,18 +44,32 @@
         },
         {
           "value": "rent",
-          "label": "For rent, a month"
+          "label": "For rent"
         }
       ]
     },
     "price": {
       "type": "monetary",
       "label": "Price",
-      "currency": "EGP",
+      "currencyField": "currency",
       "digits": [
         12,
         0
-      ]
+      ],
+      "money": {
+        "currency": "code",
+        "at": "after",
+        "per": [
+          {
+            "period": "month",
+            "when": "offer == 'rent'"
+          }
+        ]
+      }
+    },
+    "currency": {
+      "type": "char",
+      "label": "Currency"
     },
     "bedrooms": {
       "type": "integer",
@@ -210,7 +224,6 @@
       "Villa": "فيلا",
       "Offer": "العرض",
       "For sale": "للبيع",
-      "For rent, a month": "للإيجار، شهريًا",
       "Price": "السعر",
       "Bedrooms": "غرف النوم",
       "Area, m²": "المساحة، م²",
@@ -231,7 +244,9 @@
       "Listed on": "تاريخ العرض",
       "One home of the list: its details, its picture and its place on the map.": "منزل من القائمة: تفاصيله وصورته ومكانه على الخريطة.",
       "Where": "المكان",
-      "Place": "الموقع"
+      "Place": "الموقع",
+      "For rent": "للإيجار",
+      "Currency": "العملة"
     }
   }
 }
