@@ -70,8 +70,9 @@ export const textCodeWidget: WidgetFactory = ({ form, name, field, node, id, doc
         keymap.of([...defaultKeymap, ...historyKeymap]),
         node.placeholder ? placeholder(node.placeholder) : [],
         editable.of([]),
-        // Named by the field's label, like every other field; its state said as the form says it.
-        EditorView.contentAttributes.of({ id, 'aria-labelledby': `${id}-label` }),
+        // Named by the field's label, like every other field; its state said as the form says it. A char
+        // field says it is one line: to assistive technology, and to the form, which moves on from it at Enter.
+        EditorView.contentAttributes.of({ id, 'aria-labelledby': `${id}-label`, ...(line ? { 'aria-multiline': 'false' } : {}) }),
         described.of([]),
         EditorView.updateListener.of((update) => {
           if (!update.docChanged || writing) return;

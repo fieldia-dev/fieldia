@@ -1,7 +1,7 @@
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code)', 'size, pattern'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern'],
   ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
@@ -415,13 +415,14 @@ mountViewer(host, { page, dataSource, widgets: { ...gridWidgets, ...codeWidgets 
 // { "widget": "code" } on a json field, or with { "options": { "language": "python" } } on a text field`
 )}
 <p><strong>VS Code's editor.</strong> ${c('@fieldia/monaco')} draws the same fields in Monaco, VS Code's own editor: find and replace, folding, several cursors, VS Code's keys, in the form's theme. It is large (about 800 KB gzipped), so it loads only when a page has such a field, and the field is a plain text box until then. Language services (checking JSON or TypeScript as it is typed) run when the app hands it their workers.</p>
+<p><strong>One line.</strong> In either editor a ${c('char')} field is one line of code, such as a condition, as tall as a text box and drawn as one: Enter adds no line (it moves on to the next field where the page asks, with ${c('keys: { enterMovesToNext: true }')}), pasted lines join into one, Tab moves on, and the node's placeholder shows while it is empty.</p>
 ${code(
   'ts',
   `
 import { monacoWidgets, createMonacoWidgets } from '@fieldia/monaco';
 
 mountViewer(host, { page, dataSource, widgets: monacoWidgets });
-// { "widget": "monaco", "options": { "language": "typescript" } } on a text field
+// { "widget": "monaco", "options": { "language": "typescript" } } on a text or char field
 // with workers: createMonacoWidgets({ getWorker: (_id, label) => new Worker(…), services: ['json'] })`
 )}
 

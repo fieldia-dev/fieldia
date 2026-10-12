@@ -56,17 +56,28 @@ async function selectAllIn(page: Page, input: Locator) {
 const cm = (page: Page, name: string) => field(page, name).locator('.cm-content');
 const monaco = (page: Page, name: string) => field(page, name).locator('.monaco-editor');
 
-test('the Editor switch shows the same fields in either editor, or each where it fits, and says what stays', async ({ page }) => {
+/** The code page with every code field in VS Code's editor — the one-line condition too — once Monaco has loaded. */
+async function openMonaco(page: Page, query = '', skin = 'outlined') {
+  const opened = await open(page, 'plain', `page=code&skin=${skin}&editor=monaco${query}`);
+  await expect(page.locator('.monaco-editor')).toHaveCount(11);
+  for (const editor of await page.locator('.monaco-editor').all()) await editor.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  return opened;
+}
+/** The one-line condition's input in VS Code's editor, where the keyboard's typing lands. */
+const conditionInput = (page: Page) => monaco(page, 'condition').locator('textarea.inputarea');
+
+test('the Editor switch shows the same fields in either editor, or each where it fits', async ({ page }) => {
   await openCode(page);
   const editor = page.getByRole('navigation', { name: 'Editor' });
   await expect(editor.getByRole('link', { name: 'Both' })).toHaveAttribute('aria-current', 'page');
-  // Every code field in VS Code's editor; the one-line condition stays in CodeMirror, and says why.
+  // Every code field in VS Code's editor, the one-line condition too.
   await editor.getByRole('link', { name: 'VS Code' }).click();
   await expect(page).toHaveURL(/editor=monaco/);
-  await expect(page.locator('.monaco-editor')).toHaveCount(10);
-  await expect(page.locator('.cm-editor')).toHaveCount(1);
-  await expect(field(page, 'condition').locator('.cm-editor')).toHaveCount(1);
-  await expect(field(page, 'condition')).toContainText('VS Code’s editor takes code of several lines: this one-line condition stays in CodeMirror.');
+  await expect(page.locator('.monaco-editor')).toHaveCount(11);
+  await expect(page.locator('.cm-editor')).toHaveCount(0);
+  await expect(monaco(page, 'condition')).toHaveCount(1);
+  await expect(field(page, 'condition').locator('.fd-help')).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Editor' }).getByRole('link', { name: 'VS Code' })).toHaveAttribute('aria-current', 'page');
   // The same fields in CodeMirror, the record's values the same.
   await page.getByRole('navigation', { name: 'Editor' }).getByRole('link', { name: 'CodeMirror' }).click();
@@ -107,6 +118,16 @@ test.describe('code in CodeMirror', () => {
     await page.keyboard.press('Enter');
     await page.keyboard.type(' && b');
     await expect.poll(async () => (await values(page))['condition']).toBe('a > 1 && b');
+  });
+
+  test('a one-line field moves on to the next field at Enter when the page asks, adding nothing', async ({ page }) => {
+    await openCode(page, '&enterToNext=1');
+    const before = (await values(page))['condition'];
+    await cm(page, 'condition').click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    expect(await focusedField(page)).toBe('access');
+    expect((await values(page))['condition']).toBe(before);
   });
 
   test('read-only code cannot be typed in, but can be reached and its text chosen', async ({ page }) => {
@@ -173,6 +194,156 @@ test.describe('code in VS Code’s editor', () => {
     await page.keyboard.press('Escape');
     await expect(find).not.toHaveClass(/\bvisible\b/);
     await expect(monaco(page, 'handler').locator('textarea.inputarea')).toBeFocused();
+  });
+});
+
+test.describe('a one-line field in VS Code’s editor', () => {
+  test('typed in, it stays one line as tall as a text box, no line numbers; Enter adds no line', async ({ page }) => {
+    const { problems } = await openMonaco(page);
+    const condition = monaco(page, 'condition');
+    await selectAllIn(page, condition.locator('.view-lines'));
+    await page.keyboard.type('order.total > 100');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type(' && !order.paid');
+    await expect.poll(async () => (await values(page))['condition']).toBe('order.total > 100 && !order.paid');
+    await expect(condition.locator('.view-line')).toHaveCount(1);
+    await expect(conditionInput(page)).toBeFocused();
+    // Coloured as JavaScript, as it is typed.
+    expect(await colourOf(condition, '100')).toBe(LITERAL.light);
+    // Nothing beside the code: no line numbers, no folding, no gutter.
+    await expect(condition.locator('.line-numbers')).toHaveCount(0);
+    expect(await condition.evaluate((el) => (el.querySelector('.margin') as HTMLElement).getBoundingClientRect().width)).toBe(0);
+    await expect(condition.locator('.minimap')).toBeHidden();
+    // As tall as the text box below it.
+    const frame = field(page, 'condition').locator('.fd-monaco-frame');
+    const owner = page.getByLabel('Owner', { exact: true });
+    expect(Math.abs((await frame.evaluate((el) => el.getBoundingClientRect().height)) - (await owner.evaluate((el) => el.getBoundingClientRect().height)))).toBeLessThanOrEqual(1);
+    await field(page, 'condition').scrollIntoViewIfNeeded();
+    await screen(page, 'code-monaco-one-line', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('a paste with line breaks becomes one line, and one Undo takes it back', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await openMonaco(page);
+    await selectAllIn(page, monaco(page, 'condition').locator('.view-lines'));
+    await page.evaluate(() => navigator.clipboard.writeText('order.total > 100\n  && !order.paid\n'));
+    await page.keyboard.press(`${mod}+V`);
+    await expect.poll(async () => (await values(page))['condition']).toBe('order.total > 100 && !order.paid ');
+    await expect(monaco(page, 'condition').locator('.view-line')).toHaveCount(1);
+    await page.keyboard.press(`${mod}+Z`);
+    await expect.poll(async () => (await values(page))['condition']).toBeNull();
+  });
+
+  test('Tab moves on from it and Shift+Tab comes back, as from any box, typing no tab', async ({ page }) => {
+    await openMonaco(page);
+    const texts = await values(page);
+    await monaco(page, 'runner').locator('.view-lines').click();
+    await page.keyboard.press('Tab');
+    await expect(conditionInput(page)).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await focusedField(page)).toBe('access');
+    await page.keyboard.press('Shift+Tab');
+    await expect(conditionInput(page)).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    expect(await focusedField(page)).toBe('runner');
+    expect(await values(page)).toEqual(texts);
+  });
+
+  test('Enter moves on to the next field when the page asks, adding nothing', async ({ page }) => {
+    await openMonaco(page, '&enterToNext=1');
+    const before = (await values(page))['condition'];
+    await monaco(page, 'condition').locator('.view-lines').click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    expect(await focusedField(page)).toBe('access');
+    expect((await values(page))['condition']).toBe(before);
+  });
+
+  test('Ctrl+Enter saves from it, adding no line', async ({ page }) => {
+    await openMonaco(page);
+    await selectAllIn(page, monaco(page, 'condition').locator('.view-lines'));
+    await page.keyboard.type('order.paid');
+    await page.keyboard.press(`${mod}+Enter`);
+    await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['demo.code.job'][1].condition)).toBe('order.paid');
+    await expect(monaco(page, 'condition').locator('.view-line')).toHaveCount(1);
+  });
+
+  test('Ctrl+F is left to the browser, as in a text box: VS Code’s find has no room in one line', async ({ page }) => {
+    await openMonaco(page);
+    await monaco(page, 'condition').locator('.view-lines').click();
+    await page.keyboard.press(`${mod}+F`);
+    // No find bar of VS Code's opened over the line.
+    await expect(monaco(page, 'condition').locator('.find-widget')).toHaveCount(0);
+    await expect(conditionInput(page)).toBeFocused();
+  });
+
+  test('its placeholder shows while it is empty', async ({ page }) => {
+    await openMonaco(page);
+    await selectAllIn(page, monaco(page, 'condition').locator('.view-lines'));
+    await expect(monaco(page, 'condition').locator('.editorPlaceholder')).toHaveText('order.total > 100');
+    await expect(monaco(page, 'condition').locator('.editorPlaceholder')).toBeVisible();
+    await page.keyboard.type('a');
+    await expect(monaco(page, 'condition').locator('.editorPlaceholder')).toBeHidden();
+  });
+
+  test('read-only, it cannot be typed in, but is reached and read', async ({ page }) => {
+    await openMonaco(page, '&readonly=1');
+    const before = (await values(page))['condition'];
+    await monaco(page, 'condition').locator('.view-lines').click();
+    await expect(conditionInput(page)).toBeFocused();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' && x');
+    await page.keyboard.press('Enter');
+    expect((await values(page))['condition']).toBe(before);
+    await expect(monaco(page, 'condition').locator('.view-lines')).toHaveText(String(before));
+  });
+
+  // Each of these the text box's own look, in the field's frame: its edges, corners, ground and height, and its focus.
+  for (const [skin, query] of [['outlined', ''], ['underline', ''], ['outlined', '&scheme=dark'], ['underline', '&scheme=dark']] as const) {
+    test(`looks like the text box beside it: ${skin}${query ? ', dark' : ''}`, async ({ page }) => {
+      const { problems } = await openMonaco(page, query, skin);
+      const frame = field(page, 'condition').locator('.fd-monaco-frame');
+      const owner = page.getByLabel('Owner', { exact: true });
+      const look = (el: Element) => {
+        const style = getComputedStyle(el);
+        return {
+          border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth, style.borderBottomColor].join(' '),
+          radius: style.borderTopLeftRadius,
+          ground: style.backgroundColor,
+          height: Math.round(el.getBoundingClientRect().height),
+        };
+      };
+      expect(await frame.evaluate(look)).toEqual(await owner.evaluate(look));
+      // The code drawn on the box's ground, not a ground of its own.
+      expect(await monaco(page, 'condition').evaluate((el) => getComputedStyle(el.querySelector('.monaco-editor-background') as Element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+      // Read once the box's change of colour has run its course.
+      const focused = async (el: Element) => {
+        await Promise.all(el.getAnimations().map((animation) => animation.finished));
+        return { edge: getComputedStyle(el).borderBottomColor, ring: getComputedStyle(el).boxShadow };
+      };
+      await owner.focus();
+      const ownerFocused = await owner.evaluate(focused);
+      await monaco(page, 'condition').locator('.view-lines').click();
+      expect(await frame.evaluate(focused)).toEqual(ownerFocused);
+      await field(page, 'condition').scrollIntoViewIfNeeded();
+      await screen(page, `code-monaco-one-line-${skin}${query ? '-dark' : ''}`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
+
+  test('on an Arabic page the code reads left to right, named in Arabic; typing still works', async ({ page }) => {
+    const { problems } = await openMonaco(page, '&dir=rtl&locale=ar');
+    await expect(page.locator('.fd-form').first()).toHaveAttribute('dir', 'rtl');
+    expect(await monaco(page, 'condition').evaluate((el) => getComputedStyle(el).direction)).toBe('ltr');
+    await page.getByLabel('التشغيل عندما').focus();
+    await page.keyboard.press(`${mod}+A`);
+    await page.keyboard.type('a > 1');
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await values(page))['condition']).toBe('a > 1');
+    await field(page, 'condition').scrollIntoViewIfNeeded();
+    await screen(page, 'code-monaco-one-line-arabic', { viewport: true });
+    expect(problems).toEqual([]);
   });
 });
 
@@ -301,6 +472,15 @@ test.describe('the code page, checked by axe', () => {
       await monaco(page, 'notes').locator('.view-lines').click();
       await cm(page, 'script').click();
       expect(await axeFindings(page, `code page ${state}`)).toEqual([]);
+    });
+  }
+  for (const [state, query] of [['light', ''], ['dark', '&scheme=dark']] as const) {
+    test(`every field in VS Code’s editor, the one-line one in use, ${state}`, async ({ page }) => {
+      await openMonaco(page, query);
+      await selectAllIn(page, monaco(page, 'condition').locator('.view-lines'));
+      expect(await axeFindings(page, `code page in VS Code’s editor, ${state}, its one-line field empty`)).toEqual([]);
+      await page.keyboard.type('order.total > 100');
+      expect(await axeFindings(page, `code page in VS Code’s editor, ${state}`)).toEqual([]);
     });
   }
 });

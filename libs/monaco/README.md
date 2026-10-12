@@ -1,9 +1,9 @@
 # @fieldia/monaco
 
-[Fieldia](https://fieldia.dev) text and JSON fields in VS Code's editor,
-[Monaco](https://microsoft.github.io/monaco-editor/): find and replace,
-folding, several cursors, moving lines, VS Code's keys — coloured in the
-language a page names, and wearing the form's theme.
+[Fieldia](https://fieldia.dev) text, one-line and JSON fields in VS Code's
+editor, [Monaco](https://microsoft.github.io/monaco-editor/): find and
+replace, folding, several cursors, moving lines, VS Code's keys — coloured in
+the language a page names, and wearing the form's theme.
 
 ```sh
 npm install @fieldia/monaco
@@ -26,6 +26,9 @@ A node opts in with `"widget": "monaco"`:
   every name `@fieldia/code` takes (`python`, `sql`, `typescript`, `bash`…)
   and Monaco's other grammars besides (GraphQL, SCSS, Elixir, F#, HCL…):
   `MONACO_LANGUAGES` lists them. One Monaco has no grammar for is plain text.
+- `char.monaco`: a `char` field, one line of code in the language
+  `options.language` names, such as a condition:
+  `order.total > 100 && !order.paid`. See [One line](#one-line).
 - `json.monaco`: a `json` field, edited as JSON. Valid JSON reaches the form
   as it is typed; text that is not valid is said so, and the last good value
   stays.
@@ -78,13 +81,33 @@ fields ask for none: `createMonacoWidgets({ getWorker, services: ['json'] })`
 (`json`, `typescript` — JavaScript's too —, `css` — SCSS's and Less's too —
 and `html`).
 
+## One line
+
+A `char` field's editor is one line, as `@fieldia/code`'s is:
+
+- As tall as a text box, in a frame drawn as the form's text boxes are, in
+  either skin and in the dark: no line numbers, no minimap, no folding. A
+  long line scrolls sideways with the caret.
+- Enter adds no line, with Shift, Alt or Ctrl either. Ctrl+Enter (Cmd+Enter
+  on a Mac) saves, as from any field; with the viewer's
+  `keys: { enterMovesToNext: true }`, Enter moves on to the next field, as
+  from a text box. Otherwise Enter does nothing.
+- Pasted lines become one line, as a text box joins them; a paste of line
+  breaks alone adds nothing. A line break that gets in another way — a line
+  copied down, a suggestion of several lines — is joined at once, and Undo
+  takes the join back with it. A value set from elsewhere is shown whole.
+- Ctrl+F opens the browser's find, as in a text box: VS Code's find has no
+  room in one line.
+- The node's `placeholder` shows while it is empty. Its input says it is one
+  line (`aria-multiline="false"`).
+
 ## Every editor
 
 - Tab moves to the next field, as in every field; Ctrl+] and Ctrl+[ indent.
 - Read-only when the field is; required, invalid and its messages said on
   the editor's input, which the field's label names and points at.
-- Grows with its text, from a few lines to a screenful; the page scrolls
-  past it under the mouse wheel.
+- Text and JSON grow with their text, from a few lines to a screenful; the
+  page scrolls past them under the mouse wheel.
 - Its theme is made from Fieldia's tokens as the page has them (theme,
   scheme, accent), and made again when they change. Code is coloured as in
   `@fieldia/code`, light or dark with the page, readable on every theme's

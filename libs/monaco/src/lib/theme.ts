@@ -75,24 +75,30 @@ export function monacoTheme(given: FieldiaColours): MonacoThemeData {
   /** Monaco takes a rule's colour without its #. */
   const fg = (role: keyof FieldiaColours) => c[role].slice(1);
   const see = (role: keyof FieldiaColours, opacity: string) => `${c[role]}${opacity}`;
+  // Each kind's words, and after them the words Monaco's own themes colour for one language — SQL's strings, say,
+  // in a red that reads at 4:1 — which outrank a rule for their kind: given their kind's colour too.
   const roles: [string[], keyof FieldiaColours][] = [
-    [['keyword', 'keyword.flow', 'keyword.control', 'storage'], 'keyword'],
-    [['string', 'string.escape', 'string.value.json', 'regexp', 'attribute.value'], 'string'],
-    [['number', 'number.hex', 'number.float', 'constant', 'variable.predefined', 'attribute.name'], 'literal'],
-    [['predefined', 'function'], 'function'],
+    [['keyword', 'keyword.flow', 'keyword.control', 'storage', 'keyword.flow.scss'], 'keyword'],
+    [['string', 'string.escape', 'string.value.json', 'regexp', 'attribute.value', 'string.sql', 'string.yaml', 'string.html', 'attribute.value.html', 'attribute.value.xml', 'metatag.content.html'], 'string'],
+    [['number', 'number.hex', 'number.float', 'constant', 'variable.predefined', 'attribute.name', 'keyword.json', 'attribute.value.number.css', 'attribute.value.unit.css', 'attribute.value.hex.css'], 'literal'],
+    [['predefined', 'function', 'predefined.sql'], 'function'],
     [['type', 'type.identifier', 'namespace', 'annotation'], 'type'],
-    [['tag', 'metatag'], 'tag'],
+    [['tag', 'metatag', 'metatag.html', 'metatag.xml'], 'tag'],
     [['string.key.json', 'key', 'variable.name'], 'property'],
-    [['delimiter', 'operator', 'identifier', 'variable'], 'text'],
+    [['delimiter', 'operator', 'identifier', 'variable', 'operator.sql', 'operator.scss', 'operator.swift', 'delimiter.html', 'delimiter.xml'], 'text'],
   ];
+  // A read-only field is shaded (styles.ts): comments, in the page's quiet words, are laid over the shade, to read there too.
+  const ground = channels(surface);
+  const shade = `#${channels(c.text).map((t, i) => byte(t * 0.04 + ground[i] * 0.96)).join('')}`;
+  const quiet = solid(given.muted, shade).slice(1);
   return {
     base: luminance(surface) < 0.4 ? 'vs-dark' : 'vs',
     inherit: true,
     rules: [
       { token: '', foreground: fg('text') },
       ...roles.flatMap(([tokens, role]) => tokens.map((token) => ({ token, foreground: fg(role) }))),
-      { token: 'comment', foreground: fg('muted'), fontStyle: 'italic' },
-      { token: 'comment.doc', foreground: fg('muted'), fontStyle: 'italic' },
+      { token: 'comment', foreground: quiet, fontStyle: 'italic' },
+      { token: 'comment.doc', foreground: quiet, fontStyle: 'italic' },
       { token: 'invalid', foreground: fg('error') },
       { token: 'emphasis', fontStyle: 'italic' },
       { token: 'strong', fontStyle: 'bold' },
@@ -104,6 +110,7 @@ export function monacoTheme(given: FieldiaColours): MonacoThemeData {
       'editorLineNumber.foreground': c.muted,
       'editorLineNumber.activeForeground': c.text,
       'editorCursor.foreground': c.text,
+      'editor.placeholder.foreground': c.muted,
       'editor.selectionBackground': see('accent', '40'),
       'editor.inactiveSelectionBackground': see('accent', '26'),
       'editor.selectionHighlightBackground': see('accent', '1f'),

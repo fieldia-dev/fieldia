@@ -80,8 +80,8 @@ describe('fields the backend already has', () => {
   it('switches a model field only between editors that suit what it holds, keeping its definition', () => {
     const designer = customer();
     const email = designer.addModelField('email') as string;
-    // Text may also be code, a colour as #rrggbb, a value to copy, or a page shown inline.
-    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'code', 'keywords', 'website', 'colour', 'copy', 'embed']);
+    // Text may also be code (in either editor), a colour as #rrggbb, a value to copy, or a page shown inline.
+    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'code', 'vscode', 'keywords', 'website', 'colour', 'copy', 'embed']);
     expect(designer.changeKind(email, 'email')).toBe(true);
     const page = designer.getPage();
     expect(nodeOf(page, email).widget).toBe('email');

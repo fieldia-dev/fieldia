@@ -1,7 +1,7 @@
 import { indentUnit, language } from '@codemirror/language';
 import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
-import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
+import { mountViewer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import { codeWidgets, textCodeWidget } from './code';
 import { loadCodeLanguage } from './languages';
 
@@ -29,11 +29,11 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-async function mount(page: Page, script: string | null = 'def total():\n    return 1') {
+async function mount(page: Page, script: string | null = 'def total():\n    return 1', viewer: Partial<ViewerOptions> = {}) {
   const host = document.createElement('div');
   document.body.append(host);
   const dataSource = createMemoryDataSource({ records: { job: { 1: { script } } } });
-  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: codeWidgets });
+  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: codeWidgets, ...viewer });
   await handle.form.settled();
   const box = host.querySelector('[data-node="f-script"]') as HTMLElement;
   const view = EditorView.findFromDOM(box.querySelector('.cm-editor') as HTMLElement) as EditorView;
@@ -168,6 +168,25 @@ describe('text in a code editor', () => {
     expect(view.state.doc.toString()).toBe('a + b');
     replaceAll(view, 'a * b');
     expect(form.getState().values['script']).toBe('a * b');
+  });
+
+  it('says a char field is one line: Enter adds none, and moves on to the next field when the page asks, as from a text box', async () => {
+    const page = pageWith({ type: 'char' }, { language: 'javascript' });
+    (page.layout as any).children[0].children.push({ type: 'field', id: 'f-locked', field: 'locked' });
+    for (const enterMovesToNext of [false, true]) {
+      const { host, view, content } = await mount(page, 'a > 1', { keys: { enterMovesToNext } });
+      expect(content.getAttribute('aria-multiline')).toBe('false');
+      view.focus();
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true, cancelable: true }));
+      expect(view.state.doc.toString()).toBe('a > 1');
+      const next = host.querySelector('[data-node="f-locked"] input') as HTMLInputElement;
+      expect({ enterMovesToNext, moved: document.activeElement === next }).toEqual({ enterMovesToNext, moved: enterMovesToNext });
+      handle?.destroy();
+      handle = null;
+    }
+    // Code of several lines takes Enter for a new line, and says it is several lines.
+    const text = await mount(pageWith({ type: 'text' }, { language: 'python' }), 'x', { keys: { enterMovesToNext: true } });
+    expect(text.content.getAttribute('aria-multiline')).toBe('true');
   });
 
   it('is offered for text and char fields, beside JSON’s', () => {
