@@ -119,6 +119,16 @@ test.describe('code in CodeMirror', () => {
     await expect.poll(async () => (await values(page))['condition']).toBe('a > 1 && b');
   });
 
+  test('a one-line field moves on to the next field at Enter when the page asks, adding nothing', async ({ page }) => {
+    await openCode(page, '&enterToNext=1');
+    const before = (await values(page))['condition'];
+    await cm(page, 'condition').click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    expect(await focusedField(page)).toBe('access');
+    expect((await values(page))['condition']).toBe(before);
+  });
+
   test('read-only code cannot be typed in, but can be reached and its text chosen', async ({ page }) => {
     await openCode(page);
     const before = (await values(page))['generated'];
