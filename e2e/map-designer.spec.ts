@@ -86,6 +86,10 @@ test('a list on a map, in the screen designer: its Map in the list’s panel, an
   await expect(map.locator('.fd-chip')).toHaveText(['Price×', 'Bedrooms×', 'Area, m²×', 'District×']);
   await map.getByLabel('Opens as').selectOption({ label: 'The map' });
   expect((await page_(page)).layout.map.view).toBe('map');
+  // How it sits in its page: a height of its own, every gesture.
+  await map.getByLabel('Map height').selectOption({ label: 'Large, 640 pixels' });
+  await map.getByLabel('Every gesture moves the map: one finger, and the wheel with no key held').check();
+  expect((await page_(page)).layout.map).toMatchObject({ height: 640, gestures: 'all' });
   await map.scrollIntoViewIfNeeded();
   await screen(page, 'map-designer-list', { viewport: true });
 
@@ -98,6 +102,7 @@ test('a list on a map, in the screen designer: its Map in the list’s panel, an
     .poll(() => tried.locator('.fd-map-list .fd-map-mark').evaluateAll((marks) => marks.reduce((n, m) => n + (Number(m.querySelector('.fd-map-bubble')?.textContent) || 1), 0)))
     .toBe(36);
   await expect(tried.locator('.fd-map-list-note')).toBeHidden();
+  expect(await tried.locator('.fd-map-list .fd-map-box').evaluate((el) => [Math.round(el.getBoundingClientRect().height), (el as HTMLElement).dataset['gestures']])).toEqual([640, 'all']);
   expect(problems).toEqual([]);
 });
 

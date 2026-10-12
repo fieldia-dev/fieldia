@@ -26,6 +26,30 @@ mountViewer(host, {
 )}
 <p>In React they are props of the same names, in Vue props, in Angular inputs. Leaflet, the map engine, loads the first time a map is shown, and a provider's routes the first time one is asked for: a page without a map carries none of it.</p>
 
+<h2 id="own-page">A list's map in a page of your own</h2>
+<p>A page that is not Fieldia's — your own list, filters and address — can show a list's map beside them with ${c('mountListMap')}. Give it the page that describes the records (a list with ${c('map')}), where they come from (a data source, or the records themselves), the conditions they are found by, and what to do when the map asks for something; it hands back the map, to reload and destroy.</p>
+${code(
+  'ts',
+  `
+import { mountListMap, azureMaps } from '@fieldia/map';
+
+const [lat, lng, zoom] = (new URLSearchParams(location.search).get('at') ?? '').split(',').map(Number);
+const map = mountListMap(document.getElementById('map'), {
+  page,                                   // "map": { …, "height": "fill", "gestures": "all", "fitZoom": 14 }
+  provider: azureMaps({ token }),
+  dataSource,                             // or records: [{ id, values }, …]
+  filter: () => yourSearch(),             // the conditions the records are found by
+  start: zoom ? { center: { lat, lng }, zoom } : undefined,  // opens there, no fit at first
+  countArea: true,                        // "Search this area (24)": the source counts the rest
+  onSearch: ({ kind, filter }) => { keep(kind, filter); map.reload(); },   // view, drawn or region
+  onViewChange: ({ center, zoom, bounds, byPerson }) => writeTheAddress(center, zoom),
+  onHighlight: (id) => lightYourRow(id),
+  onOpenRecord: (id) => location.assign(\`/homes/\${id}\`),
+});
+row.addEventListener('mouseenter', () => map.highlight(id));`
+)}
+<p>The map brings its own base, on its own element alone: a part hidden stays hidden, words for a screen reader alone, its buttons. Its colours are Fieldia's tokens, light or dark by your page's ${c('color-scheme')}; set your own on ${c('.fd-map-embed')}, as ${c('.fd-map-embed { --fd-accent: #375dfb; }')}, and your rule wins whatever its weight. ${c('onSearch')} hands over one area at a time of each ${c('kind')} — the map's view (${c('view')}), an area drawn (${c('drawn')}), a shaded area pressed (${c('region')}) — for your search to keep, a new one in the last one's place; ${c('onViewChange')} comes once the map stops, never while it moves. <a href="/demos/map-embed/">Try homes in a page of their own</a>.</p>
+
 <h2 id="fields">A place and an area</h2>
 <p>A place is a field set by a press on the map, a dragged pin, an address found as it is typed, typed coordinates or “My location”; an area is a polygon, a box or a circle. An address with suggestions (${c('address-search')} on a char field) is the same search without a map: a suggestion picked fills a place field (${c('placeField')}) and an address's parts (${c('partsField')}), within the countries the page names (${c('countries')}), near a point (${c('near')}) or where the app's maps open. See <a href="/fields/#map">maps among the fields</a>.</p>
 

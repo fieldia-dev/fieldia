@@ -37,3 +37,7 @@ export { readArea, readPoint, writeArea, writePoint, metresBetween, type Area, t
 export { MAP_LABELS, type MapLabels } from './lib/labels';
 export type { AddressLabels } from './lib/address-labels';
 export type { AddressParts } from './lib/address-parts';
+// A list's map in a page of the app's own, outside the viewer.
+export { mountListMap, type ListMapHandle, type ListMapOptions } from './lib/embed';
+export type { MapSearch, MapViewChange } from './lib/list-view';
+export type { Box as MapBounds } from './lib/view-box';

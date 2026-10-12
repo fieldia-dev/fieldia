@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — a map in a page of your own</title>
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
+    <!-- The page's own styles: its bar, its list, its columns. The map styles itself, on its own element alone. -->
+    <style>
+      /* The page is the whole width: the demos' frame keeps its own header above it. */
+      #app.hs { max-width: none; margin: 0; padding: 0; }
+      .hs {
+        --hs-ink: light-dark(#1b1f24, #e8eaed);
+        --hs-muted: light-dark(#5b6470, #a3a9b2);
+        --hs-line: light-dark(#e3e6ea, #343a44);
+        --hs-surface: light-dark(#ffffff, #1b1f25);
+        --hs-page: light-dark(#f6f7f9, #111418);
+        --hs-accent: light-dark(#1365d9, #5aa2ff);
+        --hs-on-accent: light-dark(#ffffff, #0b1220);
+        --hs-wash: light-dark(#e6f0fb, #1d2c42);
+        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", sans-serif;
+        color: var(--hs-ink);
+        background: var(--hs-page);
+      }
+      .hs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; background: var(--hs-surface); border-bottom: 1px solid var(--hs-line); }
+      .hs-title { margin: 0; font-size: 18px; font-weight: 700; }
+      .hs-count { margin: 0; color: var(--hs-muted); }
+      .hs-offer { display: inline-flex; padding: 2px; border: 1px solid var(--hs-line); border-radius: 999px; background: var(--hs-page); }
+      .hs-offer button { font: inherit; font-weight: 600; min-height: 30px; padding: 3px 14px; border: 0; border-radius: 999px; background: none; color: var(--hs-muted); cursor: pointer; }
+      .hs-offer button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-on-accent); }
+      .hs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+      .hs-chip { display: inline-flex; align-items: center; gap: 2px; padding-inline: 12px 2px; border-radius: 999px; background: var(--hs-wash); font-weight: 600; }
+      .hs-chip button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: inherit; font: inherit; font-size: 17px; cursor: pointer; }
+      .hs-chip button:hover { background: color-mix(in srgb, var(--hs-accent) 18%, transparent); }
+      .hs-lang { margin-inline-start: auto; color: var(--hs-accent); font-weight: 600; }
+      .hs :focus-visible { outline: 2px solid var(--hs-accent); outline-offset: 2px; }
+      /* The list and the map side by side, as tall as the window leaves them; the map fills its column. */
+      .hs-body { display: grid; grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr); height: max(480px, calc(100dvh - var(--hs-top, 150px))); }
+      .hs-list { margin: 0; padding: 10px; list-style: none; overflow: auto; display: grid; gap: 8px; align-content: start; }
+      .hs-home { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; padding: 8px; border: 1px solid var(--hs-line); border-radius: 10px; background: var(--hs-surface); scroll-margin: 10px; }
+      .hs-home img { width: 104px; height: 78px; object-fit: cover; border-radius: 6px; display: block; }
+      .hs-home.is-lit { border-color: var(--hs-accent); box-shadow: 0 0 0 1px var(--hs-accent); }
+      .hs-home[aria-current="true"] { background: var(--hs-wash); }
+      .hs-price { margin: 0; font-size: 15px; font-weight: 700; }
+      .hs-name { margin: 2px 0; font-weight: 600; }
+      .hs-name a { color: inherit; text-decoration: none; }
+      .hs-name a:hover { text-decoration: underline; }
+      .hs-details { margin: 0; color: var(--hs-muted); font-size: 13px; }
+      .hs-empty { padding: 24px 12px; color: var(--hs-muted); text-align: center; }
+      .hs-map { min-width: 0; height: 100%; }
+      /* A phone: the map over the list, the page scrolling past it beside the map. */
+      @media (max-width: 760px) {
+        .hs-body { display: flex; flex-direction: column; height: auto; }
+        .hs-map { order: -1; height: 58vh; }
+        .hs-list { overflow: visible; }
+      }
+    </style>
+  </head>
+  <body>
+    <header id="demo-head" data-app="map-embed"></header>
+    <main id="app" class="hs"></main>
+    <script type="module" src="../shell.mjs"></script>
+    <!-- The page's script: its own list, its own filter, its own address, and Fieldia's map (mountListMap). -->
+    <script src="main.js" defer></script>
+  </body>
+</html>

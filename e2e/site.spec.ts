@@ -86,7 +86,7 @@ test('a link to a heading shows the heading below the bar, not under it', async 
   }
 });
 
-test('the gallery shows every demo with its thumbnail, featured first, and each opens a working form', async ({ page }) => {
+test('the gallery shows every demo with its thumbnail, featured first, and each opens a working form or map', async ({ page }) => {
   // Time by the gallery's size: each demo opened, each thumbnail loaded.
   test.setTimeout(DEMOS.length * 3000);
   const problems = watch(page);
@@ -104,7 +104,8 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
   }
   for (const href of hrefs) {
     await page.goto(SITE + href);
-    await expect(page.locator('.fd-form').first(), href).toBeVisible();
+    // A form, or the map of a page of its own.
+    await expect(page.locator('.fd-form, .fd-map-embed').first(), href).toBeVisible();
     await expect(page.locator('.dh-title'), href).not.toBeEmpty();
   }
   expect(problems).toEqual([]);

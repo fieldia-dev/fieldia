@@ -20,6 +20,7 @@ interface Demo {
   id: string;
   app?: string;
   query: string;
+  schemes?: boolean;
 }
 
 /** Each demo's addresses: the plain framework, in each skin, dark, and in Arabic right to left. */
@@ -28,6 +29,8 @@ function addresses(): string[] {
   for (const demo of DEMOS as Demo[]) {
     if (demo.app) {
       urls.add(`/${demo.app}/`);
+      // One of its own that follows the reader's scheme, dark too.
+      if (demo.schemes) urls.add(`/${demo.app}/?scheme=dark`);
       continue;
     }
     const own = new URLSearchParams(demo.query);
@@ -42,10 +45,10 @@ function addresses(): string[] {
   return [...urls];
 }
 
-/** Open a demo and wait for its form, and for what loads after it (a list's rows, a page's choices, from a source that answers after a moment). */
+/** Open a demo and wait for its form (or a page of its own's map), and for what loads after it (a list's rows, a page's choices, from a source that answers after a moment). */
 async function visit(page: Page, url: string) {
   await page.goto(url);
-  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect(page.locator('.fd-form, .fd-map-embed').first()).toBeVisible();
   await page.waitForTimeout(800);
 }
 

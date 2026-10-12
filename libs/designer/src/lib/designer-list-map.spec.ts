@@ -151,6 +151,48 @@ describe('the list’s Map, in its panel', () => {
     expect(list(designer).map?.regions).toBeUndefined();
   });
 
+  it('sets how tall the map is, whether it takes every gesture, and the closest it zooms to show the records', () => {
+    const { designer, control, map } = mount(blankPage('list', 'Homes'));
+    designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng' } });
+    const height = control<HTMLSelectElement>('Map height');
+    expect(height.value).toBe('');
+    expect([...height.options].map((o) => o.textContent)).toEqual([
+      'As tall as the window allows',
+      'As tall as the place it is put in',
+      'Small, 320 pixels',
+      'Medium, 480 pixels',
+      'Large, 640 pixels',
+    ]);
+    change(height, 'fill');
+    expect(list(designer).map?.height).toBe('fill');
+    change(height, '480');
+    expect(list(designer).map?.height).toBe(480);
+    change(height, '');
+    expect(list(designer).map?.height).toBeUndefined();
+    // A height of the page's own is offered as it is.
+    designer.setListOptions({ map: { ...list(designer).map!, height: 555 } });
+    expect(height.value).toBe('555');
+    expect(height.selectedOptions[0].textContent).toBe('555 pixels');
+
+    const gestures = [...map.querySelectorAll('label')].find((l) => l.textContent === 'Every gesture moves the map: one finger, and the wheel with no key held')!.querySelector('input')!;
+    expect(gestures.checked).toBe(false);
+    change(gestures);
+    expect(list(designer).map?.gestures).toBe('all');
+    change(gestures);
+    expect(list(designer).map?.gestures).toBeUndefined();
+
+    const closest = control<HTMLInputElement>('Closest it zooms to show the records');
+    expect(closest.placeholder).toBe('16');
+    change(closest, '14');
+    expect(list(designer).map?.fitZoom).toBe(14);
+    // A zoom the maps have, from the world (1) to a building (22).
+    change(closest, '40');
+    expect(list(designer).map?.fitZoom).toBe(22);
+    change(closest, '');
+    expect(list(designer).map?.fitZoom).toBeUndefined();
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
   it('offers no areas when the app gives no borders', () => {
     const { designer, control, shown } = mount(blankPage('list', 'Homes'), model, []);
     designer.setListOptions({ map: { latitude: 'lat', longitude: 'lng' } });

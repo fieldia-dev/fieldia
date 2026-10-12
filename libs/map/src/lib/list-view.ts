@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import type { JsonValue, ListMap, ListResult, RecordId, ResolvedFilter, Values } from '@fieldia/core';
+import type { JsonValue, ListMap, ListRequest, ListResult, RecordId, ResolvedFilter, Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -13,6 +13,7 @@ import { anchor, bubbleFace, byKeys, CROWD, MOVE_KEYS, onPress, popCard, SIZED_B
 import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
 import type { MapSettings } from './settings';
+import { boxFilter, boxOf, type Box } from './view-box';
 
 /**
  * A list's records on a map, for the viewer's `listViews`: the list's own
@@ -26,6 +27,38 @@ import type { MapSettings } from './settings';
  */
 export function mapListViews(settings: MapSettings): Record<string, ListViewFactory> {
   return { map: (context) => listMap(settings, context) };
+}
+
+/** A search the map asks for: its view ("Search this area"), an area drawn, or a shaded area pressed. */
+export interface MapSearch {
+  label: string;
+  filter: ResolvedFilter[];
+  kind: 'view' | 'drawn' | 'region';
+}
+
+/**
+ * Where a list's map stands once it stops moving, sent as the `fd-map-view`
+ * event from its element (it bubbles): its centre and zoom, the edges of its
+ * view (west east of east over the antimeridian), and whether the person
+ * moved it (a drag, a zoom, the keys) or the map moved itself (to fit its
+ * records, to show a card).
+ */
+export interface MapViewChange {
+  center: LatLng;
+  zoom: number;
+  bounds: Box;
+  byPerson: boolean;
+}
+
+/** What a list's map is given: the viewer's list's own, or a page's of its own (`mountListMap`), which may also say where it opens. */
+export interface ListMapContext extends ListViewContext {
+  addSearch(search: MapSearch): void;
+  /** Where the map opens: there, it fits no records at first. */
+  start?: { center: LatLng; zoom: number };
+  /** The records come as they are, not from a source that can count a view's (`countArea: true` asks none). */
+  given?: boolean;
+  /** False when nothing takes a search the map asks for: no "Search this area", no tools to draw one. The viewer's list always takes them. */
+  searches?: boolean;
 }
 
 /** Room kept around the records when the map fits them, in pixels. */
@@ -42,7 +75,7 @@ interface Drawn {
   ids: RecordId[];
 }
 
-function listMap(settings: MapSettings, context: ListViewContext): ListViewPart {
+export function listMap(settings: MapSettings, context: ListMapContext): ListViewPart {
   const { page, node, document: doc, locale } = context;
   // The viewer asks for a map only for a list with `map`.
   const spec = node.map as ListMap;
@@ -69,6 +102,11 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   installListMapStyles(doc);
   const element = doc.createElement('div');
   element.className = 'fd-map-list';
+  // As tall as the page says: pixels, or the room it is put in; as the window allows unless said.
+  const height = spec.height === 'fill' ? '100%' : typeof spec.height === 'number' ? spec.height : 'clamp(320px, 64vh, 640px)';
+  if (height !== 'clamp(320px, 64vh, 640px)') element.dataset['height'] = String(spec.height);
+  const takesAll = spec.gestures === 'all';
+  const { start } = context;
   const box = createMapBox({
     document: doc,
     provider: settings.provider,
@@ -76,10 +114,11 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     labels,
     name: page.title ?? model,
     keys: labels.pinKeys,
-    center: settings.center,
-    zoom: settings.zoom,
-    height: 'clamp(320px, 64vh, 640px)',
+    center: start?.center ?? settings.center,
+    zoom: start?.zoom ?? settings.zoom,
+    height,
     tools: (spec.tools ?? []).filter((tool): tool is MapTool => tool !== 'nearest'),
+    gestures: takesAll ? 'all' : 'shared',
   });
   element.append(box.element);
   const here = doc.createElement('button');
@@ -191,7 +230,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
                     dataSource: context.dataSource,
                     addSearch: (search) => {
                       ownSearch = false;
-                      context.addSearch(search);
+                      context.addSearch({ ...search, kind: 'region' });
                     },
                     records: () => records,
                   })
@@ -240,8 +279,12 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   let ghost: Leaflet.Marker | null = null;
   let asking = 0;
   let destroyed = false;
-  let fitted = false;
-  let lastFilter = '';
+  /** Opened where the app said: no fit until the search changes. */
+  let fitted = !!start;
+  let lastFilter: string | null = null;
+  /** The search the records on hand were found by, and whether they are all it finds. */
+  let shownFilter: ResolvedFilter[] = [];
+  let allShown = false;
   /** The search changed by the map's own "Search this area": the view stays where the person put it. */
   let ownSearch = false;
   let moving = false;
@@ -264,35 +307,56 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     if (event.target === box.element && MOVE_KEYS.has(event.key)) moving = true;
   };
   const wheeled = (event: WheelEvent) => {
-    if (event.ctrlKey || event.metaKey) moving = true;
+    if (event.ctrlKey || event.metaKey || takesAll) moving = true;
   };
   box.element.addEventListener('pointerdown', pressed, { capture: true });
   box.element.addEventListener('keydown', keyed, { capture: true });
   box.element.addEventListener('wheel', wheeled, { capture: true, passive: true });
 
+  const viewOf = (map: Leaflet.Map) => {
+    const b = map.getBounds();
+    return boxOf(b.getSouth(), b.getWest(), b.getNorth(), b.getEast());
+  };
+
   function searchHere(map: Leaflet.Map) {
-    const bounds = map.getBounds();
-    const round = (n: number) => Math.round(n * 1e6) / 1e6;
-    const wrap = (lng: number) => round(((((lng + 180) % 360) + 360) % 360) - 180);
-    const south = round(Math.max(-90, bounds.getSouth()));
-    const north = round(Math.min(90, bounds.getNorth()));
-    const whole = bounds.getEast() - bounds.getWest() >= 360;
-    const west = whole ? -180 : wrap(bounds.getWest());
-    const east = whole ? 180 : wrap(bounds.getEast());
-    const filter: ResolvedFilter[] = spec.point
-      ? [{ field: spec.point, op: 'within', value: { south, west, north, east } }]
-      : [
-          { field: spec.latitude as string, op: 'between', value: [south, north] },
-          // Over the antimeridian no one range holds the longitudes: either side of it, then.
-          ...(whole
-            ? []
-            : west <= east
-              ? [{ field: spec.longitude as string, op: 'between' as const, value: [west, east] }]
-              : [{ any: [{ field: spec.longitude as string, op: '>=' as const, value: west }, { field: spec.longitude as string, op: '<=' as const, value: east }] }]),
-        ];
     ownSearch = true;
     here.hidden = true;
-    context.addSearch({ label: labels.inThisArea, filter });
+    stopCount();
+    context.addSearch({ label: labels.inThisArea, filter: boxFilter(spec, viewOf(map)), kind: 'view' });
+  }
+
+  // ---- how many the view holds, said on "Search this area": its code comes the first time the button shows ----
+  type Counter = ReturnType<typeof import('./area-count').areaCounter>;
+  let counter: Promise<Counter> | null = null;
+  const sayHere = (n: number | null) => {
+    here.textContent = n === null ? labels.searchThisArea : fill(labels.searchThisAreaCount, { label: labels.searchThisArea, n: count(n) });
+  };
+  const stopCount = () => void counter?.then((made) => made.stop());
+  function countHere(map: Leaflet.Map) {
+    sayHere(null);
+    const view = viewOf(map);
+    const source = context.dataSource;
+    // The app's count, or its source's: one record asked for, its `total` the count, `signal` (an AbortSignal) aborted when the map moves on.
+    const ask =
+      typeof settings.countArea === 'function'
+        ? settings.countArea
+        : settings.countArea && source?.list && !context.given
+          ? (filter: ResolvedFilter[], signal: AbortSignal) => (source as Required<typeof source>).list({ model, fields: [], filter, sort: [], offset: 0, limit: 1, signal } as ListRequest).then((r) => r.total)
+          : null;
+    counter ??= import('./area-count').then(({ areaCounter }) => areaCounter(spec, ask, (n) => !here.hidden && !destroyed && sayHere(n)));
+    void counter.then((made) => !destroyed && !here.hidden && made.count(view, { filter: shownFilter, all: allShown, places }));
+  }
+
+  /** Where the map stands, once it stops: said to the app, once for each new view. */
+  let lastView = '';
+  function tellView(map: Leaflet.Map, byPerson: boolean) {
+    const c = map.wrapLatLng(map.getCenter());
+    const round = (n: number) => Math.round(n * 1e6) / 1e6;
+    const detail: MapViewChange = { center: { lat: round(c.lat), lng: round(c.lng) }, zoom: map.getZoom(), bounds: viewOf(map), byPerson };
+    const key = JSON.stringify([detail.center, detail.zoom, detail.bounds]);
+    if (key === lastView) return;
+    lastView = key;
+    element.dispatchEvent(new CustomEvent('fd-map-view', { detail, bubbles: true }));
   }
 
   /** An area drawn becomes a search of its own, "In the area drawn": the places inside it, in the table and on the map. */
@@ -308,7 +372,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     ownSearch = true;
     here.hidden = true;
     announce(labels.shapeDrawn);
-    context.addSearch({ label: labels.inDrawnArea, filter: [condition] });
+    context.addSearch({ label: labels.inDrawnArea, filter: [condition], kind: 'drawn' });
   }
 
   /**
@@ -503,21 +567,35 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const at = places.filter((p): p is LatLng => !!p);
     if (!at.length) return;
     fitted = true;
-    if (at.length === 1) map.setView([at[0].lat, at[0].lng], Math.max(map.getZoom(), 15), { animate: false });
-    else map.fitBounds(at.map((p) => [p.lat, p.lng] as [number, number]), { padding: [ROOM, ROOM], maxZoom: 16, animate: false });
+    // No closer than the page says (a neighbourhood, say), so a lone record is not shown on a road with nothing round it.
+    const closest = typeof spec.fitZoom === 'number' ? spec.fitZoom : null;
+    if (at.length === 1) map.setView([at[0].lat, at[0].lng], Math.min(Math.max(map.getZoom(), 15), closest ?? Infinity), { animate: false });
+    else map.fitBounds(at.map((p) => [p.lat, p.lng] as [number, number]), { padding: [ROOM, ROOM], maxZoom: closest ?? 16, animate: false });
   }
 
+  // A search nothing would take is not offered.
+  const searches = context.searches !== false;
   box.ready((map, L) => {
-    box.element.append(tools, here, note);
+    box.element.append(...(searches ? [tools, here] : []), note);
     box.shield(tools);
     box.shield(here);
     box.follow(note);
     box.follow(here);
     here.addEventListener('click', () => searchHere(map));
     map.on('zoomend', () => draw(map, L));
+    // The count said is for where the map was: gone as it moves, said again for where it stops.
+    map.on('movestart', () => {
+      stopCount();
+      sayHere(null);
+    });
     map.on('moveend', () => {
-      if (moving) here.hidden = false;
+      // A quick second press of + or −, made when this zoom ends: the map has not stopped.
+      if (box.stepping()) return;
+      const byPerson = moving;
+      if (moving && searches) here.hidden = false;
       moving = false;
+      if (!here.hidden) countHere(map);
+      tellView(map, byPerson);
     });
     map.on('popupclose', (event: Leaflet.PopupEvent) => {
       if (open?.popup === event.popup) open = null;
@@ -543,7 +621,9 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     if (asked !== asking || destroyed) return;
     records = result.records;
     places = records.map((record) => placeOf(record.values));
-    const refit = !fitted || (key !== lastFilter && !ownSearch);
+    shownFilter = filter;
+    allShown = result.total <= records.length;
+    const refit = !fitted || (lastFilter !== null && key !== lastFilter && !ownSearch);
     lastFilter = key;
     ownSearch = false;
     const missing = places.filter((p) => !p).length;
@@ -563,6 +643,8 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
       drawSearched(map, L, filter);
       if (open?.id !== null && open && !records.some((r) => r.id === open?.id)) closeCard(map, false);
       else open?.card.setChosen(open.id !== null && context.isChosen(open.id));
+      // Records changed under the button: its count again.
+      if (!here.hidden) countHere(map);
     });
   }
 
@@ -587,6 +669,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     },
     destroy() {
       destroyed = true;
+      stopCount();
       void regions?.then((made) => made?.destroy());
       void heat?.then((layer) => layer.destroy());
       box.element.removeEventListener('pointerdown', pressed, { capture: true });

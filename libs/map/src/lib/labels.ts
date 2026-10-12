@@ -337,6 +337,8 @@ export interface ListMapLabels {
   /** How the keys reach the pins. */
   pinKeys: string;
   searchThisArea: string;
+  /** "Search this area" with how many records the view holds, when that is known: `{label}` the button's words, `{n}` the count. */
+  searchThisAreaCount: string;
   /** The search a map puts in the list's search bar. */
   inThisArea: string;
   openRecord: string;
@@ -367,6 +369,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
   en: {
     pinKeys: 'Tab goes through the pins. Enter opens a pin’s card; Escape closes it.',
     searchThisArea: 'Search this area',
+    searchThisAreaCount: '{label} ({n})',
     inThisArea: 'In this area',
     openRecord: 'Open',
     choose: 'Choose',
@@ -386,6 +389,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
   ar: {
     pinKeys: 'ينتقل Tab بين الدبابيس. يفتح Enter بطاقة الدبوس، ويغلقها Escape.',
     searchThisArea: 'ابحث في هذه المنطقة',
+    searchThisAreaCount: '{label} ({n})',
     inThisArea: 'في هذه المنطقة',
     openRecord: 'فتح',
     choose: 'اختيار',
@@ -405,6 +409,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
   fr: {
     pinKeys: 'Tab parcourt les épingles. Entrée ouvre la fiche d’une épingle, Échap la ferme.',
     searchThisArea: 'Rechercher dans cette zone',
+    searchThisAreaCount: '{label} ({n})',
     inThisArea: 'Dans cette zone',
     openRecord: 'Ouvrir',
     choose: 'Choisir',
@@ -424,6 +429,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
   de: {
     pinKeys: 'Tab springt von Nadel zu Nadel. Eingabe öffnet die Karte einer Nadel, Escape schließt sie.',
     searchThisArea: 'In diesem Gebiet suchen',
+    searchThisAreaCount: '{label} ({n})',
     inThisArea: 'In diesem Gebiet',
     openRecord: 'Öffnen',
     choose: 'Auswählen',

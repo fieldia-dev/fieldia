@@ -11,7 +11,8 @@ import { installLeafletStyles, installMapStyles } from './styles';
  * credits and mark, Fieldia's own zoom buttons at the box's inline end, and
  * the manners a map needs among other fields. A scroll passes over it to the
  * page unless Ctrl (⌘) is held, and one finger scrolls the page while two
- * move the map: a form on a phone is never caught in its map.
+ * move the map: a form on a phone is never caught in its map. A map that is
+ * most of its page takes every gesture instead (`gestures: 'all'`).
  *
  * The box exists at once; the map arrives when Leaflet has loaded, and the
  * widget does its map work in `ready`.
@@ -32,6 +33,8 @@ export interface MapBoxOptions {
   height?: number | string;
   /** Tools under the zoom: the satellite's images, live traffic, full screen, measuring a distance. */
   tools?: readonly MapTool[];
+  /** `all`: one finger pans and the wheel zooms, nothing held; the page's own scroll passes by the map unless said. */
+  gestures?: 'shared' | 'all';
 }
 
 /** A tool a map can have under its zoom. */
@@ -58,6 +61,8 @@ export interface MapBox {
   follow(element: HTMLElement): void;
   /** A tool of the map's user's own under the zoom, drawn as the others are: an SVG drawing on a 24-unit square. */
   tool(words: string, drawing: string): HTMLButtonElement;
+  /** Whether a zoom kept from a quick press is still to come: the map has not stopped yet. */
+  stepping(): boolean;
   destroy(): void;
 }
 
@@ -80,6 +85,8 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   element.style.setProperty('--fd-map-height', typeof options.height === 'string' ? options.height : `${options.height ?? 280}px`);
   element.setAttribute('role', 'region');
   element.setAttribute('aria-label', fill(labels.mapOf, { label: options.name }));
+  const takesAll = options.gestures === 'all';
+  if (takesAll) element.dataset['gestures'] = 'all';
   const keysId = `fd-map-keys-${Math.random().toString(36).slice(2, 9)}`;
   const keys = doc.createElement('span');
   keys.id = keysId;
@@ -157,6 +164,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   let traffic = false;
   let baseLayer: Leaflet.TileLayer | null = null;
   let creditsAsked = 0;
+  let stepping = false;
   let creditsTimer: ReturnType<typeof setTimeout> | undefined;
   let veilTimer: ReturnType<typeof setTimeout> | undefined;
   const waiting: ((map: Leaflet.Map, L: LeafletModule) => void)[] = [];
@@ -261,7 +269,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
 
   // A scroll passes to the page; Ctrl or ⌘ with it zooms. Caught on the way down, before Leaflet's own.
   const wheel = (event: WheelEvent) => {
-    if (event.ctrlKey || event.metaKey) return;
+    if (event.ctrlKey || event.metaKey || takesAll) return;
     event.stopPropagation();
     veil(isMac(doc) ? labels.cmdZoom : labels.ctrlZoom);
   };
@@ -288,7 +296,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   // One finger scrolls the page; two move the map.
   let touchStart: { x: number; y: number } | null = null;
   const touchstart = (event: TouchEvent) => {
-    if (!map) return;
+    if (!map || takesAll) return;
     const one = event.touches.length === 1;
     touchStart = one ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
     if (one || !pannable) map.dragging.disable();
@@ -334,10 +342,12 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     map.on('zoomstart', () => (zooming = true));
     map.on('zoomend', () => {
       zooming = false;
-      if (!owed || !map) return;
-      const by = owed;
+      if (!map) return;
+      // The step kept, unless the map is already as close (or as far) as it goes: then there is none to come.
+      const to = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), map.getZoom() + owed));
       owed = 0;
-      map.setZoom(map.getZoom() + by);
+      stepping = to !== map.getZoom();
+      if (stepping) map.setZoom(to);
     });
     const step = (by: number) => {
       if (!map) return;
@@ -384,6 +394,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       shield(button);
       return button;
     },
+    stepping: () => stepping,
     destroy() {
       destroyed = true;
       clearTimeout(creditsTimer);

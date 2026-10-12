@@ -267,6 +267,26 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-embed',
+    name: 'A map in a page of your own',
+    category: 'lists',
+    // A page that is not Fieldia's, with its own list beside the map: no framework, no look of Fieldia's to switch.
+    app: 'map-embed',
+    query: '',
+    // Its code is the page's own script, mountListMap and the page round it; it follows the reader's scheme.
+    code: 'list-map',
+    schemes: true,
+    blurb: 'Homes for sale on a page that is not Fieldia’s: its own list, its own filter and its own address, with Fieldia’s map filling the column beside them. The map takes every gesture, opens where the address says, writes where it stands back into it, and says how many homes are in view before you search there.',
+    howTo: [
+      'Drag the map, and turn the wheel over it: it moves and zooms with no key held. On a phone, one finger moves it.',
+      'Move the map: Search this area says how many homes are in view. Press it: the page’s own list keeps those, and the map stays where it is.',
+      'Move the map again: the address bar’s at= keeps where it stands. Reload the page: the map opens there.',
+      'Point at a home in the list: its pin lights up. Point at a pin: its home lights up in the list.',
+      'Press To rent at the top: the page’s own filter, and the map follows it.',
+      'Press a pin, then Open on its card: the page marks that home in its list.',
+    ],
+  },
+  {
     id: 'map-couriers',
     name: 'Couriers on a map',
     category: 'lists',

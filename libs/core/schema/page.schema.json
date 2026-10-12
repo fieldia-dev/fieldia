@@ -8088,6 +8088,31 @@
               "additionalProperties": false
             }
           ]
+        },
+        "height": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 160,
+              "maximum": 2000
+            },
+            {
+              "type": "string",
+              "const": "fill"
+            }
+          ]
+        },
+        "gestures": {
+          "type": "string",
+          "enum": [
+            "shared",
+            "all"
+          ]
+        },
+        "fitZoom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 22
         }
       },
       "additionalProperties": false
