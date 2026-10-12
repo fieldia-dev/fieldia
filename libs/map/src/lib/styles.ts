@@ -229,6 +229,8 @@ span.fd-map-face-photo svg { width: 22px; height: 22px; }
 .fd-map-crowd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 220px; overflow: auto; }
 .fd-map-crowd-item { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; text-align: start; background: transparent; color: var(--fd-text); font: inherit; font-size: 13px; cursor: pointer; }
 .fd-map-crowd-item:hover { background: var(--fd-accent-soft); }
+span.fd-map-crowd-item { display: block; cursor: default; }
+span.fd-map-crowd-item:hover { background: transparent; }
 .fd-map-here {
   position: absolute; top: 10px; left: 50%; translate: -50% 0; z-index: 1000; padding: 7px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer;
   border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-text); font: inherit; font-size: 13.5px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -288,6 +290,12 @@ path.fd-map-fence { stroke: var(--fd-warning); stroke-width: 2.5; stroke-dasharr
   font-size: 11.5px; font-weight: 600; background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 .fd-map-face[data-look="photo"] .fd-map-face-stale { top: calc(100% + 26px); }
+/* A place that moves, with pins that crowd it gathered under it: their count, itself among them, at its shoulder. */
+.fd-map-count {
+  position: absolute; top: -8px; right: -10px; z-index: 2; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px;
+  display: grid; place-items: center; font: 700 11.5px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; pointer-events: none;
+  background: var(--fd-accent); color: var(--fd-accent-text); border: 2px solid var(--fd-surface); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
 .fd-map-here.fd-map-follow { top: auto; bottom: 28px; }
 .fd-map-locate {
   position: absolute; top: 8px; left: 8px; z-index: 1000; width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;

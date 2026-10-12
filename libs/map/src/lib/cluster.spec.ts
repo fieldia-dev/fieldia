@@ -26,6 +26,18 @@ describe('pins that crowd become one bubble', () => {
     for (let a = 0; a < middles.length; a++) for (let b = a + 1; b < middles.length; b++) expect(Math.hypot(middles[a].x - middles[b].x, middles[a].y - middles[b].y)).toBeGreaterThan(48);
   });
 
+  it('stands a group with a leading point where that point is: the points round it gather to it, and other groups keep clear of it', () => {
+    // A courier first, a kitchen a few pixels off, a door further on.
+    expect(clusterPoints([{ x: 100, y: 100, leads: true }, { x: 110, y: 104 }, { x: 300, y: 300 }], 48)).toEqual([[0, 1], [2]]);
+    // A kitchen 40 pixels from the courier, a stop 60: the courier's group stands on the courier, 60 from the stop, so the stop stays its own.
+    // Stood in the middle, 20 off, it would have taken the stop too.
+    const points = [{ x: 0, y: 0, leads: true }, { x: 40, y: 0 }, { x: 60, y: 0 }];
+    expect(clusterPoints(points, 48)).toEqual([[0, 1], [2]]);
+    expect(clusterPoints(points.map(({ x, y }) => ({ x, y })), 48)).toEqual([[0, 1, 2]]);
+    // Apart, a leading point is a group of its own.
+    expect(clusterPoints([{ x: 0, y: 0, leads: true }, { x: 100, y: 0 }], 48)).toEqual([[0], [1]]);
+  });
+
   it('keeps every point exactly once, and the same points give the same bubbles', () => {
     const points = Array.from({ length: 2000 }, (_, i) => ({ x: (i * 7919) % 1000, y: (i * 104729) % 700 }));
     const groups = clusterPoints(points, 50);

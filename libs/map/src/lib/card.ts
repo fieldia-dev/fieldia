@@ -110,12 +110,12 @@ export function drawCard(options: CardOptions): Card {
   };
 }
 
-/** Pins on one spot that no zoom parts: a list of them, each opening its own card. */
+/** Pins on one spot that no zoom parts: a list of them, each opening its own card; one with no card is only named. */
 export function drawCrowd(options: {
   document: Document;
   labels: ListMapLabels;
   dir: 'ltr' | 'rtl';
-  records: { record: MapRecord; name: string }[];
+  records: { record: MapRecord; name: string; plain?: boolean }[];
   pick(record: MapRecord): void;
   close(): void;
 }): Card {
@@ -126,7 +126,8 @@ export function drawCrowd(options: {
   element.setAttribute('role', 'group');
   element.setAttribute('aria-label', heading);
   const close = closeButton(doc, labels, options.close);
-  const items = options.records.map(({ record, name }) => {
+  const items = options.records.map(({ record, name, plain }) => {
+    if (plain) return make(doc, 'li', '', make(doc, 'span', 'fd-map-crowd-item', name));
     const button = make(doc, 'button', 'fd-map-crowd-item', name);
     button.type = 'button';
     button.dataset['id'] = String(record.id);
@@ -137,6 +138,6 @@ export function drawCrowd(options: {
   return {
     element,
     setChosen: () => undefined,
-    focus: () => (items[0]?.querySelector('button') ?? close).focus(),
+    focus: () => (element.querySelector<HTMLElement>('.fd-map-crowd-list button') ?? close).focus(),
   };
 }

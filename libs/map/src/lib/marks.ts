@@ -1,4 +1,5 @@
 import type * as Leaflet from 'leaflet';
+import type { Locale } from '@fieldia/core';
 import type { Card } from './card';
 import type { LatLng } from './geo';
 import type { LeafletModule } from './leaflet';
@@ -9,6 +10,9 @@ import type { PinFace } from './pins';
  * and stood on its point; pressed by a click, or by Enter or Space when it
  * has the focus; and the card it opens, over the map at its place.
  */
+
+/** Pins nearer than this, in pixels, are gathered into one bubble. */
+export const CROWD = 48;
 
 /** The keys that move a map: on a card they stay with the card. */
 export const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '+', '-', '=', '_']);
@@ -53,4 +57,26 @@ export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLn
   popup.openOn(map);
   if (options.focus) options.card.focus();
   return popup;
+}
+
+/** A bubble's face: how many pins it holds, written short (12, 1.2K), larger for more. */
+export function bubbleFace(doc: Document, n: number, locale: Locale): HTMLElement {
+  const face = doc.createElement('div');
+  face.className = 'fd-map-bubble';
+  face.dataset['size'] = n < 10 ? 's' : n < 100 ? 'm' : 'l';
+  face.textContent = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn' }).format(n);
+  return face;
+}
+
+/**
+ * A bubble pressed: the map closer, until its pins part. Pins on one spot,
+ * that no zoom parts (a tower's flats), are not zoomed to: false, and the
+ * bubble lists them instead.
+ */
+export function zoomToPart(map: Leaflet.Map, L: LeafletModule, spots: LatLng[], room: number): boolean {
+  const most = Math.min(map.getMaxZoom(), 19);
+  const bounds = L.latLngBounds(spots.map((p) => [p.lat, p.lng] as [number, number]));
+  if (map.getZoom() >= most || bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) return false;
+  map.fitBounds(bounds, { padding: [room, room], maxZoom: most });
+  return true;
 }
