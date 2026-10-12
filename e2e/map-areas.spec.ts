@@ -210,6 +210,29 @@ test.describe('orders by district', () => {
     await expect(map.locator('.fd-map-measure-hint')).toHaveCount(0);
   });
 
+  test('in Arabic, right to left: the tools at the map’s start, the legend’s ranges still read from their least', async ({ page }) => {
+    await openMap(page, `${ZONES}&locale=ar&dir=rtl`);
+    await expect(legend(page)).toBeVisible();
+    const first = legend(page).locator('li').first();
+    await expect(first).toHaveText(/^1–\d+$/);
+    // Drawn left to right: its 1 to the left of its last number, as a range of Latin digits is read.
+    const order = await first.evaluate((li) => {
+      const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+      const text = walker.nextNode() as Text;
+      const at = (i: number) => {
+        const range = document.createRange();
+        range.setStart(text, i);
+        range.setEnd(text, i + 1);
+        return range.getBoundingClientRect().x;
+      };
+      return { one: at(0), last: at(text.length - 1) };
+    });
+    expect(order.one).toBeLessThan(order.last);
+    const map = (await theMap(page).boundingBox())!;
+    const zoom = (await tool(page, 'تكبير').boundingBox().catch(() => null)) ?? (await theMap(page).locator('.fd-map-zoom').boundingBox())!;
+    expect(zoom.x).toBeLessThan(map.x + map.width / 2);
+  });
+
   test('axe finds nothing with a district lit and the way measured', async ({ page }) => {
     await openMap(page, ZONES);
     const spot = await spotOf(page, region(page, 'Dokki'));

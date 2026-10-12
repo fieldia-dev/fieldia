@@ -274,7 +274,11 @@ export function drawRegions(options: {
       swatch.style.setProperty('--fd-region', `color-mix(in srgb, var(--fd-accent) ${mixOf(i, steps.length)}%, var(--fd-surface))`);
       const below = i === 0 ? start : steps[i - 1];
       const from = whole ? below + 1 : below;
-      item.append(swatch, from >= end ? number(end) : `${number(from)}–${number(end)}`);
+      // A range reads from its least, in a right-to-left page too: its numbers kept left to right.
+      const range = doc.createElement('bdi');
+      range.dir = 'ltr';
+      range.textContent = from >= end ? number(end) : `${number(from)}–${number(end)}`;
+      item.append(swatch, range);
       list.append(item);
     });
     legend.append(title, list);
