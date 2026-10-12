@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { addField, editing, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
 

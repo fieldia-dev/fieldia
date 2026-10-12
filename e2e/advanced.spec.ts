@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { boxes, cardOf, centre, doubleLines, dropAt, misalignedOnCanvas } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 

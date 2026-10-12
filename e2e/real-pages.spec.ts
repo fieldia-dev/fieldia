@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { lane as accounting } from '../demos/shared/real/accounting';
 import { lane as crm } from '../demos/shared/real/crm';
 import { lane as legal } from '../demos/shared/real/legal';

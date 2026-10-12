@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
 
 /**
  * The map tests' stand-ins: no test calls a real map provider. Map images
@@ -142,3 +142,19 @@ export async function stubRoutes(page: Page) {
 export const ROUTE_LINE: { lat: number; lng: number }[] = (
   JSON.parse(readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/osrm-route.json'), 'utf8')).routes[0].geometry.coordinates as [number, number][]
 ).map(([lng, lat]) => ({ lat, lng }));
+
+/**
+ * Every map server a demo can call, answered by stand-ins for a whole
+ * browser context, so no test ever reaches a real one: map images
+ * (OpenStreetMap's), address search (Photon, Nominatim) and routes (OSRM).
+ * Each test gets them from e2e/fixtures.ts; a test's own `stubMaps` or
+ * `stubRoutes`, set on its page, still wins.
+ */
+export async function quietMapServers(context: BrowserContext) {
+  const json = (body: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } });
+  const route = readFileSync(join(__dirname, '../libs/map/src/lib/fixtures/osrm-route.json'), 'utf8');
+  await context.route('https://tile.openstreetmap.org/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: TILE, headers: { 'access-control-allow-origin': '*' } }));
+  await context.route('https://photon.komoot.io/**', (r) => r.fulfill(json({ type: 'FeatureCollection', features: [] })));
+  await context.route('https://nominatim.openstreetmap.org/**', (r) => r.fulfill(json(r.request().url().includes('/reverse') ? {} : [])));
+  await context.route('https://router.project-osrm.org/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: route, headers: { 'access-control-allow-origin': '*' } }));
+}

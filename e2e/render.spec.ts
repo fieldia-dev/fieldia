@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, open, screen } from './support';
 import { VARIANTS } from './variants';
 

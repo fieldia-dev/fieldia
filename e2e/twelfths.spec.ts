@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
 import { boxes, cardOf, centre, doubleLines, dropAt, inAdvanced, layout, misalignedOnCanvas } from './designer-support';
 import { screen } from './support';

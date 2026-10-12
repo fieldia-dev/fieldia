@@ -1,6 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { DEMOS, FRAMEWORKS, demoHref } from '../demos/catalog.mjs';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -96,6 +97,52 @@ test.describe('the demo frame', () => {
     expect(copied).not.toContain('tok-');
     await screen(page, 'demo-frame-code', { viewport: true });
     expect(problems).toEqual([]);
+  });
+
+  test('the Code drawer’s code names what each demo needs: its editors, its maps, its chatter, its own parts', async ({ page }) => {
+    await asVisitor(page);
+    const drawer = page.locator('#demo-code');
+    const codeOf = async (query: string, tab: string) => {
+      await page.goto(`/plain/?${query}`);
+      await expect(page.locator('.fd-form').first()).toBeVisible();
+      if (await drawer.isHidden()) await page.getByRole('button', { name: '‹/› Code' }).click();
+      await drawer.getByRole('tab', { name: tab }).click();
+      return (await drawer.locator('code').textContent()) ?? '';
+    };
+    // The code demo: both editors' packages, and only CodeMirror's when the switch shows CodeMirror alone.
+    const code = await codeOf('page=code&skin=outlined', 'JavaScript');
+    expect(code).toContain("import { codeWidgets } from '@fieldia/code';");
+    expect(code).toContain("import { monacoWidgets } from '@fieldia/monaco';");
+    expect(code).toContain('widgets: { ...codeWidgets, ...monacoWidgets },');
+    expect(await codeOf('page=code&skin=outlined&editor=codemirror', 'JavaScript')).not.toContain('monaco');
+    // A list's map with its borders, in React.
+    const zones = await codeOf('page=map-zones&skin=outlined', 'React');
+    expect(zones).toContain("import { mapListViews, openStreetMap } from '@fieldia/map';");
+    expect(zones).toContain("'cairo-districts': () => fetch('/geo/cairo-districts.json')");
+    expect(zones).toContain('listViews={listViews}');
+    // A form's map and an area field, in Vue; the chatter beside a record, in Angular.
+    const kitchen = await codeOf('page=map-kitchen&skin=outlined', 'Vue');
+    expect(kitchen).toContain(':widgets="widgets" :maps="maps"');
+    expect(kitchen).toContain('const maps = mapParts(mapSettings);');
+    const customer = await codeOf('page=customer&skin=outlined', 'Angular');
+    expect(customer).toContain('<ng-template fieldiaSlot="chatter" let-form><app-chatter [form]="form" /></ng-template>');
+    // A plain sign-up needs nothing more than the viewer.
+    expect(await codeOf('page=signup&skin=outlined', 'JavaScript')).not.toMatch(/@fieldia\/(map|code|monaco|grid|chatter)/);
+  });
+
+  test('every example page’s code parses, in every tab', async () => {
+    const { snippets } = await import('../demos/snippets.mjs');
+    const { transformSync } = await import('esbuild');
+    const files = readdirSync('examples/pages').filter((file) => file.endsWith('.page.json'));
+    expect(files.length).toBeGreaterThan(30);
+    for (const file of files) {
+      const code = snippets(JSON.parse(readFileSync(`examples/pages/${file}`, 'utf8')), new URLSearchParams('skin=outlined&theme=material&readonly=1'));
+      for (const [tab, source] of Object.entries(code)) {
+        // Vue's file is checked by its script; the rest as TypeScript with JSX.
+        const text = tab === 'vue' ? /<script setup lang="ts">([\s\S]*?)<\/script>/.exec(source as string)![1] : (source as string);
+        expect(() => transformSync(text, { loader: tab === 'json' ? 'json' : 'tsx' }), `${file} · ${tab}`).not.toThrow();
+      }
+    }
   });
 
   test('switches framework and look, keeping the demo', async ({ page }) => {

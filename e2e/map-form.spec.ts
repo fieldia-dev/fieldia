@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
 import { at, drag, mapReady, ROUTE_LINE, stubMaps, stubRoutes } from './map-support';
 import { open, screen } from './support';

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { inAdvanced } from './designer-support';
 import { card, kids, spanOf } from './keyboard-support';
 

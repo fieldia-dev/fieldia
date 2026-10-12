@@ -9,6 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
+import { snippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -168,35 +169,6 @@ function drawHowTo() {
 
 // ---- the code drawer ------------------------------------------------------------------------------
 
-/** The viewer's options this demo sets, as code. */
-function optionsAsCode(indent) {
-  const options = [];
-  const skin = params.get('skin');
-  if (skin) options.push(`skin: '${skin}'`);
-  if (params.get('theme')) options.push(`theme: '${params.get('theme')}'`);
-  for (const key of ['locale', 'dir', 'saveStatus']) if (params.get(key)) options.push(`${key}: '${params.get(key)}'`);
-  for (const key of ['readonly', 'editSwitch', 'showValid']) if (params.get(key) === '1') options.push(`${key}: true`);
-  if (params.get('enterToNext') === '1') options.push('keys: { enterMovesToNext: true }');
-  if (params.get('translate')) options.push('translate: (text) => catalog[text] ?? text');
-  return options.map((o) => `\n${indent}${o},`).join('');
-}
-
-function snippets(page) {
-  const name = page?.id ?? 'page';
-  const attrs = (pattern) =>
-    ['skin', 'theme', 'locale', 'dir']
-      .filter((key) => params.get(key))
-      .map((key) => pattern(key, params.get(key)))
-      .join(' ');
-  return {
-    json: JSON.stringify(page ?? {}, null, 2),
-    js: `import { mountViewer } from '@fieldia/viewer';\nimport { createMemoryDataSource } from '@fieldia/core';\nimport page from './${name}.page.json';\n\nmountViewer(document.getElementById('app'), {\n  page,\n  dataSource: createMemoryDataSource(), // or your own, talking to your server${optionsAsCode('  ')}\n});`,
-    react: `import { FieldiaForm } from '@fieldia/react';\nimport page from './${name}.page.json';\n\nexport function Screen() {\n  return <FieldiaForm page={page} dataSource={dataSource} ${attrs((k, v) => `${k}="${v}"`)} />;\n}`,
-    vue: `<script setup lang="ts">\nimport { FieldiaForm } from '@fieldia/vue';\nimport page from './${name}.page.json';\n</script>\n\n<template>\n  <FieldiaForm :page="page" :data-source="dataSource" ${attrs((k, v) => `${k}="${v}"`)} />\n</template>`,
-    angular: `import { FieldiaFormComponent } from '@fieldia/angular';\nimport page from './${name}.page.json';\n\n@Component({\n  imports: [FieldiaFormComponent],\n  template: \`<fieldia-form [page]="page" [dataSource]="dataSource" ${attrs((k, v) => `${k}="${v}"`)} />\`,\n})\nexport class ScreenComponent {\n  readonly page = page;\n}`,
-  };
-}
-
 function drawCode() {
   const tabs = [
     ['json', 'Page JSON', 'The page this demo shows: plain JSON, the same the browser tests drive.'],
@@ -227,7 +199,7 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], snippets(page)[tab]);
+    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], snippets(page, params)[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

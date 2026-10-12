@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEMOS } from '../demos/catalog.mjs';

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { tile, watch } from './designer-support';
 import { stubMaps } from './map-support';
 import { screen } from './support';

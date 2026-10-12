@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { screen } from './support';
 
 /** The designer's editors as React, Vue and Angular components, each in a real app of its framework. */

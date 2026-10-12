@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { cardOf, doubleLines, watch } from './designer-support';
 import { expectNoSidewaysScroll, open, screen } from './support';
 

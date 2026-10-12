@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { DEMOS } from '../demos/catalog.mjs';
 import { ALLOWED, axeFindings } from './a11y-support';
 import { inAdvanced } from './designer-support';

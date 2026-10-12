@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { EXPECTED_VARIANTS, VARIANTS } from './variants';
 
 test('every framework demo was built, so no gate is skipped', () => {

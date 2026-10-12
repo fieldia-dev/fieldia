@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { axeFindings, settle } from './a11y-support';
 import { open } from './support';
 

@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
 import { at, drag, fingerDrag, mapOf, mapReady, stubMaps, valueOf } from './map-support';
 import { node, open, screen } from './support';
