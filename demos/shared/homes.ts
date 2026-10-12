@@ -121,7 +121,7 @@ export function sampleOrder(): Values {
   };
 }
 
-/** A van's round from Tahrir Square through five stops in Zamalek and Dokki, two of them done. */
+/** A van's round from Tahrir Square through five stops in Zamalek and Dokki, two of them done: far enough apart that their pins stand clear of each other with the whole round in view. */
 export function sampleRound(): Values {
   const stop = (sequence: number, name: string, address: string, lng: number, lat: number, done: boolean) => ({
     key: `s${sequence}`,
@@ -138,9 +138,9 @@ export function sampleRound(): Values {
     stop_ids: [
       stop(1, 'Nile Traders', '12 Abu El Feda, Zamalek', 31.2218, 30.0659, true),
       stop(2, 'Zamalek Studio', '4 Hassan Sabry, Zamalek', 31.2165, 30.0606, true),
-      stop(3, 'Bayt Interiors', '19 Shagaret El Dor, Zamalek', 31.2197, 30.0626, false),
+      stop(3, 'Bayt Interiors', '26 July Street, Zamalek', 31.2238, 30.0577, false),
       stop(4, 'Delta Foods', '33 Mossadak, Dokki', 31.2091, 30.0389, false),
-      stop(5, 'Amira Clinics', '7 Tahrir Street, Dokki', 31.2143, 30.0377, false),
+      stop(5, 'Amira Clinics', '7 Tahrir Street, Dokki', 31.2205, 30.0388, false),
     ],
   };
 }

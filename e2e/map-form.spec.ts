@@ -262,7 +262,7 @@ test('a place for each line: a round’s stops numbered in their order, greyed o
   await expect(stops(page).nth(2).locator('.fd-map-face')).not.toHaveAttribute('data-tone', /.*/);
   // The way from the van through each stop, in order, longitude first.
   await expect(route(page)).toHaveCount(1);
-  expect(routes[0]).toContain('/route/v1/driving/31.2353,30.0443;31.2218,30.0659;31.2165,30.0606;31.2197,30.0626;31.2091,30.0389;31.2143,30.0377?');
+  expect(routes[0]).toContain('/route/v1/driving/31.2353,30.0443;31.2218,30.0659;31.2165,30.0606;31.2238,30.0577;31.2091,30.0389;31.2205,30.0388?');
   await expect.poll(async () => (await values(page))['distance_m']).toBeGreaterThan(0);
   // A stop ticked done in the table greys on the map.
   const third = page.locator('[data-node="f-stops"] tbody tr').nth(2);

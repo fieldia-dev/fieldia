@@ -81,6 +81,14 @@ async function pinInView(page: Page) {
   return pins(page).nth(at);
 }
 
+/** Closer by some steps of the zoom, once they have all been made: each press is a step, however quick. */
+async function closer(page: Page, steps: number) {
+  const start = await zoomOf(theMap(page));
+  for (let i = 0; i < steps; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await expect.poll(() => zoomOf(theMap(page))).toBe(start + steps);
+  await page.waitForTimeout(300);
+}
+
 /** A record's row, by the record's id. */
 const rowOf = (page: Page, id: string) => page.locator(`.fd-list-row[data-id="${id}"]`);
 
@@ -283,11 +291,13 @@ test('Search this area: once the map is moved, it puts the area into the search 
   const here = page.getByRole('button', { name: 'Search this area' });
   await expect(here).toBeHidden();
   await expect(range(page)).toHaveText('1–12 / 64');
-  // Closer, over the middle of the city.
+  // Closer, over the middle of the city: two steps, read once the second has ended (its old images linger meanwhile).
+  const start = await zoomOf(theMap(page));
   await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
   await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
   await expect(here).toBeVisible();
-  const zoom = await zoomOf(theMap(page));
+  const zoom = start + 2;
+  await expect.poll(() => zoomOf(theMap(page))).toBe(zoom);
   await here.click();
   await expect(here).toBeHidden();
   await expect(chips(page)).toHaveText(['In this area']);
@@ -341,8 +351,7 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
   await expect(page.locator('.fd-list-table')).toBeHidden();
   await expect.poll(() => onTheMap(page)).toBe(18);
   // Closer, so the couriers that crowd part.
-  for (let i = 0; i < 3; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
-  await page.waitForTimeout(600);
+  await closer(page, 1);
   const faces = page.locator('.fd-map-list .fd-map-mark:not(.fd-map-ghost) .fd-map-face[data-look="icon"]');
   expect(await faces.count()).toBeGreaterThanOrEqual(4);
   const drawn = await faces.evaluateAll((all) =>
@@ -382,8 +391,7 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
 
 test('a courier’s card offers the list’s own button, pressed for that courier alone', async ({ page }) => {
   const { demo } = await openList(page, 'plain', COURIERS);
-  for (let i = 0; i < 3; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
-  await page.waitForTimeout(600);
+  await closer(page, 1);
   const pin = await pinInView(page);
   const id = (await pin.getAttribute('data-id'))!;
   await pin.locator('.fd-map-face').click();
