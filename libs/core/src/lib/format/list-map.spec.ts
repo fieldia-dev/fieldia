@@ -89,6 +89,19 @@ describe('a list on a map', () => {
     expect(problems(page({ point: 'spot', tools: ['compass'] }))).not.toEqual([]);
   });
 
+  it('takes how tall the map is, which gestures it takes, and the closest it comes to fit its records', () => {
+    expect(problems(page({ point: 'spot', height: 'fill', gestures: 'all', fitZoom: 14 }))).toEqual([]);
+    expect(problems(page({ point: 'spot', height: 480, gestures: 'shared' }))).toEqual([]);
+    // A height is pixels, or the room it is put in; nothing else.
+    expect(problems(page({ point: 'spot', height: 'tall' }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', height: 80 }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', height: 420.5 }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', gestures: 'greedy' }))).not.toEqual([]);
+    // A zoom the maps have: from the whole world (1) to a building (22).
+    expect(problems(page({ point: 'spot', fitZoom: 0 }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', fitZoom: 23 }))).not.toEqual([]);
+  });
+
   it('refuses a look, a view or a limit that is none', () => {
     expect(problems(page({ point: 'spot', pin: { look: 'balloon' } }))).not.toEqual([]);
     expect(problems(page({ point: 'spot', view: 'globe' }))).not.toEqual([]);

@@ -926,6 +926,18 @@ export interface ListMap {
   regions?: MapRegions & { field: string };
   /** The records as a heat map while the map is far out, each weighing one unless `weight` names a number field; their pins come back close in, at the streets. */
   heat?: boolean | { weight?: string };
+  // ---- how the map sits in its page ----
+  /** How tall it is: pixels, or `fill`, as tall as the element it is put in (which gives it a height); as tall as the window allows, 320 to 640 pixels, unless said. */
+  height?: number | 'fill';
+  /**
+   * Which gestures move it: `shared` (unless said) leaves one finger and the
+   * wheel to the page, which scrolls past the map, two fingers or Ctrl (⌘)
+   * with the wheel moving it; `all` takes every one — one finger pans, the
+   * wheel zooms — for a page that is mostly its map.
+   */
+  gestures?: 'shared' | 'all';
+  /** The closest it comes when it fits its records in view: zoom 16 unless said (a neighbourhood is 14, a street 17). */
+  fitZoom?: number;
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
@@ -1411,6 +1423,10 @@ export const ListMapSchema = z
     tools: z.array(z.enum([...mapTools, 'nearest'])).optional(),
     regions: MapRegionsSchema.extend({ field: fieldName }).optional(),
     heat: z.union([z.boolean(), z.strictObject({ weight: fieldName.optional() })]).optional(),
+    // How the map sits in its page: its height, the gestures it takes, the closest a fit comes.
+    height: z.union([z.int().min(160).max(2000), z.literal('fill')]).optional(),
+    gestures: z.enum(['shared', 'all']).optional(),
+    fitZoom: z.int().min(1).max(22).optional(),
   })
   .meta({ id: 'ListMap' });
 
