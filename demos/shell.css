@@ -1,32 +1,67 @@
 /* The frame around every demo: header, menu, how-to panel and code drawer. The demo inside styles itself. */
+/*
+ * Light or dark: each colour is a pair, light-dark(light, dark), and the page's colour scheme picks one.
+ * The frame follows the reader's system; a scheme the address names wins (shell.mjs marks the page),
+ * so the frame wears the scheme of the form inside it. Every pair people read is 4.5:1 or more in both.
+ */
 :root {
-  --dh-ink: #1b1f24;
-  --dh-muted: #5b6470;
-  --dh-line: #e3e6ea;
-  --dh-surface: #ffffff;
-  --dh-page: #f6f7f9;
-  --dh-brand: #002855;
-  --dh-link: #0b5cad;
-  --dh-wash: #e7f0fb;
+  color-scheme: light dark;
+  --dh-ink: light-dark(#1b1f24, #e8eaed);
+  --dh-muted: light-dark(#5b6470, #a3a9b2);
+  --dh-line: light-dark(#e3e6ea, #343a44);
+  /* A box's edge, the theme picker's and the menu's filter's: 3:1 or more on the surface, so the box is seen. */
+  --dh-edge: light-dark(#858e9a, #6b7480);
+  --dh-surface: light-dark(#ffffff, #1b1f25);
+  --dh-page: light-dark(#f6f7f9, #111418);
+  /* The pill picked, and its words. */
+  --dh-brand: light-dark(#002855, #5aa2ff);
+  --dh-on-brand: light-dark(#ffffff, #0b1220);
+  --dh-link: light-dark(#0b5cad, #7db7ff);
+  --dh-on-link: light-dark(#ffffff, #0b1220);
+  --dh-wash: light-dark(#e7f0fb, #1d2c42);
+  --dh-wash-line: light-dark(#b8d3f2, #34557f);
+  /* The logo's own navy, in either scheme. */
+  --dh-logo: #002855;
+  --dh-code-bg: light-dark(#fbfcfd, #15181d);
+  --dh-code-ink: light-dark(#24292f, #e1e4e8);
+  /* Code's colours (demos/highlight.mjs), the docs' own, each at least 4.5:1 on the code's ground. */
+  --tok-keyword: light-dark(#cf222e, #ff7b72);
+  --tok-string: light-dark(#0a3069, #a5d6ff);
+  --tok-number: light-dark(#0550ae, #79c0ff);
+  --tok-key: light-dark(#953800, #ffa657);
+  --tok-comment: light-dark(#59636e, #8b949e);
+  --tok-tag: light-dark(#116329, #7ee787);
+  --tok-attr: light-dark(#6639ba, #d2a8ff);
   --dh-nav: 264px;
   --dh-howto: 300px;
+}
+:root[data-scheme="light"] { color-scheme: light; }
+:root[data-scheme="dark"] { color-scheme: dark; }
+/* The page round the demo, in the frame's scheme. */
+html, body { background: var(--dh-page); color: var(--dh-ink); }
+/* The "Every field" demo's bar over its form (demos/shared/panel-demo.ts) is outside the form, where Fieldia's
+   tokens are light: it wears the frame's instead, so it turns dark with it. */
+.demo-panel-bar {
+  background: var(--dh-surface); border-bottom-color: var(--dh-line); color: var(--dh-ink);
+  --fd-text: var(--dh-ink); --fd-muted: var(--dh-muted); --fd-surface: var(--dh-surface); --fd-border: var(--dh-edge);
+  --fd-accent: var(--dh-brand); --fd-accent-text: var(--dh-on-brand); --fd-focus: var(--dh-brand);
 }
 
 /* ---- header ---- */
 #demo-head { background: var(--dh-surface); border-bottom: 1px solid var(--dh-line); padding: 10px 20px 12px; }
 .dh-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-height: 32px; }
 .dh-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--dh-ink); text-decoration: none; }
-.dh-mark { width: 22px; height: 22px; border-radius: 5px; background: var(--dh-brand) url("logo.svg") center / cover; }
+.dh-mark { width: 22px; height: 22px; border-radius: 5px; background: var(--dh-logo) url("logo.svg") center / cover; }
 .dh-crumb { color: var(--dh-muted); font-size: 13px; padding-inline-start: 10px; border-inline-start: 1px solid var(--dh-line); }
 .dh-pills { display: inline-flex; padding: 2px; border: 1px solid var(--dh-line); border-radius: 999px; background: var(--dh-page); }
 .dh-pills a { padding: 3px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--dh-muted); text-decoration: none; }
 .dh-pills a:hover { color: var(--dh-ink); }
-.dh-pills a[aria-current="page"] { background: var(--dh-brand); color: #fff; }
+.dh-pills a[aria-current="page"] { background: var(--dh-brand); color: var(--dh-on-brand); }
 .dh-links { margin-inline-start: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 13.5px; }
 .dh-links a { color: var(--dh-link); text-decoration: none; }
 .dh-links a:hover { text-decoration: underline; }
-.dh-code { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--dh-link); background: var(--dh-wash); border: 1px solid #b8d3f2; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
-.dh-code[aria-expanded="true"] { background: var(--dh-link); color: #fff; border-color: var(--dh-link); }
+.dh-code { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--dh-link); background: var(--dh-wash); border: 1px solid var(--dh-wash-line); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.dh-code[aria-expanded="true"] { background: var(--dh-link); color: var(--dh-on-link); border-color: var(--dh-link); }
 .dh-menu { width: 32px; height: 32px; border: 1px solid var(--dh-line); border-radius: 6px; background: var(--dh-surface); cursor: pointer; display: grid; place-items: center; }
 .dh-menu span, .dh-menu span::before, .dh-menu span::after { display: block; width: 14px; height: 1.5px; background: var(--dh-ink); position: relative; content: ''; }
 .dh-menu span::before { position: absolute; top: -4.5px; }
@@ -35,8 +70,8 @@
 .dh-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: var(--dh-ink); }
 .dh-editor { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dh-muted); }
 .dh-looks { margin-inline-start: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.dh-theme { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #5b6470; }
-.dh-theme select { font: inherit; color: #1b1f24; padding: 4px 6px; border: 1px solid #d4d9e0; border-radius: 6px; background: #fff; }
+.dh-theme { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dh-muted); }
+.dh-theme select { font: inherit; color: var(--dh-ink); padding: 4px 6px; border: 1px solid var(--dh-edge); border-radius: 6px; background: var(--dh-surface); }
 @media (max-width: 600px) {
   /* A phone keeps the way back to the gallery and the code; the rest is a click away there. */
   .dh-links a:not(:first-of-type) { display: none; }
@@ -48,7 +83,7 @@
 body.dn-open #demo-nav { transform: none; box-shadow: 0 0 24px rgba(15, 23, 42, 0.12); }
 .dn-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--dh-line); font-weight: 700; }
 .dn-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; padding: 0 4px; }
-.dn-filter { margin: 12px; padding: 7px 10px; border: 1px solid var(--dh-line); border-radius: 8px; font: inherit; font-size: 13.5px; }
+.dn-filter { margin: 12px; padding: 7px 10px; border: 1px solid var(--dh-edge); border-radius: 8px; font: inherit; font-size: 13.5px; color: var(--dh-ink); background: var(--dh-surface); }
 .dn-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
 .dn-cat { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dh-muted); padding: 14px 8px 4px; }
 .dn-item { display: block; padding: 6px 10px; border-radius: 6px; color: var(--dh-ink); text-decoration: none; }
@@ -91,14 +126,14 @@ body.dc-open { padding-block-end: 46vh; }
 .dc-tabs button { border: none; background: none; padding: 8px 12px; font: inherit; font-weight: 600; color: var(--dh-muted); border-bottom: 2px solid transparent; cursor: pointer; }
 .dc-tabs button[aria-selected="true"] { color: var(--dh-link); border-bottom-color: var(--dh-link); }
 .dc-note { color: var(--dh-muted); font-size: 12.5px; flex: 1; min-width: 0; }
-.dc-copy { border: 1px solid #b8d3f2; background: var(--dh-wash); color: var(--dh-link); border-radius: 6px; padding: 4px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.dc-copy { border: 1px solid var(--dh-wash-line); background: var(--dh-wash); color: var(--dh-link); border-radius: 6px; padding: 4px 12px; font: inherit; font-weight: 600; cursor: pointer; }
 .dc-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; }
-/* Code's colours, each at least 4.5:1 on the code's ground (demos/highlight.mjs; the docs share them). */
-.dc-code .tok-keyword { color: #cf222e; }
-.dc-code .tok-string { color: #0a3069; }
-.dc-code .tok-number, .dc-code .tok-literal { color: #0550ae; }
-.dc-code .tok-key { color: #953800; }
-.dc-code .tok-comment { color: #59636e; font-style: italic; }
-.dc-code .tok-tag { color: #116329; }
-.dc-code .tok-attr { color: #6639ba; }
-.dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: #fbfcfd; font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #24292f; white-space: pre; }
+/* Code's colours, from the tokens above (demos/highlight.mjs; the docs share them). */
+.dc-code .tok-keyword { color: var(--tok-keyword); }
+.dc-code .tok-string { color: var(--tok-string); }
+.dc-code .tok-number, .dc-code .tok-literal { color: var(--tok-number); }
+.dc-code .tok-key { color: var(--tok-key); }
+.dc-code .tok-comment { color: var(--tok-comment); font-style: italic; }
+.dc-code .tok-tag { color: var(--tok-tag); }
+.dc-code .tok-attr { color: var(--tok-attr); }
+.dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: var(--dh-code-bg); font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--dh-code-ink); white-space: pre; }

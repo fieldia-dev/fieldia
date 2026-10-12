@@ -90,14 +90,17 @@ export const pages: Record<string, Page> = {
  * The page the query string names, with the page-wide choices it may also make:
  * `maxWidth` (narrow, medium, wide, full), `actions` (top, bottom), `scheme`
  * (light, dark, auto) and `labels` (above, beside, hidden). The viewer shows it in the query's `locale`, in the
- * page's own words when it keeps them in that language.
+ * page's own words when it keeps them in that language. With no scheme named, by the query or the page, a
+ * reader whose system is dark gets the reader's own (auto), as the frame round it does (demos/shell.mjs); a
+ * light system leaves the page exactly as it is drawn.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
   // The code page in the editor the demo's switch picked.
   const page = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
-  const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;
+  const dark = !page.look?.scheme && matchMedia('(prefers-color-scheme: dark)').matches;
+  const scheme = (params.get('scheme') ?? (dark ? 'auto' : null)) as NonNullable<Page['look']>['scheme'] | null;
   const labels = params.get('labels') as NonNullable<Page['look']>['labels'] | null;
   // A look for each kind of part, as JSON: `parts={"inputs":{"corners":"round"}}`.
   const parts = params.get('parts');

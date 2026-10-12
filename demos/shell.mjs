@@ -17,6 +17,13 @@ const demo = demoAt(app, params);
 const embedded = params.get('embed') === '1';
 const visitor = !navigator.webdriver && !embedded;
 const framework = FRAMEWORKS.some((f) => f.id === app) ? app : 'plain';
+// The frame wears its form's scheme (shell.css): the one the address names, else the reader's own as the
+// page opens, which the form follows too (demos/shared/sample-data.ts). The script tag demo's form takes
+// nothing from the address and is drawn light, so its frame is too.
+const scheme = !FRAMEWORKS.some((f) => f.id === app)
+  ? 'light'
+  : (params.get('scheme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'auto' : 'light'));
+document.documentElement.dataset.scheme = scheme;
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const remember = (key, value) => {
   try {
@@ -36,7 +43,8 @@ const THEMES = [['material', 'Material'], ['fluent', 'Fluent'], ['apple', 'Apple
 
 function withParam(key, value) {
   const next = new URLSearchParams(params);
-  next.set(key, value);
+  if (value) next.set(key, value);
+  else next.delete(key);
   return `?${next}`;
 }
 
@@ -63,6 +71,8 @@ function drawHeader() {
     ? ''
     : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
+        .join('')}</nav><nav class="dh-pills dh-schemes" aria-label="Scheme">${[['', 'System'], ['light', 'Light'], ['dark', 'Dark']]
+        .map(([id, name]) => `<a href="${esc(withParam('scheme', id))}"${id === (params.get('scheme') ?? '') ? ' aria-current="page"' : ''}>${name}</a>`)
         .join('')}</nav><label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
         .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)
         .join('')}</select></label></div>`;
