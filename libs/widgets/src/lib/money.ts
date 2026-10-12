@@ -14,8 +14,11 @@ import { currencySymbol } from './units';
 
 /** The marks Intl puts round Arabic numbers to say their direction: the text says its own. */
 const MARKS = /[\u200e\u200f\u061c]/g;
-/** Left-to-right isolation, round a symbol on a right-to-left page: "E£" stays "E£". */
-const isolate = (text: string) => `\u2066${text}\u2069`;
+/**
+ * A symbol set apart on a right-to-left page, in the direction of its first letter: "E£" and "US$" stay
+ * whole left to right, and an Arabic one ("ر.س.") keeps its dots where they were, right to left.
+ */
+const isolate = (text: string) => `\u2068${text}\u2069`;
 
 const shortFormats = new Map<Locale, Intl.NumberFormat>();
 /** A number short, in the page's language and Latin digits: "13.9M", "450K", "13.9 مليون", "13,9 Mio.". */

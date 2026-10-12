@@ -113,7 +113,7 @@ describe('a record’s pin', () => {
     // Arabic: its own short words, Latin digits, a symbol kept whole.
     expect(said({ price: 13_900_000, currency: 'EGP', offer: 'sale' }, 'ar')).toBe('13.9\u00a0مليون');
     expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' }, 'ar')).toBe('\u206825\u00a0ألف\u2069/شهر');
-    expect(said({ price: 450_000, currency: 'USD', offer: 'sale' }, 'ar')).toBe('\u2066US$\u2069\u00a0450\u00a0ألف');
+    expect(said({ price: 450_000, currency: 'USD', offer: 'sale' }, 'ar')).toBe('\u2068US$\u2069\u00a0450\u00a0ألف');
     // The fields its words read are asked for with the records: the currency, and the condition's.
     expect(pins(dawarly).fields).toEqual(['name', 'price', 'currency', 'offer']);
     // The app's home currency, under the page's own.
@@ -131,9 +131,9 @@ describe('a record’s pin', () => {
 
   it('keeps a symbol whole on a right-to-left page, the amount written as ever', () => {
     // Intl writes "E£" after the amount in Arabic; isolated, the page round it cannot turn it to "£E".
-    expect(pinText(page, 'price', villa.values, 'ar')).toMatch(/^\u200f?9\.5\u00a0مليون\u00a0\u2066E£\u2069$/);
+    expect(pinText(page, 'price', villa.values, 'ar')).toMatch(/^\u200f?9\.5\u00a0مليون\u00a0\u2068E£\u2069$/);
     expect(pins({ label: 'name' }, { locale: 'ar' }).name(villa)).toBe('Villa <b>Nile</b>');
-    expect(pins({ label: 'price' }, { locale: 'ar' }).name(villa)).toBe('Villa <b>Nile</b>، \u200f9,500,000.00\u00a0\u2066E£\u2069');
+    expect(pins({ label: 'price' }, { locale: 'ar' }).name(villa)).toBe('Villa <b>Nile</b>، \u200f9,500,000.00\u00a0\u2068E£\u2069');
     // Left to right, and a symbol that is letters alone, as ever.
     expect(pinText(page, 'price', villa.values, 'en')).toBe('E£9.5M');
     expect(pinText(page, 'price', { price: 9_500_000, currency: 'Gold' }, 'ar')).toBe('Gold 9.5\u00a0مليون');

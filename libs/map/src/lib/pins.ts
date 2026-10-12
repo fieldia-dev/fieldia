@@ -198,7 +198,7 @@ export function pinMoney(page: Page, pin: Pin, homeCurrency?: string): MoneyLook
 function wholeSymbol(text: string, currency: string | null, locale: Locale): string {
   if (!currency || !isRightToLeft(locale) || !/^[A-Z]{3}$/.test(currency)) return text;
   const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(1).find((part) => part.type === 'currency')?.value ?? '';
-  return !symbol || /^\p{L}+$/u.test(symbol) || !text.includes(symbol) ? text : text.replace(symbol, `\u2066${symbol}\u2069`);
+  return !symbol || /^\p{L}+$/u.test(symbol) || !text.includes(symbol) ? text : text.replace(symbol, `\u2068${symbol}\u2069`);
 }
 
 /** A value as a person reads it in full: a card's line, a pin's name. An amount's symbol is kept whole, "E£" on an Arabic page too. */

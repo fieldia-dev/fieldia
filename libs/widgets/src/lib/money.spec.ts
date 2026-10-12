@@ -11,7 +11,7 @@ import { moneyReads, shortNumber, writeMoney } from './money';
  */
 
 const money = (look?: MoneyLook, extra: Partial<LineField> = {}) => ({ type: 'monetary', label: 'Price', currencyField: 'currency', digits: [16, 0], ...(look ? { money: look } : {}), ...extra }) as LineField;
-const LRI = '\u2066';
+const FSI = '\u2068';
 const PDI = '\u2069';
 
 describe('an amount, as its money look writes it', () => {
@@ -29,8 +29,11 @@ describe('an amount, as its money look writes it', () => {
     expect(displayValue(money({}), 1_610_000, { currency: 'EGP' })).toBe('E£\u00a01,610,000');
     expect(displayValue(money({}), 1_610_000, { currency: 'EUR' }, 'de')).toBe('1.610.000\u00a0€');
     // "E£" isolated as left to right: never turned round to "£E" in Arabic.
-    expect(displayValue(money({}), 1_610_000, { currency: 'EGP' }, 'ar')).toBe(`1,610,000\u00a0${LRI}E£${PDI}`);
-    expect(displayValue(money({ at: 'before' }), 1_610_000, { currency: 'EGP' }, 'ar')).toBe(`${LRI}E£${PDI}\u00a01,610,000`);
+    expect(displayValue(money({}), 1_610_000, { currency: 'EGP' }, 'ar')).toBe(`1,610,000\u00a0${FSI}E£${PDI}`);
+    expect(displayValue(money({ at: 'before' }), 1_610_000, { currency: 'EGP' }, 'ar')).toBe(`${FSI}E£${PDI}\u00a01,610,000`);
+    // An Arabic symbol is set apart too, in its own direction: the riyal's dots stay where they are written.
+    expect(displayValue(money({}), 1_500, { currency: 'SAR' }, 'ar')).toContain(`${FSI}ر.س.${PDI}`);
+    expect(displayValue(money({}), 1_500, { currency: 'JOD' }, 'ar')).toContain(`${FSI}د.أ.${PDI}`);
     // A currency named by words that are no code: as written, before the amount.
     expect(displayValue(money({}), 12, { currency: 'Gold coins' })).toBe('Gold coins\u00a012');
   });
@@ -50,7 +53,7 @@ describe('an amount, as its money look writes it', () => {
     expect(writeMoney(13_900_000, 'EGP', 0, 'en', look)).toBe('13.9M');
     expect(writeMoney(450_000, 'USD', 0, 'en', look)).toBe('$\u00a0450K');
     expect(writeMoney(13_900_000, 'EGP', 0, 'ar', look)).toBe('13.9\u00a0مليون');
-    expect(writeMoney(450_000, 'USD', 0, 'ar', look)).toBe(`${LRI}US$${PDI}\u00a0450\u00a0ألف`);
+    expect(writeMoney(450_000, 'USD', 0, 'ar', look)).toBe(`${FSI}US$${PDI}\u00a0450\u00a0ألف`);
     expect(writeMoney(12, null, 2, 'en', look)).toBe('12');
   });
 
