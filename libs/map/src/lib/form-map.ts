@@ -323,11 +323,11 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
       const via = route.through ? [...marks.entries()].filter(([key]) => key.startsWith(`${route.through}:`)).map(([, mark]) => mark.at) : [];
       let state = routes.get(layer.id);
       if (!state) routes.set(layer.id, (state = { layer, asking: 0, ends: '', askedAt: 0 }));
+      // Hidden, or with an end missing: off the map, though what was found is kept for when it shows again.
       if (off || !from || (route.to && !to) || via.length + (to ? 1 : 0) < 1) {
         state.done?.remove();
         state.left?.remove();
         state.done = state.left = undefined;
-        state.found = undefined;
         continue;
       }
       const ends = JSON.stringify([...via, ...(to ? [to] : [])].map((p) => [p.lat.toFixed(5), p.lng.toFixed(5)]));

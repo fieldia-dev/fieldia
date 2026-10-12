@@ -136,6 +136,15 @@ test('the map follows the courier until the person moves it; Follow brings the c
   expect(back.x > now.x && back.x < now.x + now.width && back.y > now.y && back.y < now.y + now.height).toBe(true);
 });
 
+test('still being prepared: the courier waits at the kitchen, and no route is drawn until they set off', async ({ page }) => {
+  await openOrder(page);
+  await page.evaluate(() => (window as unknown as Demo).fieldiaDemo.handle.form.setValues({ state: 'preparing' }));
+  await expect(route(page)).toHaveCount(0);
+  await expect(courier(page)).toHaveCount(1);
+  await page.evaluate(() => (window as unknown as Demo).fieldiaDemo.handle.form.setValues({ state: 'on_the_way' }));
+  await expect(route(page)).toHaveCount(1);
+});
+
 test('delivered: the courier and the route go, and the door turns to the delivered colour', async ({ page }) => {
   await openOrder(page);
   await send(page, ROUTE_LINE[ROUTE_LINE.length - 1], { state: 'delivered' });

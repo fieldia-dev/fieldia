@@ -63,7 +63,7 @@
                 "live": { "staleAfter": 60, "follow": true },
                 "invisible": "state == 'delivered'"
               },
-              { "id": "way", "route": { "from": "courier", "to": "door", "mode": "car", "progress": true, "write": { "seconds": "eta_seconds", "metres": "distance_m", "line": "route_line" } }, "invisible": "state == 'delivered'" },
+              { "id": "way", "route": { "from": "courier", "to": "door", "mode": "car", "progress": true, "write": { "seconds": "eta_seconds", "metres": "distance_m", "line": "route_line" } }, "invisible": "state != 'on_the_way'" },
               { "id": "me", "label": "You", "myLocation": true }
             ]
           }
