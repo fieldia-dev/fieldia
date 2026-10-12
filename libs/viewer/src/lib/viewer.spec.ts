@@ -214,6 +214,34 @@ describe('keys', () => {
     expect(dataSource.responses).toEqual([]);
   });
 
+  it('moves on from a one-line editor too, which keeps Enter from adding a line and says it is one line; one of several lines keeps Enter', () => {
+    // An editor of an app's own, as a code editor is: a box to type in that is no input, and takes Enter to add no line.
+    const editor =
+      (multiline: string) =>
+      ({ document: doc }: { document: Document }) => {
+        const box = doc.createElement('div');
+        box.setAttribute('role', 'textbox');
+        box.setAttribute('aria-multiline', multiline);
+        box.setAttribute('contenteditable', 'true');
+        box.tabIndex = 0;
+        box.addEventListener('keydown', (event) => event.key === 'Enter' && event.preventDefault());
+        return { element: box, update: () => undefined, focus: () => box.focus() };
+      };
+    for (const [multiline, moves] of [['false', true], ['true', false]] as const) {
+      const p = page('signup');
+      (p.layout as any).children[0].children.find((n: { id: string }) => n.id === 'f-name').widget = 'editor';
+      const host = document.createElement('div');
+      document.body.append(host);
+      handle = mountViewer(host, { page: p, keys: { enterMovesToNext: true }, widgets: { 'char.editor': editor(multiline) as never } });
+      const box = at(host, 'f-name').querySelector('[role="textbox"]') as HTMLElement;
+      box.focus();
+      press(box, 'Enter');
+      expect({ multiline, moved: document.activeElement === input(host, 'f-email'), stayed: document.activeElement === box }).toEqual({ multiline, moved: moves, stayed: !moves });
+      handle.destroy();
+      handle = null;
+    }
+  });
+
   it('lets a field use Enter itself first: an open list picks, and the focus stays', async () => {
     const dataSource = createMemoryDataSource({ records: { partner: { 1: customer }, country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' } } } });
     const { host, form } = mount('customer', { dataSource, recordId: 1, keys: { enterMovesToNext: true } });

@@ -1595,10 +1595,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       else void submitOrSave();
       return;
     }
-    // A plain Enter a field used itself, such as picking from an open list, is the field's.
-    if (event.defaultPrevented || !keys.enterMovesToNext || event.shiftKey || event.altKey) return;
     const from = event.target as HTMLElement;
-    if (from.tagName !== 'INPUT' && from.tagName !== 'SELECT') return;
+    // A one-line code editor is a text box to the form: it says it is one line, and keeps Enter only from adding one.
+    const oneLine = from.getAttribute('aria-multiline') === 'false';
+    // A plain Enter a field used itself, such as picking from an open list, is the field's.
+    if ((event.defaultPrevented && !oneLine) || !keys.enterMovesToNext || event.shiftKey || event.altKey) return;
+    if (from.tagName !== 'INPUT' && from.tagName !== 'SELECT' && !oneLine) return;
     if (from.closest('[data-type="one2many"]')) return;
     if (['button', 'submit', 'reset', 'file'].includes((from as HTMLInputElement).type)) return;
     event.preventDefault();
