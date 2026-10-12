@@ -351,3 +351,21 @@ test('its Code drawer shows the page and the page’s own script: one call to mo
   await drawer.getByRole('tab', { name: 'JavaScript' }).click();
   for (const words of ['mountListMap(', 'countArea: true', 'onSearch(search)', 'onViewChange(', 'map.highlight(id)', '.fd-map-embed { --fd-accent']) await expect(drawer.locator('code')).toContainText(words);
 });
+
+test('two quick presses of + at the closest zoom: the second has nowhere to go, and the map still says where it stops after', async ({ page }) => {
+  // One step from the closest the map images go (19), over Zamalek.
+  await openEmbed(page, '?at=30.0626,31.2197,18');
+  // The second press while the first zoom is still under way: kept, and made when it ends.
+  await zoomIn(theMap(page)).evaluate((button: HTMLElement) => {
+    button.click();
+    setTimeout(() => button.click(), 80);
+  });
+  await expect.poll(() => zoomOf(theMap(page))).toBe(19);
+  await expect.poll(() => atOf(page)[2]).toBe(19);
+  // A drag after it: a stop of its own, said in the address, Search this area offered.
+  const before = atOf(page)[1];
+  const middle = await pointOn(theMap(page), 0.6, 0.5);
+  await drag(page, middle, { x: middle.x - 160, y: middle.y });
+  await expect.poll(() => atOf(page)[1]).toBeGreaterThan(before);
+  await expect(here(page)).toBeVisible();
+});

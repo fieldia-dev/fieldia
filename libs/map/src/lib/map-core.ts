@@ -342,11 +342,12 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     map.on('zoomstart', () => (zooming = true));
     map.on('zoomend', () => {
       zooming = false;
-      stepping = !!owed;
-      if (!owed || !map) return;
-      const by = owed;
+      if (!map) return;
+      // The step kept, unless the map is already as close (or as far) as it goes: then there is none to come.
+      const to = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), map.getZoom() + owed));
       owed = 0;
-      map.setZoom(map.getZoom() + by);
+      stepping = to !== map.getZoom();
+      if (stepping) map.setZoom(to);
     });
     const step = (by: number) => {
       if (!map) return;
