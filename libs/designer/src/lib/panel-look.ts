@@ -1,4 +1,4 @@
-import { PART_LOOKS, THEMES, type Page, type PageLook, type SectionNode, type Theme } from '@fieldia/core';
+import { PART_LOOKS, SKINS, THEMES, type Page, type PageLook, type SectionNode, type Skin, type Theme } from '@fieldia/core';
 import { applyLook, THEME_SKINS } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer, LookPatch } from './designer';
@@ -10,8 +10,8 @@ import { partLookSettings } from './panel-look-parts';
 
 /**
  * The Look tab's settings: looks to start from, then the page's look — its
- * accent, font, spacing, corners, where labels sit and how wide, light or
- * dark, and each kind of part's own — and how a group is drawn. What is set
+ * skin, accent, font, spacing, corners, where labels sit and how wide, light
+ * or dark, and each kind of part's own — and how a group is drawn. What is set
  * is worn at once by the canvas, as the viewer wears it.
  */
 
@@ -31,9 +31,10 @@ export const SWATCHES: readonly [string, string][] = [
   ['#0e7c86', 'Teal'],
 ];
 
-type Key = 'font' | 'density' | 'corners' | 'labels' | 'helpShown' | 'readonlyShown' | 'scheme';
+type Key = 'skin' | 'font' | 'density' | 'corners' | 'labels' | 'helpShown' | 'readonlyShown' | 'scheme';
 /** The look's choices of a few, by their key, in the order they stand: their names and words are the designer's. */
 const CHOICES: { key: Key; name: string; values: string[] }[] = [
+  { key: 'skin', name: 'Skin', values: [...SKINS] },
   { key: 'font', name: 'Font', values: ['system', 'serif', 'rounded'] },
   { key: 'density', name: 'Spacing', values: ['compact', 'comfortable', 'roomy'] },
   { key: 'corners', name: 'Corners', values: ['square', 'soft', 'round'] },
@@ -58,12 +59,15 @@ function lookChoice(w: DesignerWords['panel'], key: Key, value: string): Choice<
       return { value, words: w.helpWays[value as keyof typeof w.helpWays] };
     case 'readonlyShown':
       return { value, words: w.readonlyWays[value as keyof typeof w.readonlyWays] };
+    case 'skin':
+      return { value, words: w.skins[value as Skin] };
     default:
       return value === 'auto' ? { value, words: w.schemes.auto, title: w.schemeAutoTitle } : { value, words: w.schemes[value as 'light' | 'dark'] };
   }
 }
-const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, readonlyShown: w.readonlyFields, scheme: w.colours })[key];
-const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : key === 'readonlyShown' ? w.readonlyShownHint : undefined);
+const lookName = (w: DesignerWords['panel'], key: Key) => ({ skin: w.skin, font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, readonlyShown: w.readonlyFields, scheme: w.colours })[key];
+const lookHint = (w: DesignerWords['panel'], key: Key) =>
+  key === 'skin' ? w.skinHint : key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : key === 'readonlyShown' ? w.readonlyShownHint : undefined;
 
 /** The themes by the names people know them by: names, so the same in every language. */
 const THEME_NAMES: Record<Theme, string> = {
@@ -122,11 +126,13 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   const readonlyRow = rows[CHOICES.findIndex((c) => c.key === 'readonlyShown')];
   const labelsAt = CHOICES.findIndex((c) => c.key === 'labels');
   rows.splice(labelsAt + 1, 0, widthRow);
+  // The skin after the theme, which brings one of its own, and the looks to start from.
+  const skinRow = rows.shift() as HTMLElement;
 
   const parts = partLookSettings(el, designer);
   const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
-    rows: [themeRow, ...presets.rows, accent, ...rows, parts.row, note],
+    rows: [themeRow, ...presets.rows, skinRow, accent, ...rows, parts.row, note],
     update(page) {
       presets.update(page);
       parts.update(page);
@@ -193,8 +199,8 @@ const WORN_TOKENS = ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-t
  * off too. It wears the skin of the editor round it.
  */
 export function wearLook(element: HTMLElement, look: PageLook | undefined): void {
-  // A theme brings its own skin; else the editor's round it.
-  const skin = look?.theme ? THEME_SKINS[look.theme] : (element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin') ?? null);
+  // The page's own skin; else its theme's; else the editor's round it.
+  const skin = look?.skin ?? (look?.theme ? THEME_SKINS[look.theme] : (element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin') ?? null));
   // The same look and skin as last time: worn already. Taken off and put on again, the whole part would be styled anew.
   const was = worn.get(element);
   if (was && was.look === look && was.skin === skin) return;

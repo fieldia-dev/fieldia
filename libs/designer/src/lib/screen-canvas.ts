@@ -1,6 +1,6 @@
 import { createForm, type Field, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
-import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer';
-import { createWidget, type Widget, type WidgetFactory } from '@fieldia/widgets';
+import { applyLook, labelPlace, planSection, THEME_SKINS, type Place } from '@fieldia/viewer';
+import { createWidget, wearsQuiet, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
 import { formViews } from './canvas-form';
@@ -242,7 +242,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     input.size = Math.max(4, input.value.length + 1);
   }
 
-  function drawCard(node: FieldNode, labels: Place['labels'], place: Where): HTMLElement {
+  function drawCard(node: FieldNode, labels: Place['labels'], place: Where, quietAround?: boolean): HTMLElement {
     const def = page.fields[node.field];
     const editing = selected === node.id;
     // Only the card being edited types its options in place: asked of it alone, as asking walks the page.
@@ -254,6 +254,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     }
     if (!card) cards.set(node.id, (card = buildCard(node.id, editing, ownChoice)));
     const element = card.element;
+    // The quiet look as the form will wear it: the field's own word, else its group's, else the page's skin.
+    const skin = page.look?.skin ?? (page.look?.theme ? THEME_SKINS[page.look.theme] : (options.skin ?? 'outlined'));
+    element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && (node.quiet ?? quietAround ?? skin === 'quiet'));
     // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
     const isPicked = picked.includes(node.id) && picked.length > 1;
     const was = card.drawn;
@@ -431,7 +434,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** Any part where it sits: a field, a group or an arrangement, tabs, or a block between fields. */
   function drawItem(node: LayoutNode, place: Place, at: Where): HTMLElement {
     drawnIds.add(node.id);
-    if (node.type === 'field') return drawCard(node, place.labels, at);
+    if (node.type === 'field') return drawCard(node, place.labels, at, place.quiet);
     if (node.type === 'section') return drawSection(node, place, at.index < at.columns ? at.under : null);
     if (node.type === 'tabs') return drawTabs(node, place);
     if (node.type === 'form') {
@@ -500,7 +503,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       shown.panel.dataset['dropSection'] = open.id;
       shown.grid.dataset['container'] = open.id;
     }
-    const inner: Place = { columns: 1, onPage: place.onPage, labels: place.labels };
+    const inner: Place = { columns: 1, onPage: place.onPage, labels: place.labels, quiet: place.quiet };
     arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, under: i === 0 ? 'tabs' : null, columns: 1 })));
     return shown.element;
   }

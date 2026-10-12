@@ -391,6 +391,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setFieldLabels(id: string, place: LabelPlace | null): boolean;
   /** Where one field's help shows — under it, behind a (?), or both; `null` for where the page shows help. */
   setFieldHelpShown(id: string, shown: HelpShown | null): boolean;
+  /** One field in the quiet look (true), or in its box though its group or the page is quiet (false); `null` for as they draw it. */
+  setFieldQuiet(id: string, quiet: boolean | null): boolean;
   /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
   setLook(patch: LookPatch): boolean;
   /**
@@ -1412,6 +1414,7 @@ export function createDesigner(options: {
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
     setFieldHelpShown: (id, shown) => apply((draft) => settings.setFieldHelpShown(draft, id, shown)),
+    setFieldQuiet: (id, quiet) => apply((draft) => settings.setFieldQuiet(draft, id, quiet)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
     setPartLook: (kind, patch) => {
       const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));

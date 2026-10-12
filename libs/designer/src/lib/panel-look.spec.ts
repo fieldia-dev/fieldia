@@ -31,7 +31,22 @@ describe('the Look tab — the page', () => {
     const { host, panel } = screenEditor();
     expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
-    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Theme', 'Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
+    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Theme', 'Look presets', 'Skin', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
+  });
+
+  it('picks the quiet skin, the canvas wearing it and its fields reading as words, and gives it back to the theme', () => {
+    const { host, canvas, press, pressed, look, shown } = screenEditor();
+    openTab(host, 'Look');
+    expect([...shown().querySelectorAll('[data-setting="Skin"] button')].map((b) => b.textContent)).toEqual(['Underline', 'Outlined', 'Quiet']);
+    press('Skin', 'Quiet');
+    expect(look()).toEqual({ skin: 'quiet' });
+    expect(pressed('Skin')).toEqual(['Quiet']);
+    expect(canvas.getAttribute('data-fd-skin')).toBe('quiet');
+    expect(canvas.querySelector('.fd-canvas-field[data-quiet]')).not.toBeNull();
+    press('Skin', 'Quiet');
+    expect(look()?.skin).toBeUndefined();
+    expect(canvas.getAttribute('data-fd-skin')).toBe('outlined');
+    expect(canvas.querySelector('.fd-canvas-field[data-quiet]')).toBeNull();
   });
 
   it('picks a theme in a known system’s style, the canvas wearing it on the theme’s own skin, and takes it off', () => {

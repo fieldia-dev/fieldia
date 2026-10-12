@@ -18,6 +18,8 @@ export interface SectionLook {
   labelWidth?: number | null;
   /** In twelfths, whether its rows stay full as parts come and go, or may leave gaps. */
   rows?: 'full' | 'gaps' | null;
+  /** Its fields in the quiet look, or in their boxes though the page is quiet. */
+  quiet?: boolean | null;
 }
 
 /** A change to the page's look; `null` takes a setting back. */
@@ -118,7 +120,7 @@ export function setSectionLook(page: Page, id: string, look: SectionLook): void 
     if (section.children.some((child) => !['field', 'text', 'button', 'spacer'].includes(child.type))) throw new Refusal((w) => w.layout.lineHoldsParts);
     for (const key of ['columns', 'rows', 'collapsible', 'collapsed'] as const) delete section[key];
   }
-  patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows }, { style: 'card', rows: 'full' });
+  patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows, quiet: look.quiet }, { style: 'card', rows: 'full' });
 }
 
 /** Where one field's label sits; `null` for where its group or the page puts labels. */
@@ -127,6 +129,14 @@ export function setFieldLabels(page: Page, id: string, place: LabelPlace | null)
   if (at?.node.type !== 'field') throw new Refusal((w) => w.layout.noField(id));
   if (place) at.node.labels = place;
   else delete at.node.labels;
+}
+
+/** One field in the quiet look, or in its box though its group or the page is quiet; `null` for as they draw it. */
+export function setFieldQuiet(page: Page, id: string, quiet: boolean | null): void {
+  const at = locate(page, id);
+  if (at?.node.type !== 'field') throw new Refusal((w) => w.layout.noField(id));
+  if (quiet === null) delete at.node.quiet;
+  else at.node.quiet = quiet;
 }
 
 /** Where one field's help shows; `null` for where the page shows help. */
