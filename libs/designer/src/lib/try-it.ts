@@ -1,10 +1,11 @@
-import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type MapNode, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type ListViewFactory, type MapPartFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
+import { containers } from './page-tree';
 import { sampleRows } from './samples';
 import { pageLanguage } from './translations';
 import { tryLanguage } from './try-language';
@@ -70,6 +71,20 @@ function madeUp(page: Page, centre = { lat: 0, lng: 0 }): Record<string, Record<
   return { [page.data.model]: Object.fromEntries(rows.map((values, i) => [String(i + 1), values as Values])) };
 }
 
+/** On a form's maps, each place layer somewhere near the middle of the app's maps, a few hundred metres from the next: a map with nothing on it shows nothing. */
+function madeUpPlaces(page: Page, centre = { lat: 0, lng: 0 }): Values {
+  const values: Values = {};
+  const maps = containers(page).flatMap((c) => c.children.filter((n): n is MapNode => n.type === 'map'));
+  maps.flatMap((map) => map.layers.filter((l) => !l.lines && (l.point || l.latitude))).forEach((layer, k) => {
+    const lat = Math.round((centre.lat + Math.sin(k * 2.1) * (0.006 + k * 0.004)) * 1e6) / 1e6;
+    const lng = Math.round((centre.lng + Math.cos(k * 2.1) * (0.006 + k * 0.004)) * 1e6) / 1e6;
+    if (layer.point) values[layer.point] = { type: 'Point', coordinates: [lng, lat] };
+    if (layer.latitude) values[layer.latitude] = lat;
+    if (layer.longitude) values[layer.longitude] = lng;
+  });
+  return values;
+}
+
 export function tryIt(options: TryItOptions): TryIt {
   const { el, doc, designer } = options;
   const w = designer.words.tryIt;
@@ -131,7 +146,7 @@ export function tryIt(options: TryItOptions): TryIt {
       skin: options.skin,
       widgets: options.widgets,
       ...(options.listViews ? { listViews: options.listViews } : {}),
-      ...(options.maps ? { maps: options.maps } : {}),
+      ...(options.maps ? { maps: options.maps, values: madeUpPlaces(page, options.sampleCentre) } : {}),
       ...language.viewerOptions(direction),
     });
     tryDrawer(el, frame, viewer, designer.words);

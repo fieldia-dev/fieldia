@@ -26,6 +26,8 @@ export interface ToolboxOptions {
   kinds: readonly QuestionKind[];
   /** Sections and tabs, for a screen. */
   layout?: boolean;
+  /** A map among the layout's blocks: the app draws maps (the screen editor's `maps`). */
+  maps?: boolean;
   /** The designer's words. */
   words: DesignerWords;
   /** “A saved form”, for a screen: shown while the designer can place one (`update`'s `forms`). */
@@ -138,7 +140,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const tabsTile = tile('layout:tabs', 'tabs', w.tabs, w.tabsTip);
   layout.tiles.append(tile('layout:section', 'section', w.section, w.sectionTip), tabsTile);
   // Advanced's layout tiles: dropped beside, under, into or between parts like any field.
-  const blocks = ['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button'] as const;
+  const blocks = ['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button', ...(options.maps ? (['map'] as const) : [])] as const;
   const blockTiles = blocks.map((kind) => {
     const [name, tip] = w.blocks[kind];
     return tile(`block:${kind}`, blockIcon(doc, kind), name, w.blockTip(name, tip));

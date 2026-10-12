@@ -110,6 +110,8 @@ function blockWords(page: Page, node: Part, words: DesignerWords): string | null
       return w.spacer;
     case 'form':
       return w.form(nameOf(page, node, words));
+    case 'map':
+      return w.map(nameOf(page, node, words));
     default:
       return null;
   }

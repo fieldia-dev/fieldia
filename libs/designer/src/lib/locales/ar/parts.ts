@@ -8,6 +8,7 @@ export const parts: DesignerWords['parts'] = {
   sideBySide: 'جنبًا إلى جنب',
   tabs: 'علامات تبويب',
   image: 'صورة',
+  map: 'خريطة',
   divider: 'خط فاصل',
   spacer: 'مسافة',
   untitledSection: 'قسم بلا عنوان',

@@ -87,6 +87,7 @@ export const changes: DesignerWords['changes'] = {
     button: (label) => `الزر ${q(label)}`,
     image: (alt) => `الصورة ${q(alt)}`,
     anImage: 'صورة',
+    map: (label) => `الخريطة ${q(label)}`,
     divider: 'خط فاصل',
     spacer: 'مسافة',
     form: (name) => `النموذج المحفوظ ${q(name)}`,

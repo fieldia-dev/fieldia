@@ -41,6 +41,7 @@ export const outline: DesignerWords['outline'] = {
     divider: 'خط فاصل',
     spacer: 'مسافة',
     image: 'صورة',
+    map: 'خريطة',
     slot: 'جزء خاص بالتطبيق',
     form: 'نموذج محفوظ',
     part: 'جزء',

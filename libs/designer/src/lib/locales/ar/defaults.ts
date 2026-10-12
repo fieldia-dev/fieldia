@@ -23,6 +23,8 @@ export const defaults: DesignerWords['defaults'] = {
   alert: 'أمر ينبغي معرفته عن هذا السجل.',
   noneOfThese: 'لا شيء مما سبق',
   newGroup: 'مجموعة جديدة',
+  newMap: 'خريطة',
+  you: 'أنت',
   left: 'اليسار',
   right: 'اليمين',
   first: 'الأولى',

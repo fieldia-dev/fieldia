@@ -22,7 +22,8 @@ export const toolbox = {
     spacer: ['Spacer', 'Room, or an empty cell'],
     image: ['Image', 'A picture or a logo'],
     button: ['Button', 'Send, or another action'],
-  } as Record<'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button', readonly [name: string, tip: string]>,
+    map: ['Map', 'The record’s places, a route between them, the reader’s own place'],
+  } as Record<'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button' | 'map', readonly [name: string, tip: string]>,
   blockTip: (name: string, tip: string) => `${name}: ${tip}`,
   // ---- the rail's tabs
   add: 'Add',

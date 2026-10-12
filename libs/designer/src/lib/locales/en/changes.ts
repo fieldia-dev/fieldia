@@ -90,6 +90,7 @@ export const changes = {
     button: (label: string) => `the button “${label}”`,
     image: (alt: string) => `the image “${alt}”`,
     anImage: 'an image',
+    map: (label: string) => `the map “${label}”`,
     divider: 'a divider',
     spacer: 'a spacer',
     form: (name: string) => `the saved form “${name}”`,

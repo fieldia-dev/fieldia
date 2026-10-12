@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 import { formContent } from './panel-form';
+import { mapContent } from './panel-map';
 import { whenClicked } from './steps-panel';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
@@ -27,6 +28,8 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
   const kind = locate(designer.getPage(), id)?.node.type;
   // embed lane: a saved form placed here.
   if (kind === 'form') return formContent(el, designer, id);
+  // A map: its name, height and layers.
+  if (kind === 'map') return mapContent(el, designer, id);
   const w = designer.words.panel;
   if (kind === 'image') {
     const src = el('input', { class: 'fd-input', 'aria-label': w.pictureAddress, placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;

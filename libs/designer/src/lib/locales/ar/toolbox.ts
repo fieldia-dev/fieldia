@@ -23,6 +23,7 @@ export const toolbox: DesignerWords['toolbox'] = {
     spacer: ['مسافة', 'فراغ، أو خلية فارغة'],
     image: ['صورة', 'صورة أو شعار'],
     button: ['زر', 'إرسال، أو إجراء آخر'],
+    map: ['خريطة', 'أماكن السجل وطريق بينها ومكان القارئ'],
   },
   blockTip: (name, tip) => `${name}: ${tip}`,
   add: 'إضافة',

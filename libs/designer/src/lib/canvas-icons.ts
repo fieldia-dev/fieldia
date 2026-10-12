@@ -15,6 +15,7 @@ const SHAPES: Record<string, string> = {
   image: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-8 8"/>',
   button: '<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M9 12h6"/>',
   form: '<rect x="3" y="3" width="13" height="16" rx="2"/><path d="M7 8h5M7 12h5M20 7v12a2 2 0 0 1-2 2H8"/>',
+  map: '<path d="M3 6.5l6-2.5 6 2.5 6-2.5v13.5l-6 2.5-6-2.5-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
 };
 
 export function blockIcon(doc: Document, name: string): SVGSVGElement {

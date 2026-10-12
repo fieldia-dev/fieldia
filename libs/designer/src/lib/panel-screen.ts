@@ -51,6 +51,7 @@ const BLOCK_HEADS: Record<string, [keyof DesignerWords['panel']['heads'], string
   spacer: ['spacer', 'width'],
   slot: ['slot', 'more'],
   form: ['form', 'saved-form'],
+  map: ['map', 'map'],
 };
 
 /** What is picked, as the head says it: its kind, with an icon, and its name. */

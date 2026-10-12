@@ -6,6 +6,7 @@ export const parts = {
   sideBySide: 'Side by side',
   tabs: 'Tabs',
   image: 'Image',
+  map: 'Map',
   divider: 'Divider',
   spacer: 'Spacer',
   untitledSection: 'Untitled section',

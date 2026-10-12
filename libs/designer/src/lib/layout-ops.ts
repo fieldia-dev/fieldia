@@ -31,7 +31,7 @@ export type Drop =
   | { how: 'column'; container: string; after: boolean };
 
 /** What the toolbox adds besides fields: groups, tabs, and the blocks between fields. */
-export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button';
+export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button' | 'map';
 
 /** A new part: a field of a kind, a field of the backend's model, or a block. */
 export type NewPart = { kind: string } | { field: string } | { block: BlockKind };
@@ -334,10 +334,13 @@ export function makeBlock(kind: BlockKind, name: (prefix: string) => string, wor
       return { type: 'divider', id: name('divider') };
     case 'spacer':
       return { type: 'spacer', id: name('spacer') };
+    case 'map':
+      // A map starts with the reader's own place, which needs no field: its panel adds the record's places and routes.
+      return { type: 'map', id: name('map'), label: w.newMap, layers: [{ id: 'me', label: w.you, myLocation: true }] };
   }
 }
 
-const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button']);
+const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button', 'map']);
 
 /** A new part from the toolbox, its field (if any) added to the page's. Refuses what the store's rules refuse. */
 export function makePart(page: Page, part: NewPart, context: LayoutContext): LayoutNode {

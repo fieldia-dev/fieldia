@@ -41,6 +41,7 @@ export const outline = {
     divider: 'Line',
     spacer: 'Room',
     image: 'Picture',
+    map: 'Map',
     slot: 'Slot',
     form: 'Saved form',
     part: 'Part',

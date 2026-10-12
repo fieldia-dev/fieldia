@@ -51,6 +51,11 @@ export const DESIGNER_KINDS_CSS = /* css */ `
   background: repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), repeating-linear-gradient(90deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), var(--fd-fill);
 }
 .fd-map-preview.fd-canvas-block strong { color: var(--fd-text); font-size: 14px; }
+/* A map's layers in its panel: each a small framed group, its kind and a way to take it off at its head. */
+.fd-map-layers { display: grid; gap: 10px; }
+.fd-map-layer { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); }
+.fd-map-layer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-map-layer-head strong { font-size: 13px; color: var(--fd-text); }
 /* A table's columns: each one's name, Add up for a number, and whether people may hide it. */
 .fd-line-columns { display: grid; gap: 6px; width: 100%; margin: 0; padding: 0; list-style: none; }
 .fd-line-column { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 11em); gap: 8px; align-items: center; }

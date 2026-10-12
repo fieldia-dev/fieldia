@@ -13,6 +13,7 @@ import {
   type OptionsFrom,
   type PartLookKind,
   type HelpShown,
+  type MapLayer,
   type Page,
   type PageLook,
   type SectionNode,
@@ -41,7 +42,7 @@ import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
-import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields, type Container } from './page-tree';
+import { allIds, containers, findContainer, findNode, findTab, firstSection, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
 import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
@@ -449,6 +450,11 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   // canvas lane
   /** A block's words and look, a button's label, a picture's address and description; a run of typing in one is one undo step. */
   updateBlock(id: string, patch: BlockPatch): boolean;
+  /**
+   * A map's name, height and layers. The fields its layers name come onto the
+   * page from the model; the page check says what else is wrong with them.
+   */
+  updateMap(id: string, patch: { label?: string; height?: number | null; layers?: MapLayer[] }): boolean;
   /**
    * Several parts' widths as one edit: two trading width across the gutter
    * between them. With `twelfths`, widths are twelfths of their row, and a
@@ -1522,6 +1528,21 @@ export function createDesigner(options: {
     },
     // canvas lane
     updateBlock: (id, patch) => apply((draft) => settings.updateBlock(draft, id, patch), `block:${id}:${Object.keys(patch).join(',')}`),
+    updateMap: (id, patch) =>
+      apply((draft) => {
+        const node = findNode(draft, id)?.node;
+        if (!node || node.type !== 'map') throw new Refusal((w) => w.layout.noPart(id));
+        if (patch.label !== undefined) {
+          if (patch.label.trim()) node.label = patch.label;
+          else delete node.label;
+        }
+        if (patch.height === null) delete node.height;
+        else if (patch.height !== undefined) node.height = patch.height;
+        if (patch.layers !== undefined) {
+          node.layers = clone(patch.layers);
+          for (const name of mapNodeFields(node)) if (!draft.fields[name] && model[name]) draft.fields[name] = model[name];
+        }
+      }, `map:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
     ...rulesCommands({ apply, getPage: () => page, fromModel }),

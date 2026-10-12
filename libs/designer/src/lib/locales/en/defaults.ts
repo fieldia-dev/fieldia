@@ -28,6 +28,8 @@ export const defaults = {
   noneOfThese: 'None of these',
   /** The blocks Advanced's toolbox adds. */
   newGroup: 'New group',
+  newMap: 'Map',
+  you: 'You',
   left: 'Left',
   right: 'Right',
   first: 'First',

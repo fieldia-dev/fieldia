@@ -384,7 +384,7 @@ test('a courier’s card offers the list’s own button, pressed for that courie
   const { demo } = await openList(page, 'plain', COURIERS);
   for (let i = 0; i < 3; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
   await page.waitForTimeout(600);
-  const pin = pins(page).first();
+  const pin = await pinInView(page);
   const id = (await pin.getAttribute('data-id'))!;
   await pin.locator('.fd-map-face').click();
   await cardShown(page);

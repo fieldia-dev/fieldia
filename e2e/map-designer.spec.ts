@@ -99,3 +99,47 @@ test('a list on a map, in the screen designer: its Map in the list’s panel, an
   await expect(tried.locator('.fd-map-list-note')).toBeHidden();
   expect(problems).toEqual([]);
 });
+
+/** Every map on a page, wherever it sits. */
+const mapsOn = (layout: unknown): { id: string; label?: string; layers: { id: string; pin?: { look?: string } }[] }[] => {
+  const found: ReturnType<typeof mapsOn> = [];
+  const walk = (node: unknown) => {
+    if (!node || typeof node !== 'object') return;
+    const part = node as { type?: string; children?: unknown[] };
+    if (part.type === 'map') found.push(part as never);
+    part.children?.forEach(walk);
+  };
+  walk(layout);
+  return found;
+};
+
+test('a map on a page, in the screen designer: its layers in its panel, a new one from the toolbox, and Try it draws the places', async ({ page }) => {
+  const problems = watch(page);
+  await stubMaps(page);
+  await page.goto('/screen/?start=order&ride=off');
+  // On the canvas, its name and its layers: the map itself is drawn in Try it.
+  const block = page.locator('.fd-map-preview.fd-canvas-block');
+  await expect(block).toContainText('Where your order is');
+  await expect(block).toContainText('Layers: kitchen, door, courier, way, me.');
+  await block.click();
+  const layers = page.locator('.fd-map-layer');
+  await expect(layers).toHaveCount(5);
+  await expect(layers.first().getByLabel('Words')).toHaveValue('Kitchen');
+  await layers.first().getByLabel('Its pin looks like').selectOption({ label: 'A dot' });
+  expect(mapsOn((await page_(page)).layout)[0].layers[0].pin?.look).toBe('dot');
+  await screen(page, 'map-designer-form-map', { viewport: true });
+
+  // A new map, among the blocks of Advanced: it starts with the reader's own place.
+  await page.getByRole('button', { name: 'Advanced', exact: true }).click();
+  await tile(page, 'block:map').click();
+  const maps = mapsOn((await page_(page)).layout);
+  expect(maps).toHaveLength(2);
+  expect(maps[1].layers).toEqual([{ id: 'me', label: 'You', myLocation: true }]);
+
+  // Try it: the order's places, made up around the middle of the app's maps.
+  await page.getByRole('button', { name: 'Try it' }).click();
+  const tried = page.locator('.fd-try-frame .fd-map-form').first();
+  await expect(tried.locator('.leaflet-tile-loaded').first()).toBeVisible();
+  await expect(tried.locator('.fd-map-mark')).toHaveCount(3);
+  expect(problems).toEqual([]);
+});

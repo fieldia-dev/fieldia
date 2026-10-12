@@ -130,6 +130,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     kinds,
     words: designer.words,
     layout: true,
+    // A map among the blocks, when the app draws maps.
+    maps: !!options.maps,
     forms: true,
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),

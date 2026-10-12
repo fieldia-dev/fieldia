@@ -26,7 +26,7 @@
     "courier_lng": { "type": "float", "label": "Courier longitude" },
     "courier_heading": { "type": "integer", "label": "Heading" },
     "eta_seconds": { "type": "integer", "label": "Seconds left" },
-    "eta_text": { "type": "char", "label": "Arrives in", "compute": "round(eta_seconds / 60) + ' min'" },
+    "eta_text": { "type": "char", "label": "Arrives in", "compute": "if(eta_seconds > 0, round(eta_seconds / 60) + ' min', '')" },
     "distance_m": { "type": "integer", "label": "Metres left" },
     "route_line": { "type": "json", "label": "Route" }
   },

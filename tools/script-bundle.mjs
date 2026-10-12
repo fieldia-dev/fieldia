@@ -201,8 +201,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a host's tokens worn by the form and its dialogs (tokens, setTokens) — 0.4 more, to 445.4.
 // A list's records on a map (the List, Map and both switch, the map's place beside the table, its records lit and
 // chosen with the rows, the page's checks of a map) — 4.8 more, to 452.2; a map on a form (drawn by the app's maps, its
-// layers checked: places, lines, routes, the reader's own place) — 3.3 more, to 455.5.
-const BUDGET_KB = 455.5;
+// layers checked: places, lines, routes, the reader's own place) — 3.3 more, to 455.5; a list's buttons on its map's
+// cards — 0.6 more, to 456.1.
+const BUDGET_KB = 456.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time

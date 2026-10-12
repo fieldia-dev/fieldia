@@ -8,6 +8,7 @@ import { appKindIcon } from './kinds';
  */
 
 const SHAPES: Record<string, string> = {
+  map: '<path d="M3 6.5l6-2.5 6 2.5 6-2.5v13.5l-6 2.5-6-2.5-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
   // Kinds of field.
   'short-answer': '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 10v4"/>',
   paragraph: '<path d="M4 6h16M4 10h16M4 14h16M4 18h10"/>',
