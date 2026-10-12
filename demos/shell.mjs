@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { snippets } from './snippets.mjs';
+import { listMapSnippets, snippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -20,8 +20,9 @@ const visitor = !navigator.webdriver && !embedded;
 const framework = FRAMEWORKS.some((f) => f.id === app) ? app : 'plain';
 // The frame wears its form's scheme (shell.css): the one the address names, else the reader's own as the
 // page opens, which the form follows too (demos/shared/sample-data.ts). The script tag demo's form takes
-// nothing from the address and is drawn light, so its frame is too.
-const scheme = !FRAMEWORKS.some((f) => f.id === app)
+// nothing from the address and is drawn light, so its frame is too. A demo of its own that follows the
+// scheme (`schemes`, the map in a page of its own) wears it as the frameworks do.
+const scheme = !FRAMEWORKS.some((f) => f.id === app) && !demo?.schemes
   ? 'light'
   : (params.get('scheme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'auto' : 'light'));
 document.documentElement.dataset.scheme = scheme;
@@ -67,14 +68,18 @@ function drawHeader() {
           .map(([id, name]) => `<a href="${esc(withParam('editor', id))}"${id === editor ? ' aria-current="page"' : ''}>${name}</a>`)
           .join('')}</nav></div>`
       : '';
-  // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not.
+  const schemes = `<nav class="dh-pills dh-schemes" aria-label="Scheme">${[['', 'System'], ['light', 'Light'], ['dark', 'Dark']]
+    .map(([id, name]) => `<a href="${esc(withParam('scheme', id))}"${id === (params.get('scheme') ?? '') ? ' aria-current="page"' : ''}>${name}</a>`)
+    .join('')}</nav>`;
+  // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not,
+  // unless it follows the reader's scheme: then the scheme alone.
   const skins = demo?.app && demo.app !== 'plain'
-    ? ''
+    ? demo.schemes
+      ? `<div class="dh-looks">${schemes}</div>`
+      : ''
     : `<div class="dh-looks">${editors}<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
-        .join('')}</nav><nav class="dh-pills dh-schemes" aria-label="Scheme">${[['', 'System'], ['light', 'Light'], ['dark', 'Dark']]
-        .map(([id, name]) => `<a href="${esc(withParam('scheme', id))}"${id === (params.get('scheme') ?? '') ? ' aria-current="page"' : ''}>${name}</a>`)
-        .join('')}</nav><label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
+        .join('')}</nav>${schemes}<label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
         .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)
         .join('')}</select></label></div>`;
   head.innerHTML = `
@@ -180,13 +185,20 @@ function drawHowTo() {
 // ---- the code drawer ------------------------------------------------------------------------------
 
 function drawCode() {
-  const tabs = [
-    ['json', 'Page JSON', 'The page this demo shows: plain JSON, the same the browser tests drive.'],
-    ['js', 'JavaScript', 'One call, no framework.'],
-    ['react', 'React', 'The same page in React.'],
-    ['vue', 'Vue', 'The same page in Vue.'],
-    ['angular', 'Angular', 'The same page in Angular.'],
-  ];
+  // A list's map in a page of its own: the page that describes its records, and the page's own script.
+  const ownPage = demo?.code === 'list-map';
+  const tabs = ownPage
+    ? [
+        ['json', 'Page JSON', 'What the map shows of each home: plain JSON, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'The page’s own script: its list, its address, and one call for the map.'],
+      ]
+    : [
+        ['json', 'Page JSON', 'The page this demo shows: plain JSON, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'One call, no framework.'],
+        ['react', 'React', 'The same page in React.'],
+        ['vue', 'Vue', 'The same page in Vue.'],
+        ['angular', 'Angular', 'The same page in Angular.'],
+      ];
   const drawer = document.createElement('section');
   drawer.id = 'demo-code';
   drawer.hidden = true;
@@ -207,9 +219,9 @@ function drawCode() {
   let current = 'json';
   const show = (tab) => {
     current = tab;
-    const page = window.fieldiaDemo?.handle?.form?.page ?? null;
+    const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], snippets(page, params)[tab]);
+    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], (ownPage ? listMapSnippets(page) : snippets(page, params))[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

@@ -38,7 +38,8 @@ try {
   for (const demo of shots) {
     // 127.0.0.1, not localhost: another program may hold the port on another address.
     await page.goto(`http://127.0.0.1:${PORT}/${demo.href}`);
-    await page.locator('.fd-form').first().waitFor();
+    // A form, or a page of its own's map (the map in a page of your own), and its map images.
+    await page.locator('.fd-form, .fd-map-embed .leaflet-tile-loaded').first().waitFor();
     // Lists, links and grids fill in after their first answer; fonts settle.
     await page.waitForTimeout(900);
     const top = await page.locator('#app').evaluate((app) => app.getBoundingClientRect().top);

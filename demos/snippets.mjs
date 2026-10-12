@@ -222,3 +222,58 @@ export class ScreenComponent {
 
   return { json: JSON.stringify(page ?? {}, null, 2), js, react, vue, angular };
 }
+
+/**
+ * A list's map in a page of its own (`mountListMap`): the page's JSON, and
+ * the page's own script as the demo runs it — its search, its address, its
+ * list lit by the pins — with the map mounted in one call.
+ */
+export function listMapSnippets(page) {
+  const name = page?.id ?? 'page';
+  const js = `import { createMemoryDataSource } from '@fieldia/core';
+import { mountListMap, openStreetMap } from '@fieldia/map';
+import page from './${name}.page.json';
+
+// Your own, talking to your server: its list() reads the filter it is given.
+const dataSource = createMemoryDataSource();
+
+// The page's own search: its offer, and one area of each kind the map asked for.
+let offer = 'sale';
+const searches = new Map();
+const filter = () => [{ field: 'offer', op: '=', value: offer }, ...[...searches.values()].flatMap((s) => s.filter)];
+
+// Where the map opens: ?at=lat,lng,zoom, as the map wrote it there.
+const params = new URLSearchParams(location.search);
+const [lat, lng, zoom] = (params.get('at') ?? '').split(',').map(Number);
+
+// The map fills its element ("height": "fill"): give it a height, a column of the page, say.
+const map = mountListMap(document.getElementById('map'), {
+  page,
+  provider: openStreetMap(), // yours: azureMaps, googleMaps, mapbox
+  dataSource,
+  locale: document.documentElement.lang,
+  filter,
+  sort: [{ field: 'price' }],
+  ...(Number.isFinite(zoom) ? { start: { center: { lat, lng }, zoom } } : {}),
+  // "Search this area (24)": the source counts a view's homes when the homes on hand cannot.
+  countArea: true,
+  onSearch(search) {
+    searches.set(search.kind, search); // "In this area", "In the area drawn": one of each
+    showHomes(filter()); // your own list, from the same search
+    map.reload();
+  },
+  onViewChange({ center, zoom }) {
+    params.set('at', \`\${center.lat.toFixed(5)},\${center.lng.toFixed(5)},\${zoom}\`);
+    history.replaceState(null, '', \`?\${params}\`);
+  },
+  onHighlight: (id) => lightRow(id), // a pin under the pointer lights its row
+  onOpenRecord: (id) => openHome(id), // a card's Open
+});
+
+// Each of your rows lights its pin.
+row.addEventListener('mouseenter', () => map.highlight(id));
+row.addEventListener('mouseleave', () => map.highlight(null));
+
+// Your colours, over Fieldia's: .fd-map-embed { --fd-accent: #375dfb; }`;
+  return { json: JSON.stringify(page ?? {}, null, 2), js };
+}

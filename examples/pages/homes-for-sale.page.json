@@ -1,0 +1,80 @@
+{
+  "fieldia": "0.1",
+  "id": "homes-for-sale",
+  "title": "Homes",
+  "description": "The homes a page of its own lists beside Fieldia's map of them: the map fills its column, takes every gesture, and comes no closer than a neighbourhood when it fits the homes.",
+  "data": { "kind": "record", "model": "home" },
+  "fields": {
+    "name": { "type": "char", "label": "Home" },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        { "value": "sale", "label": "For sale" },
+        { "value": "rent", "label": "To rent, a month" }
+      ]
+    },
+    "price": { "type": "monetary", "label": "Price", "currency": "EGP", "digits": [12, 0] },
+    "bedrooms": { "type": "integer", "label": "Bedrooms" },
+    "area_m2": { "type": "integer", "label": "Area, m²" },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        { "value": "zamalek", "label": "Zamalek" },
+        { "value": "garden_city", "label": "Garden City" },
+        { "value": "dokki", "label": "Dokki" },
+        { "value": "mohandessin", "label": "Mohandessin" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "heliopolis", "label": "Heliopolis" },
+        { "value": "nasr_city", "label": "Nasr City" },
+        { "value": "new_cairo", "label": "New Cairo" },
+        { "value": "sheikh_zayed", "label": "Sheikh Zayed" },
+        { "value": "october", "label": "6th of October" }
+      ]
+    },
+    "lat": { "type": "float", "label": "Latitude" },
+    "lng": { "type": "float", "label": "Longitude" },
+    "photo": { "type": "image", "label": "Photo" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "homes",
+    "columns": ["name", "price"],
+    "map": {
+      "latitude": "lat",
+      "longitude": "lng",
+      "pin": { "label": "price", "tones": [{ "tone": "info", "when": "offer == 'rent'" }] },
+      "card": { "title": "name", "image": "photo", "fields": ["price", "bedrooms", "area_m2", "district"] },
+      "height": "fill",
+      "gestures": "all",
+      "fitZoom": 14
+    }
+  },
+  "translations": {
+    "ar": {
+      "Homes": "المنازل",
+      "Home": "المنزل",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "To rent, a month": "للإيجار، شهريًا",
+      "Price": "السعر",
+      "Bedrooms": "غرف النوم",
+      "Area, m²": "المساحة، م²",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Garden City": "جاردن سيتي",
+      "Dokki": "الدقي",
+      "Mohandessin": "المهندسين",
+      "Maadi": "المعادي",
+      "Heliopolis": "مصر الجديدة",
+      "Nasr City": "مدينة نصر",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "6th of October": "السادس من أكتوبر",
+      "Latitude": "خط العرض",
+      "Longitude": "خط الطول",
+      "Photo": "الصورة"
+    }
+  }
+}
