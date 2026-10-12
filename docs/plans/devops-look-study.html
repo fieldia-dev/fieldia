@@ -69,6 +69,7 @@ td:first-child { font-weight: 600; width: 22%; }
 .ok { background: var(--ok-soft); color: var(--ok); }
 .part { background: var(--part-soft); color: var(--part); }
 .miss { background: var(--miss-soft); color: var(--miss); }
+.else { background: var(--soft); color: var(--accent); }
 
 /* Proposals */
 .proposal { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
@@ -127,17 +128,6 @@ td:first-child { font-weight: 600; width: 22%; }
 .picker .row small { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .picker .indent1 { padding-inline-start: 26px; } .picker .indent0 { padding-inline-start: 10px; }
 
-.board { min-width: 620px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.lane h5 { margin: 0 0 6px; display: flex; justify-content: space-between; font: 600 13px/1.3 var(--display); }
-.lane h5 small { font: 600 12px var(--mono); color: var(--muted); }
-.lane h5 small.over { color: var(--miss); }
-.card { background: var(--surface); border: 1px solid var(--line); border-inline-start: 3px solid var(--dot-active); border-radius: 6px; padding: 7px 8px; margin-bottom: 7px; font-size: 12.5px; }
-.card.bug { border-inline-start-color: var(--miss); }
-.card .id { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-end: 4px; }
-.card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 11.5px; color: var(--muted); }
-.card .tag { padding: 0 6px; border-radius: 999px; background: var(--soft); color: var(--accent); }
-.add { font-size: 12px; color: var(--accent); margin-bottom: 7px; }
-
 .filterbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
 .filterbar .kw { flex: 1; color: var(--muted); }
 .filterbar .f { padding: 2px 8px; border-radius: 6px; font-size: 12.5px; }
@@ -181,7 +171,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   <div class="verdict">
     <div><b>The layout: mostly covered</b><p>Three columns of titled groups, labels above or beside, compact density and collapsible groups are all already in Fieldia's page format.</p></div>
     <div><b>The controls: the real gap</b><p>DevOps fields read as plain text until you point at them. Ours always look like boxes. A quiet look is the single change that would make Fieldia feel like this.</p></div>
-    <div><b>Missing parts</b><p>A Kanban board, a path picker with suggestions, a record header bar with tabs that carry counts, and a state history with before and after.</p></div>
+    <div><b>Missing parts</b><p>A path picker with suggestions, a record header bar with tabs that carry counts, and a state history with before and after. The board comes from Grafloria.</p></div>
   </div>
 
   <h2>What we cover today</h2>
@@ -202,7 +192,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
         <tr><td>Record header bar</td><td>Type badge and colour strip, ID and inline title, assignee, comment count, tags, Save and Close (split), Follow, refresh, revert, "Updated by … : Aug 25", icon tabs with counts (History, Links 0, Attachments 1).</td><td><span class="pill part">Partly</span> sheet header: title, avatar, status bar, stat buttons, gear menu, pager, breadcrumbs</td><td>Kind strip and badge, tabs with counts, "updated by", split button, Follow, revert.</td></tr>
         <tr><td>Open over the list</td><td>The work item opens large over the backlog, with maximise and close.</td><td><span class="pill ok">Covered</span> dialogs and side panels</td><td>Maximise.</td></tr>
         <tr><td>History</td><td>A state graph (each change with who and when), a history list grouped by age, and each change's before and after (old struck out, new in green).</td><td><span class="pill part">Partly</span> the chatter's tracked field changes</td><td>State timeline, before-and-after view.</td></tr>
-        <tr><td>Kanban board</td><td>Columns by state with counts and limits (11/5 in red), cards with type, ID, title, state, assignee, tags, checklist 0/1; New item at the top; columns that collapse; Show more items.</td><td><span class="pill miss">Missing</span> a list shows as a table or a map</td><td>A board view of a list.</td></tr>
+        <tr><td>Kanban board</td><td>Columns by state with counts and limits (11/5 in red), cards with type, ID, title, state, assignee, tags, checklist 0/1; New item at the top; columns that collapse; Show more items.</td><td><span class="pill else">In Grafloria</span> its Kanban already has column limits, checklists, tags, avatars, and moving cards by drag and keyboard: <a href="https://grafloria.com/demos/dashboard/kanban-board.html">board</a>, <a href="https://grafloria.com/demos/dashboard/kanban-studio.html">studio</a></td><td>None for Fieldia.</td></tr>
         <tr><td>Filter bar</td><td>"Filter by keyword", then a dropdown per field (Bug, Active, Area, Iteration, Tags), then clear.</td><td><span class="pill part">Partly</span> one search bar with chips, Filters, Group By, Favourites</td><td>A field-per-dropdown filter bar.</td></tr>
         <tr><td>Column options</td><td>Column Options, expand and collapse all, an order column.</td><td><span class="pill part">Partly</span> grouped rows that open and close; the page sets the columns</td><td>A column chooser, and expand and collapse all.</td></tr>
       </tbody>
@@ -210,7 +200,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </div>
 
   <h2>What I would add</h2>
-  <p>Seven additions, each sketched as a Fieldia page would draw it. Sizes are rough: S is days, M about a week, L two weeks or more.</p>
+  <p>Six additions, each sketched as a Fieldia page would draw it. Sizes are rough: S is days, M about a week.</p>
 
   <section class="proposal" id="quiet">
     <div class="proposal-head"><h3>1. A quiet look for fields</h3><span class="pill miss">Biggest gap</span><span class="size">Size M</span></div>
@@ -267,37 +257,8 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
     </div>
   </section>
 
-  <section class="proposal" id="board">
-    <div class="proposal-head"><h3>3. A board view of a list</h3><span class="pill miss">Missing</span><span class="size">Size L</span></div>
-    <div class="proposal-body wide">
-      <div>
-        <p class="saw">Seen in: the board. Five columns by state, about 80 cards, cards dragged between columns to change their state.</p>
-        <ul>
-          <li>A list view like the map: <code>"board": { "column": "state" }</code> beside <code>"map"</code>, with the same view switch, search and selection.</li>
-          <li>Each column shows its count and a limit, in red when over it ("11/5").</li>
-          <li>The card is laid out by the page: kind strip, ID, title, state dot, assignee, tags, checklist progress.</li>
-          <li>Moving a card changes its column's field, by drag and by keyboard (a Move to… menu), through the data source.</li>
-          <li>New item at the top of a column; columns that fold; Show more at the bottom, loaded by page.</li>
-        </ul>
-      </div>
-      <div class="sketch" aria-label="Sketch of a board">
-        <div class="board">
-          <div class="lane"><h5>To do <small>24</small></h5><div class="add">+ New item</div>
-            <div class="card bug"><span class="id">4404</span>Draft lost when offline<div class="foot"><span><span class="dot new"></span>New</span><span>RO</span></div></div>
-            <div class="card"><span class="id">5073</span>Add an export to Excel<div class="foot"><span><span class="dot new"></span>New</span><span>☑ 0/1</span></div></div></div>
-          <div class="lane"><h5>Returned <small class="over">11/5</small></h5>
-            <div class="card bug"><span class="id">5513</span>Price change not shown in list<div class="foot"><span><span class="dot new"></span>New</span><span class="tag">video</span></div></div></div>
-          <div class="lane"><h5>In progress <small class="over">17/5</small></h5>
-            <div class="card bug"><span class="id">5140</span>Stock count wrong<div class="foot"><span><span class="dot active"></span>Active</span><span></span></div></div></div>
-          <div class="lane"><h5>For testing <small>3/5</small></h5>
-            <div class="card bug"><span class="id">5786</span>Receipt total shows zero<div class="foot"><span><span class="dot resolved"></span>Resolved</span><span></span></div></div></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section class="proposal" id="picker">
-    <div class="proposal-head"><h3>4. A path picker with suggestions</h3><span class="pill part">Extends the link field</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>3. A path picker with suggestions</h3><span class="pill part">Extends the link field</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: Area and Iteration. Recently used paths first, then the full tree; each iteration's dates right-aligned.</p>
@@ -326,7 +287,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="rich">
-    <div class="proposal-head"><h3>5. Rich text that stays out of the way</h3><span class="pill part">Extends formatted text</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>4. Rich text that stays out of the way</h3><span class="pill part">Extends formatted text</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: System Info and the comment box. The toolbar appears only while the field has the focus.</p>
@@ -348,7 +309,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="history">
-    <div class="proposal-head"><h3>6. History with before and after</h3><span class="pill part">Extends the chatter</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>5. History with before and after</h3><span class="pill part">Extends the chatter</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: the History tab. The state's path across the top; each change's old value struck out beside its new one.</p>
@@ -372,7 +333,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="filters">
-    <div class="proposal-head"><h3>7. A filter bar, one dropdown per field</h3><span class="pill part">Another face of the search</span><span class="size">Size S</span></div>
+    <div class="proposal-head"><h3>6. A filter bar, one dropdown per field</h3><span class="pill part">Another face of the search</span><span class="size">Size S</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: the backlog. Keyword on the left; Work item type, State, Area, Iteration and Tags as dropdowns of checkboxes.</p>
@@ -399,8 +360,8 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   <h2>The order I would build in</h2>
   <div class="order">
     <div><span class="when">0.19</span><ul><li>Already planned: the map features Dawarly needs, and the text address field if you want it.</li><li>The quiet look (1), as the rest leans on it.</li></ul></div>
-    <div><span class="when">0.20</span><ul><li>The record header bar (2) and History with before and after (6).</li><li>The path picker (4).</li></ul></div>
-    <div><span class="when">0.21</span><ul><li>The board view of a list (3).</li><li>Rich text upgrades (5) and the filter bar (7).</li></ul></div>
+    <div><span class="when">0.20</span><ul><li>The record header bar (2) and History with before and after (5).</li><li>The path picker (3).</li></ul></div>
+    <div><span class="when">0.21</span><ul><li>Rich text upgrades (4) and the filter bar (6).</li></ul></div>
   </div>
 
   <p class="colophon">Made from the screenshots in Downloads/fieldia-screens, 12 October 2026, and Fieldia 0.18. The source of this page is kept at docs/plans/devops-look-study.html in the Fieldia repository.</p>
