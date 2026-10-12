@@ -72,6 +72,32 @@ describe('Monaco’s theme from Fieldia’s tokens', () => {
   });
 });
 
+describe('each language’s own words', () => {
+  it('are coloured by what they are, over the colours Monaco gives some languages’ own: SQL’s strings and operators, YAML’s, HTML’s, SCSS’s', () => {
+    for (const [scheme, colours] of [['light', LIGHT], ['dark', DARK]] as const) {
+      const theme = monacoTheme(colours);
+      const code = CODE_COLOURS[scheme];
+      const text = colours.text.slice(1);
+      expect([scheme, rule(theme, 'string.sql')?.foreground]).toEqual([scheme, code.string.slice(1)]);
+      expect([scheme, rule(theme, 'string.yaml')?.foreground]).toEqual([scheme, code.string.slice(1)]);
+      expect([scheme, rule(theme, 'string.html')?.foreground]).toEqual([scheme, code.string.slice(1)]);
+      expect([scheme, rule(theme, 'operator.sql')?.foreground]).toEqual([scheme, text]);
+      expect([scheme, rule(theme, 'operator.scss')?.foreground]).toEqual([scheme, text]);
+      expect([scheme, rule(theme, 'delimiter.html')?.foreground]).toEqual([scheme, text]);
+      expect([scheme, rule(theme, 'predefined.sql')?.foreground]).toEqual([scheme, code.function.slice(1)]);
+      expect([scheme, rule(theme, 'keyword.flow.scss')?.foreground]).toEqual([scheme, code.keyword.slice(1)]);
+      expect([scheme, rule(theme, 'metatag.html')?.foreground]).toEqual([scheme, code.tag.slice(1)]);
+    }
+  });
+
+  it('give comments a colour that reads on a read-only field’s shade too, the page’s quiet words laid over it', () => {
+    // Outlined's quiet words are see-through black: laid over the shade, not the white under it.
+    const theme = monacoTheme({ ...LIGHT, text: '#000000e0', muted: '#0000008c' });
+    expect(rule(theme, 'comment')?.foreground).toBe('6f6f6f');
+    expect(rule(theme, 'comment.doc')?.foreground).toBe('6f6f6f');
+  });
+});
+
 describe('the code colours', () => {
   it('are @fieldia/code’s, so both editors colour code alike', () => {
     expect(CODE_COLOURS).toEqual(CODEMIRROR_COLOURS);
