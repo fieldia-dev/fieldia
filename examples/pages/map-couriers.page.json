@@ -57,7 +57,6 @@
         ]
       },
       "card": { "title": "name", "image": "face", "fields": ["status", "vehicle", "orders_today", "phone"] },
-      "cluster": false,
       "view": "map"
     }
   },

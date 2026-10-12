@@ -85,8 +85,9 @@ bike, bus, person, shop, food and flag, Fieldia's, or the app's `icons`),
 turns whole; other icons keep upright, a pointer on their edge turning), and
 `tones` its colour by condition. `widget` names the app's own pin, given as
 `mapListViews({ pins: { name: (record, { document }) => element } })`. `card`
-takes `title`, `image`, `fields` and `open`; `cluster: false` keeps every pin
-apart; `view` is `list`, `map` or `both`; `limit` is 500 unless said.
+takes `title`, `image`, `fields` and `open`; `cluster: false` draws every pin
+on its own, though pins near one another then overlap and a pointer cannot
+reach one under another (the keys still reach each); `view` is `list`, `map` or `both`; `limit` is 500 unless said.
 
 The map's own tools draw an area to search in: a polygon, a box or a circle,
 by mouse, finger or keys, as the area field draws one. It becomes a search of

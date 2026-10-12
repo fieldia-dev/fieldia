@@ -323,11 +323,12 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
   const { problems } = await openList(page, 'plain', COURIERS);
   await expect(view(page, 'Map')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.fd-list-table')).toBeHidden();
-  // Not gathered into bubbles: the page says so.
-  await expect(bubbles(page)).toHaveCount(0);
-  await expect(pins(page)).toHaveCount(18);
-  const faces = page.locator('.fd-map-list .fd-map-face[data-look="icon"]');
-  await expect(faces).toHaveCount(18);
+  await expect.poll(() => onTheMap(page)).toBe(18);
+  // Closer, so the couriers that crowd part.
+  for (let i = 0; i < 3; i++) await theMap(page).getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await page.waitForTimeout(600);
+  const faces = page.locator('.fd-map-list .fd-map-mark:not(.fd-map-ghost) .fd-map-face[data-look="icon"]');
+  expect(await faces.count()).toBeGreaterThanOrEqual(4);
   const drawn = await faces.evaluateAll((all) =>
     all.map((face) => ({
       icon: face.querySelector('svg')?.getAttribute('data-icon'),
@@ -337,9 +338,9 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
       background: getComputedStyle(face).backgroundColor,
     }))
   );
-  expect(new Set(drawn.map((d) => d.icon))).toEqual(new Set(['car', 'scooter', 'bike']));
-  expect(new Set(drawn.map((d) => d.tone))).toEqual(new Set(['success', 'warning', 'muted']));
   for (const d of drawn) {
+    expect(['car', 'scooter', 'bike']).toContain(d.icon);
+    expect(['success', 'warning', 'muted']).toContain(d.tone);
     if (d.icon === 'car') {
       expect(d.turned).toMatch(/^rotate\(\d+deg\)$/);
       expect(d.pointer).toBeNull();
@@ -348,14 +349,14 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
       expect(d.pointer).toMatch(/^rotate\(\d+deg\)$/);
     }
   }
-  // Free, delivering and on a break: three colours.
+  // Each status its own colour.
   const byTone = new Map(drawn.map((d) => [d.tone, d.background]));
-  expect(new Set(byTone.values()).size).toBe(3);
+  expect(new Set(byTone.values()).size).toBe(byTone.size);
   // Each named for a screen reader: their name, nothing else, as the pin says no words.
   await expect(pins(page).first()).toHaveAttribute('aria-label', /^[A-Z][a-z]+ [A-Z][a-z]+$/);
   await screen(page, 'map-list-couriers');
   // The card: their photo and their fields.
-  await pins(page).first().click();
+  await pins(page).first().locator('.fd-map-face').click();
   await expect(card(page).locator('img.fd-map-card-image')).toBeVisible();
   await expect(card(page).locator('dt')).toHaveText(['Status', 'Vehicle', 'Orders today', 'Phone']);
   await view(page, 'List').click();
@@ -464,8 +465,8 @@ test('a circle drawn on the couriers’ map keeps those within it, their place o
   const centre = await at(theMap(page), 0.5, 0.45);
   await drag(page, centre, { x: centre.x + 160, y: centre.y });
   await expect(chips(page)).toHaveText(['In the area drawn']);
-  await expect.poll(() => pins(page).count()).toBeLessThan(18);
-  expect(await pins(page).count()).toBeGreaterThan(0);
+  await expect.poll(() => onTheMap(page)).toBeLessThan(18);
+  expect(await onTheMap(page)).toBeGreaterThan(0);
   await expect(page.locator('.fd-map-list circle, .fd-map-list path.fd-map-searched')).not.toHaveCount(0);
 });
 

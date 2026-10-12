@@ -108,7 +108,7 @@ ${code(
     <tr><td>${c('point')} · ${c('latitude')} ${c('longitude')}</td><td>Where each record is: a ${c('json')} field holding a GeoJSON Point, or two number fields. A record with neither is left off the map, and the map says how many are.</td></tr>
     <tr><td>${c('pin')}</td><td>Its ${c('look')} — ${c('pin')}, ${c('label')} (its words: a price, a name, minutes away), ${c('icon')} (a car, a scooter, a bike, a shop, Fieldia's own or the app's), ${c('photo')} (a round picture, a courier's face), ${c('dot')}; ${c('label')} the field it says, short as a pin needs (<em>E£9.5M</em>); ${c('icon')}, or ${c('iconField')} for each record's own; ${c('image')}; ${c('turn')}, a number field in degrees, which way it faces; ${c('tones')}, its colour while a condition holds, as a field's are; or ${c('widget')}, the app's own pin by name.</td></tr>
     <tr><td>${c('card')}</td><td>Its ${c('title')} (the first column when left out), its ${c('image')}, the ${c('fields')} it shows, and ${c('open')}: a button to open the record unless ${c('false')}.</td></tr>
-    <tr><td>${c('cluster')}</td><td>Pins that crowd become a bubble, unless ${c('false')}.</td></tr>
+    <tr><td>${c('cluster')}</td><td>Pins that crowd become a bubble, unless ${c('false')}: then each is drawn on its own, and pins near one another overlap, one under another out of a pointer's reach (the keys still reach each).</td></tr>
     <tr><td>${c('view')}</td><td>How the list opens: ${c('list')}, ${c('map')} or ${c('both')} side by side (the map over the table on a narrow screen). People switch between them over the records.</td></tr>
     <tr><td>${c('limit')}</td><td>The most records the map shows, 500 when left out; past it, the map says how many it shows of how many.</td></tr>
   </tbody>
