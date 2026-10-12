@@ -67,6 +67,20 @@ async function openABubble(page: Page) {
   await page.waitForTimeout(500);
 }
 
+/**
+ * A pin the map shows, well inside its box: a pin past the map's edge is still
+ * in the page, under whatever sits there (the demo's own header), and a click
+ * meant for it lands there.
+ */
+async function pinInView(page: Page) {
+  await theMap(page).scrollIntoViewIfNeeded();
+  const map = (await theMap(page).boundingBox())!;
+  const boxes = await pins(page).evaluateAll((all) => all.map((p) => (p.querySelector('.fd-map-face') ?? p).getBoundingClientRect().toJSON() as DOMRect));
+  const at = boxes.findIndex((b) => b.x > map.x + 40 && b.x + b.width < map.x + map.width - 50 && b.y > map.y + 50 && b.y + b.height < map.y + map.height - 30);
+  expect(at, 'no pin inside the map').toBeGreaterThanOrEqual(0);
+  return pins(page).nth(at);
+}
+
 /** A record's row, by the record's id. */
 const rowOf = (page: Page, id: string) => page.locator(`.fd-list-row[data-id="${id}"]`);
 
@@ -356,7 +370,7 @@ test('couriers drawn by their records: each one’s vehicle, a car turned the wa
   await expect(pins(page).first()).toHaveAttribute('aria-label', /^[A-Z][a-z]+ [A-Z][a-z]+$/);
   await screen(page, 'map-list-couriers');
   // The card: their photo and their fields.
-  await pins(page).first().locator('.fd-map-face').click();
+  await (await pinInView(page)).locator('.fd-map-face').click();
   await expect(card(page).locator('img.fd-map-card-image')).toBeVisible();
   await expect(card(page).locator('dt')).toHaveText(['Status', 'Vehicle', 'Orders today', 'Phone']);
   await view(page, 'List').click();
