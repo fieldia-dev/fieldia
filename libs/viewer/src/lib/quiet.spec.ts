@@ -150,6 +150,12 @@ describe('an empty quiet field', () => {
     expect([...field('f-where').querySelectorAll('input')].map((input) => input.placeholder).filter(Boolean)).toEqual([]);
   });
 
+  it('shows the page’s own words in an empty choice, when it gives some', () => {
+    const page = bug({ skin: 'quiet' }, [{ type: 'field', id: 'f-priority', field: 'priority', placeholder: 'Not triaged yet' }]);
+    const { field } = mount(page);
+    expect((field('f-priority').querySelector('select') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Not triaged yet');
+  });
+
   it('keeps its label in the box where the label is out of sight', () => {
     const { field } = mount(bug({ skin: 'quiet', labels: 'hidden' }));
     expect((field('f-points').querySelector('input') as HTMLInputElement).placeholder).toBe('Story points');

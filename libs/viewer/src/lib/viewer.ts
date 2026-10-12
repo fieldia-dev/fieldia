@@ -432,6 +432,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const ownWords = !!node.placeholder || labelsAt === 'hidden' || def.type === 'json' || def.type === 'properties';
       const hint = /[?؟]\s*$/.test(labelText) ? labels.quietAnswer : fill(labels.quietHint, { label: inSentence(labelText, locale) });
       const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
+      // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
+      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : hint);
       const quietSelect = widget.element instanceof HTMLSelectElement ? widget.element.querySelector<HTMLOptionElement>(':scope > option[value=""]') : null;
       const richText = widget.element.matches('.fd-richtext') ? widget.element : widget.element.querySelector<HTMLElement>(':scope > .fd-richtext');
       const stateWords = widget.element.querySelector<HTMLElement>(':scope > .fd-dot-label');
@@ -441,12 +443,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         wrapper.toggleAttribute('data-in-quiet', place);
         wrapper.toggleAttribute('data-quiet', quiet);
         if (textBox && !chosenPlaceholder) setAttr(textBox, 'placeholder', restWords());
-        if (quietSelect) quietSelect.textContent = quiet ? hint : '';
+        if (quietSelect) quietSelect.textContent = quiet ? blankWords : '';
         if (richText && !node.placeholder) {
           setAttr(richText, 'data-placeholder', quiet ? hint : null);
           setAttr(richText, 'aria-placeholder', quiet ? hint : null);
         }
-        if (stateWords) setAttr(stateWords, 'data-hint', quiet ? hint : null);
+        if (stateWords) setAttr(stateWords, 'data-hint', quiet ? blankWords : null);
       };
       faces.push(face);
       face();
