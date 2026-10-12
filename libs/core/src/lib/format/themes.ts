@@ -9,3 +9,14 @@
  */
 export const THEMES = ['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'] as const;
 export type Theme = (typeof THEMES)[number];
+
+/**
+ * The skins a form is drawn in: `underline`, Flectra's flat lines with labels
+ * beside them; `outlined`, boxes with labels above; and `quiet`, the outlined
+ * skin's page with each value as plain words — a light box when pointed at,
+ * the field's own editor once clicked or tabbed into — as Azure DevOps draws a
+ * work item. A theme is drawn over one (`underline` for Odoo's, `outlined`
+ * for the rest), and a page or an app may name another.
+ */
+export const SKINS = ['underline', 'outlined', 'quiet'] as const;
+export type Skin = (typeof SKINS)[number];

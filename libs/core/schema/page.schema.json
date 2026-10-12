@@ -294,6 +294,14 @@
             }
           },
           "additionalProperties": false
+        },
+        "skin": {
+          "type": "string",
+          "enum": [
+            "underline",
+            "outlined",
+            "quiet"
+          ]
         }
       },
       "additionalProperties": false
@@ -5752,6 +5760,13 @@
         },
         "required": {
           "$ref": "#/$defs/Modifier"
+        },
+        "quiet": {
+          "type": "boolean"
+        },
+        "readonlyReason": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -7024,6 +7039,13 @@
           "items": {
             "$ref": "#/$defs/LayoutNode"
           }
+        },
+        "quiet": {
+          "type": "boolean"
+        },
+        "readonlyReason": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

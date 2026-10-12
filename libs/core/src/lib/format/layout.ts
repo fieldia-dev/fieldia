@@ -205,6 +205,20 @@ export interface FieldNode {
   hideOn?: ScreenWidth[];
   readonly?: Modifier;
   required?: Modifier;
+  // ---- the quiet look ----
+  /**
+   * Its value as plain words until it is pointed at or entered (the quiet
+   * look, as the page's `look.skin: "quiet"` draws every field), or with
+   * false in its box though its group or the page is quiet. As its group or
+   * the page draws it when left out.
+   */
+  quiet?: boolean;
+  /**
+   * Why it is read-only, in plain words — "Set when the bug is resolved": said
+   * by the lock beside it while a rule keeps it read-only, when it is pointed
+   * at or focused. Its group's reason when left out.
+   */
+  readonlyReason?: string;
 }
 
 /** A table's line as a form of its own: its parts, as a page's. */
@@ -576,6 +590,11 @@ export interface SectionNode {
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
   children: LayoutNode[];
+  // ---- the quiet look ----
+  /** Its fields' values as plain words until each is pointed at or entered, or with false in their boxes though the page is quiet; a field may say otherwise. */
+  quiet?: boolean;
+  /** Why its fields are read-only, in plain words, for those that give no reason of their own. */
+  readonlyReason?: string;
 }
 
 export interface TabNode {
@@ -1040,6 +1059,9 @@ export const FieldNodeSchema = z.strictObject({
   invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
+  // The quiet look.
+  quiet: z.boolean().optional(),
+  readonlyReason: z.string().min(1).optional(),
 });
 
 export const LineFormSchema = z
@@ -1225,6 +1247,9 @@ export const SectionNodeSchema = z.strictObject({
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
+  // The quiet look.
+  quiet: z.boolean().optional(),
+  readonlyReason: z.string().min(1).optional(),
 }).meta({ id: 'SectionNode' });
 
 export const TabNodeSchema = z.strictObject({

@@ -90,6 +90,7 @@ export type {
 export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';
 export { THEMES, type Theme } from './lib/format/themes';
+export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage } from './lib/format/check-page';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';
