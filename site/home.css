@@ -1,20 +1,41 @@
 /* fieldia.dev's front page: a story told top to bottom. A navy stage opens it, where a page of JSON
    is written and drawn; chapters follow on the light page, each copy beside a live form; a dark
-   finale closes it. The ruled lines are a form sheet's underlines, the product's own material. */
+   finale closes it. The ruled lines are a form sheet's underlines, the product's own material.
+   The paper and its cards follow the reader's scheme; the navy stage and finale are the same in both. */
 :root {
   --h-ink: #10192b;
   --h-muted: #4f5b70;
   --h-paper: #f4f6fa;
   --h-surface: #ffffff;
   --h-line: #dfe4ec;
+  /* The brand as words and edges on the paper. */
   --h-navy: #002855;
+  /* A part filled with the brand, a picked theme or tab, and its words. */
+  --h-fill: #002855;
+  --h-on-fill: #ffffff;
+  /* Code inline in the copy, and the frameworks' tabs' well. */
+  --h-code: #e9eef6;
+  --h-tabs: #e8edf5;
+  /* The story's window (story.css): its title bar and dots, the chatter's side, a message of mine, a chip, the row picked, a warning. */
+  --h-chrome: #eef1f6;
+  --h-chrome-dot: #cfd6e1;
+  --h-side: #f6f8fb;
+  --h-mine: #fff4dc;
+  --h-chip: #e7eefb;
+  --h-picked: #eaf2ff;
+  --h-warn: #a14f00;
   --h-stage: #071a35;
   --h-stage-2: #0b2447;
   --h-stage-ink: #e8eef8;
   --h-stage-muted: #a4b3cc;
   --h-rule: rgba(164, 179, 204, 0.12);
   --h-signal: #4f9dff;
+  --h-signal-ink: #04122a;
+  --h-signal-hover: #77b4ff;
   --h-ok: #2f9e66;
+  /* The story's "saved" toast, white on green in either scheme. */
+  --h-saved: #1f7a4d;
+  --h-on-saved: #ffffff;
   --h-caret: #ffc75f;
   --j-key: #8cc4ff;
   --j-str: #ffd28a;
@@ -23,6 +44,28 @@
   --h-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --h-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --h-gutter: max(16px, calc((100% - 1200px) / 2));
+}
+/* A dark system: the paper and its cards go dark, the brand's words go light; each pair still 4.5:1 or more. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --h-ink: #e8eef8;
+    --h-muted: #a4b3cc;
+    --h-paper: #0e1420;
+    --h-surface: #151d2b;
+    --h-line: #2a3547;
+    --h-navy: #8cc4ff;
+    --h-fill: #8cc4ff;
+    --h-on-fill: #04122a;
+    --h-code: #1c2a40;
+    --h-tabs: #070d17;
+    --h-chrome: #1a2433;
+    --h-chrome-dot: #3a4a63;
+    --h-side: #111a28;
+    --h-mine: #33290f;
+    --h-chip: #1d3354;
+    --h-picked: #1a2f4f;
+    --h-warn: #f2b55c;
+  }
 }
 
 .story { background: var(--h-paper); color: var(--h-ink); overflow-x: clip; }
@@ -34,8 +77,8 @@
 .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 20px; border-radius: 10px; font: 600 16px/1 var(--font); text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease; }
 .btn:hover { transform: translateY(-1px); }
 .btn:focus-visible, .story button:focus-visible, .reel-card:focus-visible, .shot:focus-visible, .tpl-code:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 3px; }
-.btn-solid { background: var(--h-signal); color: #04122a; }
-.btn-solid:hover { background: #77b4ff; color: #04122a; }
+.btn-solid { background: var(--h-signal); color: var(--h-signal-ink); }
+.btn-solid:hover { background: var(--h-signal-hover); color: var(--h-signal-ink); }
 .btn-copy { background: transparent; color: var(--h-stage-ink); border-color: rgba(164, 179, 204, 0.35); }
 .btn-copy code { background: none; padding: 0; font-size: 14.5px; color: var(--h-stage-ink); }
 .btn-copy .copy-word { font-size: 13px; color: var(--h-stage-muted); padding-inline-start: 10px; border-inline-start: 1px solid rgba(164, 179, 204, 0.3); }
@@ -77,6 +120,8 @@
 @keyframes blink { 50% { opacity: 0; } }
 .stage-form { padding: 22px; background: var(--h-surface); color: var(--h-ink); min-width: 0; overflow: auto; }
 .stage-form .fd-form { --fd-page: transparent; }
+/* The live forms wear the reader's scheme (home.js, live.js); a form that names one adds room round itself, and these cards have their own. */
+.story :is(.stage-form, .live-form) .fd-form[data-scheme] > .fd-content { padding: 0; }
 .stage-form .fd-field { transition: background-color 0.6s ease; border-radius: 8px; }
 .stage-form .fd-field.just-drawn { animation: drawn 0.9s ease both; }
 @keyframes drawn { from { background-color: rgba(79, 157, 255, 0.18); transform: translateY(6px); } to { background-color: transparent; transform: none; } }
@@ -99,7 +144,7 @@
 .ticks { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; color: var(--h-ink); }
 .ticks li { position: relative; padding-inline-start: 28px; line-height: 1.5; }
 .ticks li::before { content: ""; position: absolute; inset-inline-start: 0; top: 0.25em; width: 16px; height: 16px; border-radius: 50%; background: var(--h-ok) no-repeat center / 10px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.2 4 7.5 8.5 2.5' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E"); }
-.ticks code, .chapter-copy p code { font-size: 0.86em; background: #e9eef6; padding: 0.1em 0.35em; border-radius: 4px; }
+.ticks code, .chapter-copy p code { font-size: 0.86em; background: var(--h-code); padding: 0.1em 0.35em; border-radius: 4px; }
 .chapter-cta { margin-top: 8px !important; }
 .chapter-live { min-width: 0; background: var(--h-surface); border: 1px solid var(--h-line); border-radius: 16px; box-shadow: 0 20px 50px rgba(16, 25, 43, 0.08); }
 .hero-live { padding: 18px 20px 14px; }
@@ -122,7 +167,7 @@
 .power-go { position: absolute; inset-block-start: 16px; inset-inline-end: 16px; color: var(--h-navy); font-weight: 700; }
 
 /* ---- frameworks ---- */
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: #e8edf5; border-radius: 12px; width: max-content; max-width: 100%; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: var(--h-tabs); border-radius: 12px; width: max-content; max-width: 100%; }
 .tabs [role="tab"] { font: 600 15px/1 var(--font); padding: 11px 16px; border: 0; border-radius: 8px; background: transparent; color: var(--h-muted); cursor: pointer; }
 .tabs [role="tab"][aria-selected="true"] { background: var(--h-surface); color: var(--h-ink); box-shadow: 0 2px 8px rgba(16, 25, 43, 0.1); }
 .tab-panels { min-width: 0; }
@@ -139,7 +184,7 @@
 .theme-picks { display: flex; flex-wrap: wrap; gap: 8px; }
 .theme-picks button { font: 600 14px/1 var(--font); padding: 9px 13px; border-radius: 999px; border: 1px solid var(--h-line); background: var(--h-surface); color: var(--h-ink); cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease; }
 .theme-picks button:hover { border-color: var(--h-navy); }
-.theme-picks button[aria-pressed="true"] { background: var(--h-navy); border-color: var(--h-navy); color: #fff; }
+.theme-picks button[aria-pressed="true"] { background: var(--h-fill); border-color: var(--h-fill); color: var(--h-on-fill); }
 .tpl-code { margin: 4px 0 0; padding: 14px 16px; border-radius: 12px; background: var(--h-stage); color: var(--h-stage-ink); font: 13px/1.6 var(--h-mono); overflow-x: auto; }
 .tpl-code code { background: none; padding: 0; color: inherit; font-size: inherit; }
 .tpl-live { padding: 0; overflow: hidden; }

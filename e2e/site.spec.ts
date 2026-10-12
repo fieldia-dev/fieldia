@@ -156,3 +156,137 @@ test('the Templates page: every template with its picture, and each tried, chang
   }
   expect(problems).toEqual([]);
 });
+
+// ---- light and dark ------------------------------------------------------------------
+
+/** A colour as the browser computes it, `rgb(…)` or `rgba(…)`: red, green, blue, and how opaque. */
+function channels(colour: string) {
+  const [r, g, b, a = 1] = (colour.match(/[\d.]+/g) ?? []).map(Number);
+  return { rgb: [r, g, b], alpha: a };
+}
+/** How bright a colour looks, as WCAG measures it: 0 for black, 1 for white. A ground must be opaque to be judged. */
+function luminance(colour: string) {
+  const { rgb, alpha } = channels(colour);
+  expect(alpha, `${colour} is see-through`).toBe(1);
+  const [r, g, b] = rgb.map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+/** How well words in one colour read on another: 1 to 21. */
+function contrast(words: string, ground: string) {
+  const [light, dark] = [luminance(words), luminance(ground)].sort((x, y) => y - x);
+  return (light + 0.05) / (dark + 0.05);
+}
+/** A ground that reads as dark, and one that reads as light. */
+const DARK = 0.05;
+const LIGHT = 0.6;
+const style = (page: Page, selector: string, property: string) =>
+  page.locator(selector).first().evaluate((el, name) => getComputedStyle(el).getPropertyValue(name), property);
+/** Each colour code takes (demos/highlight.mjs), as the stylesheet gives it to a word inside `selector`, and the ground under them. */
+const TOKENS = ['tok-keyword', 'tok-string', 'tok-number', 'tok-literal', 'tok-key', 'tok-comment', 'tok-tag', 'tok-attr'];
+function codeColours(page: Page, selector: string) {
+  return page.locator(selector).first().evaluate((block, names) => {
+    const inside = block.querySelector('code') ?? block;
+    const colours: Record<string, string> = { text: getComputedStyle(block).color };
+    for (const name of names) {
+      const word = document.createElement('span');
+      word.className = name;
+      inside.append(word);
+      colours[name] = getComputedStyle(word).color;
+      word.remove();
+    }
+    return { ground: getComputedStyle(block).backgroundColor, colours };
+  }, TOKENS);
+}
+
+test('a reader whose system is dark gets the site dark: its grounds, its bar, its cards, its words', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  // Each page with the ground its words are on, and words that must read there.
+  const pages: [string, string, string[]][] = [
+    ['/', '.story', ['.chapter-copy h2', '.chapter-copy > p', '.chapter-no', '.power-figure', '.figures b']],
+    ['/maps/', 'body', ['.prose h1', '.prose p', '.side a[aria-current="page"]', '.prose a']],
+    ['/data/', 'body', ['.prose p', 'th', 'td']],
+    ['/features/maps/', '.story', ['.chapter-copy h2', '.chapter-copy > p', '.feature-links a:not(.btn)']],
+    ['/demos/', 'body', ['.gallery-hero h1', '.gallery-section h2', '.demo-name', '.demo-blurb']],
+  ];
+  for (const [path, ground, words] of pages) {
+    await page.goto(SITE + path);
+    await expect(page.locator('h1').first()).toBeVisible();
+    const under = await style(page, ground, 'background-color');
+    expect(luminance(under), `${path}: the ground is dark`).toBeLessThan(DARK);
+    expect(luminance(await style(page, '.top', 'background-color')), `${path}: the bar is dark`).toBeLessThan(DARK);
+    expect(luminance(await style(page, '.foot', 'background-color')), `${path}: the footer is dark`).toBeLessThan(DARK);
+    for (const selector of words) {
+      // Each on its own card's ground where it has one, else the page's.
+      const own = await page.locator(selector).first().evaluate((el) => {
+        for (let at: Element | null = el; at; at = at.parentElement) {
+          const colour = getComputedStyle(at).backgroundColor;
+          if (!/rgba\(.*, 0\)$|transparent/.test(colour)) return colour;
+        }
+        return null;
+      });
+      expect(contrast(await style(page, selector, 'color'), own ?? under), `${path}: ${selector} reads`).toBeGreaterThanOrEqual(4.5);
+    }
+  }
+  await page.goto(SITE + '/demos/');
+  expect(luminance(await style(page, '.demo-card', 'background-color')), 'a demo’s card is dark').toBeLessThan(DARK);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`the docs’ code reads at 4.5:1 or more in each of its colours · ${colorScheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto(SITE + '/data/');
+    const { ground, colours } = await codeColours(page, '.prose pre.code');
+    // The code's ground follows the scheme.
+    if (colorScheme === 'dark') expect(luminance(ground)).toBeLessThan(DARK);
+    else expect(luminance(ground)).toBeGreaterThan(LIGHT);
+    for (const [name, colour] of Object.entries(colours)) expect(contrast(colour, ground), `${name} ${colour} on ${ground}`).toBeGreaterThanOrEqual(4.5);
+    // Code inline in a sentence, on its own ground.
+    expect(contrast(await style(page, '.prose p code', 'color'), await style(page, '.prose p code', 'background-color'))).toBeGreaterThanOrEqual(4.5);
+  });
+}
+
+test('the demos’ frame follows a dark system, the form inside it too, and a scheme in the address wins', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const demo = SITE + '/demos/plain/?page=customers&skin=outlined';
+  /** The frame's parts, open: the header, the menu, the how-to, the code drawer, and the page's own ground. */
+  async function frame(address: string) {
+    await page.goto(address);
+    await expect(page.locator('.fd-form').first()).toBeVisible();
+    await page.getByRole('button', { name: '‹/› Code' }).click();
+    const grounds: Record<string, number> = {};
+    for (const part of ['body', '#demo-head', '#demo-nav', '#demo-howto', '#demo-code', '#demo-code .dc-code']) grounds[part] = luminance(await style(page, part, 'background-color'));
+    // A box's edge is seen on its ground, at 3:1 or more: the theme picker, the menu's filter.
+    for (const box of ['#dh-theme', '#demo-nav .dn-filter']) {
+      expect(contrast(await style(page, box, 'border-top-color'), await style(page, box, 'background-color')), `${address}: ${box}'s edge`).toBeGreaterThanOrEqual(3);
+    }
+    return grounds;
+  }
+
+  await page.emulateMedia({ colorScheme: 'dark' });
+  for (const [part, light] of Object.entries(await frame(demo))) expect(light, `${part} is dark`).toBeLessThan(DARK);
+  // The form follows the reader too, painting its own dark ground.
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('data-scheme', 'auto');
+  expect(luminance(await style(page, '.fd-form', 'background-color'))).toBeLessThan(DARK);
+  // The header's words, and the code's colours in the drawer, each read on their ground.
+  for (const selector of ['.dh-title', '.dh-crumb', '.dh-links a', '.dh-theme']) {
+    expect(contrast(await style(page, selector, 'color'), await style(page, '#demo-head', 'background-color')), selector).toBeGreaterThanOrEqual(4.5);
+  }
+  const drawer = await codeColours(page, '#demo-code .dc-code');
+  for (const [name, colour] of Object.entries(drawer.colours)) expect(contrast(colour, drawer.ground), `drawer ${name}`).toBeGreaterThanOrEqual(4.5);
+  await page.screenshot({ path: 'test-results/screens/site-demo-frame-dark.png', animations: 'disabled' });
+
+  // `?scheme=light` wins over the dark system: frame and form light.
+  for (const [part, light] of Object.entries(await frame(`${demo}&scheme=light`))) expect(light, `${part} is light`).toBeGreaterThan(LIGHT);
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('data-scheme', 'light');
+  const lightDrawer = await codeColours(page, '#demo-code .dc-code');
+  for (const [name, colour] of Object.entries(lightDrawer.colours)) expect(contrast(colour, lightDrawer.ground), `light drawer ${name}`).toBeGreaterThanOrEqual(4.5);
+
+  // And `?scheme=dark` over a light one.
+  await page.emulateMedia({ colorScheme: 'light' });
+  for (const [part, light] of Object.entries(await frame(`${demo}&scheme=dark`))) expect(light, `${part} is dark`).toBeLessThan(DARK);
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('data-scheme', 'dark');
+});

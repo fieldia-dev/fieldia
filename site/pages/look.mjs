@@ -51,6 +51,8 @@ ${code('ts', `mountViewer(host, { page, dataSource, theme: 'google-forms' });   
     });
   }
   dark.addEventListener('change', draw);
+  // Dark to begin with when the reader's system is, as the page around it is.
+  dark.checked = window.matchMedia('(prefers-color-scheme: dark)').matches;
   draw();
 })();
 </script>

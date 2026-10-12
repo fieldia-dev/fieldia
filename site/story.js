@@ -35,7 +35,7 @@
   function pageIn(w) {
     var node = function (id, field, extra) { return Object.assign({ type: 'field', id: id, field: field }, extra || {}); };
     return {
-      fieldia: '0.1', id: 'fit-out', title: w.title, data: { kind: 'record', model: 'quote' }, maxWidth: 'full', look: { density: 'compact' },
+      fieldia: '0.1', id: 'fit-out', title: w.title, data: { kind: 'record', model: 'quote' }, maxWidth: 'full', look: { density: 'compact', scheme: 'auto' },
       fields: {
         name: { type: 'char', label: w.name },
         state: { type: 'selection', label: w.state, options: [{ value: 'draft', label: w.draft }, { value: 'sent', label: w.sent }, { value: 'confirmed', label: w.confirmed }] },

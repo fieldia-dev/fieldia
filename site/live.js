@@ -14,6 +14,8 @@
       id: 'early-access',
       title: w[0],
       data: { kind: 'responses' },
+      // The reader's own scheme, light or dark, as the site around it is.
+      look: { scheme: 'auto' },
       fields: {
         name: { type: 'char', label: w[1], required: true },
         email: { type: 'char', label: w[2], required: true, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' },

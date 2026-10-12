@@ -175,6 +175,51 @@ test.describe('the demo frame', () => {
     await expect(page.locator('.fd-form').first()).toHaveAttribute('data-fd-skin', 'outlined');
   });
 
+  test('a Scheme switch beside the look: the reader’s own by default, or light or dark, the frame and the form together', async ({ page }) => {
+    await asVisitor(page);
+    const html = page.locator('html');
+    const form = page.locator('.fd-form').first();
+    const schemes = page.getByRole('navigation', { name: 'Scheme' });
+    // A light system: the demo exactly as it always was, the form naming no scheme.
+    await page.goto('/plain/?page=order&skin=underline');
+    await expect(schemes.getByRole('link', { name: 'System' })).toHaveAttribute('aria-current', 'page');
+    await expect(form).not.toHaveAttribute('data-scheme');
+    await expect(html).toHaveAttribute('data-scheme', 'light');
+    await schemes.getByRole('link', { name: 'Dark' }).click();
+    await expect(page).toHaveURL(/\/plain\/\?page=order&skin=underline&scheme=dark$/);
+    await expect(form).toHaveAttribute('data-scheme', 'dark');
+    await expect(html).toHaveAttribute('data-scheme', 'dark');
+    await expect(schemes.getByRole('link', { name: 'Dark' })).toHaveAttribute('aria-current', 'page');
+    // Another framework keeps it, as it keeps the look.
+    await page.getByRole('navigation', { name: 'Framework' }).getByRole('link', { name: 'React' }).click();
+    await expect(page).toHaveURL(/\/react\/\?page=order&skin=underline&scheme=dark$/);
+    await expect(form).toHaveAttribute('data-scheme', 'dark');
+    await page.getByRole('navigation', { name: 'Scheme' }).getByRole('link', { name: 'System' }).click();
+    await expect(page).toHaveURL(/\/react\/\?page=order&skin=underline$/);
+    await expect(form).not.toHaveAttribute('data-scheme');
+
+    // A dark system: the form follows the reader, and so does the frame; Light still wins.
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/plain/?page=order&skin=underline');
+    await expect(form).toHaveAttribute('data-scheme', 'auto');
+    await expect(html).toHaveAttribute('data-scheme', 'auto');
+    await screen(page, 'demo-frame-dark', { viewport: true });
+    await schemes.getByRole('link', { name: 'Light' }).click();
+    await expect(page).toHaveURL(/scheme=light$/);
+    await expect(form).toHaveAttribute('data-scheme', 'light');
+    await expect(html).toHaveAttribute('data-scheme', 'light');
+  });
+
+  test('the script tag demo draws its form light, so its frame stays light with it on a dark system', async ({ page }) => {
+    await asVisitor(page);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(`/${demoHref(DEMOS.find((d) => d.app === 'script')!)}`);
+    await expect(page.locator('.fd-form').first()).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-scheme', 'light');
+    // No look to switch: it has an app of its own.
+    await expect(page.getByRole('navigation', { name: 'Scheme' })).toHaveCount(0);
+  });
+
   test('fits a phone: the menu waits behind its button, and the page does not scroll sideways', async ({ page }) => {
     await asVisitor(page);
     await page.setViewportSize({ width: 400, height: 860 });

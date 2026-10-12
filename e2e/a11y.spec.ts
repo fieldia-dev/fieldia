@@ -12,7 +12,7 @@ import { node, screen } from './support';
  * open, a list's search open — and on the designers: every view, dialog and
  * sheet, a part picked with each tab of the panel, and the empty state, in
  * Simple and Advanced, at a desktop's width and a phone's; and fieldia.dev's
- * own pages. Every page must come back with nothing found.
+ * own pages, light and dark. Every page must come back with nothing found.
  */
 
 interface Demo {
@@ -256,12 +256,16 @@ const SITE = `http://127.0.0.1:${process.env['FIELDIA_SITE_PORT'] ?? 4322}`;
 const SITE_PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/templates/', '/features/', '/features/forms/', '/features/records/', '/features/rules/', '/features/lists/', '/features/looks/', '/features/backend/', '/accessibility/'];
 
 test.describe('axe on fieldia.dev', () => {
-  for (const path of SITE_PAGES) {
-    test(path, async ({ page }) => {
-      await page.goto(SITE + path);
-      await expect(page.locator('h1').first()).toBeVisible();
-      expect(await axeFindings(page, `fieldia.dev${path}`)).toEqual([]);
-    });
+  // The site follows the reader's system: each page light, and dark.
+  for (const colorScheme of ['light', 'dark'] as const) {
+    for (const path of SITE_PAGES) {
+      test(colorScheme === 'light' ? path : `${path} · dark`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(SITE + path);
+        await expect(page.locator('h1').first()).toBeVisible();
+        expect(await axeFindings(page, `fieldia.dev${path} · ${colorScheme}`)).toEqual([]);
+      });
+    }
   }
 });
 

@@ -5,6 +5,8 @@
   'use strict';
   var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var wait = function (ms) { return new Promise(function (done) { setTimeout(done, calm ? 0 : ms); }); };
+  /** A page in the reader's own scheme, light or dark, as the site around it is (the JSON shown stays as written). */
+  var readers = function (p) { return Object.assign({}, p, { look: Object.assign({}, p.look, { scheme: 'auto' }) }); };
 
   /** Run `start` once the element is on screen. */
   function whenSeen(el, start, threshold) {
@@ -61,7 +63,7 @@
   function draw(p) {
     var before = viewer ? Object.keys(viewer.form.getState().values) : [];
     if (viewer) viewer.destroy();
-    viewer = Fieldia.mountViewer(stageForm, { page: p, dataSource: Fieldia.createMemoryDataSource(), skin: 'outlined' });
+    viewer = Fieldia.mountViewer(stageForm, { page: readers(p), dataSource: Fieldia.createMemoryDataSource(), skin: 'outlined' });
     // The field this step added is marked as it arrives.
     Object.keys(p.fields).filter(function (f) { return before.indexOf(f) === -1; }).forEach(function (f) {
       var el = stageForm.querySelector('[data-field="' + f + '"]');
@@ -202,7 +204,7 @@
   async function runSheet() {
     if (sheetViewer) sheetViewer.destroy();
     var source = Fieldia.createMemoryDataSource({ records: { 'sale.order': { 1: JSON.parse(JSON.stringify(RECORD)) } } });
-    sheetViewer = Fieldia.mountViewer(sheet, { page: ORDER, dataSource: source, recordId: 1, skin: 'underline' });
+    sheetViewer = Fieldia.mountViewer(sheet, { page: readers(ORDER), dataSource: source, recordId: 1, skin: 'underline' });
     await sheetViewer.form.settled();
     var form = sheetViewer.form;
     var say = function (t) { caption.textContent = t; };
@@ -251,7 +253,7 @@
   function startTemplates() {
     fetch('/templates/newsletter.page.json').then(function (r) { return r.json(); }).then(function (page) {
       var order = picks.map(function (b) { return b.dataset.theme; });
-      tplViewer = Fieldia.mountViewer(tplHost, { page: page, dataSource: Fieldia.createMemoryDataSource() });
+      tplViewer = Fieldia.mountViewer(tplHost, { page: readers(page), dataSource: Fieldia.createMemoryDataSource() });
       // With reduced motion, one theme, still, until one is picked.
       if (calm) held = true;
       wear(order[0]);
