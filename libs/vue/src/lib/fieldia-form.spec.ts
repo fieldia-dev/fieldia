@@ -132,6 +132,19 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('wears the quiet skin, the page’s own or given here, and keeps the page’s when no skin is given', async () => {
+    const survey = page('survey');
+    const wrapper = mount(FieldiaForm, { props: { page: { ...survey, look: { ...survey.look, skin: 'quiet' } } }, attachTo: document.body });
+    expect(wrapper.find('.fd-form').attributes('data-fd-skin')).toBe('quiet');
+    expect(wrapper.find('.fd-field[data-quiet]').exists()).toBe(true);
+    await wrapper.setProps({ skin: 'outlined' });
+    expect(wrapper.find('.fd-field[data-quiet]').exists()).toBe(false);
+    await wrapper.setProps({ skin: 'quiet' });
+    expect(wrapper.find('.fd-field[data-quiet]').exists()).toBe(true);
+    expect(wrapper.emitted('ready')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it('switches skin without mounting again', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey'), skin: 'underline' }, attachTo: document.body });
     await wrapper.setProps({ skin: 'outlined' });

@@ -80,7 +80,7 @@ export class FieldiaFormComponent implements OnDestroy {
   /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
   readonly context = input<ViewerOptions['context']>(undefined);
   readonly values = input<Values | undefined>(undefined);
-  /** The skin: the theme's own when left out, else underline. */
+  /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
   readonly skin = input<Skin | undefined>(undefined);
   /** A theme in the style of a known design system, over the page's own. */
   readonly theme = input<Theme | undefined>(undefined);
@@ -196,7 +196,7 @@ export class FieldiaFormComponent implements OnDestroy {
       const tokens = this.tokens();
       untracked(() => this.handle?.setTokens(tokens ?? null));
     });
-    // A theme and a skin switch in place: the theme brings its skin, unless one is given.
+    // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
     effect(() => {
       const skin = this.skin();
       const theme = this.theme();
@@ -204,7 +204,7 @@ export class FieldiaFormComponent implements OnDestroy {
         if (!this.handle) return;
         const worn = theme ?? this.page().look?.theme;
         this.handle.setTheme(worn ?? null);
-        this.handle.setSkin(skinFor(skin, worn));
+        this.handle.setSkin(skinFor(skin ?? this.page().look?.skin, worn));
       });
     });
     effect(() => {
