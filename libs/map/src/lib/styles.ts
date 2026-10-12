@@ -106,12 +106,6 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-box.fd-map-fixed { position: fixed; inset: 0; z-index: 2147483000; height: auto; border-radius: 0; }
 .fd-map-box[data-full] { border-radius: 0; }
 .fd-map-box[data-measuring] .fd-map-mark { pointer-events: none; }
-path.fd-map-measure { stroke: var(--fd-text); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-path.fd-map-measure-trace { stroke-dasharray: 4 6; stroke-opacity: 0.7; }
-.fd-map-measure-tag span {
-  display: inline-block; translate: 8px -50%; padding: 2px 8px; border-radius: 999px; white-space: nowrap; font-size: 12.5px; font-weight: 700;
-  background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); font-variant-numeric: tabular-nums;
-}
 `;
 
 /** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */

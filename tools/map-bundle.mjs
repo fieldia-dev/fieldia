@@ -20,8 +20,15 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * What an app carries, in KB gzipped: a form with a place or an area (the
  * fields and the providers, which is all most apps use), and everything (the
  * list's map too); and Leaflet, loaded the first time a map is shown.
+ * Phase 4's tools under a map's zoom (satellite, full screen, measuring a way:
+ * the button's code and the drawing both loaded with the first map that has
+ * them), their words in four languages, and the hooks that load areas by
+ * colour, a heat map, reachable areas and fences when a map has them — 1.8
+ * more for a place and an area, to 23.4; with a list's map and a form's,
+ * Nearest first, the heat map's place and the list's words too — 3.1 more,
+ * to 38.5.
  */
-const BUDGET = { fields: 21.6, all: 35.4, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 23.4, all: 38.5, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

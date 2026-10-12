@@ -5,7 +5,7 @@ import { SHAPE_ICONS, shapeDrawing } from './drawing';
 import { areaBounds, asJson, boxFrom, metresBetween, moveArea, offsetEast, readArea, writeArea, type Area, type CircleArea, type LatLng, type PointsArea, type Shape } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
-import { createMapBox } from './map-core';
+import { createMapBox, mapTools } from './map-core';
 import type { MapSettings } from './settings';
 
 /**
@@ -23,7 +23,7 @@ import type { MapSettings } from './settings';
  *
  * Options: `shapes` (any of polygon, box, circle; all unless said), `areas`
  * (named areas to choose from instead of drawing: `[{ label, value }]`),
- * `height`.
+ * `height`, `tools` (any of satellite, fullscreen, measure, under the zoom).
  */
 
 const ALL: Shape[] = ['polygon', 'box', 'circle'];
@@ -77,6 +77,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
       center: settings.center,
       zoom: settings.center ? (settings.zoom ?? 11) : undefined,
       height: typeof options['height'] === 'number' ? options['height'] : undefined,
+      tools: mapTools(options['tools']),
     });
 
     const toolButtons = new Map<Shape, HTMLButtonElement>();

@@ -1,8 +1,8 @@
 import type * as Leaflet from 'leaflet';
-import type { Locale } from '@fieldia/core';
+import type { Locale, MapLayer, MapRegions, ResolvedFilter } from '@fieldia/core';
 import { fill, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
-import type { MapBox } from './map-core';
+import { warnOnce, type MapBox } from './map-core';
 
 /**
  * Areas shaded by colour on a map: districts, zones, municipalities. Their
@@ -341,4 +341,158 @@ export function insideRings(x: number, y: number, rings: [number, number][][]): 
     return odd;
   };
   return rings.length > 0 && inside(rings[0]) && !rings.slice(1).some(inside);
+}
+
+/** A set of borders, loaded and read; null (said once to the developer) when the app gives none by that name, or it failed. */
+async function bordersOf(sets: Record<string, unknown> | undefined, spec: MapRegions): Promise<Border[] | null> {
+  let set: unknown;
+  try {
+    set = await loadBorders(sets, spec.from);
+  } catch (error) {
+    warnOnce(`The borders "${spec.from}" did not load: ${String(error)}`);
+    return null;
+  }
+  if (set === undefined) {
+    warnOnce(`No borders "${spec.from}" in the maps' regions: give them as regions: { ${JSON.stringify(spec.from)}: () => fetch(…).then((r) => r.json()) }.`);
+    return null;
+  }
+  return readBorders(set, spec);
+}
+
+/** Each border's number among its properties, by its key: what a layer's `shade` names. */
+function ownNumbers(borders: readonly Border[], property: string): Map<string, number> {
+  const values = new Map<string, number>();
+  for (const border of borders) {
+    const value = Number(border.properties[property]);
+    if (Number.isFinite(value)) values.set(border.key, value);
+  }
+  return values;
+}
+
+/**
+ * A list's areas shaded by its records: drawn once their borders load, their
+ * numbers asked for again with each search — each area's records under the
+ * search but for an area searched itself, so the others keep their shades —
+ * or a number of their own. A press searches for an area's records.
+ */
+export function listRegions(options: {
+  sets: Record<string, unknown> | undefined;
+  spec: MapRegions & { field: string };
+  box: MapBox;
+  map: Leaflet.Map;
+  L: LeafletModule;
+  document: Document;
+  locale: Locale;
+  labels: MapLabels & { inRegion: string };
+  title: string;
+  model: string;
+  dataSource: { groups?(request: { model: string; field: string; filter: ResolvedFilter[] }): Promise<{ value: unknown; count: number }[]> } | undefined;
+  addSearch(search: { label: string; filter: ResolvedFilter[] }): void;
+  /** The records the map has, to count when the data source cannot. */
+  records(): readonly { values: Record<string, unknown> }[];
+}): { shade(filter: readonly ResolvedFilter[], current: () => boolean): Promise<void>; destroy(): void } {
+  const { spec } = options;
+  let gone = false;
+  const drawn = bordersOf(options.sets, spec).then((borders) =>
+    !borders || gone
+      ? null
+      : {
+          borders,
+          layer: drawRegions({
+            ...options,
+            borders,
+            legend: spec.legend !== false,
+            press: (border) => options.addSearch({ label: fill(options.labels.inRegion, { name: border.name }), filter: [{ field: spec.field, op: '=', value: border.value }] }),
+          }),
+        }
+  );
+  const isArea = (item: ResolvedFilter) => 'field' in item && item.field === spec.field && item.op === '=';
+  return {
+    async shade(filter, current) {
+      const made = await drawn;
+      if (!made || !current()) return;
+      const picked = filter.find(isArea);
+      const chosen = picked && 'value' in picked ? String(picked.value) : null;
+      const shade = spec.shade ?? 'count';
+      let values = new Map<string, number>();
+      if (shade !== 'count') values = ownNumbers(made.borders, shade);
+      else if (options.dataSource?.groups) {
+        try {
+          const groups = await options.dataSource.groups({ model: options.model, field: spec.field, filter: filter.filter((item) => !isArea(item)) });
+          for (const group of groups) if (group.value !== null) values.set(String(group.value), group.count);
+        } catch {
+          return;
+        }
+      } else {
+        // Without a way to count, the records the map has.
+        for (const record of options.records()) {
+          const raw = record.values[spec.field];
+          const key = raw !== null && typeof raw === 'object' && 'id' in raw ? (raw as { id: unknown }).id : raw;
+          if (key !== null && key !== undefined && key !== false) values.set(String(key), (values.get(String(key)) ?? 0) + 1);
+        }
+      }
+      if (current()) made.layer.shade(values, chosen);
+    },
+    destroy() {
+      gone = true;
+      void drawn.then((made) => made?.layer.destroy());
+    },
+  };
+}
+
+/**
+ * A form's areas by colour, a layer each: shaded by a number of their own,
+ * the one the record's field holds drawn strong, a press choosing one into
+ * that field where the person may change it; on the map or off it as each
+ * layer's `invisible` says.
+ */
+export function formRegions(options: {
+  sets: Record<string, unknown> | undefined;
+  layers: readonly MapLayer[];
+  box: MapBox;
+  map: Leaflet.Map;
+  L: LeafletModule;
+  document: Document;
+  locale: Locale;
+  labels: MapLabels;
+  /** Whether a person may write a field now: a press chooses only where they may. */
+  writable(field: string): boolean;
+  choose(field: string, value: string | number): void;
+}): { update(values: Record<string, unknown>, hidden: (layerId: string) => boolean): void; destroy(): void } {
+  let gone = false;
+  const made = options.layers.map((layer) => {
+    const spec = layer.regions as MapRegions & { choose?: string };
+    const choose = spec.choose;
+    return bordersOf(options.sets, spec).then((borders) =>
+      !borders || gone
+        ? null
+        : {
+            layer,
+            spec,
+            borders,
+            regions: drawRegions({
+              ...options,
+              borders,
+              title: layer.label ?? spec.from,
+              legend: spec.legend !== false && spec.shade !== undefined,
+              ...(choose && options.writable(choose) ? { press: (border: Border) => options.choose(choose, border.value) } : {}),
+            }),
+          }
+    );
+  });
+  return {
+    update(values, hidden) {
+      for (const one of made)
+        void one.then((drawn) => {
+          if (!drawn || gone) return;
+          const chosen = drawn.spec.choose ? values[drawn.spec.choose] : null;
+          drawn.regions.shade(drawn.spec.shade ? ownNumbers(drawn.borders, drawn.spec.shade) : null, chosen === null || chosen === undefined || chosen === false ? null : String(chosen));
+          drawn.regions.show(!hidden(drawn.layer.id));
+        });
+    },
+    destroy() {
+      gone = true;
+      for (const one of made) void one.then((drawn) => drawn?.regions.destroy());
+    },
+  };
 }

@@ -37,6 +37,11 @@ export interface MapBoxOptions {
 /** A tool a map can have under its zoom. */
 export type MapTool = 'satellite' | 'fullscreen' | 'measure';
 
+/** The tools a field's `tools` option names, those a field's map can have; anything else is passed over. */
+export function mapTools(value: unknown): MapTool[] {
+  return Array.isArray(value) ? value.filter((tool): tool is MapTool => tool === 'satellite' || tool === 'fullscreen' || tool === 'measure') : [];
+}
+
 export interface MapBox {
   element: HTMLElement;
   /** Runs `use` with the map once it is there: at once if it already is. */
@@ -321,8 +326,13 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     element.append(...overlays);
     for (const over of overlays) shield(over);
     zoomIn.addEventListener('click', () => map?.zoomIn());
-    wireTools(leaflet);
     zoomOut.addEventListener('click', () => map?.zoomOut());
+    // The tools under the zoom, when the page asks for any: their code comes with the first map that has them.
+    if (tools.size)
+      void import('./tools').then(({ wireTools }) => {
+        if (destroyed || !map) return;
+        wireTools({ tools, box: api, map, L: leaflet, document: doc, labels, locale, provider, satellite: (on) => ((satellite = on), refresh()), cleanup: (done) => cleanups.push(done) });
+      });
     map.on('moveend', askCredits);
     // Shown at last in a tab or a dialog: the map measures itself again.
     const ResizeWatch = doc.defaultView?.ResizeObserver;
@@ -335,69 +345,6 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     for (const use of waiting.splice(0)) use(map, leaflet);
   });
 
-  // ---- the tools under the zoom ----------------------------------------------------------
-
-  function wireTools(leaflet: LeafletModule) {
-    if (tools.has('satellite')) {
-      const button = toolButton(labels.satellite, '<circle cx="12" cy="12" r="3"/><path d="M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="2 3"/>');
-      // A provider with no such images: no such button.
-      void provider.tiles('satellite', locale).then((spec) => (button.hidden = !spec), () => (button.hidden = true));
-      button.addEventListener('click', () => {
-        satellite = !satellite;
-        button.setAttribute('aria-pressed', String(satellite));
-        refresh();
-      });
-    }
-    if (tools.has('fullscreen')) {
-      const button = toolButton(labels.fullScreen, '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
-      const mark = (on: boolean) => {
-        element.toggleAttribute('data-full', on);
-        button.setAttribute('aria-pressed', String(on));
-        button.setAttribute('aria-label', on ? labels.leaveFullScreen : labels.fullScreen);
-        button.title = button.getAttribute('aria-label') ?? '';
-        setTimeout(() => map?.invalidateSize({ pan: false }), 50);
-      };
-      // Where the browser refuses the screen (a frame that may not), the map fills the window instead.
-      const fill = (on: boolean) => {
-        element.classList.toggle('fd-map-fixed', on);
-        mark(on);
-      };
-      const change = () => mark(doc.fullscreenElement === element);
-      doc.addEventListener('fullscreenchange', change);
-      cleanups.push(() => doc.removeEventListener('fullscreenchange', change));
-      button.addEventListener('click', () => {
-        if (element.hasAttribute('data-full')) {
-          if (doc.fullscreenElement === element) void doc.exitFullscreen();
-          else fill(false);
-        } else if (element.requestFullscreen) element.requestFullscreen().catch(() => fill(true));
-        else fill(true);
-      });
-      element.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && element.classList.contains('fd-map-fixed')) fill(false);
-      });
-    }
-    if (tools.has('measure')) {
-      const button = toolButton(labels.measure, '<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>');
-      let stop: (() => void) | null = null;
-      // Its code is asked for as the map is ready, not at the press: keys pressed straight after it are not lost.
-      const measuring = import('./measure');
-      button.addEventListener('click', async () => {
-        if (stop) {
-          stop();
-          return;
-        }
-        button.setAttribute('aria-pressed', 'true');
-        const { measure } = await measuring;
-        if (!map) return;
-        stop = measure({ box: api, map, L: leaflet, labels, locale, stopped: () => {
-          stop = null;
-          button.setAttribute('aria-pressed', 'false');
-          button.focus();
-        } });
-      });
-    }
-    for (const button of zoom.querySelectorAll<HTMLElement>('.fd-map-tool')) shield(button);
-  }
 
   const api: MapBox = {
     element,

@@ -2,14 +2,13 @@ import type * as Leaflet from 'leaflet';
 import { compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
 import { drawCard } from './card';
-import { insideArea, insideRing, metresBetween, readArea, readPoint, type LatLng } from './geo';
+import { readPoint, type LatLng } from './geo';
 import { fill, formMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox, warnOnce } from './map-core';
 import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
 import { comma, makePins, shown, type MapRecord, type Pins } from './pins';
-import type { ReachFound, RouteFound } from './providers';
-import type { Border, RegionsLayer } from './regions';
+import type { RouteFound } from './providers';
 import { nearestOnLine, pointAlong, routeLine, splitLine, type RouteLine } from './route-line';
 import type { MapSettings } from './settings';
 import { installFormMapStyles } from './styles';
@@ -41,8 +40,6 @@ const OFF_ROUTE_M = 60;
 const ROUTE_EVERY_MS = 10_000;
 /** Room kept round the places when the map fits them, in pixels. */
 const ROOM = 48;
-/** A reachable area is asked for again once its place has moved this far, in metres (and at most every ten seconds). */
-const REACH_MOVE_M = 250;
 
 interface Place {
   key: string;
@@ -235,10 +232,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     }
     restale();
     drawRoutes(map, L);
-    drawReaches(map, L);
     drawAreas(map, L);
-    drawFenceAreas(map, L);
-    checkFences();
     if (!fitted) fit(map);
   }
 
@@ -246,7 +240,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const points = [
       ...[...marks.values()].map((m) => m.at),
       ...[...routes.values()].flatMap((r) => r.found?.line ?? []),
-      ...[...reaches.values()].flatMap((r) => r.found?.rings.flat() ?? []),
+      ...reachPlaces,
       ...(mine ? [mine.at] : []),
     ];
     if (!points.length) return;
@@ -493,8 +487,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
           if (!meCircle) meCircle = L.circle(at, { radius: mine!.accuracy, className: 'fd-map-accuracy', interactive: false }).addTo(map);
           else meCircle.setLatLng(at).setRadius(mine!.accuracy);
           drawRoutes(map, L);
-          drawReaches(map, L);
-          checkFences();
+          drawAreas(map, L);
           if (first) {
             first = false;
             fitted = false;
@@ -512,175 +505,59 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     );
   }
 
-  // ---- areas by colour ---------------------------------------------------------------
+  // ---- areas by colour, reachable areas and fences: their code comes with the first map that has them ----
 
-  const regionsOf = new Map<string, Promise<{ regions: RegionsLayer; borders: Border[] } | null>>();
+  const hasRegions = node.layers.some((layer) => layer.regions);
+  const hasAreas = node.layers.some((layer) => layer.reachable) || !!node.fences?.length;
+  let regions: Promise<ReturnType<typeof import('./regions').formRegions> | null> | null = null;
+  let areas: Promise<ReturnType<typeof import('./reach').formAreas> | null> | null = null;
+  /** The reachable areas' places, for the map to fit them. */
+  let reachPlaces: LatLng[] = [];
   function drawAreas(map: Leaflet.Map, L: LeafletModule) {
     const shownNow = expressionContext(values, page.fields);
-    for (const layer of node.layers) {
-      const spec = layer.regions;
-      if (!spec) continue;
-      let made = regionsOf.get(layer.id);
-      if (!made) {
-        made = (async () => {
-          const { drawRegions, loadBorders, readBorders } = await import('./regions');
-          let set: unknown;
-          try {
-            set = await loadBorders(settings.regions, spec.from);
-          } catch (error) {
-            warnOnce(`The borders "${spec.from}" did not load: ${String(error)}`);
-            return null;
-          }
-          if (set === undefined) {
-            warnOnce(`No borders "${spec.from}" in the maps' regions: give them as regions: { ${JSON.stringify(spec.from)}: () => fetch(…).then((r) => r.json()) }.`);
-            return null;
-          }
-          if (destroyed) return null;
-          // A press chooses the area, where the person may change the field.
-          const choose = spec.choose;
-          const borders = readBorders(set, spec);
-          const regions = drawRegions({
-            box,
-            map,
-            L,
-            document: doc,
-            locale,
-            labels,
-            borders,
-            title: layer.label ?? spec.from,
-            legend: spec.legend !== false && spec.shade !== undefined,
-            ...(choose && !form.fieldReadonly(choose) ? { press: (border: Border) => form.setValue(choose, border.value) } : {}),
-          });
-          return { regions, borders };
-        })();
-        regionsOf.set(layer.id, made);
-      }
-      const off = !!hidden.get(layer.id)?.evaluate(shownNow);
-      const chosen = spec.choose ? values[spec.choose] : null;
-      void made.then((drawn) => {
-        if (!drawn || destroyed) return;
-        // Shaded by a number among each border's properties, when the layer names one.
-        const shades = new Map<string, number>();
-        for (const border of spec.shade ? drawn.borders : []) {
-          const value = Number(border.properties[spec.shade as string]);
-          if (Number.isFinite(value)) shades.set(border.key, value);
-        }
-        drawn.regions.shade(spec.shade ? shades : null, chosen === null || chosen === undefined || chosen === false ? null : String(chosen));
-        drawn.regions.show(!off);
-      });
+    const hiddenNow = (layerId: string) => !!hidden.get(layerId)?.evaluate(shownNow);
+    if (hasRegions) {
+      regions ??= import('./regions').then(({ formRegions }) =>
+        destroyed
+          ? null
+          : formRegions({
+              sets: settings.regions,
+              layers: node.layers.filter((layer) => layer.regions),
+              box,
+              map,
+              L,
+              document: doc,
+              locale,
+              labels,
+              writable: (field) => !form.fieldReadonly(field),
+              choose: (field, value) => form.setValue(field, value),
+            })
+      );
+      void regions.then((made) => made?.update(values, hiddenNow));
     }
-  }
-
-  // ---- reachable areas -----------------------------------------------------------------
-
-  interface ReachState {
-    asking: number;
-    at?: LatLng;
-    askedAt: number;
-    found?: ReachFound;
-    drawn?: Leaflet.Polygon;
-    abort?: AbortController;
-  }
-  const reaches = new Map<string, ReachState>();
-  function drawReaches(map: Leaflet.Map, L: LeafletModule) {
-    const shownNow = expressionContext(values, page.fields);
-    for (const layer of node.layers) {
-      const spec = layer.reachable;
-      if (!spec) continue;
-      let state = reaches.get(layer.id);
-      if (!state) reaches.set(layer.id, (state = { asking: 0, askedAt: 0 }));
-      const from = positionOf(spec.from);
-      if (!from || hidden.get(layer.id)?.evaluate(shownNow)) {
-        state.drawn?.remove();
-        state.drawn = undefined;
-        continue;
-      }
-      const moved = !state.at || (metresBetween(state.at, from) > REACH_MOVE_M && Date.now() - state.askedAt > ROUTE_EVERY_MS);
-      if (moved) askReach(layer.id, state, from, spec.minutes, spec.mode ?? 'car');
-      if (state.found && !state.drawn) {
-        // Its own pane: over areas by colour, under routes and pins.
-        if (!map.getPane('fd-reach')) map.createPane('fd-reach').style.zIndex = '390';
-        state.drawn = L.polygon(state.found.rings.map((ring) => ring.map((p) => [p.lat, p.lng] as [number, number])), { className: 'fd-map-reach', pane: 'fd-reach', interactive: false }).addTo(map);
-      }
+    if (hasAreas) {
+      areas ??= import('./reach').then(({ formAreas }) =>
+        destroyed
+          ? null
+          : formAreas({
+              node,
+              map,
+              L,
+              finder: settings.reach ?? settings.provider.reach,
+              provider: settings.provider.id,
+              run: (steps) => void form.run(steps),
+              found: (first, places) => {
+                reachPlaces = places;
+                // The first area found comes into view, unless the person has moved the map meanwhile.
+                if (first && !userMoved && !moving) {
+                  fitted = false;
+                  fit(map);
+                }
+              },
+            })
+      );
+      void areas.then((made) => made?.update(values, positionOf, hiddenNow));
     }
-  }
-  function askReach(id: string, state: ReachState, at: LatLng, minutes: number, mode: 'car' | 'bike' | 'foot') {
-    const finder = settings.reach ?? settings.provider.reach;
-    state.at = at;
-    state.askedAt = Date.now();
-    if (!finder) {
-      warnOnce(`The map's provider (${settings.provider.id}) works out no reachable areas: give the maps a reach function of the app's own, or use Azure Maps or Mapbox.`);
-      return;
-    }
-    state.abort?.abort();
-    const abort = new AbortController();
-    state.abort = abort;
-    const asked = ++state.asking;
-    finder({ at, minutes, mode, signal: abort.signal }).then(
-      (found) => {
-        if (destroyed || asked !== state.asking) return;
-        const first = !state.found;
-        state.found = found;
-        state.drawn?.remove();
-        state.drawn = undefined;
-        box.ready((map, L) => {
-          drawReaches(map, L);
-          checkFences();
-          // The first area found comes into view, unless the person has moved the map meanwhile.
-          if (first && !userMoved && !moving) {
-            fitted = false;
-            fit(map);
-          }
-        });
-      },
-      (error) => {
-        if (destroyed || abort.signal.aborted) return;
-        warnOnce(`The reachable area "${id}" was not found: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    );
-  }
-
-  // ---- fences --------------------------------------------------------------------------
-
-  /** Whether each fence's place was inside its area when last seen: a crossing runs its steps; the first sight only notes it. */
-  const insideNow = new Map<number, boolean>();
-  /** The areas fields hold that fences watch, drawn faintly so the person sees where steps will run. */
-  const fenceShapes = new Map<string, { drawn: string; path: Leaflet.Path }>();
-  function drawFenceAreas(map: Leaflet.Map, L: LeafletModule) {
-    for (const name of new Set((node.fences ?? []).flatMap((fence) => (fence.area !== undefined ? [fence.area] : [])))) {
-      const area = readArea(values[name]);
-      const drawn = JSON.stringify(area);
-      const had = fenceShapes.get(name);
-      if (had?.drawn === drawn) continue;
-      had?.path.remove();
-      fenceShapes.delete(name);
-      if (!area) continue;
-      if (!map.getPane('fd-reach')) map.createPane('fd-reach').style.zIndex = '390';
-      const style = { className: 'fd-map-fence', pane: 'fd-reach', interactive: false };
-      const path = area.shape === 'circle' ? L.circle([area.center.lat, area.center.lng], { ...style, radius: area.radius }) : L.polygon(area.points.map((p) => [p.lat, p.lng] as [number, number]), style);
-      fenceShapes.set(name, { drawn, path: path.addTo(map) });
-    }
-  }
-  function checkFences() {
-    node.fences?.forEach((fence, i) => {
-      // Where the place is going, not where its pin is gliding.
-      const at = positionOf(fence.layer);
-      if (!at) return;
-      let inside: boolean;
-      if (fence.area !== undefined) {
-        const area = readArea(values[fence.area]);
-        if (!area) return;
-        inside = insideArea(at, area);
-      } else {
-        const found = reaches.get(fence.within as string)?.found;
-        if (!found) return;
-        inside = found.rings.some((ring) => insideRing(at, ring));
-      }
-      const was = insideNow.get(i);
-      insideNow.set(i, inside);
-      if (was === undefined || was === inside) return;
-      if (inside === (fence.when === 'enter')) void form.run(fence.steps);
-    });
   }
 
   box.ready((map, L) => {
@@ -722,8 +599,8 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
       if (watching !== null) doc.defaultView?.navigator.geolocation.clearWatch(watching);
       for (const mark of marks.values()) if (mark.glide) cancelAnimationFrame(mark.glide);
       for (const route of routes.values()) route.abort?.abort();
-      for (const reach of reaches.values()) reach.abort?.abort();
-      for (const made of regionsOf.values()) void made.then((drawn) => drawn?.regions.destroy());
+      void regions?.then((made) => made?.destroy());
+      void areas?.then((made) => made?.destroy());
       box.element.removeEventListener('pointerdown', pressed, { capture: true });
       box.element.removeEventListener('keydown', keyed, { capture: true });
       box.element.removeEventListener('wheel', wheeled, { capture: true });

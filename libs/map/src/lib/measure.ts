@@ -13,6 +13,24 @@ import type { MapBox } from './map-core';
  * the first time a map's Measure is pressed.
  */
 
+/** The way's line, the line to the pointer, and its length beside its last point: loaded with the code that draws them. */
+const MEASURE_CSS = `
+path.fd-map-measure { stroke: var(--fd-text); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+path.fd-map-measure-trace { stroke-dasharray: 4 6; stroke-opacity: 0.7; }
+.fd-map-measure-tag span {
+  display: inline-block; translate: 8px -50%; padding: 2px 8px; border-radius: 999px; white-space: nowrap; font-size: 12.5px; font-weight: 700;
+  background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); font-variant-numeric: tabular-nums;
+}
+`;
+
+function installMeasureStyles(doc: Document) {
+  if (doc.getElementById('fieldia-map-measure-styles')) return;
+  const style = doc.createElement('style');
+  style.id = 'fieldia-map-measure-styles';
+  style.textContent = MEASURE_CSS;
+  doc.head.append(style);
+}
+
 /** A length as people read it: metres up to a kilometre, then kilometres to one decimal. */
 export function distanceWords(metres: number, labels: MapLabels, locale: Locale): string {
   const number = (n: number, digits: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn', maximumFractionDigits: digits }).format(n);
@@ -22,6 +40,7 @@ export function distanceWords(metres: number, labels: MapLabels, locale: Locale)
 export function measure(options: { box: MapBox; map: Leaflet.Map; L: LeafletModule; labels: MapLabels; locale: Locale; stopped(): void }): () => void {
   const { box, map, L, labels, locale } = options;
   const doc = box.element.ownerDocument;
+  installMeasureStyles(doc);
   const points: LatLng[] = [];
   let finished = false;
   const line = L.polyline([], { className: 'fd-map-measure', interactive: false }).addTo(map);

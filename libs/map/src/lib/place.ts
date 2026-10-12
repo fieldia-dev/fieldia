@@ -4,7 +4,7 @@ import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
-import { createMapBox, warnOnce } from './map-core';
+import { createMapBox, mapTools, warnOnce } from './map-core';
 import { searchBox } from './search-box';
 import type { MapSettings } from './settings';
 
@@ -18,7 +18,8 @@ import type { MapSettings } from './settings';
  *
  * Options: `longitudeField`, `addressField` (filled from the address
  * found, or named from the point where the provider can), `myLocation`
- * (on unless false), `search` (on unless false), `zoom` (15), `height`.
+ * (on unless false), `search` (on unless false), `zoom` (15), `height`,
+ * `tools` (any of satellite, fullscreen, measure, under the zoom).
  */
 
 const PIN = `<svg viewBox="0 0 28 40" aria-hidden="true"><path class="fd-map-pin-body" d="M14 1C6.8 1 1 6.7 1 13.8 1 23.6 14 39 14 39s13-15.4 13-25.2C27 6.7 21.2 1 14 1z"/><circle class="fd-map-pin-dot" cx="14" cy="14" r="5"/></svg>`;
@@ -73,6 +74,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       center: settings.center,
       zoom: settings.center ? (settings.zoom ?? 11) : undefined,
       height: typeof options['height'] === 'number' ? options['height'] : undefined,
+      tools: mapTools(options['tools']),
     });
 
     // ---- the coordinates, typeable -------------------------------------------

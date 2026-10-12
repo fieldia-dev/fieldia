@@ -9,7 +9,6 @@ import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { HeatLayer } from './heat';
 import { createMapBox, warnOnce, type MapTool } from './map-core';
-import type { Border, RegionsLayer } from './regions';
 import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
 import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
@@ -168,83 +167,41 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     );
   });
 
-  // ---- areas shaded by their records ----------------------------------------------------
-  let regions: Promise<RegionsLayer | null> | null = null;
-  let borders: Border[] = [];
-  function regionsLayer(): Promise<RegionsLayer | null> {
-    if (!areaSpec) return Promise.resolve(null);
-    regions ??= (async () => {
-      const { drawRegions, loadBorders, readBorders } = await import('./regions');
-      let set: unknown;
-      try {
-        set = await loadBorders(settings.regions, areaSpec.from);
-      } catch (error) {
-        warnOnce(`The borders "${areaSpec.from}" did not load: ${String(error)}`);
-        return null;
-      }
-      if (set === undefined) {
-        warnOnce(`No borders "${areaSpec.from}" in the maps' regions: give them as regions: { ${JSON.stringify(areaSpec.from)}: () => fetch(…).then((r) => r.json()) }.`);
-        return null;
-      }
-      borders = readBorders(set, areaSpec);
-      return new Promise<RegionsLayer | null>((resolve) =>
-        box.ready((map, L) =>
-          resolve(
-            destroyed
-              ? null
-              : drawRegions({
-                  box,
-                  map,
-                  L,
-                  document: doc,
-                  locale,
-                  labels,
-                  borders,
-                  title: page.title ?? model,
-                  legend: areaSpec.legend !== false,
-                  press: (border) => {
-                    ownSearch = false;
-                    context.addSearch({ label: fill(labels.inRegion, { name: border.name }), filter: [{ field: areaSpec.field, op: '=', value: border.value }] });
-                  },
-                })
+  // ---- areas shaded by their records: their code comes with the first map that has them ----
+  type Regions = ReturnType<typeof import('./regions').listRegions>;
+  let regions: Promise<Regions | null> | null = null;
+  function shadeRegions(filter: readonly ResolvedFilter[], asked: number) {
+    if (!areaSpec) return;
+    regions ??= import('./regions').then(
+      ({ listRegions }) =>
+        new Promise<Regions | null>((resolve) =>
+          box.ready((map, L) =>
+            resolve(
+              destroyed
+                ? null
+                : listRegions({
+                    sets: settings.regions,
+                    spec: areaSpec,
+                    box,
+                    map,
+                    L,
+                    document: doc,
+                    locale,
+                    labels,
+                    title: page.title ?? model,
+                    model,
+                    dataSource: context.dataSource,
+                    addSearch: (search) => {
+                      ownSearch = false;
+                      context.addSearch(search);
+                    },
+                    records: () => records,
+                  })
+            )
           )
         )
-      );
-    })();
-    return regions;
-  }
-  /** Each area's number: its records under the search but for the area searched itself, or a number of its own. */
-  async function shadeRegions(filter: readonly ResolvedFilter[], asked: number) {
-    if (!areaSpec) return;
-    const layer = await regionsLayer();
-    if (!layer || asked !== asking || destroyed) return;
-    const isArea = (item: ResolvedFilter) => 'field' in item && item.field === areaSpec.field && item.op === '=';
-    const picked = filter.find(isArea);
-    const chosen = picked && 'value' in picked ? String(picked.value) : null;
-    const shade = areaSpec.shade ?? 'count';
-    const values = new Map<string, number>();
-    if (shade !== 'count') {
-      for (const border of borders) {
-        const value = Number(border.properties[shade]);
-        if (Number.isFinite(value)) values.set(border.key, value);
-      }
-    } else if (context.dataSource?.groups) {
-      try {
-        const groups = await context.dataSource.groups({ model, field: areaSpec.field, filter: filter.filter((item) => !isArea(item)) });
-        for (const group of groups) if (group.value !== null) values.set(String(group.value), group.count);
-      } catch {
-        return;
-      }
-    } else {
-      // Without a way to count, the records the map has.
-      for (const record of records) {
-        const raw = record.values[areaSpec.field];
-        const key = raw !== null && typeof raw === 'object' && 'id' in raw ? (raw as { id: unknown }).id : raw;
-        if (key !== null && key !== undefined && key !== false) values.set(String(key), (values.get(String(key)) ?? 0) + 1);
-      }
-    }
-    if (asked !== asking || destroyed) return;
-    layer.shade(values, chosen);
+    );
+    void regions.then((made) => made?.shade(filter, () => asked === asking && !destroyed));
   }
 
   // ---- a heat map, from afar ---------------------------------------------------------
@@ -637,7 +594,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     },
     destroy() {
       destroyed = true;
-      void regions?.then((layer) => layer?.destroy());
+      void regions?.then((made) => made?.destroy());
       void heat?.then((layer) => layer.destroy());
       box.element.removeEventListener('pointerdown', pressed, { capture: true });
       box.element.removeEventListener('keydown', keyed, { capture: true });
