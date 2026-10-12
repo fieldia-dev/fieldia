@@ -513,6 +513,18 @@ describe('a one-line field in VS Code’s editor', () => {
     expect(dataSource.records['job'][1]['script']).toBe('a > 2');
   });
 
+  it('leaves the find keys to the browser, as a text box does: VS Code’s find has no room in one line', async () => {
+    const { arrive, editor, seen } = await mount(condition(), 'a > 1');
+    await arrive();
+    const key = [...editor().contextKeys].find(([, on]) => on)?.[0] as string;
+    const ctrlCmd = 2048, shift = 1024, alt = 512;
+    const [e, f, g, h, f3] = [35, 36, 37, 38, 61];
+    // Find, find and replace (Cmd+Alt+F on a Mac), find again and back (F3, or Cmd+G on a Mac), find the chosen text.
+    for (const keybinding of [ctrlCmd | f, ctrlCmd | h, ctrlCmd | alt | f, f3, shift | f3, ctrlCmd | f3, ctrlCmd | shift | f3, ctrlCmd | g, ctrlCmd | shift | g, ctrlCmd | e]) {
+      expect(seen.rules).toContainEqual(expect.objectContaining({ keybinding, command: null, when: expect.stringContaining(key) }));
+    }
+  });
+
   it('joins pasted lines into one, as a text box does, in one paste; a paste of only line breaks adds nothing', async () => {
     const { arrive, editor, form } = await mount(condition(), 'a > 1');
     await arrive();

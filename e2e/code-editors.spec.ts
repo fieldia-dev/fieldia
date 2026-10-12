@@ -258,6 +258,15 @@ test.describe('a one-line field in VS Code’s editor', () => {
     await expect(monaco(page, 'condition').locator('.view-line')).toHaveCount(1);
   });
 
+  test('Ctrl+F is left to the browser, as in a text box: VS Code’s find has no room in one line', async ({ page }) => {
+    await openMonaco(page);
+    await monaco(page, 'condition').locator('.view-lines').click();
+    await page.keyboard.press(`${mod}+F`);
+    // No find bar of VS Code's opened over the line.
+    await expect(monaco(page, 'condition').locator('.find-widget')).toHaveCount(0);
+    await expect(conditionInput(page)).toBeFocused();
+  });
+
   test('its placeholder shows while it is empty', async ({ page }) => {
     await openMonaco(page);
     await selectAllIn(page, monaco(page, 'condition').locator('.view-lines'));

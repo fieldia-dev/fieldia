@@ -86,18 +86,21 @@ const ONE_LINE = 'fieldiaOneLine';
 const LINE_KEYS = new WeakSet<MonacoApi>();
 
 /**
- * Ctrl+Enter and Ctrl+Shift+Enter (Cmd on a Mac) add a line in Monaco. In a
- * one-line editor they are bound to nothing, and left to the page, as a text
- * box leaves them: Ctrl+Enter saves the form.
+ * Keys a one-line editor leaves to the page, as a text box leaves them, bound
+ * to nothing in it: Ctrl+Enter and Ctrl+Shift+Enter (Cmd on a Mac), which add
+ * a line in Monaco — Ctrl+Enter saves the form; and find's keys, for VS Code's
+ * find has no room in one line — the browser's find opens.
  */
 function lineKeys(monaco: MonacoApi) {
   if (LINE_KEYS.has(monaco)) return;
   LINE_KEYS.add(monaco);
-  // Monaco's numbers for the keys: Ctrl (Cmd on a Mac), Shift, Enter.
-  const ctrlCmd = 2048;
-  const shift = 1024;
-  const enter = 3;
-  monaco.editor.addKeybindingRules([ctrlCmd | enter, ctrlCmd | shift | enter].map((keybinding) => ({ keybinding, command: null, when: `${ONE_LINE} && editorTextFocus` })));
+  // Monaco's numbers for the keys: Ctrl (Cmd on a Mac), Shift, Alt; Enter, E, F, G, H, F3.
+  const [ctrlCmd, shift, alt] = [2048, 1024, 512];
+  const [enter, e, f, g, h, f3] = [3, 35, 36, 37, 38, 61];
+  const lines = [ctrlCmd | enter, ctrlCmd | shift | enter];
+  // Find, find and replace (Cmd+Alt+F on a Mac), find again and back (F3, or Cmd+G on a Mac), find the chosen text.
+  const find = [ctrlCmd | f, ctrlCmd | h, ctrlCmd | alt | f, f3, shift | f3, ctrlCmd | f3, ctrlCmd | shift | f3, ctrlCmd | g, ctrlCmd | shift | g, ctrlCmd | e];
+  monaco.editor.addKeybindingRules([...lines, ...find].map((keybinding) => ({ keybinding, command: null, when: `${ONE_LINE} && editorTextFocus` })));
 }
 
 /** Text as one line, as a text box takes it: each line break, and the spaces round it, one space. */
