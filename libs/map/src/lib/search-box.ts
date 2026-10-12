@@ -1,6 +1,7 @@
 import type { Locale } from '@fieldia/core';
 import type { LatLng } from './geo';
 import type { MapLabels } from './labels';
+import { warnOnce } from './map-core';
 import type { AddressSearch, PlaceFound } from './providers';
 
 /**
@@ -130,6 +131,8 @@ export function searchBox(options: SearchBoxOptions) {
         if (mine !== asking || error.name === 'AbortError') return;
         close();
         options.say(labels.searchFailed, 'error');
+        // The reader is told to try again; the developer, why it failed.
+        warnOnce(`The address search failed: ${error.message}`);
       });
   }
 

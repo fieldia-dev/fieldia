@@ -91,6 +91,11 @@ describe('Azure Maps', () => {
     expect(asked[0].url).toBe('https://atlas.microsoft.com/map/attribution?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom=12&bounds=31.1%2C29.9%2C31.4%2C30.2&subscription-key=K');
   });
 
+  it('says why, in Azure’s own words, when it refuses a search', async () => {
+    const fetch = (async () => new Response(JSON.stringify({ error: { code: 'Unauthorized', message: 'Access denied due to invalid subscription key.' } }), { status: 401 })) as typeof globalThis.fetch;
+    await expect(azureMaps({ key: 'K', fetch }).search!({ text: 'x', locale: 'en' })).rejects.toThrow('Access denied due to invalid subscription key.');
+  });
+
   it('keeps a credit when its attribution service fails', async () => {
     const { fetch } = network({});
     expect(await azureMaps({ key: 'K', fetch }).credits('road', view, 'en')).toEqual([{ text: '© Microsoft' }]);
@@ -184,6 +189,20 @@ describe('Google', () => {
     // Picked: the next search is a new session.
     await google.search!({ text: 'zam', locale: 'ar' });
     expect(JSON.parse(String(asked[3].init?.body)).sessionToken).not.toBe(sent.sessionToken);
+  });
+
+  it('says why, in Google’s own words, when it refuses: a service not switched on, a key not allowed', async () => {
+    const refused = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })) as typeof globalThis.fetch;
+    const off = { error: { code: 403, message: 'Places API (New) has not been used in project 1 before or it is disabled.', status: 'PERMISSION_DENIED' } };
+    await expect(googleMaps({ key: 'G', fetch: refused(403, off) }).search!({ text: 'x', locale: 'en' })).rejects.toThrow('Places API (New) has not been used in project 1 before or it is disabled.');
+    // The Geocoding API answers 200 with its refusal inside.
+    const denied = { status: 'REQUEST_DENIED', error_message: 'This API is not activated on your API project.', results: [] };
+    await expect(googleMaps({ key: 'G', fetch: refused(200, denied) }).reverse!({ lat: 30, lng: 31, locale: 'en' })).rejects.toThrow('This API is not activated on your API project.');
+  });
+
+  it('names a point in Arabic without the direction marks Google puts in it', async () => {
+    const { fetch } = network({ 'https://maps.googleapis.com/maps/api/geocode/json': { status: 'OK', results: [{ formatted_address: '1 شارع محمد محمود، ميدان التحرير, قسم قصر النيل، محافظة القاهرة\u202c 4272077، مصر' }] } });
+    expect(await googleMaps({ key: 'G', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' })).toBe('1 شارع محمد محمود، ميدان التحرير, قسم قصر النيل، محافظة القاهرة 4272077، مصر');
   });
 
   it('names a point through the Geocoding API', async () => {

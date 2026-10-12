@@ -81,3 +81,30 @@ describe('a place kept in two number fields', () => {
     expect(() => mount(node)).toThrow('The place on "lat" keeps its latitude there and needs options.longitudeField for its longitude');
   });
 });
+
+describe('a provider that refuses', () => {
+  it('tells the reader to try again, and the developer why, once, in the console', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const refusing = mapWidgets({
+      provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }),
+      search: async () => {
+        throw new Error('Places API (New) has not been used in project 1 before or it is disabled.');
+      },
+    });
+    const node = { type: 'field', id: 'f-note', field: 'note', widget: 'place' } as FieldNode;
+    const form = createForm({ page });
+    const widget = createWidget({ form, name: 'note', field: page.fields['note'] as Field, node, id: 'fd-note', document }, refusing);
+    document.body.replaceChildren(widget.element);
+    widget.update({ value: null, values: form.getState().values, readonly: false, required: false, invalid: false });
+    const search = document.querySelector('[role="combobox"]') as HTMLInputElement;
+    for (let i = 0; i < 2; i++) {
+      search.value = 'tahrir';
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await new Promise((done) => setTimeout(done, 0));
+    }
+    expect(document.querySelector('.fd-map-note')?.textContent).toBe('The search did not answer. Try again.');
+    const said = warn.mock.calls.map((call) => String(call[0])).filter((words) => words.includes('address search'));
+    expect(said).toEqual(['[Fieldia] The address search failed: Places API (New) has not been used in project 1 before or it is disabled.']);
+    warn.mockRestore();
+  });
+});

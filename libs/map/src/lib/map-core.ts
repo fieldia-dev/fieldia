@@ -50,6 +50,12 @@ export interface MapBox {
 }
 
 const warned = new Set<string>();
+/** Says a provider's trouble to the developer once, in the console: a map that stays empty says nothing itself. */
+export function warnOnce(words: string) {
+  if (warned.has(words)) return;
+  warned.add(words);
+  console.warn(`[Fieldia] ${words}`);
+}
 const isMac = (doc: Document) => /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
 
 export function createMapBox(options: MapBoxOptions): MapBox {
@@ -113,10 +119,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     }
     overlays.push(mark);
   }
-  if (provider.demoOnly && !warned.has(provider.id)) {
-    warned.add(provider.id);
-    console.warn(`[Fieldia] The "${provider.id}" map provider is for demos and development only: choose a provider (azureMaps, googleMaps, mapbox, or tiles) for an app in use.`);
-  }
+  if (provider.demoOnly) warnOnce(`The "${provider.id}" map provider is for demos and development only: choose a provider (azureMaps, googleMaps, mapbox, or tiles) for an app in use.`);
 
   let map: Leaflet.Map | null = null;
   let L: LeafletModule | null = null;
@@ -186,10 +189,14 @@ export function createMapBox(options: MapBoxOptions): MapBox {
 
   async function setBaseMap(kind: BaseMap) {
     if (!map || !L || kind === baseMap) return;
-    let spec = await provider.tiles(kind, locale).catch(() => null);
+    const refused = (error: Error) => {
+      warnOnce(`The ${provider.id} map images could not be drawn: ${error.message}`);
+      return null;
+    };
+    let spec = await provider.tiles(kind, locale).catch(refused);
     let drawn = kind;
     if (!spec && kind !== 'road') {
-      spec = await provider.tiles('road', locale).catch(() => null);
+      spec = await provider.tiles('road', locale).catch(refused);
       drawn = 'road';
     }
     if (!spec || destroyed || !map) return;
@@ -198,6 +205,8 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       return;
     }
     const layer = tileLayer(L, spec).addTo(map);
+    // An image refused (a key the provider does not take, a network that blocks it): the map shows the ground and nothing else.
+    layer.on('tileerror', () => warnOnce(`The ${provider.id} map images failed to load: a key or token the provider refuses, or a network that blocks it, does this. Open one image's address to see the provider's answer.`));
     baseLayer?.remove();
     baseLayer = layer;
     baseMap = drawn;

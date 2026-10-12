@@ -4,7 +4,7 @@ import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
-import { createMapBox } from './map-core';
+import { createMapBox, warnOnce } from './map-core';
 import { searchBox } from './search-box';
 import type { MapSettings } from './settings';
 
@@ -131,7 +131,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
           addressWritten = label;
           form.setValue(addressField, label);
         })
-        .catch(() => undefined);
+        .catch((error: Error) => error.name !== 'AbortError' && warnOnce(`Naming the place failed: ${error.message}`));
     }
 
     function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string; within?: number } = {}) {
@@ -240,7 +240,10 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
           zoom: () => shown?.getZoom(),
           // A place picked: where it is (looked up now, when the provider's suggestions carry no place), and its whole address for Address.
           pick: async (place) => {
-            const located = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng, address: undefined } : await place.locate?.().catch(() => null);
+            const located =
+              place.lat !== undefined && place.lng !== undefined
+                ? { lat: place.lat, lng: place.lng, address: undefined }
+                : await place.locate?.().catch((error: Error) => (warnOnce(`Finding the place picked failed: ${error.message}`), null));
             if (!located) return say(labels.searchFailed, 'error');
             set({ lat: located.lat, lng: located.lng }, { fly: true, address: located.address ?? [place.label, place.detail].filter(Boolean).join(', ') });
           },

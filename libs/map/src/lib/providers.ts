@@ -78,18 +78,25 @@ const query = (params: Record<string, string | number | undefined>) =>
     .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
     .join('&');
 
+/**
+ * A provider's answer, or its refusal in its own words: "Places API (New) has
+ * not been used in project … or it is disabled" says what to do; a bare 403
+ * does not.
+ */
 async function getJson(fetchWith: Fetch, url: string, init?: RequestInit): Promise<unknown> {
   const response = await fetchWith(url, init);
-  if (!response.ok) throw new Error(`${response.status} from ${url.split('?')[0]}`);
-  return response.json();
+  if (response.ok) return response.json();
+  const body = await response.json().catch(() => null);
+  const said = pathOf(body, 'error', 'message') ?? pathOf(body, 'error_message') ?? pathOf(body, 'message');
+  throw new Error(`${url.split('?')[0]} answered ${response.status}${typeof said === 'string' && said ? `: ${said}` : ''}`);
 }
 
 type Json = { [key: string]: unknown };
 const isObject = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
 const pathOf = (value: unknown, ...path: string[]): unknown => path.reduce<unknown>((at, key) => (isObject(at) ? at[key] : undefined), value);
 
-/** A provider's words, without the direction marks some put in Arabic: unseen, they would stay in an address field and its searches. */
-const clean = (value: unknown) => (typeof value === 'string' ? value.replace(/[\u200e\u200f\u061c]/g, '').trim() : '');
+/** A provider's words, without the direction marks and embeddings Azure and Google put in Arabic: unseen, they would stay in an address field and its searches. */
+const clean = (value: unknown) => (typeof value === 'string' ? value.replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/g, '').trim() : '');
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', copy: '©', reg: '®' };
 /** A credit a provider sends as HTML (Azure's are links), as the words a reader sees: never put on the page as HTML. */
@@ -421,6 +428,9 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
     },
     async reverse({ lat, lng, locale, signal }) {
       const answer = await getJson(fetchWith, `https://maps.googleapis.com/maps/api/geocode/json?${query({ latlng: `${lat},${lng}`, language: locale, key: options.key })}`, { signal });
+      // The Geocoding API refuses inside a 200: its status says so, and its message why.
+      const status = pathOf(answer, 'status');
+      if (typeof status === 'string' && status !== 'OK' && status !== 'ZERO_RESULTS') throw new Error(`Google's Geocoding API answered ${status}: ${String(pathOf(answer, 'error_message') ?? '')}`);
       const results = pathOf(answer, 'results');
       const named = Array.isArray(results) ? clean(pathOf(results[0], 'formatted_address')) : '';
       return named || null;
