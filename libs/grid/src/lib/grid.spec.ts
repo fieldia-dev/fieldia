@@ -100,15 +100,16 @@ describe('the grid', () => {
   it('closes a date cell once a day is picked from its calendar, keeping the date', async () => {
     const { box, api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
-    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input[type="date"]') as HTMLInputElement;
-    // A pick from the browser's calendar: a value, no key pressed.
-    input.value = '2026-11-03';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await frames();
+    // Fieldia's own date box, its calendar beside it.
+    (document.querySelector('.ag-popup-editor .fd-grid-editor .fd-calendar-button') as HTMLButtonElement).click();
+    const day = [...document.querySelectorAll<HTMLButtonElement>('.fd-calendar tbody button')].find((b) => b.textContent === '3' && !b.classList.contains('fd-outside')) as HTMLButtonElement;
+    day.click();
     await frames();
     expect(api!.getEditingCells()).toHaveLength(0);
-    expect(formLines(form)[1].values['delivery']).toBe('2026-11-03');
-    expect(rowCells(box, 1)[4]).toBe('3 Nov 2026');
+    const picked = formLines(form)[1].values['delivery'] as string;
+    expect(picked).toMatch(/^\d{4}-\d{2}-03$/);
+    expect(rowCells(box, 1)[4]).toMatch(/^3 \w{3} \d{4}$/);
   });
 
   it('hands a column’s options to its editor without a widget, and closes once its calendar picks a day', async () => {
@@ -129,18 +130,32 @@ describe('the grid', () => {
     expect(formLines(form)[1].values['delivery']).toMatch(/^\d{4}-\d{2}-12$/);
   });
 
-  it('keeps a date cell open while its date is typed', async () => {
+  it('keeps a date cell open while its date is typed, and takes it once it reads whole', async () => {
     const { api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
-    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input[type="date"]') as HTMLInputElement;
-    // The browser says change as soon as the typed year makes a date: typing, not a pick.
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
-    input.value = '0002-11-03';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input.fd-date') as HTMLInputElement;
+    for (const text of ['0', '03', '03/1', '03/11/2', '03/11/2026']) {
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     await frames();
     expect(api!.getEditingCells()).toHaveLength(1);
-    expect(formLines(form)[1].values['delivery']).toBe('0002-11-03');
+    expect(formLines(form)[1].values['delivery']).toBe('2026-11-03');
+  });
+
+  it('keeps a date cell’s earlier day when one that does not exist is typed, and Save says why', async () => {
+    const { api, form } = await mount();
+    api!.startEditingCell({ rowIndex: 0, colKey: 'delivery' });
+    await frames();
+    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input.fd-date') as HTMLInputElement;
+    input.focus();
+    input.value = '30/02/2026';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    api!.stopEditing();
+    await frames();
+    expect(formLines(form)[0].values['delivery']).toBe('2026-10-20');
+    expect(form.getState().unread['line_ids.l1.delivery']?.message).toBe('Delivery: February 2026 has 28 days');
+    expect(form.validate()).toBe(false);
   });
 
   it('edits a cell with the field’s own widget, and the change reaches the form at once', async () => {
@@ -635,7 +650,7 @@ describe('a cell’s editor', () => {
     await frames();
     const editor = popupEditor();
     expect(editor?.dataset['type']).toBe('date');
-    expect(editor?.querySelector('input[type="date"]')).not.toBeNull();
+    expect(editor?.querySelector('input.fd-date')).not.toBeNull();
     // Its width is the value's (the stylesheet's max-content), its cell's at the least; never a fixed one.
     expect(editor?.style.minWidth).toMatch(/px$/);
     expect(editor?.style.width).toBe('');
