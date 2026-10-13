@@ -127,17 +127,42 @@ describe('Azure Maps', () => {
   });
 
   it('suggests addresses as people type (its autocomplete), near the map, each on two lines; a place picked is located then', async () => {
-    const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete, 'https://atlas.microsoft.com/geocode': AZURE.geocode });
+    const { fetch, asked } = network({
+      'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete,
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&': AZURE.geocodeDistrict,
+      'https://atlas.microsoft.com/geocode': AZURE.geocode,
+    });
     const azure = azureMaps({ key: 'K', fetch });
     expect(azure.searchAsYouType).toBe(true);
     const [first] = await azure.search!({ text: '26 july st', near: { lat: 30.05, lng: 31.24 }, locale: 'en' });
-    expect(first).toMatchObject({ label: '26 26 July Street', detail: 'El Sheikh Ali, Cairo, Egypt' });
+    expect(first).toMatchObject({ label: '26 July Street', detail: 'El Sheikh Ali, Cairo, Egypt' });
     // Its suggestions carry no place: looked up when one is picked.
     expect(first.lat).toBeUndefined();
     expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode:autocomplete?api-version=2026-01-01&top=5&query=26%20july%20st&coordinates=31.24%2C30.05&subscription-key=K');
     expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('en-US');
-    expect(await first.locate!()).toEqual({ lat: 30.0565786550162, lng: 31.2300206845206, address: '26 26 July Street, El Sheikh Ali, Cairo, Egypt' });
-    expect(asked[1].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=1&query=26%2026%20July%20Street%2C%20El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&coordinates=31.24%2C30.05&subscription-key=K');
+    // Asked for by its own address, in Azure's structured form (the street without the house number Azure made of its name, its district, governorate and city, its country): the street, in Cairo, as Azure answers it; its stretch in El Alaya, beside El Sheikh Ali, asked for once.
+    expect(await first.locate!()).toEqual({ lat: 30.0541906885011, lng: 31.2371480131072, address: '26 July Street, El Sheikh Ali, Cairo, Egypt' });
+    expect(asked[1].url).toBe(
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&addressLine=26%20July%20Street&locality=El%20Sheikh%20Ali&adminDistrict=Cairo&adminDistrict2=Cairo&countryRegion=EG&subscription-key=K'
+    );
+    expect(asked[2].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&adminDistrict=Cairo&adminDistrict2=Cairo&countryRegion=EG&coordinates=31.24%2C30.05&subscription-key=K');
+    expect(asked).toHaveLength(3);
+  });
+
+  it('takes the district a street is in, only near, where its geocoding finds no street', async () => {
+    const { fetch, asked } = network({
+      'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete,
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&': AZURE.geocodeDistrict,
+      'https://atlas.microsoft.com/geocode': { type: 'FeatureCollection', features: [] },
+    });
+    const [first] = await azureMaps({ key: 'K', fetch }).search!({ text: '26 july st', near: { lat: 30.05, lng: 31.24 }, locale: 'en' });
+    expect(await first.locate!()).toEqual({ lat: 30.053436279296875, lng: 31.23265838623047, address: '26 July Street, El Sheikh Ali, Cairo, Egypt', precise: false });
+    // The street by its parts, then by its two lines, then its district.
+    expect(asked.slice(1).map((request) => new URL(request.url).searchParams.get('addressLine') ?? new URL(request.url).searchParams.get('query') ?? new URL(request.url).searchParams.get('locality'))).toEqual([
+      '26 July Street',
+      '26 July Street, El Sheikh Ali, Cairo, Egypt',
+      'El Sheikh Ali',
+    ]);
   });
 
   it('suggests what a half-typed Arabic name may be, in Arabic, without direction marks', async () => {
@@ -151,7 +176,8 @@ describe('Azure Maps', () => {
   it('names a point without the direction marks Azure puts in Arabic, which would sit unseen in an address field', async () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/reverseGeocode': AZURE.reverseArabic });
     const named = await azureMaps({ key: 'K', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' });
-    expect(named).toBe('7 ميدان التحرير، Cairo، القاهرة، مصر');
+    // Azure names its locality "Cairo", in Latin, beside its governorate "القاهرة": one city Fieldia knows by both names, said once, in the page's words.
+    expect(named).toBe('7 ميدان التحرير، القاهرة، مصر');
     expect(named).not.toMatch(/[\u200e\u200f\u061c]/);
   });
 });
@@ -222,10 +248,29 @@ describe('Google', () => {
 
     expect(await found[0].locate!()).toEqual({ lat: 30.0444, lng: 31.2357, address: 'Tahrir Square، Qasr El Nil، Cairo، Egypt' });
     expect(asked[2].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=ar&sessionToken=${sent.sessionToken}`);
-    expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress');
+    // Place Details Essentials, its parts with them: the country they name is set apart in the line.
+    expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress,addressComponents');
     // Picked: the next search is a new session.
     await google.search!({ text: 'zam', locale: 'ar' });
     expect(JSON.parse(String(asked[3].init?.body)).sessionToken).not.toBe(sent.sessionToken);
+  });
+
+  it('locates a place from a session already ended without its token: a token used again is no session to Google', async () => {
+    const suggestion = (placeId: string, name: string) => ({ placePrediction: { placeId, types: ['geocode'], structuredFormat: { mainText: { text: name } } } });
+    const details = { location: { latitude: 30.0444, longitude: 31.2357 }, formattedAddress: 'Tahrir Square, Cairo, Egypt' };
+    const { fetch, asked } = network({
+      'https://places.googleapis.com/v1/places:autocomplete': { suggestions: [suggestion('A1', 'Tahrir Square'), suggestion('A2', 'Tahrir Street')] },
+      'https://places.googleapis.com/v1/places/': details,
+    });
+    const google = googleMaps({ key: 'G', fetch });
+    const [square, street] = await google.search!({ text: 'tahr', locale: 'en' });
+    const token = JSON.parse(String(asked[0].init?.body)).sessionToken;
+    square.picked?.();
+    await square.locate!();
+    expect(asked[1].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=en&sessionToken=${token}`);
+    // Its session ended by the place picked from it: another of its places is located alone.
+    await street.locate!();
+    expect(asked[2].url).toBe('https://places.googleapis.com/v1/places/A2?languageCode=en');
   });
 
   it('says why, in Google’s own words, when it refuses: a service not switched on, a key not allowed', async () => {
@@ -349,6 +394,34 @@ describe('routes along the roads', () => {
       intermediates: [{ location: { latLng: { latitude: 30.05, longitude: 31.23 } } }],
       travelMode: 'BICYCLE',
     });
+  });
+
+  /** Google's own answers on 12 Oct 2026, each to the request Fieldia sends (the key taken out). */
+  const GOOGLE_ROUTES = JSON.parse(readFileSync(join(__dirname, 'fixtures/google-routes-live.json'), 'utf8')) as Record<string, { request: unknown; body: unknown }>;
+  const googleAnswering = (name: string) => network({ 'https://routes.googleapis.com/directions/v2:computeRoutes': GOOGLE_ROUTES[name].body });
+  const pointsOf = (name: string) => {
+    const sent = GOOGLE_ROUTES[name].request as { origin: { location: { latLng: { latitude: number; longitude: number } } }; destination: { location: { latLng: { latitude: number; longitude: number } } } };
+    return [sent.origin, sent.destination].map(({ location: { latLng } }) => ({ lat: latLng.latitude, lng: latLng.longitude }));
+  };
+
+  it('says plainly where Google has no bicycle routes: it answers Cairo’s with nothing', async () => {
+    const cairo = googleAnswering('bike-tahrir-zamalek');
+    await expect(googleMaps({ key: 'g', fetch: cairo.fetch }).route!({ points: pointsOf('bike-tahrir-zamalek'), mode: 'bike', locale: 'en' })).rejects.toThrow(/Google has no bicycle routes here/);
+    expect(JSON.parse(String(cairo.asked[0].init?.body))).toEqual(GOOGLE_ROUTES['bike-tahrir-zamalek'].request);
+    // Berlin's, it has.
+    const berlin = googleAnswering('bike-berlin-control');
+    expect((await googleMaps({ key: 'g', fetch: berlin.fetch }).route!({ points: pointsOf('bike-berlin-control'), mode: 'bike', locale: 'en' })).metres).toBe(2754);
+  });
+
+  it('takes a route from a spot to itself as no way to go: Google leaves out its zero metres, and draws one point', async () => {
+    for (const [name, mode, seconds] of [['car-same-point', 'car', 3], ['walk-same-point', 'foot', 0]] as const) {
+      const { fetch, asked } = googleAnswering(name);
+      const route = await googleMaps({ key: 'g', fetch }).route!({ points: pointsOf(name), mode, locale: 'en' });
+      expect(JSON.parse(String(asked[0].init?.body))).toEqual(GOOGLE_ROUTES[name].request);
+      // Its one point the road's nearest to Tahrir.
+      const road = { lat: 30.04429, lng: 31.23527 };
+      expect(route).toEqual({ metres: 0, seconds, line: [road, road] });
+    }
   });
 
   it('asks Mapbox by its profile, traffic for a car', async () => {

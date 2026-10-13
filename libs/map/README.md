@@ -252,7 +252,7 @@ pin, or the bubble, that holds the place they were on.
 | Provider | Road | Dark | Satellite | Traffic | Address search | Routes | Reachable area |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, from zoom 6, in dark colours on the dark map, drawn again every four minutes | yes, as people type | car, foot | car |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car, bike, foot (Routes API) | no |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car (with traffic), foot; bike where Google has bicycle routes, none in Egypt, Saudi Arabia, the UAE or Jordan (Routes API) | no: Google's Isochrones API is in preview, and Fieldia does not use it yet |
 | `mapbox({ token, trafficStyle })` | yes | yes | yes | from `trafficStyle`, a style of yours with Mapbox Traffic's lines alone | yes, as people type | car (traffic), bike, foot | car, bike, foot |
 | `tiles({ url, credit, trafficUrl, route, reach })` | the app's own map images | | | the app's own (`trafficUrl`) | the app's own | the app's own | the app's own |
 | `openStreetMap()` | yes, **for demos only** | no | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
@@ -267,10 +267,97 @@ treat an app in use as heavy use. Photon can run on your own server
 (`openStreetMap({ photonUrl })`).
 
 Suggestions come as people type where the provider allows it, nearest where the
-map is looking first, each on two lines (the place, then where it is); Enter
-takes the first. "My location" says how sure it is: a rough location (a
+map is looking first (a map of the whole world, opened with no centre, looks
+nowhere), each on two lines (the place, then where it is); Enter takes the one
+marked with the arrows (Down marks the first, Up the last, each going round at
+the end), or the first of a list made for the words in the box:
+words typed after the list came are searched for at once, and nothing is
+picked from the list before them. "My location" says how sure it is: a rough location (a
 desktop's, placed by its network) shows the circle it may be anywhere in, says
 how wide, and names no address from it.
+
+An address with suggestions (`address-search` on a char field) keeps them to
+the `countries` the page names (ISO codes; "UK" is read as "GB", a code no one
+knows is left out and said in the console). Azure Maps is asked once for each
+country, up to ten (an autocomplete request is a tenth of a Search
+transaction); Google, for fifteen at most; Mapbox and Nominatim, for the list;
+Photon's answers are kept to them. Nearest `near` first (or where the app's
+maps open), so give a point in the page's own country: Azure ranks another
+country's suggestions by their distance from it. Addresses come before shops
+and malls where the provider says which are which (Google, Azure), and an
+address field asks Azure for no postcodes alone, and the word for a district
+typed before its name ("حي الروضة") is left out of the words it is asked, as
+Azure names its districts without it. A suggestion of Azure's is located when
+picked, asked of Azure's geocoding by its own address in its structured form
+(its street, its district for the locality where it names one, then its
+locality, its governorate or province, postcode and country), and only
+there: a district named alike in another town is never taken for it, as no
+hit outside its own admin districts is. A street is placed in its own
+district: the stretch that says it is there, else one in the district's box
+as Azure has it (a road with a name a little beyond it, as it runs on into
+the next); never a street of the name in another district ("Kamel El
+Shenawy" in Garden City, not New Cairo's), and for a street named by its
+number alone ("30 Street", "شارع 6") never another district's of that number.
+Its city is read from them each country's way (in Egypt the governorate's
+city where the governorate is one, Zamalek is Cairo's, and the town
+elsewhere, Mansoura in Dakahlia; in Saudi Arabia the governorate's city; in
+the emirate of Abu Dhabi, the city it is in); a suggestion that names no
+region ("البرشاء 2") takes its city and region from the place found, and one
+that says less of a place listed beside it is left out. A region or a city
+of Egypt, Saudi Arabia, the UAE or Jordan is named one way in each language,
+whichever of its names or codes Azure gives ("Sharjah Emirate", "Ash
+Shāriqah" and "SH" are Sharjah; "Ţanţā" and "طنطا" are Tanta), and once in a
+line ("Giza", never "Giza, Al Jizah"); a district Azure names only in its own
+line is said too ("30 Street, Al Fisht, Sharjah"), and named so where it is
+a road's with no name of its own ("Abu Tina", never Azure's French
+"Charjah"). It is said to be only near (`precise: false`) when Azure is
+unsure of it, or finds only the street for a house, the district for a
+street (its own, before its town), the town for a district; found nowhere in
+its own districts, no place is written (the field says so under the box),
+and its parts still are. A search still waiting when
+a suggestion is picked or the box is left is dropped, and Enter never searches
+for the address a pick wrote. The place and parts a pick wrote stay while the
+words are only edited (a flat added, a word taken out); once the box is left
+emptied, or with the address picked typed over (all of it selected, then typed
+or pasted), they go with it.
+
+Azure's and Google's suggestions, places and parts were checked against their
+live services in October 2026, in English and Arabic, across Egypt, Saudi
+Arabia, the UAE and Jordan. Mapbox's are read as its documentation describes
+them and have not yet been checked against its live service.
+
+Escape drops a search waiting or on its way, as more typing, a pick and
+leaving the box do, and no search is said to be going once it is dropped; a
+list closed takes what was said of it with it. A search waiting is never
+sent; one on its way is not called back, as the provider has it and may bill
+it, but its answer opens nothing. While one address is typed, words asked for
+once (near the same place) show what they brought again, however they come
+back (a letter taken back, Enter after Escape), and words still on their way,
+though dropped, are waited for, not asked again; after a pick they are a new
+address's, asked for anew, and what is still on its way is called back. A
+pick that finds no place, or no parts, takes back the ones the pick before it
+wrote (another address's), never a place set by hand since, as emptying the
+box and leaving it does (with other words typed in their place or none);
+words only edited keep them. One found only near the address (`precise:
+false`) is written, and the field says so under the box; one whose place the
+map did not answer for (a line dropped, the provider down) says that, not
+that it is not on the map. Google writes the UAE's addresses with dashes
+between their pieces ("Sheikh Zayed Rd - Dubai - United Arab Emirates"): they
+are read as its commas elsewhere, each piece said once, a landmark's name too,
+and a suggestion's name not again on the line under it.
+
+Google's costs, as its pricing pages put them (October 2026): a session of
+suggestions ended by a pick bills its first 12 requests (Autocomplete
+Requests) and the place's details (Place Details Essentials: its place, its
+line and its parts, `location,formattedAddress,addressComponents`, are all
+three that SKU's fields, asked for whatever the page keeps, as the parts name
+the country the line is written with; the place's name, `displayName`, would
+make it Pro, and the suggestion gives it); a session
+never picked bills each request. A session's token goes with its first Place
+Details alone: Google bills a token used again as no session. A route by car
+asks for traffic, which makes it Compute Routes Pro; on foot (or by bike) with
+up to 10 stops it is Essentials, 11 to 25 stops Pro, and Google refuses more
+than 25.
 
 Pass your own `search` (and `reverse`) to `mapWidgets` to use your own address
 search with any provider.

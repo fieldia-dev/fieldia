@@ -137,6 +137,45 @@ test('in Arabic, right to left: the list under the box from its right edge, its 
   await screen(page, 'map-address-arabic-picked');
 });
 
+test('in Arabic, a suggestion named in Latin: both its lines at the right, its number before its street, and the address picked read from the right', async ({ page }) => {
+  // Google and Azure answer an Arabic page in Latin where the person types Latin, its place's line in Arabic.
+  const latin: PhotonPlace = { lat: 30.0436, lon: 31.2371, type: 'street', name: '1 Mohammed Mahmoud', district: 'ميدان التحرير', city: 'القاهرة', state: 'محافظة القاهرة', country: 'مصر', countrycode: 'EG' };
+  const { box, options } = await openAddress(page, `${QUERY}&locale=ar&dir=rtl`, [latin]);
+  await box.pressSequentially('1 moh', { delay: 60 });
+  await expect(options).toHaveCount(1);
+  const [row, name, detail] = await Promise.all([options.nth(0), options.nth(0).locator('.fd-map-result-name bdi'), options.nth(0).locator('.fd-map-result-detail bdi')].map((target) => target.boundingBox()));
+  // Both lines end at the row's right edge, as the page reads.
+  expect(Math.abs(name!.x + name!.width - (detail!.x + detail!.width))).toBeLessThanOrEqual(1);
+  expect(row!.x + row!.width - (name!.x + name!.width)).toBeLessThanOrEqual(12);
+  // "1" left of "Mohammed": the Latin words in their own order.
+  const [one, street] = await options.nth(0).locator('.fd-map-result-name bdi').evaluate((el) => {
+    const text = el.firstChild!;
+    const at = (from: number) => {
+      const range = document.createRange();
+      range.setStart(text, from);
+      range.setEnd(text, from + 1);
+      return range.getBoundingClientRect().x;
+    };
+    return [at(0), at(2)];
+  });
+  expect(one).toBeLessThan(street);
+  await screen(page, 'map-address-arabic-latin', { viewport: true });
+  await box.press('Enter');
+  await expect(box).toHaveValue('1 Mohammed Mahmoud، ميدان التحرير، القاهرة، مصر');
+  // Mostly Arabic: read from the right, the street first.
+  expect(await box.evaluate((el) => [el.getAttribute('dir'), getComputedStyle(el).direction])).toEqual(['rtl', 'rtl']);
+  await screen(page, 'map-address-arabic-latin-picked', { viewport: true });
+});
+
+test('left at once, by Tab: the search that was to go opens no list over the next box', async ({ page }) => {
+  const { field, box, asked } = await openAddress(page);
+  await box.pressSequentially('tahr', { delay: 30 });
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(600);
+  await expect(field.getByRole('listbox')).toBeHidden();
+  expect(asked.filter((url) => url.includes('photon.komoot.io/api'))).toEqual([]);
+});
+
 for (const skin of ['outlined', 'underline']) {
   test(`in the ${skin} skin the box is drawn as the page's other text boxes are, the list under it`, async ({ page }) => {
     const { box, options } = await openAddress(page, `page=map-address&skin=${skin}`);
@@ -193,15 +232,38 @@ test('on Azure Maps: its suggestions, the one picked located then, its parts fro
   const { field, box, options, problems } = await openAddress(page, `${QUERY}&maps=azure`);
   await box.pressSequentially('26 july', { delay: 60 });
   await expect(options).toHaveCount(3);
-  await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('26 26 July Street');
+  // The street's own "26", not a house's too.
+  await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('26 July Street');
   await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('El Sheikh Ali, Cairo, Egypt');
   // Azure's terms ask for nothing under its suggestions.
   await expect(field.locator('.fd-address-credit')).toHaveCount(0);
   await box.press('Enter');
-  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.230021, 30.056579] });
-  expect(await valueOf(page, 'parts')).toEqual({ street: '26 26 July Street', city: 'El Sheikh Ali', region: 'Cairo', country: 'EG' });
-  expect(await valueOf(page, 'address')).toBe('26 26 July Street, El Sheikh Ali, Cairo, Egypt');
+  // Asked of Azure's geocoding by its own address, in its structured form: the street, in Cairo's governorate and city.
+  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.237148, 30.054191] });
+  // Its city where Azure keeps Egypt's, not its district.
+  expect(await valueOf(page, 'parts')).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo', country: 'EG' });
+  expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');
+  await expect(field.locator('.fd-address-note')).toBeHidden();
   expect(problems).toEqual([]);
+});
+
+test('on Azure Maps, a pick found nowhere on the map: no place written, and the field says so under the box, in sight, until the person types on', async ({ page }) => {
+  // Azure's geocoding finds nothing for the street, nor for its district.
+  await page.route((url) => url.hostname === 'atlas.microsoft.com' && url.pathname === '/geocode', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }), headers: { 'access-control-allow-origin': '*' } }));
+  const { field, box, options } = await openAddress(page, `${QUERY}&maps=azure`);
+  await box.pressSequentially('26 july', { delay: 60 });
+  await expect(options).toHaveCount(3);
+  await box.press('Enter');
+  const note = field.locator('.fd-address-note');
+  await expect(note).toHaveText('Not found on the map: no place was saved for this address.');
+  expect(await seen(note)).toBe(true);
+  await expect(box).toHaveAttribute('aria-describedby', new RegExp(`(^| )${await note.getAttribute('id')}$`));
+  expect(await valueOf(page, 'spot')).toBeFalsy();
+  expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');
+  await screen(page, 'map-address-not-placed', { viewport: true });
+  await box.press('End');
+  await box.pressSequentially(', 2nd floor', { delay: 30 });
+  await expect(note).toBeHidden();
 });
 
 test('read-only: the address is shown, and nothing is searched', async ({ page }) => {

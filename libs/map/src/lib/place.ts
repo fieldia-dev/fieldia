@@ -113,11 +113,18 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     }
 
     // ---- writing ---------------------------------------------------------------
+    /** While the widget writes its own place: shown already, and in two fields half written at first (the new latitude, the old longitude), which is no place. */
+    let writing = false;
     function write(next: LatLng | null) {
-      if (inFields) {
-        form.setValue(name, next ? round6(next.lat) : null);
-        form.setValue(longitudeField!, next ? round6(next.lng) : null);
-      } else form.setValue(name, next ? asJson(writePoint(next)) : null);
+      writing = true;
+      try {
+        if (inFields) {
+          form.setValue(name, next ? round6(next.lat) : null);
+          form.setValue(longitudeField!, next ? round6(next.lng) : null);
+        } else form.setValue(name, next ? asJson(writePoint(next)) : null);
+      } finally {
+        writing = false;
+      }
     }
 
     let naming: AbortController | null = null;
@@ -235,9 +242,9 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
           search,
           asYouType: asYouType,
           locale: context.locale ?? 'en',
-          // Nearest where the map is looking first, as a map's own search does.
+          // Nearest where the map is looking first, as a map's own search does; a map of the whole world or a continent (no centre given, nothing picked yet) looks nowhere: not the Sahara in its middle.
           near: () => {
-            const centre = shown?.getCenter();
+            const centre = shown && shown.getZoom() >= 5 ? shown.getCenter() : null;
             return centre ? { lat: centre.lat, lng: centre.lng } : (point ?? settings.center);
           },
           zoom: () => shown?.getZoom(),
@@ -335,8 +342,9 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
             ? { lat: state.value as number, lng: state.values[longitudeField!] as number }
             : null
           : readPoint(state.value);
-        const changed = next?.lat !== point?.lat || next?.lng !== point?.lng;
-        point = next;
+        // Its own place, as set() has it: not one written by another field.
+        const changed = !writing && (next?.lat !== point?.lat || next?.lng !== point?.lng);
+        if (!writing) point = next;
         tools.hidden = readonly;
         myLocation.hidden = !geolocation || blocked || readonly;
         for (const input of [lat, lng]) input.readOnly = readonly;
@@ -348,7 +356,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         lat.setAttribute('aria-required', String(state.required));
         showCoords();
         box.refresh();
-        if (changed) show();
+        // Written by another field (an address picked) or a record: the map goes to it, as close as a place is shown. In view already is not enough: a map on the whole world (no centre given) has every place in view.
+        if (changed) show(true);
         else clear.hidden = readonly || !point;
       },
     };

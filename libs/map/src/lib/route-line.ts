@@ -68,3 +68,16 @@ export function pointAlong(route: RouteLine, metres: number): LatLng {
   const t = (metres - along[i - 1]) / (along[i] - along[i - 1] || 1);
   return { lat: line[i - 1].lat + (line[i].lat - line[i - 1].lat) * t, lng: line[i - 1].lng + (line[i].lng - line[i - 1].lng) * t };
 }
+
+/** A traveller this far from their route, in metres, has left it. */
+export const OFF_ROUTE_M = 60;
+
+/**
+ * Whether a traveller has left their route: away from its line, and away
+ * from where it was asked from. A route starts on the road, tens of metres
+ * from a traveller beside it (81 m from a point at Cairo airport, in
+ * Google's), so one standing where it was asked has not left it.
+ */
+export function leftRoute(route: RouteLine, at: LatLng, askedFrom: LatLng | undefined): boolean {
+  return nearestOnLine(route, at).off > OFF_ROUTE_M && (!askedFrom || metresBetween(at, askedFrom) > OFF_ROUTE_M);
+}

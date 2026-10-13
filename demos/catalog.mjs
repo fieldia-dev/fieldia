@@ -96,14 +96,14 @@ export const DEMOS = [
     id: 'work-item',
     name: 'Work item, quiet',
     category: 'records',
-    query: 'page=work-item&skin=outlined',
-    blurb: 'A bug as Azure DevOps draws a work item: its header in the quiet look — each value plain words until pointed at, then a light box, then its editor once clicked — and a field locked by the workflow that says why.',
+    query: 'page=work-item&skin=quiet',
+    blurb: 'A bug in the quiet look, as Azure DevOps draws a work item: each value plain words until pointed at, then a light box, then its editor once clicked; a field locked by the workflow says why. Switch to Underline or Outlined above the form to see the same bug in boxes.',
     howTo: [
       'Point at Area: a light box and its chevron appear, and nothing moves. Click it: its options open.',
       'Click State and pick Active from its dots: Reason, locked while the bug was resolved, opens to change.',
       'Point at the lock by Reason while the bug is Resolved: it says why it is locked.',
       'Press Tab through the header: each field shows its editor with a ring; Escape puts back what it held.',
-      'Pick Quiet above the form: every field reads as words, the planning and details too.',
+      'Pick Underline or Outlined above the form: every field is a box again, the header too. Quiet brings the words back.',
     ],
   },
   {

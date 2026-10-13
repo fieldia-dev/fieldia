@@ -51,7 +51,7 @@ row.addEventListener('mouseenter', () => map.highlight(id));`
 <p>The map brings its own base, on its own element alone: a part hidden stays hidden, words for a screen reader alone, its buttons. Its colours are Fieldia's tokens, light or dark by your page's ${c('color-scheme')}; set your own on ${c('.fd-map-embed')}, as ${c('.fd-map-embed { --fd-accent: #375dfb; }')}, and your rule wins whatever its weight. ${c('onSearch')} hands over one area at a time of each ${c('kind')} — the map's view (${c('view')}), an area drawn (${c('drawn')}), a shaded area pressed (${c('region')}) — for your search to keep, a new one in the last one's place; ${c('onViewChange')} comes once the map stops, never while it moves. <a href="/demos/map-embed/">Try homes in a page of their own</a>.</p>
 
 <h2 id="fields">A place and an area</h2>
-<p>A place is a field set by a press on the map, a dragged pin, an address found as it is typed, typed coordinates or “My location”; an area is a polygon, a box or a circle. An address with suggestions (${c('address-search')} on a char field) is the same search without a map: a suggestion picked fills a place field (${c('placeField')}) and an address's parts (${c('partsField')}), within the countries the page names (${c('countries')}), near a point (${c('near')}) or where the app's maps open. See <a href="/fields/#map">maps among the fields</a>.</p>
+<p>A place is a field set by a press on the map, a dragged pin, an address found as it is typed, typed coordinates or “My location”; an area is a polygon, a box or a circle. An address with suggestions (${c('address-search')} on a char field) is the same search without a map: a suggestion picked fills a place field (${c('placeField')}) and an address's parts (${c('partsField')}), within the countries the page names (${c('countries')}, ISO codes: Azure Maps is asked once for each, Google for fifteen at most), nearest a point first (${c('near')}, in the page's own country) or where the app's maps open, the addresses before shops and malls. See <a href="/fields/#map">maps among the fields</a>.</p>
 
 <h2 id="list">A list's records on a map</h2>
 <p>A list page with ${c('map')} shows its records on a map beside the table or instead of it, its pins drawn as the page says, its search and choice shared with the table. See <a href="/lists/#map">lists on a map</a>.</p>
@@ -104,7 +104,7 @@ handle.form.setValues({ courier_lat: 30.0512, courier_lng: 31.2337 });`
   <thead><tr><th>Provider</th><th>Routes</th></tr></thead>
   <tbody>
     <tr><td>${c('azureMaps')}</td><td>By car and on foot (Route Directions of 2025), with the time in traffic when it gives one.</td></tr>
-    <tr><td>${c('googleMaps')}</td><td>By car, bike and on foot, through Google's Routes API: enable it for the key.</td></tr>
+    <tr><td>${c('googleMaps')}</td><td>By car (with traffic, which Google bills as Compute Routes Pro) and on foot; by bike where Google has bicycle routes, none in Egypt, Saudi Arabia, the UAE or Jordan. Through Google's Routes API: enable it for the key. Up to 25 stops; more than 10 are billed as Pro.</td></tr>
     <tr><td>${c('mapbox')}</td><td>By car (with traffic), bike and on foot.</td></tr>
     <tr><td>${c('openStreetMap')}</td><td>OSRM's public demo server, by car alone, for trying things out; or a copy you run (${c('osrmUrl')}).</td></tr>
     <tr><td>${c('tiles')}, or any</td><td>The app's own: ${c('route: ({ points, mode }) => ({ line, metres, seconds })')}.</td></tr>
@@ -148,7 +148,7 @@ ${code(
   <tbody>
     <tr><td>${c('azureMaps')}</td><td>By car (Route Range of 2025).</td></tr>
     <tr><td>${c('mapbox')}</td><td>By car, bike and on foot (Isochrone).</td></tr>
-    <tr><td>${c('googleMaps')}, ${c('openStreetMap')}</td><td>None: the app's own, ${c('reach: ({ at, minutes, mode }) => ({ rings })')}.</td></tr>
+    <tr><td>${c('googleMaps')}, ${c('openStreetMap')}</td><td>None: the app's own, ${c('reach: ({ at, minutes, mode }) => ({ rings })')}. Google's Isochrones API is in preview; Fieldia does not use it yet.</td></tr>
   </tbody>
 </table>
 <p>A fence runs the page's own steps, as a button's, when a place that moves goes into an area or comes out of it: an area field, or a reachable area of the map. Never at first sight, when the place was there already:</p>

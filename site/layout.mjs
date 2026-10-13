@@ -55,8 +55,9 @@ ${head}</head>
   <a class="brand" href="/"><span class="mark" aria-hidden="true"></span><span class="brand-word">Fieldia</span></a>
   <nav class="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
-    <a href="/features/"${path.startsWith('/features/') ? ' aria-current="page"' : ''}>Features</a>
+    <a href="/features/"${path.startsWith('/features/') && path !== '/features/maps/' ? ' aria-current="page"' : ''}>Features</a>
     <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
+    <a href="/features/maps/"${path === '/features/maps/' ? ' aria-current="page"' : ''}>Maps</a>
     <a href="/templates/"${path === '/templates/' ? ' aria-current="page"' : ''}>Templates</a>
     <a href="/designer/"${path === '/designer/' ? ' aria-current="page"' : ''}>Designer</a>
     <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>

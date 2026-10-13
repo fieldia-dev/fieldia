@@ -64,9 +64,24 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * money look, and Search this area stepping aside from an open card; the
  * page of its own carries the card's and the pin's money
  * too): 25.6 for a place and an area, 45.1 for all, 31.1 for the page of
- * its own.
+ * its own. Azure's and Google's addresses as they answer them live (a
+ * search kept to each country, a picked one checked in its district, the
+ * city where each country keeps it, Google's plus codes and numbers): read
+ * in the address chunk, loaded now with any of their searches (3.2), which
+ * takes Azure's places out of the page — 0.4 less, 0.3 less, 0.3 less.
+ * The search box (with every place's map, so in the page) dropping a search
+ * on Escape as it does on a pick and on leaving, saying none is going once
+ * dropped, keeping each search's places until a pick so no words are paid
+ * for twice, and asking nothing for Enter on the place picked; Google's
+ * token sent with its session's first Place Details alone: 5 bytes over
+ * 45.1 for all, which goes to 45.2. A search dropped on its way let come
+ * back (the provider has it, and may bill it), its answer kept for its
+ * words, and the same words waiting for it rather than asked again; a pick
+ * calling back what is still on its way; ArrowUp from no row marking the
+ * last: 30 bytes more for a place and an area (2 under its 25.6), 59 more
+ * for all, 16 over 45.2, which goes to 45.3.
  */
-const BUDGET = { fields: 25.6, all: 45.1, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.6, all: 45.3, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

@@ -150,6 +150,33 @@ test('a courier who leaves the road is given a new route, but not more than ever
   expect(routes).toHaveLength(2);
 });
 
+test('a courier standing beside the road is not given the same route again and again: it starts on the road, away from them', async ({ page }) => {
+  await page.clock.install();
+  const { routes } = await openOrder(page);
+  // 115 m from the road.
+  const beside = { lat: 30.046213, lng: 31.236328 };
+  await jump(page, 11_000);
+  await send(page, beside);
+  await expect.poll(() => routes.length).toBe(2);
+  // Still there minute after minute, their phone's fix wandering a few metres: nothing more asked.
+  for (let i = 1; i <= 3; i++) {
+    await jump(page, 11_000);
+    await send(page, { lat: beside.lat + 0.00003 * (i % 2), lng: beside.lng });
+  }
+  await page.waitForTimeout(500);
+  expect(routes).toHaveLength(2);
+});
+
+test('a courier at the door has no way left to go: nothing is asked, and nothing has failed', async ({ page }) => {
+  const { routes } = await openOrder(page);
+  const now = await values(page);
+  await page.evaluate((door) => (window as unknown as Demo).fieldiaDemo.handle.form.setValues({ door }), { type: 'Point', coordinates: [now['courier_lng'], now['courier_lat']] });
+  await expect.poll(async () => (await values(page))['eta_seconds']).toBe(0);
+  expect((await values(page))['distance_m']).toBe(0);
+  expect(routes).toHaveLength(1);
+  await expect(page.getByText('The way could not be found.')).toHaveCount(0);
+});
+
 test('news grown old: the courier greys and says when they were last seen', async ({ page }) => {
   await page.clock.install();
   await openOrder(page);

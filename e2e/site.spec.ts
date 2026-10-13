@@ -111,6 +111,18 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
   expect(problems).toEqual([]);
 });
 
+test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {
+  await page.goto(SITE + '/');
+  const nav = page.locator('.top-nav a');
+  await expect(nav).toContainText(['Docs', 'Features', 'Demos', 'Maps', 'Templates']);
+  await nav.filter({ hasText: /^Maps$/ }).click();
+  await expect(page).toHaveURL(/\/features\/maps\/$/);
+  await expect(page.locator('.top-nav a[aria-current="page"]')).toHaveText(['Maps']);
+  // Another feature's page lights Features, not Maps.
+  await page.goto(SITE + '/features/forms/');
+  await expect(page.locator('.top-nav a[aria-current="page"]')).toHaveText(['Features']);
+});
+
 test('the Designer page opens the designer at each starting point, with a way back', async ({ page }) => {
   const problems = watch(page);
   await page.goto(SITE + '/designer/');

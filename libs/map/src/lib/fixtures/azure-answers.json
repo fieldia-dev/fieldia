@@ -7,41 +7,21 @@
     "geometry": {
      "type": "Point",
      "coordinates": [
-      31.2300206845206,
-      30.0565786550162
+      31.2371480131072,
+      30.0541906885011
      ]
     },
-    "bbox": [
-     31.224070478497882,
-     30.052715937445523,
-     31.235970890543317,
-     30.060441372586876
-    ],
     "properties": {
      "type": "Address",
      "confidence": "Medium",
      "matchCodes": [
       "Ambiguous"
      ],
-     "geocodePoints": [
-      {
-       "calculationMethod": "Interpolation",
-       "usageTypes": [
-        "Display"
-       ],
-       "geometry": {
-        "type": "Point",
-        "coordinates": [
-         31.2300206845206,
-         30.0565786550162
-        ]
-       }
-      }
-     ],
      "address": {
       "addressLine": "26 July Street",
+      "streetName": "26 July Street",
       "locality": "Qesm Bolak",
-      "formattedAddress": "26 July Street, Abo El Ela, Qesm Bolak, Cairo, Egypt",
+      "formattedAddress": "26 July Street, El Alaya, Qesm Bolak, Cairo, Egypt",
       "countryRegion": {
        "name": "Egypt",
        "ISO": "EG"
@@ -56,47 +36,26 @@
       ]
      }
     }
-   },
+   }
+  ]
+ },
+ "geocodeDistrict": {
+  "type": "FeatureCollection",
+  "features": [
    {
     "type": "Feature",
     "geometry": {
      "type": "Point",
      "coordinates": [
-      31.2230945501083,
-      30.0595511500819
+      31.23265838623047,
+      30.053436279296875
      ]
     },
-    "bbox": [
-     31.2171441654678,
-     30.055688432511225,
-     31.2290449347488,
-     30.063413867652578
-    ],
     "properties": {
-     "type": "Address",
-     "confidence": "Medium",
-     "matchCodes": [
-      "Ambiguous"
-     ],
-     "geocodePoints": [
-      {
-       "calculationMethod": "Interpolation",
-       "usageTypes": [
-        "Display"
-       ],
-       "geometry": {
-        "type": "Point",
-        "coordinates": [
-         31.2230945501083,
-         30.0595511500819
-        ]
-       }
-      }
-     ],
+     "type": "PopulatedPlace",
+     "confidence": "High",
      "address": {
-      "addressLine": "26 July Street",
-      "locality": "Qesm El Zamalek",
-      "formattedAddress": "26 July Street, Mohamed Mazhar, Qesm El Zamalek, Cairo, Egypt",
+      "locality": "El Sheikh Ali",
       "countryRegion": {
        "name": "Egypt",
        "ISO": "EG"
@@ -108,7 +67,8 @@
        {
         "shortName": "Cairo"
        }
-      ]
+      ],
+      "formattedAddress": "El Sheikh Ali, Egypt"
      }
     }
    }

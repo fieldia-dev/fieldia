@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { addressLine } from './address-line';
+import { addressLine, directionOf } from './address-line';
 import { azureMaps, googleMaps, mapbox, openStreetMap } from './providers';
 
 /**
@@ -46,6 +46,11 @@ describe('an address on one line', () => {
     expect(addressLine(['1 شارع محمد محمود، ميدان التحرير, قسم قصر النيل‏', '', null, 7], 'ar')).toBe('1 شارع محمد محمود، ميدان التحرير، قسم قصر النيل');
   });
 
+  it('reads past the tatweel and the vowel marks Arabic may carry: "الشيـخ زايد" is "الشيخ زايد"', () => {
+    expect(addressLine(['الشيـخ زايد', 'الشيخ زايد', 'الجيزة', 'مصر'], 'ar')).toBe('الشيـخ زايد، الجيزة، مصر');
+    expect(addressLine(['وادِي الدَّواسِر', 'وادي الدواسر', 'الرياض'], 'ar')).toBe('وادِي الدَّواسِر، الرياض');
+  });
+
   it('joins with the Arabic comma in Arabic and the comma in the other languages', () => {
     const pieces = ['Tahrir Street 12', 'Downtown', 'Cairo'];
     expect(['en', 'fr', 'de', 'ar'].map((locale) => addressLine(pieces, locale as 'en'))).toEqual([
@@ -54,6 +59,16 @@ describe('an address on one line', () => {
       'Tahrir Street 12, Downtown, Cairo',
       'Tahrir Street 12، Downtown، Cairo',
     ]);
+  });
+});
+
+describe('the direction an address reads in', () => {
+  it('is the one most of its letters are written in, whatever its first: an Arabic address that starts with a Latin street reads from the right', () => {
+    expect(directionOf('El Tahrir، الإسماعيلية، القاهرة، مصر')).toBe('rtl');
+    expect(directionOf('1 Mohammed Mahmoud، ميدان التحرير')).toBe('ltr');
+    expect(directionOf('15 شارع التحرير')).toBe('rtl');
+    // No letters, or as many each way: the page's.
+    expect([directionOf(''), directionOf('12 / 4'), directionOf('ab جد')]).toEqual(['', '', '']);
   });
 });
 

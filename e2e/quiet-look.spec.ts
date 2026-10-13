@@ -17,7 +17,7 @@ import { expectNoSidewaysScroll, node, open, screen } from './support';
  */
 
 const QUIET = '/plain/?page=work-item&skin=quiet';
-const MIXED = '/plain/?page=work-item&skin=outlined';
+const MIXED = '/plain/?page=work-item-mixed&skin=outlined';
 
 /** What the browser draws for each property named. */
 const drawn = (element: Locator, ...names: string[]) =>
@@ -207,6 +207,16 @@ test.describe('where it is worn', () => {
     for (const id of ['f-priority', 'f-severity', 'f-points', 'f-due', 'f-repro']) await expect(node(page, id)).not.toHaveAttribute('data-quiet');
     expect(transparent((await drawn(node(page, 'f-severity').locator('select'), 'border-top-color'))['border-top-color'])).toBe(false);
     await screen(page, 'quiet-header-only');
+  });
+
+  test('the work item demo wears the look the switch picks, its header too: boxes in Underline and Outlined, words in Quiet', async ({ page }) => {
+    for (const skin of ['underline', 'outlined'] as const) {
+      await visit(page, `/plain/?page=work-item&skin=${skin}`);
+      await expect(page.locator('.fd-form')).toHaveAttribute('data-fd-skin', skin);
+      for (const id of ['f-state', 'f-area', 'f-iteration', 'f-priority']) await expect(node(page, id)).not.toHaveAttribute('data-quiet');
+    }
+    await visit(page, '/plain/?page=work-item&skin=quiet');
+    for (const id of ['f-state', 'f-area', 'f-iteration', 'f-priority']) await expect(node(page, id)).toHaveAttribute('data-quiet', '');
   });
 
   test('with no pointer, a tap goes straight to the editor', async ({ browser }) => {
