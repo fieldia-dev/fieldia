@@ -1,6 +1,6 @@
 import type { Option } from '@fieldia/core';
 import { layOut, limiter, withAlone } from './choice-rules';
-import { clearSelection, describeState, maker, rightToLeft, wordsFor } from './kind-parts';
+import { clearSelection, describeState, fillIn, maker, rightToLeft, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
 
@@ -51,6 +51,8 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
   function pick(option: Option) {
     if (!multiple) return form.setValue(name, option.value);
     const now = Array.isArray(current()) ? (current() as unknown[]) : [];
+    // At the most it takes, one more ticks nothing and says why; the cards are never turned off.
+    if (limit?.most && now.length >= limit.most && !now.includes(option.value) && !option.exclusive) return limit.say(fillIn(words.chooseUpTo, { max: limit.most }));
     const on = new Set(now.includes(option.value) ? now.filter((v) => v !== option.value) : withAlone(written, now, option.value));
     // In the options' own order, as checkboxes keep them, however they are shown.
     form.setValue(name, written.filter((o) => on.has(o.value)).map((o) => o.value));
@@ -86,12 +88,13 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
       readonly = state.readonly;
       const chosen = new Set<unknown>(Array.isArray(state.value) ? state.value : [state.value]);
       const stop = multiple ? -1 : Math.max(0, options.findIndex((o) => chosen.has(o.value)));
-      const full = !!limit?.full(Array.isArray(state.value) ? state.value.length : 0);
+      // "Up to 3" once full: a card more says why when pressed.
+      limit?.full(Array.isArray(state.value) ? state.value.length : 0);
       cards.forEach((card, i) => {
         const on = chosen.has(options[i].value);
         card.setAttribute('aria-checked', String(on));
         card.tabIndex = multiple || i === stop ? 0 : -1;
-        card.disabled = readonly || (full && !on && !options[i].exclusive);
+        card.disabled = readonly;
       });
       clear?.allow(state);
       clear?.show(options.some((o) => chosen.has(o.value)));

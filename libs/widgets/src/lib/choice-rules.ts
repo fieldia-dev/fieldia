@@ -16,14 +16,23 @@ export function withAlone(options: readonly Option[], now: readonly unknown[], v
 
 /**
  * The most a question takes, from an answer rule that always holds and stops
- * the form: once that many are ticked the rest are turned off, and a polite
- * "Up to 3" says why — as Form.io does, rather than complaining after.
+ * the form: once that many are ticked a polite "Up to 3" says so, and a press
+ * on one more ticks nothing and says why — "You can choose 3; untick one to
+ * choose another" — the boxes never turned off (hide, never disable).
  */
 export function limiter(make: Make, words: WidgetLabels, node: FieldNode) {
   const most = node.validate?.find((r) => r.atMost !== undefined && (r.when ?? true) === true && r.level !== 'warning')?.atMost;
   const element = most ? make('span', { class: 'fd-choice-limit', role: 'status' }) : null;
   return {
     element,
+    /** The most it takes: 0 when it takes any number. */
+    most: most ?? 0,
+    /** A press past the most, said in its place politely (the same words again are said again); the next change puts "Up to 3" back. */
+    say(text: string) {
+      if (!element) return;
+      setText(element, '');
+      setText(element, text);
+    },
     /** Whether `count` fills it, saying so when it does. */
     full(count: number) {
       const full = !!most && count >= most;

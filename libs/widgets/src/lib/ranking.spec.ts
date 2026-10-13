@@ -21,9 +21,11 @@ describe('ranking', () => {
     expect([el.id, el.getAttribute('role')]).toEqual(['fd-x', 'group']);
     expect(order(el)).toEqual(['Daylight', 'Quiet', 'Near a window', 'Storage']);
     expect(places(el)).toEqual(['1', '2', '3', '4']);
-    expect(button(el, 'Move Daylight up').disabled).toBe(true);
-    expect(button(el, 'Move Daylight down').disabled).toBe(false);
-    expect(button(el, 'Move Storage down').disabled).toBe(true);
+    // At an end a move is no use: out of sight, its place kept, never turned off.
+    const seen = (name: string) => [button(el, name).disabled, button(el, name).style.visibility];
+    expect(seen('Move Daylight up')).toEqual([false, 'hidden']);
+    expect(seen('Move Daylight down')).toEqual([false, '']);
+    expect(seen('Move Storage down')).toEqual([false, 'hidden']);
     // Not answered until something is moved.
     expect(value()).toEqual([]);
   });

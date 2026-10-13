@@ -1,3 +1,4 @@
+import { foldForSearch } from '@fieldia/core';
 import { drawIcon } from './icons';
 import type { Make } from './kind-parts';
 
@@ -23,7 +24,9 @@ export const typedKey = (event: KeyboardEvent): boolean => event.key.length === 
 /**
  * Type-ahead: the letters typed in a moment find the next row whose words
  * start with them; the same letter again moves on to the next row it starts.
- * Hands back the row's place, or -1 when none starts so.
+ * Hands back the row's place, or -1 when none starts so. Letters are found as
+ * a search finds them: in any case, Arabic letters in any of their forms, and
+ * digits in any script — ٢ finds the row "2".
  */
 export function typeAhead(words: () => readonly string[]) {
   let typed = '';
@@ -32,8 +35,8 @@ export function typeAhead(words: () => readonly string[]) {
     const now = Date.now();
     if (now - last > 700) typed = '';
     last = now;
-    typed += key.toLocaleLowerCase();
-    const all = words().map((text) => text.trim().toLocaleLowerCase());
+    typed += foldForSearch(key);
+    const all = words().map((text) => foldForSearch(text.trim()));
     const seek = (wanted: string, start: number) => {
       for (let step = 0; step < all.length; step++) {
         const at = (start + step) % all.length;
@@ -46,7 +49,7 @@ export function typeAhead(words: () => readonly string[]) {
     const found = again ? seek(typed[0], from + 1) : seek(typed, Math.max(from, 0));
     if (found >= 0 || typed.length === 1) return found;
     // Nothing starts with all the letters typed: the last one starts afresh.
-    typed = key.toLocaleLowerCase();
+    typed = foldForSearch(key);
     return seek(typed, from + 1);
   };
 }
