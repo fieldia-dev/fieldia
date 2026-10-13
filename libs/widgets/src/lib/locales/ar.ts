@@ -4,6 +4,9 @@ import type { WidgetLabels } from '../labels';
 export const ar: WidgetLabels = {
   search: 'بحث…',
   noResults: 'لا توجد نتائج',
+  brokenField: 'تعذّر عرض هذا الحقل: {label}',
+  brokenPart: 'تعذّر عرض هذا الجزء',
+  brokenPartNamed: 'تعذّر عرض هذا الجزء: {label}',
   remove: 'إزالة {name}',
   clear: 'مسح {label}',
   addLine: 'إضافة سطر',

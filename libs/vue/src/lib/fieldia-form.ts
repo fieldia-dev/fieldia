@@ -6,6 +6,7 @@ import {
   getCurrentScope,
   h,
   onBeforeUnmount,
+  onErrorCaptured,
   onMounted,
   onScopeDispose,
   ref,
@@ -52,7 +53,39 @@ interface Portal {
   key: string;
   element: HTMLElement;
   render: () => VNodeChild;
+  /** Said when what it renders throws: the viewer shows the field's or the slot's box, and tells onError. */
+  fail?: (error: unknown) => void;
 }
+
+/**
+ * An app's component kept to its place: one that throws as it renders — or a slot's content that throws as it is
+ * asked for — says so through `fail`, and renders nothing more; the error goes no further up Vue's tree.
+ */
+const Contained = defineComponent({
+  name: 'FieldiaContained',
+  props: { render: { type: Function as PropType<() => VNodeChild>, required: true }, fail: { type: Function as PropType<(error: unknown) => void>, default: undefined } },
+  setup(props) {
+    const failed = ref(false);
+    const fail = (error: unknown) => {
+      if (failed.value) return;
+      failed.value = true;
+      props.fail?.(error);
+    };
+    onErrorCaptured((error) => {
+      fail(error);
+      return false;
+    });
+    return () => {
+      if (failed.value) return null;
+      try {
+        return props.render();
+      } catch (error) {
+        fail(error);
+        return null;
+      }
+    };
+  },
+});
 
 /** The form's events, each emitted under its own name. */
 const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete'] as const;
@@ -107,6 +140,11 @@ export const FieldiaForm = defineComponent({
      * prop rather than an event, so its answer comes back.
      */
     onAction: { type: Function as PropType<OnAction>, default: undefined },
+    /**
+     * Told when a part of the page throws — a field's component, a slot's content, the app's widget, a map — which then
+     * shows a small box that names it, the rest of the form working on: `@error="…"`, or `:on-error`.
+     */
+    onError: { type: Function as PropType<ViewerOptions['onError']>, default: undefined },
     /** Your own way to open a page a step asks for; undefined lets the viewer open it. */
     onOpen: { type: Function as PropType<ViewerOptions['onOpen']>, default: undefined },
     /** Any of the viewer's host done your own way: words said, a question asked, a page opened, a tab shown. */
@@ -156,6 +194,7 @@ export const FieldiaForm = defineComponent({
           found.push({
             key: `field:${context.node.id}`,
             element: box,
+            fail: context.fail,
             render: () => {
               const component = props.fieldTypes?.[key];
               return component
@@ -183,7 +222,7 @@ export const FieldiaForm = defineComponent({
       for (const name of Object.keys(slots)) {
         if (name === 'default') continue;
         slotRenderers[name] = (box, context) => {
-          found.push({ key: `slot:${name}:${found.length}`, element: box, render: () => slots[name]?.({ form: context.form, name }) });
+          found.push({ key: `slot:${name}:${found.length}`, element: box, fail: context.fail, render: () => slots[name]?.({ form: context.form, name }) });
         };
       }
 
@@ -221,6 +260,7 @@ export const FieldiaForm = defineComponent({
         editSwitch: props.editSwitch,
         translate: props.translate,
         onAction: (request) => props.onAction?.(request),
+        onError: (error, where) => props.onError?.(error, where),
         onOpen: props.onOpen,
         host: props.host ? toRaw(props.host) : undefined,
         onOpenRecord: (id) => emit('openRecord', id),
@@ -276,7 +316,7 @@ export const FieldiaForm = defineComponent({
 
     return () => [
       h('div', { ref: host }),
-      ...portals.value.map((portal) => h(Teleport, { to: portal.element, key: portal.key }, [portal.render()])),
+      ...portals.value.map((portal) => h(Teleport, { to: portal.element, key: portal.key }, [h(Contained, { render: portal.render, fail: portal.fail })])),
     ];
   },
 });

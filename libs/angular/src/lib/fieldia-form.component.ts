@@ -25,7 +25,7 @@ import {
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
 import { mountViewer, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
-import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
+import type { PartFailure, PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
  * `<fieldia-form>` — the Angular shell. Thin like the React and Vue ones:
@@ -142,6 +142,11 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly action = output<ActionRequest>();
   /** A list's row was opened: the app shows the record. */
   readonly openRecord = output<RecordId>();
+  /**
+   * A part of the page threw — a field's component, a slot's content, the app's widget, a map — and shows a small box
+   * that names it, the rest of the form working on. `partError`, not `error`, which is the DOM's own event.
+   */
+  readonly partError = output<{ error: unknown; where: PartFailure }>();
   /**
    * A field was written — `by` a person, a step or the app. Not `change`: on a
    * component's element Angular hears the inputs' own change events under that
@@ -295,6 +300,7 @@ export class FieldiaFormComponent implements OnDestroy {
         this.action.emit(request);
         return this.answer()?.(request);
       },
+      onError: (error, where) => this.partError.emit({ error, where }),
       onOpen: (request) => this.openPage()?.(request),
       host: this.actionHost(),
       onOpenRecord: (id) => this.openRecord.emit(id),

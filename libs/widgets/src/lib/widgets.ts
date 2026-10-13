@@ -58,6 +58,7 @@ import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
 import { openOnClick } from './quiet';
+import { containWidget, type ErrorHandler } from './contain';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -88,6 +89,17 @@ export interface WidgetContext {
    * draws them from these too, so a column can name one as a field can.
    */
   widgets?: Record<string, WidgetFactory>;
+  /**
+   * Told when a widget throws as it is drawn, brought up to date, focused or taken away: the widget is then a small box
+   * that names its field, and the page goes on (contain.ts). The console is told when this is left out.
+   */
+  onError?: ErrorHandler;
+  /**
+   * Said by a widget that learns of its own failure later, where nothing would catch it: a React or Vue component that
+   * threw as it rendered, caught by the binding's boundary. Its field then shows the box, as for a widget that throws.
+   * `createWidget` gives every widget its own.
+   */
+  fail?: (error: unknown) => void;
 }
 
 /** What a widget may ask of the page around it in a dialog. The viewer provides these. */
@@ -158,9 +170,13 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   const context = given.widgets === registry ? given : { ...given, widgets: registry };
   const { field } = context;
   const factory = factoryFor(field, context.node, registry);
-  // Choices from the app's list: the same widget, drawn again as they load.
-  if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, context) : factory(context);
-  return pendingWidget(context);
+  // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
+  return containWidget((fail) => {
+    const own = { ...context, fail };
+    // Choices from the app's list: the same widget, drawn again as they load.
+    if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, own) : factory(own);
+    return pendingWidget(own);
+  }, context);
 }
 
 /**

@@ -4,6 +4,9 @@ import type { WidgetLabels } from '../labels';
 export const de: WidgetLabels = {
   search: 'Suchen…',
   noResults: 'Keine Ergebnisse',
+  brokenField: 'Dieses Feld konnte nicht angezeigt werden: {label}',
+  brokenPart: 'Dieser Teil konnte nicht angezeigt werden',
+  brokenPartNamed: 'Dieser Teil konnte nicht angezeigt werden: {label}',
   remove: '{name} entfernen',
   clear: '{label} leeren',
   addLine: 'Zeile hinzufügen',

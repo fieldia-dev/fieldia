@@ -26,7 +26,7 @@ interface Card {
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
 
-export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale, dialogs, widgets }) => {
+export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale, dialogs, widgets, onError }) => {
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const def = field as Extract<Field, { type: 'one2many' }>;
@@ -82,7 +82,7 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;
       const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
-      const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets });
+      const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
       const label = make('label', { class: 'fd-repeat-label', for: cellId }, sub.label);
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());
       const error = make('div', { class: 'fd-cell-error', hidden: '' });

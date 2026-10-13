@@ -80,6 +80,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     },
     dir: options.dir,
     widgets: options.widgets,
+    // A part of a dialog that throws is told where the page's own are.
+    onError: options.onError,
     preferences: options.preferences,
     pages: options.pages,
     relatedPages: options.relatedPages,

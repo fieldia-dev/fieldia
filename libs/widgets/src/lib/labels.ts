@@ -5,6 +5,13 @@ import { LANGUAGES } from './locales/all';
 export interface WidgetLabels {
   search: string;
   noResults: string;
+  /**
+   * The box drawn where a part could not be shown, its error kept to it (contain.ts): a field's widget (`{label}`, the
+   * field's label), or another part of the page, without a name and with one (`{label}`, its title).
+   */
+  brokenField: string;
+  brokenPart: string;
+  brokenPartNamed: string;
   remove: string;
   clear: string;
   addLine: string;
@@ -234,6 +241,9 @@ export interface WidgetLabels {
 const en: WidgetLabels = {
   search: 'Search…',
   noResults: 'No results',
+  brokenField: 'This field could not be shown: {label}',
+  brokenPart: 'This part could not be shown',
+  brokenPartNamed: 'This part could not be shown: {label}',
   remove: 'Remove {name}',
   clear: 'Clear {label}',
   addLine: 'Add a line',
