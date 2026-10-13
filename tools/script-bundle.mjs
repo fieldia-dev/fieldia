@@ -421,8 +421,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // left, and Save refusing it (1.4); the number boxes, shares, tax amounts and a bar's box on them (3.5); and the rules'
 // English words (3.2) — 24.3 more, to 546.1. The hint floating under a table's cell or a grid's editor (above it where the
 // table cuts it off), numbers read left to right in a right-to-left box, and the guard's names on window.Fieldia, 1.5
-// more, to 547.6.
-const BUDGET_KB = 547.6;
+// more, to 547.6. The dates', times' and choices' input rules — Fieldia's own date, date-and-time and time box in the
+// page's order with its calendar on every date (date-box.ts, 6.8), a range's end checked as a field of its own with its
+// note and limits on its calendar (0.8), a time's steps and stars' range checked, a file's kind by its name (1.4), and
+// words typed into links, choices, tags, own answers and ranks taken or said, Arabic letters folded (2.8) — 11.8
+// more, to 559.4.
+const BUDGET_KB = 559.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -475,8 +479,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // the input rules (one set of readers, the box's guard and hint, unread text kept and said on leaving, the number boxes on
 // them, and their English words; listed with the raw budget above), 9.1 more, to 167.1; the cells' floating hint and
-// right-to-left numbers, 0.4 more, to 167.5.
-const GZIP_BUDGET_KB = 167.5;
+// right-to-left numbers, 0.4 more, to 167.5; the dates', times' and choices' input rules (Fieldia's own date box with
+// its calendar on every date, a range's end as a field of its own, a time's steps, words typed into links and choices
+// taken or said; listed with the raw budget above), 4.6 more, to 172.1.
+const GZIP_BUDGET_KB = 172.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -584,8 +590,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // carries esbuild's small helpers of its own (0.6). The third side-by-side: the head's band rows on whole pixels, its
 // comments' link led by its bubble and its paperclip's box (head 34.0); the rich toolbar's lists, colour, emoji lit
 // from above, code, clear formatting and links drawn as the tracker's, and Markdown's own smaller </> (text 54.8, 18.2);
-// the path picker's chevron and divider as measured (path 13.1, 5.2).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [13.1, 5.2], choice: [5.4, 2.4], filters: [11.1, 4.2] };
+// the path picker's chevron and divider as measured (path 13.1, 5.2). A path found as typed whatever its separator and
+// script, Tab taking the match typing reached, and words naming nothing said under the box (path 13.6, 5.4).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [13.6, 5.4], choice: [5.4, 2.4], filters: [11.1, 4.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
