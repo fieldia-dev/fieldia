@@ -71,6 +71,12 @@ export interface PageLook {
    * own skin when left out (see `SKINS`).
    */
   skin?: Skin;
+  /**
+   * The order a date is typed in, and shown in while it is typed: day, month, year (`dmy`, the default, as
+   * English, Arabic, French and German pages write dates), month first (`mdy`), or year first (`ymd`). A date
+   * written year first, 2026-10-13, is read whatever the order.
+   */
+  dateOrder?: 'dmy' | 'mdy' | 'ymd';
 }
 
 export interface Page {
@@ -147,6 +153,7 @@ export const PageSchema = z
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
         skin: z.enum(SKINS).optional(),
+        dateOrder: z.enum(['dmy', 'mdy', 'ymd']).optional(),
       })
       .optional(),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),

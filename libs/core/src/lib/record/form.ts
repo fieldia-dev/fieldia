@@ -16,7 +16,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { MESSAGES, type Messages } from './messages';
+import { fill, MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
@@ -810,6 +810,29 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     }
   }
 
+  /** A range's last day (`options.endField` of a `daterange`), the field it writes besides its own; null for any other node. */
+  function rangeEnd(node: IndexedNode): string | null {
+    const source = node.source as FieldNode;
+    const end = source.widget === 'daterange' ? source.options?.['endField'] : undefined;
+    return typeof end === 'string' && page.fields[end] && end !== node.field ? end : null;
+  }
+
+  /**
+   * A range's end, a field of its own though no node shows it alone: its required, min, max and days, and that it
+   * is not before its start ("Ends can’t be before Starts"). Required when its field is, or the range is.
+   */
+  function rangeEndError(node: IndexedNode, end: string, required = nodeState(node.id).required): string | undefined {
+    const def = page.fields[end];
+    const value = state.values[end];
+    const own = checkValue(checked(end), value, required || def.required === true, messages, today());
+    if (own) return own;
+    const start = state.values[node.field as string];
+    if (typeof start !== 'string' || typeof value !== 'string' || !start || !value) return undefined;
+    const at = (v: string) => (def.type === 'datetime' ? Date.parse(v) : Date.parse(v.slice(0, 10)));
+    if (at(value) < at(start)) return fill(messages.endBeforeStart, { end: def.label, start: page.fields[node.field as string].label });
+    return undefined;
+  }
+
   /** Errors for the visible fields under `root`, without publishing them. */
   function collectErrors(root?: string): Record<string, string> {
     const errors: Record<string, string> = {};
@@ -817,6 +840,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     for (const node of visibleFieldNodes(root)) {
       const name = node.field as string;
       seen.add(name);
+      const end = rangeEnd(node);
+      if (end) {
+        seen.add(end);
+        const problem = errors[end] ? undefined : rangeEndError(node, end);
+        if (problem) errors[end] = problem;
+      }
       if (errors[name]) continue;
       const def = page.fields[name];
       const message = nodeError(node);
@@ -874,8 +903,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const parts = path.split('.');
     const field = parts[0];
     const shown = visibleFieldNodes(undefined, 'field', field);
-    if (!shown.length) return undefined;
+    // A range's end is left from its own box in the range: its problems, that it is before its start too.
+    const range = shown.length ? undefined : visibleFieldNodes().find((node) => rangeEnd(node) === field);
+    if (!shown.length && !range) return undefined;
     if (state.unread[path]) return state.unread[path].message;
+    if (range) return isEmpty(fieldDef(field), state.values[field]) ? undefined : rangeEndError(range, field, false);
     if (parts.length === 1) {
       const value = state.values[field];
       if (isEmpty(fieldDef(field), value)) return undefined;

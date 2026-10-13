@@ -174,8 +174,9 @@ function checkDateTime(value: Value | undefined, say: Say): string | undefined {
   return realDay(y, mo, d) && h < 24 && mi < 60 && s < 60 ? undefined : say('datetimeInvalid');
 }
 
+/** A day of the calendar people write: its year of four digits (never year 2, which a box half typed once made), a month and a day it has. */
 function realDay(year: number, month: number, day: number): boolean {
-  if (month < 1 || month > 12 || day < 1) return false;
+  if (year < 1000 || month < 1 || month > 12 || day < 1) return false;
   const lengths = [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return day <= lengths[month - 1];
 }
@@ -204,7 +205,7 @@ function checkFiles(field: FileField, value: Value | undefined, say: Say, messag
 export function fileProblem(field: FileField, file: { name: string; type: string; size: number }, messages: Messages = MESSAGES.en, label = file.name): string | undefined {
   if (field.maxSize !== undefined && file.size > field.maxSize) return fill(messages.fileSize, { label, size: formatBytes(field.maxSize) });
   const accept = field.type === 'image' ? ['image/*'] : field.accept;
-  if (accept && !accepts(accept, file.type)) {
+  if (accept && !(file.type ? accepts(accept, file.type) : acceptsByName(accept, file.name))) {
     const types = describeTypes(accept, messages.or);
     return fill(messages.fileType, { label, types, aTypes: article(types) });
   }
@@ -223,6 +224,19 @@ function accepts(patterns: readonly string[], type: string): boolean {
 
 /** Office kinds by the extension people know them by, from a word in their media type. */
 const EXTENSIONS = 'pdf PDF,msword DOC,wordprocessingml DOCX,opendocument.text ODT,plain TXT,ms-excel XLS,spreadsheetml XLSX,opendocument.spreadsheet ODS,csv CSV,ms-powerpoint PPT,presentationml PPTX,opendocument.presentation ODP'.split(',').map((pair) => pair.split(' '));
+
+/** The extensions a picture's file ends in, as people know them. */
+const PICTURES = 'PNG JPG JPEG GIF WEBP AVIF HEIC HEIF BMP TIF TIFF SVG'.split(' ');
+
+/**
+ * Whether a file the browser or the system gave no media type (a dropped PDF, on some systems) is one of these kinds,
+ * by the extension its name ends in, in any case: "REPORT.PDF" is a PDF, "me.jpg" a picture.
+ */
+function acceptsByName(patterns: readonly string[], name: string): boolean {
+  const extension = /\.([A-Za-z0-9]+)$/.exec(name.trim())?.[1]?.toUpperCase();
+  if (!extension) return false;
+  return patterns.some((pattern) => (pattern === 'image/*' ? PICTURES.includes(extension) : !pattern.endsWith('/*') && [describeType(pattern), pattern === 'image/jpeg' ? 'JPG' : ''].includes(extension)));
+}
 
 function describeType(pattern: string): string {
   if (pattern.endsWith('/*')) return pattern.slice(0, -2);

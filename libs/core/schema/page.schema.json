@@ -312,6 +312,14 @@
             "outlined",
             "quiet"
           ]
+        },
+        "dateOrder": {
+          "type": "string",
+          "enum": [
+            "dmy",
+            "mdy",
+            "ymd"
+          ]
         }
       },
       "additionalProperties": false

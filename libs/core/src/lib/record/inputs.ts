@@ -32,6 +32,14 @@ export function checkInput(field: Field, node: FieldNode, value: Value | undefin
     if (value < min) return fill(messages.min, { label, min });
     if (max !== undefined && value > max) return fill(messages.max, { label, max });
   }
+  // Stars or a scale keep to the points they draw: the field's min and max, else a rating's 1 to 5 and a scale's 0 to 10.
+  if ((widget === 'rating' || widget === 'scale') && typeof value === 'number' && field.type === 'integer') {
+    const label = node.label ?? field.label;
+    const min = field.min ?? (widget === 'rating' ? 1 : 0);
+    const max = field.max ?? (widget === 'rating' ? 5 : 10);
+    if (value < min) return fill(messages.min, { label, min });
+    if (value > max) return fill(messages.max, { label, max });
+  }
   if (field.type !== 'char') return checkStructure(field, node, value, messages);
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const text = value.trim();
@@ -43,10 +51,31 @@ export function checkInput(field: Field, node: FieldNode, value: Value | undefin
   if (widget === 'time') {
     if (typeof options['min'] === 'string' && text < options['min']) return fill(messages.before, { label, min: options['min'] });
     if (typeof options['max'] === 'string' && text > options['max']) return fill(messages.after, { label, max: options['max'] });
+    const off = offStep(text, options['step'], options['min']);
+    if (off) return fill(messages.timeStep, { label, step: off.step, example: off.before, next: off.after });
   }
   if (widget === 'tags' && typeof options['max'] === 'number') {
     const count = text.split(typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',').filter((t) => t.trim()).length;
     if (count > options['max']) return fill(messages.atMost, { label, max: options['max'] });
   }
   return undefined;
+}
+
+const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+/**
+ * A time between a node's steps (`step` minutes, counted from its earliest, else from 00:00), with the steps either
+ * side of it — "07:10" in steps of 15 from 07:00 is between 07:00 and 07:15; undefined on a step, or with no steps.
+ */
+function offStep(time: string, step: unknown, min: unknown): { step: number; before: string; after: string } | undefined {
+  if (typeof step !== 'number' || !Number.isInteger(step) || step <= 1 || !/^\d{2}:\d{2}$/.test(time)) return undefined;
+  const from = typeof min === 'string' && /^\d{2}:\d{2}$/.test(min) ? minutesOf(min) : 0;
+  const at = minutesOf(time);
+  const past = (((at - from) % step) + step) % step;
+  if (!past) return undefined;
+  const before = at - past;
+  // The day ends at 23:59: a step past it is the one before the last.
+  const after = before + step < 24 * 60 ? before + step : before - step;
+  return { step, before: clock(before), after: clock(Math.max(0, after)) };
 }
