@@ -43,8 +43,8 @@ export const GROUP_CSS = /* css */ `
 .fd-section-tool:hover { background: var(--fd-text-hover); }
 .fd-section-tool:active { background: var(--fd-text-pressed); }
 .fd-section-tool:focus-visible { outline: 1px solid var(--fd-focus); outline-offset: -1px; }
-/* Their icons 18px in thin lines of the words' colour: ⤢ 13px across, ^ 9px, ✎ 13px, as the tracker's (measured 20.22.23). */
-.fd-section-tool svg { width: 18px; height: 18px; stroke-width: 1.6; }
+/* Their icons 18px in lines one pixel wide, of the words' colour: ⤢ 13px across, ^ 9px, ✎ 13px, as the tracker's (measured 20.22.23). */
+.fd-section-tool svg { width: 18px; height: 18px; stroke-width: 1.34; }
 /* In the words' colour too in a heading, whose own icon before its name is muted. */
 .fd-section-title .fd-section-tools .fd-icon { color: inherit; }
 /* Shown alone over the body: the parts round it out of sight, its own heading still there to put it back. */

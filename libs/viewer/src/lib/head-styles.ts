@@ -158,6 +158,8 @@ export const HEAD_PART_CSS = /* css */ `
   font: inherit; font-size: 14px; color: var(--fd-head-link); white-space: nowrap; border-radius: 2px;
 }
 .fd-head-link .fd-icon { width: 16px; height: 16px; margin: 0; }
+/* A link led by its icon: the icon at the link's start, its words 2px after it (the comments' bubble, 20.22.23). */
+.fd-head-link:has(> .fd-icon:first-child) { padding-inline-start: 0; }
 button.fd-head-link:hover .fd-head-link-words { text-decoration: underline; }
 span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-head-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 10px; flex: none; }
@@ -227,8 +229,10 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 /* Its middle 2px past the slot's, toward the value, as the tracker's lock stands under the state's dot. */
 .fd-form .fd-head-fields > .fd-field[data-labels] > .fd-lock-wrap { grid-column: 2; grid-row: 1; justify-self: center; margin: 0; margin-inline-start: 4px; z-index: 1; }
 .fd-form .fd-head-fields > .fd-field[data-labels] > .fd-lock-wrap + * { grid-row: 1; }
-.fd-head-fields .fd-lock .fd-icon { width: 15px; height: 15px; }
+.fd-head-fields .fd-lock .fd-icon { width: 16px; height: 16px; }
 .fd-head-fields .fd-lock { color: var(--fd-text); }
+/* A locked value's words on a row of exactly 32px, as a box's: the rows and all under them on whole pixels. */
+.fd-form .fd-head-fields > .fd-field > .fd-read-text { line-height: 20px; }
 /* Every box in the head 32px tall, as the rows they stand in, its corners as small as a button's. */
 .fd-form .fd-head :is(input, select).fd-input { box-sizing: border-box; height: 32px; min-height: 32px; }
 .fd-form .fd-head .fd-field[data-quiet] :is(.fd-input:not(.fd-tags *), .fd-tags, .fd-dot-box) { border-radius: 2px; }
@@ -264,7 +268,9 @@ button.fd-head-updated:hover { text-decoration: underline; }
 .fd-head-tabs .fd-tab .fd-icon { width: 16px; height: 16px; margin: 0; }
 /* An icon alone in thin lines, a little above the middle, as the tracker's; a link's and a paperclip's 12px across (08_19). */
 .fd-head-tabs .fd-tab-icon-only > .fd-icon { margin-block-end: 3px; stroke-width: 1.5; }
-.fd-head-tabs .fd-tab-icon-only > .fd-icon:is([data-icon="link"], [data-icon="attach"]) { width: 14px; height: 14px; stroke-width: 1.7; }
+.fd-head-tabs .fd-tab-icon-only > .fd-icon[data-icon="link"] { width: 14px; height: 14px; stroke-width: 1.7; }
+/* The paperclip in its own one-pixel lines, its box 16px and the count as close as with the link's 14 (20.22.23). */
+.fd-head-tabs .fd-tab-icon-only > .fd-icon[data-icon="attach"]:not(:only-child) { margin-inline-end: -2px; }
 .fd-head-tabs .fd-tab-icon-only > .fd-icon:only-child { margin-inline: 3px; }
 .fd-head-tabs .fd-tab[aria-selected="true"] { font-weight: 600; color: var(--fd-text); border-color: var(--fd-head-edge); }
 .fd-head-tabs .fd-tab[aria-selected="true"] .fd-icon { stroke-width: 2.3; }
@@ -284,9 +290,10 @@ button.fd-head-updated:hover { text-decoration: underline; }
 .fd-head-body { padding: 0 12px 12px; background: var(--fd-surface); min-width: 0; }
 .fd-head-body > .fd-alert { margin-block: 12px 0; }
 .fd-tabs.fd-tabs-in-head > .fd-tabpanel { padding-block: 0; }
-/* A tab of fields keeps room after its last ones, as the tracker's window scrolls on past them (20.22.25: 56px past a
-   929px window); a history fitting the window keeps its own. */
-.fd-form-dialog[data-headed] .fd-tabs.fd-tabs-in-head > .fd-tabpanel:not(:has(.fd-history)) { padding-block-end: 32px; }
+/* A tab of fields keeps room after its last ones, as the tracker's window scrolls on past them (20.22.25: 54px past a
+   929px window), and no more: in a window 54px taller (08_19) they fit, with no scrollbar; a history fitting the window
+   keeps its own. */
+.fd-form-dialog[data-headed] .fd-tabs.fd-tabs-in-head > .fd-tabpanel:not(:has(.fd-history)) { padding-block-end: 30px; }
 .fd-head-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 @media (min-width: 1534px) { .fd-head-layout:has(> .fd-side) { grid-template-columns: minmax(0, 1fr) minmax(320px, 0.6fr); } }
 .fd-form-dialog .fd-head-layout > .fd-side { display: none; }

@@ -18,8 +18,10 @@ export const PICKER_CSS = /* css */ `
   background: var(--fd-surface); color: var(--fd-text); font-size: 14px; line-height: 20px;
   box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108);
 }
+/* Rows 30.3px apart, as the tracker's (20.20.45: New, Active, Resolved and Closed at 380, 410, 441 and 471): a box's line of
+   20.3px and its room round it. */
 .fd-pick-row {
-  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0; height: 29px; margin: 0 0 1px; padding: 0; padding-inline-end: 20px;
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0; height: 29.3px; margin: 0 0 1px; padding: 0; padding-inline-end: 20px;
   border-radius: 0; color: var(--fd-text); font-weight: 400; white-space: nowrap; cursor: pointer; outline: none;
 }
 .fd-pick-row[aria-checked="true"] { font-weight: 400; }
@@ -28,7 +30,8 @@ export const PICKER_CSS = /* css */ `
 .fd-pick-tick { display: grid; place-items: center; visibility: hidden; color: var(--fd-text); }
 .fd-pick-tick .fd-icon { width: 16px; height: 16px; margin: 0; stroke-width: 1.5; }
 .fd-pick-row:is([aria-checked="true"], [aria-selected="true"]) > .fd-pick-tick { visibility: visible; }
-.fd-pick-words { display: block; min-width: 0; padding-inline: 2px 6px; line-height: 29px; overflow: hidden; text-overflow: ellipsis; }
+/* Its words at the very start of their frame, as the tracker's. */
+.fd-pick-words { display: block; min-width: 0; padding-inline: 0 6px; line-height: 29.3px; overflow: hidden; text-overflow: ellipsis; }
 @media (hover: hover) { .fd-pick-row:hover { background: color-mix(in srgb, var(--fd-text) 5%, transparent); } }
 /* The row worked on: the selection colour, and a focus rectangle round its words. */
 .fd-pick-row:is(:focus, [data-active]) { background: var(--fd-accent-soft); outline: none; }
@@ -72,6 +75,7 @@ export const PICKER_CSS = /* css */ `
   position: absolute; inset-inline-start: var(--fd-quiet-pad); display: grid; place-items: center; width: 16px; height: 16px; color: var(--fd-muted); pointer-events: none;
 }
 .fd-form .fd-field[data-quiet] .fd-combo[data-avatar] > .fd-link-nobody .fd-icon { width: 16px; height: 16px; margin: 0; stroke-width: 1.5; }
-.fd-form .fd-field[data-quiet] .fd-combo[data-avatar] > .fd-link-nobody:not([hidden]) ~ .fd-combo-input { padding-inline-start: calc(var(--fd-quiet-pad) + 25px); }
+/* Its words 6px after the outline, as the tracker's "No one selected" (20.22.23: the outline's ink 129–138, the words at 150). */
+.fd-form .fd-field[data-quiet] .fd-combo[data-avatar] > .fd-link-nobody:not([hidden]) ~ .fd-combo-input { padding-inline-start: calc(var(--fd-quiet-pad) + 22px); }
 .fd-form .fd-field[data-quiet] .fd-combo[data-avatar] > .fd-combo-input::placeholder { color: var(--fd-muted); opacity: 1; }
 `;

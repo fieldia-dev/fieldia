@@ -18,7 +18,7 @@
   --bl-fill-hover: #e0e0e0;
   --bl-accent: #0078d4;
   --bl-tile: #2e7d6b;
-  --bl-star: #b85c00;
+  --bl-star: #ae6d3a;
   --bl-story: #009ccc;
   --bl-faint: #a8a8a8;
   --bl-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108);
@@ -127,13 +127,16 @@
 .bl-button:hover { background: var(--bl-fill-hover); }
 .bl-tool { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--bl-ink); cursor: pointer; }
 .bl-tool:hover { background: var(--bl-fill); }
+/* The favourite's star in a light orange line (08_18). */
 .bl-star { color: var(--bl-star); }
 /* The pivots' underline at the head's foot, 19px above the filter bar, as measured. */
 .bl-pivots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 53px; margin-block-end: 8px; }
 .bl-pivots { display: flex; gap: 4px; }
-.bl-pivots a { position: relative; padding: 8px 4px; margin-inline-end: 12px; color: var(--bl-ink); text-decoration: none; }
+/* Each pivot's words 3px in, the next 18px after them; the underline as wide as the words, 3px up (08_18: "Backlog" 296–347
+   over its line at 295–348, "Analytics" from 367). */
+.bl-pivots a { position: relative; padding: 8px 3px; margin-inline-end: 8px; color: var(--bl-ink); text-decoration: none; }
 .bl-pivots a[aria-current="page"] { font-weight: 600; }
-.bl-pivots a[aria-current="page"]::after { content: ''; position: absolute; inset-inline: 0; bottom: 2px; height: 2px; background: var(--bl-accent); }
+.bl-pivots a[aria-current="page"]::after { content: ''; position: absolute; inset-inline: 3px; bottom: 3px; height: 2px; background: var(--bl-accent); }
 /* The level's button, then its tools 32px wide and 12px apart, 15px in from the page's end; the level's icon in its
    kind's colour, the cog small (08_18). */
 .bl-tools { display: flex; align-items: center; gap: 12px; margin-inline: auto 15px; }

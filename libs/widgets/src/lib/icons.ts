@@ -4,7 +4,7 @@
  * takes the colour and size of the words beside it. An app adds its own, or
  * replaces one of these, with the viewer's `icons` option, in the same form.
  */
-import { WORK_ICONS } from './icons-work';
+import { WORK_ICONS, fine } from './icons-work';
 export type IconSet = Readonly<Record<string, string>>;
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -29,7 +29,8 @@ export const ICONS: IconSet = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.5"/>',
   star: '<path d="M12 3l2.8 6 6.2.6-4.7 4.2 1.4 6.2L12 16.8 6.3 20l1.4-6.2L3 9.6 9.2 9z"/>',
-  lock: '<rect x="4" y="9.5" width="16" height="12" rx="2.5"/><path d="M8.8 9.5V7.3a3.2 3.2 0 0 1 6.4 0v2.2"/><rect x="10.6" y="14" width="2.8" height="3.2" rx=".6" fill="currentColor" stroke="none"/>',
+  // A padlock in one-pixel lines (16px grid): a round shackle on a wide body, a dot for its keyhole.
+  lock: fine('<rect x="3.5" y="6.5" width="10" height="7" rx="1.5"/><path d="M5.5 6.5v-1a3 3 0 0 1 6 0v1"/><circle cx="8.5" cy="10" r="1" fill="currentColor" stroke="none"/>'),
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v0"/>',
   warning: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v0"/>',
@@ -37,7 +38,8 @@ export const ICONS: IconSet = {
   chart: '<path d="M3 20h18M6 20v-8M11 20V5M16 20v-6"/>',
   link: '<path d="M9.5 7.5H7.2a4.5 4.5 0 0 0 0 9h2.3M14.5 7.5h2.3a4.5 4.5 0 0 1 0 9h-2.3M8.5 12h7"/>',
   list: '<path d="M8 6h12M8 12h12M8 18h12M4 6v0M4 12v0M4 18v0"/>',
-  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  // A rounded speech bubble, its tail down at its start (16px grid, one-pixel lines).
+  chat: fine('<path d="M6 9.5h5a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 11 2.5H3A1.5 1.5 0 0 0 1.5 4v4A1.5 1.5 0 0 0 3 9.5h.5v3z"/>'),
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
   filter: '<path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',

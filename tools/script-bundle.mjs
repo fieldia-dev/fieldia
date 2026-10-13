@@ -411,7 +411,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // nested rows and Fluent's list look; a state's dot and the rows of Fieldia's lists it opens; the access key and a lock at
 // a value; help boxes and a group's tracks; the work item's icons, which any page may name; the dialog's choice of its
 // head) and the parts' loader with the table of names they share with it (1.9) — 104.4 less, to 521.6.
-const BUDGET_KB = 521.6;
+// The third side-by-side: the head's eye, back arrow, copy, paperclip, padlock and speech bubble redrawn in one-pixel
+// lines as the tracker's, a person's outline as small as its, the State list's rows 30.3px apart, and the backlog's
+// title lead and the room after its grid as measured — 0.2 more, to 521.8.
+const BUDGET_KB = 521.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -460,7 +463,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the work item's parts loaded on first use, each a script of its own (a record's head and its window, the formatted
 // text's editors with their Markdown and menus, a path picker, Fieldia's own list for a choice, a filter bar): 27.1 less,
 // to 157.9 — 15.2 over 0.19's 142.7, for what a page draws at mount (listed with the raw budget above).
-const GZIP_BUDGET_KB = 157.9;
+// the third side-by-side (the head's icons in one-pixel lines, a smaller outline, the State list's pitch, the backlog's
+// lead and the room after its grid), 0.1 more, to 158.0.
+const GZIP_BUDGET_KB = 158.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -561,8 +566,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // window (record-head, rich-button, section-tools, dialog-window and their sheets: 33.8, 9.9); the text (html-field,
 // formatted-text, markdown, text-tools, text-menu, links and their sheet: 54.1, 18.0); the path picker and its sheet
 // (13.0, 5.1); Fieldia's own list for a choice and its sheet (5.4, 2.4); the filter bar and its sheet (11.1, 4.2). Each
-// carries esbuild's small helpers of its own (0.6).
-const PART_BUDGET_KB = { head: [33.8, 9.9], text: [54.1, 18.0], path: [13.0, 5.1], choice: [5.4, 2.4], filters: [11.1, 4.2] };
+// carries esbuild's small helpers of its own (0.6). The third side-by-side: the head's band rows on whole pixels, its
+// comments' link led by its bubble and its paperclip's box (head 34.0); the rich toolbar's lists, colour, emoji lit
+// from above, code, clear formatting and links drawn as the tracker's, and Markdown's own smaller </> (text 54.8, 18.2);
+// the path picker's chevron and divider as measured (path 13.1, 5.2).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [13.1, 5.2], choice: [5.4, 2.4], filters: [11.1, 4.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

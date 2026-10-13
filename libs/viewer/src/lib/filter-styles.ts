@@ -30,11 +30,14 @@ export const FILTER_CSS = /* css */ `
 /* Fluent's filter bar: a card 50px tall, its words a little above the middle, 16px over the table's card (measured). */
 .fd-form[data-fd-theme="fluent"] .fd-list:has(> .fd-list-bar > .fd-filter-bar) { row-gap: 16px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 7px 5px; padding-inline-end: 10px; }
-/* Its fields 28px apart, word to word, each with a 12px chevron; the settings' small light cog close after them, the ×
-   12px wide further on (measured on 08_18). */
+/* Its fields 28px apart, word to word, each with a chevron 12px by 7 in a one-pixel line a shade lighter than the words,
+   a pixel above their middle; the settings' small light cog 24px after the last chevron, the × 12px wide further on
+   (measured on 08_18: the chevrons #8a8a8a, Tags' ending at 1790, the cog at 1815). */
 .fd-form[data-fd-theme="fluent"] .fd-filter-fields { gap: 6px; }
-.fd-form[data-fd-theme="fluent"] .fd-filter-chevron { width: 19px; height: 19px; margin-inline-start: -2px; }
-.fd-form[data-fd-theme="fluent"] .fd-filter-tool:not(.fd-filter-clear) { margin-inline-start: -6px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-chevron {
+  position: relative; inset-block-start: -1px; width: 22px; height: 22px; margin-inline: -3px -1px; stroke-width: 1.1; color: var(--fd-muted);
+}
+.fd-form[data-fd-theme="fluent"] .fd-filter-tool:not(.fd-filter-clear) { margin-inline-start: -5px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-tool:not(.fd-filter-clear) svg { width: 13px; height: 13px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-clear { margin-inline-start: 4px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-clear svg { width: 19px; height: 19px; }

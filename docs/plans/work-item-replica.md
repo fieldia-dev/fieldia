@@ -983,6 +983,7 @@ For each state:
 ## 9. Known limits
 
 - **Tolerance:** ±2px on positions, 0 on colours (§2.2's values, with the blues as their source values), ±1px on type metrics. On Linux the system font is not SF Pro, so word widths differ. Compare positions of edges and boxes, not glyph widths.
+- **The comparison's font:** the capture harness (`tmp/compare/shoot.mjs`) gives its pages `-apple-system` as Inter at 93.5% of its size with SF's ascent and descent: 'associated' 67px of ink against the Mac's 68, and the Deployment note wraps where the Mac wraps it (5 lines). Only those shots wear it; the gates keep the machine's fonts.
 - **Deliberate differences from the screenshots** (Fieldia's rules, §0):
   - Save and Close, Undo, the comment's Save, Remove link and New Work Item look usable.
   - Every icon-only button has a name and a tooltip.

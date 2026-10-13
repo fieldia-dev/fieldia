@@ -169,8 +169,13 @@ export const LIST_STYLES = `
 .fd-form[data-fd-theme="fluent"] .fd-list-folds { gap: 4px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-fold { width: 25px; height: 22px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-row[data-depth] > td[data-name] { padding-inline-start: calc(3px + var(--fd-depth, 0) * 20px); }
-.fd-form[data-fd-theme="fluent"] :is(.fd-list-twisty, .fd-list-twisty-room) { width: 24px; margin-inline-end: 5px; }
-.fd-form[data-fd-theme="fluent"] .fd-list-table th[data-name] { padding-inline-start: 32px; }
+/* The kind's icon 30px into the name's column, its words 4px after it, the header's word over the icon (08_18: the bug's
+   ink at 495, its title's words at 512, "Title" at 494). */
+.fd-form[data-fd-theme="fluent"] :is(.fd-list-twisty, .fd-list-twisty-room) { width: 24px; margin-inline-end: 3px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-table th[data-name] { padding-inline-start: 30px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-lead { margin-inline-end: 4px; }
+/* The grid runs 9px on past its last column's rule, as the tracker's does (08_18: its white to 2011, the rule at 2002). */
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll:has(> .fd-list-table[data-fixed]) { padding-inline-end: 9px; }
 /* Its card's scroll bar as the tracker's, on every system that lets a page draw one: 15px, a light track with a hairline
    at its inner edge, a rounded thumb in it, no arrows. Each selector written out: Chrome drops a part's :horizontal under
    an :is(), and a part paints no logical border. */

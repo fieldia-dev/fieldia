@@ -9,8 +9,11 @@ import { installPartStyles, PART_RANK } from './styles';
 export const PATH_CSS = /* css */ `
 /* ---- a path picker: its chevron at the box's end, and its list as wide as the box ---------------------------- */
 .fd-path > .fd-path-input { padding-inline-end: 34px; }
-.fd-path-chevron { position: absolute; inset-block: 0; inset-inline-end: 7px; display: grid; place-items: center; width: 20px; color: var(--fd-text); cursor: pointer; }
-.fd-path-chevron .fd-icon { width: 20px; height: 20px; margin: 0; stroke-width: 1.2; }
+/* Its chevron 13px across and 7 down in a line a little over a pixel, its point a little under the box's middle (20.20.45, 20.24.05). */
+.fd-path-chevron { position: absolute; inset-block: 0; inset-inline-end: 5px; display: grid; place-items: center; width: 24px; color: var(--fd-text); cursor: pointer; }
+/* Half a pixel over, so its slanted line falls across the pixels' edges, in a shade off the words: as soft as the tracker's
+   (#6c6c6c arms, its point darker). */
+.fd-path-chevron .fd-icon { width: 24px; height: 24px; margin: 4px 0 0; stroke-width: 1.1; translate: 0.5px 0; color: color-mix(in srgb, var(--fd-text) 82%, var(--fd-surface)); }
 .fd-path:has(> .fd-path-input[readonly]) > .fd-path-chevron { display: none; }
 .fd-form .fd-field[data-quiet] .fd-path:not(:focus-within) > .fd-path-chevron { visibility: hidden; }
 @media (hover: hover) {
@@ -55,7 +58,8 @@ export const PATH_CSS = /* css */ `
 }
 .fd-path-twist .fd-icon { width: 20px; height: 20px; margin: 0; stroke-width: 1.2; }
 .fd-path-twist .fd-icon[data-icon="chevron-right"]:dir(rtl) { transform: scaleX(-1); }
-.fd-path-divider { height: 1px; margin-block: 8px 11px; margin-inline: 20px 12px; background: var(--fd-border); }
+/* The divider ends level with the dates' end (20.24.05: 1541 against 1542). */
+.fd-path-divider { height: 1px; margin-block: 8px 11px; margin-inline: 20px; background: var(--fd-border); }
 .fd-path-empty { padding: 3px 43px; }
 @media (hover: hover) { .fd-path-row:hover { background: color-mix(in srgb, var(--fd-text) 5%, transparent); } }
 /* The row reached: the selection colour, a focus rectangle round its name and another round its words at the end. */

@@ -15,7 +15,8 @@ export const EDITOR_CSS = /* css */ `
 .fd-field-tool:hover { background: var(--fd-text-hover); }
 .fd-field-tool:active { background: var(--fd-text-pressed); }
 .fd-field-tool:focus-visible { outline: 1px solid var(--fd-focus); outline-offset: -1px; }
-.fd-field-tool svg { width: 18px; height: 18px; stroke-width: 1.6; }
+/* Its icon 18px in a line one pixel wide, as the heading's other tools (20.22.23). */
+.fd-field-tool svg { width: 18px; height: 18px; stroke-width: 1.34; }
 
 /* ---- the formatted text's editors ---- */
 .fd-text { position: relative; display: grid; min-width: 0; --fd-text-pad-x: 5px; }
@@ -92,19 +93,20 @@ export const EDITOR_CSS = /* css */ `
 .fd-text-tool:focus-visible, .fd-text-menu-item:focus-visible, .fd-links-add:focus-visible, .fd-links-remove:focus-visible {
   outline: 1px solid var(--fd-focus); outline-offset: -1px; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--fd-focus) 25%, transparent);
 }
-.fd-text-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+/* A drawing may run a little past its box, as the tracker's lists and links do (20.22.28). */
+.fd-text-icon { width: 16px; height: 16px; flex: none; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .fd-text-tool > svg.fd-icon { stroke-width: 1.6; }
 .fd-text-accent { fill: var(--fd-accent); stroke: none; }
 .fd-text-ink { fill: currentColor; stroke: none; }
 .fd-text-accent-line { stroke: var(--fd-accent); }
 .fd-text-accent-fill { fill: var(--fd-accent); stroke: none; }
 .fd-text-icon-highlight .fd-text-swatch { fill: #ffff00; stroke: none; }
-.fd-text-icon-colour .fd-text-swatch { fill: #d13438; stroke: none; }
-.fd-text-face { fill: #ffc83d; stroke: #c78b00; }
-.fd-text-dot { fill: #5c3d00; stroke: none; }
-.fd-text-icon-emoji path { stroke: #5c3d00; }
-.fd-text-eraser { fill: #f7a6c8; stroke: #c4005e; }
-.fd-text-cross { stroke: #d13438; stroke-width: 1.4; }
+.fd-text-icon-colour .fd-text-swatch { fill: #e81123; stroke: none; }
+.fd-text-face { stroke: none; }
+.fd-text-dot { fill: #7a4304; stroke: none; }
+.fd-text-icon-emoji .fd-text-smile { stroke: #a0640c; stroke-width: 1; }
+.fd-text-eraser { fill: #e68497; stroke: none; }
+.fd-text-cross { stroke: #e81123; stroke-width: 1.2; }
 .fd-text-glyph-bold { font: 700 16px/1 var(--fd-font); }
 .fd-text-glyph-strike { font: 400 15px/1 var(--fd-font); text-decoration: line-through; text-decoration-thickness: 1px; }
 .fd-text-icon-emoji { width: 20px; height: 20px; }

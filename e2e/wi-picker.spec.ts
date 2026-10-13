@@ -185,7 +185,7 @@ test.describe('a path picker, as the work tracker’s Area and Iteration', () =>
 });
 
 test.describe('State, and Planning’s choices, in Fieldia’s own list', () => {
-  test('State open: the list at its box’s start and as wide, 30px rows, a tick by Active and no dots; Resolved turns the dot orange', async ({ page }) => {
+  test('State open: the list at its box’s start and as wide, rows 30.3px apart, a tick by Active and no dots; Resolved turns the dot orange', async ({ page }) => {
     await visit(page);
     const state = node(page, 'f-state');
     await expect(state.locator('.fd-dot-label')).toHaveText('Active');
@@ -200,8 +200,11 @@ test.describe('State, and Planning’s choices, in Fieldia’s own list', () => 
     await expect(menu.locator('.fd-dot')).toHaveCount(0);
     const rows = menu.locator('[role=menuitemradio]');
     await expect(rows.locator('.fd-pick-words')).toHaveText(['New', 'Active', 'Resolved', 'Closed']);
-    const [first, second] = [await box(rows.nth(0)), await box(rows.nth(1))];
-    expect(second.y - first.y).toBe(30);
+    const first = await box(rows.nth(0));
+    // Rows 30.3px apart: Closed 91px under New, as the tracker's (380 and 471).
+    const top = (row: Locator) => row.evaluate((el) => el.getBoundingClientRect().top);
+    expect((await top(rows.nth(1))) - (await top(rows.nth(0)))).toBeCloseTo(30.3, 1);
+    expect((await top(rows.nth(3))) - (await top(rows.nth(0)))).toBeCloseTo(90.9, 1);
     expect(first.y - list.y).toBe(8);
     // A tick by the one picked alone; it is the row reached, in the selection colour, its words framed.
     expect(await rows.locator('.fd-pick-tick').evaluateAll((ticks) => ticks.map((t) => getComputedStyle(t).visibility))).toEqual(['hidden', 'visible', 'hidden', 'hidden']);

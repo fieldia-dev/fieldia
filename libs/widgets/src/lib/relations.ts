@@ -341,7 +341,7 @@ function tagAdder(doc: Document, words: string, box: Combobox, home: HTMLElement
 const adderWords = (node: FieldNode, label: string, labels: WidgetLabels) => node.placeholder || fill(labels.addNamed, { label });
 
 /** A person's outline, as a work tracker draws one where no one is picked yet: a head over a bowl. */
-const NOBODY = { nobody: '<circle cx="12" cy="7" r="3.5"/><path d="M4.5 13.5h15a7.5 6.5 0 0 1-15 0z"/>' };
+const NOBODY = { nobody: '<circle cx="10.5" cy="5.9" r="3.3"/><path d="M3.75 12.75h13.5v1.5a6.75 6 0 0 1-13.5 0z"/>' };
 
 /** Making a record from a typed name, unless the page turns it off or the data source cannot. */
 function creator(form: Form, name: string, node: FieldNode): ((text: string) => Promise<RelatedRecord>) | undefined {

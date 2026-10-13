@@ -157,6 +157,9 @@ const FINE: Record<string, { box: string; drawing: string }> = {
   query: { box: '0 0 16 16', drawing: '<path d="M1.5 4.5h4M1.5 8.5h5M1.5 12.5h12.5"/><circle cx="10.5" cy="5.5" r="3"/><path d="M12.6 7.6l2 2"/>' },
   plan: { box: '0 0 16 16', drawing: '<rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M2.5 5.5h11M5 8.5h1M7.5 8.5h1M10 8.5h1M5 11h1M7.5 11h1"/>' },
   chart: { box: '0 0 16 16', drawing: '<path d="M8.5 14.5h-5a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v3"/><path d="M10 14.5v-4M12.25 14.5v-6M14.5 14.5v-2.5" stroke-width="1.5"/>' },
+  // The team's favourite: a thin five-pointed star, 13px; its people: two heads over flat-topped bodies, 13px by 11 (08_18).
+  star: { box: '0 0 16 16', drawing: '<path d="M8 1.9l1.75 3.95 4.3.4-3.25 2.85.95 4.2L8 11.1l-3.75 2.2.95-4.2L1.95 6.25l4.3-.4z" stroke-linejoin="round"/>' },
+  people: { box: '0 0 16 16', drawing: '<circle cx="6" cy="5.5" r="2"/><circle cx="12" cy="6" r="1.5"/><path d="M2.5 9.5h7v1.2a3.5 2.6 0 0 1-7 0zM11.5 9.5h3v1.4a2.4 2.2 0 0 1-2.4 2.2h-.6" stroke-linejoin="round"/>' },
 };
 const icon = (name: string) => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
