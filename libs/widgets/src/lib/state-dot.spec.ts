@@ -65,4 +65,40 @@ describe('a state’s dot', () => {
     refresh({ readonly: true });
     expect(button(el).disabled).toBe(true);
   });
+
+  it('takes each state’s exact colour from the page, over its tone, on its dot and in its menu', () => {
+    const { el, form } = mountKind({ type: 'selection', options: STATES, default: 'normal' }, { widget: 'dot', options: { tones: { normal: 'info' }, colours: { normal: '#007acc', done: '#339933' } } });
+    expect(button(el).style.getPropertyValue('--fd-dot')).toBe('#007acc');
+    expect(items(el).map((item) => item.style.getPropertyValue('--fd-dot'))).toEqual(['#007acc', '', '#339933']);
+    form.setValue('x', 'blocked');
+    expect(button(el).style.getPropertyValue('--fd-dot')).toBe('');
+    expect(button(el).dataset['tone']).toBe('danger');
+  });
+
+  it('lists the states with a tick by the one picked and no dots, as Fieldia’s own lists, when the page says listDots: false', () => {
+    const { el, value } = mountKind({ type: 'selection', label: 'State', options: STATES, default: 'blocked' }, { widget: 'dot', options: { listDots: false, label: true } });
+    expect(menu(el).classList.contains('fd-pick-list')).toBe(true);
+    expect(menu(el).querySelector('.fd-dot')).toBeNull();
+    expect(items(el).map((item) => [item.querySelector('.fd-pick-words')?.textContent, item.getAttribute('aria-checked'), !!item.querySelector('.fd-pick-tick svg')])).toEqual([
+      ['In progress', 'false', true],
+      ['Blocked', 'true', true],
+      ['Ready for next stage', 'false', true],
+    ]);
+    // A press on its words opens it, as a press on its dot does.
+    (el.querySelector('.fd-dot-label') as HTMLElement).click();
+    expect(menu(el).hidden).toBe(false);
+    expect(document.activeElement).toBe(items(el)[1]);
+    items(el)[2].click();
+    expect(value()).toBe('done');
+  });
+
+  it('goes to a state by its first letters, from the dot and in the menu', () => {
+    const { el } = mountKind({ type: 'selection', options: STATES, default: 'normal' }, { widget: 'dot' });
+    button(el).focus();
+    press(button(el), 'r');
+    expect(menu(el).hidden).toBe(false);
+    expect(document.activeElement).toBe(items(el)[2]);
+    press(items(el)[2], 'b');
+    expect(document.activeElement).toBe(items(el)[1]);
+  });
 });

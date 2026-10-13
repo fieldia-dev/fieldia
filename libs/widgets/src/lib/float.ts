@@ -1,3 +1,13 @@
+/** Where a floating list goes and how big it is, when not as most lists are. */
+export interface FloatPlace {
+  /** Exactly as wide as its control, as a work tracker's path picker is: at least its control's width, and 224px, unless said. */
+  sameWidth?: boolean;
+  /** Its tallest, in pixels, room allowing: 240 unless said. */
+  maxHeight?: number;
+  /** Room between the control and the list, in pixels: 2 unless said. */
+  gap?: number;
+}
+
 /**
  * A list floating under the control it belongs to, over everything else: in
  * the page's top layer where the browser has one, so no scrolling table, grid
@@ -6,7 +16,7 @@
  * wherever it goes while the list is open: a scroll, a resize, or the page
  * moving it some other way (a line added above, a screenshot's resize).
  */
-export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
+export function floatUnder(anchor: HTMLElement, box: HTMLElement, look: FloatPlace = {}) {
   const doc = anchor.ownerDocument;
   const win = doc.defaultView;
   const topLayer = typeof box.showPopover === 'function';
@@ -22,19 +32,20 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
     const height = doc.documentElement.clientHeight;
     const [below, above] = [height - at.bottom - 10, at.top - 10];
     const up = below < 160 && above > below;
+    const gap = look.gap ?? 2;
     Object.assign(box.style, {
       position: 'fixed',
       inset: 'auto',
       margin: '0',
-      minWidth: `${Math.min(Math.max(at.width, 224), width - 16)}px`,
-      maxWidth: `${Math.max(at.width, Math.min(448, width - 16))}px`,
-      maxHeight: `${Math.max(96, Math.min(240, up ? above : below))}px`,
+      minWidth: `${look.sameWidth ? at.width : Math.min(Math.max(at.width, 224), width - 16)}px`,
+      maxWidth: `${look.sameWidth ? at.width : Math.max(at.width, Math.min(448, width - 16))}px`,
+      maxHeight: `${Math.max(96, Math.min(look.maxHeight ?? 240, up ? above : below))}px`,
     });
     placedAt = `${at.left},${at.top},${at.width},${width},${height}`;
     const own = box.offsetWidth;
     const rtl = win?.getComputedStyle(anchor).direction === 'rtl';
     const left = Math.max(8, Math.min(rtl ? at.right - own : at.left, width - own - 8));
-    Object.assign(box.style, { left: `${left}px`, top: `${up ? at.top - 2 - box.offsetHeight : at.bottom + 2}px` });
+    Object.assign(box.style, { left: `${left}px`, top: `${up ? at.top - gap - box.offsetHeight : at.bottom + gap}px` });
   }
   // Its control gone (a grid's cell closed under it), it goes too.
   const follow = () => {
