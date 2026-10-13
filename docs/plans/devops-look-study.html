@@ -183,37 +183,52 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
 </style>
 
 <div class="wrap">
-  <div class="kicker">Fieldia · look and layout · 12 Azure DevOps screens</div>
+  <div class="kicker">Fieldia · look and layout · 12 Azure DevOps screens · updated 13 October 2026</div>
   <h1>What Azure DevOps teaches our forms</h1>
-  <p class="lede">I went through your twelve screenshots of Azure DevOps Boards: the Kanban board, the backlog, and a bug's work item with each control open (state, area, iteration, rich text, comment, links, history). This page lists what Fieldia already covers, what it covers in part, what it lacks, and what I would add, in the order I would build it.</p>
+  <p class="lede">I went through your twelve screenshots of Azure DevOps Boards: the Kanban board, the backlog, and a bug's work item with each control open (state, area, iteration, rich text, comment, links, history). This page listed what Fieldia covered, what it lacked, and what to add; it now also says what shipped, and links the replica of the bug's edit page.</p>
   <p class="meta">Screens: board, backlog list, work item form (read state, editing State, Area and Iteration pickers, Repro Steps in Markdown, System Info in rich text, a new comment, the Add link menu), and the History tab. No screenshot is copied into this page: every sketch below is drawn the way a Fieldia form would draw it.</p>
 
   <div class="verdict">
     <div><b>The layout: mostly covered</b><p>Three columns of titled groups, labels above or beside, compact density and collapsible groups are all already in Fieldia's page format.</p></div>
-    <div><b>The controls: the real gap</b><p>DevOps fields read as plain text until you point at them. Ours always look like boxes. A quiet look is the single change that would make Fieldia feel like this.</p></div>
-    <div><b>Missing parts</b><p>A path picker with suggestions, a record header bar with tabs that carry counts, and a state history with before and after. The board comes from Grafloria.</p></div>
+    <div><b>The controls: closed in 0.19</b><p>DevOps fields read as plain text until you point at them. Fieldia's did not, until the quiet look: words at rest, a light box when pointed at, the editor once clicked.</p></div>
+    <div><b>Where it stands</b><p>Everything this page proposed has shipped: the quiet look in 0.19, the rest in 0.20. The board comes from Grafloria.</p></div>
   </div>
 
+  <section class="proposal" id="replica">
+    <div class="proposal-head"><h3>The replica: the bug's edit page in a popup</h3><span class="pill ok">Live in 0.20</span></div>
+    <div class="proposal-body wide">
+      <div>
+        <p class="saw">A backlog that opens a bug in a popup, built to look and behave as the screenshots do, then compared with them side by side in every state until no difference a person notices at a glance remained. The record's data is made up; the UI's words are DevOps' own.</p>
+        <ul>
+          <li>Open it: <a href="https://fieldia.dev/demos/backlog/?workitem=4127">fieldia.dev/demos/backlog/?workitem=4127</a>; the backlog alone: <a href="https://fieldia.dev/demos/backlog/">fieldia.dev/demos/backlog/</a>.</li>
+          <li>Click into the Discussion comment box for the 20.22.36 screenshot: the toolbar, "switch to Markdown editor", Cancel and Save.</li>
+          <li>Open State, Area or Iteration for their lists; the History tab for the State Graph.</li>
+          <li>Kept as Fieldia's own: Save and Close never greyed (with nothing changed it closes); icon buttons carry names.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <h2>What we cover today</h2>
-  <p>Each pattern in the screenshots, against Fieldia 0.18.</p>
+  <p>Each pattern in the screenshots, against Fieldia 0.20.</p>
   <div class="ledger-wrap">
     <table>
       <thead><tr><th>Pattern</th><th>What DevOps does</th><th>Fieldia today</th><th>Gap</th></tr></thead>
       <tbody>
         <tr><td>Groups in columns</td><td>Three columns: a wide one (Repro Steps, System Info, Discussion), two narrow (Planning, Effort / Deployment, Development, Related Work). Each group has a title and a hairline under it.</td><td><span class="pill ok">Covered</span> sections and groups, twelfths columns, titles</td><td>Nothing structural.</td></tr>
-        <tr><td>Labels beside, labels above</td><td>Header fields have small labels to the left (State, Reason, Area, Iteration); group fields have labels above (Category, Priority).</td><td><span class="pill ok">Covered</span> <code>look.labels</code> above, beside or hidden, <code>labelWidth</code></td><td>Per-section label placement (header beside, body above) in one page.</td></tr>
+        <tr><td>Labels beside, labels above</td><td>Header fields have small labels to the left (State, Reason, Area, Iteration); group fields have labels above (Category, Priority).</td><td><span class="pill ok">Covered</span> <code>look.labels</code> above, beside or hidden, <code>labelWidth</code>; a section or the record head sets its own</td><td>None.</td></tr>
         <tr><td>Compact density</td><td>Small type, tight rows, hairlines instead of boxes.</td><td><span class="pill ok">Covered</span> <code>look.density: "compact"</code>, the Fluent theme</td><td>None.</td></tr>
-        <tr><td>Fields that read as text</td><td>A value is plain text; pointing shows a box; clicking edits in place. State shows a coloured dot.</td><td><span class="pill part">Partly</span> read-only fields as text (<code>readonlyShown</code>), Edit switch for the whole form</td><td>No quiet look for <em>editable</em> fields.</td></tr>
-        <tr><td>Status with a coloured dot</td><td>New grey, Active blue, Resolved amber, Closed green, in the field and in its list.</td><td><span class="pill part">Partly</span> <code>selection.dot</code>, tones by condition</td><td>Dots inside the open dropdown, and a tick on the chosen one.</td></tr>
-        <tr><td>Locked fields</td><td>A lock icon before Reason and Resolved Reason.</td><td><span class="pill part">Partly</span> read-only by condition</td><td>A lock with the reason it is locked.</td></tr>
-        <tr><td>Path picker with suggestions</td><td>Area and Iteration: recent choices under "Suggestions", then the whole tree, with dates right-aligned in a second column.</td><td><span class="pill part">Partly</span> link search, details under a name</td><td>A tree, a suggestions section, a right-aligned second column.</td></tr>
-        <tr><td>Rich text</td><td>"Click to add System Info." until clicked; a full toolbar on focus (colour, highlight, emoji, indent, code, image, @ person, # work item); a Markdown editor with Preview.</td><td><span class="pill part">Partly</span> formatted text with a toolbar (bold, italic, headings, lists, links)</td><td>Toolbar on focus only, mentions and record links, code, image paste, Markdown with preview.</td></tr>
-        <tr><td>Discussion</td><td>Comment box with avatar and hint ("# to link a work item, @ to mention"), Cancel and Save on focus.</td><td><span class="pill ok">Covered</span> the chatter: messages, notes, @mentions, followers, files</td><td># to link a record.</td></tr>
-        <tr><td>Record header bar</td><td>Type badge and colour strip, ID and inline title, assignee, comment count, tags, Save and Close (split), Follow, refresh, revert, "Updated by … : Aug 25", icon tabs with counts (History, Links 0, Attachments 1).</td><td><span class="pill part">Partly</span> sheet header: title, avatar, status bar, stat buttons, gear menu, pager, breadcrumbs</td><td>Kind strip and badge, tabs with counts, "updated by", split button, Follow, revert.</td></tr>
-        <tr><td>Open over the list</td><td>The work item opens large over the backlog, with maximise and close.</td><td><span class="pill ok">Covered</span> dialogs and side panels</td><td>Maximise.</td></tr>
-        <tr><td>History</td><td>A state graph (each change with who and when), a history list grouped by age, and each change's before and after (old struck out, new in green).</td><td><span class="pill part">Partly</span> the chatter's tracked field changes</td><td>State timeline, before-and-after view.</td></tr>
+        <tr><td>Fields that read as text</td><td>A value is plain text; pointing shows a box; clicking edits in place. State shows a coloured dot.</td><td><span class="pill ok">Covered · 0.19</span> the quiet look, for a page, a section or a field</td><td>None.</td></tr>
+        <tr><td>Status with a coloured dot</td><td>New grey, Active blue, Resolved amber, Closed green, in the field and in its list.</td><td><span class="pill ok">Covered · 0.19</span> dots in the field and its open list, a tick on the chosen one</td><td>None.</td></tr>
+        <tr><td>Locked fields</td><td>A lock icon before Reason and Resolved Reason.</td><td><span class="pill ok">Covered · 0.19</span> a lock that says why (<code>readonlyReason</code>)</td><td>None.</td></tr>
+        <tr><td>Path picker with suggestions</td><td>Area and Iteration: recent choices under "Suggestions", then the whole tree, with dates right-aligned in a second column.</td><td><span class="pill ok">Covered · 0.20</span> <code>many2one.path</code>: Suggestions, then the tree, dates right-aligned</td><td>None.</td></tr>
+        <tr><td>Rich text</td><td>"Click to add System Info." until clicked; a full toolbar on focus (colour, highlight, emoji, indent, code, image, @ person, # work item); a Markdown editor with Preview.</td><td><span class="pill ok">Covered · 0.20</span> "Click to add…", the toolbar on focus, @people and # records, Markdown with Preview</td><td>None.</td></tr>
+        <tr><td>Discussion</td><td>Comment box with avatar and hint ("# to link a work item, @ to mention"), Cancel and Save on focus.</td><td><span class="pill ok">Covered · 0.20</span> the Discussion placed in a column, its tools on focus, # to link a record</td><td>None.</td></tr>
+        <tr><td>Record header bar</td><td>Type badge and colour strip, ID and inline title, assignee, comment count, tags, Save and Close (split), Follow, refresh, revert, "Updated by … : Aug 25", icon tabs with counts (History, Links 0, Attachments 1).</td><td><span class="pill ok">Covered · 0.20</span> the record head: kind strip and badge, split Save and Close, Follow, Updated by, tabs with counts</td><td>None.</td></tr>
+        <tr><td>Open over the list</td><td>The work item opens large over the backlog, with maximise and close.</td><td><span class="pill ok">Covered · 0.20</span> the inset popup, maximise and resize</td><td>None.</td></tr>
+        <tr><td>History</td><td>A state graph (each change with who and when), a history list grouped by age, and each change's before and after (old struck out, new in green).</td><td><span class="pill ok">Covered · 0.20</span> the History tab: the State Graph, changes by age, before and after</td><td>None.</td></tr>
         <tr><td>Kanban board</td><td>Columns by state with counts and limits (11/5 in red), cards with type, ID, title, state, assignee, tags, checklist 0/1; New item at the top; columns that collapse; Show more items.</td><td><span class="pill else">In Grafloria</span> its Kanban already has column limits, checklists, tags, avatars, and moving cards by drag and keyboard: <a href="https://grafloria.com/demos/dashboard/kanban-board.html">board</a>, <a href="https://grafloria.com/demos/dashboard/kanban-studio.html">studio</a></td><td>None for Fieldia.</td></tr>
-        <tr><td>Filter bar</td><td>"Filter by keyword", then a dropdown per field (Bug, Active, Area, Iteration, Tags), then clear.</td><td><span class="pill part">Partly</span> one search bar with chips, Filters, Group By, Favourites</td><td>A field-per-dropdown filter bar.</td></tr>
+        <tr><td>Filter bar</td><td>"Filter by keyword", then a dropdown per field (Bug, Active, Area, Iteration, Tags), then clear.</td><td><span class="pill ok">Covered · 0.20</span> <code>search: "fields"</code> with <code>filterFields</code>, a dropdown per field</td><td>None.</td></tr>
         <tr><td>Column options</td><td>Column Options, expand and collapse all, an order column.</td><td><span class="pill part">Partly</span> grouped rows that open and close; the page sets the columns</td><td>A column chooser, and expand and collapse all.</td></tr>
       </tbody>
     </table>
@@ -223,7 +238,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   <p>Six additions, each sketched as a Fieldia page would draw it. Sizes are rough: S is days, M about a week.</p>
 
   <section class="proposal" id="quiet">
-    <div class="proposal-head"><h3>1. A quiet look for fields</h3><span class="pill miss">Biggest gap</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>1. A quiet look for fields</h3><span class="pill ok">Released in 0.19</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: the work item header and Planning group. Values read as text; the box only appears when you point at it or click.</p>
@@ -250,7 +265,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="header">
-    <div class="proposal-head"><h3>2. A record header bar</h3><span class="pill part">Extends the sheet header</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>2. A record header bar</h3><span class="pill ok">Released in 0.20</span><span class="size">Size M</span></div>
     <div class="proposal-body wide">
       <div>
         <p class="saw">Seen in: the top of every work item.</p>
@@ -278,7 +293,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="picker">
-    <div class="proposal-head"><h3>3. A path picker with suggestions</h3><span class="pill part">Extends the link field</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>3. A path picker with suggestions</h3><span class="pill ok">Released in 0.20</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: Area and Iteration. Recently used paths first, then the full tree; each iteration's dates right-aligned.</p>
@@ -307,7 +322,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="rich">
-    <div class="proposal-head"><h3>4. Rich text that stays out of the way</h3><span class="pill part">Extends formatted text</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>4. Rich text that stays out of the way</h3><span class="pill ok">Released in 0.20</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: System Info and the comment box. The toolbar appears only while the field has the focus.</p>
@@ -329,7 +344,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="history">
-    <div class="proposal-head"><h3>5. History with before and after</h3><span class="pill part">Extends the chatter</span><span class="size">Size M</span></div>
+    <div class="proposal-head"><h3>5. History with before and after</h3><span class="pill ok">Released in 0.20</span><span class="size">Size M</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: the History tab. The state's path across the top; each change's old value struck out beside its new one.</p>
@@ -353,7 +368,7 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
   </section>
 
   <section class="proposal" id="filters">
-    <div class="proposal-head"><h3>6. A filter bar, one dropdown per field</h3><span class="pill part">Another face of the search</span><span class="size">Size S</span></div>
+    <div class="proposal-head"><h3>6. A filter bar, one dropdown per field</h3><span class="pill ok">Released in 0.20</span><span class="size">Size S</span></div>
     <div class="proposal-body">
       <div>
         <p class="saw">Seen in: the backlog. Keyword on the left; Work item type, State, Area, Iteration and Tags as dropdowns of checkboxes.</p>
@@ -377,14 +392,14 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
     <div><b>Locks with no reason</b><p>Reason and Resolved Reason show a lock and nothing more. A lock should say why, and when it will open.</p></div>
   </div>
 
-  <h2>The order I would build in</h2>
+  <h2>The order it was built in</h2>
   <div class="order">
-    <div><span class="when">0.19 · released</span><ul><li>The nine map features Dawarly needs, the address field with suggestions, and the quiet look (1). <a href="#v019">In detail below.</a></li></ul></div>
-    <div><span class="when">0.20</span><ul><li>The record header bar (2) and History with before and after (5).</li><li>The path picker (3).</li></ul></div>
-    <div><span class="when">0.21</span><ul><li>Rich text upgrades (4) and the filter bar (6).</li></ul></div>
+    <div><span class="when">0.19 · 12 Oct</span><ul><li>The nine map features Dawarly needs, the address field with suggestions, and the quiet look (1). <a href="#v019">In detail below.</a></li></ul></div>
+    <div><span class="when">0.19.1 · 13 Oct</span><ul><li>The address field checked against the live Azure and Google services in Egypt, Saudi Arabia, the UAE and Jordan, and fixed: 130 of 158 hand-checked addresses right in every way.</li></ul></div>
+    <div><span class="when">0.20 · 13 Oct</span><ul><li>The record header bar (2), the path picker (3), rich text (4), History (5) and the filter bar (6), built to reproduce the screenshots, each loaded only when a page uses it. <a href="#replica">The replica below.</a></li></ul></div>
   </div>
 
-  <h2 id="v019">0.19, released 12 October</h2>
+<h2 id="v019">0.19, released 12 October</h2>
   <p>Agreed on 12 October: Dawarly moves its property map onto Fieldia's once these are in, so they come first, with the address field and the quiet look beside them. Four parts are built side by side, each in its own branch, then joined, tested as a whole and released together. <b>Released</b> means on npm in 0.19.0 and on fieldia.dev.</p>
 
   <div class="lanes">
@@ -454,5 +469,5 @@ pre.json { margin: 10px 0 0; padding: 10px 12px; background: var(--page); border
     </ul>
   </div>
 
-  <p class="colophon">Made from the screenshots in Downloads/fieldia-screens, 12 October 2026, and Fieldia 0.18. Updated 12 October 2026 with the 0.19 plan, released the same day. The source of this page is kept at docs/plans/devops-look-study.html in the Fieldia repository.</p>
+  <p class="colophon">Made from the screenshots in Downloads/fieldia-screens, 12 October 2026, and Fieldia 0.18. Updated with 0.19 (12 October), 0.19.1 and 0.20 (13 October). The source of this page is kept at docs/plans/devops-look-study.html in the Fieldia repository.</p>
 </div>
