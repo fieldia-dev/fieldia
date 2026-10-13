@@ -83,9 +83,11 @@ describe('a map’s panel', () => {
     };
     const layer = (layerId: string) => host.querySelector<HTMLElement>(`[data-layer="${layerId}"]`)!;
     const control = <T extends HTMLElement>(within: HTMLElement, label: string) => within.querySelector<T>(`[aria-label="${label}"]`)!;
+    /** Typed, or picked: a number box is kept as it is left, so it is left too. */
     const change = (input: HTMLInputElement | HTMLSelectElement, value: string) => {
       input.value = value;
       input.dispatchEvent(new Event(input instanceof HTMLInputElement && input.type !== 'checkbox' ? 'input' : 'change', { bubbles: true }));
+      if (input instanceof HTMLInputElement && input.inputMode === 'numeric') input.dispatchEvent(new Event('change', { bubbles: true }));
     };
     return { ...made, host, add, layer, control, change };
   }
@@ -166,6 +168,33 @@ describe('a map’s panel', () => {
     add('Areas by colour');
     expect(host.querySelector('[role="status"]')!.textContent).toBe('This app gives its maps no areas to shade.');
     expect(map().layers).toHaveLength(1);
+  });
+
+  it('keeps a layer’s box and its focus while it is typed in, a key at a time: its words and its minutes whole', () => {
+    const { add, layer, control, map } = mount();
+    add('The area within some minutes');
+    const typeIn = (box: HTMLInputElement, text: string) => {
+      box.focus();
+      box.value = '';
+      for (const key of text) {
+        box.value += key;
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.activeElement).toBe(box);
+      }
+    };
+    const words = control<HTMLInputElement>(layer('reach'), 'Words');
+    typeIn(words, 'Delivery zone');
+    expect(map().layers[1].label).toBe('Delivery zone');
+    const minutes = control<HTMLInputElement>(layer('reach'), 'Minutes');
+    typeIn(minutes, '45');
+    expect(document.activeElement).toBe(minutes);
+    minutes.blur();
+    expect(map().layers[1].reachable?.minutes).toBe(45);
+    // Out of its range, said, and kept: never the 6 of "600".
+    typeIn(minutes, '600');
+    minutes.blur();
+    expect(map().layers[1].reachable?.minutes).toBe(45);
+    expect(minutes.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Minutes is a whole number from 1 to 120. It stays 45.');
   });
 
   it('adds the area within some minutes of a place, by car unless said', () => {

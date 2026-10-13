@@ -116,7 +116,8 @@ describe('the Look tab — the page', () => {
     expect(widthRow().hidden).toBe(true);
     press('Labels', 'Beside');
     expect(widthRow().hidden).toBe(false);
-    type(widthRow().querySelector('input[type="number"]') as HTMLInputElement, '180');
+    // Kept as it is typed once it reads and fits, as the slider beside it is.
+    type(widthRow().querySelector('input.fd-insp-number') as HTMLInputElement, '180');
     expect(look()).toEqual({ labels: 'beside', labelWidth: 180 });
     expect(canvas.style.getPropertyValue('--fd-label-width')).toBe('180px');
   });

@@ -4,6 +4,8 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { findNode, findTab, tabsNodes } from './page-tree';
 import { setting } from './panel-controls';
+import { tracksFrom } from './head-commands';
+import { settingNumber } from './number-box';
 
 /**
  * A record's head in the panel: the sheet's "Record head" settings — on or
@@ -64,9 +66,20 @@ export function headSettings(el: ElementFactory, designer: Designer): SettingRow
   const copy = tick(el, w.copyTitle);
   copy.addEventListener('change', () => designer.setHead({ copyTitle: copy.checked }));
   const tracks = box(el, w.bandColumns, { placeholder: '1fr 1fr', spellcheck: 'false' });
-  tracks.addEventListener('change', () => designer.setHead({ tracks: tracks.value.trim() ? tracks.value.trim().split(/\s+/) : null }));
-  const labelWidth = box(el, w.labelWidth, { type: 'number', min: '48', max: '320', placeholder: '76' });
-  labelWidth.addEventListener('change', () => designer.setHead({ labelWidth: labelWidth.value ? Number(labelWidth.value) : null }));
+  // Apart by spaces or commas, in any digits, as a group's widths are.
+  tracks.addEventListener('change', () => designer.setHead({ tracks: tracksFrom(tracks.value) }));
+  // A whole number of pixels, 48 to 320; emptied, the usual.
+  let labelsWide: number | null = null;
+  const labelWidth = settingNumber(el, designer, {
+    label: w.labelWidth,
+    attrs: { class: 'fd-input', placeholder: '76' },
+    integer: true,
+    min: 48,
+    max: 320,
+    optional: true,
+    saved: () => labelsWide,
+    commit: (n) => designer.setHead({ labelWidth: n }),
+  });
   const by = pick(el, w.updatedBy);
   const at = pick(el, w.updatedAt);
   const opens = pick(el, w.updatedOpens);
@@ -108,7 +121,7 @@ export function headSettings(el: ElementFactory, designer: Designer): SettingRow
     setting(el, 'content', 'Buttons', [buttonList, addButton], { hint: w.buttonHint, words: w.actions }),
     setting(el, 'content', 'Band’s fields', [bandList, addBandField], { words: w.bandFields }),
     setting(el, 'layout', 'Band’s columns', tracks, { hint: w.bandColumnsHint, words: w.bandColumns }),
-    setting(el, 'layout', 'Band’s labels’ width', labelWidth, { words: w.labelWidth }),
+    setting(el, 'layout', 'Band’s labels’ width', labelWidth.input, { words: w.labelWidth }),
     setting(el, 'content', 'Updated by', by, { words: w.updatedBy }),
     setting(el, 'content', 'Updated on', at, { words: w.updatedAt }),
     setting(el, 'content', 'Pressed, “Updated by” shows', opens, { words: w.updatedOpens }),
@@ -177,7 +190,8 @@ export function headSettings(el: ElementFactory, designer: Designer): SettingRow
       }
       copy.checked = head.copyTitle !== false;
       if (!focused(tracks)) tracks.value = (head.band?.tracks ?? []).join(' ');
-      if (!focused(labelWidth)) labelWidth.value = head.band?.labelWidth ? String(head.band.labelWidth) : '';
+      labelsWide = head.band?.labelWidth ?? null;
+      labelWidth.refresh();
       // "Updated by": who, when, and the tab it opens.
       const tabs = tabsNodes(page).flatMap((t) => t.children);
       fill(el, by, [['', w.noUpdated], ...fields.filter(([, f]) => ['many2one', 'char'].includes(f.type)).map(([n, f]) => [n, f.label] as [string, string])], head.updated?.byField ?? '');

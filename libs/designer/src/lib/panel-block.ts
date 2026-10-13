@@ -9,6 +9,7 @@ import { whenClicked } from './steps-panel';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
 import { helpIconSetting } from './work-text';
+import { settingNumber } from './number-box';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -50,8 +51,18 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
       ],
       (value) => value && designer.updateBlock(id, { width: value === 'auto' ? null : (value as ImageNode['width']) })
     );
-    const pixels = el('input', { type: 'number', class: 'fd-input', 'aria-label': w.widthInPixels, min: '16', max: '4000', step: '1', inputmode: 'numeric', placeholder: w.px }) as HTMLInputElement;
-    pixels.addEventListener('change', () => designer.updateBlock(id, { width: pixels.value.trim() ? Number(pixels.value) : null }));
+    // A whole number of pixels, 16 to 4000; emptied, its own width.
+    let wide: number | null = null;
+    const pixels = settingNumber(el, designer, {
+      label: w.widthInPixels,
+      attrs: { class: 'fd-input', placeholder: w.px },
+      integer: true,
+      min: 16,
+      max: 4000,
+      optional: true,
+      saved: () => wide,
+      commit: (n) => designer.updateBlock(id, { width: n }),
+    });
     const place = segmented<string>(
       el,
       w.place,
@@ -71,7 +82,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
       rows: [
         setting(el, 'content', 'Picture address', src, { words: w.pictureAddress }),
         setting(el, 'content', 'Description', alt, { hint: w.descriptionHint, words: w.description }),
-        setting(el, 'content', 'Width', [width.element, pixels], { words: w.width }),
+        setting(el, 'content', 'Width', [width.element, pixels.input], { words: w.width }),
         setting(el, 'content', 'Place', place.element, { words: w.place }),
         setting(el, 'content', 'Link', href, { hint: w.opensNewTab, words: w.link }),
         setting(el, 'content', 'Caption', caption, { words: w.caption }),
@@ -83,7 +94,8 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         if (!focused(alt)) alt.value = node.alt;
         alt.setAttribute('aria-invalid', String(!node.alt.trim()));
         width.set(typeof node.width === 'number' ? null : (node.width ?? 'auto'));
-        if (!focused(pixels)) pixels.value = typeof node.width === 'number' ? String(node.width) : '';
+        wide = typeof node.width === 'number' ? node.width : null;
+        pixels.refresh();
         place.set(node.align ?? 'start');
         if (!focused(href)) href.value = node.href ?? '';
         if (!focused(caption)) caption.value = node.caption ?? '';

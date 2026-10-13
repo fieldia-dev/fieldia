@@ -190,12 +190,14 @@ describe('pictures', () => {
 });
 
 describe('a ranking of the top few', () => {
-  it('ranks only the top few, fewer than its options', () => {
+  it('ranks only the top few, fewer than its options, saying so rather than taking the setting away', () => {
     const { box, node } = open('ranking');
     change(box('Rank only the top'), '2');
     expect(node().options).toEqual({ top: 2 });
     change(box('Rank only the top'), '3');
-    expect(node().options).toBeUndefined();
+    expect(node().options).toEqual({ top: 2 });
+    expect(box('Rank only the top').value).toBe('2');
+    expect(box('Rank only the top').parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Rank only the top is fewer than the 3 options. It stays 2.');
     change(box('Rank only the top'), '');
     expect(node().options).toBeUndefined();
   });

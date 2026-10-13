@@ -6,6 +6,7 @@ import { onTab } from './panel-controls';
 import { formulaProblem } from './rules-formula';
 import { formulaBox, type FormulaBox } from './rules-formula-box';
 import { CELL_WIDGET_KINDS, CELL_WIDGETS, type CellRule, type TableButtonPlace } from './table-commands';
+import { settingNumber } from './number-box';
 
 /**
  * A field's tone and a table's own rules in the panel: its value's tones and
@@ -122,7 +123,18 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   // Its cells drawn by a widget that suits what the column holds: hours as HH:MM, stars, a bar…
   const cellWidget = el('select', { class: 'fd-input fd-select fd-table-cell-widget', 'aria-label': w.shownAs }) as HTMLSelectElement;
   cellWidget.addEventListener('change', () => designer.setCellLook(id, current(), { widget: cellWidget.value || null }));
-  const width = el('input', { type: 'number', class: 'fd-input fd-inline-number', min: '1', max: '200', step: '1', 'aria-label': w.width }) as HTMLInputElement;
+  // A column's width in characters, a whole number 1 to 200; emptied, as its kind needs.
+  let cellWidth: number | null = null;
+  const width = settingNumber(el, designer, {
+    label: w.width,
+    attrs: { class: 'fd-input fd-inline-number' },
+    integer: true,
+    min: 1,
+    max: 200,
+    optional: true,
+    saved: () => cellWidth,
+    commit: (n) => designer.setCellLook(id, current(), { width: n }),
+  });
   // The roles the column shows to: kept once it is left or Enter is pressed, a role half typed being no role.
   const columnRoles = el('input', { class: 'fd-input fd-answer-rule-code fd-table-column-roles', 'aria-label': w.columnShownTo, placeholder: words.rulesUi.rolesPlaceholder, spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
   const keepRoles = () => {
@@ -132,7 +144,6 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   };
   columnRoles.addEventListener('change', keepRoles);
   columnRoles.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), keepRoles()));
-  width.addEventListener('change', () => designer.setCellLook(id, current(), { width: width.value.trim() ? Number(width.value) : null }));
   column.addEventListener('change', () => drawColumn());
   const columnBox = el(
     'div',
@@ -145,7 +156,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     cellTones.element,
     el('label', { class: 'fd-inline-setting' }, badge, el('span', {}, w.badge)),
     el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.shownAs), cellWidget),
-    el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.width), width)
+    el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.width), width.input)
   );
   const linesRow = onTab(
     el(
@@ -173,7 +184,8 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     cellWidget.replaceChildren(el('option', { value: '' }, w.asItsType), ...offered.map((widget) => el('option', { value: widget }, names[CELL_WIDGET_KINDS[widget]] ?? widget)));
     cellWidget.value = rules.widget && offered.includes(rules.widget) ? rules.widget : '';
     (cellWidget.parentElement as HTMLElement).hidden = !offered.length;
-    if (!focused(width)) width.value = rules.width ? String(rules.width) : '';
+    cellWidth = rules.width ?? null;
+    width.refresh();
     if (!focused(columnRoles)) columnRoles.value = (rules.roles ?? []).join(', ');
   }
 

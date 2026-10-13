@@ -6,6 +6,7 @@ import { inTwelfths, isGroup, keepsFull, percent, rowParts, rowShare, TWELVE, wi
 import { segmented, setting, type Choice } from './panel-controls';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
+import { settingNumber } from './number-box';
 
 /**
  * The Layout tab's settings: a group's columns on a desktop, a tablet and a
@@ -247,15 +248,21 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
     };
   }
   const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': w.labelWidth });
-  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': w.labelWidth });
-  const width = (value: string) => {
-    const n = Number(value);
-    // Only a width it can keep: one being typed on its way to one is left alone.
-    if (Number.isInteger(n) && n >= 60 && n <= 320) designer.setSectionLook(id, { labelWidth: n });
-  };
-  slider.addEventListener('input', () => width(slider.value));
-  number.addEventListener('input', () => width(number.value));
-  const widthRow = setting(el, 'layout', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
+  // A whole number of pixels, 60 to 320, kept as typed once it reads and fits; anything else said, and the width kept.
+  let labelsWide = 140;
+  const number = settingNumber(el, designer, {
+    label: w.labelWidth,
+    attrs: { class: 'fd-input fd-insp-number' },
+    integer: true,
+    min: 60,
+    max: 320,
+    step: 10,
+    live: true,
+    saved: () => labelsWide,
+    commit: (n) => n !== null && designer.setSectionLook(id, { labelWidth: n }),
+  });
+  slider.addEventListener('input', () => designer.setSectionLook(id, { labelWidth: Number(slider.value) }));
+  const widthRow = setting(el, 'layout', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number.input, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
   return {
     rows: [...rows, widthRow],
     update(page) {
@@ -266,9 +273,9 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
       place.set(section.labels ?? AROUND);
       showQuiet(page, section.quiet);
       widthRow.hidden = (section.labels ?? around.place) !== 'beside';
-      const value = String(section.labelWidth ?? around.width ?? 140);
-      if (number.ownerDocument.activeElement !== number) number.value = value;
-      if (number.ownerDocument.activeElement !== slider) slider.value = value;
+      labelsWide = section.labelWidth ?? around.width ?? 140;
+      number.refresh();
+      if (slider.ownerDocument.activeElement !== slider) slider.value = String(labelsWide);
     },
   };
 }

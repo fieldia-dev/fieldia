@@ -2,6 +2,7 @@ import type { Field, FieldNode, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { StructurePart } from './kind-settings-structures';
+import { settingNumber } from './number-box';
 
 /**
  * The work tracker's pickers, set in the picked field and in the side panel
@@ -36,14 +37,20 @@ export function pickerSettings(el: ElementFactory, designer: Designer, id: strin
     const made = toggle(w.pathPicker, (on) => designer.setPathPicker(id, on));
     const separator = el('select', { class: 'fd-inline-select', 'aria-label': w.joinedBy }, ...SEPARATORS.map(([value, example]) => el('option', { value }, example))) as HTMLSelectElement;
     separator.addEventListener('change', () => widget({ separator: separator.value === '\\' ? null : separator.value }));
-    const count = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': w.suggestionsShown, min: '0', max: '20', step: '1', inputmode: 'numeric', placeholder: '5' }) as HTMLInputElement;
-    // Kept once typed and left: 5 unless said, none at 0.
-    count.addEventListener('change', () => {
-      const n = count.value.trim() === '' ? null : Math.round(Number(count.value));
-      widget({ suggestions: n === null || !Number.isFinite(n) || n === 5 ? null : Math.max(0, Math.min(20, n)) });
+    // Kept once typed and left: 5 unless said, none at 0; a whole number 0 to 20, said so when it is not, never clamped in silence.
+    let shown: number | null = null;
+    const count = settingNumber(el, designer, {
+      label: w.suggestionsShown,
+      attrs: { class: 'fd-inline-input fd-inline-number', placeholder: '5' },
+      integer: true,
+      min: 0,
+      max: 20,
+      optional: true,
+      saved: () => shown,
+      commit: (n) => widget({ suggestions: n === 5 ? null : n }),
     });
     const tree = toggle(w.treeShown, (on) => widget({ tree: on ? null : false }));
-    const more = el('div', { class: 'fd-inline-row' }, word(w.joinedBy, separator), word(w.suggestionsShown, count), tree.element);
+    const more = el('div', { class: 'fd-inline-row' }, word(w.joinedBy, separator), word(w.suggestionsShown, count.input), tree.element);
     return {
       element: el('div', { class: 'fd-kind-block fd-path-settings' }, made.element, more),
       refresh(_page, node) {
@@ -52,8 +59,9 @@ export function pickerSettings(el: ElementFactory, designer: Designer, id: strin
         more.hidden = !on;
         if (!on) return;
         if (!focused(separator)) separator.value = String(option(node, 'separator') ?? '\\');
-        const shown = option(node, 'suggestions');
-        if (!focused(count)) count.value = typeof shown === 'number' ? String(shown) : '';
+        const suggestions = option(node, 'suggestions');
+        shown = typeof suggestions === 'number' ? suggestions : null;
+        count.refresh();
         tree.button.setAttribute('aria-checked', String(option(node, 'tree') !== false));
       },
     };

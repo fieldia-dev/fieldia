@@ -61,7 +61,8 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
   /** A number's least or most, or a date's earliest or latest day, as the field takes it. */
   function limit(field: Field, value: number | string): number | string {
     if (NUMBERS.includes(field.type)) {
-      if (typeof value !== 'number' || !Number.isFinite(value)) throw new Refusal((w) => w.refusals.fromToNumbers);
+      // The last guard: never NaN or ±Infinity in the page, nor a number past the 15 digits one keeps exactly ("1e+23").
+      if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) >= 1e15) throw new Refusal((w) => w.refusals.fromToNumbers);
       if (field.type === 'integer' && !Number.isInteger(value)) throw new Refusal((w) => w.refusals.wholeRange);
       return value;
     }
@@ -173,7 +174,7 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
         (draft) => {
           const { node, field, owned } = question(draft, id);
           if (node.widget !== 'slider' || (field.type !== 'integer' && field.type !== 'float')) throw new Refusal((w) => w.refusals.onlySliderStep);
-          if (step !== null && !(Number.isFinite(step) && step > 0)) throw new Refusal((w) => w.refusals.stepNumber);
+          if (step !== null && !(Number.isFinite(step) && step > 0 && step < 1e15)) throw new Refusal((w) => w.refusals.stepNumber);
           const whole = step === null || Number.isInteger(step);
           if (!owned && !whole && field.type === 'integer') throw new Refusal((w) => w.refusals.stepWhole(field.label));
           const options = { ...(node.options ?? {}) };

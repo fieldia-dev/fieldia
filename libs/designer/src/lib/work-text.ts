@@ -5,6 +5,8 @@ import type { Designer } from './designer';
 import { isSection, nodeOf } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 import { Refusal } from './refusal';
+import { trackProblem, trackRefusal, tracksFrom } from './head-commands';
+import { settingNumber } from './number-box';
 
 /**
  * A work item's body in the designer: a group's own column widths and gap,
@@ -13,9 +15,6 @@ import { Refusal } from './refusal';
  * editors and the records linked in it, and a links box's Add link, help and
  * empty link, among the field's own settings.
  */
-
-/** A column's width as the page keeps it: pixels, a share of the row, or of what is left. */
-const TRACK = /^\d+(\.\d+)?(px|%|fr)$/;
 
 export interface WorkLook {
   tracks?: string[] | null;
@@ -27,8 +26,8 @@ export interface WorkLook {
 /** A group's widths, gap, fold control and ⤢, checked against the group before they are set. */
 export function checkWorkLook(section: SectionNode, look: WorkLook): void {
   if (look.tracks) {
-    const bad = look.tracks.find((track) => !TRACK.test(track));
-    if (bad !== undefined) throw new Refusal((w) => w.workText.noWidth(bad));
+    const bad = look.tracks.find((track) => trackProblem(track));
+    if (bad !== undefined) throw new Refusal(trackRefusal(bad, (w) => w.workText.noWidth(bad)));
     const columns = wideColumns(section.columns);
     if (look.tracks.length !== columns) throw new Refusal((w) => w.workText.tracksCount(columns, look.tracks?.length ?? 0));
   }
@@ -37,11 +36,8 @@ export function checkWorkLook(section: SectionNode, look: WorkLook): void {
   if (look.maximise && !section.title) throw new Refusal((w) => w.workText.maximiseNeedsTitle);
 }
 
-/** Widths typed apart by spaces, as the page keeps them: none for even columns. */
-export const tracksFrom = (typed: string): string[] | null => {
-  const tracks = typed.trim().split(/[\s,]+/).filter(Boolean);
-  return tracks.length ? tracks : null;
-};
+/** Widths as typed, as the page keeps them: none for even columns (head-commands' reader, the band's too). */
+export { tracksFrom };
 
 export interface WorkRows {
   rows: HTMLElement[];
@@ -55,10 +51,11 @@ export function workGroupSetting(el: ElementFactory, designer: Designer, id: str
   const widths = el('input', { class: 'fd-input', 'aria-label': w.columnWidths, placeholder: '50% 1fr 1fr', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   // Kept once typed and left: "50% 1f" is no width yet.
   widths.addEventListener('change', () => designer.setSectionLook(id, { tracks: tracksFrom(widths.value) }));
-  const gap = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '0', max: '48', step: '1', 'aria-label': w.gap }) as HTMLInputElement;
-  gap.addEventListener('change', () => designer.setSectionLook(id, { gap: gap.value.trim() === '' ? null : Number(gap.value) }));
+  // A whole number of pixels, 0 to 48; emptied, the usual.
+  let gapHeld: number | null = null;
+  const gap = settingNumber(el, designer, { label: w.gap, attrs: { class: 'fd-input fd-insp-number' }, integer: true, min: 0, max: 48, optional: true, saved: () => gapHeld, commit: (n) => designer.setSectionLook(id, { gap: n }) });
   const widthRow = setting(el, 'layout', 'Column widths', widths, { words: w.columnWidths, hint: w.columnWidthsHint });
-  const gapRow = setting(el, 'layout', 'Gap between columns', [gap, el('span', { class: 'fd-insp-unit' }, designer.words.panel.px)], { words: w.gap, hint: w.gapHint });
+  const gapRow = setting(el, 'layout', 'Gap between columns', [gap.input, el('span', { class: 'fd-insp-unit' }, designer.words.panel.px)], { words: w.gap, hint: w.gapHint });
   const fold = segmented<string>(
     el,
     w.foldControl,
@@ -81,7 +78,8 @@ export function workGroupSetting(el: ElementFactory, designer: Designer, id: str
       widthRow.hidden = wideColumns(section.columns) < 2 && !section.tracks;
       gapRow.hidden = widthRow.hidden && section.gap === undefined;
       if (!focused(widths)) widths.value = (section.tracks ?? []).join(' ');
-      if (!focused(gap)) gap.value = section.gap === undefined ? '' : String(section.gap);
+      gapHeld = section.gap ?? null;
+      gap.refresh();
       foldRow.hidden = !section.collapsible;
       fold.set(section.foldAt ?? 'start');
       bigRow.hidden = !section.title;

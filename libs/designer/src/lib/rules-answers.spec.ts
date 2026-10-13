@@ -1,6 +1,6 @@
 import type { Field, FieldNode, SectionNode } from '@fieldia/core';
 import { createDesigner, blankPage } from './designer';
-import { button, choose, field, mount, openTab, press, type } from './test-editor';
+import { button, choose, field, mount, openTab, press, type, typeAndLeave } from './test-editor';
 
 /**
  * Answer rules in the panel's Rules tab: each rule a sentence; its settings
@@ -73,8 +73,8 @@ describe('answer rules in the Rules tab', () => {
     (button(age.panel(), 'Add a rule') as HTMLButtonElement).click();
     expect(age.menuItems()).toEqual(['A range', 'A rule across fields']);
     age.pickItem('A range');
-    type(field(age.panel(), 'At least'), '18');
-    type(field(age.panel(), 'At most'), '');
+    typeAndLeave(field(age.panel(), 'At least'), '18');
+    typeAndLeave(field(age.panel(), 'At most'), '');
     expect(age.node().validate).toEqual([{ min: 18 }]);
     expect(age.sentences()).toEqual(['At least 18']);
   });
@@ -83,11 +83,11 @@ describe('answer rules in the Rules tab', () => {
     const { panel, node, designer } = screen('email');
     designer.addAnswerRule('f-email', { minLength: 2, maxLength: 4 });
     (panel().querySelector('.fd-answer-rule-say') as HTMLButtonElement).click();
-    type(field(panel(), 'Shortest'), '9');
+    typeAndLeave(field(panel(), 'Shortest'), '9');
     expect(panel().querySelector('.fd-answer-rule-problem')?.textContent).toBe('The shortest, 9, is longer than the longest, 4');
     expect(node().validate).toEqual([{ minLength: 2, maxLength: 4 }]);
     expect(designer.getState().issues).toEqual([]);
-    type(field(panel(), 'Shortest'), '3');
+    typeAndLeave(field(panel(), 'Shortest'), '3');
     expect(panel().querySelector<HTMLElement>('.fd-answer-rule-problem')?.hidden).toBe(true);
     expect(node().validate).toEqual([{ minLength: 3, maxLength: 4 }]);
   });
