@@ -17,7 +17,7 @@ import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
-import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
+import { loadedRecordOf, saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -1204,7 +1204,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const seq = ++loads;
     set({ status: 'loading', error: null });
     try {
-      const loaded = await source.load({ model: page.data.model, id: state.recordId, fields });
+      // A source may give the record's version and what the person may do with it beside its values.
+      const { values: loaded } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');

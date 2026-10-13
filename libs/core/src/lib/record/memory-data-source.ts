@@ -20,7 +20,19 @@ import type {
   SubmitResult,
   ArchiveRequest,
   RecordRequest,
+  ListedRecord,
+  LoadedRecord,
+  RecordPermissions,
+  RecordVersion,
+  TotalKind,
+  Totals,
+  TotalsRequest,
+  TotalsResult,
+  UploadFile,
+  UploadRequest,
+  UploadedFile,
 } from './data-source';
+import { ConflictError, loadedRecord, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
@@ -60,7 +72,21 @@ export interface MemoryDataSourceOptions {
   attachments?: Record<string, FileValue[]>;
   /** The words after a copy's name, as a backend's copy adds them: " (copy)" unless said. */
   copySuffix?: string;
-  /** Answer after this long, so a demo shows its loading states. */
+  /**
+   * Keep a version of each record, moved on by each save: a load gives it
+   * (with `loadedRecord`), and a save that carries an older one is refused
+   * with a `ConflictError`. `by` names whoever saves through this source;
+   * `changeElsewhere` changes a record as someone else would.
+   */
+  versions?: boolean | { by?: string };
+  /**
+   * What the person may do with each record, by model: given with its load
+   * and its row in a list, and kept to as a backend would — a save, a
+   * delete, an archive or a copy it does not allow is refused, and hidden
+   * fields' values are left out.
+   */
+  can?: Record<string, (values: Values, id: RecordId) => RecordPermissions | undefined>;
+  /** Answer after this long, so a demo shows its loading states (an upload's progress, in four steps). */
   delayMs?: number;
   scheduler?: Scheduler;
 }
@@ -69,6 +95,12 @@ export interface MemoryDataSource extends Required<DataSource> {
   readonly records: Record<string, Record<string, Values>>;
   readonly responses: SubmitRequest[];
   readonly calls: { method: keyof DataSource; request: unknown }[];
+  /**
+   * Change a stored record as someone else would, from another screen: its
+   * version moves on, named for them, so a page that opened it before is
+   * told of a conflict when it saves. Gives the new version.
+   */
+  changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion;
 }
 
 /**
@@ -83,6 +115,37 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
   let lineIds = 1000;
+  let fileIds = 0;
+  /** Each record's version, by `model:id`, given when first asked. */
+  const versions = new Map<string, RecordVersion>();
+  let stamps = 0;
+  const versionOf = (model: string, id: RecordId): RecordVersion | undefined => {
+    if (!options.versions) return undefined;
+    const key = `${model}:${id}`;
+    if (!versions.has(key)) versions.set(key, { token: String(++stamps) });
+    return versions.get(key);
+  };
+  const moveOn = (model: string, id: RecordId, by: string | undefined, at = new Date().toISOString()): RecordVersion => {
+    const version: RecordVersion = { token: String(++stamps), ...(by ? { by } : {}), at };
+    versions.set(`${model}:${id}`, version);
+    return version;
+  };
+  const me = typeof options.versions === 'object' ? options.versions.by : undefined;
+  const permissions = (model: string, id: RecordId) => {
+    const stored = table(model)[String(id)];
+    return stored ? options.can?.[model]?.(structuredCopy(stored), id) : undefined;
+  };
+  /** A record as this person may read it: without the fields hidden from them. */
+  const readable = (values: Values, can: RecordPermissions | undefined): Values => {
+    for (const name of can?.hiddenFields ?? []) delete values[name];
+    return values;
+  };
+  /** Refused, as a backend refuses what the person may not do. */
+  const allowed = (can: RecordPermissions | undefined, what: 'edit' | 'delete' | 'archive' | 'duplicate') => {
+    if (can?.[what] === false) throw saveRefused({ kind: 'rule', message: can.reason ?? `You may not ${what} this record` });
+  };
+  /** A version and permissions, where this source keeps them. */
+  const told = (version: RecordVersion | undefined, can: RecordPermissions | undefined) => ({ ...(version ? { version } : {}), ...(can ? { can } : {}) });
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
   const table = (model: string) => (records[model] ??= {});
@@ -116,6 +179,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const asId = (key: string): RecordId => (Number.isFinite(Number(key)) ? Number(key) : key);
   /** A record as a filter reads it: its values and its own `id`, which a field of its own named id comes before. */
   const withId = (key: string, values: Values): Values => ({ id: asId(key), ...values });
+  /** The stored records a filter keeps. */
+  const matchingRows = (model: string, filter: TotalsRequest['filter']): Values[] => Object.entries(table(model)).filter(([key, values]) => matchesFilter(withId(key, values), filter)).map(([, values]) => values);
 
   function applyLines(current: Line[], ops: LineOp[]): Line[] {
     let lines = [...current];
@@ -149,12 +214,21 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     responses,
     calls,
 
-    async load(request: LoadRequest): Promise<Values> {
+    changeElsewhere(model: string, id: RecordId, values: Values, who: { by: string; at?: string }): RecordVersion {
+      const stored = table(model)[String(id)];
+      if (!stored) throw new Error(`No ${model} record with id ${id}`);
+      Object.assign(stored, structuredCopy(values));
+      return moveOn(model, id, who.by, who.at);
+    },
+
+    async load(request: LoadRequest): Promise<Values | LoadedRecord> {
       calls.push({ method: 'load', request });
       await pause();
       const stored = table(request.model)[String(request.id)];
       if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
-      const values = structuredCopy(stored);
+      const can = permissions(request.model, request.id);
+      const version = versionOf(request.model, request.id);
+      const values = readable(structuredCopy(stored), can);
       // Its links, with what their models show besides their names.
       if (options.shows) {
         for (const [name, def] of Object.entries(request.fields)) {
@@ -163,12 +237,24 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
           else if (def.type === 'many2many' && Array.isArray(value)) values[name] = (value as RelatedRecord[]).map((record) => shown(def.relation, record));
         }
       }
-      return values;
+      // Bare values, as ever, from a source that keeps no versions and no permissions.
+      return version || can ? loadedRecord(values, told(version, can)) : values;
     },
 
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
+      if (request.id !== null && table(request.model)[String(request.id)]) {
+        const can = permissions(request.model, request.id);
+        allowed(can, 'edit');
+        const locked = Object.keys(request.changes.values).filter((name) => can?.readonlyFields?.includes(name) || can?.hiddenFields?.includes(name));
+        if (locked.length) throw saveRefused({ kind: 'fields', message: 'You may not change these fields', fields: Object.fromEntries(locked.map((name) => [name, 'You may not change this field'])) });
+        const now = versionOf(request.model, request.id);
+        // A save that says which version it was opened at is checked; one that says none is not.
+        if (now && request.version && request.version.token !== now.token) {
+          throw new ConflictError({ version: now, theirs: readable(structuredCopy(table(request.model)[String(request.id)]), can) });
+        }
+      }
       const id = request.id ?? nextId(request.model);
       const stored: Values = { ...(table(request.model)[String(id)] ?? {}), ...structuredCopy(request.changes.values) };
       for (const [name, ops] of Object.entries(request.changes.lines)) {
@@ -178,7 +264,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         stored[name] = applyLinks((stored[name] as RelatedRecord[] | undefined) ?? [], ops, relationOf(request.fields, name));
       }
       table(request.model)[String(id)] = stored;
-      return { id, values: structuredCopy(stored) };
+      const version = options.versions ? moveOn(request.model, id, me) : undefined;
+      const can = permissions(request.model, id);
+      return { id, values: readable(structuredCopy(stored), can), ...told(version, can) };
     },
 
     async onchange(request: OnchangeRequest): Promise<OnchangeResult> {
@@ -224,28 +312,43 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       });
       return {
         total: matching.length,
-        records: matching.slice(request.offset, request.offset + request.limit).map(({ id, values }) => ({
-          id,
-          values: Object.fromEntries(request.fields.map((field) => [field, structuredCopy(values[field] ?? null) as Value])),
-        })),
+        records: matching.slice(request.offset, request.offset + request.limit).map(({ id, values }): ListedRecord => {
+          const can = permissions(request.model, id);
+          const shownValues = readable(Object.fromEntries(request.fields.map((field) => [field, structuredCopy(values[field] ?? null) as Value])), can);
+          return { id, values: shownValues, ...told(versionOf(request.model, id), can) };
+        }),
+        ...(request.allIds ? { allIds: matching.map(({ id }) => id) } : {}),
       };
     },
 
     async groups(request: GroupRequest): Promise<Group[]> {
       calls.push({ method: 'groups', request });
       await pause();
-      const counted = new Map<string, Group>();
-      for (const [id, values] of Object.entries(table(request.model))) {
-        if (!matchesFilter(withId(id, values), request.filter)) continue;
-        const raw = values[request.field] ?? null;
-        const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
-        const value = (link ? link.id : raw) as JsonValue;
-        const key = JSON.stringify(value);
-        const group = counted.get(key) ?? { value, label: link ? link.label : raw === null || raw === '' ? '' : String(raw), count: 0 };
-        group.count++;
-        counted.set(key, group);
+      return groupRows(matchingRows(request.model, request.filter), request.field).map(({ rows: _rows, ...group }) => group);
+    },
+
+    async totals(request: TotalsRequest): Promise<TotalsResult> {
+      calls.push({ method: 'totals', request });
+      await pause();
+      const rows = matchingRows(request.model, request.filter);
+      const result: TotalsResult = { count: rows.length, totals: totalsOver(rows, request.totals) };
+      if (request.groupBy) result.groups = groupRows(rows, request.groupBy).map(({ rows: under, ...group }) => ({ ...group, totals: totalsOver(under, request.totals) }));
+      return result;
+    },
+
+    async upload(file: UploadFile, request: UploadRequest): Promise<UploadedFile> {
+      calls.push({ method: 'upload', request: { ...request, file } });
+      const stopped = () => Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
+      // In four steps when it is slowed for a demo, so its progress shows.
+      const steps = options.delayMs ? 4 : 1;
+      for (let step = 1; step <= steps; step++) {
+        if (options.delayMs) await wait(options.delayMs / steps, options.scheduler);
+        if (request.signal?.aborted) throw stopped();
+        request.onProgress?.(Math.round((file.size * step) / steps), file.size);
       }
-      return [...counted.values()].sort((a, b) => (a.value === null) === (b.value === null) ? a.label.localeCompare(b.label) : a.value === null ? 1 : -1);
+      // Kept as a data address, so a preview needs nothing else.
+      const type = file.type || 'application/octet-stream';
+      return { fileId: ++fileIds, url: `data:${type};base64,${base64(new Uint8Array(await file.arrayBuffer()))}`, name: file.name, size: file.size, type };
     },
 
     async create(request: CreateRequest): Promise<RelatedRecord> {
@@ -269,6 +372,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const stored = table(request.model)[String(request.id)];
       if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
+      allowed(permissions(request.model, request.id), 'archive');
       stored['active'] = !request.archive;
     },
 
@@ -277,6 +381,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const stored = table(request.model)[String(request.id)];
       if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
+      allowed(permissions(request.model, request.id), 'duplicate');
       const id = nextId(request.model);
       const copy = structuredCopy(stored);
       const name = options.labelField?.[request.model] ?? 'name';
@@ -288,13 +393,15 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         }
       }
       table(request.model)[String(id)] = copy;
-      return { id, values: structuredCopy(copy) };
+      const can = permissions(request.model, id);
+      return { id, values: readable(structuredCopy(copy), can), ...told(versionOf(request.model, id), can) };
     },
 
     async delete(request: RecordRequest): Promise<void> {
       calls.push({ method: 'delete', request });
       await pause();
       if (!table(request.model)[String(request.id)]) throw new Error(`No ${request.model} record with id ${request.id}`);
+      allowed(permissions(request.model, request.id), 'delete');
       delete table(request.model)[String(request.id)];
     },
 
@@ -347,4 +454,47 @@ function compareValues(a: unknown, b: unknown): { result: number; empty: boolean
   const [x, y] = [label(a), label(b)];
   if (typeof x === 'number' && typeof y === 'number') return { result: x - y, empty: false };
   return { result: String(x).localeCompare(String(y)), empty: false };
+}
+
+/** Records under each value of a field: a link's by its record, nothing as its own group, last; the rest by their labels. */
+function groupRows(rows: Values[], field: string): (Group & { rows: Values[] })[] {
+  const grouped = new Map<string, Group & { rows: Values[] }>();
+  for (const values of rows) {
+    const raw = values[field] ?? null;
+    const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
+    const value = (link ? link.id : raw) as JsonValue;
+    const key = JSON.stringify(value);
+    const group = grouped.get(key) ?? { value, label: link ? link.label : raw === null || raw === '' ? '' : String(raw), count: 0, rows: [] };
+    group.count++;
+    group.rows.push(values);
+    grouped.set(key, group);
+  }
+  return [...grouped.values()].sort((a, b) => (a.value === null) === (b.value === null) ? a.label.localeCompare(b.label) : a.value === null ? 1 : -1);
+}
+
+/** Each field's totals over these records: of its numbers, and a count of those holding any value. */
+function totalsOver(rows: Values[], asked: Record<string, TotalKind[]>): Totals {
+  const totals: Totals = {};
+  for (const [field, kinds] of Object.entries(asked)) {
+    const numbers = rows.map((values) => values[field]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    const sum = numbers.reduce((a, b) => a + b, 0);
+    const of: Record<TotalKind, number | null> = {
+      sum,
+      avg: numbers.length ? sum / numbers.length : null,
+      min: numbers.length ? numbers.reduce((a, b) => Math.min(a, b)) : null,
+      max: numbers.length ? numbers.reduce((a, b) => Math.max(a, b)) : null,
+      count: rows.filter((values) => !blankValue(values[field])).length,
+    };
+    totals[field] = Object.fromEntries(kinds.map((kind) => [kind, of[kind]]));
+  }
+  return totals;
+}
+
+const blankValue = (v: unknown) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0);
+
+/** Bytes as base64, by the host's `btoa` (a browser's, or Node's). */
+function base64(bytes: Uint8Array): string {
+  let text = '';
+  for (let at = 0; at < bytes.length; at += 0x8000) text += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
+  return (globalThis as unknown as { btoa(text: string): string }).btoa(text);
 }

@@ -1,6 +1,6 @@
 import { createMemoryDataSource } from './memory-data-source';
 import type { Fields } from '../format/field';
-import type { SortOrder } from './data-source';
+import { loadedRecordOf, type SortOrder } from './data-source';
 
 const fields = {
   name: { type: 'char', label: 'Name' },
@@ -26,10 +26,10 @@ function source() {
 describe('createMemoryDataSource — implements every DataSource method', () => {
   it('loads a copy of a record', async () => {
     const ds = source();
-    const values = await ds.load({ model: 'partner', id: 1, fields });
+    const values = loadedRecordOf(await ds.load({ model: 'partner', id: 1, fields })).values;
     expect(values['name']).toBe('Nile Traders');
     (values['tag_ids'] as unknown[]).length = 0;
-    expect((await ds.load({ model: 'partner', id: 1, fields }))['tag_ids']).toHaveLength(1);
+    expect(loadedRecordOf(await ds.load({ model: 'partner', id: 1, fields })).values['tag_ids']).toHaveLength(1);
   });
 
   it('refuses to load a record it does not have', async () => {
@@ -228,7 +228,7 @@ describe('createMemoryDataSource — a tree’s records, as a path picker shows 
   });
 
   it('gives a loaded link its path and its words too', async () => {
-    const values = await trees().load({ model: 'bug', id: 1, fields: { iteration: { type: 'many2one', label: 'Iteration', relation: 'iteration' } } as Fields });
+    const { values } = loadedRecordOf(await trees().load({ model: 'bug', id: 1, fields: { iteration: { type: 'many2one', label: 'Iteration', relation: 'iteration' } } as Fields }));
     expect(values['iteration']).toEqual({ id: 2, label: 'Sprint 14', path: ['Portal', 'Sprint 14'], aside: '4/12/2027 - 5/25/2027' });
   });
 });

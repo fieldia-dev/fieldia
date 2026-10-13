@@ -1,4 +1,4 @@
-import { checkPage, validatePage } from '../../index';
+import { checkPage, loadedRecordOf, validatePage } from '../../index';
 
 /**
  * How a dense record sheet reads, as Flectra draws one: read-only values as
@@ -172,7 +172,7 @@ describe('what a link shows of its record, from the memory data source', () => {
       tag_ids: { type: 'many2many', label: 'Tags', relation: 'tag' },
       stage_id: { type: 'many2one', label: 'Stage', relation: 'stage' },
     } as const;
-    const loaded = await source.load({ model: 'deal', id: 1, fields: fieldsOf as never });
+    const loaded = loadedRecordOf(await source.load({ model: 'deal', id: 1, fields: fieldsOf as never })).values;
     expect(loaded['user_id']).toEqual({ id: 5, label: 'Mona', avatar: 'data:image/png;base64,AAA', details: '12 Nile St\nCairo' });
     expect(loaded['tag_ids']).toEqual([{ id: 9, label: 'VIP', color: 4 }]);
     expect(await source.search({ model: 'stage', query: '' })).toEqual([{ id: 2, label: 'Lost', folded: true }, { id: 3, label: 'Won', folded: false }]);

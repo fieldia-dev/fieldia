@@ -45,6 +45,12 @@ export interface FileValue {
   url?: string;
   /** A signature typed rather than drawn: the name typed, kept beside its picture. */
   text?: string;
+  /**
+   * A stored file's id, where its source keeps files as records of their own
+   * (Flectra's attachments): from the data source's `upload`. Not `id`, which
+   * would read as a link wherever a value is taken by its shape.
+   */
+  fileId?: RecordId;
 }
 
 /**

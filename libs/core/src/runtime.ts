@@ -153,8 +153,22 @@ export type {
   OptionsRequest,
   RecordRequest,
   ArchiveRequest,
+  ListedRecord,
+  LoadedRecord,
+  RecordVersion,
+  RecordPermissions,
+  SaveConflict,
+  TotalKind,
+  TotalsRequest,
+  TotalsResult,
+  TotalsGroup,
+  Totals,
+  UploadFile,
+  UploadSignal,
+  UploadRequest,
+  UploadedFile,
 } from './lib/record/data-source';
-export { saveRefused, saveProblemOf } from './lib/record/data-source';
+export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
