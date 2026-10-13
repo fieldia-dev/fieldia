@@ -7,8 +7,9 @@
  *   NPM_TOKEN=… node tools/release.mjs publish  the same check, then publish what is not on npm yet
  *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
- * Every mode refuses a version with no section in CHANGELOG.md. `publish` ends by printing that section and
- * the exact commands that tag the release and make its GitHub release, for a person to run (see release-notes.mjs).
+ * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses a page format whose shape changed
+ * under its old version (format-shape.mjs; `check` only says so), and ends by printing the version's section and the
+ * exact commands that tag the release and make its GitHub release, for a person to run (see release-notes.mjs).
  *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
  * is never packed or published.
@@ -22,6 +23,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { notesFor, printRelease } from './release-notes.mjs';
+import { checkFormatShape } from './format-shape.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -56,6 +58,11 @@ for (const { dir, manifest } of packages) {
 }
 // What changed, in plain words, before anything is packed: CHANGELOG.md's section for this version.
 if (!notesFor(readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8'), version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
+// A page this release writes says a format version: one whose shape older readers know (format-shape.mjs). Said on
+// every check, while lanes add to the format; refused at publish, where the version has to be right.
+const format = checkFormatShape(WORKSPACE);
+if (!format.ok && mode === 'publish') fail(format.message);
+if (!format.ok) console.warn(`release: before publishing, ${format.message}`);
 console.log(`release ${version}: ${packages.map((p) => p.manifest.name).join(', ')}`);
 
 // ---- pack ----------------------------------------------------------------------

@@ -98,7 +98,8 @@ export type {
   DeleteStep,
   PostStep,
 } from './lib/format/actions';
-export { FORMAT_VERSION } from './lib/format/version';
+export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
+export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
 export type { Page, PageData, PageLook } from './lib/format/page';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';

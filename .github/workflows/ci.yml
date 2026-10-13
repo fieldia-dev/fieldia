@@ -22,8 +22,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # CHANGELOG.md has a section for every version released, and the release tools read it right.
-      - run: node --test tools/release-notes.test.mjs
+      # The release tools: CHANGELOG.md has a section for every version released, and the page format's shapes.
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
       # exports point at missing files or its ESM output would not resolve in
       # Node — the packaging mistakes that pass every source-level test.
