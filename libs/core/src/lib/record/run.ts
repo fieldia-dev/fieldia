@@ -232,6 +232,8 @@ export interface RunForm {
   post(message: PostedMessage): Promise<boolean>;
   /** A field's value as words in a posted message: a link's name, a choice's label. */
   wordsOf(field: string): string;
+  /** Why the person may not archive, copy or delete the record, as its source told: their words to say; null when they may. */
+  barred?(right: 'archive' | 'duplicate' | 'delete'): string | null;
 }
 
 export const DONE: RunResult = Object.freeze({ done: true });
@@ -459,6 +461,9 @@ export function createRunner(form: RunForm) {
   async function recordStep(name: 'archive' | 'unarchive' | 'duplicate' | 'delete', scope: RunScope): Promise<Stopped | null> {
     const id = form.recordId();
     if (id == null) return cannot(`A new record cannot be ${name === 'duplicate' ? 'duplicated' : name === 'delete' ? 'deleted' : `${name}d`}: it is not saved yet`);
+    // Not when the record's source says this person may not: neither it nor the app is asked.
+    const barred = form.barred?.(name === 'unarchive' ? 'archive' : name);
+    if (barred) return cannot(barred);
     if (name === 'archive' || name === 'unarchive') {
       if (!form.archive) return instead(name, 'archive', scope);
       await form.archive(name === 'archive');

@@ -52,5 +52,9 @@ export const ar: Messages = {
   addressParts: 'عنوان الشارع|سطر العنوان 2|المدينة|المحافظة أو المنطقة|الرمز البريدي|الدولة',
   archiveConfirm: 'هل أنت متأكد من أرشفة هذا السجل؟',
   deleteConfirm: 'هل أنت متأكد من حذف هذا السجل؟',
+  mayNotEdit: 'يمكنك قراءة هذا السجل، لكن لا يمكنك تغييره.',
+  mayNotArchive: 'لا يمكنك أرشفة هذا السجل.',
+  mayNotDuplicate: 'لا يمكنك استنساخ هذا السجل.',
+  mayNotDelete: 'لا يمكنك حذف هذا السجل.',
   locale: 'ar',
 };

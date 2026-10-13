@@ -73,6 +73,14 @@ export interface Messages {
   /** What a record's gear menu asks before its built-in Archive and Delete run. */
   archiveConfirm: string;
   deleteConfirm: string;
+  /**
+   * What the record's source does not let this person do, when it gives no
+   * reason of its own: change the record, archive it, copy it, delete it.
+   */
+  mayNotEdit: string;
+  mayNotArchive: string;
+  mayNotDuplicate: string;
+  mayNotDelete: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -131,6 +139,10 @@ const en: Messages = {
   addressParts: 'Street address|Address line 2|City|State or region|Postcode|Country',
   archiveConfirm: 'Are you sure that you want to archive this record?',
   deleteConfirm: 'Are you sure you want to delete this record?',
+  mayNotEdit: 'You can read this record, but not change it.',
+  mayNotArchive: 'You cannot archive this record.',
+  mayNotDuplicate: 'You cannot duplicate this record.',
+  mayNotDelete: 'You cannot delete this record.',
   locale: 'en',
 };
 

@@ -52,5 +52,9 @@ export const fr: Messages = {
   addressParts: 'Adresse|Complément d’adresse|Ville|État ou région|Code postal|Pays',
   archiveConfirm: 'Voulez-vous vraiment archiver cet enregistrement ?',
   deleteConfirm: 'Voulez-vous vraiment supprimer cet enregistrement ?',
+  mayNotEdit: 'Vous pouvez lire cet enregistrement, mais pas le modifier.',
+  mayNotArchive: 'Vous ne pouvez pas archiver cet enregistrement.',
+  mayNotDuplicate: 'Vous ne pouvez pas dupliquer cet enregistrement.',
+  mayNotDelete: 'Vous ne pouvez pas supprimer cet enregistrement.',
   locale: 'fr',
 };
