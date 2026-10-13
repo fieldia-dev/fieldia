@@ -893,6 +893,37 @@ export interface ListNode {
   actions?: ButtonNode[];
   /** The records on a map, beside the table or instead of it (drawn by @fieldia/map). */
   map?: ListMap;
+  /**
+   * Each column's cells, by its field: a widget (`dot` for a state, with its
+   * options), an icon before the words from another field (a work item's
+   * kind), a width in characters, the side its words keep to.
+   */
+  cells?: { [column: string]: ListCell };
+  /** A box to choose each row, and the buttons for those chosen; on unless false. */
+  choose?: boolean;
+  /**
+   * The search over the list: the search bar (`bar`, the default), or a
+   * keyword box and a list of values for each field of `filterFields`
+   * (`fields`), as a work tracker's backlog filters.
+   */
+  search?: 'bar' | 'fields';
+  /** The fields the `fields` search offers a list of values for, in order: "Bug ▾", "Active ▾", "Area ▾". */
+  filterFields?: string[];
+  /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
+  parentField?: string;
+}
+
+/** How a list's column draws its cells. */
+export interface ListCell {
+  /** A widget for its words: `dot`, a state's coloured dot before them, by `options.colours` (`#rrggbb` by value) or `options.tones`. */
+  widget?: string;
+  options?: WidgetOptions;
+  /** An icon before the words, by another field's value: a bug's or a task's icon in its colour before a work item's title. */
+  lead?: { field: string; looks: { [value: string]: { icon: string; colour?: string } } };
+  /** How wide the column is, in characters: 1 to 200. Words that do not fit end in "…". */
+  width?: number;
+  /** The side its words keep to: `end` lines up an order's numbers. */
+  align?: 'start' | 'end';
 }
 
 /**
@@ -1507,6 +1538,22 @@ export const ListMapSchema = z
   })
   .meta({ id: 'ListMap' });
 
+/** A list column's cells: a widget, an icon from another field, a width in characters, a side. */
+export const ListCellSchema = z
+  .strictObject({
+    widget: z.string().min(1).optional(),
+    options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
+    lead: z
+      .strictObject({
+        field: fieldName,
+        looks: z.record(z.string(), z.strictObject({ icon: z.string().min(1), colour: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is #rrggbb').optional() })),
+      })
+      .optional(),
+    width: z.int().min(1).max(200).optional(),
+    align: z.enum(['start', 'end']).optional(),
+  })
+  .meta({ id: 'ListCell' });
+
 export const ListNodeSchema = z.strictObject({
   type: z.literal('list'),
   id,
@@ -1519,6 +1566,11 @@ export const ListNodeSchema = z.strictObject({
   groupBy: z.array(fieldName).optional(),
   actions: z.array(ButtonNodeSchema).optional(),
   map: ListMapSchema.optional(),
+  cells: z.record(fieldName, ListCellSchema).optional(),
+  choose: z.boolean().optional(),
+  search: z.enum(['bar', 'fields']).optional(),
+  filterFields: z.array(fieldName).min(1).optional(),
+  parentField: fieldName.optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

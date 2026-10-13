@@ -6,6 +6,7 @@ import type {
   StepNode, StepNodeSchema, TabNode, TabNodeSchema, LayoutNode, LayoutNodeSchema,
   RootLayout, RootLayoutSchema, FormNode, FormNodeSchema,
 } from './layout';
+import type { ListCell, ListCellSchema, ListNode, ListNodeSchema } from './layout';
 
 /**
  * Compile-time proof that the hand-written interfaces (the public types, with
@@ -26,3 +27,6 @@ export type Checks = [
   Assert<Same<z.infer<typeof RootLayoutSchema>, RootLayout>>,
   Assert<Same<z.infer<typeof PageSchema>, Page>>,
 ];
+
+/** A list's own parts, proven the same way. */
+export type ListChecks = [Assert<Same<z.infer<typeof ListNodeSchema>, ListNode>>, Assert<Same<z.infer<typeof ListCellSchema>, ListCell>>];

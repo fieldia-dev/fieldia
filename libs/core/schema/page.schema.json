@@ -147,6 +147,9 @@
             "box"
           ]
         },
+        "quietHints": {
+          "type": "boolean"
+        },
         "scheme": {
           "type": "string",
           "enum": [
@@ -8151,6 +8154,38 @@
         },
         "map": {
           "$ref": "#/$defs/ListMap"
+        },
+        "cells": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ListCell"
+          }
+        },
+        "choose": {
+          "type": "boolean"
+        },
+        "search": {
+          "type": "string",
+          "enum": [
+            "bar",
+            "fields"
+          ]
+        },
+        "filterFields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "parentField": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         }
       },
       "required": [
@@ -8285,6 +8320,76 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 22
+        }
+      },
+      "additionalProperties": false
+    },
+    "ListCell": {
+      "type": "object",
+      "properties": {
+        "widget": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "clear": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "lead": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "looks": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "icon": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "colour": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  }
+                },
+                "required": [
+                  "icon"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "field",
+            "looks"
+          ],
+          "additionalProperties": false
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
         }
       },
       "additionalProperties": false
