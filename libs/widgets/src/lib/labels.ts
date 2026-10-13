@@ -74,6 +74,44 @@ export interface WidgetLabels {
   linkAddress: string;
   applyLink: string;
   removeLink: string;
+  /**
+   * A formatted text's own tools and words: strikethrough to a checklist, each a
+   * named button; a kind of record linked (`{kind}`), a group named in its
+   * heading's tools (`{name}`), a heading's level (`{n}`); the Markdown editor's
+   * hint and switch, what switching would lose, and a links box's Add link menu.
+   */
+  strike: string;
+  highlight: string;
+  textColour: string;
+  emoji: string;
+  indent: string;
+  outdent: string;
+  textSize: string;
+  code: string;
+  mention: string;
+  linkRecordNamed: string;
+  clearFormatting: string;
+  image: string;
+  moreTools: string;
+  switchToMarkdown: string;
+  switchToRich: string;
+  markdownSupported: string;
+  pasteOrSelect: string;
+  preview: string;
+  editNamed: string;
+  doneEditing: string;
+  maximiseNamed: string;
+  foldNamed: string;
+  unfoldNamed: string;
+  addLink: string;
+  existingItem: string;
+  newItem: string;
+  formattingLost: string;
+  taskList: string;
+  cursorInLink: string;
+  attachFile: string;
+  switchAnyway: string;
+  headingLevel: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -247,6 +285,38 @@ const en: WidgetLabels = {
   linkAddress: 'Link address',
   applyLink: 'Apply',
   removeLink: 'Remove link',
+  strike: 'Strikethrough',
+  highlight: 'Highlight',
+  textColour: 'Text colour',
+  emoji: 'Emoji',
+  indent: 'Increase indent',
+  outdent: 'Decrease indent',
+  textSize: 'Text size',
+  code: 'Code',
+  mention: 'Mention someone',
+  linkRecordNamed: 'Link {kind}',
+  clearFormatting: 'Clear formatting',
+  image: 'Insert image',
+  moreTools: 'More',
+  switchToMarkdown: 'switch to Markdown editor',
+  switchToRich: 'switch to rich text editor',
+  markdownSupported: 'Markdown supported.',
+  pasteOrSelect: 'Paste or select files to insert.',
+  preview: 'Preview',
+  editNamed: 'Edit {name}',
+  doneEditing: 'Done',
+  maximiseNamed: 'Maximise {name}',
+  foldNamed: 'Collapse {name}',
+  unfoldNamed: 'Expand {name}',
+  addLink: 'Add link',
+  existingItem: 'Existing item',
+  newItem: 'New item',
+  formattingLost: 'Some formatting cannot be written in Markdown and will be lost. Switch anyway?',
+  taskList: 'Checklist',
+  cursorInLink: 'Put the cursor in a link first.',
+  attachFile: 'Attach a file',
+  switchAnyway: 'Switch',
+  headingLevel: 'Heading {n}',
   upload: 'Upload a file',
   uploadImage: 'Add a photo',
   replace: 'Replace',

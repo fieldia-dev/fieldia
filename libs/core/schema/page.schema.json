@@ -7169,7 +7169,8 @@
                 "heading",
                 "paragraph",
                 "note",
-                "alert"
+                "alert",
+                "help"
               ]
             },
             "tone": {
@@ -7181,6 +7182,10 @@
                 "danger",
                 "muted"
               ]
+            },
+            "icon": {
+              "type": "string",
+              "minLength": 1
             },
             "colspan": {
               "type": "integer",
@@ -7580,6 +7585,30 @@
         "readonlyReason": {
           "type": "string",
           "minLength": 1
+        },
+        "tracks": {
+          "minItems": 1,
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(px|%|fr)$"
+          }
+        },
+        "gap": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 48
+        },
+        "foldAt": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "maximise": {
+          "type": "boolean"
         }
       },
       "required": [

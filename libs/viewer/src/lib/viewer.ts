@@ -58,6 +58,7 @@ import { valueWords } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
 import { attachmentPreview } from './attachment-preview';
+import { applyTracks, helpBox, keepTools, loneFieldTools, sectionHeading, wordsWithLinks, workHeading, type HeadKit } from './section-head';
 import { installRecordStyles } from './record-styles';
 import { recordHead, type RecordHead } from './record-head';
 import { isRichButton, nothingToUndo, richButton } from './button-parts';
@@ -356,6 +357,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (at === -1) return [words];
     return [el('span', { class: 'fd-label-words' }, words.slice(0, at), el('span', { class: 'fd-access-key' }, words.slice(at, at + 1)), words.slice(at + 1))];
   }
+  /** What a group's heading and a help box draw with. */
+  const headKit: HeadKit = { doc, labels: widgetLabels, icons: options.icons, withIcon, el };
 
   const theme = options.theme ?? page.look?.theme;
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
@@ -445,6 +448,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         label.append(mark);
       }
       const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
+      // Its own tools (a Markdown text's Edit and Done), for a group that holds it alone to put in its heading.
+      keepTools(wrapper, widget);
       // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
       if (node.focus && scope.root) focusers.push({ wrapper, focus: () => widget.focus() });
       // Its access key: Alt with its letter takes the focus to it, as the letter underlined in its label says.
@@ -705,13 +710,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     function textItem(node: TextNode, inline = false): HTMLElement {
       const style = node.style ?? 'paragraph';
-      // Its words, with the values of the fields they name.
+      // Its words, with the values of the fields they name, and its [words](address) as links.
       const words = valueWords(doc, page.fields, node.text, locale);
+      const shown = wordsWithLinks(doc, words.nodes);
       const element = inline
-        ? el('span', { class: `fd-oneline-words fd-text-${style}`, 'data-node': node.id }, ...words.nodes)
+        ? el('span', { class: `fd-oneline-words fd-text-${style}`, 'data-node': node.id }, ...shown)
         : style === 'alert'
-          ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...words.nodes))
-          : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...words.nodes);
+          ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...shown))
+          : style === 'help'
+            ? helpBox(headKit, node, shown)
+            : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...shown);
       spans(element, node.colspan);
       hideWhen(element, node.id);
       watch((state) => words.update(state.values));
@@ -809,7 +817,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
       const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
       const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
-      if (node.title && node.collapsible) {
+      // Its own column widths and gap; a heading with tools at its end, as a work item's group has.
+      applyTracks(content, node);
+      const own = loneFieldTools(node, content);
+      if (node.title && (workHeading(node) || own.length)) {
+        content.id = uid(`${node.id}-content`);
+        const head = sectionHeading(headKit, node, section, content, description, own);
+        if (node.collapsible) folds.set(section, () => head.show(true));
+        section.append(head.legend);
+      } else if (node.title && node.collapsible) {
         content.id = uid(`${node.id}-content`);
         const toggle = el(
           'button',

@@ -1,6 +1,10 @@
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem } from './json-problem';
+import { linkAddress, sanitizeHtml } from './sanitize';
+import { modernHtml, usesEditor } from './html-field';
+
+export { linkAddress, sanitizeHtml } from './sanitize';
 
 /**
  * Formatted text and JSON. Formatted text is edited in place, with a toolbar
@@ -8,59 +12,13 @@ import { jsonProblem } from './json-problem';
  * browser's own editing, so no editor library is loaded. Every value — typed,
  * pasted or loaded — passes through `sanitizeHtml`, so stored markup can never
  * run script in the page.
+ *
+ * A page that asks for more — its toolbar only while the text is worked in
+ * (`toolbar: 'focus'`), at its foot (`toolbarAt`), its own `tools`, Markdown
+ * (`editor`), a switch between the two (`switchEditor`), people and records
+ * linked in place (`mention`, `references`) — gets the work item's editor:
+ * html-field.ts.
  */
-
-const ALLOWED = new Set([
-  'P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'UL', 'OL', 'LI', 'A', 'H1', 'H2', 'H3', 'H4',
-  'BLOCKQUOTE', 'CODE', 'PRE', 'SPAN', 'DIV',
-]);
-const DROPPED_WITH_CONTENT = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'TEMPLATE', 'NOSCRIPT', 'SVG', 'MATH']);
-/** Blocks that may keep their alignment, the one style the toolbar sets. */
-const ALIGNABLE = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'LI', 'BLOCKQUOTE', 'PRE']);
-const ALIGNMENTS = new Set(['left', 'center', 'right', 'justify', 'start', 'end']);
-
-/** Keep text structure, block alignment and http(s)/mailto links; drop every other element and attribute. */
-export function sanitizeHtml(html: string, document: Document = globalThis.document): string {
-  const box = document.createElement('template');
-  box.innerHTML = html;
-  const clean = (parent: ParentNode) => {
-    for (const node of [...parent.childNodes]) {
-      if (node.nodeType === Node.TEXT_NODE) continue;
-      if (node.nodeType !== Node.ELEMENT_NODE) {
-        node.remove();
-        continue;
-      }
-      const element = node as Element;
-      if (DROPPED_WITH_CONTENT.has(element.tagName)) {
-        element.remove();
-        continue;
-      }
-      clean(element);
-      if (!ALLOWED.has(element.tagName)) {
-        element.replaceWith(...element.childNodes);
-        continue;
-      }
-      const href = element.tagName === 'A' ? element.getAttribute('href') : null;
-      const align = ALIGNABLE.has(element.tagName) ? (element as HTMLElement).style?.textAlign?.trim().toLowerCase() : '';
-      for (const attribute of [...element.attributes]) element.removeAttribute(attribute.name);
-      if (href && /^(https?:|mailto:)/i.test(href.trim())) element.setAttribute('href', href.trim());
-      if (align && ALIGNMENTS.has(align)) element.setAttribute('style', `text-align: ${align};`);
-    }
-  };
-  clean(box.content);
-  const out = document.createElement('div');
-  out.append(box.content);
-  return out.innerHTML;
-}
-
-/** A typed address as a link target: web and mail addresses only, "https://" added to a bare domain. */
-export function linkAddress(typed: string): string | null {
-  const text = typed.trim();
-  if (/^(https?:\/\/|mailto:)\S+$/i.test(text)) return text;
-  if (/^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(text)) return `mailto:${text}`;
-  if (/^[\w-]+(\.[\w-]+)+([/?#]\S*)?$/.test(text)) return `https://${text}`;
-  return null;
-}
 
 /** The toolbar's buttons: [label key, editing command, drawn icon]. */
 const TOOLS: [keyof WidgetLabels, string, string][] = [
@@ -77,7 +35,10 @@ const TOOLS: [keyof WidgetLabels, string, string][] = [
   ['link', 'createLink', '<svg viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2.3-2.3a3 3 0 0 0-4.2-4.2L8.2 3.6M9 7a3 3 0 0 0-4.2 0L2.5 9.3a3 3 0 0 0 4.2 4.2l1.1-1.1"/></svg>'],
 ];
 
-export const htmlWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const htmlWidget: WidgetFactory = (context) => (usesEditor(context.node.options) ? modernHtml(context) : classicHtml(context));
+
+/** The classic formatted text: its toolbar on top, always, as it was before a page could ask for more. */
+const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
   const area = document.createElement('div');
   area.id = id;
   area.className = 'fd-input fd-richtext';
@@ -89,7 +50,7 @@ export const htmlWidget: WidgetFactory = ({ form, name, node, id, document, labe
     area.setAttribute('data-placeholder', node.placeholder);
     area.setAttribute('aria-placeholder', node.placeholder);
   }
-  const withToolbar = node.options?.['toolbar'] !== false;
+  const withToolbar = node.options?.['toolbar'] !== false && node.options?.['toolbar'] !== 'never';
   let last = '';
   area.addEventListener('input', () => {
     const clean = sanitizeHtml(area.innerHTML, document);

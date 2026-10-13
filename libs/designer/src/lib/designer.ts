@@ -13,6 +13,7 @@ import {
   type OptionsFrom,
   type PartLookKind,
   type HelpShown,
+  type JsonValue,
   type MapFence,
   type MapLayer,
   type MapNode,
@@ -362,7 +363,9 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** An "Other" choice after the options, with a box for an answer of one's own: for multiple choice and checkboxes. */
   setOther(id: string, on: boolean): boolean;
   /** How the field's widget shows it, such as the words at a scale's ends; `null` or nothing takes a setting away. */
-  setWidgetOptions(id: string, patch: Record<string, string | number | boolean | null>): boolean;
+  setWidgetOptions(id: string, patch: Record<string, JsonValue | null>): boolean;
+  /** The widget a field is drawn with, by name (`links` for a many2many's links box); null for its type's own. */
+  setFieldWidget(id: string, widget: string | null): boolean;
   /**
    * Which kinds of file a file upload takes (media types, such as image/*), and
    * the largest, in bytes; whether it, or an image, takes several files, and as
@@ -1371,6 +1374,14 @@ export function createDesigner(options: {
         },
         `widget:${id}:${Object.keys(patch).join(',')}`
       );
+    },
+
+    setFieldWidget(id, widget) {
+      return apply((draft) => {
+        const node = fieldNode(draft, id);
+        if (widget) node.widget = widget;
+        else delete node.widget;
+      });
     },
 
     setFileRules(id, rules) {

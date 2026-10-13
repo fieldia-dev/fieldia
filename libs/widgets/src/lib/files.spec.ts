@@ -250,3 +250,25 @@ describe('sanitizeHtml', () => {
     expect(sanitizeHtml('<div style="color:red">plain <span class="x">text</span></div>')).toBe('<div>plain <span>text</span></div>');
   });
 });
+
+describe('sanitizeHtml for a work item’s text', () => {
+  it('keeps struck words, pictures from the web or written in, and a span’s colour, highlight and size', () => {
+    expect(sanitizeHtml('<p><s>old</s> <img src="https://shop.example/a.png" alt="scan" onerror="x()"> <img src="data:image/png;base64,iVBORw0KGgo=" alt=""></p>')).toBe(
+      '<p><s>old</s> <img src="https://shop.example/a.png" alt="scan"> <img src="data:image/png;base64,iVBORw0KGgo=" alt=""></p>'
+    );
+    expect(sanitizeHtml('<p><img src="http://plain.example/a.png"><img src="javascript:alert(1)"><img src="data:image/svg+xml;base64,PHN2Zz4="></p>')).toBe('<p></p>');
+    expect(sanitizeHtml('<span style="color: #d13438; background-color: rgb(255, 255, 0); font-size: 20px; position: fixed">x</span>')).toBe(
+      '<span style="color: rgb(209, 52, 56); background-color: rgb(255, 255, 0); font-size: 20px;">x</span>'
+    );
+    expect(sanitizeHtml('<span style="color: url(evil); font-size: 99px; background-color: expression(x)">y</span>')).toBe('<span>y</span>');
+  });
+
+  it('keeps a person or record linked in place, and a checklist’s items, with safe values only', () => {
+    expect(sanitizeHtml('<p><span data-mention="2" class="m">@Karim</span> <span data-record="4127" data-model="work.item">#4127</span></p>')).toBe(
+      '<p><span data-mention="2">@Karim</span> <span data-record="4127" data-model="work.item">#4127</span></p>'
+    );
+    expect(sanitizeHtml('<span data-mention="2&quot; onclick=&quot;x" data-model="work.item">a</span><ul><li data-task="done">b</li><li data-task="maybe">c</li></ul>')).toBe(
+      '<span>a</span><ul><li data-task="done">b</li><li>c</li></ul>'
+    );
+  });
+});

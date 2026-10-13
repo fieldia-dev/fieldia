@@ -225,6 +225,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // tree's keys; Fieldia's own list with a tick for a choice and a state's list; a state's exact colours and its dot in
 // a lead slot; tags added from a button; a person's outline while no one is picked; their checks on a page; their
 // stylesheet (7 of it) and the icons the replica's lanes share (3) — add 25.3, to 498.6.
+// A work item's body, as a work tracker draws one: groups with their own column widths and gap, their heading's tools
+// at its end (⤢ alone over the body, ^ and ⌄, a field's own Edit and Done), help in a light box with links in its words;
+// the formatted text's own editor — its toolbar only while worked in, inside the box at its foot, twenty named tools in
+// a roving bar with "…" for those with no room, colours, sizes and emoji in real menus, people and records linked as
+// they are typed, Remove link saying why — Markdown both ways written by hand (no library: a CommonMark subset, raw
+// HTML escaped) with its card, hint and Preview, asking before formatting is lost; a links box with Add link and its
+// menu; the sanitizer's spans, pictures and links in place; and their stylesheet (16 of it) — 62.5 more, to 536.
 const BUDGET_KB = /*JOIN*/ 511.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -261,6 +268,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // inset dialog with maximise and grip, stored values, their checks, the work item's icons), 10 more, to 152.7.
 // the work item's pickers (a path picker and its tree, own lists with a tick, a state's colours, tags from a button,
 // their stylesheet and the replica's shared icons), 7 more, to 149.7.
+// a work item's body (groups' widths and heading tools, help boxes, the formatted text's editor with its Markdown, menus
+// and links in place, a links box, and their stylesheet), 19.4 more, to 162.1.
 const GZIP_BUDGET_KB = /*JOIN*/ 152.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -292,6 +301,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // German's to 10.3 and 4.3, French's to 10.3 and 4.2.
 // The work item's pickers' four — Suggestions, a branch's Expand and Collapse, Add {label} — Arabic's to 23.5,
 // German's to 10.1 and 4.3, French's to 10.2 and 4.2.
+// A work item's text — its tools' names, the Markdown editor's hint and switch, what switching would lose, a group's
+// Maximise, Collapse and Expand, Add link's Existing item and New item, 32 words in each — Arabic's to 25.8 and 5.4,
+// German's to 11.1 and 4.7, French's to 11.2 and 4.6.
 const ADD_ON_BUDGET_KB = /*JOIN*/ { ar: [23.9, 5.0], de: [10.3, 4.3], fr: [10.3, 4.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({

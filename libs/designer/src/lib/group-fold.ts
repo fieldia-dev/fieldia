@@ -20,6 +20,8 @@ export function setFold(page: Page, id: string, fold: Fold): void {
   delete section.collapsed;
   if (fold === 'no') {
     delete section.collapsible;
+    // Its fold control's place goes with it.
+    delete section.foldAt;
     return;
   }
   if (!section.title?.trim()) throw new Refusal((w) => w.layout.foldsByTitle);

@@ -9,6 +9,7 @@ import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead } from './head-checks';
+import { checkSectionTracks } from './section-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -631,6 +632,7 @@ export class ReferenceCheck {
             if (!['field', 'text', 'button', 'spacer'].includes(child.type)) this.report(`${path}.children[${i}]`, `a line of parts holds fields, words and buttons; a ${child.type} needs a row of its own`);
           });
         }
+        checkSectionTracks(node, path, (at, message) => this.report(at, message));
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);

@@ -20,6 +20,8 @@ export interface ChatterOptions {
   icons?: IconSet;
   /** The clock for what is due today; the real one unless a test pins it. */
   now?: () => Date;
+  /** The person using it: their picture by the comment box of a discussion. */
+  me?: Person;
 }
 
 export interface ChatterHandle {

@@ -13,6 +13,7 @@ import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
 import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
+import { wiTextDiscussion } from '../shared/wi-text';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -86,6 +87,8 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   slots: {
     // The record's conversation, to-dos and followers, beside it.
     chatter: chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined, dir: params.get('dir') === 'rtl' ? 'rtl' : undefined }),
+    // A work item's Discussion: a comment box, then a card for each comment (shared/wi-text.ts).
+    discussion: wiTextDiscussion(params, dataSource),
     note: (element, { form }) => {
       let clicks = 0;
       const button = document.createElement('button');

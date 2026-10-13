@@ -7,6 +7,7 @@ import { BUSINESS_CSS } from './styles-business';
 import { QUIET_CSS } from './styles-quiet';
 import { PICKER_CSS } from './styles-picker';
 import { HEAD_CSS } from './styles-head';
+import { TEXT_CSS } from './styles-text';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -1025,8 +1026,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // Themes' tokens after the skins' and before the page's look; their own shapes after the parts they reshape, and
 // before the page's own looks for each kind of part, which win over a theme as the page's look does. The quiet look
 // after the themes' shapes, which it quietens; the pickers' (a work tracker's lists, styles-picker) after the quiet
-// look; a record's head after them, which draws its boxes (and a dot in its lead slot) its own way.
-export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+// look; a record's head after them, which draws its boxes (and a dot in its lead slot) its own way; a work item's
+// text, groups and links (styles-text) after those.
+export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

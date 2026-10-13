@@ -1162,16 +1162,18 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     model?: string,
     ids?: RecordId[]
   ): Promise<RelatedRecord[]> {
-    if (def.type !== 'many2one' && def.type !== 'many2many' && def.type !== 'reference' && def.type !== 'json') {
-      throw new Error(`"${name}" is not a many2one, many2many, reference or json`);
+    // Formatted text names people and records in place (@mention, #4127): searched by the model they are of.
+    const byModel = def.type === 'reference' || def.type === 'json' || def.type === 'html';
+    if (def.type !== 'many2one' && def.type !== 'many2many' && !byModel) {
+      throw new Error(`"${name}" is not a many2one, many2many, reference, json or html`);
     }
-    if ((def.type === 'reference' || def.type === 'json') && !model) throw new Error(`Searching "${name}" needs a model`);
+    if (byModel && !model) throw new Error(`Searching "${name}" needs a model`);
     const source = options.dataSource;
     if (!source?.search) return [];
     // Every valueFrom, in groups too, becomes the value it names before the search goes out.
-    const own: ResolvedFilter[] | undefined = def.type === 'reference' || def.type === 'json' || !def.filter ? undefined : resolveFilter(def.filter, ctx);
+    const own: ResolvedFilter[] | undefined = byModel || !def.filter ? undefined : resolveFilter(def.filter, ctx);
     const filter = ids ? [...(own ?? []), { field: 'id', op: 'in' as const, value: ids }] : own;
-    const relation = def.type === 'reference' || def.type === 'json' ? (model as string) : def.relation;
+    const relation = byModel ? (model as string) : def.relation;
     return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
   }
 

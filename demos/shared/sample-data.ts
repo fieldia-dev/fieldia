@@ -38,6 +38,8 @@ import { wiPicker } from './wi-picker';
 import { businessData, businessPage } from './business';
 import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
+import wiText from '../../examples/pages/wi-text.page.json';
+import { wiTextRecords } from './wi-text';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 
@@ -73,6 +75,8 @@ export const pages: Record<string, Page> = {
   ...wiPicker.pages,
   // A list's records on a map, and the record each opens: shared/homes.ts.
   'map-homes': mapHomes as Page,
+  // A work item's body: groups with tools at their heading's end, Markdown and rich text, a discussion, links (shared/wi-text.ts).
+  'wi-text': wiText as Page,
   'map-home': mapHome as Page,
   'map-couriers': mapCouriers as Page,
   'map-courier': mapCourier as Page,
@@ -212,7 +216,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page };
@@ -316,6 +320,7 @@ export function sampleDataSource() {
       ...wiPicker.records,
       courier: sampleCouriers(),
       'food.order': { 1: sampleOrder() },
+      ...wiTextRecords(),
       'delivery.round': { 1: sampleRound() },
       'shop.order': sampleWeekOrders(),
       'shop.kitchen': { 1: sampleKitchen() },

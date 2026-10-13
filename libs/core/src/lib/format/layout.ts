@@ -5,6 +5,7 @@ import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
 import { AddressSearchOptionsSchema } from './address-search';
 import { pickerOptionIssues } from './picker-options';
+import { SECTION_TRACK } from './section-checks';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -350,9 +351,11 @@ export interface TextNode {
   /** The words; `{field}` in them shows that field's value, as the field shows it. */
   text: string;
   /** A heading, a paragraph, a note, or an alert's box — Flectra's alert in a tab or a wizard, toned by `tone`. */
-  style?: 'heading' | 'paragraph' | 'note' | 'alert';
+  style?: 'heading' | 'paragraph' | 'note' | 'alert' | 'help';
   /** An alert's colour; blue unless said. */
   tone?: Tone;
+  /** `help`: a light box (the `help` token) with room for an icon at its start, as a work item's Deployment note; the icon by name. */
+  icon?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -627,6 +630,15 @@ export interface SectionNode {
   quiet?: boolean;
   /** Why its fields are read-only, in plain words, for those that give no reason of their own. */
   readonlyReason?: string;
+  // ---- a work item's groups ----
+  /** Its columns' widths when not even: pixels ("274px"), a share of the row ("50%") or of what is left ("1fr"); one per column. Even columns at a tablet's and a phone's width. */
+  tracks?: string[];
+  /** Room between its columns, in pixels: the skin's unless said. */
+  gap?: number;
+  /** Where its fold control sits: before the title (the default), or at the heading's end as ^ and ⌄. */
+  foldAt?: 'start' | 'end';
+  /** A ⤢ at its heading's end that shows the group alone over the record's body, until pressed again or Escape. Needs a title. */
+  maximise?: boolean;
 }
 
 export interface TabNode {
@@ -1268,8 +1280,9 @@ export const TextNodeSchema = z.strictObject({
   type: z.literal('text'),
   id,
   text: z.string(),
-  style: z.enum(['heading', 'paragraph', 'note', 'alert']).optional(),
+  style: z.enum(['heading', 'paragraph', 'note', 'alert', 'help']).optional(),
   tone: tone.optional(),
+  icon: z.string().min(1).optional(),
   colspan: span,
   invisible, roles, hideOn,
 });
@@ -1441,6 +1454,11 @@ export const SectionNodeSchema = z.strictObject({
   // The quiet look.
   quiet: z.boolean().optional(),
   readonlyReason: z.string().min(1).optional(),
+  // A work item's groups.
+  tracks: z.array(z.string().regex(SECTION_TRACK, 'a column is as wide as pixels ("274px"), a share of the row ("50%") or of what is left ("1fr")')).min(1).max(12).optional(),
+  gap: z.int().min(0).max(48).optional(),
+  foldAt: z.enum(['start', 'end']).optional(),
+  maximise: z.boolean().optional(),
 }).meta({ id: 'SectionNode' });
 
 export const TabNodeSchema = z.strictObject({
