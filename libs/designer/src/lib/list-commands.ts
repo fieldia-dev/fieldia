@@ -1,6 +1,6 @@
-import type { ButtonNode, Field, FilterCondition, FilterItem, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, FilterItem, ListCalendar, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, fieldReads, keptFields, listMapFields, nextName } from './page-tree';
+import { allIds, fieldReads, keptFields, listCalendarFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
 
 /**
@@ -32,6 +32,8 @@ export interface ListOptionsPatch {
   filterLabel?: { field: string; label: string };
   /** The link to the list's own records its rows nest under; null for none. */
   parentField?: string | null;
+  /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
+  calendar?: ListCalendar | null;
 }
 
 export interface ListActionPatch {
@@ -242,6 +244,12 @@ export function listCommands(context: {
           // The fields it names come onto the page from the model; the page check says what is wrong with the rest.
           for (const name of listMapFields(options.map)) fieldFor(draft, name);
           list.map = JSON.parse(JSON.stringify(options.map)) as ListMap;
+        }
+        if (options.calendar === null) delete list.calendar;
+        else if (options.calendar !== undefined) {
+          // As a map's: its fields come from the model, and the page check says what is wrong with the rest.
+          for (const name of listCalendarFields(options.calendar)) fieldFor(draft, name);
+          list.calendar = JSON.parse(JSON.stringify(options.calendar)) as ListCalendar;
         }
         prune(draft);
       });

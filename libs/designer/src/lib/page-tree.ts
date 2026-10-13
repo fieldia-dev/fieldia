@@ -1,4 +1,4 @@
-import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
@@ -127,6 +127,7 @@ export function shownFields(page: Page): Set<string> {
     const read = (items: readonly FilterItem[]): string[] => items.flatMap((i) => ('any' in i ? read(i.any) : 'all' in i ? read(i.all) : [i.field]));
     for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => read(f.filter))]) shown.add(name);
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
+    if (root.calendar) for (const name of listCalendarFields(root.calendar)) shown.add(name);
     // And in its cells' icons, its filter bar and the link its rows nest by.
     for (const name of [...Object.values(root.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : [])), ...(root.filterFields ?? []), ...(root.parentField ? [root.parentField] : [])]) shown.add(name);
   }
@@ -168,6 +169,11 @@ export function mapNodeFields(node: MapNode): string[] {
       ...(node.fences ?? []).flatMap((fence) => (fence.area ? [fence.area] : [])),
     ]),
   ];
+}
+
+/** The fields a list's calendar names: when each record starts and ends, its words, its colour and its column. */
+export function listCalendarFields(calendar: ListCalendar): string[] {
+  return [calendar.start, calendar.end, calendar.title, calendar.colour, calendar.resource].filter((name): name is string => !!name);
 }
 
 /** The fields a list's map names: where each record is, what its pin and its card show and link to, what its pin's tones and money look read, its areas' field and its heat's weight. */
