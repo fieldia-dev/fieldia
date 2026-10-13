@@ -103,9 +103,14 @@ export const CALENDAR_CSS = `
 .fd-cal-agenda-head { margin: 0; padding: 10px 12px; font-size: 13px; font-weight: 600; }
 .fd-cal-agenda-day[aria-current="date"] .fd-cal-agenda-head { color: var(--fd-accent); }
 .fd-cal-agenda-list { list-style: none; margin: 0; padding: 6px 8px; display: grid; gap: 4px; min-width: 0; }
-.fd-cal-agenda-list .fd-cal-event { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; padding: 8px 40px 8px 10px; padding-inline: 10px 40px; font-size: 13.5px; }
+.fd-cal-agenda-list .fd-cal-event { position: relative; padding: 0; font-size: 13.5px; }
+.fd-cal-event-open { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; padding-block: 8px; padding-inline: 10px 48px; border-radius: inherit; }
+.fd-cal-event[data-opens] .fd-cal-event-open { cursor: pointer; }
+.fd-cal-event-open:focus { outline: none; }
+.fd-cal-event-open:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-cal-agenda-list .fd-cal-event-who { grid-column: 2; }
-.fd-cal-agenda-list .fd-cal-event-menu { display: grid; top: 50%; transform: translateY(-50%); inset-inline-end: 6px; width: 30px; height: 30px; }
+.fd-cal-agenda-list .fd-cal-event-menu { display: grid; top: 50%; transform: translateY(-50%); inset-inline-end: 6px; width: 36px; height: 36px; }
+.fd-cal-agenda-list .fd-cal-event-menu:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 @container fd-cal (max-width: 520px) {
   .fd-cal-agenda-day { grid-template-columns: minmax(0, 1fr); }
   .fd-cal-agenda-head { padding-bottom: 0; }

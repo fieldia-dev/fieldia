@@ -235,6 +235,22 @@ describe('moving and making from the keyboard', () => {
     expect(made[1]).toEqual(made[0]);
   });
 
+  it('takes a screen reader’s press, a click with no pointer behind it: a slot makes a record, a record opens', async () => {
+    const made: Values[] = [];
+    const opened: RecordId[] = [];
+    const host = await mount({ onNewRecord: (values) => void made.push(values), onOpenRecord: (id) => void opened.push(id) }, clinicPage({ view: 'day' }));
+    const slot = host.querySelector('.fd-cal-col[aria-label="Wednesday 14 October, Dr Nour"] .fd-cal-slot[data-minutes="900"]') as HTMLElement;
+    slot.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+    await until(() => made.length);
+    expect(made).toEqual([{ start: at(14, 15), stop: at(14, 16), doctor: { id: 3, label: 'Dr Nour' } }]);
+    block(host, 'Mona Adel').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+    expect(opened).toEqual([1]);
+    // A mouse's click (detail 1) is the press it ends, already handled: nothing more.
+    slot.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(made).toHaveLength(1);
+  });
+
   it('offers no way to make one when the app has none, and none to move one without a save', async () => {
     const source = clinicSource();
     const { save: _save, ...readOnly } = source;

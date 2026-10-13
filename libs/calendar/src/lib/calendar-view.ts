@@ -226,7 +226,11 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     placeNow();
   }
 
-  /** A record's block: its time, its words, its person; what it says to a screen reader; what a press does. */
+  /**
+   * A record's block: its time, its words, its person; what it says to a screen reader; what a press does. In the day,
+   * the week and the month the block itself is the press; in the agenda, a row with its own Move to… button beside it,
+   * which a phone has no keys for.
+   */
   function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false): HTMLElement {
     const movable = canSave && event.record.can?.edit !== false;
     const why = canSave && !movable ? (event.record.can?.reason ?? labels.cannotMove) : '';
@@ -235,36 +239,47 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     const block = make('div', {
       class: 'fd-cal-event',
       'data-id': String(event.id),
-      'data-focus': `e:${event.id}:${dayKey(day)}`,
       'data-opens': canOpen ? '' : undefined,
       'data-moves': movable ? '' : undefined,
       // Its words whole when pointed at, as a narrow block cuts them; or why it stays where it is.
       title: why || [span, event.title, event.resourceLabel].filter(Boolean).join(' · '),
     });
     block.style.setProperty('--fd-cal-c', colourOf(event.colour) ?? 'var(--fd-accent)');
+    const row = view === 'agenda';
+    /** What the keys and a press reach: the block, or the agenda row's own part. */
+    const target = row ? make('div', { class: 'fd-cal-event-open' }) : block;
+    target.dataset['focus'] = `e:${event.id}:${dayKey(day)}`;
     if (canOpen || movable) {
-      block.tabIndex = 0;
-      block.setAttribute('role', 'button');
-      block.setAttribute('aria-describedby', keysEvent.id);
+      target.tabIndex = 0;
+      target.setAttribute('role', 'button');
+      target.setAttribute('aria-describedby', keysEvent.id);
     }
-    block.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
-    const parts: (Node | string)[] = [];
-    if (!event.allDay) parts.push(make('span', { class: 'fd-cal-event-time' }, view === 'agenda' ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
-    parts.push(make('span', { class: 'fd-cal-event-title' }, make('bdi', {}, event.title)));
-    if (event.resourceLabel && !compact && !inOwnColumn) parts.push(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
-    for (const part of parts) block.append(part);
+    target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
+    if (!event.allDay) target.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
+    target.append(make('span', { class: 'fd-cal-event-title' }, make('bdi', {}, event.title)));
+    if (event.resourceLabel && !compact && !inOwnColumn) target.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
+    if (row) block.append(target);
     if (movable) {
-      const menu = make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': labels.moveTo, title: labels.moveTo }, '⋯');
+      // In a block, for a pointer alone: the keys reach Move to… by M, as the block tells a screen reader, and a
+      // button inside a button is no button. Beside an agenda's row, a button of its own, for a phone too.
+      const menu = row
+        ? make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': fill(labels.moveTitle, { name: event.title }), title: labels.moveTo }, '⋯')
+        : make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-hidden': 'true', title: labels.moveTo }, '⋯');
       menu.addEventListener('pointerdown', (e) => e.stopPropagation());
       menu.addEventListener('click', (e) => {
         e.stopPropagation();
-        openMove(event, block);
+        openMove(event, target);
       });
       block.append(menu);
     }
-    block.addEventListener('keydown', (e) => onEventKey(e, event, block));
-    if (view !== 'agenda') block.addEventListener('pointerdown', (e) => pressEvent(e, event, block, movable));
-    else block.addEventListener('click', () => open(event));
+    target.addEventListener('keydown', (e) => onEventKey(e, event, target));
+    if (!row) {
+      block.addEventListener('pointerdown', (e) => pressEvent(e, event, block, movable));
+      // A screen reader's press is a click with no pointer behind it: it opens the record as Enter does.
+      block.addEventListener('click', (e) => {
+        if (e.detail === 0 && e.target === block) onEventKey(new KeyboardEvent('keydown', { key: 'Enter' }), event, block, true);
+      });
+    } else target.addEventListener('click', () => open(event));
     return block;
   }
 
@@ -355,6 +370,10 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
           const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(', ');
           const cell = make('div', { class: 'fd-cal-slot', role: 'button', tabindex: '-1', 'data-minutes': String(m), 'data-focus': `s:${i}:${m}`, 'aria-label': words, 'aria-describedby': keysSlot.id });
           cell.addEventListener('keydown', (e) => onSlotKey(e, i, m));
+          // A screen reader's press, with no pointer behind it: a new record there, as Enter makes one.
+          cell.addEventListener('click', (e) => {
+            if (e.detail === 0) void createAt(atMinutes(column.day, m), null, column);
+          });
           cell.addEventListener('focus', () => (cursor = { day: column.day, minutes: m, column: i }));
           col.append(cell);
         }
@@ -583,9 +602,11 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     const timedHere = home.classList.contains('fd-cal-col');
     const homeTop = timedHere ? home.getBoundingClientRect().top : 0;
     /** Minutes between the record's start (on this day) and where it was taken hold of. */
-    const day = new Date(`${(block.dataset['focus'] ?? '').split(':')[2]}T00:00:00`);
+    const day = new Date(`${(block.dataset['focus'] ?? '').split(':').pop()}T00:00:00`);
     const segStart = segment(event, day)?.start ?? event.start;
     const grabbed = timedHere ? Math.round((startY - homeTop) / (HOUR / 60)) - (minutesOf(segStart) - shownHours.start * 60) : 0;
+    /** How far into the record this day's part begins: a record from the night before is taken by its morning's part. */
+    const into = Math.round((segStart.getTime() - event.start.getTime()) / 60000);
     let moving = false;
     let landing: { start: Date; column: Column | null } | null = null;
     const move = (m: PointerEvent) => {
@@ -596,6 +617,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         block.setAttribute('data-moving', '');
       }
       landing = landingAt(m.clientX, m.clientY, event, timedHere, grabbed, block);
+      if (landing && into) landing = { ...landing, start: addMinutes(landing.start, -into) };
     };
     const finish = (commitIt: boolean) => {
       doc.removeEventListener('pointermove', move);
@@ -758,9 +780,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
 
   function openMove(event: CalendarEvent, block: HTMLElement) {
     closeMove();
-    /** The record again, wherever it now is: its block on the same day, else its first. */
-    const focusBack = () =>
-      body.querySelector<HTMLElement>(`[data-focus="${block.dataset['focus']}"]`) ?? [...body.querySelectorAll<HTMLElement>('.fd-cal-event')].find((b) => b.dataset['id'] === String(event.id)) ?? block;
+    /** The record again, wherever it now is: on the same day, else its first. */
+    const focusBack = () => body.querySelector<HTMLElement>(`[data-focus="${block.dataset['focus']}"]`) ?? body.querySelector<HTMLElement>(`[data-focus^="e:${event.id}:"]`) ?? block;
     const heading = make('h3', { class: 'fd-cal-move-title', id: `${id}-move` }, fill(labels.moveTitle, { name: event.title }));
     const day = make('input', { type: 'date', class: 'fd-input' }) as HTMLInputElement;
     day.value = dayKey(event.start);
@@ -817,9 +838,9 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   /** Left and right as the line reads: flipped right to left. */
   const sideways = (key: string) => (key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0) * (rtl() ? -1 : 1);
 
-  function onEventKey(e: KeyboardEvent, event: CalendarEvent, block: HTMLElement) {
-    if (e.target !== block) return;
-    const movable = block.hasAttribute('data-moves');
+  function onEventKey(e: KeyboardEvent, event: CalendarEvent, block: HTMLElement, pressed = false) {
+    if (!pressed && e.target !== block) return;
+    const movable = !!block.closest('.fd-cal-event')?.hasAttribute('data-moves');
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       if (canOpen) open(event);
@@ -829,7 +850,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       openMove(event, block);
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      const all = [...body.querySelectorAll<HTMLElement>('.fd-cal-event[tabindex="0"]')];
+      const all = [...body.querySelectorAll<HTMLElement>('[data-focus^="e:"][tabindex="0"]')];
       if (view === 'agenda' || view === 'month' || !e.key.includes('Left') && !e.key.includes('Right')) {
         // Up and down: the record before or after, in the order they are read.
         const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : sideways(e.key);
@@ -843,7 +864,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const col = block.closest<HTMLElement>('[data-column]');
       const next = Number(col?.dataset['column'] ?? 0) + sideways(e.key);
       const minutes = clampMinutes(minutesOf(event.start));
-      const target = body.querySelector<HTMLElement>(`[data-focus="s:${next}:${minutes}"]`) ?? body.querySelector<HTMLElement>(`[data-column="${next}"] .fd-cal-event[tabindex="0"]`);
+      const target = body.querySelector<HTMLElement>(`[data-focus="s:${next}:${minutes}"]`) ?? body.querySelector<HTMLElement>(`[data-column="${next}"] [data-focus^="e:"][tabindex="0"]`);
       target?.focus();
     }
   }
