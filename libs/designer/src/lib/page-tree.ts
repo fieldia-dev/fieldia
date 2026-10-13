@@ -1,6 +1,7 @@
 import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
+import { headFields, headParts, tabCountFields } from './head-parts';
 
 /**
  * Finding one's way around a page's layout, for the designer's edits: the
@@ -116,7 +117,11 @@ export function shownFields(page: Page): Set<string> {
     for (const node of [...(title?.above ?? []), ...(title?.before ?? []), ...(title?.after ?? []), ...(title?.below ?? [])]) shown.add(node.field);
     // The file the attachment beside the sheet shows.
     if (root.attachmentPreview?.field) shown.add(root.attachmentPreview.field);
+    // A record head's kind, number, "Updated by" and toggles (its parts' own fields are among the sheet's parts above).
+    for (const name of headFields(root)) shown.add(name);
   }
+  // A tab's count.
+  for (const name of tabCountFields(page)) shown.add(name);
   // A list names its fields in its columns, order, search, filters and groupings.
   if (root.type === 'list') {
     const read = (items: readonly FilterItem[]): string[] => items.flatMap((i) => ('any' in i ? read(i.any) : 'all' in i ? read(i.all) : [i.field]));
@@ -227,5 +232,5 @@ export function tabHolds(tab: TabNode, id: string | null): boolean {
 /** A sheet's own parts outside its sections, each with an id: buttons, stat buttons, badges, alerts and their buttons, ribbons. */
 export function sheetParts(root: SheetNode): { id: string }[] {
   const alerts = root.alerts ?? [];
-  return [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...alerts, ...alerts.flatMap((a) => a.buttons ?? []), ...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? []), ...(root.toolbar?.menu ?? [])];
+  return [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...alerts, ...alerts.flatMap((a) => a.buttons ?? []), ...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? []), ...(root.toolbar?.menu ?? []), ...headParts(root)];
 }

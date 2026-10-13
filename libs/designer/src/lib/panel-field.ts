@@ -16,6 +16,7 @@ import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { tableSettings } from './table-panel';
 import { shownWhileSetting } from './shown-while';
+import { fieldHotkeySetting } from './head-properties';
 import { placeholderWhenList } from './placeholder-when';
 
 /**
@@ -107,6 +108,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const changes = whenItChanges(el, designer, id);
   // tables lane: its value's tone; a table's line rules, buttons and shape; the widths it is hidden at.
   const table = tableSettings(el, designer, id);
+  // Its access key: a letter of its label, Alt with it focusing the field (head-properties.ts).
+  const accessKey = fieldHotkeySetting(el, designer, id);
 
   // ---- Data: what it is stored under and as ----
   const name = el('code', { class: 'fd-insp-code' });
@@ -121,6 +124,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'content', 'Help text', help, { words: w.helpText }),
     placeholderRow,
     focusRow,
+    ...accessKey.rows,
     setting(el, 'content', 'Shown as', kind, { hint: kindNote, words: w.shownAs }),
     appSettings.element,
     optionsRow,
@@ -154,6 +158,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       if (!focused(placeholder)) placeholder.value = found.node.placeholder ?? '';
       if (!placeholderRow.hidden) placeholderWhen.update(page);
       focusBox.checked = found.node.focus === true;
+      accessKey.update(page);
       const current = kindOfField(def, found.node);
       const offered = designer.kindsFor(id);
       const key = offered.map((k) => k.id).join(',');

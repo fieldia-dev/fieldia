@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import { findNode, findTab } from './page-tree';
 import { onTab, setting } from './panel-controls';
 import { widthSetting } from './panel-layout';
+import { tabPartsSettings, tabsInHeadSetting } from './head-properties';
 
 /**
  * The screen editor's properties: what a view of a part is, and the views of
@@ -52,18 +53,22 @@ export function tabsProperties(el: ElementFactory, designer: Designer, id: strin
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTabs);
   remove.addEventListener('click', () => designer.removeNode(id));
   const width = widthSetting(el, designer, id);
+  // In a record's head, as a work item's Details, History, Links and Attachments (head-properties.ts).
+  const head = tabsInHeadSetting(el, designer, id);
   const element = el(
     'div',
     { class: 'fd-props' },
     el('p', { class: 'fd-properties-hint' }, w.tabsHint),
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
-    ...width.rows
+    ...width.rows,
+    ...head.rows
   );
   return {
     element,
     update(page) {
       moves.update(page);
       width.update(page);
+      head.update(page);
     },
   };
 }
@@ -77,7 +82,9 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
   const moves = movers(el, designer, id, [w.moveLeft, w.moveRight]);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTab);
   remove.addEventListener('click', () => designer.removeNode(id));
-  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label, { words: w.label }), onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'));
+  // Its icon, shown alone or not, and a count after it (head-properties.ts).
+  const parts = tabPartsSettings(el, designer, id);
+  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label, { words: w.label }), ...parts.rows, onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'));
   return {
     element,
     update(page) {
@@ -85,6 +92,7 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
       if (!found) return;
       if (!focused(label)) label.value = found.tab.label;
       moves.update(page);
+      parts.update(page);
     },
   };
 }
