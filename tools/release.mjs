@@ -37,7 +37,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'monaco', 'map', 'chatter', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'monaco', 'map', 'calendar', 'chatter', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
@@ -86,6 +86,7 @@ const EXPECT = {
   '@fieldia/code': ['codeWidgets', 'codeWidget', 'textCodeWidget', 'CODE_LANGUAGES', 'loadCodeLanguage'],
   '@fieldia/monaco': ['monacoWidgets', 'createMonacoWidgets', 'MONACO_LANGUAGES', 'monacoTheme'],
   '@fieldia/map': ['mapWidgets', 'mapKinds', 'azureMaps', 'googleMaps', 'mapbox', 'openStreetMap', 'tiles', 'readArea', 'writePoint', 'MAP_LABELS'],
+  '@fieldia/calendar': ['calendarListViews'],
   '@fieldia/chatter': ['mountChatter', 'chatterSlot', 'createMemoryChatter', 'CHATTER_LABELS'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
@@ -163,6 +164,7 @@ console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
 const PARTS = {
   widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'], 'choice-part': ['ownListWidget'] },
   viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'] },
+  calendar: { 'calendar-view': ['calendarPart'] },
   chatter: { discussion: ['mountDiscussion'], history: ['mountHistory'] },
 };
 writeFileSync(
@@ -213,7 +215,8 @@ import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { createMonacoWidgets, monacoWidgets, type MonacoLoader } from '@fieldia/monaco';
-import { mapKinds, mapWidgets, openStreetMap } from '@fieldia/map';
+import { mapKinds, mapListViews, mapWidgets, openStreetMap } from '@fieldia/map';
+import { calendarListViews, type CalendarSettings } from '@fieldia/calendar';
 import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/chatter';
 import type { FieldiaFormProps } from '@fieldia/react';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
@@ -221,7 +224,8 @@ declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...monacoWidgets, ...mapWidgets({ provider: openStreetMap() }) }, slots: { chatter: chatterSlot({ source }) } });
+const calendarSettings: CalendarSettings = { now: () => new Date(), limit: 200 };
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...monacoWidgets, ...mapWidgets({ provider: openStreetMap() }) }, listViews: { ...mapListViews({ provider: openStreetMap() }), ...calendarListViews(calendarSettings) }, onNewRecord: () => undefined, slots: { chatter: chatterSlot({ source }) } });
 declare const loader: MonacoLoader;
 const withWorkers = createMonacoWidgets({ getWorker: (_id, label) => new Worker(label + '.js', { type: 'module' }), loader });
 const props: FieldiaFormProps = { page, skin: 'underline' };

@@ -11,6 +11,7 @@
       "@fieldia/grid": ["libs/grid/src/index.ts"],
       "@fieldia/code": ["libs/code/src/index.ts"],
       "@fieldia/map": ["libs/map/src/index.ts"],
+      "@fieldia/calendar": ["libs/calendar/src/index.ts"],
       "@fieldia/chatter": ["libs/chatter/src/index.ts"],
       "@fieldia/angular": ["dist/libs/angular/src/index.js"]
     }
