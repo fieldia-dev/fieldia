@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/code",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "Fieldia fields in a code editor: JSON, and text in 44 languages from Python to SQL. CodeMirror 6, each grammar loaded only when a field uses it.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -41,8 +41,8 @@
     "@codemirror/lint": "^6.9.7",
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.13",
-    "@fieldia/core": "0.19.1",
-    "@fieldia/widgets": "0.19.1",
+    "@fieldia/core": "0.20.0",
+    "@fieldia/widgets": "0.20.0",
     "@lezer/highlight": "^1.2.5",
     "tslib": "^2.8.1"
   },
