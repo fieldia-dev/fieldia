@@ -1,6 +1,6 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { createWidget } from '@fieldia/widgets';
-import { tiles } from './providers';
+import { tiles, type SearchRequest } from './providers';
 import { mapWidgets } from './widgets';
 
 /**
@@ -82,7 +82,7 @@ describe('a place kept in two number fields', () => {
   });
 });
 
-describe('a place written by another field', () => {
+describe('a place on a map that opened on the whole world (no centre given)', () => {
   // A map of 400 by 300 pixels: jsdom measures none, and a map with no size shows no part of the world.
   const sized = (['clientWidth', 'clientHeight'] as const).map((side) => [side, Object.getOwnPropertyDescriptor(HTMLElement.prototype, side)] as const);
   beforeAll(() => sized.forEach(([side]) => Object.defineProperty(HTMLElement.prototype, side, { configurable: true, get: () => (side === 'clientWidth' ? 400 : 300) })));
@@ -98,6 +98,44 @@ describe('a place written by another field', () => {
     form.setValue('note', { type: 'Point', coordinates: [31.2357, 30.0444] });
     await new Promise((done) => setTimeout(done, 0));
     expect(Math.max(...zooms())).toBe(15);
+    widget.destroy?.();
+  });
+
+  it('stays as close as it is when it writes its own place into two number fields: a press, or Enter, on a map of the whole world puts the pin there and does not fly', async () => {
+    const { form, widget } = mount();
+    for (let i = 0; i < 100 && !zooms().length; i++) await new Promise((done) => setTimeout(done, 20));
+    const map = document.querySelector('.fd-map-box') as HTMLElement;
+    map.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await new Promise((done) => setTimeout(done, 0));
+    // The place at the map's centre, written: latitude, then longitude, each in its own field.
+    expect(form.getState().values).toMatchObject({ lat: 20, lng: 0 });
+    expect(Math.max(...zooms())).toBe(2);
+    widget.destroy?.();
+  });
+
+  it('searches near where the map looks only once it looks somewhere: a map of the whole world (no centre given) is near nothing', async () => {
+    const asked: SearchRequest[] = [];
+    const searching = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' }, search: async (request) => (asked.push(request), []) }) });
+    const node = { type: 'field', id: 'f-note', field: 'note', widget: 'place', options: { myLocation: false } } as FieldNode;
+    const form = createForm({ page });
+    const widget = createWidget({ form, name: 'note', field: page.fields['note'] as Field, node, id: 'fd-note', document }, searching);
+    document.body.replaceChildren(widget.element);
+    form.subscribe(() => widget.update({ value: form.getState().values['note'], values: form.getState().values, readonly: false, required: false, invalid: false }));
+    for (let i = 0; i < 100 && !zooms().length; i++) await new Promise((done) => setTimeout(done, 20));
+    const box = document.querySelector('[role="combobox"]') as HTMLInputElement;
+    const search = async (words: string) => {
+      box.value = words;
+      box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await new Promise((done) => setTimeout(done, 0));
+      return asked[asked.length - 1];
+    };
+    // Not the Sahara, the world view's middle.
+    expect((await search('tahrir')).near).toBeUndefined();
+    // Brought to a place: near it.
+    form.setValue('note', { type: 'Point', coordinates: [31.2357, 30.0444] });
+    await new Promise((done) => setTimeout(done, 0));
+    const near = (await search('zamalek')).near;
+    expect([near?.lat.toFixed(3), near?.lng.toFixed(3)]).toEqual(['30.044', '31.236']);
     widget.destroy?.();
   });
 });

@@ -267,8 +267,11 @@ treat an app in use as heavy use. Photon can run on your own server
 (`openStreetMap({ photonUrl })`).
 
 Suggestions come as people type where the provider allows it, nearest where the
-map is looking first, each on two lines (the place, then where it is); Enter
-takes the first. "My location" says how sure it is: a rough location (a
+map is looking first (a map of the whole world, opened with no centre, looks
+nowhere), each on two lines (the place, then where it is); Enter takes the one
+marked with the arrows, or the first of a list made for the words in the box:
+words typed after the list came are searched for at once, and nothing is
+picked from the list before them. "My location" says how sure it is: a rough location (a
 desktop's, placed by its network) shows the circle it may be anywhere in, says
 how wide, and names no address from it.
 
@@ -303,16 +306,24 @@ a suggestion is picked or the box is left is dropped, and Enter never searches
 for the address a pick wrote.
 
 Escape drops a search waiting or on its way, as a pick and leaving the box
-do, and no search is said to be going once it is dropped. While one address
-is typed, words asked for once (near the same place) show what they brought
-again, however they come back (a letter taken back, Enter after Escape);
-after a pick they are a new address's, asked for anew.
+do, and no search is said to be going once it is dropped; a list closed takes
+what was said of it with it. While one address is typed, words asked for once
+(near the same place) show what they brought again, however they come back (a
+letter taken back, Enter after Escape); after a pick they are a new address's,
+asked for anew. A pick that finds no place, or no parts, takes back the ones
+the pick before it wrote (another address's), never a place set by hand
+since; one found only near the address (`precise: false`) is written, and the
+field says so under the box. Google writes the UAE's addresses with dashes
+between their pieces ("Sheikh Zayed Rd - Dubai - United Arab Emirates"): they
+are read as its commas elsewhere, each piece said once, a landmark's name too.
 
 Google's costs, as its pricing pages put them (October 2026): a session of
 suggestions ended by a pick bills its first 12 requests (Autocomplete
 Requests) and the place's details (Place Details Essentials: its place, its
-line and its parts are all three that SKU's fields, asked for whatever the
-page keeps, as the parts name the country the line is written with); a session
+line and its parts, `location,formattedAddress,addressComponents`, are all
+three that SKU's fields, asked for whatever the page keeps, as the parts name
+the country the line is written with; the place's name, `displayName`, would
+make it Pro, and the suggestion gives it); a session
 never picked bills each request. A session's token goes with its first Place
 Details alone: Google bills a token used again as no session. A route by car
 asks for traffic, which makes it Compute Routes Pro; on foot (or by bike) with

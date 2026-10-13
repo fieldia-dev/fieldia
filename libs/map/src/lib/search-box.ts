@@ -9,8 +9,10 @@ import type { AddressSearch, PlaceFound } from './providers';
  * An address search over a map: a combobox (ARIA's), its places in a list
  * under it. As people type, when the provider's terms allow it; otherwise
  * when Enter is pressed. The arrow keys move through the places, Enter picks
- * one, Escape closes the list and then empties the box (unless what is typed
- * is an answer itself: `freeText`). Read-only, it searches nothing. A search
+ * the one marked, or the first of a list made for the words in the box (for
+ * words typed since, it searches them at once), Escape closes the list and
+ * then empties the box (unless what is typed is an answer itself:
+ * `freeText`). Read-only, it searches nothing. A search
  * waiting to go, or on its way, when Escape is pressed, a place is picked or
  * the box is left is dropped, so its list never opens after them and no
  * search is said to be going. Each request may be paid for: the same words,
@@ -74,8 +76,9 @@ export function searchBox(options: SearchBoxOptions) {
   /** What the search on its way asks for, and the places each search brought until a place is picked: the same words (near the same place) wait for them, or show them again. */
   let waiting = '';
   const answers = new Map<string, PlaceFound[]>();
-  /** The search whose places the list shows. */
+  /** The search whose places the list shows, and the words it asked for. */
   let showing = '';
+  let listed = '';
   /** A place picked, and nothing typed since: Enter asks nothing. */
   let picked = false;
 
@@ -90,10 +93,13 @@ export function searchBox(options: SearchBoxOptions) {
   }
 
   function close() {
+    const open = !list.hidden;
     list.hidden = true;
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
     active = -1;
+    // What was said of the list (how many places came) goes with it.
+    if (open) options.say(null);
   }
 
   function mark(index: number) {
@@ -119,8 +125,9 @@ export function searchBox(options: SearchBoxOptions) {
     options.pick(place);
   }
 
-  function show(found: PlaceFound[], these: string) {
+  function show(found: PlaceFound[], these: string, words: string) {
     showing = these;
+    listed = words;
     // Two rows that read alike are one to the person reading them: the first is kept.
     places = found.filter((place, i) => found.findIndex((other) => other.label === place.label && other.detail === place.detail) === i);
     list.replaceChildren(
@@ -173,7 +180,7 @@ export function searchBox(options: SearchBoxOptions) {
     if (had) {
       // Here already: shown, unless they are, and nothing else asked for.
       drop();
-      if (list.hidden || showing !== these) show(had, these);
+      if (list.hidden || showing !== these) show(had, these, text);
       return;
     }
     asking?.abort();
@@ -186,7 +193,7 @@ export function searchBox(options: SearchBoxOptions) {
         if (mine !== asking) return;
         asking = null;
         answers.set(these, found);
-        show(found, these);
+        show(found, these, text);
       })
       .catch((error: Error) => {
         if (mine !== asking || error.name === 'AbortError') return;
@@ -200,6 +207,8 @@ export function searchBox(options: SearchBoxOptions) {
 
   input.addEventListener('input', () => {
     picked = false;
+    // A row marked was marked for the words before.
+    mark(-1);
     if (!options.asYouType) {
       close();
       return;
@@ -217,8 +226,9 @@ export function searchBox(options: SearchBoxOptions) {
     } else if (event.key === 'Enter') {
       // Never the form's own Enter.
       event.preventDefault();
-      // Enter takes the place chosen with the arrows, or the first: the one nearest and likeliest; on the place picked, nothing.
-      if (!list.hidden && places.length) choose(places[Math.max(active, 0)]);
+      // Enter takes the place chosen with the arrows, or the first: the one nearest and likeliest, of a list made for the words in the box. A list made for fewer words names another place ("Al" for "Al Malqa"): their own are asked for now, and listed. On the place picked, nothing.
+      const chosen = active >= 0 ? places[active] : listed === input.value.trim() ? places[0] : undefined;
+      if (!list.hidden && chosen) choose(chosen);
       else if (!picked) run();
     } else if (event.key === 'Escape') {
       // The list closed, and the search that would open it again dropped, waiting or on its way.

@@ -625,6 +625,46 @@ const STRAY = /^[\s:;,،.\-–]+/u;
 /** One of Google's `addressComponents`, by its type. */
 const componentOf = (components: unknown, type: string) => (Array.isArray(components) ? components : []).find((c) => (pathOf(c, 'types') as string[] | undefined)?.includes(type));
 
+/** Every country's name in a language and in English, as the browser names them: by the page's language, once. */
+const COUNTRY_NAMES = new Map<string, Set<string>>();
+function isCountry(name: string, locale: Locale) {
+  let names = COUNTRY_NAMES.get(locale);
+  if (!names) {
+    names = new Set<string>();
+    for (const language of new Set([locale, 'en'])) {
+      const named = regionNames(language);
+      for (let a = 65; a <= 90; a++)
+        for (let b = 65; b <= 90; b++) {
+          try {
+            const one = named?.of(String.fromCharCode(a, b));
+            if (one) names.add(one);
+          } catch {
+            // A code the browser names nothing for.
+          }
+        }
+    }
+    COUNTRY_NAMES.set(locale, names);
+  }
+  return names.has(name);
+}
+
+/** A dash between two pieces of a line, as Google writes the UAE's ("Sheikh Zayed Rd - Dubai - United Arab Emirates"). */
+const DASH = /\s+[-–—]\s+/u;
+/**
+ * A line Google writes with dashes between its pieces, the UAE's, with
+ * commas there: each piece then said once, and joined as the page joins an
+ * address's ("Burj Khalifa" not again after the landmark's own name). Only
+ * a line whose last piece, after a dash, is its country (`country`, as its
+ * parts name it; or any country's name, for a suggestion's line): a dash in
+ * a name ("26 July Axis - El Shiakh Zaied", "Mobil Gas Station - Zamalek")
+ * stays.
+ */
+function undashed(line: string, locale: Locale, country = '') {
+  const pieces = line.split(DASH);
+  const last = pieces[pieces.length - 1];
+  return pieces.length > 1 && (country ? last === country : isCountry(last, locale)) ? pieces.join(', ') : line;
+}
+
 /**
  * Google's `addressComponents`, each by its type: the country by its short
  * code. Its number where Google's own line (`formatted`) puts it: before the
@@ -635,7 +675,9 @@ const componentOf = (components: unknown, type: string) => (Array.isArray(compon
  */
 export const googleParts = (components: unknown, formatted?: unknown) => {
   const of = (type: string, short?: boolean) => text(pathOf(componentOf(components, type), short ? 'shortText' : 'longText'));
-  const number = of('street_number').replace(STRAY, '');
+  // A number has a digit: Google's "شارع" ("street") before a street on an English page is none.
+  const said = of('street_number').replace(STRAY, '');
+  const number = /\p{Nd}/u.test(said) ? said : '';
   const line = text(formatted);
   const numberAt = number ? line.search(new RegExp(`(^|\\P{N})${number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!\\p{N})`, 'u')) : -1;
   const streetAt = [of('route'), of('route', true)].map((name) => (name ? line.indexOf(name) : -1)).filter((at) => at >= 0);
@@ -667,7 +709,7 @@ export function googlePlaces(answer: unknown, { locale, addresses, parts }: Sear
     const placeId = pathOf(prediction, 'placeId');
     const label = (text(pathOf(prediction, 'structuredFormat', 'mainText', 'text')) || text(pathOf(prediction, 'text', 'text'))).replace(STRAY, '');
     if (typeof placeId !== 'string' || !label) return [];
-    const detail = addressLine([pathOf(prediction, 'structuredFormat', 'secondaryText', 'text')], locale);
+    const detail = addressLine([undashed(text(pathOf(prediction, 'structuredFormat', 'secondaryText', 'text')), locale)], locale);
     const types = pathOf(prediction, 'types');
     // A building, a shop, a mall: a place with a name of its own, which its address may not say.
     const named = Array.isArray(types) && !types.includes('geocode');
@@ -681,9 +723,9 @@ export function googlePlaces(answer: unknown, { locale, addresses, parts }: Sear
           const lat = pathOf(at, 'location', 'latitude');
           const lng = pathOf(at, 'location', 'longitude');
           if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Google gave no place');
-          // Its country set apart where Google writes nothing but a space before it ("King Fahd Rd, Riyadh Saudi Arabia"), as its parts name it; a dash sets it apart already ("Sheikh Zayed Rd - Dubai - United Arab Emirates").
+          // Its country set apart where Google writes nothing but a space before it ("King Fahd Rd, Riyadh Saudi Arabia"), as its parts name it; the UAE's dashes read as commas.
           const country = text(pathOf(componentOf(pathOf(at, 'addressComponents'), 'country'), 'longText'));
-          const pieces = text(pathOf(at, 'formattedAddress'))
+          const pieces = undashed(text(pathOf(at, 'formattedAddress')), locale, country)
             .split(/[,،]/)
             .map((piece) => piece.trim())
             .flatMap((piece) => {

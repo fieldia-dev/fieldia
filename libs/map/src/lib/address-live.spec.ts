@@ -21,6 +21,8 @@ interface Recorded {
 }
 const AZURE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-live.json'), 'utf8')) as Record<string, Recorded>;
 const GOOGLE = JSON.parse(readFileSync(join(__dirname, 'fixtures/google-live.json'), 'utf8')) as Record<string, Recorded>;
+// Google's answers of 13 Oct 2026: a UAE landmark, in English and Arabic; a word in a street's number.
+Object.assign(GOOGLE, JSON.parse(readFileSync(join(__dirname, 'fixtures/google-live-oct13.json'), 'utf8')));
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
@@ -335,7 +337,9 @@ function google(suggestions: string, anyRequest = false) {
     // Place Details Essentials: its place, its line and its parts, all three at one price.
     expect((init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress,addressComponents');
     const id = decodeURIComponent(url.split('/places/')[1].split('?')[0]);
-    const details = Object.values(GOOGLE).find((r) => typeof r.request === 'object' && String(r.request.url).includes(`/places/${id}`));
+    // In the language asked for: one place's details in English and in Arabic are two answers.
+    const language = new URL(url).searchParams.get('languageCode');
+    const details = Object.values(GOOGLE).find((r) => typeof r.request === 'object' && String(r.request.url).includes(`/places/${encodeURIComponent(id)}?languageCode=${language}`));
     return details ? json(details.status, masked(details.body, init)) : json(404, { error: { message: `not recorded: ${id}` } });
   }) as typeof globalThis.fetch;
   return { fetch, asked };
@@ -385,13 +389,48 @@ describe('Google’s places, as it answers them', () => {
     expect((await picked('pick-king-fahd-road-riyadh-ar', 'ar', undefined, false)).address).toBe('طريق الملك فهد، الرياض، السعودية');
   });
 
-  it('keeps a UAE address as Google writes it, its country set apart by a dash already: no dash left hanging before it', async () => {
+  it('reads a UAE address, which Google writes with dashes between its pieces, as every other: its pieces in the page’s commas, no dash left hanging', async () => {
     const dubai = await picked('pick-sheikh-zayed-road-dubai-en');
-    expect([dubai.address, dubai.parts]).toEqual(['Sheikh Zayed Rd - Dubai - United Arab Emirates', { street: 'Sheikh Zayed Road', city: 'Dubai', region: 'Dubai', country: 'AE' }]);
-    expect((await picked('pick-sheikh-zayed-road-dubai-ar', 'ar')).address).toBe('شارع الشيخ زايد - دبي - الإمارات العربية المتحدة');
-    expect((await picked('pick-sheikh-zayed-road-dubai-en', 'en', undefined, false)).address).toBe('Sheikh Zayed Rd - Dubai - United Arab Emirates');
+    expect([dubai.address, dubai.parts]).toEqual(['Sheikh Zayed Rd, Dubai, United Arab Emirates', { street: 'Sheikh Zayed Road', city: 'Dubai', region: 'Dubai', country: 'AE' }]);
+    expect((await picked('pick-sheikh-zayed-road-dubai-ar', 'ar')).address).toBe('شارع الشيخ زايد، دبي، الإمارات العربية المتحدة');
+    expect((await picked('pick-sheikh-zayed-road-dubai-en', 'en', undefined, false)).address).toBe('Sheikh Zayed Rd, Dubai, United Arab Emirates');
     // A landmark's own name, then its address: Google's plus code before it left out, and the dash after the code too.
-    expect((await picked('pick-sheikh-zayed-road-landmark-en', 'en', ['tourist_attraction', 'point_of_interest', 'establishment'])).address).toBe('Picked, Sheikh Zayed Rd - Trade Center First - Dubai - United Arab Emirates');
+    expect((await picked('pick-sheikh-zayed-road-landmark-en', 'en', ['tourist_attraction', 'point_of_interest', 'establishment'])).address).toBe('Picked, Sheikh Zayed Rd, Trade Center First, Dubai, United Arab Emirates');
+  });
+
+  it('names a UAE landmark picked once: its name before its address, not again where Google’s line says it among its dashes', async () => {
+    for (const [locale, text, rows, line, own] of [
+      [
+        'en',
+        'burj khalifa',
+        ['Burj Khalifa | Sheikh Mohammed bin Rashid Boulevard, Dubai, United Arab Emirates', 'Burj Khalifa | Dubai, United Arab Emirates'],
+        'Burj Khalifa, 1 Sheikh Mohammed bin Rashid Blvd, Downtown Dubai, Dubai, United Arab Emirates',
+        { street: '1 Sheikh Mohammed bin Rashid Boulevard', city: 'Dubai', region: 'Dubai', country: 'AE' },
+      ],
+      [
+        'ar',
+        'برج خليفة',
+        ['برج خليفة | بوليفارد الشيخ محمد بن راشد، دبي، الإمارات العربية المتحدة', 'برج خليفة | دبي، الإمارات العربية المتحدة'],
+        'برج خليفة، 1 بوليفارد الشيخ محمد بن راشد، وسط مدينة دبي، دبي، الإمارات العربية المتحدة',
+        { street: '1 بوليفارد الشيخ محمد بن راشد', city: 'دبي', region: 'دبي', country: 'AE' },
+      ],
+    ] as const) {
+      const { fetch } = google(`ac-burj-khalifa-${locale}`);
+      // A place field alone, and with its parts: the same line.
+      for (const parts of [false, true]) {
+        const found = await googleMaps({ key: 'G', fetch }).search!({ text, near: { lat: 25.2048, lng: 55.2708 }, zoom: 12, locale, countries: ['AE'], parts });
+        // Its rows in the page's commas too, as a pick with no place to find writes them.
+        expect(found.slice(0, 2).map((place) => `${place.label} | ${place.detail}`)).toEqual(rows);
+        const landmark = await found[0].locate!();
+        expect(landmark.address).toBe(line);
+        expect(landmark.parts).toEqual(parts ? own : undefined);
+      }
+    }
+  });
+
+  it('takes no word for a house’s number: Google’s “شارع” before a street on an English page is no number', async () => {
+    const dokki = await picked('pick-tahrir-dokki-word-for-number-en');
+    expect(dokki.parts).toEqual({ street: 'El Tahrir', city: 'Dokki', region: 'Giza Governorate', postcode: '3753002', country: 'EG' });
   });
 
   it('keeps a Saudi postcode’s additional number, as a ZIP+4 keeps its four', async () => {

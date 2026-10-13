@@ -40,6 +40,13 @@ const NOT_PLACED: Record<Locale, string> = {
   fr: 'Introuvable sur la carte : aucun lieu n’a été enregistré pour cette adresse.',
   de: 'Nicht auf der Karte gefunden: Für diese Adresse wurde kein Ort gespeichert.',
 };
+/** Said when only a place near it is found (`precise: false`): its street, district or town, kilometres off perhaps. */
+const PLACED_NEAR: Record<Locale, string> = {
+  en: 'Placed only near this address: its exact place was not found on the map.',
+  ar: 'لم يُعثر على مكان هذا العنوان بالضبط على الخريطة، فوُضع قربه فقط.',
+  fr: 'Placé seulement près de cette adresse : son emplacement exact est introuvable sur la carte.',
+  de: 'Nur in der Nähe dieser Adresse platziert: Der genaue Ort wurde auf der Karte nicht gefunden.',
+};
 
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -61,7 +68,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   const { form, name, node, id, document: doc } = context;
   const locale = context.locale ?? 'en';
   const options = node.options ?? {};
-  const words = { notPlaced: NOT_PLACED[locale], ...addressLabels(locale, settings.labels?.[locale]) };
+  const words = { notPlaced: NOT_PLACED[locale], placedNear: PLACED_NEAR[locale], ...addressLabels(locale, settings.labels?.[locale]) };
   const named = (key: string) => (typeof options[key] === 'string' ? (options[key] as string) : null);
   const [placeField, longitudeField, partsField] = [named('placeField'), named('longitudeField'), named('partsField')];
   const listed = options['countries'];
@@ -89,7 +96,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     input.value = text;
     form.setValue(name, text || null);
   };
-  /** Shown, and said, when the address picked is not found where it is: the console is not where a person looks. */
+  /** Shown, and said, when the address picked is not found where it is, or only near it: the console is not where a person looks. */
   const note = doc.createElement('div');
   note.className = 'fd-address-note';
   note.id = `${id}-note`;
@@ -101,15 +108,26 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     if (ids.length) input.setAttribute('aria-describedby', ids.join(' '));
     else input.removeAttribute('aria-describedby');
   };
-  const notPlaced = (shown: boolean) => {
-    note.hidden = !shown;
-    note.textContent = shown ? words.notPlaced : '';
+  const tell = (said: string | null) => {
+    note.hidden = !said;
+    note.textContent = said ?? '';
     described();
-    if (shown) status.textContent = words.notPlaced;
+    if (said) status.textContent = said;
   };
-  const typedOn = () => notPlaced(false);
+  const typedOn = () => tell(null);
   input.addEventListener('input', typedOn);
   let picking = 0;
+
+  const now = () => form.getState().values;
+  const inFloats = () => !!placeField && form.page.fields[placeField]?.type === 'float';
+  /** The place and the parts as the form holds them, the line a person typed under the street left out: to tell this field's own from one set since. */
+  const placeNow = () => JSON.stringify(placeField ? [now()[placeField] ?? null, inFloats() && longitudeField ? (now()[longitudeField] ?? null) : null] : null);
+  const partsNow = () => {
+    const held = partsField ? now()[partsField] : null;
+    return JSON.stringify(isObject(held) ? { ...held, line2: undefined } : (held ?? null));
+  };
+  /** What the last pick wrote, while the form still holds it as written: a pick that finds no place, or no parts, takes them back (they were another address's); a place set since by hand (a pin dragged) stays. */
+  let wrote: { place?: string; parts?: string } = {};
 
   const box = searchBox({
     document: doc,
@@ -126,7 +144,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose suggestions carry none).
     async pick(place: PlaceFound) {
       const mine = ++picking;
-      notPlaced(false);
+      tell(null);
       const whole = addressLine([place.label, place.detail], locale);
       write(whole);
       let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
@@ -134,26 +152,32 @@ export function suggest({ settings, context, search, element, input, searchBox, 
       if (!at && place.locate && (placeField || (partsField && !parts))) {
         const located = await place.locate().catch((error: Error) => (warnOnce(`Finding the address picked failed: ${error.message}`), null));
         if (mine !== picking) return;
-        // Not found where it is: no place written (a pin set by hand stays), its parts still are; and the person is told.
-        if (!located) notPlaced(true);
-        else {
+        // Not found where it is: no place written, its parts still are; and the person is told. Only near it: written, and said.
+        tell(!located ? words.notPlaced : located.precise === false ? words.placedNear : null);
+        if (located) {
           at = located;
           parts = located.parts ?? parts;
           // The provider's own way of writing it, unless a person has typed since.
           if (located.address && input.value === whole) write(addressLine([located.address], locale));
         }
       }
-      if (at && placeField) {
-        if (form.page.fields[placeField]?.type !== 'float') form.setValue(placeField, asJson(writePoint(at)));
+      const before = wrote;
+      wrote = {};
+      // The pick before's place and parts, still as it wrote them, were another address's: they go, though nothing comes in their place.
+      if (placeField && (at || before.place === placeNow())) {
+        const point = at && { lat: round6(at.lat), lng: round6(at.lng) };
+        if (!inFloats()) form.setValue(placeField, point && asJson(writePoint(point)));
         else if (longitudeField) {
-          form.setValue(placeField, round6(at.lat));
-          form.setValue(longitudeField, round6(at.lng));
+          form.setValue(placeField, point && point.lat);
+          form.setValue(longitudeField, point && point.lng);
         }
+        if (at) wrote.place = placeNow();
       }
-      if (parts && partsField) {
-        const now = form.getState().values[partsField];
-        const line2 = isObject(now) && typeof now['line2'] === 'string' ? { line2: now['line2'] } : {};
-        form.setValue(partsField, { ...parts, ...line2 } as AddressParts as Value);
+      if (partsField && (parts || before.parts === partsNow())) {
+        const held = now()[partsField];
+        const line2 = isObject(held) && typeof held['line2'] === 'string' ? { line2: held['line2'] } : null;
+        form.setValue(partsField, parts || line2 ? ({ ...parts, ...line2 } as AddressParts as Value) : null);
+        if (parts) wrote.parts = partsNow();
       }
     },
   });
@@ -188,7 +212,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     destroy() {
       box.destroy();
       input.removeEventListener('input', typedOn);
-      notPlaced(false);
+      tell(null);
       popup.remove();
       note.remove();
       status.remove();
