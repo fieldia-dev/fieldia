@@ -13,7 +13,7 @@ export const TEXT_CSS = /* css */ `
   --fd-text-fill: var(--fd-fill, color-mix(in srgb, var(--fd-text) 6%, var(--fd-surface)));
   --fd-text-hover: color-mix(in srgb, var(--fd-text) 4%, var(--fd-surface));
   --fd-text-pressed: color-mix(in srgb, var(--fd-text) 20%, var(--fd-surface));
-  --fd-text-help: var(--fd-help, var(--fd-text-fill));
+  --fd-text-help: var(--fd-help, color-mix(in srgb, var(--fd-text) 4%, var(--fd-surface)));
   --fd-depth-4: 0 1.6px 3.6px rgb(0 0 0 / 0.132), 0 0.3px 0.9px rgb(0 0 0 / 0.108);
   --fd-depth-8: 0 3.2px 7.2px rgb(0 0 0 / 0.132), 0 0.6px 1.8px rgb(0 0 0 / 0.108);
 }
@@ -33,7 +33,7 @@ export const TEXT_CSS = /* css */ `
 .fd-form .fd-section[data-head] > .fd-grid { padding: 4px var(--fd-group-inset) 0; row-gap: 7px; }
 /* Its fields: a 12px label on a 16px line right over a 32px box, words 7px into it, 55px from one label to the next. */
 .fd-form .fd-section[data-head] { --fd-pad-x: 6px; --fd-control-height: 32px; }
-.fd-form .fd-section[data-head] > .fd-grid > .fd-field { gap: 0; }
+.fd-form .fd-section[data-head] > .fd-grid > .fd-field { gap: 0; line-height: 20px; }
 .fd-form .fd-section[data-head] > .fd-grid > .fd-field > .fd-label { font-size: 12px; line-height: 16px; font-weight: 400; color: var(--fd-muted); }
 /* Groups with such headings, one under another: 11px from one's last part to the next one's heading. */
 .fd-form .fd-grid:has(> .fd-section[data-head]) { row-gap: 11px; }
@@ -80,6 +80,8 @@ export const TEXT_CSS = /* css */ `
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) > * { unicode-bidi: plaintext; }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) :is(ul, ol) { padding-inline-start: 24px; }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) a { color: var(--fd-text-link); text-decoration: underline; }
+/* A link alone on its line is a target of its own: 24px tall to a finger, its line no taller. */
+:is(.fd-md-view, .fd-md-preview) a { padding-block: 4px; }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) code { padding: 0 3px; border-radius: 2px; background: var(--fd-text-fill); font: 13px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) pre { padding: 8px 10px; background: var(--fd-text-fill); overflow-x: auto; }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) pre code { padding: 0; background: none; }
@@ -96,7 +98,8 @@ export const TEXT_CSS = /* css */ `
 .fd-external { width: 12px; height: 12px; margin-inline-start: 4px; vertical-align: -1px; color: var(--fd-muted); stroke-width: 2; }
 /* The toolbar only while the text is worked in: no edge and no tools at rest, a light box when pointed at. */
 .fd-text[data-toolbar="focus"] { padding-block-end: 17px; }
-.fd-text[data-toolbar="focus"] > .fd-text-box { border-color: transparent; }
+.fd-text[data-toolbar="focus"] > .fd-text-box { border-color: transparent; background: transparent; }
+.fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { background: var(--fd-surface); }
 .fd-text[data-toolbar="focus"] > .fd-text-box:hover { border-color: var(--fd-border); }
 .fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { border-color: var(--fd-focus); }
 .fd-text[data-toolbar="focus"]:not(:focus-within) .fd-text-bar { display: none; }

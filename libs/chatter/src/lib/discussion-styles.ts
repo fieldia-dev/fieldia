@@ -17,17 +17,17 @@ export const DISCUSSION_STYLES = /* css */ `
 .fd-comment-card:focus-visible { outline: 1px solid var(--fd-focus); }
 :is(.fd-form[data-scheme="dark"], .fd-theme[data-scheme="dark"]) .fd-comment-card { box-shadow: 0 0 0 1px var(--fd-border), 0 1.6px 3.6px rgb(0 0 0 / 0.4); }
 @media (prefers-color-scheme: dark) { .fd-form[data-scheme="auto"] .fd-comment-card { box-shadow: 0 0 0 1px var(--fd-border), 0 1.6px 3.6px rgb(0 0 0 / 0.4); } }
-.fd-composer-card { padding-block: 30px 18px; }
+.fd-composer-card { padding-block: 30px 19px; }
 .fd-discussion-avatar { position: absolute; inset-block-start: 28px; inset-inline-start: 24px; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
 .fd-discussion-initials { display: grid; place-items: center; background: var(--fd-accent); color: var(--fd-accent-text, #fff); font-size: 10px; font-weight: 600; line-height: 1; }
 .fd-discussion-write { display: grid; min-width: 0; }
 .fd-discussion .fd-text { --fd-text-pad-x: 8px; padding-block-end: 0; }
-.fd-discussion .fd-text > .fd-text-box, .fd-discussion .fd-text[data-toolbar="focus"] > .fd-text-box { border-color: var(--fd-border); }
+.fd-discussion .fd-text > .fd-text-box, .fd-discussion .fd-text[data-toolbar="focus"] > .fd-text-box { border-color: var(--fd-border); background: var(--fd-surface); }
 .fd-discussion .fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { border-color: var(--fd-focus); }
 .fd-discussion .fd-text-area { min-height: 55px; }
 .fd-discussion .fd-text[data-toolbar="focus"]:not(:focus-within) .fd-text-area { min-height: 92px; }
 .fd-discussion .fd-text-under { margin-block-start: 0; }
-.fd-discussion-actions { display: none; align-items: center; justify-content: flex-end; gap: 8px; margin-block: 6px 14px; }
+.fd-discussion-actions { display: none; align-items: center; justify-content: flex-end; gap: 8px; margin-block: 7px 12px; }
 .fd-composer-card[data-open] .fd-discussion-actions { display: flex; }
 .fd-discussion-problem { flex: 1 1 auto; margin: 0; color: var(--fd-muted); font-size: 12px; line-height: 16px; }
 .fd-discussion-button {

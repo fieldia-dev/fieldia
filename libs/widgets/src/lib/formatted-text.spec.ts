@@ -98,6 +98,21 @@ describe('the rich editor', () => {
     expect(document.activeElement).toBe(size);
   });
 
+  it('keeps a colour the browser puts on bold words on a span inside them, where a stored text keeps it', () => {
+    const { el, value } = rich();
+    const area = el.querySelector('.fd-text-area') as HTMLElement;
+    typeRich(area, '<p><b>scanner</b></p>');
+    (document as unknown as { execCommand: unknown }).execCommand = (command: string, _ui: boolean, colour?: string) => {
+      commands.push([command, colour]);
+      if (command === 'hiliteColor') (area.querySelector('b') as HTMLElement).style.backgroundColor = colour as string;
+      return true;
+    };
+    const highlight = el.querySelector('[data-tool="highlight"]') as HTMLButtonElement;
+    highlight.click();
+    (document.getElementById(highlight.getAttribute('aria-controls') as string)?.querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+    expect(value()).toBe('<p><b><span style="background-color: rgb(255, 255, 0);">scanner</span></b></p>');
+  });
+
   it('says why Remove link does nothing where there is no link, and removes one under the cursor', () => {
     const { el } = rich();
     const area = el.querySelector('.fd-text-area') as HTMLElement;

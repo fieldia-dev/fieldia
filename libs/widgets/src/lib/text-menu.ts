@@ -28,7 +28,7 @@ export interface TextMenu {
 
 let menus = 0;
 
-export function textMenu(doc: Document, anchor: HTMLElement, options: { label: string; align?: 'start' | 'end'; className?: string; grid?: boolean }): TextMenu {
+export function textMenu(doc: Document, anchor: HTMLElement, options: { label: string; align?: 'start' | 'end'; className?: string; grid?: boolean; within?: HTMLElement }): TextMenu {
   const element = doc.createElement('div');
   element.className = `fd-text-menu${options.className ? ` ${options.className}` : ''}`;
   element.id = `fd-text-menu-${++menus}`;
@@ -51,7 +51,9 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
   };
 
   function place() {
-    const host = anchor.closest<HTMLElement>('.fd-form, .fd-theme') ?? doc.body;
+    // Where it floats: what the caller names — a formatted text keeps its menus inside itself, so it still holds
+    // the focus while one is open — else over the form.
+    const host = options.within ?? anchor.closest<HTMLElement>('.fd-form, .fd-theme') ?? doc.body;
     host.append(element);
     Object.assign(element.style, { position: 'absolute', top: '0px', left: '0px' });
     const [a, origin, own] = [anchor.getBoundingClientRect(), element.getBoundingClientRect(), element.offsetWidth];
@@ -98,6 +100,8 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
 
   function close(giveBack = true) {
     if (element.hidden) return;
+    // The focus back on the button first: hidden while focused, the menu would drop it on the page.
+    if (giveBack) anchor.focus();
     element.hidden = true;
     anchor.setAttribute('aria-expanded', 'false');
     anchor.classList.remove('fd-pressed');
@@ -106,7 +110,6 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
     const home = anchor.parentElement;
     if (home && element.parentElement !== home) home.append(element);
     for (const key of ['position', 'top', 'left'] as const) element.style.removeProperty(key);
-    if (giveBack) anchor.focus();
   }
 
   element.addEventListener('keydown', (event) => {

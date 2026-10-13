@@ -343,9 +343,9 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     const md = editor === 'markdown';
     switch (tool) {
       case 'highlight':
-        return HIGHLIGHTS.map(([at, colour]) => ({ label: names[at], lead: swatch(doc, colour), run: () => (restore(), doc.execCommand?.('styleWithCSS', false, 'true'), exec('hiliteColor', colour ?? 'transparent')) }));
+        return HIGHLIGHTS.map(([at, value]) => ({ label: names[at], lead: swatch(doc, value), run: () => colour('hiliteColor', value ?? 'transparent') }));
       case 'colour':
-        return TEXT_COLOURS.map(([at, colour]) => ({ label: names[at], lead: swatch(doc, colour), run: () => (restore(), doc.execCommand?.('styleWithCSS', false, 'true'), exec('foreColor', colour ?? 'inherit')) }));
+        return TEXT_COLOURS.map(([at, value]) => ({ label: names[at], lead: swatch(doc, value), run: () => colour('foreColor', value ?? 'inherit') }));
       case 'size':
         return TEXT_SIZES.map((size) => ({ label: `${size}px`, run: () => resize(size) }));
       case 'heading':
@@ -357,6 +357,32 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     }
   }
 
+  /**
+   * A colour, a highlight or a size the browser put on a bold or italic element, moved to a span inside it: the
+   * stored text keeps them on spans alone.
+   */
+  function spanStyles() {
+    for (const marked of [...area.querySelectorAll<HTMLElement>('[style]:not(span)')]) {
+      const kept = (['color', 'background-color', 'font-size'] as const).filter((name) => marked.style.getPropertyValue(name));
+      if (!kept.length) continue;
+      const span = make('span');
+      for (const name of kept) {
+        span.style.setProperty(name, marked.style.getPropertyValue(name));
+        marked.style.removeProperty(name);
+      }
+      span.append(...marked.childNodes);
+      marked.append(span);
+      if (!marked.getAttribute('style')?.trim()) marked.removeAttribute('style');
+    }
+  }
+  const colour = (command: 'hiliteColor' | 'foreColor', value: string) => {
+    restore();
+    doc.execCommand?.('styleWithCSS', false, 'true');
+    doc.execCommand?.(command, false, value);
+    spanStyles();
+    emit();
+  };
+
   /** Words in one of the sizes a stored text keeps. */
   function resize(size: number) {
     restore();
@@ -366,7 +392,8 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
       const span = make('span', { style: `font-size: ${size}px;` }, ...font.childNodes);
       font.replaceWith(span);
     }
-    for (const span of [...area.querySelectorAll<HTMLElement>('span[style*="xxx-large"]')]) span.style.fontSize = `${size}px`;
+    for (const span of [...area.querySelectorAll<HTMLElement>('[style*="xxx-large"]')]) span.style.fontSize = `${size}px`;
+    spanStyles();
     emit();
   }
 
@@ -406,7 +433,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
           button,
           press(from) {
             if (!choosing) return run(tool, reference);
-            const menu = from === button ? (stop.menu ??= textMenu(doc, button, { label, grid: tool === 'emoji', className: tool === 'emoji' ? 'fd-text-emoji' : undefined })) : moreMenuFor(from, label, tool);
+            const menu = from === button ? (stop.menu ??= textMenu(doc, button, { label, grid: tool === 'emoji', className: tool === 'emoji' ? 'fd-text-emoji' : undefined, within: element })) : moreMenuFor(from, label, tool);
             menu.open(choicesOf(tool));
           },
         };
@@ -427,7 +454,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   function moreMenuFor(more: HTMLElement, label: string, tool: TextTool) {
     let menu = fromMore.get(tool);
     if (!menu) {
-      menu = textMenu(doc, more, { label, align: 'end', grid: tool === 'emoji' });
+      menu = textMenu(doc, more, { label, align: 'end', grid: tool === 'emoji', className: tool === 'emoji' ? 'fd-text-emoji' : undefined, within: element });
       fromMore.set(tool, menu);
     }
     return menu;
@@ -439,7 +466,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     const stops = stopsFor(list);
     const more = make('button', { type: 'button', class: 'fd-text-tool fd-text-more', 'aria-label': labels.moreTools, title: labels.moreTools, tabindex: '-1', hidden: '' }, moreIcon(doc));
     more.addEventListener('mousedown', (event) => event.preventDefault());
-    const moreMenu = textMenu(doc, more, { label: labels.moreTools, align: 'end' });
+    const moreMenu = textMenu(doc, more, { label: labels.moreTools, align: 'end', within: element });
     more.addEventListener('click', () =>
       moreMenu.open(stops.filter((stop) => stop.button.hidden).map((stop) => ({ label: stop.label, lead: toolIcon(doc, stop.tool, options.icons, stop.button.getAttribute('data-key') ? references.find((r) => r.key === stop.button.getAttribute('data-key'))?.icon : undefined), run: () => stop.press(more) })))
     );
@@ -463,10 +490,11 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     });
     /** As many tools as fit, in order; "…" holds the rest. */
     const fit = () => {
+      // Out of sight (a toolbar shown only while the text is worked in), it is measured once it shows.
+      if (!bar.clientWidth) return;
       for (const stop of stops) stop.button.hidden = false;
       more.hidden = true;
       const room = bar.clientWidth - parseFloat(getComputedStyle(bar).paddingInlineStart || '0') - parseFloat(getComputedStyle(bar).paddingInlineEnd || '0');
-      if (!room) return;
       const gap = parseFloat(getComputedStyle(bar).columnGap || '0') || 0;
       const widths = stops.map((stop) => stop.button.offsetWidth + gap);
       const others = extra.reduce((sum, e) => sum + e.offsetWidth + gap, 0);
