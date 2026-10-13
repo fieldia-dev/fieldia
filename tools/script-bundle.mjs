@@ -214,7 +214,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // unsaid, "/month" on a rent) in every list, field and card, a map card's lines, units and link checked on a
 // page and translated with it — 2.7 more, to 460.0.
 // Together in 0.19, the address's checks, the quiet look and the money look: 473.3.
-const BUDGET_KB = 473.3;
+// A work item's icons, drawn as Fieldia's own (icons-work.ts: its kind, its window's and toolbars' tools, history,
+// branch and pull request), which every part of the work item's popup names — 3.0 more, to 476.3.
+const BUDGET_KB = 476.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -246,7 +248,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
 // an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
-const GZIP_BUDGET_KB = 142.7;
+// a work item's icons (icons-work.ts), 1.0 more, to 143.7.
+const GZIP_BUDGET_KB = 143.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
