@@ -418,7 +418,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // save's conflict, and the memory source keeping them — versions, a change from elsewhere, permissions kept to as a
 // backend keeps them, every id a search matches, totals by field and group, a file stored with its progress — 3.4
 // more, to 525.2.
-const BUDGET_KB = 525.2;
+// 0.21's calendar (lane w1-calendar): a list's `calendar` (its start, end, words, colour, person, views, first day,
+// hours and slot) with its page checks, and a list's switcher open to other views — each by its name and its own
+// words, made the first time it is shown, asking the app for a new record (or the model's page in a dialog) — the
+// calendar itself being @fieldia/calendar's, never in this script — 2.8 more, to 528.0.
+const BUDGET_KB = 528.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -471,7 +475,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
-const GZIP_BUDGET_KB = 159.4;
+// 0.21's calendar (a list's `calendar` and its checks, the switcher open to other views and a new record asked of the
+// app; the calendar itself is @fieldia/calendar's), 1.0 more, to 160.4.
+const GZIP_BUDGET_KB = 160.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
