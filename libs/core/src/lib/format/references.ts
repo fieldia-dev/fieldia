@@ -765,6 +765,21 @@ export class ReferenceCheck {
     if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
   }
 
+  /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
+  private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
+    const options = node.options ?? {};
+    if (node.widget === 'path' && def.type !== 'many2one') this.report(`${path}.widget`, `path is for a many2one field; "${node.field}" is a ${def.type}`);
+    const single = def.type === 'selection' && !def.multiple && !node.widget;
+    if (options['list'] !== undefined && !single) this.report(`${path}.options.list`, `list "own" is for a choice of one drawn as a list, with no widget; "${node.field}" is ${def.type === 'selection' ? `a selection${def.multiple ? ' of several' : ` drawn as ${node.widget}`}` : `a ${def.type}`}`);
+    const tags = (def.type === 'many2many' && (!node.widget || node.widget === 'tags') && !node.columns?.length) || (def.type === 'char' && node.widget === 'tags');
+    if (options['adder'] !== undefined && !tags) this.report(`${path}.options.adder`, `adder is for tags: a many2many, or a char field drawn as tags; "${node.field}" is ${node.widget ? `a ${def.type} drawn as ${node.widget}` : `a ${def.type}`}`);
+    const colours = options['colours'];
+    if (node.widget === 'dot' && def.type === 'selection' && colours && typeof colours === 'object' && !Array.isArray(colours)) {
+      const values = new Set(def.options.map((option) => String(option.value)));
+      for (const value of Object.keys(colours)) if (!values.has(value)) this.report(`${path}.options.colours.${value}`, `"${value}" is not a value of "${node.field}"`);
+    }
+  }
+
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
     // Answer rules: each condition and rule across fields reads, each pattern is a regular expression.
@@ -805,6 +820,7 @@ export class ReferenceCheck {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
     if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
+    if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order) {
       if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
