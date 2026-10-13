@@ -241,8 +241,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the list asking again when a row's dialog closes, Fluent's list look, empty quiet fields that say nothing, and the
 // work item's icons (3 of it, shared with the record head, the pickers, the text and the history), a dialog's focus past
 // a hidden box and a quiet field's Escape after its record came — 21.5 more, to 494.8.
-// Joined for 0.20, the work item's popup over its backlog: the five lanes above in one bundle, their icons once — 612.6.
-const BUDGET_KB = 612.6;
+// Joined for 0.20, the work item's popup over its backlog: the five lanes above in one bundle, their icons once — 612.7.
+const BUDGET_KB = 612.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time

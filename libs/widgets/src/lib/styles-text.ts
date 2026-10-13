@@ -38,6 +38,8 @@ export const TEXT_CSS = /* css */ `
 /* Groups with such headings, one under another: 11px from one's last part to the next one's heading. */
 .fd-form .fd-grid:has(> .fd-section[data-head]) { row-gap: 11px; }
 .fd-section-tools { display: flex; align-items: center; gap: 2px; margin-inline-start: auto; flex: none; opacity: 0; transition: opacity 0.1s ease; }
+/* In a work heading its tools sit low, their middle 8px under the title's, as the tracker's do (measured 20.22.23). */
+.fd-form .fd-section[data-head] > .fd-section-title .fd-section-tools { align-self: flex-end; margin-block-end: 1px; }
 /* Pointed at, worked in or folded, a group shows its tools; where nothing can point, always. */
 .fd-form .fd-section[data-head]:is(:hover, :focus-within, .fd-section-folded, [data-maximised]) > .fd-section-title .fd-section-tools { opacity: 1; }
 @media (hover: none) { .fd-section-tools { opacity: 1; } }

@@ -324,6 +324,10 @@ test.describe('the popup, once the work item lanes have joined', () => {
     const at = async () => (await systemHead.boundingBox())!.y;
     const before = await at();
     await repro.locator(':scope > legend').hover();
+    // The heading's tools sit low: their middle 8px under the title's, as measured on the tracker.
+    const middle = (box: { y: number; height: number } | null) => box!.y + box!.height / 2;
+    const title = middle(await repro.locator(':scope > legend .fd-section-name').boundingBox());
+    expect(Math.round(middle(await dialog(page).getByRole('button', { name: 'Maximise Repro Steps' }).boundingBox()) - title)).toBe(8);
     await dialog(page).getByRole('button', { name: 'Edit Repro Steps' }).click();
     const card = repro.locator('.fd-md-card');
     await expect(card.getByRole('switch', { name: 'Preview' })).toBeVisible();
