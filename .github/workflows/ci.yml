@@ -14,11 +14,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The whole history: the release notes' test finds every release commit in it.
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # CHANGELOG.md has a section for every version released, and the release tools read it right.
+      - run: node --test tools/release-notes.test.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
       # exports point at missing files or its ESM output would not resolve in
       # Node — the packaging mistakes that pass every source-level test.

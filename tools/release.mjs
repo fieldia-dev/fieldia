@@ -7,6 +7,9 @@
  *   NPM_TOKEN=… node tools/release.mjs publish  the same check, then publish what is not on npm yet
  *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
+ * Every mode refuses a version with no section in CHANGELOG.md. `publish` ends by printing that section and
+ * the exact commands that tag the release and make its GitHub release, for a person to run (see release-notes.mjs).
+ *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
  * is never packed or published.
  *
@@ -18,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
+import { notesFor, printRelease } from './release-notes.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const WORK = join(WORKSPACE, 'tmp/release');
@@ -50,6 +54,8 @@ for (const { dir, manifest } of packages) {
   if (!existsSync(built) || read(built).version !== version) fail(`dist/libs/${dir} is missing or stale: run \`npx nx run-many -t build\``);
   if (!existsSync(join(WORKSPACE, 'dist/libs', dir, 'README.md'))) fail(`dist/libs/${dir} has no README.md — its npm page would be empty`);
 }
+// What changed, in plain words, before anything is packed: CHANGELOG.md's section for this version.
+if (!notesFor(readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8'), version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
 console.log(`release ${version}: ${packages.map((p) => p.manifest.name).join(', ')}`);
 
 // ---- pack ----------------------------------------------------------------------
@@ -297,4 +303,6 @@ if (mode === 'publish') {
     console.log(`  published ${manifest.name}@${version}`);
   }
   rmSync(npmrc, { force: true });
+  // The notes, and the tag and GitHub release to make from them: printed, never run.
+  printRelease(WORKSPACE, version, run('git', ['rev-parse', '--short=12', 'HEAD']).trim());
 }
