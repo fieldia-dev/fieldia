@@ -1219,6 +1219,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   root.toggleAttribute('data-readonly', locked);
   form.setEditing(!locked);
   updaters.push((state) => {
+    // A record its source lets the person only read is read whole, as a locked form is: its values as words.
+    setAttr(root, 'data-readonly', locked || state.can?.edit === false ? '' : null);
     if (!editSwitch) return;
     // No Edit for a record its source lets the person only read.
     setHidden(editSwitch, state.can?.edit === false);

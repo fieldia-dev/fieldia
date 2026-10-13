@@ -103,7 +103,7 @@ export const RECORD_STYLES = /* css */ `
 .fd-read-only-icon { display: flex; flex: none; }
 .fd-read-only-icon svg { width: 16px; height: 16px; }
 /* Over a sheet, in from its edges as the banner is. */
-.fd-content > :is(.fd-conflict, .fd-set-aside, .fd-read-only-note):has(~ .fd-sheet-page) { margin: 12px 16px 0; }
+.fd-content > :is(.fd-conflict, .fd-set-aside, .fd-read-only-note):has(~ .fd-sheet-page) { margin: 12px 16px; }
 .fd-record-menu-note { margin-block-start: 4px; padding: 8px 12px 6px; border-block-start: 1px solid var(--fd-border); color: var(--fd-muted); font-size: 12.5px; line-height: 1.4; }
 `;
 

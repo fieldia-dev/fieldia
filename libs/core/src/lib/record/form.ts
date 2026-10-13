@@ -500,7 +500,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let editing = options.editing !== false;
   /** The record a line's form is of, as its conditions read it: worked out once. */
   const parentContext = options.parent ? recordContext(options.parent.values as Values, options.parent.fields, { recordId: options.parent.id ?? null, user: options.user, context: options.context }) : undefined;
-  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing, context: options.context, parent: parentContext });
+  /** Whether the record is being edited now: not while a view locks it, nor when its source lets the person only read it. */
+  const editingNow = () => editing && !(started && state.can?.edit === false);
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing: editingNow(), context: options.context, parent: parentContext });
   const computed = compileComputed(page, today, about);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
@@ -738,10 +740,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
   /** The values as expressions read them, and what else they read: the record's id, the person, the lines' rows, today. */
   function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
-    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editing) {
+    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editingNow()) {
       const values = state.values as Values;
       const context = recordContext(values, page.fields, about());
-      contextCache = { values, recordId: state.recordId, editing, context, env: expressionEnv(values, page.fields, today) };
+      contextCache = { values, recordId: state.recordId, editing: editingNow(), context, env: expressionEnv(values, page.fields, today) };
     }
     return contextCache;
   }

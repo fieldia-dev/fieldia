@@ -282,6 +282,15 @@ describe('what the person may do with a record, as its source says', () => {
     expect(saves(ds)).toEqual([]);
   });
 
+  it('may not edit: conditions read the record as not being edited, so parts for editing only go', async () => {
+    const editingOnly: Page = { ...lead, layout: { ...(lead.layout as Extract<Page['layout'], { type: 'sheet' }>), buttons: [{ type: 'button', id: 'note', label: 'Add a note', action: 'note', invisible: 'not editing' }] } };
+    const form = createForm({ page: editingOnly, dataSource: guarded(() => ({ edit: false })), recordId: 1 });
+    await form.load();
+    expect(form.node('note').invisible).toBe(true);
+    await form.openRecord(null);
+    expect(form.node('note').invisible).toBe(false);
+  });
+
   it('may not edit, with no reason given: the form says so in its own words, in the page’s language', async () => {
     const form = await opened(guarded(() => ({ edit: false })), 1, { messages: MESSAGES.fr });
     form.setValues({ phone: '+201009998887' });

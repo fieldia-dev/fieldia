@@ -180,10 +180,13 @@ describe('what the source says the person may do with the record', () => {
     const { host, handle } = await mount({ dataSource: guarded({ edit: false, archive: false, duplicate: false, delete: false, reason: 'Only Mona, the lead’s agent, can change it.' }), editSwitch: true, readonly: true });
     expect(shown(note(host))).toBe(true);
     expect(note(host).getAttribute('role')).toBe('status');
+    // Read whole, as a locked form is: values as words, even once the app unlocks the form.
+    expect(host.querySelector('.fd-form')?.hasAttribute('data-readonly')).toBe(true);
     expect(note(host).textContent).toBe('Only Mona, the lead’s agent, can change it.');
     expect(button(host, 'Edit')).toBeUndefined();
     expect(menuItems(host)).toEqual(['Brochure']);
     handle.setReadonly(false);
+    expect(host.querySelector('.fd-form')?.hasAttribute('data-readonly')).toBe(true);
     handle.setValues({ phone: '+201009998887' });
     expect(button(host, 'Save')).toBeUndefined();
     expect((host.querySelector('[data-field="phone"] input') as HTMLInputElement).readOnly).toBe(true);
