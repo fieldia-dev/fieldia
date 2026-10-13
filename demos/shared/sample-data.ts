@@ -31,6 +31,7 @@ import big from '../../examples/pages/big.page.json';
 import reading from '../../examples/pages/reading.page.json';
 import workItem from '../../examples/pages/work-item.page.json';
 import { customPage } from './custom-page';
+import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { businessData, businessPage } from './business';
@@ -60,6 +61,8 @@ export const pages: Record<string, Page> = {
   delivery: delivery as Page,
   // Its buttons and moments run steps: a page opened by its id (see `openedPages`), the app's answers (shared/order-desk.ts).
   'quick-order': quickOrder as Page,
+  // A work item's head: kind, title line, row, buttons, band and tabs (shared/wi-header.ts); `&open=dialog` opens it in a large popup.
+  'wi-head': wiHeadPage,
   // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
   'map-delivery': mapDelivery as Page,
   'map-zone': mapZone as Page,
@@ -304,6 +307,7 @@ export function sampleDataSource() {
     shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' } },
     records: {
       ...READING,
+      ...WI_HEAD_RECORDS,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
       courier: sampleCouriers(),

@@ -110,6 +110,10 @@ export function findHeaderPart(page: Page, id: string): { kind: HeaderPartKind; 
   const menu = root.toolbar?.menu ?? [];
   const item = menu.findIndex((p) => p.id === id);
   if (item !== -1) return { kind: 'menu', list: menu, index: item, part: menu[item] };
+  // A record head's buttons: buttons of the header, in the head's own list.
+  const actions = root.head?.actions ?? [];
+  const action = actions.findIndex((p) => p.id === id);
+  if (action !== -1) return { kind: 'button', list: actions, index: action, part: actions[action] };
   if (root.ribbon?.id === id) return { kind: 'ribbon', list: [root.ribbon, ...(root.ribbons ?? [])], index: 0, part: root.ribbon };
   for (const kind of Object.keys(LISTS) as (keyof typeof LISTS)[]) {
     const list = (root[LISTS[kind]] ?? []) as HeaderPart[];
@@ -362,7 +366,8 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
           // The menu and the toolbar go with their last item, the pager's and the trail's settings staying.
           if (!list.length && root.toolbar) delete root.toolbar.menu;
           if (root.toolbar && !Object.keys(root.toolbar).length) delete root.toolbar;
-        } else if (!list.length) delete root[LISTS[kind]];
+        } else if (!list.length && root.head?.actions === list) delete root.head.actions;
+        else if (!list.length) delete root[LISTS[kind]];
         prune(draft);
       });
     },

@@ -8,6 +8,7 @@ import { compileExpression } from '../expression/expression';
 import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
+import { checkButtonParts, checkHead } from './head-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -68,6 +69,17 @@ export class ReferenceCheck {
   run(): PageIssue[] {
     this.checkFields(this.page.fields, 'fields', this.line?.name, this.line?.parent);
     this.walkRoot(this.page.layout, 'layout');
+    checkHead(this.page.layout, 'layout', {
+      claim: (id, path) => this.claim(id, path),
+      need: (name, path) => this.need(name, path),
+      report: (path, message) => this.report(path, message),
+      walkNode: (node, path) => this.walkNode(node, path),
+      checkModifiers: (owner, path, keys) => this.checkModifiers(owner, path, keys),
+      checkSteps: (steps, path) => this.checkSteps(steps, path),
+      checkPress: (button, path) => this.checkPress(button, path),
+      isPart: (id) => this.ids.has(id),
+      isPlace: (id) => this.places.has(id),
+    });
     if (this.page.on) this.checkEvents(this.page.on, 'on');
     this.checkGoingTo();
     return this.issues;
@@ -114,7 +126,10 @@ export class ReferenceCheck {
 
   /** A press: steps, an app action, or both — and its steps checked. */
   private checkPress(button: ButtonNode | StatButton, path: string) {
-    if (!button.steps && button.action === undefined) this.report(path, 'a button needs steps, an action, or both');
+    // A button with a menu of its own and nothing else is a menu button.
+    const menu = 'menu' in button && !!button.menu?.length;
+    if (!button.steps && button.action === undefined && !menu) this.report(path, 'a button needs steps, an action, or both');
+    if ('type' in button && button.type === 'button') checkButtonParts(button, path, { claim: (id, at) => this.claim(id, at), report: (at, message) => this.report(at, message), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys), checkSteps: (steps, at) => this.checkSteps(steps, at) });
     const key = 'hotkey' in button ? button.hotkey : undefined;
     if (typeof key === 'string' && BROWSER_HOTKEYS.includes(key.replace('shift+', ''))) this.report(`${path}.hotkey`, `${hotkeyWords(key)} is the browser’s own: pick another key`);
     if (button.steps) this.checkSteps(button.steps, `${path}.steps`);

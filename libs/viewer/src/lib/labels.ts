@@ -29,6 +29,23 @@ export interface ViewerLabels {
   /** A form in a dialog: the button that saves it and closes the dialog, and the × that closes it. */
   saveClose: string;
   close: string;
+  /**
+   * A record's head and the dialog round it: the dialog's ⤢ and its Restore,
+   * its grip, the title's copy button and what it says once copied, the ⋮ of
+   * the record's menu, "Updated by" (`{name}`, `{date}`), what Undo says with
+   * nothing to put back, and a tab's name with its count (`{label}`, `{count}`).
+   */
+  maximise: string;
+  restoreSize: string;
+  resize: string;
+  copyTitle: string;
+  titleCopied: string;
+  moreActions: string;
+  /** A split button's chevron, named for the button it opens more of (`{label}`), unless it has a name of its own. */
+  optionsFor: string;
+  updatedBy: string;
+  nothingChanged: string;
+  countOf: string;
   /** A form in a side panel: what it asks before Escape or × drops the changes made in it. */
   discardChanges: string;
   /** The × on an alert that may be dismissed. */
@@ -163,6 +180,16 @@ const en: ViewerLabels = {
   loading: 'Loading…',
   saveClose: 'Save & Close',
   close: 'Close',
+  maximise: 'Maximise',
+  restoreSize: 'Restore',
+  resize: 'Resize',
+  copyTitle: 'Copy title',
+  titleCopied: 'Title copied',
+  moreActions: 'More actions',
+  optionsFor: '{label} options',
+  updatedBy: 'Updated by {name}: {date}',
+  nothingChanged: 'Nothing has changed.',
+  countOf: '{label}, {count}',
   discardChanges: 'Discard your changes?',
   dismiss: 'Dismiss',
   helpFor: 'Help for {label}',

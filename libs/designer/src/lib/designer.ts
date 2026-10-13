@@ -50,6 +50,7 @@ import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
 import { rulesCommands, type AnswerRulePatch } from './rules-commands';
+import { headCommands, type HeadCommands } from './head-commands';
 import { keepWhatRulesRead } from './rules-reads';
 import { stepsCommands, type StepsCommands } from './steps-commands';
 import { forgetGoneTargets } from './steps-places';
@@ -279,7 +280,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands, TableCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands, TableCommands, HeadCommands {
   /** The designer's own words, in its language: English unless `locale` said another it speaks. */
   readonly words: DesignerWords;
   /**
@@ -1565,6 +1566,8 @@ export function createDesigner(options: {
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
+    // A record's head, and the parts it brought: a button's icon alone, toggle and menu; a tab's count; a field's access key.
+    ...headCommands({ apply, select: (id) => designer.select(id), model, words }),
     // extend lane
     appKinds: () => [...appKinds],
     templates: () => templatesFor(page, options.templates, locale ?? 'en'),

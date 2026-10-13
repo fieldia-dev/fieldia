@@ -7,6 +7,7 @@ import { onTab, segmented, setting } from './panel-controls';
 import { blockContent } from './panel-block';
 import { aroundWords, widthSetting } from './panel-layout';
 import { severalRequired } from './panel-several-required';
+import { buttonPartsSettings } from './head-properties';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -26,7 +27,9 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
   const width = locate(designer.getPage(), id)?.node.type === 'divider' ? null : widthSetting(el, designer, id);
   // Its own settings: a picture's address and description, how words read, a button's words.
   const own = blockContent(el, designer, id);
-  const element = el('div', { class: 'fd-props' }, about, ...(own?.rows ?? []), onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'), ...(width?.rows ?? []));
+  // A button's icon alone, toggle, menu and look while the record has changes (head-properties.ts).
+  const parts = locate(designer.getPage(), id)?.node.type === 'button' ? buttonPartsSettings(el, designer, id) : null;
+  const element = el('div', { class: 'fd-props' }, about, ...(own?.rows ?? []), ...(parts?.rows ?? []), onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'), ...(width?.rows ?? []));
   return {
     element,
     update(page) {
@@ -34,6 +37,7 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
       if (!node) return;
       width?.update(page);
       own?.update(page);
+      parts?.update(page);
       const said: Record<string, string> = w.about;
       about.textContent = node.type === 'text' && node.style === 'heading' ? w.about.heading : (said[node.type] ?? '');
     },

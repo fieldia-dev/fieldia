@@ -7,6 +7,7 @@ import { designerIcon } from './icons';
 import { openMenu } from './menu';
 import { setHidden } from './writes';
 import { widgetWords } from './chrome-language';
+import { canvasHead } from './canvas-head';
 
 /**
  * A record's header on the canvas, drawn the way the viewer draws it: the
@@ -56,7 +57,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   // The ribbons, each a chip in its colour beside the badges (the viewer shows the first whose condition holds, in the card's corner),
   // and the alerts as the viewer draws them: a row of their own only once there is one, so a sheet without keeps its height.
   const alerts = el('div', { class: 'fd-canvas-alerts' });
-  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, alerts, badges);
+  // A record's head, as a work item's, in place of the classic header when the sheet has one (canvas-head.ts).
+  const head = canvasHead({ el, doc, designer });
+  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, alerts, badges, head.element);
   const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge'), ribbon: adder('ribbon'), alert: adder('alert'), menu: adder('menu') };
 
   function add(kind: HeaderPartKind) {
@@ -241,6 +244,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       setHidden(top, root.type !== 'sheet');
       setHidden(card, root.type !== 'sheet');
       if (root.type !== 'sheet') return;
+      head.update(page, selected, form);
+      card.toggleAttribute('data-head', !!root.head);
+      setHidden(top, !!root.head);
       const live = new Set<string>();
       const row = (kind: HeaderPartKind, parts: HeaderPart[] | undefined) =>
         (parts ?? []).map((part, i, all) => {

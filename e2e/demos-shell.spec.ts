@@ -32,7 +32,9 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   const forTiming = new Set(['big']);
   // A home's, a courier's and an order's own page: a record opened from its list's row or card, not a demo of its own.
   const opened = new Set(['map-home', 'map-courier', 'map-week-order']);
-  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !opened.has(name));
+  // The work item replica's lanes' own pages (shared/wi-*.ts), for their browser gates: the work item's card is the backlog's.
+  const forGates = new Set(['wi-head']);
+  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !opened.has(name) && !forGates.has(name));
   expect(unnamed).toEqual([]);
 });
 

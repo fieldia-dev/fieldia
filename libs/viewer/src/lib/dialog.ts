@@ -1,5 +1,5 @@
 import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
-import { WIDGET_LABELS } from '@fieldia/widgets';
+import { drawIcon, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -16,7 +16,18 @@ import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOp
 
 export interface FormDialogOptions extends ViewerOptions {
   title: string;
-  size?: 'small' | 'medium' | 'large' | 'full';
+  /**
+   * How big: small, medium (the default), large, the whole window — or
+   * `inset`, as a work item's window over its backlog: 96 pixels in from the
+   * window's sides and 46 from its top and bottom, the whole window under 760.
+   */
+  size?: 'small' | 'medium' | 'large' | 'full' | 'inset';
+  /** The page behind dimmed (the default), or `clear`: left as it is, though out of reach while the dialog is open. */
+  backdrop?: 'dim' | 'clear';
+  /** A ⤢ beside × that fills the window with it, and Restore that puts it back. */
+  maximise?: boolean;
+  /** A grip at its end-bottom corner that resizes it, by dragging, or by the arrow keys while it has the focus. */
+  resizable?: boolean;
   /**
    * "save" (the default) saves the record through the data source. "values"
    * only checks the form and hands its values back, for something saved with
@@ -95,9 +106,21 @@ export function openFormPanel(options: FormPanelOptions): Promise<FormDialogResu
   return openForm(options, `fd-form-panel ${side === 'top' || side === 'bottom' ? `fd-height-${options.height ?? 'medium'}` : `fd-width-${options.width ?? 'medium'}`}`, side);
 }
 
-/** A dialog or a panel (from its side): a page in a box with a head, a body that scrolls and a foot; `shape` is the box's own classes. */
+/** How far the grip's arrow keys resize a dialog, in pixels; and the least it is resized to. */
+const RESIZE_STEP = 16;
+const LEAST = { width: 320, height: 240 };
+
+/**
+ * A dialog or a panel (from its side): a page in a box with a head, a body that
+ * scrolls and a foot; `shape` is the box's own classes. A page whose sheet has
+ * a head of its own (`SheetHead`) is its own head and foot: the dialog draws
+ * neither, its ⤢ and × at the end of the head's badge row, named by the badge
+ * and the title, and asks before Escape or × drop changes, as a panel does.
+ */
 function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): Promise<FormDialogResult> {
   const panel = !!side;
+  const layout = options.page.layout;
+  const headed = !panel && layout.type === 'sheet' && !!layout.head;
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
@@ -106,7 +129,13 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   const make = maker(doc);
 
   const title = make('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, options.title);
-  const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close }, '×');
+  const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close, title: labels.close });
+  const closeIcon = headed ? drawIcon(doc, 'close') : null;
+  if (closeIcon) closeButton.append(closeIcon);
+  else closeButton.textContent = '×';
+  // ⤢ fills the window with it, and Restore puts it back.
+  const maximise = options.maximise && !panel ? make('button', { type: 'button', class: 'fd-dialog-max', 'aria-label': labels.maximise, title: labels.maximise }) : null;
+  const grip = options.resizable && !panel ? make('button', { type: 'button', class: 'fd-dialog-grip', 'aria-label': labels.resize, title: labels.resize, 'aria-keyshortcuts': 'ArrowLeft ArrowRight ArrowUp ArrowDown' }) : null;
   const body = make('div', { class: 'fd-form-dialog-body' });
   const discard = make('button', { type: 'button', class: 'fd-button' }, labels.discard);
   const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, panel && options.mode === 'values' ? labels.done : labels.saveClose);
@@ -124,16 +153,22 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   });
   if (side) box.setAttribute('data-side', side);
   if (options.dir) box.setAttribute('dir', options.dir);
+  if (headed) box.setAttribute('data-headed', '');
   applyLook(box, theme ? { ...look, theme } : look);
   wearTokens(box, options.tokens);
-  box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
-  box.firstElementChild?.append(title, closeButton);
+  // A page with a head of its own is the dialog's head and foot: the dialog draws neither.
+  if (headed) box.append(body);
+  else {
+    box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
+    box.firstElementChild?.append(title, ...(maximise ? [maximise] : []), closeButton);
+  }
+  if (grip) box.append(grip);
   // A page's own buttons at its foot, as a wizard's, stand in place of Discard and Save & Close.
   const footer = options.page.layout.type === 'sections' || options.page.layout.type === 'sheet' ? (options.page.layout.footer ?? []) : [];
   const own = footer.map((node) => ({ node, button: make('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, node.label) }));
   for (const { node, button } of own) if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
-  box.lastElementChild?.append(...(own.length ? own.map((b) => b.button) : [discard, saveClose]));
-  const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}` });
+  if (!headed) box.querySelector('.fd-form-dialog-foot')?.append(...(own.length ? own.map((b) => b.button) : [discard, saveClose]));
+  const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}${options.backdrop === 'clear' ? ' fd-backdrop-clear' : ''}` });
   backdrop.append(box);
   // The panel this one opens over steps back while it is open.
   const under = panel ? [...doc.querySelectorAll('.fd-form-panel')].pop() : undefined;
@@ -148,22 +183,43 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
     // A dialog has no pager or breadcrumbs: they belong to the record under it.
     records: undefined,
     breadcrumbs: undefined,
-    host: { ...options.host, close: () => discard.click() },
+    // A `close` step after the same run saved closes it saved: Save and Close.
+    host: { ...options.host, close: () => close(saves > savesBefore) },
   });
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
   if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
+  // A dialog round a page with a head: its ⤢ and × at the end of the head's badge row, and named by the badge and the title.
+  if (headed) {
+    if (handle.element.dir && !options.dir) box.dir = handle.element.dir;
+    const slot = body.querySelector('.fd-head-window');
+    slot?.append(...(maximise ? [maximise] : []), closeButton);
+    const names = [...body.querySelectorAll<HTMLElement>('[data-head-name]')].map((part) => part.id).filter(Boolean);
+    if (names.length) box.setAttribute('aria-labelledby', names.join(' '));
+    else box.setAttribute('aria-label', options.title);
+  }
+  if (maximise) wireMaximise(box, maximise, labels, doc);
+  if (grip) wireGrip(box, grip, doc);
   let done = false;
+  /** The saves made in it, and how many there were as the last run of steps ended: a run that saved, then closed, closes it saved. */
+  let saves = 0;
+  let savesBefore = 0;
+  handle.on('save', () => saves++);
+  handle.on('run', ({ id: run }) => {
+    if (!run.startsWith('on.')) savesBefore = saves;
+  });
+  let close = (saved: boolean) => void saved;
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
   // Into the dialog: its field that takes the focus (focus) or its first, once the record is in, or the dialog itself meanwhile.
-  const firstField = () => focusField(body) ?? body.querySelector<HTMLElement>(FIRST_FIELD);
+  // A page with a head of its own opens at rest, as a work item does: the dialog holds the focus until the page names a field for it.
+  const firstField = () => focusField(body) ?? (headed ? null : body.querySelector<HTMLElement>(FIRST_FIELD));
   (firstField() ?? box).focus();
   void handle.form.settled().then(() => {
     if (doc.activeElement === box || !box.contains(doc.activeElement)) firstField()?.focus();
   });
 
   return new Promise((resolve) => {
-    const close = (saved: boolean) => {
+    close = (saved: boolean) => {
       if (done) return;
       done = true;
       const state = handle.form.getState();
@@ -203,9 +259,9 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
         box.append(shade);
         no.focus();
       });
-    /** Escape and ×: a panel with changes in it asks first; a dialog closes at once, as it always has. */
+    /** Escape and ×: a panel, or a dialog round a page with a head, asks first when there are changes in it; any other dialog closes at once, as it always has. */
     const leave = async () => {
-      if (!panel || !handle.form.getState().dirty.length || (await ask())) close(false);
+      if (!(panel || headed) || !handle.form.getState().dirty.length || (await ask())) close(false);
     };
     saveClose.addEventListener('click', async () => {
       saveClose.disabled = true;
@@ -269,6 +325,77 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
         void leave();
       } else keepTabIn(box, event);
     });
+  });
+}
+
+/** ⤢: the dialog fills the window, and Restore puts it back where it was, at its size. */
+function wireMaximise(box: HTMLElement, button: HTMLElement, labels: { maximise: string; restoreSize: string }, doc: Document) {
+  const face = (maximised: boolean) => {
+    const name = maximised ? labels.restoreSize : labels.maximise;
+    button.setAttribute('aria-label', name);
+    button.title = name;
+    button.replaceChildren(...[drawIcon(doc, maximised ? 'restore' : 'maximise')].filter((icon): icon is SVGSVGElement => !!icon));
+  };
+  face(false);
+  button.addEventListener('click', () => {
+    const maximised = !box.hasAttribute('data-maximised');
+    box.toggleAttribute('data-maximised', maximised);
+    face(maximised);
+  });
+}
+
+/**
+ * The grip at the dialog's end-bottom corner: dragged, the corner follows the
+ * pointer; focused, the arrow keys move it by 16 pixels — the way the page
+ * reads, so right to left ArrowLeft widens it. The other corner stays put.
+ */
+function wireGrip(box: HTMLElement, grip: HTMLElement, doc: Document) {
+  const view = doc.defaultView as Window;
+  const rtl = () => getComputedStyle(box).direction === 'rtl';
+  /** Held where it is, at the size it is: its own place from now on, not the window's inset. */
+  const hold = () => {
+    const at = box.getBoundingClientRect();
+    box.setAttribute('data-resized', '');
+    box.style.top = `${at.top}px`;
+    if (rtl()) {
+      box.style.right = `${view.innerWidth - at.right}px`;
+      box.style.left = 'auto';
+    } else {
+      box.style.left = `${at.left}px`;
+      box.style.right = 'auto';
+    }
+    box.style.bottom = 'auto';
+    return at;
+  };
+  const size = (width: number, height: number) => {
+    const at = box.getBoundingClientRect();
+    const roomX = rtl() ? at.right : view.innerWidth - at.left;
+    const roomY = view.innerHeight - at.top;
+    box.style.width = `${Math.round(Math.max(LEAST.width, Math.min(width, roomX)))}px`;
+    box.style.height = `${Math.round(Math.max(LEAST.height, Math.min(height, roomY)))}px`;
+  };
+  grip.addEventListener('pointerdown', (event) => {
+    if (box.hasAttribute('data-maximised')) return;
+    event.preventDefault();
+    const start = hold();
+    const from = { x: event.clientX, y: event.clientY };
+    grip.setPointerCapture?.(event.pointerId);
+    const move = (moved: PointerEvent) => size(start.width + (moved.clientX - from.x) * (rtl() ? -1 : 1), start.height + (moved.clientY - from.y));
+    const up = () => {
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', up);
+      grip.removeEventListener('pointercancel', up);
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', up);
+    grip.addEventListener('pointercancel', up);
+  });
+  grip.addEventListener('keydown', (event) => {
+    const by = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[event.key];
+    if (!by || box.hasAttribute('data-maximised')) return;
+    event.preventDefault();
+    const start = hold();
+    size(start.width + by[0] * RESIZE_STEP * (rtl() ? -1 : 1), start.height + by[1] * RESIZE_STEP);
   });
 }
 

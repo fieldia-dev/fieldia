@@ -1,5 +1,5 @@
 import type { ActionRequest, Locale, Theme } from '@fieldia/core';
-import { mountViewer, type FormDialogResult, type Skin } from '@fieldia/viewer';
+import { mountViewer, openFormDialog, type FormDialogResult, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
@@ -12,6 +12,7 @@ import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery,
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
+import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -104,6 +105,41 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   },
 });
 opened();
+
+/**
+ * `&open=dialog`: the page's record opened again in a large popup over the page,
+ * as a work item opens over its backlog — 96px in from the window's sides, no
+ * dimming, ⤢ and a grip. What it closes with is kept in `fieldiaDialog.results`.
+ */
+if (params.get('open') === 'dialog') {
+  const locale = (params.get('locale') as Locale | null) ?? undefined;
+  const dark = params.get('scheme') === 'dark' || (params.get('scheme') !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const results: FormDialogResult[] = [];
+  const open = () =>
+    openFormDialog({
+      page,
+      dataSource,
+      recordId: recordFromQuery(params, page),
+      title: page.title ?? name,
+      size: 'inset',
+      backdrop: 'clear',
+      maximise: true,
+      resizable: true,
+      skin: (params.get('skin') as Skin | null) ?? undefined,
+      theme: (params.get('theme') as Theme | null) ?? undefined,
+      dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
+      locale,
+      pages: appPages,
+      ...(name === 'wi-head' ? { tokens: wiHeadTokens(dark) } : {}),
+      onAction: (request) => {
+        actions.push(request.action);
+        requests.push(request);
+        return wiHeadAction(request) ?? answerAction(request, locale);
+      },
+    }).then((result) => void results.push(result));
+  void open();
+  Object.assign(window, { fieldiaDialog: { results, open } });
+}
 
 /** What each side panel handed back. */
 const panelResults: FormDialogResult[] = [];

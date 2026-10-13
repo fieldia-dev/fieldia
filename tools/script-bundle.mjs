@@ -214,7 +214,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // unsaid, "/month" on a rent) in every list, field and card, a map card's lines, units and link checked on a
 // page and translated with it — 2.7 more, to 460.0.
 // Together in 0.19, the address's checks, the quiet look and the money look: 473.3.
-const BUDGET_KB = 473.3;
+// A record's head, as a work tracker draws a bug in a popup over its backlog (0.20's wi-header): the kind's strip
+// and badge, the title line with Copy title, the row of people and counts, buttons split, toggled and by their icon
+// alone with the record's ⋮, the band of fields with their access keys and a lock at the value, "Updated by", the
+// tabs in the head with their counts; the dialog's inset size, clear backdrop, maximise and grip, the head as its own
+// head and foot; values the server keeps (stored); the page's checks of it all; and the work item's shared icons —
+// 38.3 more, to 511.6: 15 of it the stylesheet, 3 the icons, 4.4 the checks.
+const BUDGET_KB = 511.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -246,7 +252,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
 // an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
-const GZIP_BUDGET_KB = 142.7;
+// a record's head and its popup (the strip, badge, title line, row, split and toggled buttons, band, head tabs,
+// inset dialog with maximise and grip, stored values, their checks, the work item's icons), 10 more, to 152.7.
+const GZIP_BUDGET_KB = 152.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -272,7 +280,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // What an amount is for — /day, /night, /week, /month, /year — five words in each: Arabic's to 23.1, German's
 // to 9.9 (4.2 gzipped) and French's to 10.0.
 // Both together in 0.19: Arabic's to 23.3 and 4.9, German's 10.0 and 4.2, French's 10.1 and 4.1.
-const ADD_ON_BUDGET_KB = { ar: [23.3, 4.9], de: [10.0, 4.2], fr: [10.1, 4.1] };
+// A record's head and its popup — Maximise, Restore, Resize, Copy title, Title copied, More actions, a split
+// button's options, Updated by, Nothing has changed, a tab's count — ten words in each: Arabic's to 23.9 and 5.0,
+// German's to 10.3 and 4.3, French's to 10.3 and 4.2.
+const ADD_ON_BUDGET_KB = { ar: [23.9, 5.0], de: [10.3, 4.3], fr: [10.3, 4.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

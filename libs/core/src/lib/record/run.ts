@@ -52,6 +52,11 @@ export interface ChosenLines {
  */
 export interface ActionResult {
   values?: Values;
+  /**
+   * Values the app's server keeps for the record now, written as loaded ones
+   * are: never a change to save. Follow's answer, `{ following: true }`.
+   */
+  stored?: Values;
   /** The app changed the record on its server: it is loaded again before the steps go on. */
   reload?: boolean;
   say?: string | { message: string; tone?: Tone };
@@ -193,6 +198,8 @@ export interface RunForm {
   today(): string;
   /** Write fields as a step does: worked out once, no person's change. Throws for a field the page lacks. */
   write(values: Values): void;
+  /** Write values the record holds where it is kept: no change to save. */
+  store(values: Values): void;
   addLine(field: string, values: Values): void;
   check(fields: readonly string[] | undefined): Stopped | null;
   save(chain: readonly string[]): Promise<Stopped | null>;
@@ -395,6 +402,11 @@ export function createRunner(form: RunForm) {
     if (answer.reload) {
       const reloaded = await form.reload();
       if (reloaded) return reloaded;
+    }
+    if (answer.stored) {
+      const known: Values = {};
+      for (const [name, value] of Object.entries(answer.stored)) if (name in form.fields) known[name] = fit(form.fields[name], value);
+      form.store(known);
     }
     if (answer.values) {
       const known: Values = {};

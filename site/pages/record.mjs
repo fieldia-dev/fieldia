@@ -41,6 +41,52 @@ ${code(
 </table>
 <p>Give a built-in steps of its own and they run instead, without its question: Flectra's employee form, whose Archive opens the departure wizard, is ${c('{ "id": "m-archive", "builtin": "archive", "steps": [{ "do": "open", "page": "hr-departure-wizard", "record": "id" }] }')}. The same steps — ${c('archive')}, ${c('unarchive')}, ${c('duplicate')}, ${c('delete')} — run from any button or moment, as <a href="/actions/#steps">Actions</a> says.</p>
 
+<h2 id="head">A work item's head</h2>
+<p>A sheet's ${c('head')} draws the record as a work tracker draws a bug: its kind's strip of colour along the start edge and a badge — the kind's icon, its name in capitals, the record's number — over the title; the number before the title, with Copy title at its end while it is pointed at or focused; a row of people and counts under it, the record's buttons at its end; then a band of fields, their labels beside them, “Updated by” and the tabs at its end. The classic header bar, statusbar, badges and stat buttons give way to it; the gear menu is its ⋮.</p>
+${code(
+  'json',
+  `
+{
+  "type": "sheet", "id": "bug",
+  "title": { "field": "title", "before": [{ "type": "field", "id": "t-number", "field": "number" }] },
+  "head": {
+    "kind": { "field": "work_type", "numberField": "number",
+      "looks": { "bug": { "colour": "#cc293d", "icon": "bug" }, "task": { "colour": "#f2cb1d", "icon": "task" } } },
+    "meta": [
+      { "type": "field", "id": "h-assigned", "field": "assigned_to", "placeholder": "No one selected" },
+      { "type": "link", "id": "h-comments", "icon": "chat", "field": "comment_count",
+        "words": { "one": "Comment", "other": "Comments" }, "target": "g-discussion" }
+    ],
+    "actions": [
+      { "type": "button", "id": "b-save-close", "label": "Save and Close", "icon": "save", "primaryWhenChanged": true,
+        "steps": [{ "do": "save" }, { "do": "close" }], "menu": [{ "id": "m-save", "label": "Save", "steps": [{ "do": "save" }] }] },
+      { "type": "button", "id": "b-follow", "label": "Follow", "pressedLabel": "Following", "pressed": "following",
+        "icon": "eye", "action": "follow", "menuIcon": "gear", "menuLabel": "Notification settings",
+        "menu": [{ "id": "m-all", "label": "All changes", "action": "follow-all" }] },
+      { "type": "button", "id": "b-undo", "label": "Revert changes", "icon": "undo", "iconOnly": true, "steps": [{ "do": "reset" }] }
+    ],
+    "band": { "tracks": ["274px", "1fr"], "labelWidth": 76, "children": [
+      { "type": "field", "id": "f-state", "field": "state", "widget": "dot", "hotkey": "e" },
+      { "type": "field", "id": "f-reason", "field": "reason", "readonly": true, "readonlyReason": "Set by the workflow" }
+    ] },
+    "updated": { "byField": "changed_by", "atField": "changed_date", "opens": "t-history" }
+  },
+  "children": [{ "type": "tabs", "id": "tabs", "place": "head", "children": [
+    { "type": "tab", "id": "t-details", "label": "Details", "children": [] },
+    { "type": "tab", "id": "t-history", "label": "History", "icon": "history", "iconOnly": true, "children": [] },
+    { "type": "tab", "id": "t-links", "label": "Links", "icon": "link", "iconOnly": true, "count": "related", "children": [] }
+  ] }]
+}`
+)}
+<ul>
+  <li>A button takes ${c('iconOnly')} (its label its name and tooltip), ${c('pressed')} with ${c('pressedLabel')} for a toggle, ${c('menu')} for a split button — or a menu button with no steps of its own — and ${c('primaryWhenChanged')}: quiet but usable with nothing changed, when Save and Close simply closes. Undo with nothing to put back says “Nothing has changed.”</li>
+  <li>Your app answers Follow with ${c('{ stored: { following: true } }')}: values the server keeps, written as loaded ones are, never a change to save — ${c('form.setValues(values, { stored: true })')} does the same.</li>
+  <li>A field's ${c('hotkey')} underlines that letter of its label; Alt with it takes the focus there. The page's ${c('"lockAt": "value"')} puts a locked field's lock at its value's start.</li>
+  <li>${c('"place": "head"')} puts the sheet's tabs at the band's end, their panels as the body; a tab's ${c('count')} shows in a pill and in its name, “Links, 0”.</li>
+  <li>In ${c("openFormDialog({ size: 'inset', backdrop: 'clear', maximise: true, resizable: true })")} the head is the dialog's own: no title bar or foot, its ⤢ and × at the badge row's end, Escape and × asking before changes go.</li>
+</ul>
+<p><a href="/demos/plain/?page=wi-head&amp;open=dialog">Try a bug in a large popup</a>.</p>
+
 <h2 id="pager">The pager and the breadcrumbs: your app's</h2>
 ${code(
   'ts',

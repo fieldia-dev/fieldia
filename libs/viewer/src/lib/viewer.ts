@@ -25,6 +25,7 @@ import {
   type SheetNode,
   type SlotNode,
   type TabsNode,
+  type TabNode,
   type TextNode,
   type DividerNode,
   type SpacerNode,
@@ -41,6 +42,7 @@ import {
   type RunResult,
   type Values,
   MESSAGES,
+  hotkeyWords,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, wearsQuiet, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -57,6 +59,8 @@ import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
 import { attachmentPreview } from './attachment-preview';
 import { installRecordStyles } from './record-styles';
+import { recordHead, type RecordHead } from './record-head';
+import { isRichButton, nothingToUndo, richButton } from './button-parts';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
@@ -330,6 +334,29 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return icon ? [icon, words] : [words];
   }
 
+  /**
+   * A tab's face: its icon and words, or its icon alone (its words then its
+   * name and tooltip), and the pill of its count after them.
+   */
+  function tabFace(tab: TabNode): (Node | string)[] {
+    const pill = tab.count !== undefined ? [el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
+    if (!tab.iconOnly) return [...withIcon(tab.icon, tab.label), ...pill];
+    const icon = drawIcon(doc, tab.icon, options.icons);
+    return [...(icon ? [icon] : []), ...pill];
+  }
+
+  /**
+   * A label's words with its access key's letter underlined, as a work item's
+   * "Stat_e_": the first of that letter in them, whatever its case. Its words
+   * stay one piece for whatever reads them; without a key, the words alone.
+   */
+  function accessKeyed(text: string, key: string | undefined): (Node | string)[] {
+    const words = keepMarkWithWord(text);
+    const at = key ? words.toLocaleLowerCase().indexOf(key) : -1;
+    if (at === -1) return [words];
+    return [el('span', { class: 'fd-label-words' }, words.slice(0, at), el('span', { class: 'fd-access-key' }, words.slice(at, at + 1)), words.slice(at + 1))];
+  }
+
   const theme = options.theme ?? page.look?.theme;
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin ?? page.look?.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
@@ -366,12 +393,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /** The fields that take the focus as the record opens, in the order they are drawn. */
   const focusers: { wrapper: HTMLElement; focus(): void }[] = [];
+  /** The fields with an access key, in the order they are drawn: Alt with the key focuses the first shown. */
+  const fieldKeys: { key: string; wrapper: HTMLElement; focus(): void }[] = [];
   /** Each field's face, put on again when the form changes skin: quiet, or in its box. */
   const faces: (() => void)[] = [];
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
   /** Every part drawn again from the state of the page shown. */
   const renderNow = () => render(form.getState());
+  /** The record's head being drawn: tabs placed in it go to its band. */
+  let headNow: RecordHead | null = null;
   /** Set once the viewer is on the page; set again when it is taken away. */
   let mounted = false;
   let gone = false;
@@ -406,7 +437,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt, 'data-focus': node.focus && scope.root ? '' : undefined });
       if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
       const labelText = node.label ?? def.label;
-      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, keepMarkWithWord(labelText));
+      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, ...accessKeyed(labelText, node.hotkey));
       // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
       const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
       if (mark) {
@@ -416,6 +447,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
       // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
       if (node.focus && scope.root) focusers.push({ wrapper, focus: () => widget.focus() });
+      // Its access key: Alt with its letter takes the focus to it, as the letter underlined in its label says.
+      if (node.hotkey) {
+        fieldKeys.push({ key: node.hotkey, wrapper, focus: () => widget.focus() });
+        const control = widget.element.matches(CONTROL) ? widget.element : widget.element.querySelector(CONTROL);
+        control?.setAttribute('aria-keyshortcuts', hotkeyWords(node.hotkey));
+      }
       // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
       const textBox = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
       if (labelsAt === 'hidden' && !node.placeholder) textBox?.setAttribute('placeholder', labelText);
@@ -491,7 +528,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
         lock = reason ? bubbleTip(`${id}-lock`, reason, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
         lockMark = lock?.element ?? el('span', { class: 'fd-lock-wrap' }, el('span', { class: 'fd-lock', 'aria-hidden': 'true' }, icon));
-        if (labelsAt === 'hidden') widget.element.after(lockMark);
+        // At the value's start, as a work item's Reason: in a record head's band, in the room before the value.
+        if (page.look?.lockAt === 'value') {
+          widget.element.before(lockMark);
+          wrapper.setAttribute('data-lock-at', 'value');
+        } else if (labelsAt === 'hidden') widget.element.after(lockMark);
         else label.insertBefore(lockMark, tip && labelsAt !== 'after' ? tip.element : null);
         return lockMark;
       };
@@ -644,11 +685,19 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     function buttonItem(node: ButtonNode): HTMLElement {
+      // Its icon alone, a toggle, a menu beside it, a look that follows the record's changes: drawn by button-parts.ts.
+      if (isRichButton(node)) {
+        const rich = richButton({ doc, el, form, labels, icons: options.icons, uid, withIcon, press, say: (message, tone) => actionHost.say(message, tone), watch, cleanups }, node);
+        spans(rich, node.colspan);
+        return hiddenOn(node, rich);
+      }
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
       if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
       spans(button, node.colspan);
-      // Its confirmation, then its steps: the form asks, through the viewer.
-      button.addEventListener('click', () => void press(button, () => form.runAction(node.id)));
+      // Its confirmation, then its steps: the form asks, through the viewer. Undo with nothing to put back says so.
+      button.addEventListener('click', () => {
+        if (!nothingToUndo(node, form, (message, tone) => actionHost.say(message, tone), labels)) void press(button, () => form.runAction(node.id));
+      });
       hideWhen(button, node.id);
       // A header's button is drawn here too, never through item(): hidden at its widths the same way.
       return hiddenOn(node, button);
@@ -806,7 +855,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const parts = node.children.map((tab) => {
         const tabId = uid(`${tab.id}-tab`);
         const panelId = uid(`${tab.id}-panel`);
-        const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
+        const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...tabFace(tab));
+        if (tab.iconOnly) {
+          button.classList.add('fd-tab-icon-only');
+          button.setAttribute('aria-label', tab.label);
+          button.title = tab.label;
+        }
         const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId });
         /**
          * A tab's parts are drawn when it is first shown, and kept up to date
@@ -849,12 +903,32 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Too long for its room, the strip scrolls; the tab chosen, however, comes into sight in it.
       const strip = tabStrip(list, el);
       cleanups.push(strip.destroy);
-      box.append(strip.element, ...parts.map((p) => p.panel));
+      // Placed in a record's head: the tabs at the end of its band, the panels the sheet's body.
+      const inHead = node.place === 'head' && headNow && scope.root ? headNow : null;
+      if (inHead) {
+        box.classList.add('fd-tabs-in-head');
+        inHead.tabs.append(strip.element);
+        box.append(...parts.map((p) => p.panel));
+      } else box.append(strip.element, ...parts.map((p) => p.panel));
+      // A tab's count in its pill, and in its name: "Links, 0".
+      for (const p of parts) {
+        const count = p.tab.count;
+        if (count === undefined) continue;
+        const pill = p.button.querySelector<HTMLElement>('.fd-tab-count') as HTMLElement;
+        watch((state) => {
+          const value = state.values[count];
+          const n = Array.isArray(value) ? value.length : typeof value === 'number' ? value : Number(value ?? 0) || 0;
+          setText(pill, String(n));
+          setAttr(p.button, 'aria-label', fill(labels.countOf, { label: p.tab.label, count: n }));
+        });
+      }
       let shownKey = '';
       let revealed = '';
       watch((state) => {
         const tabsHidden = form.node(node.id).invisible;
         setHidden(box, tabsHidden);
+        // In the head, its strip is apart from its box: hidden with it.
+        if (inHead) setHidden(strip.element, tabsHidden);
         const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
         const keep = picked !== null && shown.some((p) => p.tab.id === picked);
         if (keep) active = picked as string;
@@ -1383,6 +1457,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
 
   function sheetLayout(node: SheetNode): HTMLElement {
+    if (node.head) return headedLayout(node);
     const pageBox = el('div', { class: 'fd-sheet-page', 'data-node': node.id });
     const actions = el('div', { class: 'fd-actions' });
     const save = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, labels.save);
@@ -1471,36 +1546,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       });
       card.append(stats);
     }
-    for (const alert of node.alerts ?? []) {
-      // Its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled.
-      const words = valueWords(doc, page.fields, alert.message, locale);
-      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
-      let fromField = false;
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
-      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
-      updaters.push((state) => {
-        words.update(state.values);
-        const from = alert.messageField ? state.values[alert.messageField] : null;
-        const said = typeof from === 'string' ? from.trim() : '';
-        if (said) setText(message, said);
-        else if (fromField) message.replaceChildren(...words.nodes);
-        fromField = !!said;
-      });
-      if (alert.dismissible) {
-        // Closed, it stays closed while the page is open, whatever its condition does.
-        let dismissed = false;
-        const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss }, '×');
-        close.addEventListener('click', () => {
-          dismissed = true;
-          box.hidden = true;
-        });
-        box.append(close);
-        updaters.push(() => {
-          box.hidden = dismissed || form.node(alert.id).invisible;
-        });
-      } else hideWhen(box, alert.id);
-      card.append(box);
-    }
+    card.append(...alertBoxes(node));
     if (node.badges?.length) {
       const badges = el('div', { class: 'fd-badges' });
       for (const badge of node.badges) {
@@ -1567,6 +1613,90 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
     const bar = topBar(node.toolbar);
     pageBox.append(...(bar ? [bar] : []), header, layout);
+    return pageBox;
+  }
+
+  /** The sheet's alerts: its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled. */
+  function alertBoxes(node: SheetNode): HTMLElement[] {
+    return (node.alerts ?? []).map((alert) => {
+      const words = valueWords(doc, page.fields, alert.message, locale);
+      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
+      let fromField = false;
+      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
+      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
+      updaters.push((state) => {
+        words.update(state.values);
+        const from = alert.messageField ? state.values[alert.messageField] : null;
+        const said = typeof from === 'string' ? from.trim() : '';
+        if (said) setText(message, said);
+        else if (fromField) message.replaceChildren(...words.nodes);
+        fromField = !!said;
+      });
+      if (alert.dismissible) {
+        // Closed, it stays closed while the page is open, whatever its condition does.
+        let dismissed = false;
+        const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss }, '×');
+        close.addEventListener('click', () => {
+          dismissed = true;
+          box.hidden = true;
+        });
+        box.append(close);
+        updaters.push(() => {
+          box.hidden = dismissed || form.node(alert.id).invisible;
+        });
+      } else hideWhen(box, alert.id);
+      return box;
+    });
+  }
+
+  /**
+   * A record with a head (`SheetHead`), as a work item: the head — its kind,
+   * title, row, buttons and band, the tabs placed in it — then the body, which
+   * holds its alerts and its parts (a tab's panels, when its tabs are in the
+   * head). The record's breadcrumbs and pager, when the app gives them, over
+   * it; its gear menu is the head's ⋮.
+   */
+  function headedLayout(node: SheetNode): HTMLElement {
+    const pageBox = el('div', { class: 'fd-sheet-page fd-head-page', 'data-node': node.id });
+    const head = recordHead({
+      doc,
+      el,
+      form,
+      page,
+      sheet: node,
+      head: node.head as NonNullable<SheetNode['head']>,
+      labels,
+      locale,
+      icons: options.icons,
+      uid,
+      fill,
+      withIcon,
+      press,
+      say: (message, tone) => actionHost.say(message, tone),
+      fieldItem,
+      item,
+      buttonItem,
+      watch: (update) => updaters.push(update),
+      cleanups,
+      showTab: (id) => tabs.get(id)?.() ?? false,
+      unfold(part) {
+        for (let folded = part.closest<HTMLElement>('.fd-section-folded'); folded; folded = folded.parentElement?.closest<HTMLElement>('.fd-section-folded') ?? null) folds.get(folded)?.();
+      },
+      root: () => root,
+    });
+    // The parts drawn now: tabs placed in the head go to its band.
+    headNow = head;
+    let parts: HTMLElement;
+    try {
+      parts = grid(node.children, 1, top(false));
+    } finally {
+      headNow = null;
+    }
+    const body = el('div', { class: 'fd-head-body' }, ...alertBoxes(node), parts);
+    // The side panel beside the body on a wide page; a dialog leaves it to the full page.
+    const side = node.sidePanel ? el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)) : null;
+    const bar = topBar(node.toolbar ? { ...node.toolbar, menu: undefined } : undefined);
+    pageBox.append(...(bar ? [bar] : []), head.element, side ? el('div', { class: 'fd-head-layout' }, body, side) : body);
     return pageBox;
   }
 
@@ -1730,6 +1860,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const button = [...root.querySelectorAll<HTMLButtonElement>(`button[data-hotkey="${key}"]`)].find(
       (b) => b.closest('.fd-form') === root && !b.closest('[hidden]') && !b.disabled && !b.hasAttribute('aria-busy')
     );
+    // A field's access key: the first shown with it takes the focus.
+    const field = button ? undefined : fieldKeys.find((one) => one.key === key && one.wrapper.isConnected && !one.wrapper.closest('[hidden]'));
+    if (field) {
+      event.preventDefault();
+      root.removeAttribute('data-hotkeys');
+      field.focus();
+      return;
+    }
     if (!button) return;
     event.preventDefault();
     root.removeAttribute('data-hotkeys');
@@ -1873,6 +2011,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
   };
 }
+
+/** What a field is worked with: where its access key is said. */
+const CONTROL = 'input:not([type="hidden"]), select, textarea, button, [contenteditable="true"], [tabindex="0"]';
 
 /** The boxes a label can be shown in, as the words of an empty box. */
 const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea';

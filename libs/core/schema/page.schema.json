@@ -140,6 +140,13 @@
         "helpShown": {
           "$ref": "#/$defs/HelpShown"
         },
+        "lockAt": {
+          "type": "string",
+          "enum": [
+            "label",
+            "value"
+          ]
+        },
         "readonlyShown": {
           "type": "string",
           "enum": [
@@ -4679,6 +4686,9 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
+        "head": {
+          "$ref": "#/$defs/SheetHead"
+        },
         "title": {
           "type": "object",
           "properties": {
@@ -4860,6 +4870,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5107,6 +5143,32 @@
                       "items": {
                         "$ref": "#/$defs/ScreenWidth"
                       }
+                    },
+                    "iconOnly": {
+                      "type": "boolean"
+                    },
+                    "pressed": {
+                      "$ref": "#/$defs/Modifier"
+                    },
+                    "pressedLabel": {
+                      "type": "string"
+                    },
+                    "menu": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/MenuItem"
+                      }
+                    },
+                    "menuIcon": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "menuLabel": {
+                      "type": "string"
+                    },
+                    "primaryWhenChanged": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
@@ -5341,6 +5403,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5359,32 +5447,213 @@
       ],
       "additionalProperties": false
     },
-    "PlaceholderWhen": {
+    "SheetHead": {
       "type": "object",
       "properties": {
-        "when": {
-          "$ref": "#/$defs/Modifier"
+        "kind": {
+          "$ref": "#/$defs/SheetKind"
         },
-        "text": {
-          "type": "string"
+        "meta": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/__schema1"
+              },
+              {
+                "$ref": "#/$defs/HeadLink"
+              }
+            ]
+          }
+        },
+        "actions": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "button"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ActionStep"
+                }
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "params": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                }
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "danger",
+                  "link"
+                ]
+              },
+              "confirm": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
+              },
+              "colspan": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "band": {
+          "$ref": "#/$defs/HeadBand"
+        },
+        "updated": {
+          "type": "object",
+          "properties": {
+            "byField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "atField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "opens": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            }
+          },
+          "required": [
+            "byField",
+            "atField"
+          ],
+          "additionalProperties": false
+        },
+        "copyTitle": {
+          "type": "boolean"
         }
       },
-      "required": [
-        "when",
-        "text"
-      ],
       "additionalProperties": false
     },
-    "Modifier": {
-      "anyOf": [
-        {
-          "type": "boolean"
+    "SheetKind": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         },
-        {
+        "label": {
+          "type": "string"
+        },
+        "numberField": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "icon": {
           "type": "string",
           "minLength": 1
+        },
+        "looks": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "colour": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "icon": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "colour"
+            ],
+            "additionalProperties": false
+          }
         }
-      ]
+      },
+      "additionalProperties": false
     },
     "__schema1": {
       "type": "object",
@@ -5570,6 +5839,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5653,6 +5948,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5736,6 +6057,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -5833,6 +6180,10 @@
         "readonlyReason": {
           "type": "string",
           "minLength": 1
+        },
+        "hotkey": {
+          "type": "string",
+          "pattern": "^[a-z0-9]$"
         }
       },
       "required": [
@@ -5841,6 +6192,33 @@
         "field"
       ],
       "additionalProperties": false
+    },
+    "PlaceholderWhen": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "when",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "Modifier": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
     },
     "LineOrder": {
       "type": "object",
@@ -6581,6 +6959,70 @@
         "wide"
       ]
     },
+    "MenuItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "builtin": {
+          "type": "string",
+          "enum": [
+            "archive",
+            "unarchive",
+            "duplicate",
+            "delete"
+          ]
+        },
+        "group": {
+          "type": "string",
+          "enum": [
+            "actions",
+            "print"
+          ]
+        },
+        "steps": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ActionStep"
+          }
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "confirm": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
     "LineForm": {
       "type": "object",
       "properties": {
@@ -6672,6 +7114,32 @@
               "items": {
                 "$ref": "#/$defs/ScreenWidth"
               }
+            },
+            "iconOnly": {
+              "type": "boolean"
+            },
+            "pressed": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "pressedLabel": {
+              "type": "string"
+            },
+            "menu": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/MenuItem"
+              }
+            },
+            "menuIcon": {
+              "type": "string",
+              "minLength": 1
+            },
+            "menuLabel": {
+              "type": "string"
+            },
+            "primaryWhenChanged": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -7156,6 +7624,10 @@
           "items": {
             "$ref": "#/$defs/TabNode"
           }
+        },
+        "place": {
+          "type": "string",
+          "const": "head"
         }
       },
       "required": [
@@ -7193,6 +7665,13 @@
           "items": {
             "$ref": "#/$defs/LayoutNode"
           }
+        },
+        "iconOnly": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         }
       },
       "required": [
@@ -7717,31 +8196,31 @@
       },
       "additionalProperties": false
     },
-    "MenuItem": {
+    "HeadLink": {
       "type": "object",
       "properties": {
+        "type": {
+          "type": "string",
+          "const": "link"
+        },
         "id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
-        "label": {
-          "type": "string"
-        },
-        "builtin": {
+        "icon": {
           "type": "string",
-          "enum": [
-            "archive",
-            "unarchive",
-            "duplicate",
-            "delete"
-          ]
+          "minLength": 1
         },
-        "group": {
+        "field": {
           "type": "string",
-          "enum": [
-            "actions",
-            "print"
-          ]
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "words": {
+          "$ref": "#/$defs/PluralWords"
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
         "steps": {
           "minItems": 1,
@@ -7749,25 +8228,6 @@
           "items": {
             "$ref": "#/$defs/ActionStep"
           }
-        },
-        "action": {
-          "type": "string",
-          "minLength": 1
-        },
-        "params": {
-          "type": "object",
-          "propertyNames": {
-            "type": "string"
-          },
-          "additionalProperties": {
-            "$ref": "#/$defs/JsonValue"
-          }
-        },
-        "confirm": {
-          "type": "string"
-        },
-        "icon": {
-          "type": "string"
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
@@ -7777,7 +8237,39 @@
         }
       },
       "required": [
-        "id"
+        "type",
+        "id",
+        "field",
+        "words"
+      ],
+      "additionalProperties": false
+    },
+    "HeadBand": {
+      "type": "object",
+      "properties": {
+        "tracks": {
+          "minItems": 1,
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(px|%|fr)$"
+          }
+        },
+        "labelWidth": {
+          "type": "integer",
+          "minimum": 48,
+          "maximum": 320
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        }
+      },
+      "required": [
+        "children"
       ],
       "additionalProperties": false
     },
@@ -7871,6 +8363,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -8139,6 +8657,32 @@
                 "items": {
                   "$ref": "#/$defs/ScreenWidth"
                 }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
               }
             },
             "required": [

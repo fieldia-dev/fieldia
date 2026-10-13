@@ -10,6 +10,7 @@ import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
+import { buttonPartsSettings } from './head-properties';
 
 /**
  * The panel for a part of a record's header: a button, a counter, a badge or
@@ -109,6 +110,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   showWhen.addEventListener('click', () => when.start());
   const roles = rolesSetting(el, designer, id, { tabbed: false });
   const shownWhile = shownWhileSetting(el, designer, id, { tabbed: false });
+  // A button's icon alone, toggle, menu and look while the record has changes (head-properties.ts).
+  const parts = buttonPartsSettings(el, designer, id);
   const left = el('button', { type: 'button', class: 'fd-button' }, w.moveLeft);
   const right = el('button', { type: 'button', class: 'fd-button' }, w.moveRight);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
@@ -125,6 +128,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     lookRow,
     asksRow,
     hotkeyRow,
+    ...parts.rows,
     countRow,
     ...statRows,
     toneRow,
@@ -147,6 +151,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       const { kind, part, index, list } = found;
       if (!focused(words)) words.value = wordsOf(part);
       pressed?.update(page);
+      parts.update(page);
       lookRow.hidden = hotkeyRow.hidden = kind !== 'button';
       asksRow.hidden = kind !== 'button' && kind !== 'menu';
       builtinRow.hidden = groupRow.hidden = kind !== 'menu';

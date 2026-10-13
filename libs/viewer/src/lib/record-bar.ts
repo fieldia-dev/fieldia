@@ -93,7 +93,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
   }
 
   // ---- the gear menu ----
-  if (menuItems.length) bar.append(gearMenu(context, menuItems, updaters, cleanups));
+  if (menuItems.length) bar.append(recordMenu(context, menuItems, updaters, cleanups));
 
   // ---- the pager ----
   if (given) bar.append(pager(context, given, trail, updaters, cleanups));
@@ -109,14 +109,23 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
   };
 }
 
-/** The gear and its menu: a real menu, opened with Enter, Space or the arrows, its items reached with the arrows, gone with Escape. */
-function gearMenu(context: RecordBarContext, items: readonly MenuItem[], updaters: (() => void)[], cleanups: (() => void)[]): HTMLElement {
+/** What the record's menu needs of the viewer that draws it. */
+export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'uid' | 'withIcon' | 'press'>;
+
+/**
+ * The record's menu: the gear with its words over a record, or — `more` —
+ * ⋮ alone at the end of a record head's buttons, named "More actions". A
+ * real menu, opened with Enter, Space or the arrows, its items reached with
+ * the arrows, gone with Escape.
+ */
+export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[], updaters: (() => void)[], cleanups: (() => void)[], look: 'gear' | 'more' = 'gear'): HTMLElement {
   const { doc, el, form, labels } = context;
-  const id = context.uid('record-menu');
-  const gear = el('button', { type: 'button', class: 'fd-button fd-record-gear', id: `${id}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id, title: labels.actions });
-  const icon = drawIcon(doc, 'gear', GEAR);
+  const id = context.uid(look === 'more' ? 'record-more' : 'record-menu');
+  const name = look === 'more' ? labels.moreActions : labels.actions;
+  const gear = el('button', { type: 'button', class: look === 'more' ? 'fd-button fd-record-gear fd-head-more' : 'fd-button fd-record-gear', id: `${id}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id, title: name, 'aria-label': look === 'more' ? name : undefined });
+  const icon = drawIcon(doc, look === 'more' ? 'more' : 'gear', GEAR);
   if (icon) gear.append(icon);
-  gear.append(el('span', { class: 'fd-record-gear-words' }, labels.actions));
+  if (look === 'gear') gear.append(el('span', { class: 'fd-record-gear-words' }, labels.actions));
   const menu = el('div', { class: 'fd-record-menu', role: 'menu', id, 'aria-labelledby': gear.id, hidden: '' });
   const drawn = items.map((item) => {
     const words = item.label ?? (item.builtin ? labels[item.builtin] : item.id);

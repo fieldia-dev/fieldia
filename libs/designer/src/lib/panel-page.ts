@@ -6,6 +6,7 @@ import { setting } from './panel-controls';
 import { pageLookSettings } from './panel-look';
 import type { PropertiesView } from './screen-properties';
 import { formMoments } from './steps-panel';
+import { headSettings } from './head-properties';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -44,6 +45,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
+  // A record's head, as a work item's: its kind, row, buttons, band and "Updated by" (head-properties.ts).
+  const head = headSettings(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -56,6 +59,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     crumbsRow,
     previewRow,
     besideRow,
+    ...head.rows,
     ...look.rows,
     moments.element
   );
@@ -65,6 +69,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       if (!focused(description)) description.value = page.description ?? '';
       look.update(page);
       moments.update(page);
+      head.update(page);
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';
