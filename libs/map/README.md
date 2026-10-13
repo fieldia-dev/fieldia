@@ -284,24 +284,36 @@ Photon's answers are kept to them. Nearest `near` first (or where the app's
 maps open), so give a point in the page's own country: Azure ranks another
 country's suggestions by their distance from it. Addresses come before shops
 and malls where the provider says which are which (Google, Azure), and an
-address field asks Azure for no postcodes alone. A suggestion of Azure's is
-located when picked, asked of Azure's geocoding by its own address in its
-structured form (its street, district, governorate or province, postcode and
-country), and only there: a district named alike in another town is never
-taken for it, as no hit outside its own admin districts is; of a street's
-stretches, the one in its own district, and for a street named by its number
-alone ("30 Street", "شارع 6") never another district's of that number. Its
-city is read from them each country's way (in Egypt and Saudi Arabia the
-governorate's city: Zamalek is Cairo's; in the emirate of Abu Dhabi, the city
-it is in). A region or a city of Egypt, Saudi Arabia, the UAE or Jordan is
-named one way in each language, whichever of its names or codes Azure gives
-("Sharjah Emirate", "Ash Shāriqah" and "SH" are Sharjah), and once in a line
-("Giza", never "Giza, Al Jizah"); a district Azure names only in its own line
-is said too ("30 Street, Al Fisht, Sharjah"). It is said to be only near
-(`precise: false`) when Azure is unsure of it, or finds only the street for a
-house, the district for a street (its own, before its town), the town for a
-district; found nowhere in its own districts, no place is written (the field
-says so under the box), and its parts still are. A search still waiting when
+address field asks Azure for no postcodes alone, and the word for a district
+typed before its name ("حي الروضة") is left out of the words it is asked, as
+Azure names its districts without it. A suggestion of Azure's is located when
+picked, asked of Azure's geocoding by its own address in its structured form
+(its street, its district for the locality where it names one, then its
+locality, its governorate or province, postcode and country), and only
+there: a district named alike in another town is never taken for it, as no
+hit outside its own admin districts is. A street is placed in its own
+district: the stretch that says it is there, else one in the district's box
+as Azure has it (a road with a name a little beyond it, as it runs on into
+the next); never a street of the name in another district ("Kamel El
+Shenawy" in Garden City, not New Cairo's), and for a street named by its
+number alone ("30 Street", "شارع 6") never another district's of that number.
+Its city is read from them each country's way (in Egypt the governorate's
+city where the governorate is one, Zamalek is Cairo's, and the town
+elsewhere, Mansoura in Dakahlia; in Saudi Arabia the governorate's city; in
+the emirate of Abu Dhabi, the city it is in); a suggestion that names no
+region ("البرشاء 2") takes its city and region from the place found, and one
+that says less of a place listed beside it is left out. A region or a city
+of Egypt, Saudi Arabia, the UAE or Jordan is named one way in each language,
+whichever of its names or codes Azure gives ("Sharjah Emirate", "Ash
+Shāriqah" and "SH" are Sharjah; "Ţanţā" and "طنطا" are Tanta), and once in a
+line ("Giza", never "Giza, Al Jizah"); a district Azure names only in its own
+line is said too ("30 Street, Al Fisht, Sharjah"), and named so where it is
+a road's with no name of its own ("Abu Tina", never Azure's French
+"Charjah"). It is said to be only near (`precise: false`) when Azure is
+unsure of it, or finds only the street for a house, the district for a
+street (its own, before its town), the town for a district; found nowhere in
+its own districts, no place is written (the field says so under the box),
+and its parts still are. A search still waiting when
 a suggestion is picked or the box is left is dropped, and Enter never searches
 for the address a pick wrote.
 

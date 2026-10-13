@@ -29,8 +29,13 @@ export interface CorpusCase {
   locale: Locale;
   near?: string;
   countries: string[];
-  /** The names the row's own line may have, and where its second line says it is when several share them (a district, a city). */
-  pick: { names: string[]; in?: string };
+  /**
+   * The names the row's own line may have, and where its second line says it
+   * is when several share them (a district, a city); `first`: the first row
+   * so named that does not say it is elsewhere, as a person picks one whose
+   * line says only its country.
+   */
+  pick: { names: string[]; in?: string; first?: boolean };
   kind: Kind;
   truth: { city: string; region: string; street?: string[]; at: At | At[] };
 }
@@ -68,6 +73,15 @@ export const NAMES: Record<string, string[]> = {
   sharjah: ['Sharjah', 'Sharjah Emirate', 'Ash Shariqah', 'الشارقة', 'إمارة الشارقة', 'مدينة الشارقة'],
   alAin: ['Al Ain', 'Al Ayn', 'العين'],
   amman: ['Amman', 'Amman Governorate', 'Capital Governorate', 'عمان', 'عمّان', 'محافظة العاصمة', 'العاصمة'],
+  mansoura: ['Mansoura', 'El Mansoura', 'Al Mansurah', 'المنصورة'],
+  dakahlia: ['Dakahlia', 'Ad Daqahliyah', 'الدقهلية'],
+  tanta: ['Tanta', 'طنطا'],
+  gharbia: ['Gharbia', 'Al Gharbiyah', 'الغربية'],
+  sohag: ['Sohag', 'Sawhaj', 'Suhaj', 'سوهاج'],
+  zagazig: ['Zagazig', 'El Zaqaziq', 'Az Zaqaziq', 'الزقازيق'],
+  sharqia: ['Sharqia', 'Sharkia', 'Ash Sharqiyah', 'الشرقية'],
+  kharga: ['Kharga', 'El Kharga', 'Al Kharijah', 'الخارجة'],
+  newValley: ['New Valley', 'Al Wadi al Jadid', 'الوادي الجديد'],
 };
 
 /** How near counts as there, by kind. */
@@ -195,6 +209,10 @@ export function pickRow(found: PlaceFound[], c: Pick<CorpusCase, 'pick' | 'truth
   const there = pick.in
     ? (place: PlaceFound) => says(place.detail ?? '', pick.in!)
     : (place: PlaceFound) => names(truth.city, place.detail ?? '') || (isName(truth.city, place.label) && !namesOther(keys, place.detail ?? ''));
+  if (pick.first) {
+    const first = matching.find((place) => there(place) || saysNowhereElse(keys, place.detail));
+    return first && { row: first, there: there(first) };
+  }
   const right = matching.find(there);
   if (right) return { row: right, there: true };
   const unsaid = matching.find((place) => saysNowhereElse(keys, place.detail));

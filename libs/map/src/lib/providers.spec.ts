@@ -129,7 +129,7 @@ describe('Azure Maps', () => {
   it('suggests addresses as people type (its autocomplete), near the map, each on two lines; a place picked is located then', async () => {
     const { fetch, asked } = network({
       'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete,
-      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&query=El%20Sheikh%20Ali%2C': AZURE.geocodeDistrict,
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&': AZURE.geocodeDistrict,
       'https://atlas.microsoft.com/geocode': AZURE.geocode,
     });
     const azure = azureMaps({ key: 'K', fetch });
@@ -140,12 +140,13 @@ describe('Azure Maps', () => {
     expect(first.lat).toBeUndefined();
     expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode:autocomplete?api-version=2026-01-01&top=5&query=26%20july%20st&coordinates=31.24%2C30.05&subscription-key=K');
     expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('en-US');
-    // Asked for by its own address, in Azure's structured form (the street without the house number Azure made of its name, its district, governorate and city, its country): the street, in Cairo, as Azure answers it.
+    // Asked for by its own address, in Azure's structured form (the street without the house number Azure made of its name, its district, governorate and city, its country): the street, in Cairo, as Azure answers it; its stretch in El Alaya, beside El Sheikh Ali, asked for once.
     expect(await first.locate!()).toEqual({ lat: 30.0541906885011, lng: 31.2371480131072, address: '26 July Street, El Sheikh Ali, Cairo, Egypt' });
     expect(asked[1].url).toBe(
       'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&addressLine=26%20July%20Street&locality=El%20Sheikh%20Ali&adminDistrict=Cairo&adminDistrict2=Cairo&countryRegion=EG&subscription-key=K'
     );
-    expect(asked).toHaveLength(2);
+    expect(asked[2].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&adminDistrict=Cairo&adminDistrict2=Cairo&countryRegion=EG&coordinates=31.24%2C30.05&subscription-key=K');
+    expect(asked).toHaveLength(3);
   });
 
   it('takes the district a street is in, only near, where its geocoding finds no street', async () => {

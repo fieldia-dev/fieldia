@@ -92,7 +92,7 @@ describe('Azure Maps’ suggestions, as it answers them', () => {
     expect(warn.mock.calls.map(([words]) => String(words))).toEqual(['[Fieldia] "XX" is not a country\'s ISO code ("EG", "SA"): the address search leaves it out.', '[Fieldia] "EGY" is not a country\'s ISO code ("EG", "SA"): the address search leaves it out.']);
     warn.mockRestore();
     expect(found.map((place) => [place.label, place.parts?.country])).toEqual([
-      ['Sheikh Zayed City', 'EG'],
+      ['Sheikh Zayed', 'EG'],
       ['Sheikh Zayed Grand Mosque', 'AE'],
       ['El Sheikh Zayed Station', 'EG'],
       ['Sheikh Zayed Road', 'AE'],
@@ -122,7 +122,11 @@ describe('Azure Maps’ suggestions, as it answers them', () => {
     ]);
     // "الشيـخ زايد", its town "الشيخ زايد": the same words, said once, and written as the town Fieldia knows.
     const zayed = await azureMaps({ key: 'K', fetch: azure().fetch }).search!({ text: 'الشيخ زا', near: CAIRO, locale: 'ar', countries: ['EG'] });
-    expect(zayed[1]).toMatchObject({ label: 'الشيخ زايد', detail: 'الجيزة، 12556، مصر' });
+    // Said once with its postcode, where Azure also gives it without: the row that says more, where the first of them was.
+    expect(zayed.slice(0, 2)).toMatchObject([
+      { label: 'الشيخ زايد', detail: 'الجيزة، 12556، مصر' },
+      { label: 'الشيخ زايد', detail: 'القاهرة، مصر' },
+    ]);
   });
 
   it('names a neighbourhood by its own name, which Azure puts first in its locality ("Zamâlek, Cairo"), and its city as its governorate’s: Zamalek is Cairo’s', async () => {
@@ -144,7 +148,8 @@ describe('Azure Maps’ suggestions, as it answers them', () => {
   it('says a place that is its own town once, not again under it', async () => {
     const { fetch } = azure();
     const [city] = await azureMaps({ key: 'K', fetch }).search!({ text: 'Sheikh Zayed', near: CAIRO, locale: 'en' });
-    expect(city.label).toBe('Sheikh Zayed City');
+    // Its own name as Fieldia writes the city ("Sheikh Zayed City" is Sheikh Zayed).
+    expect(city.label).toBe('Sheikh Zayed');
     expect(city.detail).not.toMatch(/Sheikh Zayed/);
     const [abdoun] = await azureMaps({ key: 'K', fetch: azure().fetch }).search!({ text: 'Abdoun', near: AMMAN, locale: 'en', countries: ['JO'] });
     expect(abdoun).toMatchObject({ label: 'Abdoun', detail: 'Amman, Jordan' });
@@ -163,19 +168,21 @@ describe('Azure Maps’ suggestions, as it answers them', () => {
     expect((await parts('Sheikh Zayed Road', DUBAI))[1]).toEqual({ street: 'Sheikh Zayed Road', city: 'Dubai', region: 'Dubai', country: 'AE' });
     expect((await parts('Abdoun', AMMAN, 'en', ['JO']))[0]).toEqual({ city: 'Amman', region: 'Amman', country: 'JO' });
     // A district of its own, with no locality: still a city.
-    expect((await parts('الشيخ زايد', CAIRO, 'ar'))[0]).toEqual({ city: 'الشيخ زايد', region: 'الجيزة', country: 'EG' });
+    expect((await parts('الشيخ زايد', CAIRO, 'ar'))[0]).toEqual({ city: 'الشيخ زايد', region: 'الجيزة', postcode: '12556', country: 'EG' });
     // Elsewhere, its locality is the city.
     expect((await parts('Fifth Settlement', CAIRO))[0]).toEqual({ street: '5th St', city: 'Rome', region: 'New York', postcode: '13440', country: 'US' });
   });
 
-  it('takes the locality for the city in Saudi Arabia where Azure gives one admin district alone, a province: the locality is the town then; in Egypt, the governorate’s city', async () => {
+  it('takes the locality for the city in Saudi Arabia where Azure gives one admin district alone, a province: the locality is the town then; in Egypt, a city Fieldia knows, else the governorate’s city', async () => {
     const parts = async (text: string, near: { lat: number; lng: number } | undefined, countries: string[]) =>
       (await azureMaps({ key: 'K', fetch: azure().fetch }).search!({ text, near, locale: 'en', parts: true, countries })).map((place) => place.parts);
     // Al Khobar in the Eastern Province, each by the one name Fieldia writes for it (Azure's "Al Khubar", "Eastern"); Al Khurmah, 250 km from Mecca, in Makkah's.
     expect((await parts('Prince Turki St Al Khob', undefined, ['SA']))[1]).toEqual({ street: 'Prince Turki Street', city: 'Al Khobar', region: 'Eastern Province', country: 'SA' });
     expect((await parts('King Faisal St', CAIRO, ['EG', 'SA']))[0]).toEqual({ street: 'King Faisal Street', city: 'Al Khurmah', region: 'Makkah', country: 'SA' });
-    // Azure files Sheikh Zayed City under Cairo alone, as it files Cairo's own districts ("El Zamalek"): its city is Cairo's, by Egypt's rule. Azure's Arabic answer gives it its own (Giza, Sheikh Zayed).
-    expect((await parts('Sheikh Zayed', CAIRO, []))[0]).toMatchObject({ city: 'Cairo', region: 'Cairo', country: 'EG' });
+    // Azure files Sheikh Zayed City under Cairo alone, as it files Cairo's own districts ("El Zamalek"): a city Fieldia knows is its own city all the same (its region as Azure has it; its Arabic answer says Giza).
+    expect((await parts('Sheikh Zayed', CAIRO, []))[0]).toMatchObject({ city: 'Sheikh Zayed', region: 'Cairo', country: 'EG' });
+    // A district Azure files under Cairo alone is Cairo's.
+    expect((await parts('Zamalek', CAIRO, ['EG']))[0]).toMatchObject({ city: 'Cairo', region: 'Cairo', country: 'EG' });
   });
 
   it('names a UAE city as Azure tells it: Dubai and Ajman are their emirates’ cities; the other emirates’ localities are their towns; each emirate one way, never "Abu Dhabi Emirate" here and "Ash Shāriqah" there', async () => {
@@ -208,7 +215,7 @@ describe('Azure Maps’ suggestions, as it answers them', () => {
     expect(dubai[0]).toMatchObject({ label: 'شارع الشيخ زايد', detail: 'دبي، الإمارات العربية المتحدة' });
     expect(dubai.map((place) => place.detail).join()).not.toContain('DU');
     const tagamoa = await azureMaps({ key: 'K', fetch: azure().fetch }).search!({ text: 'التجمع الخامس', near: CAIRO, locale: 'ar' });
-    expect(tagamoa[1]).toMatchObject({ label: 'التجمع الخامس', detail: 'القاهرة الجديدة، القاهرة، مصر' });
+    expect(tagamoa[0]).toMatchObject({ label: 'التجمع الخامس', detail: 'القاهرة الجديدة، القاهرة، 11774، مصر' });
     expect(tagamoa.map((place) => place.detail).join()).not.toContain('Mişr');
   });
 });
@@ -259,14 +266,16 @@ describe('a suggestion of Azure’s picked', () => {
     expect(located).toMatchObject({ lat: 30.055700302124023, lng: 31.19826316833496, precise: false });
   });
 
-  it('asks for a street with its district and town, not where the search looked: one of a road’s stretches, as Azure ranks them, is the street itself', async () => {
+  it('asks for a street with its district and town, not where the search looked; a road found only beyond its district’s box is placed in the district, near', async () => {
     const kingFahd = await pick('King Fahd Road', 'en', RIYADH, undefined, (_, i) => i === 2);
     expect(kingFahd.place).toMatchObject({ label: 'King Fahd Road', detail: 'Al Olaya, Riyadh, Saudi Arabia' });
-    expect(kingFahd.located).toEqual({ lat: 24.7343642500028, lng: 46.6606356000113, address: 'King Fahd Road, Al Olaya, Riyadh, Saudi Arabia', parts: { street: 'King Fahd Road', city: 'Riyadh', region: 'Riyadh', country: 'SA' } });
+    // Azure's four King Fahd Roads are 1.8 km and more beyond Al Olaya's box, to the north: Al Olaya's middle, near the road.
+    expect(kingFahd.located).toEqual({ lat: 24.694242477416992, lng: 46.687294006347656, address: 'King Fahd Road, Al Olaya, Riyadh, Saudi Arabia', parts: { street: 'King Fahd Road', city: 'Riyadh', region: 'Riyadh', country: 'SA' }, precise: false });
     expect(Object.fromEntries(kingFahd.asked[0].searchParams)).toMatchObject({ addressLine: 'King Fahd Road', locality: 'Al Olaya', adminDistrict: 'Riyadh', adminDistrict2: 'Riyadh', countryRegion: 'SA' });
     // Where the search looked may be a town away from the street: it would rank the stretch nearest it, not the street's own.
     expect(kingFahd.asked[0].searchParams.has('coordinates')).toBe(false);
-    expect(kingFahd.asked).toHaveLength(1);
+    // The district asked for once, for its box; then the road by its two lines.
+    expect(kingFahd.asked.map((url) => url.searchParams.get('addressLine') ?? url.searchParams.get('query') ?? url.searchParams.get('locality'))).toEqual(['King Fahd Road', 'Al Olaya', 'King Fahd Road, Al Olaya, Riyadh, Saudi Arabia']);
     // A road of Azure's own, its suggestion's district: "El Bank El Markazy", High and Good.
     const bank = await pick('Mohandessin', 'en', CAIRO, ['EG'], ({ label }) => label === 'El Bank El Markazy');
     expect(bank.located).toMatchObject({ lat: 30.061392854799, lng: 31.2054219632006 });
@@ -274,9 +283,9 @@ describe('a suggestion of Azure’s picked', () => {
   });
 
   it('is only near when Azure is unsure of the hit, or found it only above it: a house not found, its street; a street not found, its district', async () => {
-    // "King Fahd Road, Riyadh 12361" for house 2: Low, UpHierarchy.
+    // "King Fahd Road, Riyadh 12361" for house 2 in Al Olaya: Low, UpHierarchy, and beyond Al Olaya's box; the district's middle.
     const house = await pick('2 King Fahd Road Riyadh', 'en', RIYADH, undefined, (_, i) => i === 3);
-    expect(house.located).toMatchObject({ lat: 24.7343642500028, lng: 46.6606356000113, precise: false });
+    expect(house.located).toMatchObject({ lat: 24.694242477416992, lng: 46.687294006347656, precise: false });
     const [tahrir] = await azureMaps({ key: 'K', fetch: azure().fetch }).search!({ text: '15 Tahrir Street', near: CAIRO, locale: 'en' });
     expect(await tahrir.locate!()).toEqual({ lat: 30.0441504188108, lng: 31.2423197184108, address: '15 El Tahrir Street, El Balaqsa, Cairo, Egypt', precise: false });
     // A street of New Maadi Azure finds only as New Maadi (a populated place, UpHierarchy): its centre, near, not the street.

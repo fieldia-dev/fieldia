@@ -8,7 +8,8 @@ import type { Locale } from '@fieldia/core';
  * a locality in another script ("Cairo" in an Arabic answer) or another
  * spelling ("Ad Dammām", "الأسكندرية"). Each place here has one name in each
  * language, which Fieldia writes, and every other name Azure was seen to give
- * it (12–13 Oct 2026). Loaded with the providers' address parts.
+ * it (12–13 Oct 2026; each region's capital asked for in English and
+ * Arabic on 13 Oct). Loaded with the providers' address parts.
  *
  * A place is one of these only by its code or one of its names, the same
  * words (without accents, vowel marks or tatweel, in lower case): never by
@@ -67,15 +68,15 @@ HAI|Hail|حائل|Ha'il, Ḩā'il, منطقة حائل
 JAZ|Jazan|جازان|Jizan, Gizan, جيزان, منطقة جازان
 |Najran|نجران|منطقة نجران
 |Al Bahah|الباحة|Al Baha, منطقة الباحة
-|Al Jawf|الجوف|منطقة الجوف
-|Northern Borders|الحدود الشمالية|Al Hudud ash Shamaliyah, منطقة الحدود الشمالية`,
+JOF|Al Jawf|الجوف|منطقة الجوف
+|Northern Borders|الحدود الشمالية|Northern Frontier, Al Hudud ash Shamaliyah, منطقة الحدود الشمالية`,
   AE: `
 AZ|Abu Dhabi|أبوظبي|Abu Dhabi Emirate, Abu Zabi, أبو ظبي, إمارة أبوظبي, إمارة أبو ظبي, fr=Abou Dabi
 DU|Dubai|دبي|Dubai Emirate, إمارة دبي, fr=Dubaï
 SH|Sharjah|الشارقة|Sharjah Emirate, Ash Shariqah, Ash Shāriqah, إمارة الشارقة, fr=Charjah, de=Schardscha
 AJ|Ajman|عجمان|Ajman Emirate, 'Ajman, إمارة عجمان
-UQ|Umm Al Quwain|أم القيوين|Umm al Qaywayn, Umm Al-Quwain, Umm Al Quwain Emirate, ام القيوين
-RK|Ras Al Khaimah|رأس الخيمة|Ra's al Khaymah, Ras al-Khaimah, Ras Al Khaimah Emirate, راس الخيمة
+UQ|Umm Al Quwain|أم القيوين|Umm al Qaywayn, Umm Al-Quwain, Umm Al Quwain Emirate, Umm al-Quwain Emirate, ام القيوين
+RK|Ras Al Khaimah|رأس الخيمة|Ra's al Khaymah, Ras al-Khaimah, Ras Al Khaimah Emirate, Ras al-Khaimah Emirate, راس الخيمة
 FU|Fujairah|الفجيرة|Al Fujayrah, Fujairah Emirate`,
   JO: `
 |Amman|عمان|Amman Governorate, Capital Governorate, Al Asimah, عمّان, محافظة العاصمة, العاصمة
@@ -88,7 +89,7 @@ FU|Fujairah|الفجيرة|Al Fujayrah, Fujairah Emirate`,
 |Ma'an|معان|Maan
 |Aqaba|العقبة|Al Aqabah
 |Mafraq|المفرق|Al Mafraq
-|Jerash|جرش
+|Jerash|جرش|Jarash, محافظة جرش
 |Ajloun|عجلون|Ajlun`,
 };
 
@@ -104,14 +105,28 @@ const CITIES: Record<string, string> = {
 |Shubra El Kheima|شبرا الخيمة|Shubra al Khaymah, Shubrā al Khaymah
 |Port Said|بورسعيد|Bur Sa'id, بور سعيد
 |Suez|السويس|As Suways
-|Ismailia|الإسماعيلية|Al Isma'iliyah, الاسماعيلية
-|Mansoura|المنصورة|Al Mansurah
+|Ismailia|الإسماعيلية|El Ismailia, Al Isma'iliyah, الاسماعيلية
+|Mansoura|المنصورة|El Mansoura, Al Mansurah
 |Tanta|طنطا
 |Zagazig|الزقازيق|El Zaqaziq, Az Zaqaziq
 |Damietta|دمياط|Dumyat
+|Banha|بنها|Benha
+|Damanhur|دمنهور|Damanhour
+|Shibin El Kom|شبين الكوم|Shibin al Kawm, Shebin El Kom
+|Kafr El Sheikh|كفر الشيخ|Kafr ash Shaykh
+|Faiyum|الفيوم|El Faiyum, Al Fayyum, Fayoum
+|Beni Suef|بني سويف|Bani Suwayf
+|Minya|المنيا|El Minya, El Menia, Al Minya
+|Asyut|أسيوط|Assiut, اسيوط
+|Sohag|سوهاج|Sawhaj, Suhaj
+|Qena|قنا|Qina
 |Luxor|الأقصر|Al Uqsur, الاقصر
 |Aswan|أسوان|اسوان
 |Hurghada|الغردقة|Al Ghardaqah
+|Kharga|الخارجة|El Kharga, Al Kharijah
+|Marsa Matruh|مرسى مطروح|Marsa Matrouh
+|Arish|العريش|El Arish, Al Arish
+|El Tor|الطور|At Tur, مدينة الطور, مدينه الطور
 |Sharm El Sheikh|شرم الشيخ|Sharm ash Shaykh`,
   SA: `
 |Riyadh|الرياض|Ar Riyad, fr=Riyad, de=Riad
@@ -121,22 +136,25 @@ const CITIES: Record<string, string> = {
 |Dammam|الدمام|Ad Dammam, Ad Dammām
 |Al Khobar|الخبر|Al Khubar, Khobar
 |Dhahran|الظهران|Az Zahran
-|Taif|الطائف|At Taif, Ta'if
+|Taif|الطائف|At Taif, At Ta’if, Ta'if
 |Abha|أبها
 |Khamis Mushait|خميس مشيط
 |Tabuk|تبوك
-|Buraydah|بريدة|Buraidah
+|Buraydah|بريدة|Al Buraydah, Buraidah
 |Hail|حائل|Ha'il
 |Al Kharj|الخرج
 |Al Hofuf|الهفوف|Al Hufuf, Hofuf
 |Jubail|الجبيل|Al Jubayl, Al Jubail
 |Yanbu|ينبع
 |Najran|نجران
-|Jazan|جازان|Jizan, جيزان`,
+|Jazan|جازان|Jizan, جيزان
+|Al Bahah|الباحة|Al Baha
+|Sakaka|سكاكا|Sakakah
+|Arar|عرعر|Arar & Wardat Nuaman, عرعر ورده نعمان`,
   AE: `
 |Dubai|دبي|fr=Dubaï
 |Abu Dhabi|أبوظبي|أبو ظبي, Abu Zabi, fr=Abou Dabi
-|Sharjah|الشارقة|مدينة الشارقة, Ash Shariqah, fr=Charjah, de=Schardscha
+|Sharjah|الشارقة|Sharjah City, مدينة الشارقة, Ash Shariqah, fr=Charjah, de=Schardscha
 |Al Ain|العين|Al Ayn
 |Ajman|عجمان|'Ajman
 |Ras Al Khaimah|رأس الخيمة|Ra's al Khaymah, راس الخيمة
@@ -146,10 +164,13 @@ const CITIES: Record<string, string> = {
 |Kalba|كلباء`,
   JO: `
 |Amman|عمان|عمّان
-|Zarqa|الزرقاء|Az Zarqa
+|Zarqa|الزرقاء|Az Zarqa, Zerka
 |Irbid|إربد|اربد
 |Aqaba|العقبة|Al Aqabah
-|Salt|السلط|As Salt
+|Salt|السلط|As Salt, Al Salt
+|Tafilah|الطفيلة|At Tafila, At Tafilah
+|Ma'an|معان|Maan
+|Ajloun|عجلون|Ajlun
 |Madaba|مادبا
 |Jerash|جرش
 |Mafraq|المفرق|Al Mafraq

@@ -7,7 +7,7 @@ import { markSpellings, recorded, scoreCase, tally, type Answers, type CaseScore
 /**
  * Azure's suggestions in an address field, scored against what people in
  * Egypt, Saudi Arabia, the UAE and Jordan mean by them
- * (fixtures/azure-corpus-cases.json: 139 cases, English and Arabic; streets
+ * (fixtures/azure-corpus-cases.json: 158 cases, English and Arabic; streets
  * with numbers and without, districts, cities): the row a person picks (one
  * named as the place, that says it is where they mean), the city and region
  * written (each spelled one way for every place of it, in each language),
@@ -17,12 +17,16 @@ import { markSpellings, recorded, scoreCase, tally, type Answers, type CaseScore
  * (fixtures/azure-corpus-answers.json); a request Fieldia sends that is not
  * among them fails the case, so the answers stay the ones Fieldia asks for.
  *
- * Right in every way: 111 of the 139 now; 103 with this branch's round
- * before (b1a88d9, whose requests are answered here too: its
- * address-parts.ts and providers.ts against these files score it); 3 with
- * 0.19.0, whose requests were answered live the same day (196 more, not
- * kept). What is still wrong is in `STILL_WRONG`, each with what Azure
- * answers that makes it so.
+ * Right in every way: 130 of the 158 now; 114 with this branch's round
+ * before (9ac5e62), 111 of its 139 and 3 of the 19 cases added after its
+ * live check (Egypt's towns outside Cairo, Giza and Alexandria; streets of
+ * Garden City, El Mohandessin and Khalifa City Azure places in another
+ * district; Sharjah's numbered streets; "حي" before a district; a
+ * suggestion that names no emirate); 103 of the first 139 with the round
+ * before that (b1a88d9). The requests of both rounds are answered here too:
+ * their address-parts.ts and providers.ts against these files score them.
+ * What is still wrong is in `STILL_WRONG`, each with what Azure answers that
+ * makes it so.
  */
 
 const CASES = (JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-corpus-cases.json'), 'utf8')) as { cases: CorpusCase[] }).cases;
@@ -74,6 +78,7 @@ describe('Azure’s suggestions in an address field, scored against what people 
   let scores: CaseScore[];
   let asked: string[];
   let unanswered: string[];
+  let answered: string[];
   const of = (id: string) => scores.find((score) => score.id === id)!;
   beforeAll(async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -83,6 +88,7 @@ describe('Azure’s suggestions in an address field, scored against what people 
     for (const one of CASES) each.push(await scoreCase(maps, one));
     scores = markSpellings(each);
     ({ asked, unanswered } = live);
+    answered = asked.filter((request) => request.startsWith('/geocode:autocomplete'));
     warn.mockRestore();
   });
 
@@ -91,8 +97,8 @@ describe('Azure’s suggestions in an address field, scored against what people 
     expect(unanswered).toEqual([]);
   });
 
-  it('gets 111 of the 139 right in every way: the row, its city and region spelled one way, each place said once, the place within reach (103 before)', () => {
-    expect(tally(scores)).toEqual({ cases: 139, listed: 117, rowCity: 116, city: 114, region: 117, spelled: 139, once: 139, placed: 112, honest: 134, street: '3/3', allRight: 111 });
+  it('gets 130 of the 158 right in every way: the row, its city and region spelled one way, each place said once, the place within reach (114 before)', () => {
+    expect(tally(scores)).toEqual({ cases: 158, listed: 136, rowCity: 135, city: 133, region: 136, spelled: 158, once: 158, placed: 131, honest: 153, street: '7/7', allRight: 130 });
   });
 
   it('gets each other case wrong only as Azure’s answer makes it', () => {
@@ -145,6 +151,44 @@ describe('Azure’s suggestions in an address field, scored against what people 
 
   it('never makes a house number of a street’s own number, in either digits (شارع 26 يوليو, شارع ٢٦ يوليو)', () => {
     expect(['eg-26july-en', 'eg-26july-ar', 'eg-26july-ar-digits'].map((id) => of(id).parts?.street)).toEqual(['26 July Street', 'شارع 26 يوليو', 'شارع 26 يوليو']);
+  });
+
+  it('places a street in its own district, never at a street of the name in another that Azure gives first (Garden City’s Kamel El Shenawy is 25 km from New Cairo’s)', () => {
+    // Asked with its district for its locality, the stretch that says it is there; else one in the district's box; else the district, near.
+    for (const id of ['eg-gardencity-shenawy-en', 'eg-gardencity-naguib-en', 'eg-mohandessin-amr-en', 'ae-khalifa-sihayli-en']) expect([id, of(id).placed, of(id).honest]).toEqual([id, true, true]);
+    expect([of('eg-gardencity-shenawy-en').km, of('eg-gardencity-shenawy-en').precise]).toEqual([0.14, undefined]);
+    // "Amr | El Mohandessin": by its parts, Azure's Amr Ibn El Aas Street, in El Ahram, 6.5 km off; by its two lines, Amr Street in El Mohandessin itself.
+    expect([of('eg-mohandessin-amr-en').address, of('eg-mohandessin-amr-en').precise]).toEqual(['Amr, El Mohandessin, Giza, Egypt', undefined]);
+  });
+
+  it('never takes another district’s street of a number, though Azure marks it Ambiguous beside one that names no district at the same spot ("10 41 Street | Abu Tina", Al Nahda’s)', () => {
+    for (const id of ['ae-abutina-41-en', 'ae-fisht-1-en']) expect([id, of(id).placed, of(id).precise, of(id).parts?.street]).toEqual([id, true, false, id === 'ae-fisht-1-en' ? '10 1 Street' : '10 41 Street']);
+  });
+
+  it('asks for a district without the word for one typed before it, which Azure leaves out of its names (حي الروضة, حي السليمانية)', () => {
+    for (const id of ['sa-hay-rawdah-ar', 'sa-hay-sulaimaniyah-ar']) expect([id, of(id).row, of(id).placed]).toEqual([id, `${id === 'sa-hay-rawdah-ar' ? 'الروضة' : 'السليمانية'} | الرياض، المملكة العربية السعودية`, true]);
+    expect(answered.filter((request) => /query=حي /.test(request))).toEqual([]);
+  });
+
+  it('writes the city of an Egyptian town Azure files under its governorate alone as the town, a city Fieldia knows by its own name (Mansoura, Tanta, Zagazig, Kharga)', () => {
+    expect(['eg-mansoura-ar', 'eg-tanta-en', 'eg-tanta-ar', 'eg-zagazig-en', 'eg-kharga-en', 'eg-sohag-en'].map((id) => [of(id).parts?.city, of(id).parts?.region])).toEqual([
+      ['المنصورة', 'الدقهلية'],
+      ['Tanta', 'Gharbia'],
+      ['طنطا', 'الغربية'],
+      ['Zagazig', 'Sharqia'],
+      ['Kharga', 'New Valley'],
+      ['Sohag', 'Sohag'],
+    ]);
+    // Sohag's own spelling, "Sawhāj", once beside its governorate's name; the governorate named for its town placed at the town, not its division's middle 57 km off.
+    expect([of('eg-tahrir-sohag-en').row, of('eg-sohag-en').placed]).toEqual(['El Tahrir Street | Sohag, Egypt', true]);
+  });
+
+  it('takes the city and region of a suggestion that names no emirate from the place found, and leaves it out beside one that says more of it (البرشاء 2)', () => {
+    expect([of('ae-barsha2-ar').row, of('ae-barsha2-ar').parts]).toEqual(['البرشاء 2 | دبي، الإمارات العربية المتحدة', { city: 'دبي', region: 'دبي', country: 'AE' }]);
+  });
+
+  it('names a road with no name of its own by the district its line names it in, in the page’s words, not by its town in Azure’s French ("Abu Tina, Charjah")', () => {
+    expect([of('ae-abutina-en').row, of('ae-abutina-en').placed, of('ae-abutina-en').precise]).toEqual(['Abu Tina | Sharjah, United Arab Emirates', true, undefined]);
   });
 
   it('says the district of a street named by its number, which Azure gives only in its line, and places it there: never at another district’s street of the number', () => {

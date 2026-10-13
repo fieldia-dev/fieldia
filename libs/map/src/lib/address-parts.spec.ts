@@ -253,6 +253,82 @@ describe('a region and a city named one way, and a street’s district said', ()
   });
 });
 
+describe('a city written each country’s way, and a place named once, as Azure answered live on 13 Oct 2026', () => {
+  const azure = (type: string, address: Record<string, unknown>) => ({ type: 'Feature', geometry: null, properties: { type, address } });
+  const egypt = (locality: string, ...districts: string[]) => azure('PopulatedPlace', { locality, adminDistricts: districts.map((name) => ({ name })), countryRegion: { ISO: 'EG' }, formattedAddress: `${locality}, Egypt` });
+
+  it('writes an Egyptian town Azure files under its governorate alone as the town, a city Fieldia knows by its name; a district of Cairo or Giza as theirs', () => {
+    const english = azurePlaces({ features: [egypt('Ţanţā', 'Al Gharbiyah'), egypt('Zagazig', 'Sharkia'), egypt('El Kharga', 'Al Wadi al Jadid'), egypt('El Zamalek', 'Cairo'), egypt('Ad-Duqqi', 'Al Jizah'), egypt('Sheikh Zayed City', 'Cairo'), egypt('Qesm 1st Sohag', 'Suhaj', 'Sohag')] }, 'en', '', true);
+    expect(english.map((place) => [place.label, place.parts?.city, place.parts?.region])).toEqual([
+      // Its own name, as Fieldia writes the city: "Ţanţā" once, not again in its line.
+      ['Tanta', 'Tanta', 'Gharbia'],
+      ['Zagazig', 'Zagazig', 'Sharqia'],
+      ['Kharga', 'Kharga', 'New Valley'],
+      ['El Zamalek', 'Cairo', 'Cairo'],
+      ['Ad-Duqqi', 'Giza', 'Giza'],
+      // Filed under Cairo, as its English answer has it: a city of its own all the same.
+      ['Sheikh Zayed', 'Sheikh Zayed', 'Cairo'],
+      ['Qesm 1st Sohag', 'Sohag', 'Sohag'],
+    ]);
+    expect(english[0].detail).toBe('Gharbia, Egypt');
+    const [mansoura] = azurePlaces({ features: [azure('PopulatedPlace', { locality: 'المنصورة', adminDistricts: [{ name: 'الدقهلية' }], countryRegion: { ISO: 'EG' } })] }, 'ar', '', true);
+    expect(mansoura.parts).toEqual({ city: 'المنصورة', region: 'الدقهلية', country: 'EG' });
+  });
+
+  it('says a town once in a line, in Fieldia’s spelling of it beside Azure’s ("Sawhāj, Sohag" is Sohag)', () => {
+    const [tahrir] = azurePlaces({ features: [azure('RoadBlock', { locality: 'Sawhāj', adminDistricts: [{ name: 'Suhaj' }], countryRegion: { ISO: 'EG' }, streetName: 'El Tahrir Street', addressLine: 'El Tahrir Street', formattedAddress: 'El Tahrir Street, Sawhāj, Suhaj, Egypt' })] }, 'en', '', true);
+    expect([tahrir.detail, tahrir.parts?.city]).toEqual(['Sohag, Egypt', 'Sohag']);
+  });
+
+  it('writes no city for a suggestion that names no emirate (its locality a district), and lists it not at all beside one that says more of it', async () => {
+    const barsha = (emirate?: boolean) => azure('Neighborhood', { locality: 'البرشاء 2', ...(emirate ? { adminDistricts: [{ name: 'دبي', shortName: 'DU' }] } : {}), countryRegion: { ISO: 'AE' }, formattedAddress: 'البرشاء‏ 2, الإمارات‏ العربية‏ المتحدة' });
+    const [alone] = azurePlaces({ features: [barsha()] }, 'ar', '', true);
+    expect(alone.parts).toEqual({ country: 'AE' });
+    // Located, it takes its city and region from the place found.
+    const found = { features: [{ geometry: { coordinates: [55.2161, 25.1024] }, properties: { type: 'Neighborhood', confidence: 'High', matchCodes: ['Ambiguous'], address: { neighborhood: 'البرشاء 2', adminDistricts: [{ shortName: 'DU' }], countryRegion: { ISO: 'AE' } } } }] };
+    expect(await azureLocate(async () => found, alone, 'ar')).toEqual({ lat: 25.1024, lng: 55.2161, address: 'البرشاء 2، دبي، الإمارات العربية المتحدة', parts: { city: 'دبي', region: 'دبي', country: 'AE' } });
+    const { fetch } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': { features: [barsha(), barsha(true)] } });
+    const listed = await azureMaps({ key: 'K', fetch }).search!({ text: 'البرشاء', locale: 'ar', countries: ['AE'], parts: true });
+    expect(listed.map((place) => [place.label, place.detail])).toEqual([['البرشاء 2', 'دبي، الإمارات العربية المتحدة']]);
+  });
+
+  it('lists a town once where Azure gives it with its postcode and without, where the first was; never a district of the name in another town as less of it', async () => {
+    const saudi = (locality: string, type: string, districts: string[], postalCode?: string) =>
+      azure(type, { locality, adminDistricts: [{ name: 'Riyadh', shortName: 'RIY' }, ...districts.map((name) => ({ name }))], countryRegion: { ISO: 'SA' }, ...(postalCode ? { postalCode } : {}) });
+    const { fetch } = network({
+      'https://atlas.microsoft.com/geocode:autocomplete': {
+        features: [saudi('Al Rawdah', 'PopulatedPlace', ['Riyadh']), saudi('Al Rawdah', 'PopulatedPlace', ['Al Kharj']), saudi('Al Rawdah', 'AdminDivision2', ['Riyadh'], '13211'), saudi('Al Rawdah', 'Neighborhood', ['Riyadh'])],
+      },
+    });
+    const listed = await azureMaps({ key: 'K', fetch }).search!({ text: 'Al Rawdah', near: { lat: 24.7136, lng: 46.6753 }, locale: 'en', countries: ['SA'] });
+    expect(listed.map((place) => [place.label, place.detail])).toEqual([
+      ['Al Rawdah', 'Riyadh, 13211, Saudi Arabia'],
+      ['Al Rawdah', 'Al Kharj, Riyadh, Saudi Arabia'],
+    ]);
+  });
+
+  it('names a road with no name of its own by the district its line names it in, and a town Azure names in French in the page’s words ("Abu Tina, Charjah")', () => {
+    const [road] = azurePlaces({ features: [azure('RoadBlock', { locality: 'Charjah', adminDistricts: [{ name: 'Charjah' }], countryRegion: { ISO: 'AE' }, streetName: '', addressLine: '', formattedAddress: 'Abu Tina, Charjah, Émirats arabes unis' })] }, 'en', '', true);
+    expect([road.label, road.detail, road.parts]).toEqual(['Abu Tina', 'Sharjah, United Arab Emirates', { city: 'Sharjah', region: 'Sharjah', country: 'AE' }]);
+  });
+
+  it('asks for a district without the word for one typed before its name ("حي الروضة"), and with it only where that finds nothing', async () => {
+    const asked: string[] = [];
+    const rawdah = azure('PopulatedPlace', { locality: 'الروضة', adminDistricts: [{ name: 'الرياض', shortName: 'RIY' }, { name: 'الرياض' }], countryRegion: { ISO: 'SA' } });
+    const fetch = (async (input: RequestInfo | URL) => {
+      const query = new URL(String(input)).searchParams.get('query') ?? '';
+      asked.push(query);
+      return new Response(JSON.stringify({ features: query === 'الروضة' ? [rawdah] : [] }), { status: 200 });
+    }) as typeof globalThis.fetch;
+    const maps = azureMaps({ key: 'K', fetch });
+    const [found] = await maps.search!({ text: 'حي الروضة', near: { lat: 24.7136, lng: 46.6753 }, locale: 'ar', countries: ['SA'] });
+    expect([found.label, found.detail, asked]).toEqual(['الروضة', 'الرياض، المملكة العربية السعودية', ['الروضة']]);
+    asked.length = 0;
+    expect(await maps.search!({ text: 'حى الملقا', near: { lat: 24.7136, lng: 46.6753 }, locale: 'ar', countries: ['SA'] })).toEqual([]);
+    expect(asked).toEqual(['الملقا', 'حى الملقا']);
+  });
+});
+
 describe('a street of Azure’s located in its own district', () => {
   type Hit = { line: string; district: string; at: [number, number]; type?: string; codes?: string[] };
   const hit = ({ line, district, at, type = 'Address', codes = ['Ambiguous'] }: Hit) => ({
@@ -260,26 +336,46 @@ describe('a street of Azure’s located in its own district', () => {
     properties: { type, confidence: 'Medium', matchCodes: codes, address: { addressLine: line, neighborhood: district, locality: 'Abu Dhabi', adminDistricts: [{ name: 'Abu Dhabi' }], countryRegion: { ISO: 'AE' }, formattedAddress: `${line}, ${district}, Abu Dhabi, United Arab Emirates` } },
   });
   const area = (name: string, at: [number, number]) => ({ geometry: { coordinates: [at[1], at[0]] }, properties: { type: 'PopulatedPlace', confidence: 'High', matchCodes: ['Ambiguous'], address: { locality: name, adminDistricts: [{ shortName: 'AZ' }], countryRegion: { ISO: 'AE' } } } });
-  const suggestion = (street: string) =>
+  const suggestion = (street: string, district = 'Al Bateen') =>
     azurePlaces(
-      { features: [{ properties: { type: 'RoadBlock', address: { locality: 'Abu Dhabi', adminDistricts: [{ name: 'Abu Dhabi Emirate', shortName: 'AZ' }], countryRegion: { ISO: 'AE' }, streetName: street, addressLine: street, formattedAddress: `${street}, Al Bateen, Abu Dhabi, AZ, United Arab Emirates` } } }] },
+      { features: [{ properties: { type: 'RoadBlock', address: { locality: 'Abu Dhabi', adminDistricts: [{ name: 'Abu Dhabi Emirate', shortName: 'AZ' }], countryRegion: { ISO: 'AE' }, streetName: street, addressLine: street, formattedAddress: `${street}, ${district}, Abu Dhabi, AZ, United Arab Emirates` } } }] },
       'en',
       '',
       true,
       { lat: 24.4539, lng: 54.3773 },
     )[0];
 
+  /** Azure's geocoding as asked: a street's stretches by its line, the district by its own name, nothing by two lines; what was asked, in order. */
+  const geocoding = (answers: { street?: unknown[]; district?: unknown[]; query?: unknown[] }) => {
+    const asked: string[] = [];
+    const geocode = async (params: Record<string, unknown>) => {
+      const kind = params['addressLine'] ? 'street' : params['query'] ? 'query' : 'district';
+      asked.push(`${kind} ${String(params['addressLine'] ?? params['query'] ?? params['locality'])}${params['addressLine'] ? ` in ${String(params['locality'])}` : ''}`);
+      return { features: answers[kind] ?? [] };
+    };
+    return { geocode, asked };
+  };
+  const box = (feature: ReturnType<typeof area>, [west, south, east, north]: number[]) => ({ ...feature, bbox: [west, south, east, north] });
+
   it('takes another district’s street of the same number for another street: the district then, nearest where the search looked, and said to be near', async () => {
-    const asked: Record<string, unknown>[] = [];
-    const answers = [
-      { features: [hit({ line: '8', district: 'Al Jami Al Kabeer', at: [24.4077, 54.4711] }), hit({ line: '8', district: 'Al Mazoon', at: [24.4087, 54.4666] })] },
-      { features: [] },
+    const { geocode, asked } = geocoding({
+      street: [hit({ line: '8', district: 'Al Jami Al Kabeer', at: [24.4077, 54.4711] }), hit({ line: '8', district: 'Al Mazoon', at: [24.4087, 54.4666] })],
       // Al Ain's Al Bateen first, as Azure ranks them; Abu Dhabi's nearer where the search looked.
-      { features: [area('Al Bateen', [24.2049, 55.6197]), area('Al Bateen', [24.4516, 54.3447])] },
-    ];
-    const located = await azureLocate(async (params) => (asked.push(params), answers[asked.length - 1]), suggestion('8'), 'en');
+      district: [area('Al Bateen', [24.2049, 55.6197]), area('Al Bateen', [24.4516, 54.3447])],
+    });
+    const located = await azureLocate(geocode, suggestion('8'), 'en');
     expect(located).toMatchObject({ lat: 24.4516, lng: 54.3447, address: '8, Al Bateen, Abu Dhabi, United Arab Emirates', precise: false, parts: { street: '8', city: 'Abu Dhabi' } });
-    expect(asked.map((params) => params['addressLine'] ?? params['query'] ?? params['locality'])).toEqual(['8', '8, Al Bateen, Abu Dhabi, United Arab Emirates', 'Al Bateen']);
+    // By its district for its locality, then its town's; the district asked for once; then its two lines.
+    expect(asked).toEqual(['street 8 in Al Bateen', 'district Al Bateen', 'street 8 in Abu Dhabi', 'query 8, Al Bateen, Abu Dhabi, United Arab Emirates']);
+  });
+
+  it('never takes a street of its number that says it is in no district for one in its own, where Azure marks both Ambiguous at one spot ("10 41 Street | Abu Tina", Al Nahda’s)', async () => {
+    const nahda = hit({ line: '10 41 Street', district: 'Al Nahda', at: [25.3183, 55.3944] });
+    const unsaid = { ...hit({ line: '10 41 Street', district: '', at: [25.3183, 55.3946] }) };
+    unsaid.properties.address.formattedAddress = '10 41 Street, Sharjah City, United Arab Emirates';
+    const { geocode } = geocoding({ street: [nahda, unsaid], district: [box(area('Abu Tina', [25.3712, 55.4019]), [55.396, 25.3659, 55.4078, 25.3767])] });
+    const located = await azureLocate(geocode, suggestion('10 41 Street', 'Abu Tina'), 'en');
+    expect([located.lat, located.lng, located.precise]).toEqual([25.3712, 55.4019, false]);
   });
 
   it('takes its district, where Azure finds the street only as the town above it, as Azure answered live for Sharjah’s 19 Street in Al Layyeh', async () => {
@@ -291,21 +387,29 @@ describe('a street of Azure’s located in its own district', () => {
       true,
       { lat: 25.3463, lng: 55.4209 },
     );
-    const asked: Record<string, unknown>[] = [];
-    const answers = [
-      { features: [{ geometry: { coordinates: [55.42106, 25.34615] }, properties: { type: 'PopulatedPlace', confidence: 'Medium', matchCodes: ['UpHierarchy'], address: { locality: 'مدينة الشارقة', ...sharjah } } }] },
-      { features: [{ geometry: { coordinates: [55.37251, 25.34709] }, properties: { type: 'Neighborhood', confidence: 'Medium', matchCodes: ['UpHierarchy'], address: { neighborhood: 'اللية', locality: 'مدينة الشارقة', ...sharjah } } }] },
-    ];
-    const located = await azureLocate(async (params) => (asked.push(params), answers[asked.length - 1]), street, 'ar');
+    const town = { geometry: { coordinates: [55.42106, 25.34615] }, properties: { type: 'PopulatedPlace', confidence: 'Medium', matchCodes: ['UpHierarchy'], address: { locality: 'مدينة الشارقة', ...sharjah } } };
+    const { geocode, asked } = geocoding({
+      street: [town],
+      query: [town],
+      district: [{ geometry: { coordinates: [55.37251, 25.34709] }, properties: { type: 'Neighborhood', confidence: 'Medium', matchCodes: ['UpHierarchy'], address: { neighborhood: 'اللية', locality: 'مدينة الشارقة', ...sharjah } } }],
+    });
+    const located = await azureLocate(geocode, street, 'ar');
     expect(located).toMatchObject({ lat: 25.34709, lng: 55.37251, address: '19 Street، اللية، الشارقة، الإمارات العربية المتحدة', precise: false, parts: { street: '19 Street', city: 'الشارقة', region: 'الشارقة' } });
-    expect(asked.map((params) => params['addressLine'] ?? params['locality'])).toEqual(['19 Street', 'اللية']);
+    expect(asked).toEqual(['street 19 Street in اللية', 'street 19 Street in مدينة الشارقة', 'query 19 Street, اللية, الشارقة, الإمارات العربية المتحدة', 'district اللية']);
   });
 
-  it('takes a named street’s stretch in its own district, and another district’s stretch where Azure gives no other: one street through several', async () => {
-    const stretches = [hit({ line: 'Al Khaleej Al Arabi Street', district: 'Al Mushrif', at: [24.44, 54.39] }), hit({ line: 'Al Khaleej Al Arabi Street', district: 'Al Bateen', at: [24.45, 54.34] })];
-    const own = await azureLocate(async () => ({ features: stretches }), suggestion('Al Khaleej Al Arabi Street'), 'en');
+  it('takes a named street’s stretch in its own district; another district’s only where it runs near the district’s box, as a road runs on through the next', async () => {
+    const mushrif = hit({ line: 'Al Khaleej Al Arabi Street', district: 'Al Mushrif', at: [24.44, 54.39] });
+    const bateen = hit({ line: 'Al Khaleej Al Arabi Street', district: 'Al Bateen', at: [24.45, 54.34] });
+    const district = [box(area('Al Bateen', [24.4516, 54.3447]), [54.335, 24.44, 54.355, 24.465])];
+    const own = await azureLocate(geocoding({ street: [mushrif, bateen], district }).geocode, suggestion('Al Khaleej Al Arabi Street'), 'en');
     expect([own.lat, own.lng, own.precise]).toEqual([24.45, 54.34, undefined]);
-    const other = await azureLocate(async () => ({ features: stretches.slice(0, 1) }), suggestion('Al Khaleej Al Arabi Street'), 'en');
-    expect([other.lat, other.lng, other.precise]).toEqual([24.44, 54.39, undefined]);
+    // 3.5 km beyond Al Bateen's box: another street of the name; the district, near.
+    const far = await azureLocate(geocoding({ street: [mushrif], district }).geocode, suggestion('Al Khaleej Al Arabi Street'), 'en');
+    expect([far.lat, far.lng, far.precise]).toEqual([24.4516, 54.3447, false]);
+    // 1 km beyond it: the road itself, running on.
+    const next = hit({ line: 'Al Khaleej Al Arabi Street', district: 'Al Mushrif', at: [24.455, 54.365] });
+    const near = await azureLocate(geocoding({ street: [next], district }).geocode, suggestion('Al Khaleej Al Arabi Street'), 'en');
+    expect([near.lat, near.lng, near.precise]).toEqual([24.455, 54.365, undefined]);
   });
 });
