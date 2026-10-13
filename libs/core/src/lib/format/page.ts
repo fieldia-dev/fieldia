@@ -54,6 +54,12 @@ export interface PageLook {
    * no, a table, tags, a file and the like keep their own look either way.
    */
   readonlyShown?: 'text' | 'box';
+  /**
+   * False: an empty field in the quiet look shows nothing at rest, as a work
+   * item's Planning does, its label saying what it is; true (the default) it
+   * says what to add ("Add story points").
+   */
+  quietHints?: boolean;
   /** Light, dark, or as the reader's system has it. */
   scheme?: 'light' | 'dark' | 'auto';
   /** A look for each kind of part, over the page's: text boxes, choices, groups, buttons, tables. See `PART_LOOKS`. */
@@ -137,6 +143,7 @@ export const PageSchema = z
         helpShown: HelpShownSchema.optional(),
         lockAt: z.enum(['label', 'value']).optional(),
         readonlyShown: z.enum(['text', 'box']).optional(),
+        quietHints: z.boolean().optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
         skin: z.enum(SKINS).optional(),

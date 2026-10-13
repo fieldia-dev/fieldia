@@ -147,6 +147,9 @@ export const TOKEN_NAMES = [
   'text', 'muted', 'page', 'surface', 'fill', 'border', 'border-strong', 'edge',
   'accent', 'accent-text', 'accent-soft', 'accent-hover', 'focus', 'focus-ring',
   'error', 'error-soft', 'success', 'success-soft', 'warning', 'warning-soft', 'info', 'info-soft',
+  // A link's words; the band of fields under a record's head; a help box's ground. Read where they are worn as
+  // var(--fd-link, var(--fd-accent)), var(--fd-band, var(--fd-page)) and var(--fd-help, var(--fd-fill)).
+  'link', 'band', 'help',
   'radius', 'control-radius', 'font', 'label-weight',
 ] as const;
 export type TokenName = (typeof TOKEN_NAMES)[number];

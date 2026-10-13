@@ -74,6 +74,25 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'backlog',
+    name: 'Work item in a popup',
+    category: 'records',
+    // A tracker's page of its own round Fieldia's list, a bug opened over it in Fieldia's popup: no framework, no look to switch.
+    app: 'backlog',
+    query: '',
+    // Its code is the app's own: the list mounted in its page, a row's bug opened in the popup. It follows the reader's scheme.
+    code: 'backlog',
+    schemes: true,
+    blurb: 'A backlog of bugs and one opened in a large popup over it, as a work tracker draws it: its kind’s strip and badge, a quiet head with State, Reason, Area and Iteration, three columns of groups, a discussion, links, and its history.',
+    howTo: [
+      'Click a bug in the backlog: it opens in a large popup over the list.',
+      'Open Area and Iteration: Suggestions first, then the tree with each sprint’s dates.',
+      'Click into System Info: the toolbar appears inside the box.',
+      'Write a comment and Save it: the count in the head follows.',
+      'Open the History tab: the State Graph, then each change with its before and after.',
+    ],
+  },
+  {
     id: 'work-item',
     name: 'Work item, quiet',
     category: 'records',

@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { listMapSnippets, snippets } from './snippets.mjs';
+import { backlogSnippets, listMapSnippets, snippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -187,7 +187,15 @@ function drawHowTo() {
 function drawCode() {
   // A list's map in a page of its own: the page that describes its records, and the page's own script.
   const ownPage = demo?.code === 'list-map';
-  const tabs = ownPage
+  // A tracker's backlog of its own: the list's page, the bug's page, and the app's script.
+  const backlog = demo?.code === 'backlog';
+  const tabs = backlog
+    ? [
+        ['json', 'Backlog JSON', 'The list the backlog shows: plain JSON, the same the browser tests drive.'],
+        ['bug', 'Bug JSON', 'The bug the popup shows: its head, its three columns of groups, its tabs.'],
+        ['js', 'JavaScript', 'The app’s own script: the list in its page, a row’s bug in the popup.'],
+      ]
+    : ownPage
     ? [
         ['json', 'Page JSON', 'What the map shows of each home: plain JSON, the same the browser tests drive.'],
         ['js', 'JavaScript', 'The page’s own script: its list, its address, and one call for the map.'],
@@ -221,7 +229,8 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    code.innerHTML = highlight({ json: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], (ownPage ? listMapSnippets(page) : snippets(page, params))[tab]);
+    const written = backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

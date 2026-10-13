@@ -1,0 +1,147 @@
+{
+  "fieldia": "0.1",
+  "id": "backlog",
+  "data": { "kind": "record", "model": "work.item" },
+  "look": { "theme": "fluent", "density": "compact" },
+  "maxWidth": "full",
+  "fields": {
+    "order": { "type": "integer", "label": "Order" },
+    "number": { "type": "integer", "label": "ID" },
+    "work_type": {
+      "type": "selection",
+      "label": "Work Item Type",
+      "options": [
+        { "value": "bug", "label": "Bug" },
+        { "value": "task", "label": "Task" },
+        { "value": "story", "label": "User Story" }
+      ]
+    },
+    "title": { "type": "char", "label": "Title" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "active", "label": "Active" },
+        { "value": "resolved", "label": "Resolved" },
+        { "value": "closed", "label": "Closed" }
+      ]
+    },
+    "story_points": { "type": "float", "label": "Story Points" },
+    "value_area": {
+      "type": "selection",
+      "label": "Value Area",
+      "options": [
+        { "value": "business", "label": "Business" },
+        { "value": "architectural", "label": "Architectural" }
+      ]
+    },
+    "area": { "type": "many2one", "label": "Area", "relation": "work.area" },
+    "iteration": { "type": "many2one", "label": "Iteration Path", "relation": "work.iteration" },
+    "tags": { "type": "many2many", "label": "Tags", "relation": "work.tag" },
+    "parent_id": { "type": "many2one", "label": "Parent", "relation": "work.item" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "backlog-list",
+    "columns": ["order", "work_type", "title", "state", "story_points", "value_area", "iteration", "tags"],
+    "sort": [{ "field": "order" }],
+    "pageSize": 100,
+    "searchFields": ["title", "number", "tags"],
+    "cells": {
+      "order": { "align": "start", "width": 6 },
+      "work_type": { "width": 4 },
+      "title": {
+        "lead": {
+          "field": "work_type",
+          "looks": {
+            "bug": { "icon": "bug", "colour": "#cc293d" },
+            "task": { "icon": "task", "colour": "#f2cb1d" },
+            "story": { "icon": "story", "colour": "#009ccc" }
+          }
+        }
+      },
+      "state": {
+        "widget": "dot",
+        "width": 8,
+        "options": { "colours": { "new": "#b2b2b2", "active": "#007acc", "resolved": "#ff9d00", "closed": "#339933" } }
+      },
+      "story_points": { "width": 6 },
+      "value_area": { "width": 10 },
+      "iteration": { "width": 22 },
+      "tags": { "width": 22 }
+    },
+    "choose": false,
+    "search": "fields",
+    "filterFields": ["work_type", "state", "area", "iteration", "tags"],
+    "parentField": "parent_id"
+  },
+  "translations": {
+    "ar": {
+      "Order": "الترتيب",
+      "ID": "المعرّف",
+      "Work Item Type": "نوع بند العمل",
+      "Bug": "خلل",
+      "Task": "مهمة",
+      "User Story": "قصة مستخدم",
+      "Title": "العنوان",
+      "State": "الحالة",
+      "New": "جديد",
+      "Active": "نشط",
+      "Resolved": "محلول",
+      "Closed": "مغلق",
+      "Story Points": "نقاط القصة",
+      "Value Area": "مجال القيمة",
+      "Business": "الأعمال",
+      "Architectural": "معماري",
+      "Area": "المجال",
+      "Iteration Path": "مسار التكرار",
+      "Tags": "الوسوم",
+      "Parent": "الأصل"
+    },
+    "de": {
+      "Order": "Reihenfolge",
+      "ID": "ID",
+      "Work Item Type": "Arbeitselementtyp",
+      "Bug": "Fehler",
+      "Task": "Aufgabe",
+      "User Story": "User Story",
+      "Title": "Titel",
+      "State": "Status",
+      "New": "Neu",
+      "Active": "Aktiv",
+      "Resolved": "Gelöst",
+      "Closed": "Geschlossen",
+      "Story Points": "Story Points",
+      "Value Area": "Wertbereich",
+      "Business": "Geschäft",
+      "Architectural": "Architektur",
+      "Area": "Bereich",
+      "Iteration Path": "Iterationspfad",
+      "Tags": "Tags",
+      "Parent": "Übergeordnet"
+    },
+    "fr": {
+      "Order": "Ordre",
+      "ID": "ID",
+      "Work Item Type": "Type d’élément de travail",
+      "Bug": "Bogue",
+      "Task": "Tâche",
+      "User Story": "Récit utilisateur",
+      "Title": "Titre",
+      "State": "État",
+      "New": "Nouveau",
+      "Active": "Actif",
+      "Resolved": "Résolu",
+      "Closed": "Fermé",
+      "Story Points": "Points de récit",
+      "Value Area": "Domaine de valeur",
+      "Business": "Métier",
+      "Architectural": "Architecture",
+      "Area": "Zone",
+      "Iteration Path": "Chemin d’itération",
+      "Tags": "Balises",
+      "Parent": "Parent"
+    }
+  }
+}

@@ -166,4 +166,10 @@ export const refusals: DesignerWords['refusals'] = {
   filterCondition: 'يحتاج عامل التصفية إلى شرط',
   buttonWords: 'يحتاج الزر إلى نص',
   listButtonAction: 'يحتاج الزر إلى اسم إجرائه، مثل archive',
+  cellWidth: 'عرض العمود من 1 إلى 200 حرف',
+  leadNeedsChoice: (label) => `الأيقونة قبل الكلمات تأتي من قيمة حقل اختيار، و${q(label)} ليس حقل اختيار`,
+  dotNeedsChoice: (label) => `نقطة الحالة لحقل اختيار، و${q(label)} ليس كذلك`,
+  parentNotOwnLink: (label) => `تتداخل الصفوف تحت رابط إلى سجلات القائمة نفسها، و${q(label)} ليس كذلك`,
+  notFilterable: (label) => `لا يستطيع شريط التصفية عرض قيم ${q(label)}`,
+  chooseHasButtons: 'للقائمة أزرار للصفوف المحددة: أزلها قبل مربع تحديد الصف',
 };

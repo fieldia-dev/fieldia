@@ -24,6 +24,8 @@ const has = (record: object, key: string) => Object.prototype.hasOwnProperty.cal
 /** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
 const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
+/** The kinds of field a list's filter bar can list the values of. */
+const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
 
 /** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
 interface Scope {
@@ -483,6 +485,41 @@ export class ReferenceCheck {
       this.checkPress(button, `${path}.actions[${i}]`);
     });
     if (list.map) this.walkListMap(list.map, `${path}.map`);
+    this.checkListCells(list, path);
+  }
+
+  /**
+   * A list drawn as a backlog: each column's cells are a column's, a lead's
+   * icon is by a field's values; the filter bar's fields can list their
+   * values; rows nest under a link to the list's own records; and buttons for
+   * the rows chosen need a box to choose one.
+   */
+  private checkListCells(list: ListNode, path: string) {
+    for (const [column, cell] of Object.entries(list.cells ?? {})) {
+      const at = `${path}.cells.${column}`;
+      if (!list.columns.includes(column)) {
+        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
+        continue;
+      }
+      if (!cell.lead) continue;
+      const def = this.need(cell.lead.field, `${at}.lead.field`);
+      if (def?.type !== 'selection') continue;
+      const values = new Set(def.options.map((option) => String(option.value)));
+      for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
+    }
+    if (list.filterFields && list.search !== 'fields') this.report(`${path}.filterFields`, 'the filter fields are for the "fields" search: add "search": "fields"');
+    list.filterFields?.forEach((name, i) => {
+      const def = this.need(name, `${path}.filterFields[${i}]`);
+      if (def && !LISTS_ITS_VALUES.has(def.type)) this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number`);
+    });
+    if (list.parentField !== undefined) {
+      const def = this.need(list.parentField, `${path}.parentField`);
+      const model = this.page.data.kind === 'record' ? this.page.data.model : '';
+      if (def && (def.type !== 'many2one' || def.relation !== model)) {
+        this.report(`${path}.parentField`, `"${list.parentField}" ${def.type === 'many2one' ? `links to ${def.relation}` : `is a ${def.type}`}; a parent is a many2one to the list’s own model, ${model}`);
+      }
+    }
+    if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
   }
 
   /** A list's map: where each record is, and the fields its pin and its card show, each of a type that can. */

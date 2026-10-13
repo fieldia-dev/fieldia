@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, FilterItem, ListMap, ListNode, Page } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, FilterItem, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -20,6 +20,14 @@ export interface ListOptionsPatch {
   groupBy?: string[];
   /** The records on a map too: where each is, its pin and its card; null for no map. */
   map?: ListMap | null;
+  /** A box to choose each row; false for none (a list with no buttons for the rows chosen). */
+  choose?: boolean;
+  /** The search bar, or a keyword and a list of values for each of `filterFields`. */
+  search?: 'bar' | 'fields';
+  /** The fields the filter bar offers the values of, in order; empty for none. */
+  filterFields?: string[];
+  /** The link to the list's own records its rows nest under; null for none. */
+  parentField?: string | null;
 }
 
 export interface ListActionPatch {
@@ -35,6 +43,8 @@ export interface ListCommands {
   moveColumn(field: string, index: number): boolean;
   removeColumn(field: string): boolean;
   setListOptions(options: ListOptionsPatch): boolean;
+  /** How a column draws its cells: a widget, an icon from another field, a width, a side; null draws it as its kind does. */
+  setListCell(column: string, cell: ListCell | null): boolean;
   /** A named filter for the search bar. Returns its id. */
   addListFilter(label: string, filter: FilterCondition[]): string | false;
   /** Its words, its conditions, and whether it is on when the list opens. */
@@ -45,6 +55,9 @@ export interface ListCommands {
   updateListAction(id: string, patch: ListActionPatch): boolean;
   removeListAction(id: string): boolean;
 }
+
+/** Kinds of field whose values a list's filter bar can offer to tick. */
+export const FILTERABLE = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
 
 /** Kinds of field a column cannot show: lines, rich text, files and raw data. */
 const NOT_IN_A_COLUMN = new Set(['one2many', 'html', 'binary', 'json']);
@@ -138,9 +151,11 @@ export function listCommands(context: {
         if (at === -1) throw new Refusal((w) => w.refusals.notAColumn(field));
         if (list.columns.length === 1) throw new Refusal((w) => w.refusals.listNeedsColumn);
         list.columns.splice(at, 1);
-        // The order and the search leave a column that is gone.
+        // The order and the search leave a column that is gone, and so do its cells.
         if (list.sort) list.sort = list.sort.filter((s) => s.field !== field);
         if (!list.sort?.length) delete list.sort;
+        if (list.cells) delete list.cells[field];
+        if (list.cells && !Object.keys(list.cells).length) delete list.cells;
         prune(draft);
       });
       if (ok) unpick(columnId(field));
@@ -167,6 +182,32 @@ export function listCommands(context: {
         }
         fields('searchFields', options.searchFields);
         fields('groupBy', options.groupBy);
+        if (options.choose === true) delete list.choose;
+        else if (options.choose === false) {
+          if (list.actions?.length) throw new Refusal((w) => w.refusals.chooseHasButtons);
+          list.choose = false;
+        }
+        if (options.search === 'fields') list.search = 'fields';
+        else if (options.search === 'bar') {
+          // The fields' values belong to the filter bar alone.
+          delete list.search;
+          delete list.filterFields;
+        }
+        if (options.filterFields !== undefined) {
+          for (const name of options.filterFields) {
+            const def = fieldFor(draft, name);
+            if (!FILTERABLE.has(def.type)) throw new Refusal((w) => w.refusals.notFilterable(def.label));
+          }
+          if (options.filterFields.length) list.filterFields = [...options.filterFields];
+          else delete list.filterFields;
+        }
+        if (options.parentField === null) delete list.parentField;
+        else if (options.parentField !== undefined) {
+          const def = fieldFor(draft, options.parentField);
+          const own = draft.data.kind === 'record' ? draft.data.model : '';
+          if (def.type !== 'many2one' || def.relation !== own) throw new Refusal((w) => w.refusals.parentNotOwnLink(def.label));
+          list.parentField = options.parentField;
+        }
         if (options.map === null) delete list.map;
         else if (options.map !== undefined) {
           // The fields it names come onto the page from the model; the page check says what is wrong with the rest.
@@ -175,6 +216,31 @@ export function listCommands(context: {
         }
         prune(draft);
       });
+    },
+
+    setListCell(column, cell) {
+      return apply(
+        (draft) => {
+          const list = listOf(draft);
+          if (!list.columns.includes(column)) throw new Refusal((w) => w.refusals.notAColumn(column));
+          const cells = { ...list.cells };
+          if (!cell || !Object.keys(cell).length) delete cells[column];
+          else {
+            if (cell.width !== undefined && (!Number.isInteger(cell.width) || cell.width < 1 || cell.width > 200)) throw new Refusal((w) => w.refusals.cellWidth);
+            const own = fieldFor(draft, column);
+            if (cell.widget === 'dot' && own.type !== 'selection') throw new Refusal((w) => w.refusals.dotNeedsChoice(own.label));
+            if (cell.lead) {
+              const from = fieldFor(draft, cell.lead.field);
+              if (from.type !== 'selection') throw new Refusal((w) => w.refusals.leadNeedsChoice(from.label));
+            }
+            cells[column] = JSON.parse(JSON.stringify(cell)) as ListCell;
+          }
+          if (Object.keys(cells).length) list.cells = cells;
+          else delete list.cells;
+          prune(draft);
+        },
+        `cell:${column}`
+      );
     },
 
     addListFilter(label, filter) {

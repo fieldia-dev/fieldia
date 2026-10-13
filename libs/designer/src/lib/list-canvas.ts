@@ -57,10 +57,12 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   // ---- the search bar and the pager ----------------------------------------------------
   const facets = el('span', { class: 'fd-facets' });
   const searchWords = el('span', { class: 'fd-search-placeholder' });
+  // A filter bar of fields (search "fields"): "Filter by keyword", then each field's name with its chevron, as the viewer draws it.
+  const filterFields = el('span', { class: 'fd-canvas-filter-fields' });
   const search = el(
     'div',
     { class: 'fd-search fd-canvas-search', role: 'button', tabindex: '0', 'aria-label': w.searchAndFilters, title: w.searchTitle },
-    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, searchWords)
+    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, searchWords, filterFields)
   );
   const openFilters = () => {
     designer.select(null);
@@ -202,7 +204,10 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   }
 
   function drawTable(page: Page, list: ListNode, selected: string | null) {
-    const key = JSON.stringify([list.columns, list.sort?.[0], list.columns.map((name) => page.fields[name]), selected]);
+    const key = JSON.stringify([list.columns, list.sort?.[0], list.columns.map((name) => page.fields[name]), selected, list.cells, list.choose]);
+    // Its cells as the viewer draws them: the side their words keep to, a state's dot before its words; no box to choose a row when it has none.
+    const choose = list.choose !== false;
+    const atEnd = (name: string) => (list.cells?.[name]?.align ? list.cells[name].align === 'end' : NUMBERS.has(page.fields[name].type));
     if (key === tableKey) return;
     tableKey = key;
     const box = () => el('input', { type: 'checkbox', class: 'fd-list-checkbox', tabindex: '-1', 'aria-hidden': 'true', disabled: '' });
@@ -212,7 +217,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       const picked = selected === columnId(name);
       const th = el(
         'th',
-        { scope: 'col', 'data-node': name, tabindex: '0', class: ['fd-canvas-column', NUMBERS.has(def.type) ? 'fd-num' : '', picked ? 'fd-picked' : ''].filter(Boolean).join(' ') },
+        { scope: 'col', 'data-node': name, tabindex: '0', class: ['fd-canvas-column', atEnd(name) ? 'fd-num' : '', picked ? 'fd-picked' : ''].filter(Boolean).join(' ') },
         el('span', { class: 'fd-list-sort' }, def.label)
       );
       if (order?.field === name) th.setAttribute('aria-sort', order.desc ? 'descending' : 'ascending');
@@ -233,10 +238,11 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       el(
         'tr',
         { class: 'fd-list-row' },
-        el('td', { class: 'fd-list-check' }, box()),
+        ...(choose ? [el('td', { class: 'fd-list-check' }, box())] : []),
         ...list.columns.map((name) => {
-          const td = el('td', { 'data-node': name, class: [NUMBERS.has(page.fields[name].type) ? 'fd-num' : '', selected === columnId(name) ? 'fd-picked' : ''].filter(Boolean).join(' ') || undefined });
+          const td = el('td', { 'data-node': name, class: [atEnd(name) ? 'fd-num' : '', selected === columnId(name) ? 'fd-picked' : ''].filter(Boolean).join(' ') || undefined });
           td.textContent = displayValue(page.fields[name] as LineField, values[name], values);
+          if (list.cells?.[name]?.widget === 'dot' && td.textContent) td.prepend(el('span', { class: 'fd-list-dot', 'aria-hidden': 'true', 'data-tone': 'info' }));
           td.addEventListener('click', () => designer.select(columnId(name)));
           return td;
         }),
@@ -244,7 +250,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       )
     );
     table.replaceChildren(
-      el('thead', {}, el('tr', {}, el('th', { class: 'fd-list-check', scope: 'col' }, box()), ...heads, el('th', { class: 'fd-canvas-add-column' }, add))),
+      el('thead', {}, el('tr', {}, ...(choose ? [el('th', { class: 'fd-list-check', scope: 'col' }, box())] : []), ...heads, el('th', { class: 'fd-canvas-add-column' }, add))),
       el('tbody', {}, ...rows)
     );
   }
@@ -273,7 +279,11 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       facets.replaceChildren(...(list.filters ?? []).filter((f) => on.has(f.id)).map((f) => el('span', { class: 'fd-facet' }, el('span', { class: 'fd-facet-text' }, f.label))));
       const size = list.pageSize ?? 40;
       const said = viewerWords(page);
-      searchWords.textContent = said.search;
+      const fieldsBar = list.search === 'fields';
+      searchWords.textContent = fieldsBar ? said.filterByKeyword : said.search;
+      filterFields.replaceChildren(...(fieldsBar ? (list.filterFields ?? []).map((name) => el('span', { class: 'fd-canvas-filter-field' }, page.fields[name]?.label ?? name, ' ▾')) : []));
+      // No box to choose a row: no buttons for the rows chosen either.
+      selection.hidden = list.choose === false;
       chosen.textContent = said.selected.replace('{n}', '2');
       pagerText.textContent = said.range.replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
       drawActions(list, selected);
