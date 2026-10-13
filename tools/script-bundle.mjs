@@ -418,7 +418,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // save's conflict, and the memory source keeping them — versions, a change from elsewhere, permissions kept to as a
 // backend keeps them, every id a search matches, totals by field and group, a file stored with its progress — 3.4
 // more, to 525.2.
-const BUDGET_KB = 525.2;
+// Save safety on that contract (lane w1-save): the form keeping a record's version and what the person may do —
+// fields locked or hidden, a save refused before the source is asked, Archive, Duplicate and Delete and the buttons
+// that would do them hidden — a conflict's who, when and fields, Reload with the person's changes set aside to put
+// back, Keep mine; the viewer's banner, the list of changes set aside, the line over a record only to read, a locked
+// field’s reason, the gear menu’s note, their words and their stylesheet (2.3 of it) — 10.9 more, to 536.1.
+const BUDGET_KB = 536.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -471,7 +476,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
-const GZIP_BUDGET_KB = 159.4;
+// Save safety on that contract (a conflict's banner with Reload and Keep mine, the changes set aside, a record only to
+// read and what the person may do kept to, with their words and stylesheet), 3.5 more, to 162.9.
+const GZIP_BUDGET_KB = 162.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -508,7 +515,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
 // Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
 // Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
-const ADD_ON_BUDGET_KB = { ar: [27.2, 5.6], de: [11.7, 4.9], fr: [11.8, 4.8] };
+// Save safety (lane w1-save) — who changed the record and when, what each changed, what Reload and Keep mine do and
+// their buttons, the changes set aside and Put back, a record only to read, a field locked for this person, what the
+// gear leaves out, and the four refusals core says when the source gives no reason — 21 words in each: Arabic's to
+// 30.2 and 6.0, German’s to 12.9 and 5.2, French’s to 13.0 and 5.2.
+const ADD_ON_BUDGET_KB = { ar: [30.2, 6.0], de: [12.9, 5.2], fr: [13.0, 5.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
