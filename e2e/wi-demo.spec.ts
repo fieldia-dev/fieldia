@@ -1,0 +1,333 @@
+import { type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import { axeFindings } from './a11y-support';
+import { expectNoSidewaysScroll, screen } from './support';
+
+/**
+ * The backlog demo (demos/backlog): a work tracker's page of its own round a
+ * Fieldia list, drawn as the tracker draws its backlog — no box to choose a
+ * row, a kind's icon before each title, a state's dot, headers cut short with
+ * their whole words as a title, a filter bar of a keyword and each field's
+ * values — and a bug opened from a row in a large popup over it, kept in the
+ * address so a reload opens it again, the focus back on its row once closed.
+ * The popup's own parts (its head, its three columns, its discussion and
+ * history) are the other work item lanes'; their states are checked here
+ * once they have joined (the fixme tests at the end).
+ */
+
+const BACKLOG = '/backlog/';
+const rows = (page: Page) => page.locator('.fd-list-row:visible');
+const row = (page: Page, id: number) => page.locator(`.fd-list-row[data-id="${id}"]`);
+const pick = (page: Page, field: string) => page.locator(`.fd-filter-pick[data-field="${field}"]`);
+const dialog = (page: Page) => page.getByRole('dialog');
+
+function watch(page: Page) {
+  const problems: string[] = [];
+  page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
+  page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
+  return problems;
+}
+
+async function openBacklog(page: Page, query = '') {
+  const problems = watch(page);
+  await page.goto(`${BACKLOG}${query}`);
+  await expect(rows(page).first()).toBeVisible();
+  return problems;
+}
+
+test.describe('the backlog', () => {
+  test.use({ viewport: { width: 2044, height: 929 } });
+
+  test('is the tracker’s page round a Fieldia list drawn as its backlog', async ({ page }) => {
+    const problems = await openBacklog(page);
+    // The app's own chrome: a 48px bar, the project's menu, the team's head with its buttons and pivots.
+    expect((await page.locator('.bl-top').boundingBox())?.height).toBe(48);
+    expect((await page.locator('.bl-nav').boundingBox())?.width).toBe(255);
+    await expect(page.locator('.bl-team')).toHaveText('Portal Team');
+    await expect(page.getByRole('button', { name: 'New Work Item' })).toBeVisible();
+    await expect(page.locator('.bl-pivots [aria-current="page"]')).toHaveText('Backlog');
+    // No product's name or mark in it.
+    await expect(page.locator('#app')).not.toContainText(/Azure|DevOps|Microsoft|Contoso|Fabrikam|Northwind/);
+
+    // The filter bar: the team's default search, active bugs, its picks in strong words; the rest muted.
+    const bar = page.locator('.fd-filter-bar');
+    await expect(bar.getByRole('searchbox', { name: 'Filter by keyword' })).toBeVisible();
+    await expect(pick(page, 'work_type')).toHaveText('Work Item Type: Bug');
+    await expect(pick(page, 'work_type')).toHaveAttribute('data-picked', '');
+    await expect(pick(page, 'state')).toHaveText('State: Active');
+    for (const field of ['area', 'iteration', 'tags']) await expect(pick(page, field)).not.toHaveAttribute('data-picked', '');
+    await expect(bar.getByRole('button', { name: 'Filter settings' })).toBeVisible();
+    await expect(bar.getByRole('button', { name: 'Clear filters' })).toBeVisible();
+    const picked = await pick(page, 'state').evaluate((b) => getComputedStyle(b).fontWeight);
+    const muted = await pick(page, 'area').evaluate((b) => [getComputedStyle(b).fontWeight, getComputedStyle(b).color]);
+    expect(picked).toBe('600');
+    expect(muted).toEqual(['400', 'rgb(112, 112, 112)']);
+    // A card with the callout's shadow, 45px tall.
+    const card = await bar.evaluate((b) => ({ height: b.getBoundingClientRect().height, shadow: getComputedStyle(b).boxShadow }));
+    expect(card.height).toBeGreaterThanOrEqual(45);
+    expect(card.shadow).toContain('rgba(0, 0, 0, 0.133)');
+
+    // The table: seventeen active bugs in their order, no box to choose one, Expand all and Collapse all in the header.
+    await expect(rows(page)).toHaveCount(17);
+    await expect(page.locator('.fd-list-checkbox')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Expand all' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Collapse all' })).toBeVisible();
+    const first = row(page, 4127);
+    await expect(first.locator('td').nth(1)).toHaveText('17');
+    await expect(first.locator('td').nth(2)).toHaveText('Bug');
+    await expect(first.locator('td').nth(3)).toHaveText('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
+    // Order keeps to the start, as the tracker draws it; a bug's icon before its title in its colour; a dot before its state.
+    expect(await first.locator('td').nth(1).evaluate((td) => getComputedStyle(td).textAlign)).toBe('start');
+    expect(await first.locator('.fd-list-lead').evaluate((svg) => [svg.getAttribute('data-icon'), getComputedStyle(svg).color])).toEqual(['bug', 'rgb(204, 41, 61)']);
+    expect(await first.locator('.fd-list-dot').evaluate((dot) => [getComputedStyle(dot).backgroundColor, dot.getBoundingClientRect().width])).toEqual(['rgb(0, 122, 204)', 8]);
+    // Rows 35px tall, no lines between them; headers small and muted, parted by short rules, cut ones saying themselves whole.
+    expect((await row(page, 4131).boundingBox())?.height).toBe(35);
+    expect(await first.locator('td').nth(3).evaluate((td) => getComputedStyle(td).borderBottomWidth)).toBe('0px');
+    const kind = page.locator('thead th[data-field="work_type"] .fd-list-head');
+    await expect(kind).toHaveAttribute('title', 'Work Item Type');
+    expect(await kind.evaluate((head) => head.scrollWidth > head.clientWidth)).toBe(true);
+    expect(await kind.evaluate((head) => [getComputedStyle(head).fontSize, getComputedStyle(head).fontWeight])).toEqual(['12px', '600']);
+    expect(await page.locator('thead th[data-field="title"]').evaluate((th) => [getComputedStyle(th, '::after').width, getComputedStyle(th, '::after').backgroundColor])).toEqual(['1px', 'rgb(234, 234, 234)']);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'wi-demo-backlog', { viewport: true });
+    expect(await axeFindings(page, 'backlog')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('filters by keys: ↓ opens a field’s values, the arrows move, Space ticks, Escape closes; × clears every filter', async ({ page }) => {
+    const problems = await openBacklog(page);
+    const kinds = pick(page, 'work_type');
+    await kinds.focus();
+    await page.keyboard.press('ArrowDown');
+    const menu = page.getByRole('menu', { name: 'Filter by Work Item Type' });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitemcheckbox')).toHaveText(['Bug', 'Task', 'User Story']);
+    await expect(menu.getByRole('menuitemcheckbox', { name: 'Bug' })).toBeFocused();
+    await expect(menu.getByRole('menuitemcheckbox', { name: 'Bug' })).toHaveAttribute('aria-checked', 'true');
+    await screen(page, 'wi-demo-filter-open', { viewport: true });
+    expect(await axeFindings(page, 'a filter’s values open')).toEqual([]);
+    // Tasks too: the active one comes nested under the bug it belongs to.
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+    await expect(menu.getByRole('menuitemcheckbox', { name: 'Task' })).toHaveAttribute('aria-checked', 'true');
+    await expect(rows(page)).toHaveCount(18);
+    await expect(row(page, 4128)).toHaveAttribute('data-depth', '1');
+    await expect(row(page, 4127)).toHaveAttribute('aria-expanded', 'true');
+    const ids = await rows(page).evaluateAll((trs) => trs.slice(0, 3).map((tr) => (tr as HTMLElement).dataset['id']));
+    expect(ids).toEqual(['4127', '4128', '4131']);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(kinds).toBeFocused();
+    await expect(kinds).toHaveText('Work Item Type: Bug, Task');
+    // Collapse all folds the tasks under their bug; Expand all brings them back.
+    await page.getByRole('button', { name: 'Collapse all' }).click();
+    await expect(rows(page)).toHaveCount(17);
+    await page.getByRole('button', { name: 'Expand all' }).click();
+    await expect(rows(page)).toHaveCount(18);
+    // A keyword: the titles that hold it.
+    await page.getByRole('searchbox', { name: 'Filter by keyword' }).fill('write a test');
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).first()).toContainText('Write a test for the stock count');
+    // × clears the keyword and every pick: the whole backlog.
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(rows(page)).toHaveCount(19);
+    await expect(pick(page, 'state')).toHaveText('State');
+    await expect(page.getByRole('searchbox', { name: 'Filter by keyword' })).toHaveValue('');
+    expect(problems).toEqual([]);
+  });
+
+  test('opens a bug from its row in the popup, keeps it in the address, and gives the focus back to its row', async ({ page }) => {
+    const problems = await openBacklog(page);
+    await row(page, 4136).click();
+    await expect(dialog(page)).toBeVisible();
+    await expect(page).toHaveURL(/[?&]workitem=4136\b/);
+    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('The menu link should say Inventory, not Warehouse');
+    await page.keyboard.press('Escape');
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(page).not.toHaveURL(/workitem=/);
+    await expect(row(page, 4136)).toBeFocused();
+    // Enter on a row opens it as well.
+    await row(page, 4140).focus();
+    await page.keyboard.press('Enter');
+    await expect(dialog(page)).toBeVisible();
+    await expect(page).toHaveURL(/[?&]workitem=4140\b/);
+    await page.keyboard.press('Escape');
+    await expect(row(page, 4140)).toBeFocused();
+    expect(problems).toEqual([]);
+  });
+
+  test('opens the bug the address names, as the page loads; closed, its row has the focus', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await expect(dialog(page)).toBeVisible();
+    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
+    await page.reload();
+    await expect(dialog(page)).toBeVisible();
+    await expect(page).toHaveURL(/[?&]workitem=4127\b/);
+    await screen(page, 'wi-demo-popup', { viewport: true });
+    await page.keyboard.press('Escape');
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(row(page, 4127)).toBeFocused();
+    expect(problems).toEqual([]);
+  });
+
+  test('New Work Item opens a new bug; once saved it is on the backlog', async ({ page }) => {
+    const problems = await openBacklog(page);
+    await page.getByRole('button', { name: 'New Work Item' }).click();
+    await expect(dialog(page)).toBeVisible();
+    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('');
+    await dialog(page).locator('[data-field="title"] input').fill('Printing a pick list cuts its last line');
+    await dialog(page).getByRole('button', { name: /Save/ }).last().click();
+    await expect(dialog(page)).toHaveCount(0);
+    // A new bug is New, not Active: it shows once the filter lets every state through.
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(page.locator('.fd-list-row', { hasText: 'Printing a pick list cuts its last line' })).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+
+  test('the Code drawer shows the backlog’s page, the bug’s page and the app’s own script', async ({ page }) => {
+    await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+    const problems = await openBacklog(page);
+    await page.getByRole('button', { name: '‹/› Code' }).click();
+    const code = page.locator('#demo-code');
+    await expect(code.getByRole('tab')).toHaveText(['Backlog JSON', 'Bug JSON', 'JavaScript']);
+    await expect(code.locator('code')).toContainText('"search": "fields"');
+    await code.getByRole('tab', { name: 'Bug JSON' }).click();
+    await expect(code.locator('code')).toContainText('"id": "work-item-bug"');
+    await code.getByRole('tab', { name: 'JavaScript' }).click();
+    await expect(code.locator('code')).toContainText("size: 'inset'");
+    await expect(code.locator('code')).toContainText('onOpenRecord: (id) => openBug(id)');
+    expect(problems).toEqual([]);
+  });
+
+  test('a press on a part this demo does not have says so', async ({ page }) => {
+    await openBacklog(page);
+    await page.getByRole('button', { name: 'View as Board' }).click();
+    await expect(page.locator('.bl-note')).toHaveText('Only the backlog and its bugs are in this demo.');
+  });
+});
+
+test.describe('the backlog in other languages, dark, and on a phone', () => {
+  test('right to left in Arabic: the chrome, the list and its filter bar mirrored and in Arabic', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const problems = await openBacklog(page, '?locale=ar');
+    await expect(page.locator('#app')).toHaveAttribute('dir', 'rtl');
+    await expect(page.getByRole('searchbox', { name: 'تصفية بكلمة' })).toBeVisible();
+    await expect(pick(page, 'work_type')).toHaveText('نوع بند العمل: خلل');
+    await expect(page.getByRole('button', { name: 'طي الكل' })).toBeVisible();
+    await expect(row(page, 4127).locator('td').nth(2)).toHaveText('خلل');
+    // The menu at the right, the list's filter fields at the left.
+    const nav = await page.locator('.bl-nav').boundingBox();
+    expect((nav?.x ?? 0) + (nav?.width ?? 0)).toBeGreaterThan(1400);
+    const fields = await page.locator('.fd-filter-fields').boundingBox();
+    const keyword = await page.locator('.fd-filter-search').boundingBox();
+    expect(fields?.x ?? 0).toBeLessThan(keyword?.x ?? 0);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'wi-demo-backlog-arabic', { viewport: true });
+    expect(await axeFindings(page, 'backlog in Arabic')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('in German and French, the filter bar’s words and the page’s', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openBacklog(page, '?locale=de');
+    await expect(page.getByRole('searchbox', { name: 'Nach Stichwort filtern' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Filtereinstellungen' })).toBeVisible();
+    await expect(pick(page, 'state')).toHaveText('Status: Aktiv');
+    await openBacklog(page, '?locale=fr');
+    await expect(page.getByRole('searchbox', { name: 'Filtrer par mot-clé' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Effacer les filtres' })).toBeVisible();
+    await expect(pick(page, 'state')).toHaveText('État: Actif');
+  });
+
+  test('dark: the chrome and the list in the tracker’s dark colours', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const problems = await openBacklog(page, '?scheme=dark');
+    expect(await page.locator('.bl-top').evaluate((bar) => getComputedStyle(bar).backgroundColor)).toBe('rgb(37, 36, 35)');
+    expect(await page.locator('.fd-list-scroll').evaluate((card) => getComputedStyle(card).backgroundColor)).toBe('rgb(37, 36, 35)');
+    expect(await row(page, 4127).locator('td').nth(3).evaluate((td) => getComputedStyle(td).color)).toBe('rgb(243, 242, 241)');
+    await screen(page, 'wi-demo-backlog-dark', { viewport: true });
+    expect(await axeFindings(page, 'backlog, dark')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('390px wide: the page and the list fit, nothing scrolls sideways but the table', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const problems = await openBacklog(page);
+    await expect(page.locator('.bl-nav')).toBeHidden();
+    await expectNoSidewaysScroll(page);
+    // The filter bar wraps inside its card.
+    const bar = await page.locator('.fd-filter-bar').boundingBox();
+    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(390 - 16 + 1);
+    await screen(page, 'wi-demo-backlog-phone', { viewport: true });
+    expect(await axeFindings(page, 'backlog, 390px')).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+});
+
+/**
+ * The popup's states as the screenshots show them: these need the other work
+ * item lanes (wi-header's head and dialog, wi-picker's pickers, wi-text's
+ * groups, editors and discussion, wi-history's history) and the target page
+ * (demos/backlog/work-item-bug.target.json) copied over the bug's page at the join.
+ */
+test.describe('the popup, once the work item lanes have joined', () => {
+  test.use({ viewport: { width: 1920, height: 983 } });
+
+  test.fixme('08_19: an inset popup over the backlog, nothing dimmed, its head and three columns', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    const box = (await dialog(page).boundingBox())!;
+    expect([box.x, box.width]).toEqual([96, 1728]);
+    expect(await page.locator('.fd-form-dialog-backdrop').evaluate((shade) => getComputedStyle(shade).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+    await expect(dialog(page).getByText('BUG 4127')).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Save and Close' })).toBeVisible();
+    await expect(dialog(page).getByText('Updated by Mona Adel: Aug 25')).toBeVisible();
+    await screen(page, 'wi-demo-popup-joined', { viewport: true });
+    expect(await axeFindings(page, 'popup')).toEqual([]);
+  });
+
+  test.fixme('20.20.45 / 20.24.05: State’s list, Area’s and Iteration’s pickers with Suggestions and the tree', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await dialog(page).locator('[data-node="f-iteration"]').click();
+    await expect(page.getByRole('tree')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Suggestions' })).toBeVisible();
+    await screen(page, 'wi-demo-iteration', { viewport: true });
+  });
+
+  test.fixme('20.21.54 / 20.22.25 / 20.22.28: Repro Steps in Markdown, System Info pointed at and focused', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await dialog(page).getByRole('button', { name: 'Edit Repro Steps' }).click();
+    await expect(dialog(page).getByRole('switch', { name: 'Preview' })).toBeVisible();
+  });
+
+  test.fixme('20.22.23 / 20.22.36: the discussion, a comment written and saved, the count in the head following it', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await expect(dialog(page).getByText('1 Comment')).toBeVisible();
+  });
+
+  test.fixme('20.23.03: Related Work’s Add link menu, Effort (Hours) folded', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await dialog(page).getByRole('button', { name: 'Add link' }).last().click();
+    await expect(page.getByRole('menuitem', { name: 'Existing item' })).toBeVisible();
+  });
+
+  test.fixme('20.24.46: the History tab, its State Graph and the changes', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await dialog(page).getByRole('tab', { name: 'History' }).click();
+    await expect(dialog(page).getByText('State Graph')).toBeVisible();
+  });
+
+  test.fixme('390px wide: the popup fills the window', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    const box = (await dialog(page).boundingBox())!;
+    expect([box.x, box.width]).toEqual([0, 390]);
+    await expectNoSidewaysScroll(page);
+  });
+
+  test.fixme('Follow answered by the app: Following, and nothing for Save and Close to save', async ({ page }) => {
+    await page.goto(`${BACKLOG}?workitem=4127`);
+    await dialog(page).getByRole('button', { name: 'Follow', exact: true }).click();
+    await expect(dialog(page).getByRole('button', { name: 'Following' })).toHaveAttribute('aria-pressed', 'true');
+  });
+});

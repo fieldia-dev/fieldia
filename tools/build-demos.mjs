@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'map-embed', 'backlog'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -80,5 +80,7 @@ for (const variant of variants) {
     });
   }
   cpSync(join(WORKSPACE, 'demos', variant, 'index.html'), join(OUT, variant, 'index.html'));
+  // A demo with a stylesheet of its own beside its page (the backlog's chrome): copied with it.
+  for (const file of readdirSync(join(WORKSPACE, 'demos', variant))) if (file.endsWith('.css')) cpSync(join(WORKSPACE, 'demos', variant, file), join(OUT, variant, file));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);
 }

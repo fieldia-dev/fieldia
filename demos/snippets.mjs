@@ -277,3 +277,70 @@ row.addEventListener('mouseleave', () => map.highlight(null));
 // Your colours, over Fieldia's: .fd-map-embed { --fd-accent: #375dfb; }`;
   return { json: JSON.stringify(page ?? {}, null, 2), js };
 }
+
+/**
+ * A tracker's backlog (the backlog demo): the list page's JSON, the bug
+ * page's, and the app's own script as the demo runs it — the list mounted in
+ * its page with the look's tokens, a row's bug opened in the popup with its
+ * discussion and its history, the address keeping it open, Follow answered.
+ */
+export function backlogSnippets(listPage, bugPage) {
+  const js = `import { mountViewer, openFormDialog } from '@fieldia/viewer';
+import { chatterSlot, historySlot } from '@fieldia/chatter';
+import backlog from './${listPage?.id ?? 'backlog'}.page.json';
+import bug from './${bugPage?.id ?? 'work-item-bug'}.page.json';
+
+// Your own, talking to your server: records, and each record's comments and changes.
+const dataSource = yourDataSource;
+const chatter = yourChatter;
+// Your look, as Fieldia's tokens: the list's and the popup's colours, corners and font.
+const tokens = { text: '#1a1a1a', muted: '#707070', surface: '#ffffff', fill: '#f2f2f2', border: '#eaeaea',
+  accent: '#0078d4', 'accent-soft': '#deecf9', link: '#005a9e', band: '#f8f8f8', help: '#f4f4f4', radius: '4px' };
+
+// The backlog, in your page. A row opens its bug; once the popup closes the list asks again
+// and its row has the focus back, because onOpenRecord answers with the popup's promise.
+const list = mountViewer(document.getElementById('backlog'), {
+  page: backlog,
+  dataSource,
+  tokens: { ...tokens, page: '#f8f8f8' },
+  onOpenRecord: (id) => openBug(id),
+});
+
+// The bug in a large popup over the backlog, nothing dimmed; the address keeps it open.
+async function openBug(id) {
+  const address = new URL(location.href);
+  if (id === null) address.searchParams.delete('workitem');
+  else address.searchParams.set('workitem', id);
+  history.replaceState(null, '', address);
+  const me = { id: 3, name: 'Salma Nabil' };
+  const result = await openFormDialog({
+    page: bug,
+    recordId: id,
+    title: id === null ? 'Bug' : \`Bug \${id}\`,
+    size: 'inset',
+    backdrop: 'clear',
+    maximise: true,
+    resizable: true,
+    dataSource,
+    tokens,
+    slots: {
+      // The comment count in its head follows the comments, kept as the server has it.
+      discussion: chatterSlot({ source: chatter, look: 'discussion', me,
+        onCount: (count, form) => form.setValues({ comment_count: count }, { stored: true }) }),
+      history: historySlot({ source: chatter, stateField: 'state', reasonField: 'reason', kind: 'work item' }),
+    },
+    // Follow is kept by your server: the record has nothing to save for it.
+    onAction: async (request) =>
+      request.action === 'follow' ? { stored: { following: await yourFollow(request.recordId) } } : undefined,
+  });
+  address.searchParams.delete('workitem');
+  history.replaceState(null, '', address);
+  if (id === null && result.saved) await list.reload();
+  return result;
+}
+
+// A bug the address names opens with the page.
+const asked = new URLSearchParams(location.search).get('workitem');
+if (asked) openBug(Number(asked));`;
+  return { json: JSON.stringify(listPage ?? {}, null, 2), bug: JSON.stringify(bugPage ?? {}, null, 2), js };
+}

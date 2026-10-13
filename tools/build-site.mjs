@@ -12,7 +12,7 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/site');
 const DEMOS = join(WORKSPACE, 'dist/demos');
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
-const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'designer', 'screen', 'map-embed'];
+const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'designer', 'screen', 'map-embed', 'backlog'];
 
 if (!existsSync(BUNDLE)) throw new Error('the site needs the script bundle: run `npx nx build viewer` first');
 for (const demo of PUBLIC_DEMOS) {

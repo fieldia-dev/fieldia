@@ -1,0 +1,121 @@
+/*
+ * The tracker's own chrome round Fieldia's list: a bar across the top, the project's menu down the start
+ * side, and the page's head with its buttons and pivots. Its colours light and dark; the list and the
+ * popup take theirs from the tokens the app gives Fieldia (main.ts).
+ */
+.bl {
+  --bl-ink: #1a1a1a;
+  --bl-muted: #707070;
+  --bl-bar: #ffffff;
+  --bl-bar-line: #e7e8e7;
+  --bl-nav: #eaeaea;
+  --bl-nav-open: #dedede;
+  --bl-nav-current: #d2d2d2;
+  --bl-page: #f8f8f8;
+  --bl-fill: #ebebeb;
+  --bl-fill-hover: #e0e0e0;
+  --bl-accent: #0078d4;
+  --bl-tile: #2e7d6b;
+  --bl-star: #b85c00;
+  --bl-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108);
+  font: 14px/1.43 "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Helvetica, Ubuntu, Arial, "Noto Sans Arabic", sans-serif;
+  color: var(--bl-ink);
+  background: var(--bl-page);
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--bl-above, 0px));
+}
+.bl[data-scheme="dark"] {
+  --bl-ink: #f3f2f1;
+  --bl-muted: #a19f9d;
+  --bl-bar: #252423;
+  --bl-bar-line: #3b3a39;
+  --bl-nav: #292827;
+  --bl-nav-open: #323130;
+  --bl-nav-current: #3b3a39;
+  --bl-page: #1b1a19;
+  --bl-fill: #323130;
+  --bl-fill-hover: #3b3a39;
+  --bl-accent: #2899f5;
+  --bl-star: #f2b43c;
+  --bl-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.4), 0 0.6px 1.8px rgba(0, 0, 0, 0.3);
+}
+/* The page is the whole width: the demos' frame keeps its own header above it. */
+#app.bl { max-width: none; margin: 0; padding: 0; }
+.bl :focus-visible { outline: 2px solid var(--bl-accent); outline-offset: -2px; }
+.bl-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- the bar across the top: 48px, white ---- */
+.bl-top { display: flex; align-items: center; gap: 12px; height: 48px; flex: none; box-sizing: border-box; padding-inline: 16px; background: var(--bl-bar); border-block-end: 1px solid var(--bl-bar-line); }
+.bl-mark { width: 20px; height: 20px; border-radius: 4px; background: var(--bl-accent); flex: none; }
+.bl-crumbs { min-width: 0; flex: 1; }
+.bl-crumbs ol { display: flex; align-items: center; gap: 0; margin: 0; padding: 0; list-style: none; white-space: nowrap; overflow: hidden; }
+.bl-crumbs li { display: flex; align-items: center; min-width: 0; }
+.bl-crumbs li + li::before { content: '/'; padding-inline: 12px; color: var(--bl-muted); }
+.bl-crumbs a { color: var(--bl-muted); text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
+.bl-crumbs li:first-child a { color: var(--bl-ink); font-weight: 600; }
+.bl-crumbs a:hover { text-decoration: underline; }
+.bl-search { display: flex; align-items: center; gap: 8px; width: 196px; height: 30px; box-sizing: border-box; padding-inline: 8px; border: 1px solid var(--bl-muted); border-radius: 2px; color: var(--bl-muted); }
+.bl-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; color: var(--bl-ink); }
+.bl-search input::placeholder { color: var(--bl-muted); opacity: 1; }
+.bl-language { font: inherit; font-size: 13px; color: var(--bl-ink); background: var(--bl-bar); border: 1px solid var(--bl-bar-line); border-radius: 2px; height: 30px; padding-inline: 6px; }
+.bl-me { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: #8764b8; color: #fff; font-size: 12px; font-weight: 600; }
+
+/* ---- the project's menu: 255px, grey ---- */
+.bl-frame { display: flex; flex: 1; min-height: 0; }
+.bl-nav { display: flex; flex-direction: column; width: 255px; flex: none; box-sizing: border-box; background: var(--bl-nav); }
+.bl-project { display: flex; align-items: center; gap: 10px; height: 46px; margin-inline: 8px; padding-inline: 4px; border-block-end: 1px solid var(--bl-nav-current); font-weight: 600; }
+.bl-project > span:nth-child(2) { flex: 1; }
+.bl-tile { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 2px; background: var(--bl-tile); color: #fff; font-size: 13px; }
+.bl-nav ul { margin: 4px 0 0; padding: 0; list-style: none; }
+.bl-nav-item { display: flex; align-items: center; gap: 14px; height: 39px; padding-inline: 12px; color: var(--bl-ink); text-decoration: none; }
+.bl-nav-item .bl-icon { width: 18px; height: 18px; }
+.bl-nav-group, .bl-nav-group ~ li:has(.bl-nav-sub) { background: var(--bl-nav-open); }
+.bl-nav-open { font-weight: 600; }
+.bl-nav-sub { padding-inline-start: 12px; }
+.bl-nav-item:hover { background: var(--bl-nav-current); }
+.bl-nav-item[aria-current="page"] { background: var(--bl-nav-current); font-weight: 600; }
+.bl-nav-foot { display: flex; align-items: center; margin-block-start: auto; margin-inline: 8px; border-block-start: 1px solid var(--bl-nav-current); }
+.bl-nav-foot .bl-nav-item { flex: 1; padding-inline: 4px; }
+
+/* ---- the page: its head, its pivots, then Fieldia's list ---- */
+.bl-page { flex: 1; min-width: 0; box-sizing: border-box; padding: 18px 32px 32px; padding-inline: 32px 32px; background: var(--bl-page); }
+.bl-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 48px; }
+.bl-head-icon { display: grid; place-items: center; width: 28px; color: var(--bl-ink); }
+.bl-team { margin: 0 4px; font-size: 20px; font-weight: 600; line-height: 28px; }
+.bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-inline-start: auto; }
+.bl-button { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding-inline: 12px; border: 0; border-radius: 2px; background: var(--bl-fill); color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.bl-button:hover { background: var(--bl-fill-hover); }
+.bl-tool { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--bl-ink); cursor: pointer; }
+.bl-tool:hover { background: var(--bl-fill); }
+.bl-star { color: var(--bl-star); }
+.bl-pivots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 44px; margin-block-end: 8px; }
+.bl-pivots { display: flex; gap: 4px; }
+.bl-pivots a { position: relative; padding: 8px 4px; margin-inline-end: 12px; color: var(--bl-ink); text-decoration: none; }
+.bl-pivots a[aria-current="page"] { font-weight: 600; }
+.bl-pivots a[aria-current="page"]::after { content: ''; position: absolute; inset-inline: 0; bottom: 2px; height: 2px; background: var(--bl-accent); }
+.bl-tools { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.bl-level { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding-inline: 8px; border: 0; background: none; color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.bl-level .bl-icon:first-child { color: var(--bl-accent); }
+.bl-level:hover { background: var(--bl-fill); }
+/* Fieldia's list fills the page: the page's own room round it is the app's, over the theme's own. */
+#app .bl-list > .fd-form > .fd-content { padding: 0; }
+#app .bl-list > .fd-form { background: none; }
+
+/* A press on a part this demo does not have: a note that goes by itself. */
+.bl-note { position: fixed; inset-inline-start: 50%; bottom: 24px; z-index: 50; margin: 0; padding: 10px 16px; border-radius: 4px; background: var(--bl-ink); color: var(--bl-page); box-shadow: var(--bl-shadow); translate: -50% 12px; opacity: 0; pointer-events: none; transition: opacity 0.15s, translate 0.15s; }
+.bl[dir="rtl"] .bl-note { translate: 50% 12px; }
+.bl-note.bl-note-on { opacity: 1; translate: -50% 0; }
+.bl[dir="rtl"] .bl-note.bl-note-on { translate: 50% 0; }
+@media (prefers-reduced-motion: reduce) { .bl-note { transition: none; } }
+
+/* ---- narrower windows: the menu goes, then the bar keeps its words short; a phone keeps 16px each side ---- */
+@media (max-width: 1100px) { .bl-nav { display: none; } .bl-search { width: 140px; } }
+@media (max-width: 760px) {
+  .bl-search, .bl-crumbs li:not(:last-child) { display: none; }
+  .bl-crumbs li:last-child::before { content: none; }
+  .bl-page { padding: 12px 16px 24px; }
+  .bl-actions { margin-inline-start: 0; width: 100%; }
+  .bl-actions .bl-button span { font-size: 13px; }
+  .bl-tools { margin-inline-start: 0; }
+}

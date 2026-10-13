@@ -80,6 +80,7 @@ ${code(
 ] }`
 )}
 <p>A field a rule keeps read-only shows a lock by its label, and ${c('readonlyReason')} — on the field, or on the section whose rule locks it — says why, in a bubble, when the lock or the value is pointed at, or the lock is reached with Tab. A value read-only by its nature (worked out, or always read-only) has no lock unless the page says why. <a href="/demos/plain/?page=work-item&amp;skin=outlined">Try the work item</a>.</p>
+<p id="quiet-hints">${c('"look": { "quietHints": false }')} has an empty quiet field show nothing at rest, its label alone saying what it is, as a work item's Planning does; the page's own ${c('placeholder')} still shows. In the designer it is Empty quiet fields, on the Look tab. <a href="/demos/backlog/">Try the work item in a popup</a>.</p>
 
 <h2 id="tokens">Restyle with custom properties</h2>
 <p>Both skins are built from CSS custom properties on ${c('.fd-form')}. Override them to match your product:</p>
@@ -95,6 +96,7 @@ ${code(
 }`
 )}
 <p>The others: ${c('--fd-text')}, ${c('--fd-muted')}, ${c('--fd-page')}, ${c('--fd-surface')}, ${c('--fd-border')}, ${c('--fd-border-strong')}, ${c('--fd-focus')}, ${c('--fd-focus-ring')}, ${c('--fd-error')}, ${c('--fd-success')}, ${c('--fd-warning')}, ${c('--fd-info')} (each with a ${c('-soft')} partner), ${c('--fd-pad-x')}, ${c('--fd-pad-y')}, ${c('--fd-gap-x')}, ${c('--fd-gap-y')}, ${c('--fd-label-weight')} and ${c('--fd-label-width')}.</p>
+<p>Three more a host may set, each falling back to one of the above where it is not: ${c('--fd-link')} (a link's words; the accent), ${c('--fd-band')} (the band of fields under a record's head; the page) and ${c('--fd-help')} (a help box's ground; the fill). The viewer's ${c('tokens')} option takes them by name, as ${c('link')}, ${c('band')} and ${c('help')}.</p>
 
 <h2 id="parts">A look for each kind of part</h2>
 <p>A page can say how each kind of part looks, over its own look, as SurveyJS and Vueform theme each kind of component: text boxes, choices, groups, buttons and tables, each with the few things both skins draw on it. The designer sets them on its Look tab; in the page they are ${c('look.parts')}, any setting left out drawn as the page draws it:</p>

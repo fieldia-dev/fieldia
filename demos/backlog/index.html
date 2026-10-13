@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — a work item in a popup</title>
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
+    <!-- The tracker's own chrome round the list: its bar, its menu, its page head. Fieldia styles the list and the popup. -->
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body>
+    <header id="demo-head" data-app="backlog"></header>
+    <div id="app" class="bl"></div>
+    <script type="module" src="../shell.mjs"></script>
+    <!-- The app: the backlog, a Fieldia list in its page; a row's bug in a Fieldia popup over it. -->
+    <script src="main.js" defer></script>
+  </body>
+</html>
