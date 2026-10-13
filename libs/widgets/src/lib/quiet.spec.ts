@@ -24,7 +24,7 @@ describe('the widgets that wear the quiet look', () => {
         'char', 'char.email', 'char.phone', 'char.url', 'char.password', 'char.time', 'char.tags', 'char.copy',
         'text', 'text.copy', 'integer', 'float', 'float.duration', 'float.percentage', 'monetary',
         'selection', 'selection.dot', 'selection.tags', 'date', 'date.daterange', 'datetime', 'datetime.daterange',
-        'many2one', 'many2many', 'many2many.tags', 'reference', 'html', 'json.address', 'properties',
+        'many2one', 'many2one.path', 'many2many', 'many2many.tags', 'reference', 'html', 'json.address', 'properties',
       ].sort()
     );
   });

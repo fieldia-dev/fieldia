@@ -19,7 +19,7 @@ const QUIET: Partial<Record<Field['type'], readonly (string | undefined)[]>> = {
   selection: [undefined, 'dot', 'tags'],
   date: [undefined, 'daterange'],
   datetime: [undefined, 'daterange'],
-  many2one: [undefined],
+  many2one: [undefined, 'path'],
   many2many: [undefined, 'tags'],
   reference: [undefined],
   html: [undefined],

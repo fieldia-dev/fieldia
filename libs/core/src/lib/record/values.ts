@@ -23,6 +23,10 @@ export interface RelatedRecord {
   color?: number;
   details?: string;
   folded?: boolean;
+  /** For a record of a tree (an area, an iteration): the names from the top down to it, its own last — ["Portal", "Sprint 14"]. */
+  path?: string[];
+  /** Words at the end of its row in a picker, such as an iteration's dates "3/25/2026 - 4/16/2026". */
+  aside?: string;
 }
 
 /** A reference points at a record of one of several models. */

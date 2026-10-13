@@ -4,6 +4,7 @@ import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
 import { AddressSearchOptionsSchema } from './address-search';
+import { pickerOptionIssues } from './picker-options';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -1225,6 +1226,7 @@ export const FieldNodeSchema = z.strictObject({
   hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
 }).superRefine((node, context) => {
   // A widget's own options, where the format knows them: an address with suggestions.
+  for (const issue of pickerOptionIssues(node)) context.addIssue({ code: 'custom', ...issue });
   if (node.widget !== 'address-search') return;
   const checked = AddressSearchOptionsSchema.safeParse(node.options ?? {});
   for (const issue of checked.error?.issues ?? []) context.addIssue({ code: 'custom', message: issue.message, path: ['options', ...issue.path] });

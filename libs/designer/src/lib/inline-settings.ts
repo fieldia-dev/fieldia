@@ -6,6 +6,7 @@ import { WIDGET_ONLY_KINDS, kindOfField } from './kinds';
 import { kindSettings } from './kind-settings';
 import { inputSettings } from './kind-settings-inputs';
 import { structureSettings } from './kind-settings-structures';
+import { pickerSettings } from './kind-settings-picker';
 import type { DesignerWords } from './designer-words';
 
 /**
@@ -222,7 +223,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
     }
     // The text, number and date kinds' own, then the structures', after the rest of their kind's.
     const inputs = inputSettings(el, designer, id, kind);
-    const structures = structureSettings(el, designer, id, kind);
+    // The work tracker's pickers' own (kind-settings-picker): a path, tags from a button, an own list, a state's colours.
+    const structures = [...structureSettings(el, designer, id, kind), ...pickerSettings(el, designer, id, kind)];
     if (!inputs && !structures.length) return;
     element.append(...(inputs?.elements ?? []), ...structures.map((p) => p.element));
     const before = refresh;

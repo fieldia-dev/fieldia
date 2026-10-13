@@ -231,6 +231,122 @@ describe('many2many', () => {
   });
 });
 
+describe('tags added from a button', () => {
+  const adderPage = {
+    fieldia: '0.1',
+    id: 'bug',
+    data: { kind: 'record', model: 'work.item' },
+    fields: {
+      tag_ids: { type: 'many2many', label: 'Tags', relation: 'tag' },
+      keywords: { type: 'char', label: 'Keywords' },
+      owner: { type: 'many2one', label: 'Assigned to', relation: 'user' },
+    },
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [
+        { type: 'field', id: 'n-tags', field: 'tag_ids', placeholder: 'Add Tag', options: { adder: 'button' } },
+        { type: 'field', id: 'n-keywords', field: 'keywords', widget: 'tags', options: { adder: 'button', suggestions: ['oak', 'glass'] } },
+        { type: 'field', id: 'n-owner', field: 'owner', placeholder: 'No one selected', options: { avatar: true } },
+      ],
+    },
+  } as unknown as Page;
+  function mountAdder(nodeId: string, readonly = false) {
+    const form = createForm({ page: adderPage, dataSource: createMemoryDataSource({ records: { tag: { 10: { name: 'VIP' }, 11: { name: 'Wholesale' } }, user: { 1: { name: 'Mona Adel' } } } }) });
+    const node = (adderPage.layout as { children: FieldNode[] }).children.find((n) => n.id === nodeId) as FieldNode;
+    const widget = createWidget({ form, name: node.field, field: adderPage.fields[node.field] as Field, node, id: `fd-${nodeId}`, document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    const button = widget.element.querySelector('.fd-tags-adder') as HTMLButtonElement;
+    const box = widget.element.querySelector('.fd-combo') as HTMLElement;
+    return { form, el: widget.element, button, box, input: box?.querySelector('input') as HTMLInputElement };
+  }
+
+  it('shows a button with the page’s words, and no box, until it is pressed', () => {
+    const { button, box } = mountAdder('n-tags');
+    expect(button.textContent).toBe('Add Tag');
+    expect(button.hidden).toBe(false);
+    expect(box.hidden).toBe(true);
+    // With no words of the page's own: "Add" and the field's label.
+    expect(mountAdder('n-keywords').button.textContent).toBe('Add Keywords');
+  });
+
+  it('turns into the tag box when pressed; Enter adds the tag typed and the button comes back, the focus on it', async () => {
+    const { form, button, box, input } = mountAdder('n-tags');
+    button.click();
+    expect(button.hidden).toBe(true);
+    expect(box.hidden).toBe(false);
+    expect(document.activeElement).toBe(input);
+    type(input, 'wholesale');
+    key(input, 'Enter');
+    await settle();
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 11, label: 'Wholesale' }]);
+    expect(button.hidden).toBe(false);
+    expect(box.hidden).toBe(true);
+    expect(document.activeElement).toBe(button);
+  });
+
+  it('makes a new tag from what was typed when none has that name', async () => {
+    const { form, button, input } = mountAdder('n-tags');
+    button.click();
+    type(input, 'Night shift');
+    key(input, 'Enter');
+    await settle();
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 12, label: 'Night shift' }]);
+  });
+
+  it('comes back as a button on Escape, keeping the tags as they were', () => {
+    const { form, button, box, input } = mountAdder('n-tags');
+    form.setValue('tag_ids', [{ id: 10, label: 'VIP' }]);
+    button.click();
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    input.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(box.hidden).toBe(true);
+    expect(document.activeElement).toBe(button);
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 10, label: 'VIP' }]);
+  });
+
+  it('comes back as a button when the box is left with nothing typed', async () => {
+    const { button, box, input } = mountAdder('n-tags');
+    button.click();
+    input.blur();
+    await settle();
+    expect(box.hidden).toBe(true);
+    expect(button.hidden).toBe(false);
+  });
+
+  it('adds a free-text tag the same way', () => {
+    const { form, button, box, input } = mountAdder('n-keywords');
+    button.click();
+    type(input, 'walnut');
+    key(input, 'Enter');
+    expect(form.getState().values['keywords']).toBe('walnut');
+    expect(box.hidden).toBe(true);
+    expect(document.activeElement).toBe(button);
+  });
+
+  it('has neither button nor box when read-only', () => {
+    const { button, box } = mountAdder('n-tags', true);
+    expect(button.hidden).toBe(true);
+    expect(box.hidden).toBe(true);
+  });
+
+  it('shows a person’s outline in a link with pictures while no one is picked, and the picture once someone is', () => {
+    const { form, el } = mountAdder('n-owner');
+    const nobody = el.querySelector('.fd-link-nobody') as HTMLElement;
+    expect(nobody.hidden).toBe(false);
+    expect(nobody.getAttribute('aria-hidden')).toBe('true');
+    expect(nobody.querySelector('svg')?.getAttribute('data-icon')).toBe('nobody');
+    expect((el.querySelector('.fd-link-avatar') as HTMLElement).hidden).toBe(true);
+    form.setValue('owner', { id: 1, label: 'Mona Adel' });
+    expect(nobody.hidden).toBe(true);
+    expect(el.querySelector('.fd-link-avatar')?.textContent).toBe('MA');
+  });
+});
+
 describe('free-text tags', () => {
   const tagPage = {
     fieldia: '0.1',

@@ -40,8 +40,13 @@ export interface MemoryDataSourceOptions {
    * come from — `{ "res.users": { avatar: "image" }, "tag": { color: "color" },
    * "stage": { folded: "fold" }, "partner": { details: ["street", "city"] } }` —
    * given with each record a search finds and each link a record loads.
+   * A tree's records (areas, iterations) name the field holding their names
+   * from the top down (`path`: a list of names, or names joined by "\") and
+   * the one whose words go at the end of their row in a picker (`aside`):
+   * `{ "work.iteration": { path: "path", aside: "dates" } }`. A search finds
+   * such a record by its whole path too.
    */
-  shows?: Record<string, { avatar?: string; color?: string; details?: string[]; folded?: string }>;
+  shows?: Record<string, { avatar?: string; color?: string; details?: string[]; folded?: string; path?: string; aside?: string }>;
   /** The app's lists of choices, by name: the choices, or a function of the form's values giving them. */
   lists?: Record<string, Option[] | ((values: Values) => Option[] | Promise<Option[]>)>;
   /**
@@ -96,7 +101,16 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     if (how.folded) out.folded = values[how.folded] === true;
     const lines = (how.details ?? []).map((name) => values[name]).map((v) => (v && typeof v === 'object' && 'label' in v ? (v as RelatedRecord).label : v)).filter((v) => typeof v === 'string' && v.trim());
     if (lines.length) out.details = lines.join('\n');
+    const path = how.path ? pathOf(values[how.path]) : null;
+    if (path) out.path = path;
+    const aside = how.aside ? values[how.aside] : null;
+    if (typeof aside === 'string' && aside.trim()) out.aside = aside;
     return out;
+  };
+  /** A tree's record's names from the top down, joined as a picker shows them; nothing for a model that keeps none. */
+  const pathWords = (model: string, id: RecordId): string => {
+    const field = options.shows?.[model]?.path;
+    return (field && pathOf(table(model)[String(id)]?.[field])?.join('\\')) || '';
   };
   const nextId = (model: string) => Math.max(0, ...Object.keys(table(model)).map(Number).filter(Number.isFinite)) + 1;
   const asId = (key: string): RecordId => (Number.isFinite(Number(key)) ? Number(key) : key);
@@ -184,7 +198,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return Object.entries(table(request.model))
         .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
-        .filter((record) => record.label.toLowerCase().includes(query))
+        // By its name, or a tree's record by its whole path: "Portal\Sprint".
+        .filter((record) => record.label.toLowerCase().includes(query) || pathWords(request.model, record.id).toLowerCase().includes(query))
         .slice(0, request.limit ?? 8)
         .map((record) => shown(request.model, record));
     },
@@ -315,6 +330,13 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       addedDefinitions.set(`${request.list}:${JSON.stringify(own)}`, structuredCopy(request.definitions.filter((d) => !own.some((o) => o.name === d.name))));
     },
   };
+}
+
+/** A tree's record's names from the top down: a list of names, or names joined by a backslash; null for anything else. */
+function pathOf(value: unknown): string[] | null {
+  const names = Array.isArray(value) ? value : typeof value === 'string' ? value.split('\\') : null;
+  const kept = names?.filter((name): name is string => typeof name === 'string' && name.trim() !== '');
+  return kept?.length ? kept : null;
 }
 
 /** Two values in order: a link by its label, text by the reader's rules, numbers by size; `empty` says one of them had nothing. */

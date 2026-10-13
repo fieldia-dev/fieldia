@@ -220,7 +220,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // tabs in the head with their counts; the dialog's inset size, clear backdrop, maximise and grip, the head as its own
 // head and foot; values the server keeps (stored); the page's checks of it all; and the work item's shared icons —
 // 38.3 more, to 511.6: 15 of it the stylesheet, 3 the icons, 4.4 the checks.
-const BUDGET_KB = 511.6;
+// The work item's pickers (docs/plans/work-item-replica.md, lane wi-picker) — a path picker for a record of a tree
+// with its suggestions, the person's latest picks, the tree folded to the value, each row's words at its end and the
+// tree's keys; Fieldia's own list with a tick for a choice and a state's list; a state's exact colours and its dot in
+// a lead slot; tags added from a button; a person's outline while no one is picked; their checks on a page; their
+// stylesheet (7 of it) and the icons the replica's lanes share (3) — add 25.3, to 498.6.
+const BUDGET_KB = /*JOIN*/ 511.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -254,7 +259,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
 // a record's head and its popup (the strip, badge, title line, row, split and toggled buttons, band, head tabs,
 // inset dialog with maximise and grip, stored values, their checks, the work item's icons), 10 more, to 152.7.
-const GZIP_BUDGET_KB = 152.7;
+// the work item's pickers (a path picker and its tree, own lists with a tick, a state's colours, tags from a button,
+// their stylesheet and the replica's shared icons), 7 more, to 149.7.
+const GZIP_BUDGET_KB = /*JOIN*/ 152.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -283,7 +290,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A record's head and its popup — Maximise, Restore, Resize, Copy title, Title copied, More actions, a split
 // button's options, Updated by, Nothing has changed, a tab's count — ten words in each: Arabic's to 23.9 and 5.0,
 // German's to 10.3 and 4.3, French's to 10.3 and 4.2.
-const ADD_ON_BUDGET_KB = { ar: [23.9, 5.0], de: [10.3, 4.3], fr: [10.3, 4.2] };
+// The work item's pickers' four — Suggestions, a branch's Expand and Collapse, Add {label} — Arabic's to 23.5,
+// German's to 10.1 and 4.3, French's to 10.2 and 4.2.
+const ADD_ON_BUDGET_KB = /*JOIN*/ { ar: [23.9, 5.0], de: [10.3, 4.3], fr: [10.3, 4.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

@@ -2,6 +2,7 @@ import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/co
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { floatUnder } from './float';
 import { setAttr, setHidden } from './kind-parts';
+import { drawIcon } from './icons';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -285,6 +286,63 @@ function shows(node: FieldNode) {
   return { avatar: options['avatar'] === true, details: options['details'] === true, colors: options['colors'] === true, opens: options['open'] !== false };
 }
 
+/**
+ * Tags added from a button (`options.adder: "button"`), as a work tracker's
+ * "Add Tag": its words the page's placeholder, else "Add {label}". Pressed,
+ * it turns into the tag box with its suggestions; it comes back once a tag is
+ * added, on Escape, and when the box is left.
+ */
+function tagAdder(doc: Document, words: string, box: Combobox, home: HTMLElement) {
+  const button = doc.createElement('button');
+  button.type = 'button';
+  button.className = 'fd-tags-adder';
+  button.textContent = words;
+  let adding = false;
+  let readonly = false;
+  const show = () => {
+    setHidden(button, adding || readonly);
+    setHidden(box.element, !adding || readonly);
+  };
+  const stop = (focus: boolean) => {
+    if (!adding) return;
+    adding = false;
+    box.close();
+    box.input.value = '';
+    show();
+    if (focus) button.focus();
+  };
+  button.addEventListener('click', () => {
+    adding = true;
+    show();
+    box.input.focus();
+  });
+  box.input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !adding) return;
+    // Back to the button, the tags as they are: not the field's own Escape, which puts back what it held.
+    event.preventDefault();
+    stop(true);
+  });
+  // Left for somewhere else (not for its own list, which keeps the focus): the button again.
+  box.input.addEventListener('blur', () => setTimeout(() => adding && !home.contains(doc.activeElement) && stop(false)));
+  show();
+  return {
+    button,
+    /** A tag added: the button again, the focus on it. */
+    added: () => stop(true),
+    setReadonly(next: boolean) {
+      readonly = next;
+      if (next) adding = false;
+      show();
+    },
+  };
+}
+
+/** The words of a button that adds tags: the page's own, else "Add {label}". */
+const adderWords = (node: FieldNode, label: string, labels: WidgetLabels) => node.placeholder || fill(labels.addNamed, { label });
+
+/** A person's outline, as a work tracker draws one where no one is picked yet: a head over a bowl. */
+const NOBODY = { nobody: '<circle cx="12" cy="7" r="3.5"/><path d="M4.5 13.5h15a7.5 6.5 0 0 1-15 0z"/>' };
+
 /** Making a record from a typed name, unless the page turns it off or the data source cannot. */
 function creator(form: Form, name: string, node: FieldNode): ((text: string) => Promise<RelatedRecord>) | undefined {
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
@@ -351,8 +409,14 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   box.element.append(clear, ...(open ? [open] : []));
   // The record's picture before its name; lines of it — an address — under the link.
   const avatar = own.avatar ? linkAvatar(document, null) : null;
-  if (avatar) {
-    box.element.prepend(avatar);
+  // No one picked yet, a person's outline stands where the picture will (shown in the quiet look: "No one selected").
+  const nobody = avatar ? document.createElement('span') : null;
+  if (avatar && nobody) {
+    nobody.className = 'fd-link-nobody';
+    nobody.setAttribute('aria-hidden', 'true');
+    const outline = drawIcon(document, 'nobody', NOBODY);
+    if (outline) nobody.append(outline);
+    box.element.prepend(avatar, nobody);
     box.element.setAttribute('data-avatar', '');
   }
   const details = own.details ? document.createElement('div') : null;
@@ -370,6 +434,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     update(state) {
       const record = state.value as RelatedRecord | null | undefined;
       if (avatar) linkAvatar(document, record, avatar);
+      if (nobody) setHidden(nobody, !!record);
       if (details) {
         const lines = record?.details?.trim() ?? '';
         setHidden(details, !lines);
@@ -409,6 +474,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
     pick: (record) => {
       if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
       box.input.value = '';
+      adder?.added();
     },
     exclude: () => new Set(current().map((record) => record.id)),
     onEmptyBackspace: () => {
@@ -428,7 +494,25 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
           if (saved && saved.label !== record.label) form.setValue(name, current().map((r) => (r.id === record.id ? saved : r)));
         }
       : undefined;
-  element.append(chips, box.element);
+  // Added from a button, "Add Tag": Enter adds the tag typed, an existing one by its name or a new one.
+  const adder = node.options?.['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels), box, element) : null;
+  const createTag = creator(form, name, node);
+  if (adder) {
+    box.input.addEventListener('keydown', (event) => {
+      const typed = box.input.value.trim();
+      if (event.key !== 'Enter' || event.defaultPrevented || !typed) return;
+      event.preventDefault();
+      void (async () => {
+        const found = await form.search(name, typed, SHOWN).catch(() => [] as RelatedRecord[]);
+        const same = found.find((record) => record.label.trim().toLowerCase() === typed.toLowerCase());
+        const record = same ?? (createTag ? await createTag(typed).catch(() => null) : null);
+        if (!record) return;
+        if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
+        adder.added();
+      })();
+    });
+  }
+  element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let readonly = false;
   let drawn = '';
   return {
@@ -440,7 +524,8 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const key = JSON.stringify([state.readonly, records]);
       readonly = state.readonly;
       box.setReadonly(readonly);
-      box.element.hidden = readonly;
+      if (adder) adder.setReadonly(readonly);
+      else box.element.hidden = readonly;
       box.input.setAttribute('aria-invalid', String(state.invalid));
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       if (key === drawn) return;
@@ -493,7 +578,7 @@ function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boole
  * node's `options.suggestions` are offered as you type. `options.separator`
  * is "," unless set; with `options.max`, the box goes once there are as many.
  */
-export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const options = node.options ?? {};
   const separator = typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',';
   const suggestions = Array.isArray(options['suggestions']) ? options['suggestions'].filter((s): s is string => typeof s === 'string') : [];
@@ -527,6 +612,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
     pick: (record) => {
       add(record.label);
       box.input.value = '';
+      adder?.added();
     },
     onEmptyBackspace: () => {
       const tags = current();
@@ -540,6 +626,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
     add(box.input.value);
     box.input.value = '';
     box.close();
+    adder?.added();
   });
   // A separator typed ends a tag.
   box.input.addEventListener('input', () => {
@@ -552,7 +639,9 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
   box.input.addEventListener('change', () => {
     if (box.input.value.trim()) add(box.input.value);
   });
-  element.append(chips, box.element);
+  // Added from a button, "Add Tag", that turns into the box and comes back once a tag is added.
+  const adder = options['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels), box, element) : null;
+  element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let drawn = '';
   return {
     element,
@@ -560,7 +649,9 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
     update(state) {
       const tags = split(state.value);
       box.setReadonly(state.readonly);
-      box.element.hidden = state.readonly || tags.length >= (options['max'] as number);
+      const full = tags.length >= (options['max'] as number);
+      if (adder) adder.setReadonly(state.readonly || full);
+      else box.element.hidden = state.readonly || full;
       box.input.setAttribute('aria-invalid', String(state.invalid));
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       const key = JSON.stringify([state.readonly, tags]);

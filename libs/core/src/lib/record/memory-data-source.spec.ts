@@ -195,3 +195,40 @@ describe('createMemoryDataSource — a record’s own id in a filter', () => {
     expect(listed.records[0].values).toEqual({ name: 'Wholesale' });
   });
 });
+
+describe('createMemoryDataSource — a tree’s records, as a path picker shows them', () => {
+  const trees = () =>
+    createMemoryDataSource({
+      records: {
+        iteration: {
+          1: { name: 'Portal', path: ['Portal'] },
+          2: { name: 'Sprint 14', path: ['Portal', 'Sprint 14'], dates: '4/12/2027 - 5/25/2027' },
+          // Names joined as a backend keeps them, and a record with no dates.
+          3: { name: 'Invoices', path: 'Portal\\Invoices', dates: '' },
+          4: { name: 'Warehouse' },
+        },
+        bug: { 1: { name: 'Stock count', iteration: { id: 2, label: 'Sprint 14' } } },
+      },
+      shows: { iteration: { path: 'path', aside: 'dates' } },
+    });
+
+  it('gives each record found its names from the top down and the words at the end of its row', async () => {
+    expect(await trees().search({ model: 'iteration', query: '' })).toEqual([
+      { id: 1, label: 'Portal', path: ['Portal'] },
+      { id: 2, label: 'Sprint 14', path: ['Portal', 'Sprint 14'], aside: '4/12/2027 - 5/25/2027' },
+      { id: 3, label: 'Invoices', path: ['Portal', 'Invoices'] },
+      { id: 4, label: 'Warehouse' },
+    ]);
+  });
+
+  it('finds a record by its whole path, as it is typed into a picker', async () => {
+    const ds = trees();
+    expect((await ds.search({ model: 'iteration', query: 'portal\\spr' })).map((r) => r.id)).toEqual([2]);
+    expect((await ds.search({ model: 'iteration', query: 'portal' })).map((r) => r.id)).toEqual([1, 2, 3]);
+  });
+
+  it('gives a loaded link its path and its words too', async () => {
+    const values = await trees().load({ model: 'bug', id: 1, fields: { iteration: { type: 'many2one', label: 'Iteration', relation: 'iteration' } } as Fields });
+    expect(values['iteration']).toEqual({ id: 2, label: 'Sprint 14', path: ['Portal', 'Sprint 14'], aside: '4/12/2027 - 5/25/2027' });
+  });
+});

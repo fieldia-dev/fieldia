@@ -1,0 +1,241 @@
+{
+  "fieldia": "0.1",
+  "id": "wi-picker",
+  "title": "Bug 4127",
+  "description": "The pickers of a work item: Area and Iteration as paths with suggestions and a tree, State in its own list, Planning's choices in Fieldia's own list, tags added from a button, and no one assigned yet.",
+  "data": { "kind": "record", "model": "wi.picker" },
+  "look": { "theme": "fluent", "skin": "quiet", "density": "compact" },
+  "fields": {
+    "assigned_to": { "type": "many2one", "label": "Assigned To", "relation": "wi.user" },
+    "tags": { "type": "many2many", "label": "Tags", "relation": "wi.tag" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "required": true,
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "active", "label": "Active" },
+        { "value": "resolved", "label": "Resolved" },
+        { "value": "closed", "label": "Closed" }
+      ]
+    },
+    "reason": {
+      "type": "selection",
+      "label": "Reason",
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "approved", "label": "Approved" },
+        { "value": "investigated", "label": "Investigation Complete" },
+        { "value": "fixed", "label": "Fixed" }
+      ]
+    },
+    "area": { "type": "many2one", "label": "Area", "relation": "wi.area", "required": true },
+    "iteration": { "type": "many2one", "label": "Iteration", "relation": "wi.iteration", "required": true },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        { "value": "business", "label": "Business" },
+        { "value": "architectural", "label": "Architectural" }
+      ]
+    },
+    "story_points": { "type": "float", "label": "Story Points" },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" }
+      ]
+    },
+    "severity": {
+      "type": "selection",
+      "label": "Severity",
+      "options": [
+        { "value": "1", "label": "1 - Critical" },
+        { "value": "2", "label": "2 - High" },
+        { "value": "3", "label": "3 - Medium" },
+        { "value": "4", "label": "4 - Low" }
+      ]
+    },
+    "activity": {
+      "type": "selection",
+      "label": "Activity",
+      "options": [
+        { "value": "deployment", "label": "Deployment" },
+        { "value": "design", "label": "Design" },
+        { "value": "development", "label": "Development" },
+        { "value": "documentation", "label": "Documentation" },
+        { "value": "requirements", "label": "Requirements" },
+        { "value": "testing", "label": "Testing" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "meta",
+        "style": "plain",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-assigned", "field": "assigned_to", "labels": "hidden", "placeholder": "No one selected", "options": { "avatar": true } },
+          { "type": "field", "id": "f-tags", "field": "tags", "labels": "hidden", "placeholder": "Add Tag", "options": { "adder": "button" } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "band",
+        "style": "plain",
+        "labels": "beside",
+        "labelWidth": 76,
+        "columns": { "wide": 2, "narrow": 1 },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-state",
+            "field": "state",
+            "widget": "dot",
+            "options": { "label": true, "listDots": false, "colours": { "new": "#b2b2b2", "active": "#007acc", "resolved": "#ff9d00", "closed": "#339933" } }
+          },
+          { "type": "field", "id": "f-area", "field": "area", "widget": "path" },
+          { "type": "field", "id": "f-reason", "field": "reason", "readonly": true, "readonlyReason": "Set by the workflow when the State changes" },
+          { "type": "field", "id": "f-iteration", "field": "iteration", "widget": "path" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "planning",
+        "title": "Planning",
+        "style": "line",
+        "children": [
+          { "type": "field", "id": "f-category", "field": "category", "options": { "list": "own" } },
+          { "type": "field", "id": "f-points", "field": "story_points" },
+          { "type": "field", "id": "f-priority", "field": "priority", "options": { "list": "own" } },
+          { "type": "field", "id": "f-severity", "field": "severity", "options": { "list": "own" } },
+          { "type": "field", "id": "f-activity", "field": "activity", "options": { "list": "own" } }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Bug 4127": "خلل 4127",
+      "The pickers of a work item: Area and Iteration as paths with suggestions and a tree, State in its own list, Planning's choices in Fieldia's own list, tags added from a button, and no one assigned yet.": "منتقيات بند العمل: المجال والدورة كمسارات مع اقتراحات وشجرة، والحالة في قائمتها، وخيارات التخطيط في قائمة Fieldia، ووسوم تُضاف من زر، ولا أحد مُسنَد بعد.",
+      "Assigned To": "مُسنَد إلى",
+      "No one selected": "لم يُختر أحد",
+      "Tags": "الوسوم",
+      "Add Tag": "إضافة وسم",
+      "State": "الحالة",
+      "New": "جديد",
+      "Active": "نشط",
+      "Resolved": "تم الحل",
+      "Closed": "مغلق",
+      "Reason": "السبب",
+      "Approved": "معتمد",
+      "Investigation Complete": "اكتمل التحقيق",
+      "Fixed": "تم الإصلاح",
+      "Set by the workflow when the State changes": "يضبطه سير العمل عند تغيّر الحالة",
+      "Area": "المجال",
+      "Iteration": "الدورة",
+      "Planning": "التخطيط",
+      "Category": "الفئة",
+      "Business": "الأعمال",
+      "Architectural": "معماري",
+      "Story Points": "نقاط القصة",
+      "Priority": "الأولوية",
+      "Severity": "الخطورة",
+      "1 - Critical": "1 - حرج",
+      "2 - High": "2 - مرتفع",
+      "3 - Medium": "3 - متوسط",
+      "4 - Low": "4 - منخفض",
+      "Activity": "النشاط",
+      "Deployment": "النشر",
+      "Design": "التصميم",
+      "Development": "التطوير",
+      "Documentation": "التوثيق",
+      "Requirements": "المتطلبات",
+      "Testing": "الاختبار"
+    },
+    "de": {
+      "Bug 4127": "Fehler 4127",
+      "The pickers of a work item: Area and Iteration as paths with suggestions and a tree, State in its own list, Planning's choices in Fieldia's own list, tags added from a button, and no one assigned yet.": "Die Auswahlfelder eines Arbeitselements: Bereich und Iteration als Pfade mit Vorschlägen und Baum, der Status in seiner Liste, die Planungsfelder in Fieldias eigener Liste, Tags über eine Schaltfläche und noch niemand zugewiesen.",
+      "Assigned To": "Zugewiesen an",
+      "No one selected": "Niemand ausgewählt",
+      "Tags": "Tags",
+      "Add Tag": "Tag hinzufügen",
+      "State": "Status",
+      "New": "Neu",
+      "Active": "Aktiv",
+      "Resolved": "Gelöst",
+      "Closed": "Geschlossen",
+      "Reason": "Grund",
+      "Approved": "Genehmigt",
+      "Investigation Complete": "Untersuchung abgeschlossen",
+      "Fixed": "Behoben",
+      "Set by the workflow when the State changes": "Wird vom Workflow gesetzt, wenn sich der Status ändert",
+      "Area": "Bereich",
+      "Iteration": "Iteration",
+      "Planning": "Planung",
+      "Category": "Kategorie",
+      "Business": "Geschäft",
+      "Architectural": "Architektur",
+      "Story Points": "Story Points",
+      "Priority": "Priorität",
+      "Severity": "Schweregrad",
+      "1 - Critical": "1 - Kritisch",
+      "2 - High": "2 - Hoch",
+      "3 - Medium": "3 - Mittel",
+      "4 - Low": "4 - Niedrig",
+      "Activity": "Aktivität",
+      "Deployment": "Bereitstellung",
+      "Design": "Entwurf",
+      "Development": "Entwicklung",
+      "Documentation": "Dokumentation",
+      "Requirements": "Anforderungen",
+      "Testing": "Test"
+    },
+    "fr": {
+      "Bug 4127": "Bogue 4127",
+      "The pickers of a work item: Area and Iteration as paths with suggestions and a tree, State in its own list, Planning's choices in Fieldia's own list, tags added from a button, and no one assigned yet.": "Les sélecteurs d’un élément de travail : la zone et l’itération en chemins avec suggestions et arbre, l’état dans sa liste, les choix de planification dans la liste de Fieldia, des balises ajoutées par un bouton, et personne d’affecté.",
+      "Assigned To": "Affecté à",
+      "No one selected": "Personne de sélectionné",
+      "Tags": "Balises",
+      "Add Tag": "Ajouter une balise",
+      "State": "État",
+      "New": "Nouveau",
+      "Active": "Actif",
+      "Resolved": "Résolu",
+      "Closed": "Fermé",
+      "Reason": "Raison",
+      "Approved": "Approuvé",
+      "Investigation Complete": "Enquête terminée",
+      "Fixed": "Corrigé",
+      "Set by the workflow when the State changes": "Défini par le flux de travail quand l’état change",
+      "Area": "Zone",
+      "Iteration": "Itération",
+      "Planning": "Planification",
+      "Category": "Catégorie",
+      "Business": "Métier",
+      "Architectural": "Architecture",
+      "Story Points": "Points d’histoire",
+      "Priority": "Priorité",
+      "Severity": "Gravité",
+      "1 - Critical": "1 - Critique",
+      "2 - High": "2 - Élevée",
+      "3 - Medium": "3 - Moyenne",
+      "4 - Low": "4 - Faible",
+      "Activity": "Activité",
+      "Deployment": "Déploiement",
+      "Design": "Conception",
+      "Development": "Développement",
+      "Documentation": "Documentation",
+      "Requirements": "Exigences",
+      "Testing": "Test"
+    }
+  }
+}

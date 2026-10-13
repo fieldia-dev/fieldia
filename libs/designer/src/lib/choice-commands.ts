@@ -3,6 +3,7 @@ import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
+import { pickerCommands, type PickerCommands } from './picker-commands';
 
 /**
  * The edits the choice kinds need beyond their options' words: an option
@@ -23,7 +24,7 @@ export interface ChoiceCommandsDeps {
 /** The largest picture an option takes, as uploaded: 5 MB. */
 export const LARGEST_PICTURE = 5 * 1024 * 1024;
 
-export interface ChoiceCommands {
+export interface ChoiceCommands extends PickerCommands {
   /** An option moved from one place to another; its value, picture and points go with it. */
   moveOption(id: string, from: number, to: number): boolean;
   /** "None of these" after the options: it goes alone, clearing the others when picked. */
@@ -63,6 +64,8 @@ export function choiceCommands({ apply, fromModel, words }: ChoiceCommandsDeps):
   };
 
   return {
+    // A link as a path picker, a state's colours: picker-commands.ts.
+    ...pickerCommands({ apply }),
     moveOption(id, from, to) {
       return apply((draft) => {
         const { field } = choice(draft, id, (w, label) => w.refusals.orderFromModel(label));

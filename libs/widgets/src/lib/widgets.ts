@@ -47,6 +47,8 @@ import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
+import { ownListWidget } from './own-list';
+import { pathPickerWidget } from './path-picker';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { dateRangeWidget } from './date-range';
@@ -359,6 +361,8 @@ function options(field: Field) {
 
 const selectWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document } = context;
+  // Fieldia's own list in place of the browser's, a tick by the option picked: own-list.ts.
+  if (node.options?.['list'] === 'own') return ownListWidget(context);
   // A long list, or one the page asks to: a box to type in, its options found as one types.
   const search = node.options?.['search'];
   if (search === true || (search !== false && options(field).length > 15)) return searchWidget(context);
@@ -698,6 +702,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   datetime: dateTimeWidget,
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarWidget,
+  // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).
+  'many2one.path': pathPickerWidget,
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,

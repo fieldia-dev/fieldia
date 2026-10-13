@@ -26,6 +26,12 @@ export interface WidgetLabels {
   /** Choices at the end of a link's list, and the button that opens the linked record (`{name}`). */
   createAndEdit: string;
   searchMore: string;
+  /** A path picker's list: the heading of its suggestions, and the names of a branch's chevron (`{name}`). */
+  suggestions: string;
+  expandNamed: string;
+  collapseNamed: string;
+  /** The button that adds to tags, when the page gives it no words of its own: `{label}` is the field's. */
+  addNamed: string;
   openNamed: string;
   /** The button that opens a line of a table in a dialog. */
   openLine: string;
@@ -205,6 +211,10 @@ const en: WidgetLabels = {
   createNamed: 'Create “{name}”',
   createAndEdit: 'Create and edit…',
   searchMore: 'Search more…',
+  suggestions: 'Suggestions',
+  expandNamed: 'Expand {name}',
+  collapseNamed: 'Collapse {name}',
+  addNamed: 'Add {label}',
   openNamed: 'Open {name}',
   openLine: 'Open line',
   chooseLine: 'Choose {name}',
