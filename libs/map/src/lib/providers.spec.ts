@@ -175,8 +175,8 @@ describe('Azure Maps', () => {
   it('names a point without the direction marks Azure puts in Arabic, which would sit unseen in an address field', async () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/reverseGeocode': AZURE.reverseArabic });
     const named = await azureMaps({ key: 'K', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' });
-    // Azure names its locality "Cairo", in Latin, beside its governorate "القاهرة", as its own formatted address does: both said, as no guess tells a name in two alphabets from two names.
-    expect(named).toBe('7 ميدان التحرير، Cairo، القاهرة، مصر');
+    // Azure names its locality "Cairo", in Latin, beside its governorate "القاهرة": one city Fieldia knows by both names, said once, in the page's words.
+    expect(named).toBe('7 ميدان التحرير، القاهرة، مصر');
     expect(named).not.toMatch(/[\u200e\u200f\u061c]/);
   });
 });

@@ -285,11 +285,18 @@ address field asks Azure for no postcodes alone. A suggestion of Azure's is
 located when picked, asked of Azure's geocoding by its own address in its
 structured form (its street, district, governorate or province, postcode and
 country), and only there: a district named alike in another town is never
-taken for it, as no hit outside its own admin districts is. Its city is read
-from them each country's way (in Egypt and Saudi Arabia the governorate's
-city: Zamalek is Cairo's; in the emirate of Abu Dhabi, the city it is in).
-It is said to be only near (`precise: false`) when Azure is unsure of it, or
-finds only the street for a house, the district for a street, the town for a
+taken for it, as no hit outside its own admin districts is; of a street's
+stretches, the one in its own district, and for a street named by its number
+alone ("30 Street", "شارع 6") never another district's of that number. Its
+city is read from them each country's way (in Egypt and Saudi Arabia the
+governorate's city: Zamalek is Cairo's; in the emirate of Abu Dhabi, the city
+it is in). A region or a city of Egypt, Saudi Arabia, the UAE or Jordan is
+named one way in each language, whichever of its names or codes Azure gives
+("Sharjah Emirate", "Ash Shāriqah" and "SH" are Sharjah), and once in a line
+("Giza", never "Giza, Al Jizah"); a district Azure names only in its own line
+is said too ("30 Street, Al Fisht, Sharjah"). It is said to be only near
+(`precise: false`) when Azure is unsure of it, or finds only the street for a
+house, the district for a street (its own, before its town), the town for a
 district; found nowhere in its own districts, no place is written (the field
 says so under the box), and its parts still are. A search still waiting when
 a suggestion is picked or the box is left is dropped, and Enter never searches
