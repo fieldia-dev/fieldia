@@ -5,6 +5,7 @@ import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, res
 import { settingWords } from './look-parts-words';
 import { Refusal } from './refusal';
 import { hotkeyFrom } from './hotkey-setting';
+import { checkWorkLook } from './work-text';
 
 /**
  * A layout's settings: a group's columns on each size of screen, how wide a
@@ -20,6 +21,11 @@ export interface SectionLook {
   rows?: 'full' | 'gaps' | null;
   /** Its fields in the quiet look, or in their boxes though the page is quiet. */
   quiet?: boolean | null;
+  /** Its columns' own widths, the gap between them, its fold control's place and its ⤢ (work-text.ts). */
+  tracks?: string[] | null;
+  gap?: number | null;
+  foldAt?: 'start' | 'end' | null;
+  maximise?: boolean | null;
 }
 
 /** A change to the page's look; `null` takes a setting back. */
@@ -118,9 +124,10 @@ export function setSectionLook(page: Page, id: string, look: SectionLook): void 
   // On one line: fields, words and buttons only, as wide as they need — no columns, rows or folding.
   if (look.style === 'inline') {
     if (section.children.some((child) => !['field', 'text', 'button', 'spacer'].includes(child.type))) throw new Refusal((w) => w.layout.lineHoldsParts);
-    for (const key of ['columns', 'rows', 'collapsible', 'collapsed'] as const) delete section[key];
+    for (const key of ['columns', 'rows', 'collapsible', 'collapsed', 'foldAt', 'tracks', 'gap', 'maximise'] as const) delete section[key];
   }
-  patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows, quiet: look.quiet }, { style: 'card', rows: 'full' });
+  checkWorkLook(section, look);
+  patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows, quiet: look.quiet, tracks: look.tracks, gap: look.gap, foldAt: look.foldAt, maximise: look.maximise }, { style: 'card', rows: 'full', foldAt: 'start', maximise: false });
 }
 
 /** Where one field's label sits; `null` for where its group or the page puts labels. */
@@ -207,6 +214,8 @@ export interface BlockPatch {
   tone?: Tone;
   /** A button's key, as typed: "v", "Shift+G"; empty for none. */
   hotkey?: string;
+  /** A help box's icon, by name; empty for none. */
+  icon?: string;
 }
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
@@ -222,6 +231,13 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
       node.tone = patch.tone;
     }
     if (node.style !== 'alert') delete node.tone;
+    // An icon is a help box's: words that are no longer one lose it.
+    if (patch.icon !== undefined) {
+      if (node.style !== 'help') throw new Refusal((w) => w.workText.noIconHere);
+      if (patch.icon) node.icon = patch.icon;
+      else delete node.icon;
+    }
+    if (node.style !== 'help') delete node.icon;
   } else if (node.type === 'button') {
     if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal((w) => w.layout.buttonNotText);
     if (patch.label !== undefined) node.label = patch.label;

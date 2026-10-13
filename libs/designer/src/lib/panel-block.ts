@@ -8,6 +8,7 @@ import { mapContent } from './panel-map';
 import { whenClicked } from './steps-panel';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
+import { helpIconSetting } from './work-text';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -98,9 +99,12 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         { value: 'paragraph', words: w.words },
         { value: 'note', words: w.note, title: w.noteTitle },
         { value: 'alert', words: w.alertBox, title: w.alertBoxTitle },
+        { value: 'help', words: designer.words.workText.helpBox, title: designer.words.workText.helpBoxTitle },
       ],
       (value) => value && designer.updateBlock(id, { style: value })
     );
+    // A help box's icon, at its start.
+    const icon = helpIconSetting(el, designer, id);
     // An alert's colour, as a sheet's alert has one.
     const tone = segmented<Tone>(
       el,
@@ -111,11 +115,12 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     const toneRow = setting(el, 'content', 'Alert colour', tone.element, { words: w.alertColour });
     const textWhile = shownWhileSetting(el, designer, id, { tab: 'content' });
     return {
-      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs }), toneRow, textWhile.element],
+      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs }), toneRow, ...icon.rows, textWhile.element],
       update(page) {
         const node = locate(page, id)?.node;
         if (node?.type !== 'text') return;
         textWhile.update(page);
+        icon.update(page);
         style.set(node.style ?? 'paragraph');
         toneRow.hidden = node.style !== 'alert';
         tone.set(node.tone ?? 'info');

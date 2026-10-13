@@ -3,6 +3,7 @@ import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { USUAL_ADDRESS } from './kind-commands';
+import { linksPart, richTextPart } from './work-text';
 
 /**
  * The settings of the kinds that hold more than one value — a signature, an
@@ -226,10 +227,13 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
   if (kind === 'link' || kind === 'links') parts.push(link());
-  // Rich text with its formatting toolbar, or plain of it.
+  // A many2many as tags or as a work item's links box, with its Add link, help and empty link.
+  if (kind === 'links') parts.push(linksPart(el, designer, id));
+  // Rich text with its formatting toolbar, or plain of it; then where it shows, its tools and editors.
   if (kind === 'rich-text') {
     const bar = toggle(w.toolbar, (on) => widget({ toolbar: on ? null : false }));
-    parts.push({ element: bar.element, refresh: (_page, node) => bar.button.setAttribute('aria-checked', String(option(node, 'toolbar') !== false)) });
+    parts.push({ element: bar.element, refresh: (_page, node) => bar.button.setAttribute('aria-checked', String(option(node, 'toolbar') !== false && option(node, 'toolbar') !== 'never')) });
+    parts.push(richTextPart(el, designer, id));
   }
   if (kind === 'lines') parts.push(table());
   if (kind === 'address') parts.push(address());

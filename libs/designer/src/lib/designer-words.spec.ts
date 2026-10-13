@@ -24,6 +24,8 @@ export const LATIN_KEPT = [
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
   // Formats and currencies.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
+  // A formatted text's own format, and the units a column's width is written in.
+  ...['Markdown', 'px', 'fr'],
   // JSON's own words, as they are typed in it.
   ...['true', 'false', 'null'],
   // Language tags, as examples of what to type.
@@ -32,7 +34,7 @@ export const LATIN_KEPT = [
   'Fieldia',
   ...['VS', 'Code'],
   // Names in code, in examples.
-  ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street'],
+  ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street', 'res', 'users'],
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2); an escape; and a place in a sentence that something is drawn in, as {language}. */

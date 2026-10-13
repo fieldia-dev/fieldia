@@ -11,6 +11,7 @@ import { foldSetting } from './panel-fold';
 import { movers, type PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { shownWhileSetting } from './shown-while';
+import { workGroupSetting } from './work-text';
 
 /**
  * A group's settings, on the panel's tabs: its title, whether it folds by
@@ -30,6 +31,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const width = widthSetting(el, designer, id);
   const style = groupStyleSetting(el, designer, id);
   const fold = foldSetting(el, designer, id);
+  const work = workGroupSetting(el, designer, id, true);
   const moves = movers(el, designer, id, [w.moveUp, w.moveDown]);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteSection);
   remove.addEventListener('click', () => designer.removeNode(id));
@@ -47,6 +49,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     ...fold.rows,
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
     ...columns.rows,
+    ...work.rows,
     ...rows.rows,
     ...labels.rows,
     ...width.rows,
@@ -61,7 +64,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       if (!focused(title)) title.value = section.title ?? '';
-      for (const part of [columns, rows, labels, width, style, fold]) part.update(page);
+      for (const part of [columns, rows, labels, width, style, fold, work]) part.update(page);
       moves.update(page);
       // A page keeps one thing at its top, and a tab its last section.
       const holder = findNode(page, id)?.parent;
@@ -80,12 +83,14 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
 export function arrangementProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
   const columns = columnsSetting(el, designer, id, designer.words.panel.columns);
   const width = widthSetting(el, designer, id);
-  const element = el('div', { class: 'fd-props' }, ...columns.rows, ...width.rows);
+  const work = workGroupSetting(el, designer, id, false);
+  const element = el('div', { class: 'fd-props' }, ...columns.rows, ...work.rows, ...width.rows);
   return {
     element,
     update(page) {
       if (!isSection(nodeOf(page, id))) return;
       columns.update(page);
+      work.update(page);
       width.update(page);
     },
   };
