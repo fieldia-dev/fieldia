@@ -1,5 +1,7 @@
 import type { FileValue } from '@fieldia/core';
 import { readFile } from './files';
+import { goingList } from './files-going';
+import { shrinkFor, shrinkPhoto } from './shrink';
 import { describeState, maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
@@ -48,6 +50,18 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   // A picture of a signature, from this computer or a phone's camera.
   const upload = options['upload'] === true ? button(words.uploadSignature) : null;
   const file = make('input', { type: 'file', accept: 'image/*', class: 'fd-sr-only', tabindex: '-1', 'aria-hidden': 'true' });
+  // Where the data source stores files, a picture uploaded goes to the store as it is picked — made smaller, as a
+  // picture field's photos are — and shows on its way under the pad. This listener comes first: the one below, which
+  // reads a picture into the record, never hears of it.
+  const going = goingList(make, words, form, name);
+  file.addEventListener('change', (event) => {
+    const chosen = file.files?.[0];
+    if (!chosen || !form.canUpload()) return;
+    event.stopImmediatePropagation();
+    file.value = '';
+    const shrink = shrinkFor({ ...field, type: 'image' } as typeof field, true);
+    form.upload(name, [chosen], shrink ? { prepare: (picked) => shrinkPhoto(picked as File, shrink, document) } : {});
+  });
   const element = make(
     'div',
     { id, class: 'fd-signature', role: 'group' },
@@ -188,6 +202,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     canvas.hidden = false;
   }
 
+  element.append(going.element);
+
   return {
     element,
     focus: () => (typed.hidden ? clear : typed).focus(),
@@ -220,6 +236,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       undo.hidden = readonly || !strokes.length || !image.hidden;
       if (upload) upload.hidden = readonly;
       canvas.classList.toggle('fd-signature-locked', readonly);
+      going.update(readonly);
       describeState(element, state);
       typed.setAttribute('aria-invalid', String(state.invalid));
     },

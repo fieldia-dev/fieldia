@@ -371,7 +371,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * the largest, in bytes; whether it, or an image, takes several files, and as
    * few and as many as it takes. `null` lifts a limit; one file again lifts both counts.
    */
-  setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null; multiple?: boolean; minFiles?: number | null; maxFiles?: number | null }): boolean;
+  /**
+   * A file upload's or an image's rules: the kinds it takes, the largest file, several files and how many, and
+   * `shrink` — its photos made smaller before they are kept ({ maxSide, quality }), kept as taken (false), or as
+   * usual (null): smaller where the data source stores files, for an image.
+   */
+  setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null; multiple?: boolean; minFiles?: number | null; maxFiles?: number | null; shrink?: { maxSide?: number; quality?: number } | false | null }): boolean;
   /**
    * Drop a part where it goes, as one edit: a part on the page, by its id, or
    * a new one from the toolbox. Returns its id, and picks it.
@@ -1413,6 +1418,14 @@ export function createDesigner(options: {
           else field[key] = count;
         }
         if ((field.minFiles ?? 0) > (field.maxFiles ?? Infinity)) throw new Refusal((w) => w.refusals.leastOverMost);
+        // Photos made smaller, kept as taken, or as usual: the format's own bounds.
+        if (rules.shrink === null) delete field.shrink;
+        else if (rules.shrink === false) field.shrink = false;
+        else if (rules.shrink) {
+          const { maxSide, quality } = rules.shrink;
+          if ((maxSide !== undefined && !(Number.isInteger(maxSide) && maxSide >= 160 && maxSide <= 16384)) || (quality !== undefined && !(quality >= 0.3 && quality <= 1))) throw new Refusal((w) => w.refusals.smallerPhotos);
+          field.shrink = { ...(maxSide !== undefined ? { maxSide } : {}), ...(quality !== undefined ? { quality } : {}) };
+        }
       });
     },
 

@@ -1,5 +1,5 @@
 import { fill, type Locale } from '@fieldia/core';
-import { installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
+import { installStyles, sanitizeHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart } from './activities';
 import { attachmentList, composerFiles } from './attachments';
 import { followersPart } from './followers';
@@ -22,6 +22,8 @@ export interface ChatterOptions {
   now?: () => Date;
   /** The person using it: their picture by the comment box of a discussion. */
   me?: Person;
+  /** Photos attached made smaller first, as a picture field's are: the longest side and the quality. Kept as they are unless said. */
+  shrink?: ShrinkOptions;
 }
 
 export interface ChatterHandle {
@@ -110,10 +112,18 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     problem.textContent = message;
     problem.hidden = false;
   };
-  const files = composerFiles(context, say);
+  // Send pressed while files are still on their way: it waits, and says so here, the count kept as they arrive.
+  const uploading = el('p', { class: 'fd-help fd-chatter-uploading', role: 'status', hidden: '' });
+  let waitingToSend = false;
+  const tellWaiting = () => {
+    const n = files.busy();
+    uploading.textContent = n === 1 ? labels.sendingAfterFile : fill(labels.sendingAfterFiles, { n });
+    uploading.hidden = !waitingToSend || !n;
+  };
+  const files = composerFiles(context, say, { ...(options.shrink ? { shrink: options.shrink } : {}), changed: () => waitingToSend && tellWaiting() });
   const actions = el('div', { class: 'fd-composer-actions' }, post, cancel);
   if (files.element) actions.append(el('span', { class: 'fd-spacer' }), files.element);
-  const composer = el('div', { class: 'fd-composer', hidden: '' }, replying, box, mentioning.list, files.chips, problem, actions);
+  const composer = el('div', { class: 'fd-composer', hidden: '' }, replying, box, mentioning.list, files.chips, problem, uploading, actions);
   files.takeDropsOn(composer);
 
   function openComposer(kind: 'message' | 'note', answering: ChatterMessage | null = null) {
@@ -138,9 +148,19 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   }
   async function submit() {
     const current = record;
-    // Words, files or both; and never while a file is still on its way.
+    // Words, files or both — those still on their way waited for, saying so; one that did not get there stops it.
+    if (!current || (!box.value.trim() && !files.files().length && !files.busy()) || post.disabled || waitingToSend) return;
+    if (files.busy()) {
+      waitingToSend = true;
+      tellWaiting();
+      await files.settled();
+      waitingToSend = false;
+      uploading.hidden = true;
+    }
+    const failed = files.failed();
+    if (failed.length) return say(fill(labels.notSentFile, { name: failed[0] }));
     const attachments = files.files();
-    if (!current || (!box.value.trim() && !attachments.length) || post.disabled || files.busy()) return;
+    if (!box.value.trim() && !attachments.length) return;
     post.disabled = true;
     try {
       const mentioned = mentioning.picked();

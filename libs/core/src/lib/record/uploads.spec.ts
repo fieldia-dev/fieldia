@@ -222,6 +222,15 @@ describe('a file picked is stored at once, where the source stores files', () =>
     finish = [];
   });
 
+  it('refuses a file its field refuses once made ready — still too large — saying why, and sends none of it', async () => {
+    const store = handStore();
+    const { form, state } = setup({ upload: store.upload });
+    form.upload('photos', [photo('huge.png')], { prepare: async () => Promise.reject(saveRefused({ kind: 'rule', message: 'Photos is larger than 5 MB' })) });
+    await form.settled();
+    expect(store.sent).toEqual([]);
+    expect(state().uploads).toEqual([expect.objectContaining({ name: 'huge.png', status: 'refused', error: 'Photos is larger than 5 MB' })]);
+  });
+
   it('takes files for a field on a table’s line, the line named in the request', async () => {
     const store = handStore();
     const { form } = setup({ upload: store.upload });

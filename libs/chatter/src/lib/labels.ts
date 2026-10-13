@@ -70,6 +70,10 @@ export interface ChatterLabels {
   search: string;
   noOneFound: string;
   couldNotSend: string;
+  /** Send pressed while files are still on their way: one, or `{n}`; and one that did not get there (`{name}`). */
+  sendingAfterFile: string;
+  sendingAfterFiles: string;
+  notSentFile: string;
   /** A discussion's comment box and cards: when a comment was written (`{date}`), Save with nothing typed, its Save and its name; Escape asking before typed words go. */
   commentedOn: string;
   writeFirst: string;
@@ -144,6 +148,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Search…',
     noOneFound: 'No one found',
     couldNotSend: 'Not sent: {reason}',
+    sendingAfterFile: '1 file still uploading. Sending when it is done.',
+    sendingAfterFiles: '{n} files still uploading. Sending when they are done.',
+    notSentFile: 'Not sent: {name} was not uploaded. Retry it, or remove it.',
     commentedOn: 'commented {date}',
     writeFirst: 'Write a comment first.',
     saveComment: 'Save',
@@ -215,6 +222,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'بحث…',
     noOneFound: 'لم يُعثر على أحد',
     couldNotSend: 'لم يُرسل: {reason}',
+    sendingAfterFile: 'ملف واحد ما زال يُرفع. سيُرسل عند انتهائه.',
+    sendingAfterFiles: 'ما زالت الملفات تُرفع: {n}. سيُرسل عند انتهائها.',
+    notSentFile: 'لم يُرسل: لم يُرفع {name}. أعد المحاولة أو أزله.',
     commentedOn: 'علّق في {date}',
     writeFirst: 'اكتب تعليقًا أولاً.',
     saveComment: 'حفظ',
@@ -286,6 +296,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Suchen…',
     noOneFound: 'Niemand gefunden',
     couldNotSend: 'Nicht gesendet: {reason}',
+    sendingAfterFile: '1 Datei wird noch hochgeladen. Gesendet wird, sobald sie fertig ist.',
+    sendingAfterFiles: '{n} Dateien werden noch hochgeladen. Gesendet wird, sobald sie fertig sind.',
+    notSentFile: 'Nicht gesendet: {name} wurde nicht hochgeladen. Erneut versuchen oder entfernen.',
     commentedOn: 'hat am {date} kommentiert',
     writeFirst: 'Schreiben Sie zuerst einen Kommentar.',
     saveComment: 'Speichern',
@@ -357,6 +370,9 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Rechercher…',
     noOneFound: 'Personne trouvée',
     couldNotSend: 'Non envoyé : {reason}',
+    sendingAfterFile: '1 fichier encore en cours d’envoi. Envoi dès qu’il est arrivé.',
+    sendingAfterFiles: '{n} fichiers encore en cours d’envoi. Envoi dès qu’ils sont arrivés.',
+    notSentFile: 'Non envoyé : {name} n’a pas été envoyé. Réessayez, ou retirez-le.',
     commentedOn: 'a commenté le {date}',
     writeFirst: 'Écrivez d’abord un commentaire.',
     saveComment: 'Enregistrer',

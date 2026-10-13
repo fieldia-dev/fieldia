@@ -10,6 +10,11 @@ export interface ViewerLabels {
   discard: string;
   saving: string;
   saved: string;
+  /** A save or a send waiting for files still on their way to the store: one, or `{n}`. */
+  savingAfterFile: string;
+  savingAfterFiles: string;
+  sendingAfterFile: string;
+  sendingAfterFiles: string;
   submit: string;
   next: string;
   back: string;
@@ -176,6 +181,10 @@ const en: ViewerLabels = {
   discard: 'Discard',
   saving: 'Saving…',
   saved: 'Saved',
+  savingAfterFile: '1 file still uploading. Saving when it is done.',
+  savingAfterFiles: '{n} files still uploading. Saving when they are done.',
+  sendingAfterFile: '1 file still uploading. Sending when it is done.',
+  sendingAfterFiles: '{n} files still uploading. Sending when they are done.',
   submit: 'Submit',
   next: 'Next',
   back: 'Back',

@@ -43,6 +43,7 @@ import {
   type Values,
   MESSAGES,
   hotkeyWords,
+  uploadGoing,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -1241,15 +1242,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
+  /** A save waiting for files still on their way: how many, said where Saving… would be. Save waits, and says why. */
+  function waitingFor(state: FormState): string {
+    const going = state.status === 'saving' ? (state.uploads ?? []).filter(uploadGoing).length : 0;
+    if (!going) return '';
+    const sending = page.data.kind === 'responses';
+    return fill(going === 1 ? (sending ? labels.sendingAfterFile : labels.savingAfterFile) : sending ? labels.sendingAfterFiles : labels.savingAfterFiles, { n: going });
+  }
   updaters.push((state) => {
     const problem = state.saveProblem;
     const text =
-      state.status === 'saving' ? labels.saving
+      waitingFor(state) ||
+      (state.status === 'saving' ? labels.saving
       : state.status === 'saved' ? labels.saved
       : state.status === 'loading' ? labels.loading
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
       : state.status === 'error' ? state.error ?? ''
-      : '';
+      : '');
     // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
     setAttr(statusText, 'aria-live', state.status === 'error' && problem ? 'off' : 'polite');
     setText(statusText, text);
@@ -1415,7 +1424,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       discard.addEventListener('click', () => form.reset());
       actions.insertBefore(discard, action);
       updaters.push((state) => {
-        const dirty = state.dirty.length > 0 && state.status !== 'saving' && !locked;
+        // A file on its way is a change coming: Save shows for it, and waits.
+        const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked;
         setHidden(action, !dirty);
         setHidden(discard, !dirty);
       });
@@ -1524,7 +1534,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // The Edit switch leads the header bar, before Save and the record's own buttons.
     if (editSwitch && options.showActions !== false) actions.prepend(editSwitch);
     updaters.push((state) => {
-      const dirty = state.dirty.length > 0 && state.status !== 'saving' && !locked;
+      // A file on its way is a change coming: Save shows for it, and waits.
+      const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked;
       save.hidden = !dirty;
       discard.hidden = !dirty;
     });

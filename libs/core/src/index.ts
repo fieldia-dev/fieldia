@@ -9,6 +9,7 @@ export {
   FilterConditionSchema,
   FilterItemSchema,
   MoneyLookSchema,
+  ShrinkSchema,
   PERIODS,
 } from './lib/format/field';
 export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema } from './lib/format/layout';

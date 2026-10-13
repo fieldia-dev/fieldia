@@ -4,6 +4,8 @@ export * from './lib/labels';
 export * from './lib/relations';
 export * from './lib/lines';
 export * from './lib/files';
+export { goingItem, goingWords, type Going, type GoingItem } from './lib/files-going';
+export { shrinkPhoto, shrinkFor, shrinkable, SHRINK_DEFAULTS, type ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
 export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';

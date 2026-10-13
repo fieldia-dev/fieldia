@@ -69,7 +69,8 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
     async post(record, message) {
       return add(record, { kind: message.kind, body: message.body, attachments: message.attachments ?? [], parentId: message.parentId ?? null, mentions: message.mentions ?? [] });
     },
-    async upload(_record, file) {
+    async upload(_record, file, how) {
+      if (how?.signal?.aborted) throw Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
       // Kept as a data address, so a preview needs nothing else.
       const url = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -78,6 +79,7 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
         reader.readAsDataURL(file);
       });
       const stored: Attachment = { id: next++, name: file.name, type: file.type || 'application/octet-stream', size: file.size, url };
+      how?.onProgress?.(file.size, file.size);
       return stored;
     },
     async react(record, messageId, emoji) {

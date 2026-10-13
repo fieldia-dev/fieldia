@@ -230,15 +230,22 @@ export function createUploads(host: UploadsHost) {
     entry.status = 'preparing';
     tell();
     const original = entry.file;
+    let refused: string | null = null;
     try {
       entry.file = await (entry.prepare as NonNullable<Entry['prepare']>)(original);
-    } catch {
-      // A file that cannot be made ready goes as it is: never lost.
+    } catch (error) {
+      // A file that cannot be made ready goes as it is, never lost — unless the field refuses it as it is (too large still).
+      const problem = saveProblemOf(error);
+      if (problem.kind === 'rule') refused = problem.message;
       entry.file = original;
     }
     entry.ready = true;
     if (!entries.includes(entry)) return;
-    entry.status = 'waiting';
+    entry.status = refused === null ? 'waiting' : 'refused';
+    if (refused !== null) {
+      entry.error = refused;
+      entry.end?.();
+    }
     tell();
     pump();
   }
