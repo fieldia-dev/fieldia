@@ -3,7 +3,7 @@
   "id": "work-item-bug",
   "title": "Bug",
   "data": { "kind": "record", "model": "work.item" },
-  "look": { "theme": "fluent", "skin": "quiet", "density": "compact", "quietHints": false, "readonlyShown": "text" },
+  "look": { "theme": "fluent", "skin": "quiet", "density": "compact", "quietHints": false, "lockAt": "value", "readonlyShown": "text" },
   "fields": {
     "number": { "type": "integer", "label": "ID", "readonly": true },
     "work_type": {
@@ -98,10 +98,13 @@
   "layout": {
     "type": "sheet",
     "id": "bug",
-    "title": {
-      "field": "title",
-      "before": [{ "type": "field", "id": "t-number", "field": "number", "labels": "hidden" }],
-      "below": [
+    "head": {
+      "kind": {
+        "field": "work_type",
+        "numberField": "number",
+        "looks": { "bug": { "colour": "#cc293d", "icon": "bug" }, "task": { "colour": "#f2cb1d", "icon": "task" }, "story": { "colour": "#009ccc", "icon": "story" } }
+      },
+      "meta": [
         {
           "type": "field",
           "id": "h-assigned",
@@ -109,6 +112,14 @@
           "labels": "hidden",
           "placeholder": "No one selected",
           "options": { "avatar": true }
+        },
+        {
+          "type": "link",
+          "id": "h-comments",
+          "icon": "chat",
+          "field": "comment_count",
+          "words": { "one": "Comment", "other": "Comments" },
+          "target": "g-discussion"
         },
         {
           "type": "field",
@@ -119,34 +130,61 @@
           "placeholder": "Add Tag",
           "options": { "adder": "button" }
         }
-      ]
-    },
-    "toolbar": { "menu": [{ "id": "m-copy-link", "label": "Copy link", "action": "copy-link" }, { "id": "m-delete", "builtin": "delete" }] },
-    "children": [
-      {
-        "type": "section",
-        "id": "band",
-        "style": "plain",
-        "quiet": true,
-        "labels": "beside",
+      ],
+      "actions": [
+        {
+          "type": "button",
+          "id": "b-save-close",
+          "label": "Save and Close",
+          "icon": "save",
+          "primaryWhenChanged": true,
+          "steps": [{ "do": "save" }, { "do": "close" }],
+          "menu": [{ "id": "m-save", "label": "Save", "steps": [{ "do": "save" }] }]
+        },
+        {
+          "type": "button",
+          "id": "b-follow",
+          "label": "Follow",
+          "pressedLabel": "Following",
+          "icon": "eye",
+          "pressed": "following",
+          "action": "follow",
+          "menuIcon": "gear",
+          "menuLabel": "Notification settings",
+          "menu": [
+            { "id": "m-follow-all", "label": "All changes", "action": "follow-all" },
+            { "id": "m-follow-state", "label": "State changes", "action": "follow-state" }
+          ]
+        },
+        { "type": "button", "id": "b-refresh", "label": "Refresh", "icon": "refresh", "iconOnly": true, "steps": [{ "do": "reload" }] },
+        { "type": "button", "id": "b-undo", "label": "Revert changes", "icon": "undo", "iconOnly": true, "steps": [{ "do": "reset" }] }
+      ],
+      "band": {
+        "tracks": ["274px", "1fr"],
         "labelWidth": 76,
-        "columns": 2,
         "children": [
           {
             "type": "field",
             "id": "f-state",
             "field": "state",
             "widget": "dot",
+            "hotkey": "e",
             "options": { "label": true, "listDots": false, "colours": { "new": "#b2b2b2", "active": "#007acc", "resolved": "#ff9d00", "closed": "#339933" } }
           },
-          { "type": "field", "id": "f-area", "field": "area", "widget": "path" },
+          { "type": "field", "id": "f-area", "field": "area", "widget": "path", "hotkey": "a" },
           { "type": "field", "id": "f-reason", "field": "reason", "readonly": true, "readonlyReason": "Set by the workflow when the State changes" },
-          { "type": "field", "id": "f-iteration", "field": "iteration", "widget": "path" }
+          { "type": "field", "id": "f-iteration", "field": "iteration", "widget": "path", "hotkey": "r" }
         ]
       },
+      "updated": { "byField": "changed_by", "atField": "changed_date", "opens": "t-history" }
+    },
+    "title": { "field": "title", "before": [{ "type": "field", "id": "t-number", "field": "number", "labels": "hidden" }] },
+    "toolbar": { "menu": [{ "id": "m-copy-link", "label": "Copy link", "action": "copy-link" }, { "id": "m-delete", "builtin": "delete" }] },
+    "children": [
       {
         "type": "tabs",
         "id": "wi-tabs",
+        "place": "head",
         "children": [
           {
             "type": "tab",
@@ -158,6 +196,8 @@
                 "id": "cols",
                 "style": "plain",
                 "columns": 3,
+                "tracks": ["50%", "1fr", "1fr"],
+                "gap": 16,
                 "children": [
                   {
                     "type": "section",
@@ -170,6 +210,8 @@
                         "title": "Repro Steps",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
+                        "maximise": true,
                         "children": [
                           {
                             "type": "field",
@@ -204,6 +246,8 @@
                         "title": "System Info",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
+                        "maximise": true,
                         "children": [
                           {
                             "type": "field",
@@ -247,6 +291,8 @@
                         "title": "Discussion",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
+                        "maximise": true,
                         "children": [{ "type": "slot", "id": "s-discussion", "name": "discussion" }]
                       }
                     ]
@@ -262,6 +308,7 @@
                         "title": "Planning",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [
                           { "type": "field", "id": "f-category", "field": "category", "options": { "list": "own" } },
                           {
@@ -283,6 +330,7 @@
                         "title": "Effort (Hours)",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [
                           { "type": "field", "id": "f-estimate", "field": "original_estimate" },
                           { "type": "field", "id": "f-remaining", "field": "remaining_work" },
@@ -302,11 +350,12 @@
                         "title": "Deployment",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [
                           {
                             "type": "text",
                             "id": "x-deployment",
-                            "style": "note",
+                            "style": "help",
                             "text": "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)"
                           }
                         ]
@@ -317,6 +366,7 @@
                         "title": "Development",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [
                           {
                             "type": "field",
@@ -338,6 +388,7 @@
                         "title": "Related Work",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [
                           {
                             "type": "field",
@@ -355,6 +406,7 @@
                         "title": "System Info",
                         "style": "line",
                         "collapsible": true,
+                        "foldAt": "end",
                         "children": [{ "type": "field", "id": "f-found", "field": "found_in" }, { "type": "field", "id": "f-integrated", "field": "integrated_in" }]
                       }
                     ]
@@ -368,6 +420,7 @@
             "id": "t-history",
             "label": "History",
             "icon": "history",
+            "iconOnly": true,
             "children": [{ "type": "slot", "id": "s-history", "name": "history" }]
           },
           {
@@ -375,6 +428,8 @@
             "id": "t-links",
             "label": "Links",
             "icon": "link",
+            "iconOnly": true,
+            "count": "related",
             "children": [{ "type": "field", "id": "f-links-all", "field": "related", "widget": "links", "labels": "hidden", "options": { "add": "menu" } }]
           },
           {
@@ -382,6 +437,8 @@
             "id": "t-attachments",
             "label": "Attachments",
             "icon": "attach",
+            "iconOnly": true,
+            "count": "attachments",
             "children": [{ "type": "field", "id": "f-files", "field": "attachments", "labels": "hidden" }]
           }
         ]
@@ -398,6 +455,7 @@
       "Title": "العنوان",
       "Assigned To": "مُسنَد إلى",
       "Comments": "تعليقات",
+      "Comment": "تعليق",
       "Tags": "الوسوم",
       "State": "الحالة",
       "New": "جديد",
@@ -446,6 +504,14 @@
       "Attachments": "المرفقات",
       "No one selected": "لم يُحدَّد أحد",
       "Add Tag": "إضافة وسم",
+      "Save and Close": "حفظ وإغلاق",
+      "Save": "حفظ",
+      "Follow": "متابعة",
+      "Notification settings": "إعدادات الإشعارات",
+      "All changes": "كل التغييرات",
+      "State changes": "تغييرات الحالة",
+      "Refresh": "تحديث",
+      "Revert changes": "التراجع عن التغييرات",
       "Set by the workflow when the State changes": "يضبطه سير العمل عند تغيّر الحالة",
       "Set when the bug is resolved": "يُضبط عند حل الخلل",
       "Copy link": "نسخ الرابط",
@@ -470,6 +536,7 @@
       "Title": "Titel",
       "Assigned To": "Zugewiesen an",
       "Comments": "Kommentare",
+      "Comment": "Kommentar",
       "Tags": "Tags",
       "State": "Status",
       "New": "Neu",
@@ -518,6 +585,14 @@
       "Attachments": "Anlagen",
       "No one selected": "Niemand ausgewählt",
       "Add Tag": "Tag hinzufügen",
+      "Save and Close": "Speichern und schließen",
+      "Save": "Speichern",
+      "Follow": "Folgen",
+      "Notification settings": "Benachrichtigungseinstellungen",
+      "All changes": "Alle Änderungen",
+      "State changes": "Statusänderungen",
+      "Refresh": "Aktualisieren",
+      "Revert changes": "Änderungen zurücksetzen",
       "Set by the workflow when the State changes": "Wird vom Workflow gesetzt, wenn sich der Status ändert",
       "Set when the bug is resolved": "Wird gesetzt, wenn der Fehler gelöst ist",
       "Copy link": "Link kopieren",
@@ -542,6 +617,7 @@
       "Title": "Titre",
       "Assigned To": "Attribué à",
       "Comments": "Commentaires",
+      "Comment": "Commentaire",
       "Tags": "Balises",
       "State": "État",
       "New": "Nouveau",
@@ -590,6 +666,14 @@
       "Attachments": "Pièces jointes",
       "No one selected": "Personne n’est sélectionné",
       "Add Tag": "Ajouter une balise",
+      "Save and Close": "Enregistrer et fermer",
+      "Save": "Enregistrer",
+      "Follow": "Suivre",
+      "Notification settings": "Paramètres de notification",
+      "All changes": "Toutes les modifications",
+      "State changes": "Changements d’état",
+      "Refresh": "Actualiser",
+      "Revert changes": "Annuler les modifications",
       "Set by the workflow when the State changes": "Défini par le flux de travail quand l’état change",
       "Set when the bug is resolved": "Défini quand le bogue est résolu",
       "Copy link": "Copier le lien",

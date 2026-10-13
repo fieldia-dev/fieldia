@@ -43,8 +43,11 @@ export interface ListContext {
   icons?: IconSet;
   /** Where the list's favourite searches are kept. */
   preferences: PreferenceStore;
-  /** A row opened. A promise answered (the record in a dialog, closed): the list asks again once it settles, and its row takes the focus back. */
-  onOpenRecord?: (id: RecordId) => void | Promise<unknown>;
+  /**
+   * A row opened. A promise answered (the record in a dialog, closed): the list asks again once it settles, and its row
+   * takes the focus back. Anything else answered is let be, so a handler that returns what it did (a push's count) still fits.
+   */
+  onOpenRecord?: (id: RecordId) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
   /** Other ways of showing the records, by name: `map` for a list with `map`. */

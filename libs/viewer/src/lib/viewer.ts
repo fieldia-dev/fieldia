@@ -161,9 +161,9 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * A list page: a row was opened, by a click or by Enter. The app shows the
    * record. When it answers with a promise — the record in a dialog, closed —
    * the list asks for its records again once it settles, and puts the focus
-   * back on the row.
+   * back on the row. Anything else it answers is let be.
    */
-  onOpenRecord?: (id: RecordId) => void | Promise<unknown>;
+  onOpenRecord?: (id: RecordId) => unknown;
   /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
   listFilter?: ResolvedFilter[];
   /**

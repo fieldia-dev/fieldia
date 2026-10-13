@@ -12,7 +12,7 @@ import { expectNoSidewaysScroll, screen } from './support';
  * address so a reload opens it again, the focus back on its row once closed.
  * The popup's own parts (its head, its three columns, its discussion and
  * history) are the other work item lanes'; their states are checked here
- * once they have joined (the fixme tests at the end).
+ * now that they have joined (the tests at the end).
  */
 
 const BACKLOG = '/backlog/';
@@ -177,7 +177,7 @@ test.describe('the backlog', () => {
     await expect(dialog(page)).toBeVisible();
     await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('');
     await dialog(page).locator('[data-field="title"] input').fill('Printing a pick list cuts its last line');
-    await dialog(page).getByRole('button', { name: /Save/ }).last().click();
+    await dialog(page).getByRole('button', { name: 'Save and Close', exact: true }).click();
     await expect(dialog(page)).toHaveCount(0);
     // A new bug is New, not Active: it shows once the filter lets every state through.
     await page.getByRole('button', { name: 'Clear filters' }).click();
@@ -266,27 +266,26 @@ test.describe('the backlog in other languages, dark, and on a phone', () => {
 });
 
 /**
- * The popup's states as the screenshots show them: these need the other work
- * item lanes (wi-header's head and dialog, wi-picker's pickers, wi-text's
- * groups, editors and discussion, wi-history's history) and the target page
- * (demos/backlog/work-item-bug.target.json) copied over the bug's page at the join.
+ * The popup's states as the screenshots show them, with the other work item
+ * lanes' parts joined: wi-header's head and dialog, wi-picker's pickers,
+ * wi-text's groups, editors and discussion, wi-history's history.
  */
 test.describe('the popup, once the work item lanes have joined', () => {
   test.use({ viewport: { width: 1920, height: 983 } });
 
-  test.fixme('08_19: an inset popup over the backlog, nothing dimmed, its head and three columns', async ({ page }) => {
+  test('08_19: an inset popup over the backlog, nothing dimmed, its head and three columns', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     const box = (await dialog(page).boundingBox())!;
     expect([box.x, box.width]).toEqual([96, 1728]);
     expect(await page.locator('.fd-form-dialog-backdrop').evaluate((shade) => getComputedStyle(shade).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
     await expect(dialog(page).getByText('BUG 4127')).toBeVisible();
-    await expect(dialog(page).getByRole('button', { name: 'Save and Close' })).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: 'Save and Close', exact: true })).toBeVisible();
     await expect(dialog(page).getByText('Updated by Mona Adel: Aug 25')).toBeVisible();
     await screen(page, 'wi-demo-popup-joined', { viewport: true });
     expect(await axeFindings(page, 'popup')).toEqual([]);
   });
 
-  test.fixme('20.20.45 / 20.24.05: State’s list, Area’s and Iteration’s pickers with Suggestions and the tree', async ({ page }) => {
+  test('20.20.45 / 20.24.05: State’s list, Area’s and Iteration’s pickers with Suggestions and the tree', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).locator('[data-node="f-iteration"]').click();
     await expect(page.getByRole('tree')).toBeVisible();
@@ -294,30 +293,30 @@ test.describe('the popup, once the work item lanes have joined', () => {
     await screen(page, 'wi-demo-iteration', { viewport: true });
   });
 
-  test.fixme('20.21.54 / 20.22.25 / 20.22.28: Repro Steps in Markdown, System Info pointed at and focused', async ({ page }) => {
+  test('20.21.54 / 20.22.25 / 20.22.28: Repro Steps in Markdown, System Info pointed at and focused', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).getByRole('button', { name: 'Edit Repro Steps' }).click();
     await expect(dialog(page).getByRole('switch', { name: 'Preview' })).toBeVisible();
   });
 
-  test.fixme('20.22.23 / 20.22.36: the discussion, a comment written and saved, the count in the head following it', async ({ page }) => {
+  test('20.22.23 / 20.22.36: the discussion, a comment written and saved, the count in the head following it', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await expect(dialog(page).getByText('1 Comment')).toBeVisible();
   });
 
-  test.fixme('20.23.03: Related Work’s Add link menu, Effort (Hours) folded', async ({ page }) => {
+  test('20.23.03: Related Work’s Add link menu, Effort (Hours) folded', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).getByRole('button', { name: 'Add link' }).last().click();
     await expect(page.getByRole('menuitem', { name: 'Existing item' })).toBeVisible();
   });
 
-  test.fixme('20.24.46: the History tab, its State Graph and the changes', async ({ page }) => {
+  test('20.24.46: the History tab, its State Graph and the changes', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).getByRole('tab', { name: 'History' }).click();
     await expect(dialog(page).getByText('State Graph')).toBeVisible();
   });
 
-  test.fixme('390px wide: the popup fills the window', async ({ page }) => {
+  test('390px wide: the popup fills the window', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BACKLOG}?workitem=4127`);
     const box = (await dialog(page).boundingBox())!;
@@ -325,7 +324,7 @@ test.describe('the popup, once the work item lanes have joined', () => {
     await expectNoSidewaysScroll(page);
   });
 
-  test.fixme('Follow answered by the app: Following, and nothing for Save and Close to save', async ({ page }) => {
+  test('Follow answered by the app: Following, and nothing for Save and Close to save', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).getByRole('button', { name: 'Follow', exact: true }).click();
     await expect(dialog(page).getByRole('button', { name: 'Following' })).toHaveAttribute('aria-pressed', 'true');

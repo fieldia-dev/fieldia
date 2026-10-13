@@ -120,7 +120,6 @@ const NAMES: Record<string, string> = {
   'Updated by': 'آخر تحديث من',
   'Updated on': 'آخر تحديث في',
   'Pressed, “Updated by” shows': 'عند الضغط، يعرض «آخر تحديث»',
-  Icon: 'الأيقونة',
   'Its icon alone': 'أيقونته وحدها',
   'Pressed while': 'مضغوط عندما',
   'Words while pressed': 'الكلمات وهو مضغوط',

@@ -245,7 +245,8 @@ test.describe('pointed at, focused, pressed', () => {
     await expect(dialog(page)).toHaveCount(0);
     const [result] = await results(page);
     expect(result.saved).toBe(true);
-    expect(result.values['area']).toEqual({ id: 4, label: 'Warehouse' });
+    // The record kept as the data source shows it: with its path, as the path picker reads it.
+    expect(result.values['area']).toEqual({ id: 4, label: 'Warehouse', path: ['Warehouse'] });
   });
 
   test('Save in Save and Close’s menu saves and keeps the popup open', async ({ page }) => {

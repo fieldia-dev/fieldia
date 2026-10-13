@@ -241,7 +241,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the list asking again when a row's dialog closes, Fluent's list look, empty quiet fields that say nothing, and the
 // work item's icons (3 of it, shared with the record head, the pickers, the text and the history), a dialog's focus past
 // a hidden box and a quiet field's Escape after its record came — 21.5 more, to 494.8.
-const BUDGET_KB = /*JOIN*/ 511.6;
+// Joined for 0.20, the work item's popup over its backlog: the five lanes above in one bundle, their icons once — 612.1.
+const BUDGET_KB = 612.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -281,7 +282,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // and links in place, a links box, and their stylesheet), 19.4 more, to 162.1.
 // a work item's icons (icons-work.ts), 1.0 more, to 143.7.
 // a list drawn as a backlog (cells, the filter bar, rows under their parent, Fluent's list look) and the work item's icons, 6.6 more, to 149.3.
-const GZIP_BUDGET_KB = /*JOIN*/ 152.7;
+// Joined for 0.20 (the five work item lanes in one bundle, their shared icons once), to 182.4.
+const GZIP_BUDGET_KB = 182.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -317,7 +319,8 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // German's to 11.1 and 4.7, French's to 11.2 and 4.6.
 // A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
 // Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
-const ADD_ON_BUDGET_KB = /*JOIN*/ { ar: [23.9, 5.0], de: [10.3, 4.3], fr: [10.3, 4.2] };
+// Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
+const ADD_ON_BUDGET_KB = { ar: [27.2, 5.6], de: [11.7, 4.9], fr: [11.8, 4.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

@@ -141,13 +141,11 @@ function workItems(): Record<string, Values> {
  * picture; an area's and a sprint's path, and a sprint's dates at the end of
  * its row.
  */
-// TODO(wi-join): `path` and `aside` are wi-picker's (memory-data-source `shows[model].path / aside`); until they land,
-// a sprint's dates show under its name (`details`), the nearest the combobox has.
-const shows = {
+const shows: MemoryDataSourceOptions['shows'] = {
   'res.users': { avatar: 'image' },
   'work.area': { path: 'path' },
-  'work.iteration': { path: 'path', aside: 'dates', details: ['dates'] },
-} as unknown as MemoryDataSourceOptions['shows'];
+  'work.iteration': { path: 'path', aside: 'dates' },
+};
 
 export function backlogData() {
   return createMemoryDataSource({
@@ -158,6 +156,8 @@ export function backlogData() {
       'work.iteration': Object.fromEntries(ITERATIONS.map((i) => [i.id, { name: pathName(i.path), path: i.path, dates: i.dates }])),
       'work.tag': { 1: { name: 'Stock' }, 2: { name: 'Pricing' }, 3: { name: 'Night shift' } },
       'dev.link': {},
+      // What a comment's ! links: a few pull requests, invented.
+      'pull.request': { 61: { name: 'Release keeps the reserved stock' }, 62: { name: 'Stock count after a partial release' }, 63: { name: 'Night shift scanner log export' } },
     },
     shows,
     // A work item is named by its title, as a link to one shows it.
@@ -165,8 +165,10 @@ export function backlogData() {
   });
 }
 
-/** The person's latest Area and Iteration picks, so the pickers' Suggestions are there on the first open. */
-// TODO(wi-join): the key and shape wi-picker keeps them in (`recent:<model>`, newest first) — check at the join.
+/**
+ * The person's latest Area and Iteration picks, so the pickers' Suggestions are there on the first open: kept as the
+ * path picker keeps them (`recent:<model>`, newest first, each `{ id, label }`).
+ */
 export const recentPicks = {
   'recent:work.iteration': [14, 13, 15, 16, 11].map((id) => ({ id, label: pathName(ITERATIONS.find((i) => i.id === id)?.path ?? []) })),
   'recent:work.area': [1, 2, 4].map((id) => ({ id, label: pathName(AREAS.find((a) => a.id === id)?.path ?? []) })),

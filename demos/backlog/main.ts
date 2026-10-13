@@ -1,6 +1,5 @@
-import * as chatterLib from '@fieldia/chatter';
-import { chatterSlot, type ChatterSlotOptions } from '@fieldia/chatter';
-import { isRightToLeft, localizePage, type ActionRequest, type ActionResult, type Facet, type Form, type JsonValue, type Locale, type Page, type RecordId, type Values } from '@fieldia/core';
+import { chatterSlot, historySlot } from '@fieldia/chatter';
+import { isRightToLeft, localizePage, type ActionRequest, type ActionResult, type Facet, type JsonValue, type Locale, type Page, type RecordId } from '@fieldia/core';
 import { mountViewer, openFormDialog, type FormDialogOptions, type FormDialogResult, type Tokens } from '@fieldia/viewer';
 import { memoryPreferences } from '@fieldia/widgets';
 import backlogJson from '../../examples/pages/backlog.page.json';
@@ -283,8 +282,7 @@ async function answer(request: ActionRequest): Promise<ActionResult | void> {
     // Follow toggles; a notification setting follows the bug. Kept by the server, so the record has no change to save.
     if (request.action === 'follow' && following.has(id)) following.delete(id);
     else following.add(id);
-    // TODO(wi-join): `stored` is wi-header's ActionResult part; until it lands the answer is not shown.
-    return { stored: { following: following.has(id) } } as unknown as ActionResult;
+    return { stored: { following: following.has(id) } };
   }
   if (request.action === 'copy-link') {
     const address = new URL(location.href);
@@ -294,31 +292,40 @@ async function answer(request: ActionRequest): Promise<ActionResult | void> {
   }
 }
 
+/** The words in the empty comment box, and what # and ! link, in the reader's language. */
+const COMMENTING = {
+  en: { hint: 'Add a comment. Use # to link a work item, @ to mention a person, or ! to link a pull request.', item: 'work item', pull: 'pull request' },
+  ar: { hint: 'أضف تعليقًا. استخدم # لربط عنصر عمل، و@ للإشارة إلى شخص، و! لربط طلب سحب.', item: 'عنصر عمل', pull: 'طلب سحب' },
+  de: { hint: 'Kommentar hinzufügen. Mit # verknüpfen Sie ein Arbeitselement, mit @ erwähnen Sie eine Person, mit ! verknüpfen Sie einen Pull Request.', item: 'Arbeitselement', pull: 'Pull Request' },
+  fr: { hint: 'Ajoutez un commentaire. Utilisez # pour lier un élément de travail, @ pour mentionner une personne ou ! pour lier une demande de tirage.', item: 'un élément de travail', pull: 'une demande de tirage' },
+}[locale];
+
+/** Records a comment links by their key, found in the demo's data. */
+const find = (model: string) => async (query: string) => (await dataSource.search?.({ model, query, limit: 8 })) ?? [];
+
 /** The popup's slots: the bug's discussion, and its history. */
 function slots() {
-  // TODO(wi-join): the Discussion look (`look`, `me`, `onCount`) is wi-text's; until it lands the slot is the chatter as it is.
-  const discussion: ChatterSlotOptions = {
-    source: chatter,
-    locale: locale as Locale,
-    dir,
-    ...({
-      look: 'discussion',
-      me,
-      // The comment count in the head follows the comments, kept as the server has it: no change to save.
-      onCount: (count: number, form: Form) => (form.setValues as (values: Values, how?: { stored?: boolean }) => void)({ comment_count: count }, { stored: true }),
-    } as Partial<ChatterSlotOptions>),
-  };
-  // TODO(wi-join): historySlot is wi-history's; until it lands, the History tab shows the chatter, whose events are the changes.
-  const historySlot = Reflect.get(chatterLib, 'historySlot') as ((options: Record<string, unknown>) => ReturnType<typeof chatterSlot>) | undefined;
   return {
-    discussion: chatterSlot(discussion),
-    history: historySlot ? historySlot({ source: chatter, stateField: 'state', reasonField: 'reason', kind: 'work item', locale, dir }) : chatterSlot({ source: chatter, locale: locale as Locale, dir }),
+    discussion: chatterSlot({
+      look: 'discussion',
+      source: chatter,
+      me,
+      placeholder: COMMENTING.hint,
+      references: [
+        { key: '#', model: 'work.item', label: COMMENTING.item, icon: 'hash', search: find('work.item') },
+        { key: '!', model: 'pull.request', label: COMMENTING.pull, icon: 'pull-request', search: find('pull.request') },
+      ],
+      locale: locale as Locale,
+      dir,
+      // The comment count in the head follows the comments, kept as the server has it: no change to save.
+      onCount: (count, form) => form.setValues({ comment_count: count }, { stored: true }),
+    }),
+    history: historySlot({ source: chatter, stateField: 'state', reasonField: 'reason', kind: 'work item', locale: locale as Locale, dir }),
   };
 }
 
 /** The popup's shape: a large window over the backlog, nothing dimmed, that can fill the window and be resized. */
-// TODO(wi-join): `inset`, `backdrop`, `maximise` and `resizable` are wi-header's; until they land the dialog is the widest one, dimmed.
-const POPUP = { size: 'inset', backdrop: 'clear', maximise: true, resizable: true } as unknown as Pick<FormDialogOptions, 'size'>;
+const POPUP: Pick<FormDialogOptions, 'size' | 'backdrop' | 'maximise' | 'resizable'> = { size: 'inset', backdrop: 'clear', maximise: true, resizable: true };
 
 /** The bug in the address while it is open, so a reload opens it again. */
 function remember(id: RecordId | null) {

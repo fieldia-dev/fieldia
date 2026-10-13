@@ -478,20 +478,6 @@ export const DEMOS = [
     ],
   },
   {
-    id: 'wi-text',
-    name: 'Work item body',
-    category: 'records',
-    query: 'page=wi-text&skin=quiet',
-    blurb: 'A work item’s body as a work tracker draws it: three columns of groups that fold and grow from their heading’s end, Repro Steps in Markdown and System Info in rich text with their toolbars, a discussion of comment cards, help with links, and Add link menus.',
-    howTo: [
-      'Point at System Info: a light box and its heading’s tools show. Click into it: the toolbar opens inside the box, at its foot.',
-      'Click the Repro Steps link’s words: the Markdown card opens. Turn on Preview, then press Done in the heading.',
-      'Write a comment and press Ctrl+Enter: its card comes first under the box.',
-      'Open Related Work’s Add link: Existing item searches, New item opens a new work item.',
-      'Press ⤢ on Discussion: it fills the body alone; Escape puts it back.',
-    ],
-  },
-  {
     id: 'customers-arabic',
     name: 'Customer list, right to left',
     category: 'lists',
