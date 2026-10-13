@@ -1,0 +1,642 @@
+{
+  "fieldia": "0.1",
+  "id": "wi-text",
+  "title": "Bug 4127",
+  "description": "A work item's body as its editor draws it: three columns of groups that fold and grow from their heading's end, Repro Steps in Markdown and System Info in rich text, a discussion, help, and links to other work.",
+  "data": {
+    "kind": "record",
+    "model": "wi.text"
+  },
+  "maxWidth": "full",
+  "look": {
+    "theme": "fluent",
+    "skin": "quiet",
+    "density": "compact"
+  },
+  "fields": {
+    "repro_steps": {
+      "type": "html",
+      "label": "Repro Steps"
+    },
+    "system_info": {
+      "type": "html",
+      "label": "System Info"
+    },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        {
+          "value": "business",
+          "label": "Business"
+        },
+        {
+          "value": "architectural",
+          "label": "Architectural"
+        }
+      ]
+    },
+    "resolved_reason": {
+      "type": "selection",
+      "label": "Resolved Reason",
+      "options": [
+        {
+          "value": "fixed",
+          "label": "Fixed"
+        },
+        {
+          "value": "duplicate",
+          "label": "Duplicate"
+        },
+        {
+          "value": "as_designed",
+          "label": "As Designed"
+        },
+        {
+          "value": "cannot_reproduce",
+          "label": "Cannot Reproduce"
+        }
+      ]
+    },
+    "story_points": {
+      "type": "float",
+      "label": "Story Points",
+      "digits": [
+        16,
+        1
+      ]
+    },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "options": [
+        {
+          "value": "1",
+          "label": "1"
+        },
+        {
+          "value": "2",
+          "label": "2"
+        },
+        {
+          "value": "3",
+          "label": "3"
+        },
+        {
+          "value": "4",
+          "label": "4"
+        }
+      ]
+    },
+    "severity": {
+      "type": "selection",
+      "label": "Severity",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 - Critical"
+        },
+        {
+          "value": "2",
+          "label": "2 - High"
+        },
+        {
+          "value": "3",
+          "label": "3 - Medium"
+        },
+        {
+          "value": "4",
+          "label": "4 - Low"
+        }
+      ]
+    },
+    "activity": {
+      "type": "selection",
+      "label": "Activity",
+      "options": [
+        {
+          "value": "deployment",
+          "label": "Deployment"
+        },
+        {
+          "value": "design",
+          "label": "Design"
+        },
+        {
+          "value": "development",
+          "label": "Development"
+        },
+        {
+          "value": "documentation",
+          "label": "Documentation"
+        },
+        {
+          "value": "requirements",
+          "label": "Requirements"
+        },
+        {
+          "value": "testing",
+          "label": "Testing"
+        }
+      ]
+    },
+    "original_estimate": {
+      "type": "float",
+      "label": "Original Estimate",
+      "digits": [
+        16,
+        1
+      ]
+    },
+    "remaining_work": {
+      "type": "float",
+      "label": "Remaining",
+      "digits": [
+        16,
+        1
+      ]
+    },
+    "completed_work": {
+      "type": "float",
+      "label": "Completed",
+      "digits": [
+        16,
+        1
+      ]
+    },
+    "dev_links": {
+      "type": "many2many",
+      "label": "Development",
+      "relation": "wi.dev"
+    },
+    "related": {
+      "type": "many2many",
+      "label": "Related Work",
+      "relation": "wi.text"
+    },
+    "found_in": {
+      "type": "char",
+      "label": "Found in Build"
+    },
+    "integrated_in": {
+      "type": "char",
+      "label": "Integrated in Build"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "cols",
+        "style": "plain",
+        "columns": 3,
+        "tracks": [
+          "50%",
+          "1fr",
+          "1fr"
+        ],
+        "gap": 16,
+        "children": [
+          {
+            "type": "section",
+            "id": "col-1",
+            "style": "plain",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-repro",
+                "title": "Repro Steps",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "maximise": true,
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-repro",
+                    "field": "repro_steps",
+                    "labels": "hidden",
+                    "placeholder": "Click to add Repro Steps.",
+                    "options": {
+                      "editor": "markdown",
+                      "toolbar": "focus",
+                      "tools": [
+                        "mention",
+                        "reference",
+                        "attach",
+                        "highlight",
+                        "heading",
+                        "bold",
+                        "italic",
+                        "code",
+                        "link",
+                        "bulletList",
+                        "numberList",
+                        "taskList"
+                      ],
+                      "mention": {
+                        "model": "wi.person"
+                      },
+                      "references": [
+                        {
+                          "key": "#",
+                          "model": "wi.text",
+                          "label": "Work item",
+                          "icon": "hash"
+                        },
+                        {
+                          "key": "!",
+                          "model": "wi.pull",
+                          "label": "Pull request",
+                          "icon": "pull-request"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-system",
+                "title": "System Info",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "maximise": true,
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-system",
+                    "field": "system_info",
+                    "labels": "hidden",
+                    "placeholder": "Click to add System Info.",
+                    "options": {
+                      "editor": "rich",
+                      "toolbar": "focus",
+                      "toolbarAt": "bottom",
+                      "switchEditor": true,
+                      "tools": [
+                        "bold",
+                        "italic",
+                        "underline",
+                        "bulletList",
+                        "numberList",
+                        "highlight",
+                        "colour",
+                        "emoji",
+                        "outdent",
+                        "indent",
+                        "strike",
+                        "size",
+                        "code",
+                        "mention",
+                        "reference",
+                        "clearFormatting",
+                        "image",
+                        "link",
+                        "unlink"
+                      ],
+                      "mention": {
+                        "model": "wi.person"
+                      },
+                      "references": [
+                        {
+                          "key": "#",
+                          "model": "wi.text",
+                          "label": "Work item",
+                          "icon": "hash"
+                        },
+                        {
+                          "key": "!",
+                          "model": "wi.pull",
+                          "label": "Pull request",
+                          "icon": "pull-request"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-discussion",
+                "title": "Discussion",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "maximise": true,
+                "children": [
+                  {
+                    "type": "slot",
+                    "id": "s-discussion",
+                    "name": "discussion"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "col-2",
+            "style": "plain",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-planning",
+                "title": "Planning",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-category",
+                    "field": "category"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-resolved-reason",
+                    "field": "resolved_reason",
+                    "readonly": true,
+                    "readonlyReason": "Set when the bug is resolved"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-points",
+                    "field": "story_points"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-priority",
+                    "field": "priority"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-severity",
+                    "field": "severity"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-activity",
+                    "field": "activity"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-effort",
+                "title": "Effort (Hours)",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "collapsed": true,
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-estimate",
+                    "field": "original_estimate"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-remaining",
+                    "field": "remaining_work"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-completed",
+                    "field": "completed_work"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "col-3",
+            "style": "plain",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-deployment",
+                "title": "Deployment",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "children": [
+                  {
+                    "type": "text",
+                    "id": "x-deployment",
+                    "style": "help",
+                    "text": "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting for Boards in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-development",
+                "title": "Development",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-dev",
+                    "field": "dev_links",
+                    "widget": "links",
+                    "labels": "hidden",
+                    "options": {
+                      "add": "search",
+                      "helpIcon": "branch",
+                      "help": "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started."
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-related",
+                "title": "Related Work",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-related",
+                    "field": "related",
+                    "widget": "links",
+                    "labels": "hidden",
+                    "options": {
+                      "add": "menu",
+                      "emptyLink": "Add an existing work item as a parent"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-build",
+                "title": "System Info",
+                "style": "line",
+                "collapsible": true,
+                "foldAt": "end",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-found",
+                    "field": "found_in"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-integrated",
+                    "field": "integrated_in"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Bug 4127": "علة 4127",
+      "A work item's body as its editor draws it: three columns of groups that fold and grow from their heading's end, Repro Steps in Markdown and System Info in rich text, a discussion, help, and links to other work.": "متن عنصر عمل كما يرسمه محرره: ثلاثة أعمدة من المجموعات تُطوى وتكبر من نهاية عنوانها، وخطوات إعادة الإنتاج بلغة Markdown ومعلومات النظام بنص منسق، ونقاش، ومساعدة، وروابط لأعمال أخرى.",
+      "Repro Steps": "خطوات إعادة الإنتاج",
+      "System Info": "معلومات النظام",
+      "Discussion": "نقاش",
+      "Planning": "التخطيط",
+      "Effort (Hours)": "الجهد (ساعات)",
+      "Deployment": "النشر",
+      "Development": "التطوير",
+      "Related Work": "أعمال ذات صلة",
+      "Category": "الفئة",
+      "Business": "أعمال",
+      "Architectural": "معماري",
+      "Resolved Reason": "سبب الحل",
+      "Fixed": "تم الإصلاح",
+      "Duplicate": "مكرر",
+      "As Designed": "حسب التصميم",
+      "Cannot Reproduce": "تتعذر إعادة الإنتاج",
+      "Story Points": "نقاط القصة",
+      "Priority": "الأولوية",
+      "Severity": "الخطورة",
+      "1 - Critical": "1 - حرج",
+      "2 - High": "2 - مرتفع",
+      "3 - Medium": "3 - متوسط",
+      "4 - Low": "4 - منخفض",
+      "Activity": "النشاط",
+      "Design": "التصميم",
+      "Documentation": "التوثيق",
+      "Requirements": "المتطلبات",
+      "Testing": "الاختبار",
+      "Original Estimate": "التقدير الأصلي",
+      "Remaining": "المتبقي",
+      "Completed": "المنجز",
+      "Found in Build": "وُجد في الإصدار",
+      "Integrated in Build": "دُمج في الإصدار",
+      "Set when the bug is resolved": "يُضبط عند حل العلة",
+      "Click to add Repro Steps.": "انقر لإضافة خطوات إعادة الإنتاج.",
+      "Click to add System Info.": "انقر لإضافة معلومات النظام.",
+      "Add an existing work item as a parent": "إضافة عنصر عمل موجود كأصل",
+      "Work item": "عنصر عمل",
+      "Pull request": "طلب سحب",
+      "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting for Boards in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "لتتبّع الإصدارات المرتبطة بعنصر العمل هذا، انتقل إلى [الإصدارات](https://example.com/releases) وشغّل الإبلاغ عن حالة النشر للوحات في قائمة خيارات مسارك. [اعرف المزيد عن الإبلاغ عن حالة النشر](https://example.com/help/deployment-status)",
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "اربط [إيداعًا](https://example.com/help/commit) أو [طلب سحب](https://example.com/help/pull-request) أو [فرعًا](https://example.com/help/branch) لترى حالة تطويرك. يمكنك أيضًا [إنشاء فرع](https://example.com/help/new-branch) للبدء."
+    },
+    "de": {
+      "Bug 4127": "Fehler 4127",
+      "A work item's body as its editor draws it: three columns of groups that fold and grow from their heading's end, Repro Steps in Markdown and System Info in rich text, a discussion, help, and links to other work.": "Der Inhalt eines Arbeitselements, wie sein Editor ihn zeichnet: drei Spalten von Gruppen, die sich vom Ende ihrer Überschrift aus zuklappen und vergrößern lassen, Reproduktionsschritte in Markdown und Systeminfo als formatierter Text, eine Diskussion, Hilfe und Links zu anderer Arbeit.",
+      "Repro Steps": "Reproduktionsschritte",
+      "System Info": "Systeminfo",
+      "Discussion": "Diskussion",
+      "Planning": "Planung",
+      "Effort (Hours)": "Aufwand (Stunden)",
+      "Deployment": "Bereitstellung",
+      "Development": "Entwicklung",
+      "Related Work": "Verwandte Arbeit",
+      "Category": "Kategorie",
+      "Business": "Geschäft",
+      "Architectural": "Architektur",
+      "Resolved Reason": "Lösungsgrund",
+      "Fixed": "Behoben",
+      "Duplicate": "Duplikat",
+      "As Designed": "Wie entworfen",
+      "Cannot Reproduce": "Nicht reproduzierbar",
+      "Story Points": "Story Points",
+      "Priority": "Priorität",
+      "Severity": "Schweregrad",
+      "1 - Critical": "1 - Kritisch",
+      "2 - High": "2 - Hoch",
+      "3 - Medium": "3 - Mittel",
+      "4 - Low": "4 - Niedrig",
+      "Activity": "Aktivität",
+      "Design": "Entwurf",
+      "Documentation": "Dokumentation",
+      "Requirements": "Anforderungen",
+      "Testing": "Test",
+      "Original Estimate": "Ursprüngliche Schätzung",
+      "Remaining": "Verbleibend",
+      "Completed": "Abgeschlossen",
+      "Found in Build": "Gefunden in Build",
+      "Integrated in Build": "Integriert in Build",
+      "Set when the bug is resolved": "Wird gesetzt, wenn der Fehler behoben ist",
+      "Click to add Repro Steps.": "Klicken, um Reproduktionsschritte hinzuzufügen.",
+      "Click to add System Info.": "Klicken, um Systeminfo hinzuzufügen.",
+      "Add an existing work item as a parent": "Vorhandenes Arbeitselement als übergeordnetes Element hinzufügen",
+      "Work item": "Arbeitselement",
+      "Pull request": "Pull Request",
+      "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting for Boards in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "Um Releases zu diesem Arbeitselement zu verfolgen, öffnen Sie [Releases](https://example.com/releases) und schalten Sie im Optionsmenü Ihrer Pipeline die Meldung des Bereitstellungsstatus für Boards ein. [Mehr über die Meldung des Bereitstellungsstatus](https://example.com/help/deployment-status)",
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Verknüpfen Sie einen [Commit](https://example.com/help/commit), einen [Pull Request](https://example.com/help/pull-request) oder einen [Branch](https://example.com/help/branch), um den Stand Ihrer Entwicklung zu sehen. Sie können auch [einen Branch erstellen](https://example.com/help/new-branch), um zu beginnen."
+    },
+    "fr": {
+      "Bug 4127": "Bogue 4127",
+      "A work item's body as its editor draws it: three columns of groups that fold and grow from their heading's end, Repro Steps in Markdown and System Info in rich text, a discussion, help, and links to other work.": "Le corps d’un élément de travail tel que son éditeur le dessine : trois colonnes de groupes qui se replient et s’agrandissent depuis la fin de leur titre, les étapes de reproduction en Markdown et les infos système en texte enrichi, une discussion, de l’aide et des liens vers d’autres travaux.",
+      "Repro Steps": "Étapes de reproduction",
+      "System Info": "Infos système",
+      "Discussion": "Discussion",
+      "Planning": "Planification",
+      "Effort (Hours)": "Effort (heures)",
+      "Deployment": "Déploiement",
+      "Development": "Développement",
+      "Related Work": "Travail associé",
+      "Category": "Catégorie",
+      "Business": "Métier",
+      "Architectural": "Architectural",
+      "Resolved Reason": "Raison de la résolution",
+      "Fixed": "Corrigé",
+      "Duplicate": "Doublon",
+      "As Designed": "Conforme à la conception",
+      "Cannot Reproduce": "Impossible à reproduire",
+      "Story Points": "Points de récit",
+      "Priority": "Priorité",
+      "Severity": "Gravité",
+      "1 - Critical": "1 - Critique",
+      "2 - High": "2 - Élevée",
+      "3 - Medium": "3 - Moyenne",
+      "4 - Low": "4 - Faible",
+      "Activity": "Activité",
+      "Design": "Conception",
+      "Documentation": "Documentation",
+      "Requirements": "Exigences",
+      "Testing": "Test",
+      "Original Estimate": "Estimation initiale",
+      "Remaining": "Restant",
+      "Completed": "Terminé",
+      "Found in Build": "Trouvé dans la build",
+      "Integrated in Build": "Intégré dans la build",
+      "Set when the bug is resolved": "Défini quand le bogue est résolu",
+      "Click to add Repro Steps.": "Cliquez pour ajouter des étapes de reproduction.",
+      "Click to add System Info.": "Cliquez pour ajouter des infos système.",
+      "Add an existing work item as a parent": "Ajouter un élément de travail existant comme parent",
+      "Work item": "un élément de travail",
+      "Pull request": "une demande de tirage",
+      "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting for Boards in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "Pour suivre les versions liées à cet élément de travail, allez dans [Versions](https://example.com/releases) et activez le suivi de l’état du déploiement pour les tableaux dans le menu Options de votre pipeline. [En savoir plus sur le suivi de l’état du déploiement](https://example.com/help/deployment-status)",
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Liez un [commit](https://example.com/help/commit), une [demande de tirage](https://example.com/help/pull-request) ou une [branche](https://example.com/help/branch) pour voir l’état de votre développement. Vous pouvez aussi [créer une branche](https://example.com/help/new-branch) pour commencer."
+    }
+  }
+}
