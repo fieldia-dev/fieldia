@@ -214,6 +214,12 @@ export interface ViewerHandle {
   isReadonly(): boolean;
   /** Ask the data source again: a list page's records, keeping its page, order and search; else the record, as a reload step does. */
   reload(): Promise<void>;
+  /**
+   * A list page: open a record as its row's press does — the app's onOpenRecord, the row marked open (aria-current) while
+   * it is, then the records again and the focus back on its row — as when the app opens one from its address. A record
+   * page has no rows: nothing happens.
+   */
+  openRecord(id: RecordId): Promise<void>;
   /** Listen to one of the form's events — change, save, send, action, run, step, open; returns what stops listening. */
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   /** Write several fields at once, as the app: the page's change steps do not run for it. */
@@ -1754,6 +1760,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let body: HTMLElement;
   /** A list page's way to ask for its records again (handle.reload). */
   let reloadList: (() => Promise<void>) | null = null;
+  /** And its way to open a record as its row's press does (handle.openRecord). */
+  let openInList: ((id: RecordId) => Promise<void>) | null = null;
   if (layout.type === 'sheet') body = sheetLayout(layout);
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
@@ -1779,6 +1787,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     });
     cleanups.push(list.destroy);
     reloadList = list.reload;
+    openInList = list.open;
     body = list.element;
   }
   else body = sectionsLayout(layout);
@@ -2029,6 +2038,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     reload: async () => {
       if (reloadList) return reloadList();
       await form.run([{ do: 'reload' }]);
+    },
+    openRecord: async (id) => {
+      await openInList?.(id);
     },
     on: (event, listener) => {
       const off = form.on(event, listener);

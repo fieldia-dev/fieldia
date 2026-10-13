@@ -21,7 +21,7 @@ import { mountSurveyEditor } from './survey-editor';
  */
 export const LATIN_KEPT = [
   // Keys, and the letters of shortcuts.
-  ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
+  ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G', 'E'],
   // Formats and currencies.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
   // A formatted text's own format, and the units a column's width is written in.

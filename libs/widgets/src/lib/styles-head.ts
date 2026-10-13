@@ -57,6 +57,10 @@ export const HEAD_CSS = /* css */ `
   border-inline-end: 1.5px solid currentColor; border-block-end: 1.5px solid currentColor;
 }
 .fd-form-dialog:has(> .fd-dialog-grip) { position: relative; }
+/* The grip has a band of its own at the foot: the body's scrollbar ends above it, as a work item's window has it; a
+   history filling the body keeps 20px under its list, its foot 38px from the window's edge as before. */
+.fd-form-dialog[data-headed]:not([data-maximised]):has(> .fd-dialog-grip) > .fd-form-dialog-body { padding-block-end: 18px; --fd-history-foot: 20px; }
+@media (max-width: 759.98px) { .fd-form-dialog.fd-size-inset[data-headed]:has(> .fd-dialog-grip) > .fd-form-dialog-body { padding-block-end: 0; --fd-history-foot: 38px; } }
 .fd-form-dialog.fd-size-inset:has(> .fd-dialog-grip), .fd-form-dialog[data-resized] { position: fixed; }
 
 /* A page with a head of its own is the dialog: its head stays, its body scrolls under it. */
@@ -66,6 +70,30 @@ export const HEAD_CSS = /* css */ `
 .fd-form-dialog[data-headed] .fd-head-page { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .fd-form-dialog[data-headed] .fd-head-page > .fd-head { flex: none; }
 .fd-form-dialog[data-headed] .fd-head-page > :is(.fd-head-body, .fd-head-layout) { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* ---- scroll bars, as the tracker's window draws them on every system: 15px, a light track with a hairline at its
+   inner edge, a rounded thumb inset in it, no arrows (where the browser lets a page draw them: Chrome, Edge, Safari).
+   Each selector written out: Chrome drops a scroll bar part's :vertical or :horizontal under an :is() ancestor, and a
+   part paints no logical border, so its sides are physical ones, swapped right to left. ---- */
+.fd-head-page ::-webkit-scrollbar, .fd-history ::-webkit-scrollbar { width: 15px; height: 15px; }
+.fd-head-page ::-webkit-scrollbar-track, .fd-history ::-webkit-scrollbar-track,
+.fd-head-page ::-webkit-scrollbar-corner, .fd-history ::-webkit-scrollbar-corner { background: color-mix(in srgb, var(--fd-text) 2.2%, var(--fd-surface)); }
+.fd-head-page ::-webkit-scrollbar-track:vertical, .fd-history ::-webkit-scrollbar-track:vertical {
+  border-left: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-right: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+[dir="rtl"] .fd-head-page ::-webkit-scrollbar-track:vertical, [dir="rtl"] .fd-history ::-webkit-scrollbar-track:vertical {
+  border-left-color: color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface)); border-right-color: color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface));
+}
+.fd-head-page ::-webkit-scrollbar-track:horizontal, .fd-history ::-webkit-scrollbar-track:horizontal {
+  border-top: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-bottom: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+.fd-head-page ::-webkit-scrollbar-thumb, .fd-history ::-webkit-scrollbar-thumb {
+  border: solid transparent; border-width: 3px 3px 3px 4px; border-radius: 8px; background: color-mix(in srgb, var(--fd-text) 24.5%, var(--fd-surface)) padding-box;
+}
+.fd-head-page ::-webkit-scrollbar-thumb:horizontal, .fd-history ::-webkit-scrollbar-thumb:horizontal { border-width: 4px 3px 3px; }
+[dir="rtl"] .fd-head-page ::-webkit-scrollbar-thumb:vertical, [dir="rtl"] .fd-history ::-webkit-scrollbar-thumb:vertical { border-width: 3px 4px 3px 3px; }
+.fd-head-page ::-webkit-scrollbar-thumb:hover, .fd-history ::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
+.fd-head-page ::-webkit-scrollbar-button, .fd-history ::-webkit-scrollbar-button { display: none; }
 
 /* ---- the head ------------------------------------------------------------------------ */
 .fd-head-page { padding: 0; background: var(--fd-surface); }
@@ -88,7 +116,8 @@ export const HEAD_CSS = /* css */ `
 .fd-head-badge-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 42px; padding-inline: 20px 4px; }
 .fd-head-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; line-height: 16px; color: var(--fd-head-link); white-space: nowrap; }
 .fd-head-badge-icon { display: inline-grid; color: var(--fd-kind, var(--fd-head-link)); }
-.fd-head-badge-icon .fd-icon { width: 12px; height: 12px; margin: 0; stroke-width: 2.2; }
+/* The kind's icon 14px, its box 2px before the badge's start so its drawing starts there, the words 39px in (20.22.23). */
+.fd-head-badge-icon .fd-icon { width: 14px; height: 14px; margin: 0; margin-inline-start: -2px; stroke-width: 2.2; }
 .fd-head-window { display: inline-flex; align-items: center; gap: 3px; margin-inline-start: auto; }
 /* The title line: the number before the title, its box from 64px in, Copy title at its end. */
 .fd-head-title { display: flex; align-items: center; min-height: 32px; margin-block-start: 1px; padding-inline: 19px 8px; }
@@ -178,10 +207,11 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-form .fd-head-fields > .fd-field[data-labels] > :not(.fd-label) { grid-column: 3; }
 .fd-form .fd-head-fields > .fd-field[data-labels] > .fd-label + * { grid-row: 1; }
 /* The lead slot: a lock at the value's start, its words muted. */
-.fd-form .fd-head-fields > .fd-field[data-labels] > .fd-lock-wrap { grid-column: 2; grid-row: 1; justify-self: center; margin: 0; z-index: 1; }
+/* Its middle 2px past the slot's, toward the value, as the tracker's lock stands under the state's dot. */
+.fd-form .fd-head-fields > .fd-field[data-labels] > .fd-lock-wrap { grid-column: 2; grid-row: 1; justify-self: center; margin: 0; margin-inline-start: 4px; z-index: 1; }
 .fd-form .fd-head-fields > .fd-field[data-labels] > .fd-lock-wrap + * { grid-row: 1; }
-.fd-head-fields .fd-lock .fd-icon { width: 12px; height: 12px; }
-.fd-head-fields .fd-lock { color: color-mix(in srgb, var(--fd-text) 64%, var(--fd-surface)); }
+.fd-head-fields .fd-lock .fd-icon { width: 15px; height: 15px; }
+.fd-head-fields .fd-lock { color: var(--fd-text); }
 /* Every box in the head 32px tall, as the rows they stand in, its corners as small as a button's. */
 .fd-form .fd-head :is(input, select).fd-input { box-sizing: border-box; height: 32px; min-height: 32px; }
 .fd-form .fd-head .fd-field[data-quiet] :is(.fd-input:not(.fd-tags *), .fd-tags, .fd-dot-box) { border-radius: 2px; }
@@ -195,8 +225,8 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-form .fd-head-fields .fd-dot-button > .fd-dot { width: 10px; height: 10px; }
 /* A box pointed at in the head, as the title's and Area's: an edge of the strong border. */
 @media (hover: hover) {
-  .fd-form .fd-head .fd-field[data-quiet] > :hover :is(.fd-input:not(.fd-tags *), .fd-tags):not([readonly], :disabled, [contenteditable="false"]),
-  .fd-form .fd-head .fd-field[data-quiet] > :is(.fd-input, .fd-tags, .fd-dot-box:not(:has(:disabled))):not([readonly], :disabled, [contenteditable="false"]):hover {
+  .fd-form .fd-head .fd-field[data-quiet] > :hover :is(.fd-input:not(.fd-tags *), .fd-tags):not([readonly], :disabled, [contenteditable="false"], :focus, :focus-within),
+  .fd-form .fd-head .fd-field[data-quiet] > :is(.fd-input, .fd-tags, .fd-dot-box:not(:has(:disabled))):not([readonly], :disabled, [contenteditable="false"], :focus, :focus-within):hover {
     border-color: var(--fd-border-strong);
   }
 }

@@ -59,6 +59,7 @@ const WORDS = {
     team: 'Portal Team', teams: 'Other teams', favourite: 'Add to favourites', members: 'Team members', newItem: 'New Work Item', asBoard: 'View as Board', columns: 'Column Options', more: 'More actions',
     backlog: 'Backlog', analytics: 'Analytics', views: 'Backlog views', level: 'Stories', viewOptions: 'View options', filter: 'Filter', backlogSettings: 'Settings', fullScreen: 'Full screen',
     notHere: 'Only the backlog and its bugs are in this demo.', me: 'Salma Nabil', bug: 'Bug',
+    create: 'Create', myWork: 'My work items', extensions: 'Extensions', help: 'Help', userSettings: 'User settings',
   },
   ar: {
     org: 'Harbor Supply', project: 'Portal', boards: 'اللوحات', backlogs: 'قوائم الأعمال', search: 'بحث', language: 'اللغة', path: 'موقعك', menu: 'المشروع',
@@ -66,6 +67,7 @@ const WORDS = {
     team: 'فريق Portal', teams: 'فرق أخرى', favourite: 'إضافة إلى المفضلة', members: 'أعضاء الفريق', newItem: 'بند عمل جديد', asBoard: 'عرض كلوحة', columns: 'خيارات الأعمدة', more: 'إجراءات أخرى',
     backlog: 'قائمة الأعمال', analytics: 'التحليلات', views: 'طرق عرض قائمة الأعمال', level: 'القصص', viewOptions: 'خيارات العرض', filter: 'تصفية', backlogSettings: 'الإعدادات', fullScreen: 'ملء الشاشة',
     notHere: 'لا يضم هذا العرض إلا قائمة الأعمال وأخطاءها.', me: 'سلمى نبيل', bug: 'خلل',
+    create: 'إنشاء', myWork: 'بنود عملي', extensions: 'الإضافات', help: 'المساعدة', userSettings: 'إعدادات المستخدم',
   },
   de: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Boards', backlogs: 'Backlogs', search: 'Suchen', language: 'Sprache', path: 'Wo Sie sind', menu: 'Projekt',
@@ -73,6 +75,7 @@ const WORDS = {
     team: 'Portal-Team', teams: 'Andere Teams', favourite: 'Zu Favoriten hinzufügen', members: 'Teammitglieder', newItem: 'Neues Arbeitselement', asBoard: 'Als Board anzeigen', columns: 'Spaltenoptionen', more: 'Weitere Aktionen',
     backlog: 'Backlog', analytics: 'Analyse', views: 'Backlog-Ansichten', level: 'Storys', viewOptions: 'Ansichtsoptionen', filter: 'Filter', backlogSettings: 'Einstellungen', fullScreen: 'Vollbild',
     notHere: 'In dieser Demo gibt es nur das Backlog und seine Fehler.', me: 'Salma Nabil', bug: 'Fehler',
+    create: 'Erstellen', myWork: 'Meine Arbeitselemente', extensions: 'Erweiterungen', help: 'Hilfe', userSettings: 'Benutzereinstellungen',
   },
   fr: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Tableaux', backlogs: 'Backlogs', search: 'Rechercher', language: 'Langue', path: 'Où vous êtes', menu: 'Projet',
@@ -80,6 +83,7 @@ const WORDS = {
     team: 'Équipe Portal', teams: 'Autres équipes', favourite: 'Ajouter aux favoris', members: 'Membres de l’équipe', newItem: 'Nouvel élément de travail', asBoard: 'Afficher en tableau', columns: 'Options des colonnes', more: 'Autres actions',
     backlog: 'Backlog', analytics: 'Analyse', views: 'Vues du backlog', level: 'Récits', viewOptions: 'Options d’affichage', filter: 'Filtrer', backlogSettings: 'Paramètres', fullScreen: 'Plein écran',
     notHere: 'Cette démo ne contient que le backlog et ses bogues.', me: 'Salma Nabil', bug: 'Bogue',
+    create: 'Créer', myWork: 'Mes éléments de travail', extensions: 'Extensions', help: 'Aide', userSettings: 'Paramètres utilisateur',
   },
 }[locale];
 
@@ -105,7 +109,11 @@ const ICON: Record<string, string> = {
   build: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
   test: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
   box: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  tasks: '<path d="M10 6h11M10 12h11M10 18h11M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
+  bag: '<rect x="6" y="8" width="12" height="13" rx="1.5"/><path d="M9 8V6a3 3 0 0 1 6 0v2M12 8v13"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.01"/>',
+  user: '<circle cx="10" cy="7.5" r="3.5"/><path d="M3 20c0-4 3-6.5 7-6.5 1.2 0 2.3.2 3.2.6"/><circle cx="17.5" cy="17.5" r="2.2"/><path d="M17.5 13.5v1.8M17.5 19.7v1.8M21.5 17.5h-1.8M15.3 17.5h-1.8M20.3 14.7l-1.2 1.2M15.9 19.1l-1.2 1.2M20.3 20.3l-1.2-1.2M15.9 15.9l-1.2-1.2"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
   collapse: '<path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/>',
   star: '<path d="M12 3l2.8 6 6.2.6-4.7 4.2 1.4 6.2L12 16.8 6.3 20l1.4-6.2L3 9.6 9.2 9z"/>',
@@ -120,6 +128,27 @@ const ICON: Record<string, string> = {
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
   levels: '<path d="M4 6h16M8 12h12M12 18h8"/>',
 };
+/**
+ * The project's parts, each a tile of its own colour with a white drawing, 24px, as a tracker marks its top-level parts;
+ * the app's own drawings and colours, of no product's mark.
+ */
+const TILE: Record<string, { colour: string; drawing: string }> = {
+  overview: { colour: '#2f7dd1', drawing: '<path d="M8 7.5h8M8 11h8M8 14.5h5"/><path d="M6.5 4.5h11v15h-11z"/>' },
+  boards: { colour: '#1e9a5a', drawing: '<path d="M5.5 5.5h3.5v13H5.5zM10.25 5.5h3.5v9h-3.5zM15 5.5h3.5v6H15z"/>' },
+  code: { colour: '#e2552d', drawing: '<circle cx="8" cy="6.5" r="1.8"/><circle cx="8" cy="17.5" r="1.8"/><circle cx="16" cy="9" r="1.8"/><path d="M8 8.3v7.4M16 10.8c0 3-3 3.6-7.4 5.4"/>' },
+  builds: { colour: '#2a62d6', drawing: '<path d="M9 6.5l8 5.5-8 5.5z"/>' },
+  tests: { colour: '#7d3fc8', drawing: '<path d="M10 5h4M10.7 5v5.2L6.6 17.4a1.2 1.2 0 0 0 1 1.8h8.8a1.2 1.2 0 0 0 1-1.8l-4.1-7.2V5M8.6 14.5h6.8"/>' },
+  packages: { colour: '#d23a5c', drawing: '<path d="M12 4.8l6.5 3.6v7.2L12 19.2l-6.5-3.6V8.4z"/><path d="M5.5 8.4L12 12l6.5-3.6M12 12v7.2"/>' },
+};
+const tile = (name: string) => {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', `bl-tile-icon bl-tile-${name}`);
+  svg.innerHTML = `<rect width="24" height="24" rx="4" fill="${TILE[name].colour}"/><g fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TILE[name].drawing}</g>`;
+  return svg;
+};
+
 const icon = (name: string) => {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -150,15 +179,69 @@ app.lang = locale;
 app.dir = dir;
 app.dataset['scheme'] = scheme;
 
-// The bar across the top: where you are, a search box, the language and the person.
-const languages = el('select', { class: 'bl-language', 'aria-label': WORDS.language }, ...[['en', 'English'], ['ar', 'العربية'], ['de', 'Deutsch'], ['fr', 'Français']].map(([value, name]) => el('option', { value, lang: value }, name)));
-languages.value = locale;
-languages.addEventListener('change', () => {
+// The bar across the top: where you are, a search box, the person's tools, and the person.
+const LANGUAGES = [['en', 'English'], ['ar', 'العربية'], ['de', 'Deutsch'], ['fr', 'Français']] as const;
+/** The page again in another language. */
+function speak(language: string) {
+  if (language === locale) return;
   const next = new URLSearchParams(location.search);
-  if (languages.value === 'en') next.delete('locale');
-  else next.set('locale', languages.value);
+  if (language === 'en') next.delete('locale');
+  else next.set('locale', language);
   location.search = next.toString();
+}
+/**
+ * User settings: a menu of the languages, the one shown ticked. Its button names it; ↓ or a press opens it on the
+ * language ticked, the arrows move, Enter or Space picks, Escape closes it and gives the focus back.
+ */
+const userButton = el('button', { type: 'button', class: 'bl-tool', 'aria-label': WORDS.userSettings, title: WORDS.userSettings, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'bl-user-menu' }, icon('user'));
+const userMenu = el(
+  'div',
+  { class: 'bl-menu', role: 'menu', id: 'bl-user-menu', 'aria-label': WORDS.language, hidden: '' },
+  el('p', { class: 'bl-menu-heading', 'aria-hidden': 'true' }, WORDS.language),
+  ...LANGUAGES.map(([value, name]) => {
+    const item = el('button', { type: 'button', class: 'bl-menu-item', role: 'menuitemradio', 'aria-checked': String(value === locale), lang: value, tabindex: '-1' }, name);
+    item.addEventListener('click', () => {
+      closeUserMenu(true);
+      speak(value);
+    });
+    return item;
+  })
+);
+const menuItems = () => [...userMenu.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+function openUserMenu(at: 'checked' | 'first' | 'last' = 'checked') {
+  userMenu.hidden = false;
+  userButton.setAttribute('aria-expanded', 'true');
+  const items = menuItems();
+  (at === 'first' ? items[0] : at === 'last' ? items[items.length - 1] : (items.find((item) => item.getAttribute('aria-checked') === 'true') ?? items[0])).focus();
+}
+function closeUserMenu(focusBack = false) {
+  if (userMenu.hidden) return;
+  userMenu.hidden = true;
+  userButton.setAttribute('aria-expanded', 'false');
+  if (focusBack) userButton.focus();
+}
+userButton.addEventListener('click', () => (userMenu.hidden ? openUserMenu() : closeUserMenu()));
+userButton.addEventListener('keydown', (event) => {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  event.preventDefault();
+  openUserMenu(event.key === 'ArrowDown' ? 'first' : 'last');
 });
+userMenu.addEventListener('keydown', (event) => {
+  const items = menuItems();
+  const at = items.indexOf(document.activeElement as HTMLElement);
+  const to = ({ ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 } as Record<string, number>)[event.key];
+  if (to !== undefined) {
+    event.preventDefault();
+    items[(to + items.length) % items.length]?.focus();
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeUserMenu(true);
+  } else if (event.key === 'Tab') closeUserMenu();
+});
+document.addEventListener('pointerdown', (event) => {
+  if (!userButton.parentElement?.contains(event.target as Node)) closeUserMenu();
+});
+
 const crumbs = [WORDS.org, WORDS.project, WORDS.boards, WORDS.backlogs];
 const top = el(
   'div',
@@ -166,43 +249,51 @@ const top = el(
   el('span', { class: 'bl-mark', 'aria-hidden': 'true' }),
   el('nav', { class: 'bl-crumbs', 'aria-label': WORDS.path }, el('ol', {}, ...crumbs.map((words, at) => el('li', {}, at === crumbs.length - 1 ? el('a', { href: '#', 'aria-current': 'page' }, words) : el('a', { href: '#' }, words))))),
   el('label', { class: 'bl-search' }, icon('search'), el('input', { type: 'search', placeholder: WORDS.search, 'aria-label': WORDS.search })),
-  languages,
-  el('span', { class: 'bl-me', role: 'img', 'aria-label': WORDS.me }, 'SN')
+  el(
+    'div',
+    { class: 'bl-top-tools' },
+    button('tasks', WORDS.myWork, { iconOnly: true, className: 'bl-tool' }),
+    button('bag', WORDS.extensions, { iconOnly: true, className: 'bl-tool' }),
+    button('help', WORDS.help, { iconOnly: true, className: 'bl-tool' }),
+    el('span', { class: 'bl-user' }, userButton, userMenu)
+  ),
+  me.avatar ? el('img', { class: 'bl-me', src: me.avatar, alt: WORDS.me }) : el('span', { class: 'bl-me', role: 'img', 'aria-label': WORDS.me }, 'SN')
 );
 for (const a of top.querySelectorAll('.bl-crumbs a')) a.addEventListener('click', (event) => (event.preventDefault(), notHere()));
 
-// The project's menu: its tile, then its parts, Boards open with Backlogs the page shown.
-const navItem = (iconName: string, words: string, current = false, sub = false) => {
-  const link = el('a', { href: '#', class: `bl-nav-item${sub ? ' bl-nav-sub' : ''}`, 'aria-current': current ? 'page' : undefined }, icon(iconName), el('span', {}, words));
-  if (!current) link.addEventListener('click', (event) => (event.preventDefault(), notHere()));
-  else link.addEventListener('click', (event) => event.preventDefault());
-  return el('li', {}, link);
+// The project's menu: its tile and a press to create, then its parts — each top one a tile of its colour — Boards open
+// with Backlogs the page shown.
+const navLink = (lead: Element, words: string, className: string, current = false) => {
+  const link = el('a', { href: '#', class: className, 'aria-current': current ? 'page' : undefined }, el('span', { class: 'bl-nav-glyph' }, lead), el('span', {}, words));
+  link.addEventListener('click', (event) => (event.preventDefault(), current ? undefined : notHere()));
+  return link;
 };
+const topItem = (tileName: string, words: string, open = false) => el('li', { class: open ? 'bl-nav-group' : undefined }, navLink(tile(tileName), words, `bl-nav-item bl-nav-top${open ? ' bl-nav-open' : ''}`));
+const subItem = (iconName: string, words: string, current = false) => el('li', { class: 'bl-nav-in' }, navLink(icon(iconName), words, 'bl-nav-item bl-nav-sub', current));
+const settingsLink = navLink(icon('gear'), WORDS.settings, 'bl-nav-item');
 const nav = el(
   'nav',
   { class: 'bl-nav', 'aria-label': WORDS.menu },
-  el('div', { class: 'bl-project' }, el('span', { class: 'bl-tile', 'aria-hidden': 'true' }, 'P'), el('span', {}, WORDS.project)),
+  el('div', { class: 'bl-project' }, el('span', { class: 'bl-tile', 'aria-hidden': 'true' }, 'P'), el('span', {}, WORDS.project), button('plus', WORDS.create, { iconOnly: true, className: 'bl-tool' })),
   el(
     'ul',
     {},
-    navItem('home', WORDS.overview),
-    el('li', { class: 'bl-nav-group' }, el('a', { href: '#', class: 'bl-nav-item bl-nav-open' }, icon('board'), el('span', {}, WORDS.boards))),
-    navItem('items', WORDS.workItems, false, true),
-    navItem('board', WORDS.boards, false, true),
-    navItem('backlog', WORDS.backlogs, true, true),
-    navItem('sprint', WORDS.sprints, false, true),
-    navItem('query', WORDS.queries, false, true),
-    navItem('plan', WORDS.plans, false, true),
-    navItem('chart', WORDS.analyticsViews, false, true),
-    navItem('code', WORDS.code),
-    navItem('build', WORDS.builds),
-    navItem('test', WORDS.tests),
-    navItem('box', WORDS.packages)
+    topItem('overview', WORDS.overview),
+    topItem('boards', WORDS.boards, true),
+    subItem('items', WORDS.workItems),
+    subItem('board', WORDS.boards),
+    subItem('backlog', WORDS.backlogs, true),
+    subItem('sprint', WORDS.sprints),
+    subItem('query', WORDS.queries),
+    subItem('plan', WORDS.plans),
+    subItem('chart', WORDS.analyticsViews),
+    topItem('code', WORDS.code),
+    topItem('builds', WORDS.builds),
+    topItem('tests', WORDS.tests),
+    topItem('packages', WORDS.packages)
   ),
-  el('div', { class: 'bl-nav-foot' }, el('a', { href: '#', class: 'bl-nav-item' }, icon('gear'), el('span', {}, WORDS.settings)), button('collapse', WORDS.collapse, { iconOnly: true, className: 'bl-tool' }))
+  el('div', { class: 'bl-nav-foot' }, settingsLink, button('collapse', WORDS.collapse, { iconOnly: true, className: 'bl-tool' }))
 );
-nav.querySelector('.bl-nav-open')?.addEventListener('click', (event) => (event.preventDefault(), notHere()));
-nav.querySelector('.bl-nav-foot a')?.addEventListener('click', (event) => (event.preventDefault(), notHere()));
 
 // The page's head: the team, its buttons, and the backlog's pivots with its tools at the end.
 const newItem = button('plus', WORDS.newItem, { onClick: () => void openBug(null) });
@@ -367,13 +458,9 @@ async function openBug(id: RecordId | null): Promise<FormDialogResult | null> {
   }
 }
 
-// A bug in the address opens as the page does; closed, its row has the focus.
+// A bug in the address opens as the page does, through the list as a row's press would: its row lit while it is open,
+// the backlog asked again and the focus on its row once it closes.
 const asked = Number(params.get('workitem'));
-if (Number.isInteger(asked) && asked > 0) {
-  void openBug(asked).then(async () => {
-    await list.reload();
-    document.querySelector<HTMLElement>(`.fd-list-row[data-id="${asked}"]`)?.focus();
-  });
-}
+if (Number.isInteger(asked) && asked > 0) void list.openRecord(asked);
 
 Object.assign(window, { fieldiaDemo: { handle: list, page: backlogPage, bugPage, dataSource, chatter, preferences, following } });

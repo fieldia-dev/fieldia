@@ -34,7 +34,8 @@ const KEYWORD_PAUSE = 250;
  * it: "Filter by keyword" looks in the list's search fields; each field of
  * `filterFields` has a list of its values to tick, its button in muted words
  * until some are ticked, then the words ticked; × clears every filter; the
- * gear chooses which fields the bar offers. A field's values are its
+ * gear chooses which fields the bar offers, each by its own name where the
+ * page gives one (`filterLabels`). A field's values are its
  * choices, yes and no, or those its records hold (a link's, through the data
  * source). Keys: ↓ opens a list, the arrows move, Space ticks, Escape closes.
  */
@@ -194,7 +195,8 @@ export function filterBar(context: FilterBarContext) {
   };
 
   const dropdowns = fields.map((field) => {
-    const def = page.fields[field];
+    // Its own name where the page gives one ("Iteration" for Iteration Path): on its button, its list and the gear's.
+    const def = { ...page.fields[field], label: node.filterLabels?.[field] ?? page.fields[field].label };
     const menuId = uid(`${node.id}-filter-${field}`);
     const words = el('span', { class: 'fd-filter-words' });
     const button = el('button', { type: 'button', class: 'fd-filter-pick', 'data-field': field, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': menuId }, words, ...icon('chevron-down', 'fd-filter-chevron'));
@@ -281,7 +283,7 @@ export function filterBar(context: FilterBarContext) {
   const element = el(
     'div',
     { class: 'fd-filter-bar', role: 'search', 'data-node': `${node.id}-filters` },
-    el('label', { class: 'fd-filter-search' }, ...icon('filter', 'fd-filter-icon'), input),
+    el('label', { class: 'fd-filter-search' }, ...icon('filter-lines', 'fd-filter-icon'), input),
     el('div', { class: 'fd-filter-fields' }, ...dropdowns.map((d) => d.holder), gearHolder, clear)
   );
   // A press anywhere else closes an open list.

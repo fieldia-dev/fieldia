@@ -624,7 +624,11 @@ export const DESIGNER_CSS = /* css */ `
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }
 /* Rows 24px apart at least, so each small box has room round it (WCAG 2.5.8). */
-.fd-list-search-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.fd-list-search-fields, .fd-list-filter-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+/* A field the filter bar offers: its box, and its own name on the bar beside it, on a line of their own. */
+.fd-list-filter-field { flex: 1 1 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; }
+/* A column's width: the number, and what it is in. */
+.fd-list-width { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
 .fd-list-filters { display: grid; gap: 8px; }
 .fd-list-filter { margin: 0; display: grid; gap: 6px; padding: 8px; border: 1px solid var(--fd-border); border-radius: 6px; min-width: 0; }
 .fd-list-filter-condition { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }

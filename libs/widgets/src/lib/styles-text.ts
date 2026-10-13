@@ -35,11 +35,18 @@ export const TEXT_CSS = /* css */ `
 .fd-form .fd-section[data-head] { --fd-pad-x: 6px; --fd-control-height: 32px; }
 .fd-form .fd-section[data-head] > .fd-grid > .fd-field { gap: 0; line-height: 20px; }
 .fd-form .fd-section[data-head] > .fd-grid > .fd-field > .fd-label { font-size: 12px; line-height: 16px; font-weight: 400; color: var(--fd-muted); }
+/* A number's box is a compact one, 22px: 45px from its label to the next one, as the tracker's numbers (measured 20.22.23). */
+.fd-form .fd-section[data-head] > .fd-grid > .fd-field:is([data-type="integer"], [data-type="float"]) > input.fd-input { height: 22px; min-height: 22px; padding-block: 0; }
+/* A lock in such a group is drawn in the words' colour, a padlock 12px wide and 13px tall, as the tracker's. */
+.fd-form .fd-section[data-head] > .fd-grid > .fd-field .fd-lock { color: var(--fd-text); }
+.fd-form .fd-section[data-head] > .fd-grid > .fd-field .fd-lock .fd-icon { width: 15px; height: 15px; }
+/* At a value's start, its padlock's edge a pixel past the label's, as the tracker's: the 18px button pulled 2px back and up. */
+.fd-form .fd-section[data-head] > .fd-grid > .fd-field[data-lock-at="value"] > .fd-lock-wrap { margin-inline-start: -2px; inset-block-start: -1.5px; }
 /* Groups with such headings, one under another: 11px from one's last part to the next one's heading. */
 .fd-form .fd-grid:has(> .fd-section[data-head]) { row-gap: 11px; }
 .fd-section-tools { display: flex; align-items: center; gap: 2px; margin-inline-start: auto; flex: none; opacity: 0; transition: opacity 0.1s ease; }
 /* In a work heading its tools sit low, their middle 8px under the title's, as the tracker's do (measured 20.22.23). */
-.fd-form .fd-section[data-head] > .fd-section-title .fd-section-tools { align-self: flex-end; margin-block-end: 1px; }
+.fd-form .fd-section[data-head] > .fd-section-title .fd-section-tools { align-self: flex-end; margin-block-end: 1px; margin-inline-end: -2px; }
 /* Pointed at, worked in or folded, a group shows its tools; where nothing can point, always. */
 .fd-form .fd-section[data-head]:is(:hover, :focus-within, .fd-section-folded, [data-maximised]) > .fd-section-title .fd-section-tools { opacity: 1; }
 @media (hover: none) { .fd-section-tools { opacity: 1; } }
@@ -50,7 +57,10 @@ export const TEXT_CSS = /* css */ `
 :is(.fd-section-tool, .fd-field-tool):hover { background: var(--fd-text-hover); }
 :is(.fd-section-tool, .fd-field-tool):active { background: var(--fd-text-pressed); }
 :is(.fd-section-tool, .fd-field-tool):focus-visible { outline: 1px solid var(--fd-focus); outline-offset: -1px; }
-:is(.fd-section-tool, .fd-field-tool) svg { width: 16px; height: 16px; stroke-width: 2.2; }
+/* Their icons 18px in thin lines of the words' colour: ⤢ 13px across, ^ 9px, ✎ 13px, as the tracker's (measured 20.22.23). */
+:is(.fd-section-tool, .fd-field-tool) svg { width: 18px; height: 18px; stroke-width: 1.6; }
+/* In the words' colour too in a heading, whose own icon before its name is muted. */
+.fd-section-title .fd-section-tools .fd-icon { color: inherit; }
 /* Shown alone over the body: the parts round it out of sight, its own heading still there to put it back. */
 .fd-form [data-unshown] { display: none !important; }
 .fd-form .fd-grid[data-maximising] { grid-template-columns: minmax(0, 1fr) !important; }
@@ -99,7 +109,8 @@ export const TEXT_CSS = /* css */ `
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) :is([data-mention], [data-record]) { color: var(--fd-text-link); font-weight: 600; }
 .fd-external { width: 12px; height: 12px; margin-inline-start: 4px; vertical-align: -1px; color: var(--fd-muted); stroke-width: 2; }
 /* The toolbar only while the text is worked in: no edge and no tools at rest, a light box when pointed at. */
-.fd-text[data-toolbar="focus"] { padding-block-end: 17px; }
+/* Not in Markdown, whose card keeps its own room; :where, so a host's own rule (a comment box's 0) still wins. */
+.fd-text[data-toolbar="focus"]:not(:where([data-editor="markdown"])) { padding-block-end: 17px; }
 .fd-text[data-toolbar="focus"] > .fd-text-box { border-color: transparent; background: transparent; }
 .fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { background: var(--fd-surface); }
 .fd-text[data-toolbar="focus"] > .fd-text-box:hover { border-color: var(--fd-border); }
@@ -137,6 +148,7 @@ export const TEXT_CSS = /* css */ `
 .fd-text-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .fd-text-tool > svg.fd-icon { stroke-width: 1.6; }
 .fd-text-accent { fill: var(--fd-accent); stroke: none; }
+.fd-text-ink { fill: currentColor; stroke: none; }
 .fd-text-accent-line { stroke: var(--fd-accent); }
 .fd-text-accent-fill { fill: var(--fd-accent); stroke: none; }
 .fd-text-icon-highlight .fd-text-swatch { fill: #ffff00; stroke: none; }
@@ -149,10 +161,12 @@ export const TEXT_CSS = /* css */ `
 .fd-text-glyph-bold { font: 700 16px/1 var(--fd-font); }
 .fd-text-glyph-strike { font: 400 15px/1 var(--fd-font); text-decoration: line-through; text-decoration-thickness: 1px; }
 .fd-text-icon-emoji { width: 20px; height: 20px; }
-.fd-text-chevron { width: 10px; height: 10px; margin-inline-start: 6px; fill: none; stroke: currentColor; stroke-width: 1; }
+/* A tool's list chevron 12px across, a thin line in the muted colour: its icon carries the tool, the chevron the list. */
+.fd-text-chevron { width: 12px; height: 12px; margin-inline-start: 4px; fill: none; stroke: currentColor; stroke-width: 1; }
+.fd-text-tool-choice > .fd-text-chevron { color: var(--fd-muted); }
 /* ---- the Markdown editor: a card, the box, a hint, the toolbar and Preview ---- */
 .fd-md-card {
-  display: grid; min-width: 0; margin-block: 12px 9px; margin-inline: calc(-1 * var(--fd-group-inset, 0px)); padding: 20px 16px;
+  display: grid; min-width: 0; margin-block: 12px 11px; margin-inline: calc(-1 * var(--fd-group-inset, 0px)); padding: 20px 16px;
   border-radius: 4px; background: var(--fd-surface); box-shadow: var(--fd-depth-4);
 }
 .fd-text:not([data-editor="markdown"]) > .fd-md-card, .fd-text:not([data-editor="rich"]) > .fd-text-box { display: none; }
@@ -162,6 +176,11 @@ export const TEXT_CSS = /* css */ `
   font: 14px/20px var(--fd-font); resize: vertical;
 }
 .fd-md-input:focus, .fd-md-preview:focus { outline: none; border-color: var(--fd-focus); }
+/* In its card, the card is the frame of what is edited: the box keeps its light edge, the caret in it, and no grip. */
+.fd-md-card :is(.fd-md-input, .fd-md-preview), .fd-md-card :is(.fd-md-input, .fd-md-preview):focus { border-color: var(--fd-border); resize: none; }
+/* Its tools in the words' colour alone, as a Markdown toolbar draws them: no accent in a list's marks. */
+.fd-md-card .fd-text-bar :is(.fd-text-accent, .fd-text-accent-fill) { fill: currentColor; }
+.fd-md-card .fd-text-bar .fd-text-accent-line { stroke: currentColor; }
 .fd-md-input[hidden], .fd-md-preview[hidden] { display: none; }
 .fd-md-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin: 7px 0 0; color: var(--fd-muted); font-size: 12px; line-height: 16px; }
 .fd-md-hint > .fd-icon { width: 12px; height: 12px; stroke-width: 2; }
@@ -189,6 +208,10 @@ export const TEXT_CSS = /* css */ `
  * room at rest, as a work item's empty Repro Steps — the heading's ✎, in the Tab order, starts it.
  */
 .fd-form .fd-field:has(> .fd-md-field > .fd-field-tools:empty):has(> .fd-md-field > .fd-md-view.fd-blank:not([data-placeholder], [hidden])) { display: none; }
+/* Its group then its heading alone: no room under the rule, and the next group's heading 8px below it (measured 20.24.05).
+   (:has() chained, not nested: a :has() inside another is no selector at all.) */
+.fd-form .fd-section[data-head] > .fd-grid:has(> .fd-field:only-child > .fd-md-field > .fd-field-tools:empty):has(> .fd-field:only-child > .fd-md-field > .fd-md-view.fd-blank:not([data-placeholder], [hidden])) { padding-block-start: 0; }
+.fd-form .fd-section[data-head]:has(> .fd-grid > .fd-field:only-child > .fd-md-field > .fd-field-tools:empty):has(> .fd-grid > .fd-field:only-child > .fd-md-field > .fd-md-view.fd-blank:not([data-placeholder], [hidden])) { margin-block-end: -3px; }
 .fd-field-tools { display: flex; justify-content: flex-end; gap: 2px; }
 .fd-field-tools:not(:has(> :not([hidden]))) { display: none; }
 .fd-section-tools .fd-field-tool[hidden] { display: none; }

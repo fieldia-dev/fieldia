@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from './page';
-import { translatePage } from './translate';
+import { pageWords, translatePage } from './translate';
 import { validatePage } from './validate';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
@@ -100,6 +100,13 @@ describe('translatePage', () => {
     const order = { ...page('customer'), layout: { type: 'sheet', children: [{ type: 'map', id: 'm', layers: [{ id: 'stop', label: 'Stop', point: 'spot', card: { fields: [{ field: 'area', unit: 'm²' }] } }] }] } as any };
     const layer = (translatePage(order, marked).layout as any).children[0].layers[0];
     expect(layer).toEqual({ id: 'stop', label: '«Stop»', point: 'spot', card: { fields: [{ field: 'area', unit: '«m²»' }] } });
+  });
+
+  it('translates a list’s filters’ own names and keeps the fields they are for', () => {
+    const backlog: Page = { ...page('customer'), layout: { type: 'list', id: 'l', columns: ['name'], search: 'fields', filterFields: ['name'], filterLabels: { name: 'Who' } } as any };
+    const list = translatePage(backlog, marked).layout as any;
+    expect([list.filterFields, list.filterLabels]).toEqual([['name'], { name: '«Who»' }]);
+    expect(pageWords(backlog)).toContain('Who');
   });
 
   it('gives back a new page and leaves the one it was given alone', () => {

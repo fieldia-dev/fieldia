@@ -9,7 +9,12 @@ import { createMemoryDataSource, type MemoryDataSourceOptions, type RelatedRecor
 
 // ---- people ------------------------------------------------------------------------------------------
 
-/** Karim draws his own picture; the others show their initials. */
+/** Karim and Salma, the person using the demo, have pictures of their own (drawn, of no one); the others show their initials. */
+const salmaPicture =
+  'data:image/svg+xml;base64,' +
+  btoa(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" fill="#8fa3ad"/><path d="M14 40c-2-20 6-31 18-31s20 11 18 31z" fill="#4a3426"/><circle cx="32" cy="27" r="11" fill="#e9c4a2"/><path d="M21 25c1-8 6-11 11-11s10 3 11 11c-4-4-8-5-11-5s-7 1-11 5z" fill="#4a3426"/><path d="M8 64c2-13 11-19 24-19s22 6 24 19z" fill="#2f5d7c"/></svg>'
+  );
 const karimPicture =
   'data:image/svg+xml;base64,' +
   btoa(
@@ -19,7 +24,7 @@ const karimPicture =
 export const people = {
   mona: { id: 1, name: 'Mona Adel' },
   karim: { id: 2, name: 'Karim Fathy', avatar: karimPicture },
-  salma: { id: 3, name: 'Salma Nabil' },
+  salma: { id: 3, name: 'Salma Nabil', avatar: salmaPicture },
   omar: { id: 4, name: 'Omar Hany' },
 } satisfies Record<string, Person>;
 

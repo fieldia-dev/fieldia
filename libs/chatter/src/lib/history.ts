@@ -159,7 +159,7 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
   states.hidden = true;
 
   // The list's heading, with the filter at its end.
-  const filter = tool('filter', 'filter', labels.filterHistory);
+  const filter = tool('filter', 'filter-lines', labels.filterHistory);
   filter.setAttribute('aria-haspopup', 'menu');
   filter.setAttribute('aria-expanded', 'false');
   filter.setAttribute('aria-controls', `${uid}-menu`);

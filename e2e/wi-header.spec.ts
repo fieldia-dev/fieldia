@@ -89,7 +89,8 @@ test.describe('at rest, as the screenshot of the bug shows it', () => {
     expect((await drawn(strip, 'background-color'))['background-color']).toBe('rgb(204, 41, 61)');
     const badge = dialog(page).locator('.fd-head-badge');
     await expect(badge).toHaveText('BUG 4127');
-    near((await at(page, badge.locator('.fd-icon'))).x, 20, 1);
+    // The ladybird's 14px box 2px before the badge's start, so its drawing starts 20px in, as the tracker's.
+    near((await at(page, badge.locator('.fd-icon'))).x, 18, 1);
     near((await at(page, badge.locator('.fd-head-badge-words'))).x, 39, 1);
     near((await at(page, badge)).cy, 21, 1);
     expect((await drawn(badge, 'font-size'))['font-size']).toBe('12px');
@@ -153,7 +154,8 @@ test.describe('at rest, as the screenshot of the bug shows it', () => {
     near((await at(page, state.locator('.fd-dot-label'))).x, 104, 1);
     await expect(state.locator('.fd-dot-label')).toHaveText('Active');
     const reason = part(page, 'f-reason');
-    near((await at(page, reason.locator('.fd-lock .fd-icon'))).cx, 80, 1);
+    // The padlock's middle 2px past the dot's, toward the value, as the tracker's (its ink 173-184 under a dot at 172-181).
+    near((await at(page, reason.locator('.fd-lock .fd-icon'))).cx, 82, 1);
     near((await at(page, reason.locator('select'))).cy, 178, 1);
     near((await at(page, part(page, 'f-area').locator('.fd-label'))).x, 298, 0);
     expect(await at(page, part(page, 'f-area').locator('input'))).toMatchObject({ x: 374, height: 32 });

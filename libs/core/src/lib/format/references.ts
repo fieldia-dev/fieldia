@@ -512,6 +512,10 @@ export class ReferenceCheck {
       const def = this.need(name, `${path}.filterFields[${i}]`);
       if (def && !LISTS_ITS_VALUES.has(def.type)) this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number`);
     });
+    // A filter's own name is for a filter the bar offers.
+    for (const name of Object.keys(list.filterLabels ?? {})) {
+      if (!list.filterFields?.includes(name)) this.report(`${path}.filterLabels.${name}`, `"${name}" is no field of filterFields: its name is for a filter the bar offers`);
+    }
     if (list.parentField !== undefined) {
       const def = this.need(list.parentField, `${path}.parentField`);
       const model = this.page.data.kind === 'record' ? this.page.data.model : '';

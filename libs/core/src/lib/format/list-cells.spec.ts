@@ -69,6 +69,24 @@ describe('a list drawn as a backlog', () => {
     expect(problems(page({ cells: { title: { colour: '#000000' } } }))[0]).toMatch(/^layout\.cells\.title/);
   });
 
+  it('takes a width in pixels for the whole column, 8px to 4000px, as a tracker sizes its grid', () => {
+    expect(problems(page({ cells: { number: { width: '59px' }, work_type: { width: '36px' }, title: { width: '908px' }, state: { width: 8 } } }))).toEqual([]);
+    for (const width of ['7px', '4001px', '12.5px', '120', 'px', '10em', '-20px']) {
+      expect({ width, problems: problems(page({ cells: { title: { width } } })) }).toEqual({ width, problems: [expect.stringMatching(/^layout\.cells\.title\.width/)] });
+    }
+  });
+
+  it('keeps its rank when headers do not sort, and gives a filter a name of its own', () => {
+    expect(problems(page({ sortable: false, sort: [{ field: 'number' }] }))).toEqual([]);
+    expect(problems(page({ sortable: 'no' }))[0]).toMatch(/^layout\.sortable/);
+    expect(problems(page({ search: 'fields', filterFields: ['state', 'area'], filterLabels: { area: 'Where' } }))).toEqual([]);
+    // Only for a filter the bar offers, and never empty.
+    expect(problems(page({ search: 'fields', filterFields: ['state'], filterLabels: { area: 'Where' } }))).toEqual([
+      'layout.filterLabels.area: "area" is no field of filterFields: its name is for a filter the bar offers',
+    ]);
+    expect(problems(page({ search: 'fields', filterFields: ['area'], filterLabels: { area: '' } }))[0]).toMatch(/^layout\.filterLabels\.area/);
+  });
+
   it('warns of a lead whose looks name no value of a choice', () => {
     expect(problems(page({ cells: { title: { lead: { field: 'work_type', looks: { epic: { icon: 'story' } } } } } }))).toEqual([
       'layout.cells.title.lead.looks.epic: "epic" is no value of "work_type"',
@@ -99,5 +117,6 @@ describe('a list drawn as a backlog', () => {
   it('is a schema of its own, for a host that checks a cell alone', () => {
     expect(ListCellSchema.safeParse({ widget: 'dot', options: { colours: { active: '#007acc' } }, width: 12, align: 'end' }).success).toBe(true);
     expect(ListCellSchema.safeParse({ widht: 12 }).success).toBe(false);
+    expect(ListCellSchema.safeParse({ width: '200px' }).success).toBe(true);
   });
 });

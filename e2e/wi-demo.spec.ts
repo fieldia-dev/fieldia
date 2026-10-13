@@ -85,8 +85,14 @@ test.describe('the backlog', () => {
     expect(await first.locator('td').nth(1).evaluate((td) => getComputedStyle(td).textAlign)).toBe('start');
     expect(await first.locator('.fd-list-lead').evaluate((svg) => [svg.getAttribute('data-icon'), getComputedStyle(svg).color])).toEqual(['bug', 'rgb(204, 41, 61)']);
     expect(await first.locator('.fd-list-dot').evaluate((dot) => [getComputedStyle(dot).backgroundColor, dot.getBoundingClientRect().width])).toEqual(['rgb(0, 122, 204)', 8]);
-    // Rows 35px tall, no lines between them; headers small and muted, parted by short rules, cut ones saying themselves whole.
-    expect((await row(page, 4131).boundingBox())?.height).toBe(35);
+    // Rows 36px tall, no lines between them; headers small and muted, parted by short rules, cut ones saying themselves whole.
+    expect((await row(page, 4131).boundingBox())?.height).toBe(36);
+    // The columns as wide as the tracker's (in pixels), their edges where its are; a ranked list: no header sorts it.
+    const edges = await page.locator('thead th').evaluateAll((ths) => ths.map((th) => Math.round(th.getBoundingClientRect().right)));
+    expect(edges).toEqual([368, 427, 463, 1371, 1441, 1502, 1602, 1802, 2002]);
+    await expect(page.locator('thead .fd-list-sort')).toHaveCount(0);
+    await expect(page.locator('thead th[data-field="order"]')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(pick(page, 'iteration')).toHaveText('Iteration');
     expect(await first.locator('td').nth(3).evaluate((td) => getComputedStyle(td).borderBottomWidth)).toBe('0px');
     const kind = page.locator('thead th[data-field="work_type"] .fd-list-head');
     await expect(kind).toHaveAttribute('title', 'Work Item Type');
@@ -173,6 +179,7 @@ test.describe('the backlog', () => {
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);
     await expect(row(page, 4127)).toBeFocused();
+    await expect(row(page, 4127)).not.toHaveAttribute('aria-current', 'true');
     expect(problems).toEqual([]);
   });
 
@@ -202,6 +209,32 @@ test.describe('the backlog', () => {
     await code.getByRole('tab', { name: 'JavaScript' }).click();
     await expect(code.locator('code')).toContainText("size: 'inset'");
     await expect(code.locator('code')).toContainText('onOpenRecord: (id) => openBug(id)');
+    expect(problems).toEqual([]);
+  });
+
+  test('User settings offers the languages by keys: ↓ opens on the first, the arrows move, Escape closes, Enter picks', async ({ page }) => {
+    const problems = await openBacklog(page);
+    const settings = page.getByRole('button', { name: 'User settings' });
+    await expect(settings).toHaveAttribute('title', 'User settings');
+    for (const name of ['My work items', 'Extensions', 'Help', 'Create']) await expect(page.getByRole('button', { name })).toHaveAttribute('title', name);
+    await settings.focus();
+    await page.keyboard.press('ArrowDown');
+    const menu = page.getByRole('menu', { name: 'Language' });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitemradio')).toHaveText(['English', 'العربية', 'Deutsch', 'Français']);
+    await expect(menu.getByRole('menuitemradio', { name: 'English' })).toBeFocused();
+    await expect(menu.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute('aria-checked', 'true');
+    expect(await axeFindings(page, 'User settings open')).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(settings).toBeFocused();
+    await settings.press('Enter');
+    await expect(menu.getByRole('menuitemradio', { name: 'English' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/[?&]locale=de\b/);
+    await expect(page.getByRole('button', { name: 'Benutzereinstellungen' })).toBeVisible();
     expect(problems).toEqual([]);
   });
 
@@ -282,6 +315,13 @@ test.describe('the popup, once the work item lanes have joined', () => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     const box = (await dialog(page).boundingBox())!;
     expect([box.x, box.width]).toEqual([96, 1728]);
+    // Behind it, the bug's row lit while it is open, and the backlog's card scrolling sideways in its own bar: its grid is
+    // wider than the window leaves it, the page itself does not scroll.
+    await expect(row(page, 4127)).toHaveAttribute('aria-current', 'true');
+    expect(await row(page, 4127).locator('td').first().evaluate((td) => getComputedStyle(td).backgroundColor)).toBe('rgb(222, 236, 249)');
+    const top = (await page.locator('#app').boundingBox())!.y;
+    expect(await page.locator('.fd-list-scroll').evaluate((card) => [card.scrollWidth > card.clientWidth, Math.round(card.getBoundingClientRect().bottom)])).toEqual([true, 966 + Math.round(top)]);
+    await expectNoSidewaysScroll(page);
     expect(await page.locator('.fd-form-dialog-backdrop').evaluate((shade) => getComputedStyle(shade).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
     await expect(dialog(page).getByText('BUG 4127')).toBeVisible();
     await expect(dialog(page).getByRole('button', { name: 'Save and Close', exact: true })).toBeVisible();

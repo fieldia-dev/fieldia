@@ -62,7 +62,8 @@ export const stateDotWidget: WidgetFactory = ({ form, name, field, node, id, doc
     return item;
   });
   const menu = make('div', { id: `${id}-menu`, role: 'menu', class: ticked ? 'fd-dot-menu fd-pick-list' : 'fd-dot-menu', 'aria-label': field.label, hidden: '' }, ...items);
-  const element = make('span', { class: 'fd-dot-box' }, button, words, menu);
+  // Marked for the stylesheet when its list is drawn as Fieldia's own: open, the value stays its words (styles-picker).
+  const element = make('span', { class: 'fd-dot-box', 'data-list': ticked ? 'own' : undefined }, button, words, menu);
 
   const current = () => options.findIndex((option) => option.value === form.getState().values[name]);
   let refocus = false;

@@ -417,7 +417,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
         const choosing = CHOOSING.has(tool) && !(tool === 'highlight' && editor === 'markdown');
         // Emoji opens its list too, though its face alone says so: no chevron.
         const chevroned = choosing && tool !== 'emoji';
-        const button = make('button', { type: 'button', class: `fd-text-tool${chevroned ? ' fd-text-tool-choice' : ''}`, 'data-tool': tool, 'aria-label': label, title: label, tabindex: '-1' }, toolIcon(doc, tool, options.icons, reference?.icon));
+        const button = make('button', { type: 'button', class: `fd-text-tool${chevroned ? ' fd-text-tool-choice' : ''}`, 'data-tool': tool, 'aria-label': label, title: label, tabindex: '-1' }, toolIcon(doc, tool, options.icons, reference?.icon, editor));
         if (choosing) {
           if (chevroned) button.append(chevron(doc));
           button.setAttribute('aria-haspopup', 'menu');
@@ -468,7 +468,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     more.addEventListener('mousedown', (event) => event.preventDefault());
     const moreMenu = textMenu(doc, more, { label: labels.moreTools, align: 'end', within: element });
     more.addEventListener('click', () =>
-      moreMenu.open(stops.filter((stop) => stop.button.hidden).map((stop) => ({ label: stop.label, lead: toolIcon(doc, stop.tool, options.icons, stop.button.getAttribute('data-key') ? references.find((r) => r.key === stop.button.getAttribute('data-key'))?.icon : undefined), run: () => stop.press(more) })))
+      moreMenu.open(stops.filter((stop) => stop.button.hidden).map((stop) => ({ label: stop.label, lead: toolIcon(doc, stop.tool, options.icons, stop.button.getAttribute('data-key') ? references.find((r) => r.key === stop.button.getAttribute('data-key'))?.icon : undefined, editor), run: () => stop.press(more) })))
     );
     bar.append(...stops.map((stop) => stop.button), more, ...extra);
     // One stop on Tab, the first tool; the rest, Preview too, by the arrows.

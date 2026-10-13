@@ -41,9 +41,11 @@ export const HISTORY_STYLES = /* css */ `
 /* The State Graph: each move an arrow with why above it and who and when under it, then the state it came to. */
 .fd-history-graph { list-style: none; margin: 0; padding: 15px 0 0; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 10px; }
 .fd-history-step { display: flex; align-items: flex-start; gap: 10px; }
-.fd-history-move { display: grid; grid-template-rows: 16px 19px 17px 15px; justify-items: center; min-width: 84px; font-size: 12px; line-height: 16px; color: var(--fd-muted); white-space: nowrap; }
+/* Its arrow the move's whole box: at least 85px, else 3px past the words over and under it each side, as the tracker's
+   (measured 20.24.46); 10px on to the state, and from it to the next arrow. */
+.fd-history-move { box-sizing: border-box; display: grid; grid-template-rows: 16px 19px 17px 15px; justify-items: center; min-width: 85px; padding-inline: 3px; font-size: 12px; line-height: 16px; color: var(--fd-muted); white-space: nowrap; }
 .fd-history-move > :is(.fd-history-arrow, .fd-history-who) { align-self: end; }
-.fd-history-arrow { justify-self: stretch; display: flex; height: 18px; color: var(--fd-history-arrow, var(--fdh-arrow)); }
+.fd-history-arrow { justify-self: stretch; display: flex; height: 18px; margin-inline: -3px; color: var(--fd-history-arrow, var(--fdh-arrow)); }
 .fd-history-arrow::before { content: ""; flex: 1; height: 8px; margin-block: 5px; background: currentColor; }
 .fd-history-arrow::after { content: ""; flex: none; width: 10px; height: 18px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
 .fd-history-arrow:dir(rtl) { transform: scaleX(-1); }

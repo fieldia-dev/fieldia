@@ -22,10 +22,14 @@ export interface ListOptionsPatch {
   map?: ListMap | null;
   /** A box to choose each row; false for none (a list with no buttons for the rows chosen). */
   choose?: boolean;
+  /** Whether a header's press sorts the list; false for a ranked list that keeps its own order. */
+  sortable?: boolean;
   /** The search bar, or a keyword and a list of values for each of `filterFields`. */
   search?: 'bar' | 'fields';
-  /** The fields the filter bar offers the values of, in order; empty for none. */
+  /** The fields the filter bar offers the values of, in order; empty for none. A field taken away takes its own name with it. */
   filterFields?: string[];
+  /** A filter's own name on the bar, for a field it offers; empty for the field's label. */
+  filterLabel?: { field: string; label: string };
   /** The link to the list's own records its rows nest under; null for none. */
   parentField?: string | null;
 }
@@ -55,6 +59,10 @@ export interface ListCommands {
   updateListAction(id: string, patch: ListActionPatch): boolean;
   removeListAction(id: string): boolean;
 }
+
+/** A column's width: 1 to 200 characters, or "8px" to "4000px" for the whole column. */
+export const widthIsGood = (width: unknown): boolean =>
+  typeof width === 'number' ? Number.isInteger(width) && width >= 1 && width <= 200 : typeof width === 'string' && /^([89]|[1-9]\d{1,2}|[1-3]\d{3}|4000)px$/.test(width);
 
 /** Kinds of field whose values a list's filter bar can offer to tick. */
 export const FILTERABLE = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
@@ -187,11 +195,14 @@ export function listCommands(context: {
           if (list.actions?.length) throw new Refusal((w) => w.refusals.chooseHasButtons);
           list.choose = false;
         }
+        if (options.sortable === true) delete list.sortable;
+        else if (options.sortable === false) list.sortable = false;
         if (options.search === 'fields') list.search = 'fields';
         else if (options.search === 'bar') {
-          // The fields' values belong to the filter bar alone.
+          // The fields' values, and their names on the bar, belong to the filter bar alone.
           delete list.search;
           delete list.filterFields;
+          delete list.filterLabels;
         }
         if (options.filterFields !== undefined) {
           for (const name of options.filterFields) {
@@ -200,6 +211,21 @@ export function listCommands(context: {
           }
           if (options.filterFields.length) list.filterFields = [...options.filterFields];
           else delete list.filterFields;
+          // A filter no longer offered takes its own name with it.
+          const named = Object.entries(list.filterLabels ?? {}).filter(([name]) => list.filterFields?.includes(name));
+          if (named.length) list.filterLabels = Object.fromEntries(named);
+          else delete list.filterLabels;
+        }
+        if (options.filterLabel !== undefined) {
+          const { field, label } = options.filterLabel;
+          const def = fieldFor(draft, field);
+          if (!list.filterFields?.includes(field)) throw new Refusal((w) => w.refusals.filterLabelNotOffered(def.label));
+          const words = label.trim();
+          const labels = { ...list.filterLabels };
+          if (words && words !== def.label) labels[field] = words;
+          else delete labels[field];
+          if (Object.keys(labels).length) list.filterLabels = labels;
+          else delete list.filterLabels;
         }
         if (options.parentField === null) delete list.parentField;
         else if (options.parentField !== undefined) {
@@ -226,7 +252,7 @@ export function listCommands(context: {
           const cells = { ...list.cells };
           if (!cell || !Object.keys(cell).length) delete cells[column];
           else {
-            if (cell.width !== undefined && (!Number.isInteger(cell.width) || cell.width < 1 || cell.width > 200)) throw new Refusal((w) => w.refusals.cellWidth);
+            if (cell.width !== undefined && !widthIsGood(cell.width)) throw new Refusal((w) => w.refusals.cellWidth);
             const own = fieldFor(draft, column);
             if (cell.widget === 'dot' && own.type !== 'selection') throw new Refusal((w) => w.refusals.dotNeedsChoice(own.label));
             if (cell.lead) {

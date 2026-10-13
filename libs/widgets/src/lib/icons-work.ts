@@ -7,7 +7,8 @@ import type { IconSet } from './icons';
 export const WORK_ICONS: IconSet = {
   attach: '<path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/>',
   branch: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10M18 9c0 4-5 4-11 8.5"/>',
-  bug: '<path d="M9 7.5a3 3 0 0 1 6 0"/><rect x="6.5" y="7.5" width="11" height="13" rx="5.5"/><path d="M12 11v9.5M6.5 12.5H3M21 12.5h-3.5M6.8 17l-2.8 2M17.2 17l2.8 2M8 8.5L5.5 6M16 8.5L18.5 6"/>',
+  // A ladybird, filled in the kind's colour: its head a ring, four spots and the seam between its wings cut out of it.
+  bug: '<g fill="currentColor" stroke="none" fill-rule="evenodd"><path d="M7.4 3.2h9.2v6.4H7.4zM9.6 5.2v2.6h4.8V5.2z"/><path d="M3.1 15.5a8.9 7.1 0 1 0 17.8 0a8.9 7.1 0 1 0-17.8 0zM7.6 11.6h3v3h-3zM13.4 11.6h3v3h-3zM5.4 16.4h3v3h-3zM15.6 16.4h3v3h-3zM11.55 16.2h.9v6h-.9z"/></g><path d="M7.9 3.6L6.8 1.8M16.1 3.6l1.1-1.8M8.4 21.6l-.8 1.6M15.6 21.6l.8 1.6" stroke-width="1.6"/>',
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
   'chevron-right': '<path d="M9 6l6 6-6 6"/>',
   'chevron-up': '<path d="M6 15l6-6 6 6"/>',
@@ -17,11 +18,13 @@ export const WORK_ICONS: IconSet = {
   emoji: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5v.01M15 9.5v.01"/>',
   external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   eye: '<path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/>',
+  // A filter as a work tracker draws one: three lines, each shorter than the one over it.
+  'filter-lines': '<path d="M4 6.5h16M7 12h10M10 17.5h4"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   hash: '<path d="M10 3L8 21M16 3l-2 18M4 8.5h16M3.5 15.5h16"/>',
   history: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5V9H9M12 8v4.5l3 2"/>',
   image: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 16l5-5 4.5 4.5 3-3L21 18"/><circle cx="15.5" cy="9.5" r="1.5"/>',
-  maximise: '<path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/>',
+  maximise: '<path d="M3.5 20.5l17-17M13.5 3.5h7v7M10.5 20.5h-7v-7"/>',
   mention: '<circle cx="12" cy="12" r="3.5"/><path d="M15.5 8.5V13a2.5 2.5 0 0 0 5 0v-1a8.5 8.5 0 1 0-3.4 6.8"/>',
   more: '<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
   'pull-request': '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v10M18 17v-8a3 3 0 0 0-3-3h-3.5M13.5 3.5L11 6l2.5 2.5"/>',

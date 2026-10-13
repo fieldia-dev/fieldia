@@ -106,6 +106,50 @@ describe('a backlog’s cells', () => {
     expect(head('title').hasAttribute('title')).toBe(false);
   });
 
+  it('take widths in pixels for the whole column; every column sized, the table keeps them', async () => {
+    const sized: Page = {
+      ...backlog,
+      layout: { ...backlog.layout, cells: { number: { width: '59px' }, work_type: { width: '36px' }, title: { width: '908px' }, state: { width: 8 } } } as Page['layout'],
+    };
+    const host = await mount({}, sized);
+    const head = (field: string) => host.querySelector(`thead th[data-field="${field}"]`) as HTMLElement;
+    expect(head('title').hasAttribute('data-width-px')).toBe(true);
+    expect(head('title').style.getPropertyValue('--fd-col-px')).toBe('908px');
+    expect(head('state').getAttribute('data-width')).toBe('8');
+    const [, , kind] = [...rows(host)[0].querySelectorAll('td')];
+    expect(kind.style.getPropertyValue('--fd-col-px')).toBe('36px');
+    // Cut in 36px, its header says itself whole; whole in 908px, it does not.
+    expect(head('work_type').querySelector('.fd-list-head')?.getAttribute('title')).toBe('Work Item Type');
+    expect(head('title').querySelector('.fd-list-head')?.hasAttribute('title')).toBe(false);
+    expect(host.querySelector('.fd-list-table')?.hasAttribute('data-fixed')).toBe(true);
+    // One column left to take the room: the table fills its card as before.
+    handle?.destroy();
+    document.body.replaceChildren();
+    const loose = await mount({}, { ...sized, layout: { ...sized.layout, cells: { number: { width: '59px' } } } as Page['layout'] });
+    expect(loose.querySelector('.fd-list-table')?.hasAttribute('data-fixed')).toBe(false);
+  });
+
+  it('keep a ranked list’s order: its headers are words, not presses, and the order still said', async () => {
+    const host = await mount({}, { ...backlog, layout: { ...backlog.layout, sortable: false } as Page['layout'] });
+    expect(host.querySelectorAll('thead .fd-list-sort')).toHaveLength(0);
+    expect(host.querySelector('thead th[data-field="title"] .fd-list-head')?.textContent).toBe('Title');
+    expect(host.querySelector('thead th[data-field="number"]')?.getAttribute('aria-sort')).toBe('ascending');
+    // Sortable as before unless said.
+    handle?.destroy();
+    document.body.replaceChildren();
+    const sorting = await mount();
+    expect(sorting.querySelectorAll('thead .fd-list-sort').length).toBeGreaterThan(0);
+  });
+
+  it('keep room the size of a toggle before every name, and the name’s header over the names', async () => {
+    const host = await mount({}, { ...backlog, layout: { ...backlog.layout, defaultFilters: undefined } as Page['layout'] });
+    // Rows that are no parent have the room, so names line up whether a page shows parents or not.
+    const leaf = rows(host).find((tr) => !tr.hasAttribute('data-parent-of')) as HTMLElement;
+    expect(leaf.querySelector('td[data-name] > .fd-list-twisty-room')).not.toBeNull();
+    expect(host.querySelector('thead th[data-field="title"]')?.hasAttribute('data-name')).toBe(true);
+    expect(host.querySelector('thead th[data-field="state"]')?.hasAttribute('data-name')).toBe(false);
+  });
+
   it('have no box to choose a row, and no buttons for rows chosen', async () => {
     const host = await mount();
     expect(host.querySelector('.fd-list-checkbox')).toBeNull();
@@ -270,6 +314,14 @@ describe('the filter bar', () => {
     expect(preferences.get('filters:backlog:list')).toEqual(['state']);
   });
 
+  it('names a filter by its own name where the page gives one, on its button, its list and the gear’s', async () => {
+    const host = await mount({}, { ...backlog, layout: { ...backlog.layout, filterLabels: { area: 'Where' } } as Page['layout'] });
+    const area = host.querySelector('.fd-filter-pick[data-field="area"]') as HTMLButtonElement;
+    expect(area.textContent).toBe('Where');
+    expect(host.querySelector(`#${area.getAttribute('aria-controls')}`)?.getAttribute('aria-label')).toBe('Filter by Where');
+    expect(host.querySelector('.fd-filter-pick[data-field="state"]')?.textContent).toBe('State');
+  });
+
   it('speaks German, French and Arabic', async () => {
     for (const [locale, words] of [['de', 'Nach Stichwort filtern'], ['fr', 'Filtrer par mot-clé'], ['ar', 'تصفية بكلمة']] as const) {
       const host = await mount({ locale });
@@ -307,6 +359,36 @@ describe('a row opened in a dialog', () => {
     await until(() => rows(host)[3]?.textContent?.includes('keeps'));
     await until(() => document.activeElement?.classList.contains('fd-list-row'));
     expect((document.activeElement as HTMLElement).dataset['id']).toBe('2');
+  });
+
+  it('marks the row of the record open while it is, and opens one the app asks for as a press on its row would', async () => {
+    let close!: () => void;
+    const opened: unknown[] = [];
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, {
+      page: backlog,
+      dataSource: source(),
+      onOpenRecord: (id) => {
+        opened.push(id);
+        return new Promise<void>((done) => (close = done));
+      },
+    });
+    // Asked before the rows are there, as an address read at load: its row comes marked.
+    const done = handle.openRecord(2);
+    expect(opened).toEqual([2]);
+    await until(() => rows(host).length);
+    const marked = () => rows(host).filter((tr) => tr.getAttribute('aria-current') === 'true').map((tr) => tr.dataset['id']);
+    expect(marked()).toEqual(['2']);
+    close();
+    await done;
+    expect(marked()).toEqual([]);
+    expect((document.activeElement as HTMLElement).dataset['id']).toBe('2');
+    // A press on a row marks it too, until it closes.
+    rows(host)[0].click();
+    expect(marked()).toEqual(['1']);
+    close();
+    await until(() => marked().length === 0);
   });
 
   it('can be asked to load again by the app, keeping its search', async () => {

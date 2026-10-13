@@ -18,8 +18,8 @@ import { expectNoSidewaysScroll, screen } from './support';
 
 /** Latin words the Arabic keeps on purpose — the same list the unit table is held to (designer-words.spec.ts). */
 const KEPT = [
-  // Keys, and the letters of shortcuts, as keyboards print them.
-  ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
+  // Keys, and the letters of shortcuts, as keyboards print them (E, an access key's example in a head's settings).
+  ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G', 'E'],
   // Formats and currencies, written so in Arabic too.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
   // Fieldia's own name, as its look's; an editor's, as people know it (the VS Code editor kind).

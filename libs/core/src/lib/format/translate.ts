@@ -66,8 +66,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
     else if (widget && name === 'references' && Array.isArray(inner)) out[name] = inner.map(wordsOfReference(text));
     // A list's map names fields, but for the words after its card's values.
     else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
-    // A head's link: the words after its number, each plural form ("Comment", "Comments").
-    else if (name === 'words' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
+    // A head's link: the words after its number, each plural form ("Comment", "Comments"); a list's filters' own names, by field.
+    else if ((name === 'words' || name === 'filterLabels') && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
   }
   return out;

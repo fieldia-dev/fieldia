@@ -114,6 +114,14 @@ export const LIST_STYLES = `
 .fd-list-table [data-width] { box-sizing: content-box; width: calc(var(--fd-col-width) * 1ch); max-width: calc(var(--fd-col-width) * 1ch); overflow: hidden; text-overflow: ellipsis; }
 .fd-list-table th[data-width] .fd-list-sort { min-width: 0; }
 .fd-list-table th[data-width] .fd-list-head { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A column in pixels: the whole column, its paddings in it, as a work tracker sizes its grid's. */
+.fd-list-table [data-width-px] { box-sizing: border-box; width: var(--fd-col-px); min-width: var(--fd-col-px); max-width: var(--fd-col-px); overflow: hidden; text-overflow: ellipsis; }
+.fd-list-table th[data-width-px] .fd-list-sort { min-width: 0; }
+.fd-list-table th[data-width-px] .fd-list-head { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Every column sized: the table as wide as they are, never stretched; wider than its card, the card scrolls sideways. */
+.fd-list-table[data-fixed] { width: max-content; }
+/* The row whose record is open (in a popup over the list): lit as a chosen one is, until it closes. */
+.fd-list-row[aria-current="true"] td { background: var(--fd-accent-soft); }
 /* What a cell draws before its words: a kind's icon in its colour, a state's dot. */
 .fd-list-lead { width: 14px; height: 14px; margin-inline-end: 6px; vertical-align: -2px; flex: none; stroke-width: 2.2; }
 .fd-list-dot { display: inline-block; width: 8px; height: 8px; margin-inline-end: 6px; border-radius: 50%; vertical-align: 1px; background: var(--fd-dot, var(--fd-border-strong)); }
@@ -173,12 +181,43 @@ export const LIST_STYLES = `
 .fd-form[data-fd-theme="fluent"] .fd-list:has(> .fd-list-bar > .fd-filter-bar) { row-gap: 16px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 4px 8px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll { border: 0; border-radius: 4px; box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.132), 0 0.3px 0.9px rgba(0, 0, 0, 0.108); }
-.fd-form[data-fd-theme="fluent"] .fd-list-table th { position: relative; height: 38px; padding-block: 0; color: var(--fd-muted); border-block-end: 1px solid var(--fd-border); }
+/* Its header 38px and its rule, 39px in all whether a column's width is in pixels (its whole box) or characters. */
+.fd-form[data-fd-theme="fluent"] .fd-list-table th { position: relative; box-sizing: border-box; height: 39px; padding-block: 0; color: var(--fd-muted); border-block-end: 1px solid var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-head { font-size: 12px; font-weight: 600; }
 .fd-form[data-fd-theme="fluent"] .fd-list-table thead th:not(:first-child)::after { content: ''; position: absolute; inset-inline-end: 0; inset-block: 10px; width: 1px; background: var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-tree::after, .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-check::after { content: none; }
-.fd-form[data-fd-theme="fluent"] .fd-list-table td { height: 35px; padding-block: 0; border-block-end: 0; }
+/* Rows 36px apart (measured on the tracker's backlog: 17 rows from y 280 to 892); a cell's words 3px in from its column's
+   start, its header's 7px, so a header stands a little in from the words under it. */
+.fd-form[data-fd-theme="fluent"] .fd-list-table td { height: 36px; padding-block: 0; padding-inline: 3px 8px; border-block-end: 0; }
+.fd-form[data-fd-theme="fluent"] .fd-list-table th { padding-inline: 7px 8px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-row:hover td { background: var(--fd-fill, var(--fd-page)); }
+.fd-form[data-fd-theme="fluent"] .fd-list-row[aria-current="true"] td { background: var(--fd-accent-soft); }
+/* Expand all and Collapse all 15px in, 25px by 22px and 4px apart, 7px before the next column; a parent's toggle, or room
+   the size of one, 24px and 5px before the name, and the name's header over the name. */
+.fd-form[data-fd-theme="fluent"] .fd-list-table .fd-list-tree { padding-inline: 15px 7px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-folds { gap: 4px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-fold { width: 25px; height: 22px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-row[data-depth] > td[data-name] { padding-inline-start: calc(3px + var(--fd-depth, 0) * 20px); }
+.fd-form[data-fd-theme="fluent"] :is(.fd-list-twisty, .fd-list-twisty-room) { width: 24px; margin-inline-end: 5px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-table th[data-name] { padding-inline-start: 32px; }
+/* Its card's scroll bar as the tracker's, on every system that lets a page draw one: 15px, a light track with a hairline
+   at its inner edge, a rounded thumb in it, no arrows. Each selector written out: Chrome drops a part's :horizontal under
+   an :is(), and a part paints no logical border. */
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar { width: 15px; height: 15px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-track,
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-corner { background: color-mix(in srgb, var(--fd-text) 2.2%, var(--fd-surface)); }
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-track:horizontal {
+  border-top: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-bottom: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-track:vertical {
+  border-left: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-right: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb {
+  border: solid transparent; border-width: 4px 3px 3px; border-radius: 8px; background: color-mix(in srgb, var(--fd-text) 24.5%, var(--fd-surface)) padding-box;
+}
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb:vertical { border-width: 3px 3px 3px 4px; }
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
+.fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-button { display: none; }
 `;
 
 /** Puts the list's look in the document once. */

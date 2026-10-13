@@ -281,7 +281,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       const said = viewerWords(page);
       const fieldsBar = list.search === 'fields';
       searchWords.textContent = fieldsBar ? said.filterByKeyword : said.search;
-      filterFields.replaceChildren(...(fieldsBar ? (list.filterFields ?? []).map((name) => el('span', { class: 'fd-canvas-filter-field' }, page.fields[name]?.label ?? name, ' ▾')) : []));
+      filterFields.replaceChildren(...(fieldsBar ? (list.filterFields ?? []).map((name) => el('span', { class: 'fd-canvas-filter-field' }, list.filterLabels?.[name] ?? page.fields[name]?.label ?? name, ' ▾')) : []));
       // No box to choose a row: no buttons for the rows chosen either.
       selection.hidden = list.choose === false;
       chosen.textContent = said.selected.replace('{n}', '2');

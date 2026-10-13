@@ -59,6 +59,18 @@ export const PICKER_CSS = /* css */ `
 }
 .fd-field[data-lead] .fd-dot-box:not(.fd-own-box) > .fd-dot-button > .fd-dot { width: 10px; height: 10px; }
 .fd-field[data-lead] .fd-dot-box:not(.fd-own-box) { cursor: pointer; }
+/* Its list open (drawn as Fieldia's own, a tick alone), the value stays its words: no box, no chevron, pointed at or not.
+   The list's row with the focus shows where the person is; a caret after the words says typing finds a state. */
+.fd-form .fd-field[data-quiet] > .fd-dot-box.fd-dot-box[data-list="own"]:not(.fd-own-box):has(> .fd-dot-button[aria-expanded="true"]) {
+  border-color: transparent; background-color: transparent; box-shadow: none;
+}
+.fd-form .fd-field[data-quiet] > .fd-dot-box.fd-dot-box[data-list="own"]:not(.fd-own-box):has(> .fd-dot-button[aria-expanded="true"])::after { visibility: hidden; }
+.fd-form .fd-field[data-quiet] > .fd-dot-box[data-list="own"]:not(.fd-own-box):has(> .fd-dot-button[aria-expanded="true"]) > .fd-dot-label::after {
+  content: ""; display: inline-block; width: 1px; height: 17px; margin-inline-start: 1px; vertical-align: -4px; background: var(--fd-text);
+  animation: fd-caret 1.06s steps(1, end) infinite;
+}
+@keyframes fd-caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fd-form .fd-field[data-quiet] .fd-dot-label::after { animation: none; } }
 
 /* ---- a path picker: its chevron at the box's end, and its list as wide as the box ---------------------------- */
 .fd-path > .fd-path-input { padding-inline-end: 34px; }
@@ -71,6 +83,9 @@ export const PICKER_CSS = /* css */ `
   /* Pointed at, its edge in the strong border colour, as a work tracker's path box: darker than other boxes'. */
   .fd-form .fd-field[data-quiet] .fd-path:hover > .fd-path-input:not([readonly], :focus) { border-color: var(--fd-border-strong); }
 }
+/* Quiet, its tree open: the box keeps the strong edge and no ring, as a work tracker's path picker; the tree's row with
+   the focus is ringed, and that shows where the person is. Closed again (Escape), the ring is back. */
+.fd-form .fd-field[data-quiet] .fd-path.fd-combo > .fd-path-input[aria-expanded="true"]:focus { border-color: var(--fd-border-strong); box-shadow: none; }
 .fd-path-callout {
   box-sizing: border-box; margin: 0; padding: 8px 0; overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 0 0 2px 2px;
   background: var(--fd-surface); color: var(--fd-text); font-family: var(--fd-font); font-size: 14px; line-height: 20px; text-align: start;

@@ -242,7 +242,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // work item's icons (3 of it, shared with the record head, the pickers, the text and the history), a dialog's focus past
 // a hidden box and a quiet field's Escape after its record came — 21.5 more, to 494.8.
 // Joined for 0.20, the work item's popup over its backlog: the five lanes above in one bundle, their icons once — 612.7.
-const BUDGET_KB = 612.7;
+// The popup and its backlog set side by side with the tracker's screens: a list's columns in pixels kept as given (the
+// card scrolling sideways), headers a ranked list does not sort by, a filter's own name, the row of the record open lit,
+// Fluent's list as measured (36px rows, its headers' and cells' insets, the toggles' room) and its slim scroll bar; the
+// popup's own slim scroll bars and grip band, a state's list leaving its words bare, a path picker open without a ring,
+// Markdown's own tool drawings, a ladybird, a padlock, two rings for a link, a filter of three lines, and the CSS that
+// says why for each — 9.3 more, to 622.0.
+const BUDGET_KB = 622.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -283,7 +289,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a work item's icons (icons-work.ts), 1.0 more, to 143.7.
 // a list drawn as a backlog (cells, the filter bar, rows under their parent, Fluent's list look) and the work item's icons, 6.6 more, to 149.3.
 // Joined for 0.20 (the five work item lanes in one bundle, their shared icons once), to 182.5.
-const GZIP_BUDGET_KB = 182.5;
+// set side by side with the tracker's screens (a list's pixel columns, unsorted headers, a filter's own name, the open
+// row lit, Fluent's list as measured, slim scroll bars, the state's and path's open looks, Markdown's tool drawings,
+// the redrawn icons), 1.8 more, to 184.3.
+const GZIP_BUDGET_KB = 184.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

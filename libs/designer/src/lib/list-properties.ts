@@ -3,7 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
-import { FILTERABLE } from './list-commands';
+import { FILTERABLE, widthIsGood } from './list-commands';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -520,10 +520,22 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ choose: choose.checked })) choose.checked = !choose.checked;
   });
   const chooseRow = el('div', { class: 'fd-prop', 'data-part': 'choose' }, el('label', { class: 'fd-q-required' }, choose, el('span', {}, w.choose)), el('p', { class: 'fd-properties-hint' }, w.chooseHint));
+  const sorts = el('input', { type: 'checkbox', 'aria-label': w.sortable }) as HTMLInputElement;
+  sorts.addEventListener('change', () => {
+    if (!designer.setListOptions({ sortable: sorts.checked })) sorts.checked = !sorts.checked;
+  });
+  const sortsRow = el('div', { class: 'fd-prop', 'data-part': 'sortable' }, el('label', { class: 'fd-q-required' }, sorts, el('span', {}, w.sortable)), el('p', { class: 'fd-properties-hint' }, w.sortableHint));
   const searchWay = select(el, w.searchWay, [['bar', w.searchWays.bar], ['fields', w.searchWays.fields]]);
   searchWay.addEventListener('change', () => designer.setListOptions({ search: searchWay.value as 'bar' | 'fields' }));
   const filterBox = el('div', { class: 'fd-list-filter-fields' });
-  const filterFieldsRow = el('div', { class: 'fd-prop', 'data-part': 'filter-fields' }, el('span', { class: 'fd-prop-name' }, w.filterFields), filterBox, el('p', { class: 'fd-properties-hint' }, w.filterFieldsNote));
+  const filterFieldsRow = el(
+    'div',
+    { class: 'fd-prop', 'data-part': 'filter-fields' },
+    el('span', { class: 'fd-prop-name' }, w.filterFields),
+    filterBox,
+    el('p', { class: 'fd-properties-hint' }, w.filterFieldsNote),
+    el('p', { class: 'fd-properties-hint' }, w.filterLabelsNote)
+  );
   const parent = el('select', { class: 'fd-input fd-select', 'aria-label': w.parentField }) as HTMLSelectElement;
   parent.addEventListener('change', () => designer.setListOptions({ parentField: parent.value || null }));
   const parentWhy = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noParentField);
@@ -537,6 +549,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     prop(el, w.sortedBy, sortBy),
     directionRow,
     chooseRow,
+    sortsRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
     parentRow,
@@ -590,20 +603,30 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       while (filtersBox.children.length > drawn.length) filtersBox.lastElementChild?.remove();
 
       choose.checked = list.choose !== false;
+      sorts.checked = list.sortable !== false;
       searchWay.value = list.search ?? 'bar';
       // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.
       filterFieldsRow.hidden = list.search !== 'fields';
       const offered = list.filterFields ?? [];
       const filterable = [...new Set([...offered, ...everyField(page, designer).filter(({ field }) => FILTERABLE.has(field.type)).map(({ name }) => name)])];
-      filterBox.replaceChildren(
-        ...filterable.map((name) => {
-          const label = page.fields[name]?.label ?? designer.modelFields().find((m) => m.name === name)?.field.label ?? name;
-          const box = el('input', { type: 'checkbox', 'aria-label': w.filterFieldNamed(label) }) as HTMLInputElement;
-          box.checked = offered.includes(name);
-          box.addEventListener('change', () => designer.setListOptions({ filterFields: box.checked ? [...offered, name] : offered.filter((n) => n !== name) }));
-          return el('label', { class: 'fd-q-required' }, box, el('span', {}, label));
-        })
-      );
+      // Each one offered has a name of its own on the bar, its label unless one is written; kept while it is being typed in.
+      const typing = filterBox.querySelector<HTMLInputElement>('.fd-list-filter-name:focus');
+      if (!typing || !filterable.includes(typing.dataset['field'] ?? '')) {
+        filterBox.replaceChildren(
+          ...filterable.map((name) => {
+            const label = page.fields[name]?.label ?? designer.modelFields().find((m) => m.name === name)?.field.label ?? name;
+            const box = el('input', { type: 'checkbox', 'aria-label': w.filterFieldNamed(label) }) as HTMLInputElement;
+            box.checked = offered.includes(name);
+            box.addEventListener('change', () => designer.setListOptions({ filterFields: box.checked ? [...offered, name] : offered.filter((n) => n !== name) }));
+            const choice = el('label', { class: 'fd-q-required' }, box, el('span', {}, label));
+            if (!offered.includes(name)) return choice;
+            const own = el('input', { class: 'fd-input fd-list-filter-name', 'data-field': name, 'aria-label': w.filterLabelOf(label), title: w.filterLabelOf(label), placeholder: label }) as HTMLInputElement;
+            own.value = list.filterLabels?.[name] ?? '';
+            own.addEventListener('change', () => designer.setListOptions({ filterLabel: { field: name, label: own.value } }));
+            return el('div', { class: 'fd-list-filter-field' }, choice, own);
+          })
+        );
+      }
       // Rows under their parent: a link to the list's own records.
       const own = page.data.kind === 'record' ? page.data.model : '';
       const links = everyField(page, designer).filter(({ field }) => field.type === 'many2one' && field.relation === own);
@@ -692,12 +715,22 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
   lead.addEventListener('change', () => save({ ...cellNow(), lead: lead.value ? { field: lead.value, looks: {} } : undefined }));
   const leadLooks = el('div', { class: 'fd-list-cell-looks' });
   const leadRow = el('div', { class: 'fd-prop', 'data-part': 'lead' }, el('span', { class: 'fd-prop-name' }, w.leadFrom), lead, leadLooks);
+  // Its width, in characters of its words or in pixels for the whole column: a number and its unit.
   const width = el('input', { class: 'fd-input', type: 'number', min: '1', max: '200', 'aria-label': w.cellWidth }) as HTMLInputElement;
-  width.addEventListener('input', () => {
+  const unit = select(el, w.cellWidthUnit, [['ch', w.cellWidthUnits.characters], ['px', w.cellWidthUnits.pixels]]);
+  const saveWidth = () => {
     const value = width.value.trim();
-    if (value === '' || (Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 200)) save({ ...cellNow(), width: value === '' ? undefined : Number(value) });
+    if (value === '') return void save({ ...cellNow(), width: undefined });
+    const next: ListCell['width'] = unit.value === 'px' ? (`${Number(value)}px` as `${number}px`) : Number(value);
+    if (widthIsGood(next)) save({ ...cellNow(), width: next });
+  };
+  width.addEventListener('input', saveWidth);
+  unit.addEventListener('change', () => {
+    width.max = unit.value === 'px' ? '4000' : '200';
+    width.min = unit.value === 'px' ? '8' : '1';
+    saveWidth();
   });
-  const widthRow = el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), width, el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
+  const widthRow = el('div', { class: 'fd-prop', 'data-part': 'width' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), el('div', { class: 'fd-list-width' }, width, unit), el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
   const side = select(el, w.cellSide, [['', w.cellSides.auto], ['start', w.cellSides.start], ['end', w.cellSides.end]]);
   side.addEventListener('change', () => save({ ...cellNow(), align: (side.value || undefined) as ListCell['align'] }));
 
@@ -748,7 +781,11 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
           return [icon, colour];
         })
       );
-      if (!focused(width)) width.value = cell.width === undefined ? '' : String(cell.width);
+      const inPixels = typeof cell.width === 'string';
+      if (!focused(width)) width.value = cell.width === undefined ? '' : String(Number.parseInt(String(cell.width), 10));
+      if (!focused(unit) && cell.width !== undefined) unit.value = inPixels ? 'px' : 'ch';
+      width.max = unit.value === 'px' ? '4000' : '200';
+      width.min = unit.value === 'px' ? '8' : '1';
       side.value = cell.align ?? '';
     },
   };

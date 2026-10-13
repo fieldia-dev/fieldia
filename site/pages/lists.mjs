@@ -52,9 +52,10 @@ ${code(
     <tr><td>${c('groupBy')}</td><td>The fields the menu offers to group by.</td></tr>
     <tr><td>${c('actions')}</td><td>Buttons for the records chosen. A ${c('confirm')} asks first.</td></tr>
     <tr><td>${c('map')}</td><td>The records on a map too, beside the table or instead of it: see <a href="#map">on a map</a>.</td></tr>
-    <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters (words past it end in “…”, a header cut short shows its whole name when pointed at), an ${c('align')}. See <a href="#backlog">a backlog</a>.</td></tr>
+    <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters, or in pixels for the whole column (${c('"200px"')}) as a tracker sizes its grid's (words past it end in “…”, a header cut short shows its whole name when pointed at; every column sized, the table keeps them and scrolls sideways in its card when wider), an ${c('align')}. See <a href="#backlog">a backlog</a>.</td></tr>
     <tr><td>${c('choose')}</td><td>${c('false')}: no box to choose a row, and so no buttons for rows chosen.</td></tr>
-    <tr><td>${c('search')} · ${c('filterFields')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar.</td></tr>
+    <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
+    <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
   </tbody>
 </table>
@@ -86,18 +87,19 @@ ${code(
   `
 {
   "type": "list", "id": "backlog", "columns": ["order", "work_type", "title", "state"],
-  "choose": false,
+  "choose": false, "sortable": false,
   "search": "fields", "filterFields": ["work_type", "state", "area", "iteration", "tags"],
+  "filterLabels": { "iteration": "Iteration" },
   "parentField": "parent_id",
   "cells": {
-    "order": { "align": "start", "width": 6 },
-    "work_type": { "width": 4 },
-    "title": { "lead": { "field": "work_type", "looks": { "bug": { "icon": "bug", "colour": "#cc293d" } } } },
-    "state": { "widget": "dot", "options": { "colours": { "new": "#b2b2b2", "active": "#007acc" } } }
+    "order": { "align": "start", "width": "59px" },
+    "work_type": { "width": "36px" },
+    "title": { "width": "908px", "lead": { "field": "work_type", "looks": { "bug": { "icon": "bug", "colour": "#cc293d" } } } },
+    "state": { "width": "70px", "widget": "dot", "options": { "colours": { "new": "#b2b2b2", "active": "#007acc" } } }
   }
 }`
 )}
-<p>Rows under a parent on the same page sit under it, each depth further in; a parent's toggle, or <kbd>→</kbd> and <kbd>←</kbd> on its row (turned round right to left), folds it. A row opened in a dialog comes back: when ${c('onOpenRecord')} answers with a promise, the list asks for its records again once it settles, and the row has the focus back. ${c('handle.reload()')} asks again from the app, after a new record is made. With the Fluent theme the table reads as the tracker draws it: small muted headers parted by short rules, rows 35 pixels tall with no lines between them. <a href="/demos/backlog/">Try the backlog</a>.</p>
+<p>Rows under a parent on the same page sit under it, each depth further in; a parent's toggle, or <kbd>→</kbd> and <kbd>←</kbd> on its row (turned round right to left), folds it. A row opened in a dialog comes back: when ${c('onOpenRecord')} answers with a promise, its row is lit (${c('aria-current')}) while the record is open, the list asks for its records again once it settles, and the row has the focus back. ${c('handle.openRecord(id)')} opens one the same way from the app — a record named in the address as the page loads — and ${c('handle.reload()')} asks again, after a new record is made. With the Fluent theme the table reads as the tracker draws it: small muted headers parted by short rules and standing a little in from the words under them, rows 36 pixels tall with no lines between them, a slim scroll bar. <a href="/demos/backlog/">Try the backlog</a>.</p>
 
 <h2 id="app">Opening and acting on records</h2>
 <p>A row opens its record by a click or by <kbd>Enter</kbd>; the app decides what that means. A list's button hands the app the records chosen, as ${c('recordIds')}, in the order they were chosen:</p>

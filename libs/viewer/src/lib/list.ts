@@ -106,6 +106,11 @@ export interface ListView {
   element: HTMLElement;
   /** Ask for the records again, keeping the page, the order and what is chosen where it still applies. */
   reload(): Promise<void>;
+  /**
+   * Open a record as its row's press does: the app's onOpenRecord, its row marked open meanwhile (aria-current); once the
+   * app's promise settles, the records again and the focus back on its row. For an app that opens one by its address too.
+   */
+  open(id: RecordId): Promise<void>;
   destroy(): void;
 }
 
@@ -159,14 +164,27 @@ export function listView(context: ListContext): ListView {
   const show = (name: string, values: Record<string, Value>) => displayValue(page.fields[name] as LineField, values[name], values, locale);
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
-  /** A column of a given width, its words cut with "…" past it. */
+  /** A column of a given width, its words cut with "…" past it: in characters of its words, or in pixels for the whole column. */
   const sized = (cell: HTMLTableCellElement, name: string) => {
     const width = cellOf(name)?.width;
     if (!width) return cell;
+    if (typeof width === 'string') {
+      cell.setAttribute('data-width-px', '');
+      cell.style.setProperty('--fd-col-px', width);
+      return cell;
+    }
     cell.setAttribute('data-width', String(width));
     cell.style.setProperty('--fd-col-width', String(width));
     return cell;
   };
+  /** What names a record: its first column of words, else its first column. */
+  const nameColumn = node.columns.find((name) => page.fields[name].type === 'char') ?? node.columns[0];
+  /** Every column sized: the table keeps their widths, scrolling sideways in its card when wider, the room left after its last. */
+  const fixedWidths = node.columns.every((name) => cellOf(name)?.width);
+  /** Whether a header's press orders the list: not for a ranked list, which keeps its own order. */
+  const sortable = node.sortable !== false;
+  /** The record open from its row (or by open()), its row marked while it is. */
+  let openId: RecordId | null = null;
   /** The columns before the fields': the box to choose a row, and the parents' toggles. */
   const leading = (choose ? 1 : 0) + (parentField ? 1 : 0);
 
@@ -175,11 +193,13 @@ export function listView(context: ListContext): ListView {
   const chooseAll = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': labels.selectAll });
   const headers = node.columns.map((name) => {
     const def = page.fields[name];
-    const th = sized(el('th', { scope: 'col', 'data-field': name, class: atEnd(name) ? 'fd-num' : undefined }), name);
-    // Words cut short say themselves whole when pointed at.
+    // The name's header marked as its cells are, rows under their parent: a theme stands it over the name, past the toggles.
+    const th = sized(el('th', { scope: 'col', 'data-field': name, class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }), name);
+    // Words cut short say themselves whole when pointed at: past the characters given, or about a 12px word's 6.5px a letter.
     const width = cellOf(name)?.width;
-    const head = el('span', { class: 'fd-list-head', title: width && def.label.length > width ? def.label : undefined }, def.label);
-    if (UNSORTABLE.has(def.type)) th.append(head);
+    const cut = typeof width === 'number' ? def.label.length > width : typeof width === 'string' ? def.label.length * 6.5 > Number.parseInt(width, 10) - 16 : false;
+    const head = el('span', { class: 'fd-list-head', title: cut ? def.label : undefined }, def.label);
+    if (UNSORTABLE.has(def.type) || !sortable) th.append(head);
     else {
       const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
       button.addEventListener('click', () => {
@@ -199,7 +219,7 @@ export function listView(context: ListContext): ListView {
   const body = el('tbody');
   const table = el(
     'table',
-    { class: 'fd-list-table', 'aria-label': page.title },
+    { class: 'fd-list-table', 'aria-label': page.title, 'data-fixed': fixedWidths ? '' : undefined, 'data-sortable': sortable ? undefined : 'false' },
     el(
       'thead',
       {},
@@ -246,15 +266,27 @@ export function listView(context: ListContext): ListView {
     return [...before, el('bdi', {}, words)];
   }
 
-  /** Open a record from its row; when the app answers with a promise, ask again once it settles and go back to its row. */
+  /** Mark the row of the record open, and only it. */
+  const markOpen = () => {
+    for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
+      if (openId !== null && tr.dataset['id'] === String(openId)) tr.setAttribute('aria-current', 'true');
+      else tr.removeAttribute('aria-current');
+    }
+  };
+
+  /** Open a record from its row; when the app answers with a promise, its row marked open meanwhile, ask again once it settles and go back to its row. */
   async function openRow(id: RecordId) {
     const answer = context.onOpenRecord?.(id);
     if (!isPromise(answer)) return;
+    openId = id;
+    markOpen();
     try {
       await answer;
     } catch {
       // The app's own trouble: the list still asks again.
     }
+    if (openId === id) openId = null;
+    markOpen();
     if (destroyed) return;
     await load();
     // Back on its row, unless the person went somewhere else meanwhile.
@@ -270,9 +302,6 @@ export function listView(context: ListContext): ListView {
     return next as HTMLElement | null;
   };
 
-  /** What names a record: its first column of words, else its first column. */
-  const nameColumn = node.columns.find((name) => page.fields[name].type === 'char') ?? node.columns[0];
-
   function row(record: Row, level = 0): HTMLTableRowElement {
     const name = show(nameColumn, record.values) || String(record.id);
     const box = choose ? el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) }) : null;
@@ -287,7 +316,13 @@ export function listView(context: ListContext): ListView {
     }
     const tr = el(
       'tr',
-      { class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row', tabindex: '0', 'data-id': String(record.id), 'data-level': level ? String(level) : undefined },
+      {
+        class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row',
+        tabindex: '0',
+        'data-id': String(record.id),
+        'data-level': level ? String(level) : undefined,
+        'aria-current': openId !== null && String(openId) === String(record.id) ? 'true' : undefined,
+      },
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
       ...node.columns.map((name) => sized(el('td', { class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }, ...cellContent(name, record.values)), name))
@@ -358,7 +393,8 @@ export function listView(context: ListContext): ListView {
       tr.setAttribute('data-depth', String(depth));
       tr.hidden = hiddenUnder;
       const under = children.get(id) ?? [];
-      // Before its name: the parent's toggle, or room the size of one, so names line up at each depth.
+      // Before its name: the parent's toggle, or room the size of one, so names line up at each depth — room whether or not
+      // this page shows a parent at all, so names keep their place as a filter lets parents in or out.
       const cell = tr.querySelector<HTMLElement>(':scope > td[data-name]');
       if (under.length) {
         tr.setAttribute('data-parent-of', String(under.length));
@@ -366,7 +402,7 @@ export function listView(context: ListContext): ListView {
         const twisty = el('button', { type: 'button', class: 'fd-list-twisty', tabindex: '-1', 'aria-expanded': String(!closed.has(id)), 'aria-label': show(nameColumn, record.values) || id });
         twisty.addEventListener('click', () => fold(id, twisty.getAttribute('aria-expanded') === 'true'));
         cell?.prepend(twisty);
-      } else if (children.size) cell?.prepend(el('span', { class: 'fd-list-twisty-room', 'aria-hidden': 'true' }));
+      } else cell?.prepend(el('span', { class: 'fd-list-twisty-room', 'aria-hidden': 'true' }));
       drawn.push(tr);
       for (const child of under) place(child, depth + 1, hiddenUnder || closed.has(id));
     };
@@ -657,6 +693,7 @@ export function listView(context: ListContext): ListView {
     reload: async () => {
       await Promise.all([load(), mapPart?.reload()]);
     },
+    open: (id) => openRow(id),
     destroy() {
       destroyed = true;
       search.destroy();

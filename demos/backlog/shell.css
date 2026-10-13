@@ -12,6 +12,7 @@
   --bl-nav-line: #d5d5d5;
   --bl-nav-open: #dedede;
   --bl-nav-current: #d2d2d2;
+  --bl-nav-bar: #b7b7b7;
   --bl-page: #f8f8f8;
   --bl-fill: #ebebeb;
   --bl-fill-hover: #e0e0e0;
@@ -35,6 +36,7 @@
   --bl-nav-line: #3b3a39;
   --bl-nav-open: #323130;
   --bl-nav-current: #3b3a39;
+  --bl-nav-bar: #605e5c;
   --bl-page: #1b1a19;
   --bl-fill: #323130;
   --bl-fill-hover: #3b3a39;
@@ -57,32 +59,54 @@
 .bl-crumbs a { color: var(--bl-muted); text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
 .bl-crumbs li:first-child a { color: var(--bl-ink); font-weight: 600; }
 .bl-crumbs a:hover { text-decoration: underline; }
-.bl-search { display: flex; align-items: center; gap: 8px; width: 196px; height: 30px; box-sizing: border-box; padding-inline: 8px; border: 1px solid var(--bl-muted); border-radius: 2px; color: var(--bl-muted); }
+/* A search box 200px by 32, then the person's four tools 32px each, 3px apart, then their picture (measured on 08_19). */
+.bl-search { display: flex; align-items: center; gap: 8px; width: 200px; height: 32px; box-sizing: border-box; padding-inline: 8px; border: 1px solid var(--bl-muted); border-radius: 2px; color: var(--bl-muted); }
 .bl-search input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; color: var(--bl-ink); }
 .bl-search input::placeholder { color: var(--bl-muted); opacity: 1; }
-.bl-language { font: inherit; font-size: 13px; color: var(--bl-ink); background: var(--bl-bar); border: 1px solid var(--bl-bar-line); border-radius: 2px; height: 30px; padding-inline: 6px; }
-.bl-me { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: #8764b8; color: #fff; font-size: 12px; font-weight: 600; }
+.bl-top-tools { display: flex; align-items: center; gap: 3px; margin-inline-start: 3px; }
+.bl-me { display: grid; place-items: center; width: 32px; height: 32px; flex: none; margin-inline-start: -2px; border-radius: 50%; object-fit: cover; background: #8764b8; color: #fff; font-size: 12px; font-weight: 600; }
+/* User settings' menu: the languages, the one shown ticked. */
+.bl-user { position: relative; display: inline-flex; }
+.bl-menu { position: absolute; z-index: 40; inset-inline-end: 0; top: calc(100% + 4px); min-width: 180px; padding-block: 4px; background: var(--bl-bar); border-radius: 4px; box-shadow: var(--bl-shadow); }
+.bl-menu[hidden] { display: none; }
+.bl-menu-heading { margin: 0; padding: 6px 12px 4px; color: var(--bl-muted); font-size: 12px; font-weight: 600; }
+.bl-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding-inline: 12px; border: 0; background: none; color: var(--bl-ink); font: inherit; text-align: start; cursor: pointer; }
+.bl-menu-item::before { content: ''; width: 14px; flex: none; }
+.bl-menu-item[aria-checked="true"]::before { content: '✓'; color: var(--bl-accent); }
+.bl-menu-item:hover, .bl-menu-item:focus { background: var(--bl-fill); outline: none; box-shadow: inset 0 0 0 1px var(--bl-accent); }
+.bl-menu-item:hover:not(:focus) { box-shadow: none; }
 
-/* ---- the project's menu: 255px, grey ---- */
+/* ---- the project's menu: 260px, grey ---- */
 .bl-frame { display: flex; flex: 1; min-height: 0; }
 /* 259px and its line, as measured on the tracker's backlog (the list's card then starts at 292). */
 .bl-nav { display: flex; flex-direction: column; width: 260px; flex: none; box-sizing: border-box; background: var(--bl-nav); border-inline-end: 1px solid var(--bl-nav-line); }
-.bl-project { display: flex; align-items: center; gap: 10px; height: 46px; margin-inline: 8px; padding-inline: 4px; border-block-end: 1px solid var(--bl-nav-current); font-weight: 600; }
+/* The project: its tile 12px in, its name at 48px, a press to create at its end; 48px with its line under it. */
+.bl-project { display: flex; align-items: center; gap: 12px; height: 47px; margin-inline: 8px; padding-inline: 4px 0; border-block-end: 1px solid var(--bl-nav-line); font-weight: 600; }
 .bl-project > span:nth-child(2) { flex: 1; }
+.bl-project > .bl-tool { margin-inline-end: -4px; }
 .bl-tile { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 2px; background: var(--bl-tile); color: #fff; font-size: 13px; }
 .bl-nav ul { margin: 4px 0 0; padding: 0; list-style: none; }
-.bl-nav-item { display: flex; align-items: center; gap: 14px; height: 39px; padding-inline: 12px; color: var(--bl-ink); text-decoration: none; }
-.bl-nav-item .bl-icon { width: 18px; height: 18px; }
-.bl-nav-group, .bl-nav-group ~ li:has(.bl-nav-sub) { background: var(--bl-nav-open); }
+/* Each part's lead in a 24px slot 12px in, its words at 48px: a top part 48px tall with a tile of its colour, a part
+   under it 40px with a 14px drawing (measured on 08_18). */
+.bl-nav-item { display: flex; align-items: center; gap: 12px; height: 48px; padding-inline: 12px; color: var(--bl-ink); text-decoration: none; }
+.bl-nav-sub { height: 40px; }
+.bl-nav-glyph { display: grid; place-items: center; width: 24px; height: 24px; flex: none; }
+.bl-tile-icon { width: 24px; height: 24px; }
+.bl-nav-sub .bl-icon { width: 14px; height: 14px; }
+/* The part open, with what is under it: a darker ground and a 3px bar down its start; the page shown, a darker one still
+   and the bar in the accent. */
+.bl-nav-group, .bl-nav-in { background: var(--bl-nav-open); box-shadow: inset 3px 0 var(--bl-nav-bar); }
+.bl[dir="rtl"] :is(.bl-nav-group, .bl-nav-in) { box-shadow: inset -3px 0 var(--bl-nav-bar); }
 .bl-nav-open { font-weight: 600; }
-.bl-nav-sub { padding-inline-start: 12px; }
 .bl-nav-item:hover { background: var(--bl-nav-current); }
-.bl-nav-item[aria-current="page"] { background: var(--bl-nav-current); font-weight: 600; }
-.bl-nav-foot { display: flex; align-items: center; margin-block-start: auto; margin-inline: 8px; border-block-start: 1px solid var(--bl-nav-current); }
+.bl-nav-item[aria-current="page"] { background: var(--bl-nav-current); box-shadow: inset 3px 0 var(--bl-accent); font-weight: 600; }
+.bl[dir="rtl"] .bl-nav-item[aria-current="page"] { box-shadow: inset -3px 0 var(--bl-accent); }
+.bl-nav-foot { display: flex; align-items: center; margin-block-start: auto; margin-inline: 8px; border-block-start: 1px solid var(--bl-nav-line); }
 .bl-nav-foot .bl-nav-item { flex: 1; padding-inline: 4px; }
+.bl-nav-foot .bl-icon { width: 14px; height: 14px; }
 
 /* ---- the page: its head, its pivots, then Fieldia's list ---- */
-.bl-page { flex: 1; min-width: 0; box-sizing: border-box; padding: 18px 32px 32px; padding-inline: 32px 32px; background: var(--bl-page); }
+.bl-page { flex: 1; min-width: 0; box-sizing: border-box; padding: 18px 32px 17px; padding-inline: 32px 32px; background: var(--bl-page); }
 .bl-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 48px; }
 .bl-head-icon { display: grid; place-items: center; width: 28px; color: var(--bl-ink); }
 .bl-team { margin: 0 4px; font-size: 20px; font-weight: 600; line-height: 28px; }
@@ -105,6 +129,9 @@
 /* Fieldia's list fills the page: the page's own room round it is the app's, over the theme's own. */
 #app .bl-list > .fd-form > .fd-content { padding: 0; }
 #app .bl-list > .fd-form { background: none; }
+/* The backlog's card fills the window down to 17px above its foot, however few its rows, as the tracker's (08_18, 08_19):
+   its top is 242px down the app, 17px under it the page's own room. */
+#app.bl .bl-list .fd-list-scroll { min-height: calc(100dvh - var(--bl-above, 0px) - 259px); box-sizing: border-box; }
 
 /* A press on a part this demo does not have: a note that goes by itself. */
 .bl-note { position: fixed; inset-inline-start: 50%; bottom: 24px; z-index: 50; margin: 0; padding: 10px 16px; border-radius: 4px; background: var(--bl-ink); color: var(--bl-page); box-shadow: var(--bl-shadow); translate: -50% 12px; opacity: 0; pointer-events: none; transition: opacity 0.15s, translate 0.15s; }
@@ -115,6 +142,7 @@
 
 /* ---- narrower windows: the menu goes, then the bar keeps its words short; a phone keeps 16px each side ---- */
 @media (max-width: 1100px) { .bl-nav { display: none; } .bl-search { width: 140px; } }
+@media (max-width: 1100px) { #app.bl .bl-list .fd-list-scroll { min-height: 0; } }
 @media (max-width: 760px) {
   .bl-search, .bl-crumbs li:not(:last-child) { display: none; }
   .bl-crumbs li:last-child::before { content: none; }

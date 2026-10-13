@@ -49,9 +49,10 @@
     "pageSize": 100,
     "searchFields": ["title", "number", "tags"],
     "cells": {
-      "order": { "align": "start", "width": 6 },
-      "work_type": { "width": 4 },
+      "order": { "align": "start", "width": "59px" },
+      "work_type": { "width": "36px" },
       "title": {
+        "width": "908px",
         "lead": {
           "field": "work_type",
           "looks": {
@@ -63,17 +64,19 @@
       },
       "state": {
         "widget": "dot",
-        "width": 8,
+        "width": "70px",
         "options": { "colours": { "new": "#b2b2b2", "active": "#007acc", "resolved": "#ff9d00", "closed": "#339933" } }
       },
-      "story_points": { "width": 6 },
-      "value_area": { "width": 10 },
-      "iteration": { "width": 22 },
-      "tags": { "width": 22 }
+      "story_points": { "width": "61px" },
+      "value_area": { "width": "100px" },
+      "iteration": { "width": "200px" },
+      "tags": { "width": "200px" }
     },
     "choose": false,
+    "sortable": false,
     "search": "fields",
     "filterFields": ["work_type", "state", "area", "iteration", "tags"],
+    "filterLabels": { "iteration": "Iteration" },
     "parentField": "parent_id"
   },
   "translations": {
@@ -96,6 +99,7 @@
       "Architectural": "معماري",
       "Area": "المجال",
       "Iteration Path": "مسار التكرار",
+      "Iteration": "التكرار",
       "Tags": "الوسوم",
       "Parent": "الأصل"
     },
@@ -118,6 +122,7 @@
       "Architectural": "Architektur",
       "Area": "Bereich",
       "Iteration Path": "Iterationspfad",
+      "Iteration": "Iteration",
       "Tags": "Tags",
       "Parent": "Übergeordnet"
     },
@@ -140,6 +145,7 @@
       "Architectural": "Architecture",
       "Area": "Zone",
       "Iteration Path": "Chemin d’itération",
+      "Iteration": "Itération",
       "Tags": "Balises",
       "Parent": "Parent"
     }

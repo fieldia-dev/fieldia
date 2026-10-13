@@ -64,6 +64,34 @@ describe('a list drawn as a backlog, by the designer', () => {
     expect(designer.getPage().fields['area']).toBeUndefined();
   });
 
+  it('keeps a ranked list’s own order: its headers do not sort it', () => {
+    const designer = bugs();
+    expect(designer.setListOptions({ sortable: false })).toBe(true);
+    expect(list(designer).sortable).toBe(false);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ sortable: true })).toBe(true);
+    expect(list(designer).sortable).toBeUndefined();
+  });
+
+  it('gives a filter its own name on the bar, for a field it offers; the name goes with the field', () => {
+    const designer = bugs();
+    expect(designer.setListOptions({ search: 'fields', filterFields: ['state', 'area'] })).toBe(true);
+    expect(designer.setListOptions({ filterLabel: { field: 'area', label: ' Where ' } })).toBe(true);
+    expect(list(designer).filterLabels).toEqual({ area: 'Where' });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    // Its label again, or nothing, is no name of its own.
+    expect(designer.setListOptions({ filterLabel: { field: 'area', label: 'Area' } })).toBe(true);
+    expect(list(designer).filterLabels).toBeUndefined();
+    expect(designer.setListOptions({ filterLabel: { field: 'work_type', label: 'Kind' } })).toBe(false);
+    expect(designer.getState().issues).toEqual(['The filter bar does not offer Work Item Type: tick it first']);
+    expect(designer.setListOptions({ filterLabel: { field: 'area', label: 'Where' } })).toBe(true);
+    expect(designer.setListOptions({ filterFields: ['state'] })).toBe(true);
+    expect(list(designer).filterLabels).toBeUndefined();
+    expect(designer.setListOptions({ filterFields: ['state', 'area'], filterLabel: { field: 'area', label: 'Where' } })).toBe(true);
+    expect(designer.setListOptions({ search: 'bar' })).toBe(true);
+    expect(list(designer).filterLabels).toBeUndefined();
+  });
+
   it('nests rows under a link to the list’s own records, and refuses any other', () => {
     const designer = bugs();
     expect(designer.setListOptions({ parentField: 'parent_id' })).toBe(true);
@@ -90,7 +118,12 @@ describe('a list drawn as a backlog, by the designer', () => {
     expect(designer.getPage().fields['work_type']).toEqual(model['work_type']);
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(designer.setListCell('title', { width: 0 })).toBe(false);
-    expect(designer.getState().issues).toEqual(['A column is 1 to 200 characters wide']);
+    expect(designer.getState().issues).toEqual(['A column is 1 to 200 characters wide, or 8 to 4000 pixels']);
+    // In pixels for the whole column, as a tracker sizes its grid's.
+    expect(designer.setListCell('title', { width: '908px' })).toBe(true);
+    expect(list(designer).cells?.['title']).toEqual({ width: '908px' });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    for (const width of ['7px', '4001px', '12.5px']) expect(designer.setListCell('title', { width: width as `${number}px` })).toBe(false);
     expect(designer.setListCell('title', { widget: 'dot' })).toBe(false);
     expect(designer.getState().issues).toEqual(['A state’s dot is for a choice; Title is not one']);
     expect(designer.setListCell('title', { lead: { field: 'area', looks: {} } })).toBe(false);
@@ -145,6 +178,16 @@ describe('the backlog’s settings, in the panels', () => {
     change(offerState());
     change(control<HTMLInputElement>('Offer Area’s values'));
     expect(list(designer).filterFields).toEqual(['state', 'area']);
+    // An offered field's own name on the bar, its label the placeholder.
+    const areaName = control<HTMLInputElement>('Area’s name on the filter bar');
+    expect(areaName.placeholder).toBe('Area');
+    change(areaName, 'Where');
+    expect(list(designer).filterLabels).toEqual({ area: 'Where' });
+    // Headers that sort the list, on unless taken away.
+    const sorts = control<HTMLInputElement>('A header’s press sorts the list');
+    expect(sorts.checked).toBe(true);
+    change(sorts);
+    expect(list(designer).sortable).toBe(false);
     const parent = control<HTMLSelectElement>('Rows under their parent, by');
     expect([...parent.options].map((o) => o.textContent)).toEqual(['None: every row at the top', 'Parent']);
     change(parent, 'parent_id');
@@ -161,10 +204,16 @@ describe('the backlog’s settings, in the panels', () => {
     change(control<HTMLSelectElement>('An icon before the words, by'), 'work_type');
     change(control<HTMLInputElement>('Icon for Bug'), 'bug');
     expect(list(designer).cells?.['state']?.lead).toEqual({ field: 'work_type', looks: { bug: { icon: 'bug' } } });
-    change(control<HTMLInputElement>('Width, in characters'), '8');
+    change(control<HTMLInputElement>('Width'), '8');
     change(control<HTMLSelectElement>('Its words keep to'), 'end');
     expect(list(designer).cells?.['state']).toMatchObject({ width: 8, align: 'end' });
-    change(control<HTMLInputElement>('Width, in characters'), '');
+    // In pixels: the same number, the unit changed.
+    change(control<HTMLSelectElement>('Width in'), 'px');
+    expect(list(designer).cells?.['state']).toMatchObject({ width: '8px' });
+    change(control<HTMLInputElement>('Width'), '70');
+    expect(list(designer).cells?.['state']).toMatchObject({ width: '70px' });
+    expect(control<HTMLInputElement>('Width').value).toBe('70');
+    change(control<HTMLInputElement>('Width'), '');
     expect(list(designer).cells?.['state']?.width).toBeUndefined();
     expect(shown(drawn)).toBe(true);
     expect(validatePage(designer.getPage()).ok).toBe(true);
@@ -173,7 +222,7 @@ describe('the backlog’s settings, in the panels', () => {
   it('a column of words has no dot to draw', () => {
     const { shown, control } = mount('title');
     expect(shown(control('Drawn as'))).toBe(false);
-    expect(shown(control('Width, in characters'))).toBe(true);
+    expect(shown(control('Width'))).toBe(true);
   });
 });
 
@@ -204,7 +253,7 @@ describe('a backlog on the canvas', () => {
     const { host } = mountEditor(designer, { mode: 'advanced' });
     const canvas = host.querySelector('.fd-list-canvas') as HTMLElement;
     expect(canvas.querySelector('.fd-search-placeholder')?.textContent).toBe('Filter by keyword');
-    expect([...canvas.querySelectorAll('.fd-canvas-filter-field')].map((f) => f.textContent)).toEqual(['Work Item Type ▾', 'State ▾', 'Area ▾', 'Iteration Path ▾', 'Tags ▾']);
+    expect([...canvas.querySelectorAll('.fd-canvas-filter-field')].map((f) => f.textContent)).toEqual(['Work Item Type ▾', 'State ▾', 'Area ▾', 'Iteration ▾', 'Tags ▾']);
     expect(canvas.querySelector('.fd-list-checkbox')).toBeNull();
     expect((canvas.querySelector('.fd-canvas-selection') as HTMLElement).hidden).toBe(true);
     expect(canvas.querySelector('th[data-node="order"]')?.classList.contains('fd-num')).toBe(false);

@@ -1030,6 +1030,12 @@ export interface ListNode {
   /** A box to choose each row, and the buttons for those chosen; on unless false. */
   choose?: boolean;
   /**
+   * Whether a header's press puts the list in its column's order; on unless
+   * false. A ranked backlog keeps its own order (`sort`, the rank): its
+   * headers are words, with no press and no arrow.
+   */
+  sortable?: boolean;
+  /**
    * The search over the list: the search bar (`bar`, the default), or a
    * keyword box and a list of values for each field of `filterFields`
    * (`fields`), as a work tracker's backlog filters.
@@ -1037,6 +1043,12 @@ export interface ListNode {
   search?: 'bar' | 'fields';
   /** The fields the `fields` search offers a list of values for, in order: "Bug ▾", "Active ▾", "Area ▾". */
   filterFields?: string[];
+  /**
+   * A filter's own name on its button and its list, by field, where the
+   * field's label is longer than the bar wants: "Iteration" for Iteration
+   * Path. The field's label unless said; translated with the page's words.
+   */
+  filterLabels?: { [field: string]: string };
   /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
   parentField?: string;
 }
@@ -1048,8 +1060,14 @@ export interface ListCell {
   options?: WidgetOptions;
   /** An icon before the words, by another field's value: a bug's or a task's icon in its colour before a work item's title. */
   lead?: { field: string; looks: { [value: string]: { icon: string; colour?: string } } };
-  /** How wide the column is, in characters: 1 to 200. Words that do not fit end in "…". */
-  width?: number;
+  /**
+   * How wide the column is: in characters of its words (1 to 200), or in
+   * pixels for the whole column ("868px", 8 to 4000), as a work tracker sizes
+   * its grid's. Words that do not fit end in "…". When every column has a
+   * width, the table keeps them: wider than its card, it scrolls sideways;
+   * narrower, the room left is after the last column.
+   */
+  width?: number | `${number}px`;
   /** The side its words keep to: `end` lines up an order's numbers. */
   align?: 'start' | 'end';
 }
@@ -1737,7 +1755,7 @@ export const ListMapSchema = z
   })
   .meta({ id: 'ListMap' });
 
-/** A list column's cells: a widget, an icon from another field, a width in characters, a side. */
+/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side. */
 export const ListCellSchema = z
   .strictObject({
     widget: z.string().min(1).optional(),
@@ -1748,7 +1766,13 @@ export const ListCellSchema = z
         looks: z.record(z.string(), z.strictObject({ icon: z.string().min(1), colour: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is #rrggbb').optional() })),
       })
       .optional(),
-    width: z.int().min(1).max(200).optional(),
+    width: z
+      .union([
+        z.int().min(1).max(200),
+        // 8px to 4000px, said in the pattern itself so the JSON Schema says it too.
+        z.string().regex(/^([89]|[1-9]\d{1,2}|[1-3]\d{3}|4000)px$/, 'a width in pixels is a whole number from 8 to 4000 and px, as "120px"') as unknown as z.ZodType<`${number}px`>,
+      ])
+      .optional(),
     align: z.enum(['start', 'end']).optional(),
   })
   .meta({ id: 'ListCell' });
@@ -1767,8 +1791,10 @@ export const ListNodeSchema = z.strictObject({
   map: ListMapSchema.optional(),
   cells: z.record(fieldName, ListCellSchema).optional(),
   choose: z.boolean().optional(),
+  sortable: z.boolean().optional(),
   search: z.enum(['bar', 'fields']).optional(),
   filterFields: z.array(fieldName).min(1).optional(),
+  filterLabels: z.record(fieldName, z.string().min(1)).optional(),
   parentField: fieldName.optional(),
 }).meta({ id: 'ListNode' });
 

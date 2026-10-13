@@ -48,8 +48,8 @@ export const QUIET_CSS = /* css */ `
 
 /* Pointed at: a light box. Only where a pointer can hover, so a tap is never left showing one. */
 @media (hover: hover) {
-  .fd-form .fd-field[data-quiet] > :hover :is(.fd-input:not(.fd-tags *), .fd-tags):not([readonly], :disabled, [contenteditable="false"]),
-  .fd-form .fd-field[data-quiet] > :is(.fd-input, .fd-tags, .fd-dot-box:not(:has(:disabled))):not([readonly], :disabled, [contenteditable="false"]):hover {
+  .fd-form .fd-field[data-quiet] > :hover :is(.fd-input:not(.fd-tags *), .fd-tags):not([readonly], :disabled, [contenteditable="false"], :focus, :focus-within),
+  .fd-form .fd-field[data-quiet] > :is(.fd-input, .fd-tags, .fd-dot-box:not(:has(:disabled))):not([readonly], :disabled, [contenteditable="false"], :focus, :focus-within):hover {
     border-color: var(--fd-border); background-color: var(--fd-inputs-bg, var(--fd-surface));
   }
 }
