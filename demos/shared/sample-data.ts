@@ -38,6 +38,7 @@ import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
+import { wiHistoryPage, wiHistoryRecord } from './wi-history';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -74,6 +75,8 @@ export const pages: Record<string, Page> = {
   'map-order': mapOrder as Page,
   // A place for each line: a van's round through its stops, in order.
   'map-round': mapRound as Page,
+  // A bug's History tab on its own: how its State moved, then each change with its before and after (shared/wi-history.ts).
+  'wi-history': wiHistoryPage,
   'map-zones': mapZones as Page,
   'map-heat': mapHeat as Page,
   'map-kitchen': mapKitchen as Page,
@@ -310,6 +313,7 @@ export function sampleDataSource() {
       'food.order': { 1: sampleOrder() },
       'delivery.round': { 1: sampleRound() },
       'shop.order': sampleWeekOrders(),
+      'wi.history': { 1: wiHistoryRecord() },
       'shop.kitchen': { 1: sampleKitchen() },
       'work.item': {
         1: {

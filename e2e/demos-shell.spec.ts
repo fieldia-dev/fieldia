@@ -32,7 +32,9 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   const forTiming = new Set(['big']);
   // A home's, a courier's and an order's own page: a record opened from its list's row or card, not a demo of its own.
   const opened = new Set(['map-home', 'map-courier', 'map-week-order']);
-  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !opened.has(name));
+  // A part of the work item's popup tried on its own page, the backlog demo showing it whole: a bug's History tab.
+  const parts = new Set(['wi-history']);
+  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !opened.has(name) && !parts.has(name));
   expect(unnamed).toEqual([]);
 });
 

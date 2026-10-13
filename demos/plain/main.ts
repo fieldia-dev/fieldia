@@ -8,6 +8,8 @@ import { demoListViews, demoMaps, demoMapWidgets } from '../shared/maps';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
+import { historySlot } from '@fieldia/chatter';
+import { wiHistoryChatter } from '../shared/wi-history';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
@@ -101,6 +103,15 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
       element.append(hello, button);
       return leave;
     },
+    // A bug's history, as its History tab shows it: the State Graph, then each change with its before and after.
+    history: historySlot({
+      source: wiHistoryChatter(),
+      stateField: 'state',
+      reasonField: 'reason',
+      kind: 'work item',
+      locale: (params.get('locale') as Locale | null) ?? undefined,
+      dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
+    }),
   },
 });
 opened();
