@@ -82,6 +82,8 @@ export const HISTORY_STYLES = /* css */ `
 .fd-history-summary .fd-history-dot { margin-inline-end: 6px; vertical-align: -0.5px; }
 /* The summary sits 2px under the middle, its date where it was: as a work item's list sets them. */
 .fd-history-row .fd-history-when { justify-self: end; margin-block-start: -2px; font-size: 12px; line-height: 16px; color: var(--fd-muted); }
+/* On the picked row's grey the muted words would read under 4.5:1 (#707070 on #eaeaea is 4.1): a fifth of the text's ink in them. */
+.fd-history-row[aria-selected="true"] .fd-history-when { color: color-mix(in srgb, var(--fd-muted) 80%, var(--fd-text)); }
 .fd-history-end-dot { position: absolute; inset-inline-end: 6px; top: 14px; }
 .fd-history-none { margin: 12px 9px; color: var(--fd-muted); }
 

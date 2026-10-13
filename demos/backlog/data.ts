@@ -170,8 +170,9 @@ export function backlogData() {
  * path picker keeps them (`recent:<model>`, newest first, each `{ id, label }`).
  */
 export const recentPicks = {
-  'recent:work.iteration': [14, 13, 15, 16, 11].map((id) => ({ id, label: pathName(ITERATIONS.find((i) => i.id === id)?.path ?? []) })),
-  'recent:work.area': [1, 2, 4].map((id) => ({ id, label: pathName(AREAS.find((a) => a.id === id)?.path ?? []) })),
+  // As the tracker's screens show them: the sprint picked before the current one first, then the current one.
+  'recent:work.iteration': [12, 14, 10, 15, 16].map((id) => ({ id, label: pathName(ITERATIONS.find((i) => i.id === id)?.path ?? []) })),
+  'recent:work.area': [1].map((id) => ({ id, label: pathName(AREAS.find((a) => a.id === id)?.path ?? []) })),
 };
 
 // ---- bug 4127's conversation and history ----------------------------------------------------------------

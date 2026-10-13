@@ -244,7 +244,9 @@ button.fd-head-updated:hover { text-decoration: underline; }
 .fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) { grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; }
 .fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) > * { grid-column: 1 / -1; }
 .fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) > .fd-lock-wrap { grid-column: 1; align-self: center; margin: 0; }
-.fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) > .fd-lock-wrap + * { grid-column: 2; }
+/* Its value beside it: the widget, or the words a locked value reads as (readonlyShown "text") after the widget it hides. */
+.fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) > .fd-lock-wrap + :not([hidden]),
+.fd-form .fd-field[data-lock-at="value"]:not(.fd-head-fields > *):has(> .fd-lock-wrap:not([hidden])) > .fd-lock-wrap + [hidden] + .fd-read-text { grid-column: 2; }
 
 /* ---- focus: every control of the head and its dialog ringed in the focus colour, inside its box where it fills one ---- */
 :is(.fd-head, .fd-split, .fd-form-dialog) :is(.fd-button, .fd-head-link, .fd-head-updated):focus-visible { outline: 2px solid var(--fd-focus, var(--fd-accent)); outline-offset: 1px; }

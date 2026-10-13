@@ -40,9 +40,10 @@ test.describe('the backlog', () => {
 
   test('is the tracker’s page round a Fieldia list drawn as its backlog', async ({ page }) => {
     const problems = await openBacklog(page);
-    // The app's own chrome: a 48px bar, the project's menu, the team's head with its buttons and pivots.
-    expect((await page.locator('.bl-top').boundingBox())?.height).toBe(48);
-    expect((await page.locator('.bl-nav').boundingBox())?.width).toBe(255);
+    // The app's own chrome: a 48px bar and its line, the project's menu (259px and its line), the team's head with its
+    // buttons and pivots — measured on the tracker's backlog (08_18), whose list's card starts at x 292.
+    expect((await page.locator('.bl-top').boundingBox())?.height).toBe(49);
+    expect((await page.locator('.bl-nav').boundingBox())?.width).toBe(260);
     await expect(page.locator('.bl-team')).toHaveText('Portal Team');
     await expect(page.getByRole('button', { name: 'New Work Item' })).toBeVisible();
     await expect(page.locator('.bl-pivots [aria-current="page"]')).toHaveText('Backlog');
@@ -62,10 +63,14 @@ test.describe('the backlog', () => {
     const muted = await pick(page, 'area').evaluate((b) => [getComputedStyle(b).fontWeight, getComputedStyle(b).color]);
     expect(picked).toBe('600');
     expect(muted).toEqual(['400', 'rgb(112, 112, 112)']);
-    // A card with the callout's shadow, 45px tall.
-    const card = await bar.evaluate((b) => ({ height: b.getBoundingClientRect().height, shadow: getComputedStyle(b).boxShadow }));
-    expect(card.height).toBeGreaterThanOrEqual(45);
+    // A card with the callout's shadow, 50px tall at y 176, x 292; the table's card 16px under it, its header 38px and a rule.
+    // (y from the app's top: the demos' own header sits above it in a browser test.)
+    const top = (await page.locator('#app').boundingBox())!.y;
+    const card = await bar.evaluate((b) => ({ box: b.getBoundingClientRect().toJSON(), shadow: getComputedStyle(b).boxShadow }));
+    expect([card.box.x, card.box.y - top, card.box.height]).toEqual([292, 176, 50]);
     expect(card.shadow).toContain('rgba(0, 0, 0, 0.133)');
+    expect((await page.locator('.fd-list-scroll').boundingBox())!.y - top).toBe(242);
+    expect(Math.round((await page.locator('thead tr').boundingBox())!.height)).toBe(39);
 
     // The table: seventeen active bugs in their order, no box to choose one, Expand all and Collapse all in the header.
     await expect(rows(page)).toHaveCount(17);
@@ -286,34 +291,94 @@ test.describe('the popup, once the work item lanes have joined', () => {
   });
 
   test('20.20.45 / 20.24.05: State’s list, Area’s and Iteration’s pickers with Suggestions and the tree', async ({ page }) => {
+    const problems = watch(page);
     await page.goto(`${BACKLOG}?workitem=4127`);
-    await dialog(page).locator('[data-node="f-iteration"]').click();
+    // State: its list at the value box's start, a tick on Active, no dots.
+    await dialog(page).locator('[data-node="f-state"] .fd-dot-box').click();
+    const states = page.locator('.fd-pick-list:visible');
+    await expect(states.getByRole('menuitemradio')).toHaveText(['New', 'Active', 'Resolved', 'Closed']);
+    await expect(states.getByRole('menuitemradio', { name: 'Active' })).toHaveAttribute('aria-checked', 'true');
+    await expect(states.locator('.fd-dot')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    // Area: the person's one latest pick, then the tree.
+    await dialog(page).locator('[data-node="f-area"] input').click();
+    await expect(page.getByRole('group', { name: 'Suggestions' }).getByRole('treeitem')).toHaveText(['Portal']);
+    await page.keyboard.press('Escape');
+    // Iteration: the latest picks in the order picked, the current one second as the screenshot has it, each with its dates.
+    await dialog(page).locator('[data-node="f-iteration"] input').click();
     await expect(page.getByRole('tree')).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Suggestions' })).toBeVisible();
+    const suggestions = page.getByRole('group', { name: 'Suggestions' }).getByRole('treeitem');
+    await expect(suggestions.locator('.fd-path-words, .fd-path-name').first()).toBeVisible();
+    await expect(suggestions.nth(0)).toContainText('Portal\\Sprint 12');
+    await expect(suggestions.nth(0)).toContainText('3/25/2026 - 4/16/2026');
+    await expect(suggestions.nth(1)).toContainText('Portal\\Sprint 14');
     await screen(page, 'wi-demo-iteration', { viewport: true });
+    expect(await axeFindings(page, 'iteration open')).toEqual([]);
+    expect(problems).toEqual([]);
   });
 
-  test('20.21.54 / 20.22.25 / 20.22.28: Repro Steps in Markdown, System Info pointed at and focused', async ({ page }) => {
+  test('20.21.54 / 20.22.28 / 20.24.05: Repro Steps in Markdown, emptied it takes no room; System Info’s tools', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
+    const repro = dialog(page).locator('[data-node="g-repro"]');
+    const systemHead = dialog(page).locator('[data-node="g-system"] > legend');
+    const at = async () => (await systemHead.boundingBox())!.y;
+    const before = await at();
+    await repro.locator(':scope > legend').hover();
     await dialog(page).getByRole('button', { name: 'Edit Repro Steps' }).click();
-    await expect(dialog(page).getByRole('switch', { name: 'Preview' })).toBeVisible();
+    const card = repro.locator('.fd-md-card');
+    await expect(card.getByRole('switch', { name: 'Preview' })).toBeVisible();
+    // The Markdown toolbar's thirteen tools, @ # and ! first, as the screenshot has them.
+    const tools = await card.getByRole('toolbar').getByRole('button').evaluateAll((b) => b.filter((x) => !(x as HTMLElement).hidden && !x.matches('[role=switch]')).map((x) => x.getAttribute('aria-label')));
+    expect(tools.slice(0, 3)).toEqual(['Mention someone', 'Link work item', 'Link pull request']);
+    expect(tools).toHaveLength(13);
+    // Emptied and done: an empty Markdown text with no words of its own takes no room, System Info moves up under its heading.
+    await card.locator('textarea').fill('');
+    await dialog(page).getByRole('button', { name: 'Done' }).click();
+    await expect(card).toBeHidden();
+    expect(before - (await at())).toBeGreaterThanOrEqual(50);
+    await expect(repro.getByRole('button', { name: 'Edit Repro Steps' })).toBeAttached();
+    // System Info focused: its twenty tools, @ # and ! among them.
+    await dialog(page).locator('[data-node="f-system"] .fd-text-area').click();
+    const rich = dialog(page).locator('[data-node="f-system"]').getByRole('toolbar', { name: 'Formatting' });
+    await expect(rich.getByRole('button', { name: 'Link pull request' })).toBeVisible();
+    await expect(rich.getByRole('button', { name: 'Remove link' })).toBeVisible();
   });
 
   test('20.22.23 / 20.22.36: the discussion, a comment written and saved, the count in the head following it', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
-    await expect(dialog(page).getByText('1 Comment')).toBeVisible();
+    await expect(dialog(page).getByRole('button', { name: /1 Comment/ })).toBeVisible();
+    await page.locator('.fd-composer-card .fd-text-area').click();
+    await page.keyboard.type('The scanner is back: 3 of 15 left the shelf twice.');
+    await page.locator('.fd-composer-card').getByRole('button', { name: 'Save' }).click();
+    await expect(page.locator('li.fd-comment-card')).toHaveCount(2);
+    await expect(dialog(page).getByRole('button', { name: /2 Comments/ })).toBeVisible();
+    // Kept as the server has it: nothing for Save and Close to save.
+    await expect(dialog(page).getByRole('button', { name: 'Save and Close', exact: true })).not.toHaveClass(/fd-button-primary/);
   });
 
   test('20.23.03: Related Work’s Add link menu, Effort (Hours) folded', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
-    await dialog(page).getByRole('button', { name: 'Add link' }).last().click();
-    await expect(page.getByRole('menuitem', { name: 'Existing item' })).toBeVisible();
+    const effort = dialog(page).locator('[data-node="g-effort"] > legend');
+    await effort.hover();
+    await effort.getByRole('button', { name: 'Collapse Effort (Hours)' }).click();
+    await expect(effort.getByRole('button', { name: 'Expand Effort (Hours)' })).toBeVisible();
+    await dialog(page).locator('[data-node="f-related"]').getByRole('button', { name: 'Add link' }).click();
+    // Existing item, and New item: the app gives a page for a work item.
+    await expect(page.getByRole('menuitem')).toHaveText(['Existing item', 'New item']);
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('menuitem', { name: 'New item' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menuitem')).toHaveCount(0);
   });
 
   test('20.24.46: the History tab, its State Graph and the changes', async ({ page }) => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await dialog(page).getByRole('tab', { name: 'History' }).click();
     await expect(dialog(page).getByText('State Graph')).toBeVisible();
+    await expect(dialog(page).getByRole('list', { name: 'State Graph' }).getByRole('listitem').first()).toBeVisible();
+    await page.getByRole('option', { name: /1999979534/ }).first().click();
+    await expect(dialog(page).locator('.fd-history-detail')).toContainText('Wed 7/22/2026');
+    expect(await axeFindings(page, 'history')).toEqual([]);
   });
 
   test('390px wide: the popup fills the window', async ({ page }) => {

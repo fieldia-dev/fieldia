@@ -218,7 +218,6 @@
                             "id": "f-repro",
                             "field": "repro_steps",
                             "labels": "hidden",
-                            "placeholder": "Click to add Repro Steps.",
                             "options": {
                               "editor": "markdown",
                               "toolbar": "focus",
@@ -235,6 +234,11 @@
                                 "bulletList",
                                 "numberList",
                                 "taskList"
+                              ],
+                              "mention": { "model": "res.users" },
+                              "references": [
+                                { "key": "#", "model": "work.item", "label": "Work item", "icon": "hash" },
+                                { "key": "!", "model": "pull.request", "label": "Pull request", "icon": "pull-request" }
                               ]
                             }
                           }
@@ -280,6 +284,11 @@
                                 "image",
                                 "link",
                                 "unlink"
+                              ],
+                              "mention": { "model": "res.users" },
+                              "references": [
+                                { "key": "#", "model": "work.item", "label": "Work item", "icon": "hash" },
+                                { "key": "!", "model": "pull.request", "label": "Pull request", "icon": "pull-request" }
                               ]
                             }
                           }
@@ -521,11 +530,12 @@
       "Discussion": "النقاش",
       "Planning": "التخطيط",
       "Effort (Hours)": "الجهد (بالساعات)",
-      "Click to add Repro Steps.": "انقر لإضافة خطوات إعادة الإنتاج.",
       "Click to add System Info.": "انقر لإضافة معلومات النظام.",
       "Add an existing work item as a parent": "إضافة بند عمل موجود كأصل",
       "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "لتتبّع الإصدارات المرتبطة ببند العمل هذا، انتقل إلى [الإصدارات](https://example.com/releases) وفعّل الإبلاغ عن حالة النشر من قائمة خيارات خط الإنتاج. [اعرف المزيد عن الإبلاغ عن حالة النشر](https://example.com/help/deployment-status)",
-      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "اربط [إيداعًا](https://example.com/help/commit) أو [طلب سحب](https://example.com/help/pull-request) أو [فرعًا](https://example.com/help/branch) لترى حالة التطوير. يمكنك أيضًا [إنشاء فرع](https://example.com/help/new-branch) للبدء."
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "اربط [إيداعًا](https://example.com/help/commit) أو [طلب سحب](https://example.com/help/pull-request) أو [فرعًا](https://example.com/help/branch) لترى حالة التطوير. يمكنك أيضًا [إنشاء فرع](https://example.com/help/new-branch) للبدء.",
+      "Work item": "بند عمل",
+      "Pull request": "طلب سحب"
     },
     "de": {
       "Bug": "Fehler",
@@ -602,11 +612,12 @@
       "Discussion": "Diskussion",
       "Planning": "Planung",
       "Effort (Hours)": "Aufwand (Stunden)",
-      "Click to add Repro Steps.": "Klicken, um Schritte zum Reproduzieren hinzuzufügen.",
       "Click to add System Info.": "Klicken, um Systeminfo hinzuzufügen.",
       "Add an existing work item as a parent": "Vorhandenes Arbeitselement als übergeordnetes Element hinzufügen",
       "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "Um die Releases zu diesem Arbeitselement zu verfolgen, öffnen Sie [Releases](https://example.com/releases) und aktivieren Sie im Menü „Optionen“ Ihrer Pipeline die Meldung des Bereitstellungsstatus. [Mehr über die Meldung des Bereitstellungsstatus](https://example.com/help/deployment-status)",
-      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Verknüpfen Sie einen [Commit](https://example.com/help/commit), einen [Pull Request](https://example.com/help/pull-request) oder einen [Branch](https://example.com/help/branch), um den Stand Ihrer Entwicklung zu sehen. Sie können auch [einen Branch erstellen](https://example.com/help/new-branch), um zu beginnen."
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Verknüpfen Sie einen [Commit](https://example.com/help/commit), einen [Pull Request](https://example.com/help/pull-request) oder einen [Branch](https://example.com/help/branch), um den Stand Ihrer Entwicklung zu sehen. Sie können auch [einen Branch erstellen](https://example.com/help/new-branch), um zu beginnen.",
+      "Work item": "Arbeitselement",
+      "Pull request": "Pull Request"
     },
     "fr": {
       "Bug": "Bogue",
@@ -683,11 +694,12 @@
       "Discussion": "Discussion",
       "Planning": "Planification",
       "Effort (Hours)": "Effort (heures)",
-      "Click to add Repro Steps.": "Cliquez pour ajouter les étapes de reproduction.",
       "Click to add System Info.": "Cliquez pour ajouter les infos système.",
       "Add an existing work item as a parent": "Ajouter un élément de travail existant comme parent",
       "To track releases associated with this work item, go to [Releases](https://example.com/releases) and turn on deployment status reporting in your pipeline's Options menu. [Learn more about deployment status reporting](https://example.com/help/deployment-status)": "Pour suivre les mises en production liées à cet élément de travail, ouvrez [Releases](https://example.com/releases) et activez le signalement de l’état de déploiement dans le menu Options de votre pipeline. [En savoir plus sur le signalement de l’état de déploiement](https://example.com/help/deployment-status)",
-      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Liez un [commit](https://example.com/help/commit), une [demande de tirage](https://example.com/help/pull-request) ou une [branche](https://example.com/help/branch) pour voir où en est le développement. Vous pouvez aussi [créer une branche](https://example.com/help/new-branch) pour commencer."
+      "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started.": "Liez un [commit](https://example.com/help/commit), une [demande de tirage](https://example.com/help/pull-request) ou une [branche](https://example.com/help/branch) pour voir où en est le développement. Vous pouvez aussi [créer une branche](https://example.com/help/new-branch) pour commencer.",
+      "Work item": "un élément de travail",
+      "Pull request": "une demande de tirage"
     }
   }
 }

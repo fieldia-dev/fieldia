@@ -9,6 +9,7 @@
   --bl-bar: #ffffff;
   --bl-bar-line: #e7e8e7;
   --bl-nav: #eaeaea;
+  --bl-nav-line: #d5d5d5;
   --bl-nav-open: #dedede;
   --bl-nav-current: #d2d2d2;
   --bl-page: #f8f8f8;
@@ -31,6 +32,7 @@
   --bl-bar: #252423;
   --bl-bar-line: #3b3a39;
   --bl-nav: #292827;
+  --bl-nav-line: #3b3a39;
   --bl-nav-open: #323130;
   --bl-nav-current: #3b3a39;
   --bl-page: #1b1a19;
@@ -45,8 +47,8 @@
 .bl :focus-visible { outline: 2px solid var(--bl-accent); outline-offset: -2px; }
 .bl-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---- the bar across the top: 48px, white ---- */
-.bl-top { display: flex; align-items: center; gap: 12px; height: 48px; flex: none; box-sizing: border-box; padding-inline: 16px; background: var(--bl-bar); border-block-end: 1px solid var(--bl-bar-line); }
+/* ---- the bar across the top: 48px and its line, white ---- */
+.bl-top { display: flex; align-items: center; gap: 12px; height: 49px; flex: none; box-sizing: border-box; padding-inline: 16px; background: var(--bl-bar); border-block-end: 1px solid var(--bl-bar-line); }
 .bl-mark { width: 20px; height: 20px; border-radius: 4px; background: var(--bl-accent); flex: none; }
 .bl-crumbs { min-width: 0; flex: 1; }
 .bl-crumbs ol { display: flex; align-items: center; gap: 0; margin: 0; padding: 0; list-style: none; white-space: nowrap; overflow: hidden; }
@@ -63,7 +65,8 @@
 
 /* ---- the project's menu: 255px, grey ---- */
 .bl-frame { display: flex; flex: 1; min-height: 0; }
-.bl-nav { display: flex; flex-direction: column; width: 255px; flex: none; box-sizing: border-box; background: var(--bl-nav); }
+/* 259px and its line, as measured on the tracker's backlog (the list's card then starts at 292). */
+.bl-nav { display: flex; flex-direction: column; width: 260px; flex: none; box-sizing: border-box; background: var(--bl-nav); border-inline-end: 1px solid var(--bl-nav-line); }
 .bl-project { display: flex; align-items: center; gap: 10px; height: 46px; margin-inline: 8px; padding-inline: 4px; border-block-end: 1px solid var(--bl-nav-current); font-weight: 600; }
 .bl-project > span:nth-child(2) { flex: 1; }
 .bl-tile { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 2px; background: var(--bl-tile); color: #fff; font-size: 13px; }
@@ -89,7 +92,8 @@
 .bl-tool { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--bl-ink); cursor: pointer; }
 .bl-tool:hover { background: var(--bl-fill); }
 .bl-star { color: var(--bl-star); }
-.bl-pivots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 44px; margin-block-end: 8px; }
+/* The pivots' underline at the head's foot, 19px above the filter bar, as measured. */
+.bl-pivots-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 53px; margin-block-end: 8px; }
 .bl-pivots { display: flex; gap: 4px; }
 .bl-pivots a { position: relative; padding: 8px 4px; margin-inline-end: 12px; color: var(--bl-ink); text-decoration: none; }
 .bl-pivots a[aria-current="page"] { font-weight: 600; }

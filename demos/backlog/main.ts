@@ -295,7 +295,7 @@ async function answer(request: ActionRequest): Promise<ActionResult | void> {
 /** The words in the empty comment box, and what # and ! link, in the reader's language. */
 const COMMENTING = {
   en: { hint: 'Add a comment. Use # to link a work item, @ to mention a person, or ! to link a pull request.', item: 'work item', pull: 'pull request' },
-  ar: { hint: 'أضف تعليقًا. استخدم # لربط عنصر عمل، و@ للإشارة إلى شخص، و! لربط طلب سحب.', item: 'عنصر عمل', pull: 'طلب سحب' },
+  ar: { hint: 'أضف تعليقًا. استخدم # لربط بند عمل، و@ للإشارة إلى شخص، و! لربط طلب سحب.', item: 'بند عمل', pull: 'طلب سحب' },
   de: { hint: 'Kommentar hinzufügen. Mit # verknüpfen Sie ein Arbeitselement, mit @ erwähnen Sie eine Person, mit ! verknüpfen Sie einen Pull Request.', item: 'Arbeitselement', pull: 'Pull Request' },
   fr: { hint: 'Ajoutez un commentaire. Utilisez # pour lier un élément de travail, @ pour mentionner une personne ou ! pour lier une demande de tirage.', item: 'un élément de travail', pull: 'une demande de tirage' },
 }[locale];
@@ -353,6 +353,8 @@ async function openBug(id: RecordId | null): Promise<FormDialogResult | null> {
     tokens,
     preferences,
     slots: slots(),
+    // Related Work's New item opens a new work item on the bug's own page.
+    relatedPages: { 'work.item': bugPage },
     onAction: answer,
   });
   try {

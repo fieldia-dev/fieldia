@@ -169,8 +169,11 @@ export const LIST_STYLES = `
 .fd-list[data-search="fields"] .fd-list-records > .fd-pager { justify-self: end; }
 /* Fluent's lists, as a work tracker draws its backlog: the table a card with a light shadow and no frame; the header's words
    small, semibold and muted, the columns parted by short rules; rows 35px tall with no lines between them. */
+/* Fluent's filter bar: a card 50px tall, its words a little above the middle, 16px over the table's card (measured). */
+.fd-form[data-fd-theme="fluent"] .fd-list:has(> .fd-list-bar > .fd-filter-bar) { row-gap: 16px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 4px 8px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll { border: 0; border-radius: 4px; box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.132), 0 0.3px 0.9px rgba(0, 0, 0, 0.108); }
-.fd-form[data-fd-theme="fluent"] .fd-list-table th { position: relative; height: 40px; padding-block: 0; color: var(--fd-muted); border-block-end: 1px solid var(--fd-border); }
+.fd-form[data-fd-theme="fluent"] .fd-list-table th { position: relative; height: 38px; padding-block: 0; color: var(--fd-muted); border-block-end: 1px solid var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-head { font-size: 12px; font-weight: 600; }
 .fd-form[data-fd-theme="fluent"] .fd-list-table thead th:not(:first-child)::after { content: ''; position: absolute; inset-inline-end: 0; inset-block: 10px; width: 1px; background: var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-tree::after, .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-check::after { content: none; }

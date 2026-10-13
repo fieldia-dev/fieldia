@@ -182,6 +182,11 @@ export const TEXT_CSS = /* css */ `
 .fd-md-view[aria-readonly="true"] { cursor: default; border-color: transparent; }
 .fd-md-view.fd-blank::before { content: attr(data-placeholder); color: var(--fd-muted); font-style: italic; }
 .fd-md-view[hidden] { display: none; }
+/*
+ * Empty, with no words of its own to say so, and its Edit in its group's heading (a lone field's tools): it takes no
+ * room at rest, as a work item's empty Repro Steps — the heading's ✎, in the Tab order, starts it.
+ */
+.fd-form .fd-field:has(> .fd-md-field > .fd-field-tools:empty):has(> .fd-md-field > .fd-md-view.fd-blank:not([data-placeholder], [hidden])) { display: none; }
 .fd-field-tools { display: flex; justify-content: flex-end; gap: 2px; }
 .fd-field-tools:not(:has(> :not([hidden]))) { display: none; }
 .fd-section-tools .fd-field-tool[hidden] { display: none; }
