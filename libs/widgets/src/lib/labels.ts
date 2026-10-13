@@ -228,6 +228,88 @@ export interface WidgetLabels {
   perWeek: string;
   perMonth: string;
   perYear: string;
+  /**
+   * The input rules' words (FIELDIA INPUT RULES): hints said under a box as a keystroke or a paste is refused,
+   * text left that does not read, a table's totals and pastes, a list's filters. `{label}` is the field's.
+   */
+  /** Typing that can never be part of a number, said under the box: `{label}` is the field's. */
+  numbersOnly: string;
+  /** A minus typed after the number has begun. */
+  minusFirst: string;
+  /** A second decimal mark typed. */
+  oneDecimalMark: string;
+  /** Grouping marks where groups of three cannot be: `{example}` is the page's own 1234567. */
+  groupsOfThree: string;
+  /** Text left in a number box that does not read: `{text}` is what was typed. */
+  notANumber: string;
+  /** Text with a tab or a line break pasted into one box. */
+  severalValues: string;
+  /** An amount pasted in another currency: the box's `{currency}`, and the one pasted. */
+  otherCurrency: string;
+  /** A paste that is no number, quoted. */
+  notPastedNumber: string;
+  /** A box emptied and left that goes back to what the field holds (`{value}`). */
+  stillHolds: string;
+  /** Hours with minutes past 59. */
+  minutes: string;
+  /** Hours that do not read: `{decimal}` is 6.5 or 6,5, as the page writes it. */
+  duration: string;
+  /** A text over its most, under its counter. */
+  charactersOver: string;
+  /** A phone number's box, refusing a letter. */
+  phoneChars: string;
+  /** An email address's box, refusing a space. */
+  emailNoSpaces: string;
+  /** The box that adds a tag. */
+  addTag: string;
+  /** A tag added twice: `{tag}`. */
+  tagThere: string;
+  /** Tags past the most: `{tags}` are those not added. */
+  tagsAtMost: string;
+  /** JSON that does not read, where it goes wrong (`{line}`, `{column}`) and why (`{reason}`, one of the four below or the parser's). */
+  json: string;
+  jsonComma: string;
+  jsonQuotes: string;
+  jsonDigits: string;
+  jsonChar: string;
+  /** A colour's code box: what it takes, its name, and an empty colour. */
+  colourCode: string;
+  colourCodeBox: string;
+  noColour: string;
+  /** A date box's placeholder, in the page's order (day/month/year, month/day/year, year-month-day), with a time, and a time alone. */
+  dateShape: string;
+  dateShapeMdy: string;
+  dateShapeYmd: string;
+  dateTimeShape: string;
+  timeShape: string;
+  /** A typed date that is no day: `{month}` by its name, `{year}`, and the `{days}` it has. */
+  noSuchDay: string;
+  noSuchMonth: string;
+  yearDigits: string;
+  /** A date or time not whole when left: `{text}` as typed, `{example}` a date in the page's order. */
+  dateUnfinished: string;
+  timeUnfinished: string;
+  /** A paste that is no date, quoted. */
+  notPastedDate: string;
+  /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
+  noMatch: string;
+  noMatchCreate: string;
+  /** An own answer that is one of the choices: it is ticked. */
+  isAnOption: string;
+  /** A press past the most choices (`{max}`), and past the most ranked. */
+  chooseUpTo: string;
+  rankTop: string;
+  /** A total that cannot be added up while line `{n}` holds text that does not read. */
+  totalWaits: string;
+  /** A block pasted on a table: how many cells took it, those that did not (`{cells}`, each a `cellName`), and lines past the last. */
+  pastedCells: string;
+  notPastedCells: string;
+  cellName: string;
+  pasteBeyondLines: string;
+  /** A list's filter box waiting for its value. */
+  enterNumber: string;
+  enterDate: string;
+  enterValue: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -404,6 +486,55 @@ const en: WidgetLabels = {
   perWeek: '/week',
   perMonth: '/month',
   perYear: '/year',
+  numbersOnly: '{label}: numbers only',
+  minusFirst: 'The minus sign goes before the number',
+  oneDecimalMark: 'A number has only one decimal mark',
+  groupsOfThree: 'Digits are grouped in threes, like {example}',
+  notANumber: '{label}: “{text}” is not a number',
+  severalValues: '{label} takes one value, and several were pasted',
+  otherCurrency: '{label} is in {currency}, and this amount is in {pasted}',
+  notPastedNumber: '“{text}” is not a number, so it was not pasted',
+  stillHolds: '{label} still holds {value}',
+  minutes: '{label}: minutes go from 0 to 59, like 6:30',
+  duration: '{label}: write hours and minutes, like 6:30, or hours, like {decimal}',
+  charactersOver: '{n} characters too many',
+  phoneChars: 'A phone number takes digits, spaces and + ( ) . - only',
+  emailNoSpaces: 'An email address has no spaces',
+  addTag: 'Add a tag',
+  tagThere: '“{tag}” is already there',
+  tagsAtMost: '{label} takes at most {max}. Not added: {tags}',
+  json: 'Not valid JSON, so not saved: {reason} (line {line}, column {column})',
+  jsonComma: 'a comma with nothing after it',
+  jsonQuotes: 'use straight quotes " instead of “ ”',
+  jsonDigits: 'numbers in JSON are written 0-9',
+  jsonChar: '“{char}” can’t be here',
+  colourCode: 'Enter a colour code, like #1f2937',
+  colourCodeBox: 'Colour code',
+  noColour: 'No colour',
+  dateShape: 'dd/mm/yyyy',
+  dateShapeMdy: 'mm/dd/yyyy',
+  dateShapeYmd: 'yyyy-mm-dd',
+  dateTimeShape: 'dd/mm/yyyy hh:mm',
+  timeShape: 'hh:mm',
+  noSuchDay: '{label}: {month} {year} has {days} days',
+  noSuchMonth: '{label}: months go from 1 to 12',
+  yearDigits: '{label}: the year has 4 digits, like 2026',
+  dateUnfinished: '{label}: “{text}” is not a whole date yet; write it like {example}',
+  timeUnfinished: '{label}: “{text}” is not a time; write it like 14:30',
+  notPastedDate: '“{text}” is not a date, so it was not pasted',
+  noMatch: '{label}: nothing is called “{text}”; pick one from the list',
+  noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',
+  isAnOption: '“{text}” is one of the choices, so it is ticked',
+  chooseUpTo: 'You can choose {max}; untick one to choose another',
+  rankTop: 'Only the top {max} are ranked; take one out to rank another',
+  totalWaits: 'Fix line {n} to see this total',
+  pastedCells: 'Pasted into {n} cells.',
+  notPastedCells: 'Not pasted: {cells}',
+  cellName: '{column}, line {n}',
+  pasteBeyondLines: 'Only {n} lines are here, so the rest was not pasted',
+  enterNumber: 'Enter a number',
+  enterDate: 'Enter a date, like {example}',
+  enterValue: 'Enter a value to filter by',
 };
 
 /**

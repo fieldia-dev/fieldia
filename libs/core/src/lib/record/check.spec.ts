@@ -18,7 +18,7 @@ describe('checkValue — required', () => {
 
 describe('checkValue — text', () => {
   it('limits length', () => {
-    expect(checkValue(F({ type: 'char', size: 3 }), 'abcd', false)).toBe('Maximum 3 characters allowed');
+    expect(checkValue(F({ type: 'char', size: 3 }), 'abcd', false)).toBe('Name takes at most 3 characters');
     expect(checkValue(F({ type: 'char', size: 3 }), 'abc', false)).toBeUndefined();
   });
 
@@ -47,7 +47,7 @@ describe('checkValue — numbers', () => {
   });
 
   it('limits decimal places', () => {
-    expect(checkValue(F({ type: 'float', digits: [16, 2] }), 1.234, false)).toBe('Maximum 2 decimal places allowed');
+    expect(checkValue(F({ type: 'float', digits: [16, 2] }), 1.234, false)).toBe('Name takes at most 2 decimal places');
     expect(checkValue(F({ type: 'monetary', digits: [16, 2] }), 1.23, false)).toBeUndefined();
   });
 
@@ -146,7 +146,7 @@ describe('checkValue — other languages', () => {
     const { MESSAGES } = await import('./messages');
     expect(checkValue(name, null, true, MESSAGES.ar)).toBe('الاسم مطلوب');
     expect(checkValue(F({ type: 'integer', label: 'Bewertung', min: 1 }), 0, false, MESSAGES.de)).toBe('Bewertung muss mindestens 1 sein');
-    expect(checkValue(F({ type: 'char', label: 'Nom', size: 3 }), 'abcd', false, MESSAGES.fr)).toBe('3 caractères au maximum');
+    expect(checkValue(F({ type: 'char', label: 'Nom', size: 3 }), 'abcd', false, MESSAGES.fr)).toBe('Nom accepte au plus 3 caractères');
   });
 
   it('joins choices with the language’s own "or"', async () => {
