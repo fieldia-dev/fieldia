@@ -419,8 +419,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // hours, a date and a time in the page's order, words folded for finding (10.1); the box's guard on keystrokes, pastes,
 // drops and an IME's edits, with its hint (5.2); text left that does not read, kept by the form and said as the box is
 // left, and Save refusing it (1.4); the number boxes, shares, tax amounts and a bar's box on them (3.5); and the rules'
-// English words (3.2) — 24.3 more, to 546.1.
-const BUDGET_KB = 546.1;
+// English words (3.2) — 24.3 more, to 546.1. The hint floating under a table's cell or a grid's editor (above it where the
+// table cuts it off), numbers read left to right in a right-to-left box, and the guard's names on window.Fieldia, 1.5
+// more, to 547.6.
+const BUDGET_KB = 547.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -472,8 +474,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the third side-by-side (the head's icons in one-pixel lines, a smaller outline, the State list's pitch, the backlog's
 // lead and the room after its grid), 0.1 more, to 158.0.
 // the input rules (one set of readers, the box's guard and hint, unread text kept and said on leaving, the number boxes on
-// them, and their English words; listed with the raw budget above), 9.1 more, to 167.1.
-const GZIP_BUDGET_KB = 167.1;
+// them, and their English words; listed with the raw budget above), 9.1 more, to 167.1; the cells' floating hint and
+// right-to-left numbers, 0.4 more, to 167.5.
+const GZIP_BUDGET_KB = 167.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
