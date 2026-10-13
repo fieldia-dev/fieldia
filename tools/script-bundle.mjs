@@ -414,7 +414,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The third side-by-side: the head's eye, back arrow, copy, paperclip, padlock and speech bubble redrawn in one-pixel
 // lines as the tracker's, a person's outline as small as its, the State list's rows 30.3px apart, and the backlog's
 // title lead and the room after its grid as measured — 0.2 more, to 521.8.
-const BUDGET_KB = 521.8;
+// The input rules (0.21), what every box needs at mount: one set of readers in @fieldia/core — a number in any script
+// with the page's marks or ٫ ، ٬, its places and digits, a pasted amount with its own currency or an accounting minus,
+// hours, a date and a time in the page's order, words folded for finding (10.1); the box's guard on keystrokes, pastes,
+// drops and an IME's edits, with its hint (5.2); text left that does not read, kept by the form and said as the box is
+// left, and Save refusing it (1.4); the number boxes, shares, tax amounts and a bar's box on them (3.5); and the rules'
+// English words (3.2) — 24.3 more, to 546.1.
+const BUDGET_KB = 546.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -465,7 +471,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 157.9 — 15.2 over 0.19's 142.7, for what a page draws at mount (listed with the raw budget above).
 // the third side-by-side (the head's icons in one-pixel lines, a smaller outline, the State list's pitch, the backlog's
 // lead and the room after its grid), 0.1 more, to 158.0.
-const GZIP_BUDGET_KB = 158.0;
+// the input rules (one set of readers, the box's guard and hint, unread text kept and said on leaving, the number boxes on
+// them, and their English words; listed with the raw budget above), 9.1 more, to 167.1.
+const GZIP_BUDGET_KB = 167.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -502,7 +510,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
 // Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
 // Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
-const ADD_ON_BUDGET_KB = { ar: [27.2, 5.6], de: [11.7, 4.9], fr: [11.8, 4.8] };
+// The input rules' words (0.21) — every hint a box gives as it refuses a keystroke or a paste, text that does not read,
+// the decimals' plural forms, a postcode's, a web address's, a range's and a time step's checks, a date box's shapes,
+// a table's totals and pastes, a list's filters, 61 in each — Arabic's to 35.3 and 7.0 (Arabic letters are six ASCII
+// bytes each), German's to 15.1 and 6.0, French's to 15.5 and 6.0.
+const ADD_ON_BUDGET_KB = { ar: [35.3, 7.0], de: [15.1, 6.0], fr: [15.5, 6.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
