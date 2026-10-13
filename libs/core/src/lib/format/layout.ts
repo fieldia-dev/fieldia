@@ -1021,6 +1021,8 @@ export interface ListNode {
   actions?: ButtonNode[];
   /** The records on a map, beside the table or instead of it (drawn by @fieldia/map). */
   map?: ListMap;
+  /** The records on a calendar, by day, week or month, a press away from the table (drawn by @fieldia/calendar). */
+  calendar?: ListCalendar;
   /**
    * Each column's cells, by its field: a widget (`dot` for a state, with its
    * options), an icon before the words from another field (a work item's
@@ -1175,6 +1177,40 @@ export interface ListMap {
   gestures?: 'shared' | 'all';
   /** The closest it comes when it fits its records in view: zoom 16 unless said (a neighbourhood is 14, a street 17). */
   fitZoom?: number;
+}
+
+/** The spans a list's calendar shows: a day, a week, a month, or the week as a list of what comes (a phone's). */
+export type CalendarView = 'day' | 'week' | 'month' | 'agenda';
+
+/**
+ * A list's records on a calendar: when each starts and ends, its words, its
+ * colour, and the person or room it is with — a column for each in the day
+ * view. People move a record by dragging it, or with "Move to…" from the
+ * keyboard, and make one by pressing an empty slot.
+ */
+export interface ListCalendar {
+  /** When each record starts: a date (the record takes the whole day) or a date and time field. */
+  start: string;
+  /** When it ends, a field of the same kind as `start`; with none, a record lasts an hour (a day, for a date) and cannot be stretched. */
+  end?: string;
+  /** The words on each record's block: the patient, the booking's name. */
+  title: string;
+  /** A field whose value colours each record: the same value, the same colour. */
+  colour?: string;
+  /** A field naming who or what each record is with — a doctor, a room: a column for each in the day view. */
+  resource?: string;
+  /** The views offered, in this order: all four unless said. */
+  views?: CalendarView[];
+  /** The view it shows first: the first of `views` unless said (`agenda` on a phone). */
+  view?: CalendarView;
+  /** Whether the list opens on its table (unless said) or on its calendar. */
+  opens?: 'list' | 'calendar';
+  /** The week's first day, 0 Sunday to 6 Saturday: the language's own unless said. */
+  firstDay?: number;
+  /** The hours the day and the week show, from 0 to 24: 8 to 20 unless said; a record outside them stretches them. */
+  hours?: { start: number; end: number };
+  /** The minutes a drag moves by and an empty slot holds: 15, 30 (unless said) or 60. */
+  slot?: 15 | 30 | 60;
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
@@ -1763,6 +1799,23 @@ export const ListMapSchema = z
   })
   .meta({ id: 'ListMap' });
 
+/** A list's records on a calendar: when each starts and ends, its words, its colour, its person or room, the views, the first day and the hours. */
+export const ListCalendarSchema = z
+  .strictObject({
+    start: fieldName,
+    end: fieldName.optional(),
+    title: fieldName,
+    colour: fieldName.optional(),
+    resource: fieldName.optional(),
+    views: z.array(z.enum(['day', 'week', 'month', 'agenda'])).min(1).optional(),
+    view: z.enum(['day', 'week', 'month', 'agenda']).optional(),
+    opens: z.enum(['list', 'calendar']).optional(),
+    firstDay: z.int().min(0).max(6).optional(),
+    hours: z.strictObject({ start: z.int().min(0).max(23), end: z.int().min(1).max(24) }).optional(),
+    slot: z.union([z.literal(15), z.literal(30), z.literal(60)]).optional(),
+  })
+  .meta({ id: 'ListCalendar' });
+
 /** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule. */
 export const ListCellSchema = z
   .strictObject({
@@ -1804,6 +1857,7 @@ export const ListNodeSchema = z.strictObject({
   groupBy: z.array(fieldName).optional(),
   actions: z.array(ButtonNodeSchema).optional(),
   map: ListMapSchema.optional(),
+  calendar: ListCalendarSchema.optional(),
   cells: z.record(fieldName, ListCellSchema).optional(),
   choose: z.boolean().optional(),
   sortable: z.boolean().optional(),

@@ -26,6 +26,14 @@ const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'moneta
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
 /** The kinds of field a list's filter bar can list the values of. */
 const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
+/** What a calendar's start and end can be: a day, or a day and a time. */
+const CALENDAR_TIMES: ReadonlySet<string> = new Set(['date', 'datetime']);
+/** What a record's words on a calendar can be. */
+const CALENDAR_WORDS: ReadonlySet<string> = new Set(['char', 'text', 'selection', 'many2one', 'integer', 'float', 'monetary', 'date', 'datetime']);
+/** What a calendar's columns come from: a value that repeats. */
+const CALENDAR_COLUMNS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer']);
+/** What a record's colour comes from. */
+const CALENDAR_COLOURS: ReadonlySet<string> = new Set(['many2one', 'selection', 'char', 'integer', 'boolean']);
 
 /** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
 interface Scope {
@@ -485,7 +493,39 @@ export class ReferenceCheck {
       this.checkPress(button, `${path}.actions[${i}]`);
     });
     if (list.map) this.walkListMap(list.map, `${path}.map`);
+    if (list.calendar) this.walkListCalendar(list, `${path}.calendar`);
     this.checkListCells(list, path);
+  }
+
+  /**
+   * A list's calendar: when each record starts (a date, or a date and time)
+   * and ends (the same kind), its words, its colour and its columns, each
+   * from a field that can; the view it opens on is one it offers, its hours
+   * run forward, and the list opens on one thing.
+   */
+  private walkListCalendar(list: ListNode, path: string) {
+    const calendar = list.calendar as NonNullable<ListNode['calendar']>;
+    const typed = (name: string | undefined, key: string, ok: ReadonlySet<string>, says: string) => {
+      if (name === undefined) return undefined;
+      const def = this.need(name, `${path}.${key}`);
+      if (def && !ok.has(def.type)) this.report(`${path}.${key}`, `"${name}" is a ${def.type}; ${says}`);
+      return def;
+    };
+    const start = typed(calendar.start, 'start', CALENDAR_TIMES, "a calendar's start is a date, or a date and time");
+    const end = typed(calendar.end, 'end', CALENDAR_TIMES, "a calendar's end is a date, or a date and time");
+    if (start && end && CALENDAR_TIMES.has(start.type) && CALENDAR_TIMES.has(end.type) && start.type !== end.type) {
+      this.report(`${path}.end`, `"${calendar.end}" is a ${end.type}; an end is the same kind of field as its start, a ${start.type}`);
+    }
+    typed(calendar.title, 'title', CALENDAR_WORDS, "a record's words on a calendar are a field that can be said");
+    typed(calendar.colour, 'colour', CALENDAR_COLOURS, 'a colour comes from a link, a choice, text, a whole number or a yes or no');
+    typed(calendar.resource, 'resource', CALENDAR_COLUMNS, 'a column for each comes from a link, a choice, text or a whole number');
+    const views = calendar.views ?? ['day', 'week', 'month', 'agenda'];
+    views.forEach((view, i) => {
+      if (views.indexOf(view) !== i) this.report(`${path}.views[${i}]`, `"${view}" is offered twice`);
+    });
+    if (calendar.view && !views.includes(calendar.view)) this.report(`${path}.view`, `"${calendar.view}" is not one of its views (${views.join(', ')})`);
+    if (calendar.hours && calendar.hours.end <= calendar.hours.start) this.report(`${path}.hours`, `the hours end at ${calendar.hours.end}, before they start at ${calendar.hours.start}`);
+    if (calendar.opens === 'calendar' && list.map?.view && list.map.view !== 'list') this.report(`${path}.opens`, 'the list opens on its map (map.view) and on its calendar: say one');
   }
 
   /**
