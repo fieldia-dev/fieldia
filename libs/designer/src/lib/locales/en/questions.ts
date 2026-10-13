@@ -132,6 +132,15 @@ export const questions = {
   tagColours: 'Colours',
   opensRecord: 'Opens its record',
   colourFor: (label: string) => `Colour for ${label}`,
+  // ---- the work tracker's pickers
+  pathPicker: 'Path in a tree',
+  joinedBy: 'Names joined by',
+  suggestionsShown: 'Suggestions',
+  treeShown: 'The tree under them',
+  addedFromButton: 'Added from a button',
+  ownList: 'Fieldia’s own list',
+  dotsInList: 'Dots in its list',
+  noColourFor: (label: string) => `No colour of its own for ${label}`,
   // ---- text, numbers and dates
   mostCharacters: 'Most characters',
   any: 'Any',
