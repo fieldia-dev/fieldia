@@ -875,7 +875,8 @@ export function googlePlaces(answer: unknown, { locale, addresses, parts }: Sear
     const placeId = pathOf(prediction, 'placeId');
     const label = (text(pathOf(prediction, 'structuredFormat', 'mainText', 'text')) || text(pathOf(prediction, 'text', 'text'))).replace(STRAY, '');
     if (typeof placeId !== 'string' || !label) return [];
-    const detail = addressLine([undashed(text(pathOf(prediction, 'structuredFormat', 'secondaryText', 'text')), locale)], locale);
+    // Where it is, without its name again: Google's line under a road may start with the road ("Sheikh Zayed Road - Dubai - …").
+    const detail = addressLine([undashed(text(pathOf(prediction, 'structuredFormat', 'secondaryText', 'text')), locale)], locale, [label]);
     const types = pathOf(prediction, 'types');
     // A building, a shop, a mall: a place with a name of its own, which its address may not say.
     const named = Array.isArray(types) && !types.includes('geocode');

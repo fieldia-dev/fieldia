@@ -74,9 +74,14 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * dropped, keeping each search's places until a pick so no words are paid
  * for twice, and asking nothing for Enter on the place picked; Google's
  * token sent with its session's first Place Details alone: 5 bytes over
- * 45.1 for all, which goes to 45.2.
+ * 45.1 for all, which goes to 45.2. A search dropped on its way let come
+ * back (the provider has it, and may bill it), its answer kept for its
+ * words, and the same words waiting for it rather than asked again; a pick
+ * calling back what is still on its way; ArrowUp from no row marking the
+ * last: 30 bytes more for a place and an area (2 under its 25.6), 59 more
+ * for all, 16 over 45.2, which goes to 45.3.
  */
-const BUDGET = { fields: 25.6, all: 45.2, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.6, all: 45.3, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

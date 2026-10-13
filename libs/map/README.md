@@ -269,7 +269,8 @@ treat an app in use as heavy use. Photon can run on your own server
 Suggestions come as people type where the provider allows it, nearest where the
 map is looking first (a map of the whole world, opened with no centre, looks
 nowhere), each on two lines (the place, then where it is); Enter takes the one
-marked with the arrows, or the first of a list made for the words in the box:
+marked with the arrows (Down marks the first, Up the last, each going round at
+the end), or the first of a list made for the words in the box:
 words typed after the list came are searched for at once, and nothing is
 picked from the list before them. "My location" says how sure it is: a rough location (a
 desktop's, placed by its network) shows the circle it may be anywhere in, says
@@ -317,17 +318,25 @@ and its parts still are. A search still waiting when
 a suggestion is picked or the box is left is dropped, and Enter never searches
 for the address a pick wrote.
 
-Escape drops a search waiting or on its way, as a pick and leaving the box
-do, and no search is said to be going once it is dropped; a list closed takes
-what was said of it with it. While one address is typed, words asked for once
-(near the same place) show what they brought again, however they come back (a
-letter taken back, Enter after Escape); after a pick they are a new address's,
-asked for anew. A pick that finds no place, or no parts, takes back the ones
-the pick before it wrote (another address's), never a place set by hand
-since; one found only near the address (`precise: false`) is written, and the
-field says so under the box. Google writes the UAE's addresses with dashes
+Escape drops a search waiting or on its way, as more typing, a pick and
+leaving the box do, and no search is said to be going once it is dropped; a
+list closed takes what was said of it with it. A search waiting is never
+sent; one on its way is not called back, as the provider has it and may bill
+it, but its answer opens nothing. While one address is typed, words asked for
+once (near the same place) show what they brought again, however they come
+back (a letter taken back, Enter after Escape), and words still on their way,
+though dropped, are waited for, not asked again; after a pick they are a new
+address's, asked for anew, and what is still on its way is called back. A
+pick that finds no place, or no parts, takes back the ones the pick before it
+wrote (another address's), never a place set by hand since, as emptying the
+box and leaving it does (with other words typed in their place or none);
+words only edited keep them. One found only near the address (`precise:
+false`) is written, and the field says so under the box; one whose place the
+map did not answer for (a line dropped, the provider down) says that, not
+that it is not on the map. Google writes the UAE's addresses with dashes
 between their pieces ("Sheikh Zayed Rd - Dubai - United Arab Emirates"): they
-are read as its commas elsewhere, each piece said once, a landmark's name too.
+are read as its commas elsewhere, each piece said once, a landmark's name too,
+and a suggestion's name not again on the line under it.
 
 Google's costs, as its pricing pages put them (October 2026): a session of
 suggestions ended by a pick bills its first 12 requests (Autocomplete
