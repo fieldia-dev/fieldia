@@ -2,6 +2,7 @@ import type { FilterItem } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ResolvedFilter, ResolvedFilterCondition } from './data-source';
 import type { RelatedRecord, Values } from './values';
+import { foldDigits } from './input-rules';
 
 /**
  * Whether a record passes a filter, the way a search should judge it: every
@@ -63,9 +64,9 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
     case 'not in':
       return Array.isArray(expected) && !expected.includes(actual as JsonValue);
     case 'like':
-      return text.includes(String(expected));
+      return finds(text, String(expected), false);
     case 'ilike':
-      return text.toLowerCase().includes(String(expected).toLowerCase());
+      return finds(text, String(expected), true);
     case 'startswith':
       return text.toLowerCase().startsWith(String(expected).toLowerCase());
     case 'endswith':
@@ -82,6 +83,17 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
     case 'within':
       return within(values, raw, expected);
   }
+}
+
+/**
+ * Whether text holds what is looked for, digits in any script alike (٤٤٠٠ finds 4400). Digits with % between them
+ * ("4%4%0%0", a phone searched by its digits, as a server's ilike takes them) are those digits in order, whatever
+ * the spacing: compared by the digits alone.
+ */
+function finds(text: string, wanted: string, anyCase: boolean): boolean {
+  if (/^\d(%\d)+$/.test(wanted)) return foldDigits(text).replace(/\D/g, '').includes(wanted.replace(/%/g, ''));
+  const [have, want] = [foldDigits(text), foldDigits(wanted)];
+  return anyCase ? have.toLowerCase().includes(want.toLowerCase()) : have.includes(want);
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);

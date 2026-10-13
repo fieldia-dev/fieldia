@@ -28,7 +28,7 @@ for (const variant of VARIANTS) {
       const credit = (await page.locator('.fd-list-row').first().locator('td').nth(6).locator('bdi').boundingBox())!;
       expect(Math.abs(credit.x + credit.width - (creditHead.x + creditHead.width)), 'the amount is not on the end').toBeLessThan(2);
       await expect(page.locator('.fd-list-row').first().locator('td').nth(6)).toHaveText('E£ 50,000.00');
-      await expect(page.locator('.fd-list-row').nth(1).locator('td').nth(6)).toHaveText('JOD 18,000.00');
+      await expect(page.locator('.fd-list-row').nth(1).locator('td').nth(6)).toHaveText('JOD 18,000.000');
       await expectNoSidewaysScroll(page);
       await screen(page, `${variant}-list`, { viewport: true });
       expect(problems).toEqual([]);

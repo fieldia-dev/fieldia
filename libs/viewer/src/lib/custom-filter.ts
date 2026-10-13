@@ -1,4 +1,5 @@
-import type { Facet, Field, JsonValue, Page, ResolvedFilterCondition } from '@fieldia/core';
+import { readDate, readNumber, type DateOrder, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
+import { displayValue, guard, numberRules, refusalHint, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
@@ -37,22 +38,43 @@ function conditionsFor(def: Field): [Op, keyof Words][] {
   }
 }
 
+/** A day as a page of this language and order writes one: 13/10/2026, 13.10.2026 in German, 10/13/2026, 2026-10-13. */
+function dateExample(day: Date, locale: Locale, order: DateOrder): string {
+  const [d, m, y] = [String(day.getDate()).padStart(2, '0'), String(day.getMonth() + 1).padStart(2, '0'), String(day.getFullYear())];
+  if (order === 'ymd') return `${y}-${m}-${d}`;
+  const mark = locale === 'de' ? '.' : '/';
+  return order === 'mdy' ? [m, d, y].join(mark) : [d, m, y].join(mark);
+}
+
 /**
  * A filter of a person's own, under the list's filters: a field, a condition
  * that suits it, and a value of its kind. Applied, it becomes a chip.
+ *
+ * Its value is read as every box reads one (FIELDIA INPUT RULES): a number in
+ * the page's language — its marks, Arabic and Persian digits, never hex or an
+ * exponent — in a box that refuses letters as they are typed, saying why; a
+ * date typed in the page's order. A value that does not read is kept, and the
+ * words beside it say what goes there; the chip writes the value the page's way.
  */
-export function customFilterPart(context: { page: Page; el: El; labels: ViewerLabels; add: (facet: Facet) => void }) {
+export function customFilterPart(context: { page: Page; el: El; labels: ViewerLabels; locale?: Locale; add: (facet: Facet) => void }) {
   const { page, el, labels } = context;
+  const locale = context.locale ?? 'en';
+  const words = WIDGET_LABELS[locale] ?? WIDGET_LABELS.en;
+  const dateOrder = (page.look as { dateOrder?: DateOrder } | undefined)?.dateOrder ?? 'dmy';
   const fields = Object.entries(page.fields).filter(([, def]) => conditionsFor(def).length);
   const field = el('select', { class: 'fd-input', 'aria-label': labels.field }, ...fields.map(([name, def]) => el('option', { value: name }, def.label)));
   const condition = el('select', { class: 'fd-input', 'aria-label': labels.condition });
-  const valueBox = el('span', { class: 'fd-custom-filter-value' });
+  const valueBox = el('div', { class: 'fd-custom-filter-value' });
   const apply = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.apply);
   const form = el('div', { class: 'fd-custom-filter', hidden: '' }, field, condition, valueBox, apply);
   const button = el('button', { type: 'button', class: 'fd-search-option fd-search-add', 'aria-expanded': 'false' }, labels.addCustomFilter);
   let value: HTMLInputElement | HTMLSelectElement = el('input', { class: 'fd-input', 'aria-label': labels.value });
+  /** The value box's guard and its hint: what it refuses as typed, and why Apply waits. */
+  let checks: Guard | null = null;
+  let hint: RefusalHint | null = null;
 
   const def = () => page.fields[field.value];
+  const isNumber = (type: string) => type === 'integer' || type === 'float' || type === 'monetary';
 
   function drawConditions() {
     condition.replaceChildren(...conditionsFor(def()).map(([op, word]) => el('option', { value: op }, labels[word])));
@@ -62,13 +84,21 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   /** A box of the field's kind: its choices, yes or no, a number, a day, or text. */
   function drawValue() {
     const current = def();
+    checks?.destroy();
+    checks = null;
     if (current.type === 'selection') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...current.options.map((o) => el('option', { value: String(o.value) }, o.label)));
     else if (current.type === 'boolean') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, el('option', { value: 'true' }, labels.yes), el('option', { value: 'false' }, labels.no));
     else {
-      const type = ['integer', 'float', 'monetary'].includes(current.type) ? 'number' : current.type === 'date' ? 'date' : current.type === 'datetime' ? 'datetime-local' : 'text';
-      value = el('input', { class: 'fd-input', type, 'aria-label': labels.value });
+      // Never the browser's number or date box: they follow the browser's language, not the page's, and drop Arabic digits.
+      const date = current.type === 'date' || current.type === 'datetime';
+      const placeholder = date ? (current.type === 'datetime' ? words.dateTimeShape : dateOrder === 'mdy' ? words.dateShapeMdy : dateOrder === 'ymd' ? words.dateShapeYmd : words.dateShape) : undefined;
+      value = el('input', { class: 'fd-input', type: 'text', autocomplete: 'off', 'aria-label': labels.value, ...(isNumber(current.type) ? { inputmode: 'decimal' } : {}), ...(placeholder ? { placeholder } : {}) });
     }
     valueBox.replaceChildren(value);
+    hint = refusalHint(value);
+    if (value instanceof HTMLInputElement && isNumber(current.type)) {
+      checks = guard(value, numberRules({ label: current.label, locale, labels: words, limits: () => ({ integer: current.type === 'integer' }) }), hint);
+    }
     valueBox.hidden = condition.value === 'set' || condition.value === 'notset';
   }
 
@@ -80,6 +110,12 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
     if (!form.hidden) field.focus();
   });
 
+  /** Apply waits: the value stays, and the words beside it say what goes there, politely. */
+  const wait = (said: string) => {
+    value.focus();
+    hint?.show(said);
+  };
+
   apply.addEventListener('click', () => {
     const current = def();
     const op = condition.value as Op;
@@ -88,7 +124,8 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
     let shown = '';
     if (!valueBox.hidden) {
       const text = value.value.trim();
-      if (!text) return value.focus();
+      const date = current.type === 'date' || current.type === 'datetime';
+      const example = dateExample(new Date(), locale, dateOrder);
       if (current.type === 'selection') {
         const option = current.options.find((o) => String(o.value) === text);
         wanted = option?.value ?? text;
@@ -96,15 +133,24 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
       } else if (current.type === 'boolean') {
         wanted = text === 'true';
         shown = wanted ? labels.yes : labels.no;
-      } else if (['integer', 'float', 'monetary'].includes(current.type)) {
-        wanted = Number(text);
-        if (!Number.isFinite(wanted)) return value.focus();
-        shown = text;
+      } else if (isNumber(current.type)) {
+        const read = readNumber(text, locale);
+        if (!read.ok || read.value === null) return wait(words.enterNumber);
+        wanted = read.value;
+        // As the page writes the number: its grouping, its decimal mark, never fewer places than it has.
+        shown = displayValue({ ...current, type: 'float', digits: [16, 0] } as LineField, read.value, {}, locale);
+      } else if (date) {
+        const read = readDate(text, { order: dateOrder, time: current.type === 'datetime' });
+        if (!read.ok || read.value === null) return wait(words.enterDate.split('{example}').join(example));
+        wanted = read.value;
+        shown = displayValue(current as LineField, read.value, {}, locale);
       } else {
+        if (!text) return wait(words.enterValue);
         wanted = text;
         shown = text;
       }
     }
+    hint?.hide();
     context.add({ kind: 'custom', label: [current.label, word, shown].filter(Boolean).join(' '), filter: [{ field: field.value, op, value: wanted }] });
     form.hidden = true;
     button.setAttribute('aria-expanded', 'false');

@@ -133,7 +133,7 @@ describe('the search bar', () => {
     condition().dispatchEvent(new Event('change', { bubbles: true }));
     (form.querySelector('input[aria-label="Value"]') as HTMLInputElement).value = '60000';
     button(form, 'Apply').click();
-    expect(chips(host)).toEqual(['Credit limit greater than 60000']);
+    expect(chips(host)).toEqual(['Credit limit greater than 60,000']);
     await shows(host, ['Nile Traders', 'Petra Tours']);
     expect(form.hidden).toBe(true);
   });

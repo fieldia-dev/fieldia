@@ -1,4 +1,4 @@
-import { suggestions, type Facet, type ListNode, type Page, type Suggestion } from '@fieldia/core';
+import { suggestions, type Facet, type ListNode, type Locale, type Page, type Suggestion } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
@@ -17,6 +17,8 @@ export interface SearchContext {
   uid: (id: string) => string;
   icons?: IconSet;
   preferences: PreferenceStore;
+  /** The page's language: what is typed is read in it (a number's marks, a date's order). */
+  locale?: Locale;
   /** What the list starts with. */
   facets: Facet[];
   onChange: (facets: Facet[]) => void;
@@ -132,7 +134,7 @@ export function searchBar(context: SearchContext) {
   }
 
   input.addEventListener('input', () => {
-    offered = suggestions(input.value, page, node, { searchFor: labels.searchFor });
+    offered = suggestions(input.value, page, node, { searchFor: labels.searchFor }, context.locale);
     active = 0;
     drawOffered();
   });
@@ -183,7 +185,7 @@ export function searchBar(context: SearchContext) {
     button.addEventListener('click', () => toggleIn('groupBy', field));
     return button;
   });
-  const custom = customFilterPart({ page, el, labels, add: (facet) => change([...facets, facet]) });
+  const custom = customFilterPart({ page, el, labels, locale: context.locale, add: (facet) => change([...facets, facet]) });
   const favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change });
 
   const group = (kind: string, iconName: string, title: string, ...parts: HTMLElement[]) =>
