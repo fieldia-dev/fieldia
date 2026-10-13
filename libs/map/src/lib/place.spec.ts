@@ -82,6 +82,26 @@ describe('a place kept in two number fields', () => {
   });
 });
 
+describe('a place written by another field', () => {
+  // A map of 400 by 300 pixels: jsdom measures none, and a map with no size shows no part of the world.
+  const sized = (['clientWidth', 'clientHeight'] as const).map((side) => [side, Object.getOwnPropertyDescriptor(HTMLElement.prototype, side)] as const);
+  beforeAll(() => sized.forEach(([side]) => Object.defineProperty(HTMLElement.prototype, side, { configurable: true, get: () => (side === 'clientWidth' ? 400 : 300) })));
+  afterAll(() => sized.forEach(([side, own]) => own && Object.defineProperty(HTMLElement.prototype, side, own)));
+  /** The zooms of the map images asked for. */
+  const zooms = () => [...document.querySelectorAll('.leaflet-tile')].map((tile) => Number(/\/(\d+)\/\d+\/\d+\.png/.exec(tile.getAttribute('src') ?? '')?.[1]));
+
+  it('is brought into view as close as a place is shown, though the map opened on the whole world (no centre given): an address picked lands there', async () => {
+    const node = { type: 'field', id: 'f-note', field: 'note', widget: 'place', options: { search: false, myLocation: false } } as FieldNode;
+    const { form, widget } = mount(node, 'note');
+    for (let i = 0; i < 100 && !zooms().length; i++) await new Promise((done) => setTimeout(done, 20));
+    expect(Math.max(...zooms())).toBe(2);
+    form.setValue('note', { type: 'Point', coordinates: [31.2357, 30.0444] });
+    await new Promise((done) => setTimeout(done, 0));
+    expect(Math.max(...zooms())).toBe(15);
+    widget.destroy?.();
+  });
+});
+
 describe('a provider that refuses', () => {
   it('tells the reader to try again, and the developer why, once, in the console', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);

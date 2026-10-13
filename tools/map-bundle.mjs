@@ -69,8 +69,14 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * city where each country keeps it, Google's plus codes and numbers): read
  * in the address chunk, loaded now with any of their searches (3.2), which
  * takes Azure's places out of the page — 0.4 less, 0.3 less, 0.3 less.
+ * The search box (with every place's map, so in the page) dropping a search
+ * on Escape as it does on a pick and on leaving, saying none is going once
+ * dropped, keeping each search's places until a pick so no words are paid
+ * for twice, and asking nothing for Enter on the place picked; Google's
+ * token sent with its session's first Place Details alone: 5 bytes over
+ * 45.1 for all, which goes to 45.2.
  */
-const BUDGET = { fields: 25.6, all: 45.1, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.6, all: 45.2, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

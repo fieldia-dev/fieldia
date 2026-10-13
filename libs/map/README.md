@@ -292,16 +292,25 @@ It is said to be only near (`precise: false`) when Azure is unsure of it, or
 finds only the street for a house, the district for a street, the town for a
 district; found nowhere in its own districts, no place is written (the field
 says so under the box), and its parts still are. A search still waiting when
-a suggestion is picked or the box is left is dropped, the same words are not
-asked for twice, and Enter never searches for the address a pick wrote.
+a suggestion is picked or the box is left is dropped, and Enter never searches
+for the address a pick wrote.
+
+Escape drops a search waiting or on its way, as a pick and leaving the box
+do, and no search is said to be going once it is dropped. While one address
+is typed, words asked for once (near the same place) show what they brought
+again, however they come back (a letter taken back, Enter after Escape);
+after a pick they are a new address's, asked for anew.
 
 Google's costs, as its pricing pages put them (October 2026): a session of
 suggestions ended by a pick bills its first 12 requests (Autocomplete
-Requests) and the place's details (Place Details Essentials, its parts at the
-same price); a session never picked bills each request. A route by car asks
-for traffic, which makes it Compute Routes Pro; on foot (or by bike) with up
-to 10 stops it is Essentials, 11 to 25 stops Pro, and Google refuses more than
-25.
+Requests) and the place's details (Place Details Essentials: its place, its
+line and its parts are all three that SKU's fields, asked for whatever the
+page keeps, as the parts name the country the line is written with); a session
+never picked bills each request. A session's token goes with its first Place
+Details alone: Google bills a token used again as no session. A route by car
+asks for traffic, which makes it Compute Routes Pro; on foot (or by bike) with
+up to 10 stops it is Essentials, 11 to 25 stops Pro, and Google refuses more
+than 25.
 
 Pass your own `search` (and `reverse`) to `mapWidgets` to use your own address
 search with any provider.

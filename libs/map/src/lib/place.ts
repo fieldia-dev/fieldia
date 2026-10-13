@@ -348,7 +348,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         lat.setAttribute('aria-required', String(state.required));
         showCoords();
         box.refresh();
-        if (changed) show();
+        // Written by another field (an address picked) or a record: the map goes to it, as close as a place is shown. In view already is not enough: a map on the whole world (no centre given) has every place in view.
+        if (changed) show(true);
         else clear.hidden = readonly || !point;
       },
     };

@@ -247,10 +247,29 @@ describe('Google', () => {
 
     expect(await found[0].locate!()).toEqual({ lat: 30.0444, lng: 31.2357, address: 'Tahrir Square، Qasr El Nil، Cairo، Egypt' });
     expect(asked[2].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=ar&sessionToken=${sent.sessionToken}`);
-    expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress');
+    // Place Details Essentials, its parts with them: the country they name is set apart in the line.
+    expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress,addressComponents');
     // Picked: the next search is a new session.
     await google.search!({ text: 'zam', locale: 'ar' });
     expect(JSON.parse(String(asked[3].init?.body)).sessionToken).not.toBe(sent.sessionToken);
+  });
+
+  it('locates a place from a session already ended without its token: a token used again is no session to Google', async () => {
+    const suggestion = (placeId: string, name: string) => ({ placePrediction: { placeId, types: ['geocode'], structuredFormat: { mainText: { text: name } } } });
+    const details = { location: { latitude: 30.0444, longitude: 31.2357 }, formattedAddress: 'Tahrir Square, Cairo, Egypt' };
+    const { fetch, asked } = network({
+      'https://places.googleapis.com/v1/places:autocomplete': { suggestions: [suggestion('A1', 'Tahrir Square'), suggestion('A2', 'Tahrir Street')] },
+      'https://places.googleapis.com/v1/places/': details,
+    });
+    const google = googleMaps({ key: 'G', fetch });
+    const [square, street] = await google.search!({ text: 'tahr', locale: 'en' });
+    const token = JSON.parse(String(asked[0].init?.body)).sessionToken;
+    square.picked?.();
+    await square.locate!();
+    expect(asked[1].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=en&sessionToken=${token}`);
+    // Its session ended by the place picked from it: another of its places is located alone.
+    await street.locate!();
+    expect(asked[2].url).toBe('https://places.googleapis.com/v1/places/A2?languageCode=en');
   });
 
   it('says why, in Google’s own words, when it refuses: a service not switched on, a key not allowed', async () => {

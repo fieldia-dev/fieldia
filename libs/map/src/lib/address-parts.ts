@@ -461,7 +461,8 @@ const componentOf = (components: unknown, type: string) => (Array.isArray(compon
  * code. Its number where Google's own line (`formatted`) puts it: before the
  * street in Egypt and Saudi Arabia ("7524 King Fahd Rd"), after it in Jordan
  * and Germany ("Rainbow St. 15"). Its city its locality; Egypt's streets have
- * none, and their district stands for it ("Qasr El Nil", "Maadi").
+ * none, and their district stands for it ("Qasr El Nil", "Maadi"), by its
+ * name alone in Arabic too ("الدقي", not "قسم الدقي", its police district's).
  */
 export const googleParts = (components: unknown, formatted?: unknown) => {
   const of = (type: string, short?: boolean) => text(pathOf(componentOf(components, type), short ? 'shortText' : 'longText'));
@@ -476,7 +477,7 @@ export const googleParts = (components: unknown, formatted?: unknown) => {
     street: of('route'),
     number,
     numberFirst: numberAt >= 0 && (!streetAt.length || numberAt < Math.min(...streetAt)),
-    city: of('locality') || of('postal_town') || of('administrative_area_level_2') || of('sublocality_level_1') || of('administrative_area_level_3'),
+    city: (of('locality') || of('postal_town') || of('administrative_area_level_2') || of('sublocality_level_1') || of('administrative_area_level_3')).replace(/^قسم\s+/u, ''),
     region: of('administrative_area_level_1'),
     postcode: postcode && suffix ? `${postcode}-${suffix}` : postcode,
     country: of('country', true),
@@ -511,13 +512,17 @@ export function googlePlaces(answer: unknown, { locale, addresses, parts }: Sear
           const lat = pathOf(at, 'location', 'latitude');
           const lng = pathOf(at, 'location', 'longitude');
           if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Google gave no place');
-          // Its country set apart where Google writes none before it ("King Fahd Rd, Riyadh Saudi Arabia"), when its parts name it.
+          // Its country set apart where Google writes nothing but a space before it ("King Fahd Rd, Riyadh Saudi Arabia"), as its parts name it; a dash sets it apart already ("Sheikh Zayed Rd - Dubai - United Arab Emirates").
           const country = text(pathOf(componentOf(pathOf(at, 'addressComponents'), 'country'), 'longText'));
           const pieces = text(pathOf(at, 'formattedAddress'))
             .split(/[,،]/)
             .map((piece) => piece.trim())
-            .flatMap((piece) => (country && piece !== country && piece.endsWith(` ${country}`) ? [piece.slice(0, -country.length), country] : [piece]));
-          pieces[0] = pieces[0].replace(STRAY, '').replace(PLUS_CODE, '');
+            .flatMap((piece) => {
+              const before = country && piece !== country && piece.endsWith(` ${country}`) ? piece.slice(0, -country.length).trim() : '';
+              return before && !/[-–—]$/u.test(before) ? [before, country] : [piece];
+            });
+          // Without a plus code before it, nor what joined the code to it ("67GM+6V6 - Sheikh Zayed Rd").
+          pieces[0] = pieces[0].replace(STRAY, '').replace(PLUS_CODE, '').replace(STRAY, '');
           const address = addressLine(named ? [label, ...pieces] : pieces, locale);
           const own = parts ? googleParts(pathOf(at, 'addressComponents'), pathOf(at, 'formattedAddress')) : undefined;
           return { lat, lng, ...(address ? { address } : {}), ...(own ? { parts: own } : {}) };
