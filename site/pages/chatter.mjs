@@ -35,6 +35,7 @@ function Chatter({ form }: SlotComponentProps) {
 <FieldiaForm page={page} dataSource={dataSource} recordId={7} slots={{ chatter: Chatter }} />`
 )}
 <p>On its own, anywhere: ${c("mountChatter(element, { source, record: { model: 'sale.order', id: 7 } })")}.</p>
+<p>As a work item's Discussion: ${c("chatterSlot({ look: 'discussion', source, me, placeholder, references, onCount })")} draws a card to write a comment in — the person's picture, then the formatted text's own editor, its toolbar inside the box while it is worked in, Cancel and Save under it — and a card for each comment, newest first, “commented Jun 14” on each. Tracked changes are left to the record's history. <kbd>Ctrl</kbd>+<kbd>Enter</kbd> saves; Save with nothing typed says why; <kbd>Escape</kbd> asks before typed words go. ${c('onCount(count, form)')} is told how many comments there are after each load and each one saved, for a count in the record's head.</p>
 <p>It fetches again once the record is loaded again — after your server action changed it — and posts what a ${c('post')} step or your app's answer posts. ${c('chatterAttachments(source)')} hands its files to a sheet's attachment preview; ${c('"sidePanelBeside": "always"')} keeps it beside the sheet on any screen it fits. See <a href="/record/">Around a record</a>.</p>
 
 <h2 id="source">Your server, through a source</h2>

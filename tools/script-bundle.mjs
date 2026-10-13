@@ -214,7 +214,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // unsaid, "/month" on a rent) in every list, field and card, a map card's lines, units and link checked on a
 // page and translated with it — 2.7 more, to 460.0.
 // Together in 0.19, the address's checks, the quiet look and the money look: 473.3.
-const BUDGET_KB = 473.3;
+// A work item's body, as a work tracker draws one: groups with their own column widths and gap, their heading's tools
+// at its end (⤢ alone over the body, ^ and ⌄, a field's own Edit and Done), help in a light box with links in its words;
+// the formatted text's own editor — its toolbar only while worked in, inside the box at its foot, twenty named tools in
+// a roving bar with "…" for those with no room, colours, sizes and emoji in real menus, people and records linked as
+// they are typed, Remove link saying why — Markdown both ways written by hand (no library: a CommonMark subset, raw
+// HTML escaped) with its card, hint and Preview, asking before formatting is lost; a links box with Add link and its
+// menu; the sanitizer's spans, pictures and links in place; and their stylesheet (16 of it) — 62.5 more, to 536.
+const BUDGET_KB = 536;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -246,7 +253,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
 // an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
-const GZIP_BUDGET_KB = 142.7;
+// a work item's body (groups' widths and heading tools, help boxes, the formatted text's editor with its Markdown, menus
+// and links in place, a links box, and their stylesheet), 19.4 more, to 162.1.
+const GZIP_BUDGET_KB = 162.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -272,7 +281,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // What an amount is for — /day, /night, /week, /month, /year — five words in each: Arabic's to 23.1, German's
 // to 9.9 (4.2 gzipped) and French's to 10.0.
 // Both together in 0.19: Arabic's to 23.3 and 4.9, German's 10.0 and 4.2, French's 10.1 and 4.1.
-const ADD_ON_BUDGET_KB = { ar: [23.3, 4.9], de: [10.0, 4.2], fr: [10.1, 4.1] };
+// A work item's text — its tools' names, the Markdown editor's hint and switch, what switching would lose, a group's
+// Maximise, Collapse and Expand, Add link's Existing item and New item, 32 words in each — Arabic's to 25.8 and 5.4,
+// German's to 11.1 and 4.7, French's to 11.2 and 4.6.
+const ADD_ON_BUDGET_KB = { ar: [25.8, 5.4], de: [11.1, 4.7], fr: [11.2, 4.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
