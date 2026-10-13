@@ -1,0 +1,169 @@
+import type { ActionStep } from './actions';
+import type { Field, LineField } from './field';
+import type { ButtonNode, FieldNode, LayoutNode, MenuItem, RootLayout, SheetNode, TabNode, TabsNode } from './layout';
+
+/**
+ * The checks of a record's head (`SheetHead`) and of the parts it brought to
+ * the format: the band's and the row's fields, its link and its buttons, a
+ * tab's count, the tabs placed in the head, and the access keys of fields.
+ * The reference check hands over its own tools, so what is said reads as the
+ * rest of its findings.
+ */
+export interface HeadTools {
+  claim(id: string, path: string): void;
+  need(name: string, path: string): Field | LineField | undefined;
+  report(path: string, message: string): void;
+  /** A part as any in a group: its id, its conditions, its fields. */
+  walkNode(node: LayoutNode, path: string): void;
+  checkModifiers(owner: object, path: string, keys?: readonly string[]): void;
+  checkSteps(steps: ActionStep[], path: string): void;
+  /** A button's press: steps, an action, or a menu. */
+  checkPress(button: ButtonNode, path: string): void;
+  /** Whether an id is a part of this page, once the whole page has been walked. */
+  isPart(id: string): boolean;
+  /** Whether an id is a tab or a wizard step of this page. */
+  isPlace(id: string): boolean;
+}
+
+const NUMBER = new Set(['integer', 'float', 'monetary']);
+/** What a tab's count can count: a number, lines, links, files. */
+const COUNTED = new Set(['integer', 'float', 'monetary', 'one2many', 'many2many', 'binary', 'image']);
+/** What a record's number can be: a number, or words such as "BUG-12". */
+const NUMBERED = new Set(['integer', 'float', 'char']);
+const DATED = new Set(['date', 'datetime']);
+
+/**
+ * A button's own parts, wherever it stands: an icon to show alone, the
+ * condition that presses a toggle, and the items of its menu — each one
+ * doing something, and with words.
+ */
+export function checkButtonParts(button: ButtonNode, path: string, tools: Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps'>): void {
+  if (button.iconOnly && !button.icon) tools.report(`${path}.iconOnly`, 'a button shown by its icon alone needs an icon');
+  if (button.pressedLabel !== undefined && button.pressed === undefined) tools.report(`${path}.pressedLabel`, 'words while pressed need the condition that presses it (pressed)');
+  if ((button.menuIcon !== undefined || button.menuLabel !== undefined) && !button.menu?.length) tools.report(`${path}.menu`, 'a chevron of its own needs a menu to open');
+  tools.checkModifiers(button, path, ['pressed']);
+  button.menu?.forEach((item, i) => checkMenuItem(item, `${path}.menu[${i}]`, tools));
+}
+
+/** An item of a button's menu, as one of the record's gear menu: its id, its condition, and what it does. */
+function checkMenuItem(item: MenuItem, path: string, tools: Pick<HeadTools, 'claim' | 'report' | 'checkModifiers' | 'checkSteps'>) {
+  tools.claim(item.id, path);
+  tools.checkModifiers(item, path);
+  if (!item.steps && item.action === undefined && !item.builtin) tools.report(path, 'a menu item needs steps, an action, or a built-in');
+  if (item.label === undefined && !item.builtin) tools.report(`${path}.label`, 'a menu item needs words, unless it is a built-in');
+  if (item.steps) tools.checkSteps(item.steps, `${path}.steps`);
+}
+
+/** Every part of a layout with where it stands, the head's and the title's fields included. */
+function eachPart(root: RootLayout, path: string, visit: (node: LayoutNode | TabNode, at: string, parent: RootLayout | LayoutNode | TabNode) => void) {
+  const walk = (nodes: readonly LayoutNode[], at: string, parent: RootLayout | LayoutNode | TabNode) =>
+    nodes.forEach((node, i) => {
+      const here = `${at}[${i}]`;
+      visit(node, here, parent);
+      if (node.type === 'section') walk(node.children, `${here}.children`, node);
+      if (node.type === 'tabs') {
+        node.children.forEach((tab, j) => {
+          visit(tab, `${here}.children[${j}]`, node);
+          walk(tab.children, `${here}.children[${j}].children`, tab);
+        });
+      }
+      if (node.type === 'field' && node.lineForm) walk(node.lineForm.children, `${here}.lineForm.children`, node);
+    });
+  if (root.type === 'tabs') {
+    visit(root, path, root);
+    root.children.forEach((tab, j) => {
+      visit(tab, `${path}.children[${j}]`, root);
+      walk(tab.children, `${path}.children[${j}].children`, tab);
+    });
+    return;
+  }
+  if (root.type === 'list') return;
+  if (root.type === 'wizard') return root.children.forEach((step, i) => walk(step.children, `${path}.children[${i}].children`, root));
+  walk(root.children, `${path}.children`, root);
+  if (root.type !== 'sheet') return;
+  for (const place of ['above', 'before', 'after', 'below'] as const) walk(root.title?.[place] ?? [], `${path}.title.${place}`, root);
+  walk((root.head?.meta ?? []).filter((part): part is FieldNode => part.type === 'field'), `${path}.head.meta`, root);
+  walk(root.head?.band?.children ?? [], `${path}.head.band.children`, root);
+}
+
+/**
+ * The record's head, once the whole page is walked: its kind, its row, its
+ * buttons, its band and "Updated by"; then, over the whole page, tabs placed
+ * in a head they are not directly under, a tab's icon and count, and the
+ * access keys of fields — one field each.
+ */
+export function checkHead(root: RootLayout, path: string, tools: HeadTools): void {
+  if (root.type === 'sheet' && root.head) checkSheetHead(root, path, tools);
+  const keys = new Map<string, string>();
+  let headTabs = 0;
+  eachPart(root, path, (node, at, parent) => {
+    if (node.type === 'tabs' && node.place === 'head') {
+      const placed = parent.type === 'sheet' && !!(parent as SheetNode).head && (parent as SheetNode).children.includes(node);
+      if (!placed) tools.report(`${at}.place`, 'tabs go in the head only from directly in a sheet with a head');
+      else if (++headTabs > 1) tools.report(`${at}.place`, 'a head holds one row of tabs');
+    }
+    if (node.type === 'tab') checkTab(node, at, tools);
+    if (node.type === 'field' && node.hotkey !== undefined) {
+      const first = keys.get(node.hotkey);
+      if (first !== undefined) tools.report(`${at}.hotkey`, `Alt+${node.hotkey.toUpperCase()} takes the focus to the field at ${first} already`);
+      else keys.set(node.hotkey, at);
+    }
+  });
+}
+
+/** A tab's icon shown alone, and the field it counts. */
+function checkTab(tab: TabNode, path: string, tools: HeadTools) {
+  if (tab.iconOnly && !tab.icon) tools.report(`${path}.iconOnly`, 'a tab shown by its icon alone needs an icon');
+  if (tab.count === undefined) return;
+  const def = tools.need(tab.count, `${path}.count`);
+  if (def && !COUNTED.has(def.type)) tools.report(`${path}.count`, `"${tab.count}" is a ${def.type}; a tab counts a number, a table's lines, links or files`);
+}
+
+function checkSheetHead(sheet: SheetNode, path: string, tools: HeadTools) {
+  const head = sheet.head as NonNullable<SheetNode['head']>;
+  const at = `${path}.head`;
+  const kind = head.kind;
+  if (kind) {
+    const def = kind.field !== undefined ? tools.need(kind.field, `${at}.kind.field`) : undefined;
+    if (def && def.type !== 'selection' && def.type !== 'many2one') tools.report(`${at}.kind.field`, `"${kind.field}" is a ${def.type}; a kind is a selection or a many2one`);
+    if (def?.type === 'selection') {
+      const values = new Set(def.options.map((option) => String(option.value)));
+      for (const value of Object.keys(kind.looks ?? {})) if (!values.has(value)) tools.report(`${at}.kind.looks.${value}`, `"${value}" is not an option of "${kind.field}"`);
+    }
+    if (kind.looks && kind.field === undefined) tools.report(`${at}.kind.looks`, 'a look for each kind needs the field that holds the kind');
+    if (kind.numberField !== undefined) {
+      const number = tools.need(kind.numberField, `${at}.kind.numberField`);
+      if (number && !NUMBERED.has(number.type)) tools.report(`${at}.kind.numberField`, `"${kind.numberField}" is a ${number.type}; a record's number is a number or words`);
+    }
+  }
+  head.meta?.forEach((part, i) => {
+    const here = `${at}.meta[${i}]`;
+    if (part.type === 'field') return tools.walkNode(part, here);
+    tools.claim(part.id, here);
+    tools.checkModifiers(part, here);
+    const def = tools.need(part.field, `${here}.field`);
+    if (def && !NUMBER.has(def.type)) tools.report(`${here}.field`, `"${part.field}" is a ${def.type}; a link's words follow a number`);
+    if (part.target !== undefined && !tools.isPart(part.target)) tools.report(`${here}.target`, `no part "${part.target}" on this page`);
+    if (part.steps) tools.checkSteps(part.steps, `${here}.steps`);
+  });
+  head.actions?.forEach((button, i) => {
+    const here = `${at}.actions[${i}]`;
+    tools.claim(button.id, here);
+    tools.checkModifiers(button, here);
+    tools.checkPress(button, here);
+  });
+  const band = head.band;
+  band?.children.forEach((child, i) => tools.walkNode(child, `${at}.band.children[${i}]`));
+  const updated = head.updated;
+  if (updated) {
+    tools.need(updated.byField, `${at}.updated.byField`);
+    const date = tools.need(updated.atField, `${at}.updated.atField`);
+    if (date && !DATED.has(date.type)) tools.report(`${at}.updated.atField`, `"${updated.atField}" is a ${date.type}; when it was updated is a date or a datetime`);
+    if (updated.opens !== undefined && !tools.isPlace(updated.opens)) tools.report(`${at}.updated.opens`, `no tab "${updated.opens}" on this page`);
+  }
+}
+
+/** The tabs a sheet places in its head, if it does. */
+export function headTabs(sheet: SheetNode): TabsNode | undefined {
+  return sheet.head ? sheet.children.find((child): child is TabsNode => child.type === 'tabs' && child.place === 'head') : undefined;
+}

@@ -58,6 +58,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
     if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
     // A list's map names fields, but for the words after its card's values.
     else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
+    // A head's link: the words after its number, each plural form ("Comment", "Comments").
+    else if (name === 'words' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
   }
   return out;

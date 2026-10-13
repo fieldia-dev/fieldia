@@ -5,6 +5,7 @@ import type {
   FieldNode, FieldNodeSchema, ButtonNode, ButtonNodeSchema, SheetNode, SheetNodeSchema,
   StepNode, StepNodeSchema, TabNode, TabNodeSchema, LayoutNode, LayoutNodeSchema,
   RootLayout, RootLayoutSchema, FormNode, FormNodeSchema,
+  SheetHead, SheetHeadSchema, HeadLink, HeadLinkSchema, TabsNode, TabsNodeSchema,
 } from './layout';
 
 /**
@@ -21,6 +22,9 @@ export type Checks = [
   Assert<Same<z.infer<typeof TabNodeSchema>, TabNode>>,
   Assert<Same<z.infer<typeof StepNodeSchema>, StepNode>>,
   Assert<Same<z.infer<typeof SheetNodeSchema>, SheetNode>>,
+  Assert<Same<z.infer<typeof SheetHeadSchema>, SheetHead>>,
+  Assert<Same<z.infer<typeof HeadLinkSchema>, HeadLink>>,
+  Assert<Same<z.infer<typeof TabsNodeSchema>, TabsNode>>,
   Assert<Same<z.infer<typeof FormNodeSchema>, FormNode>>,
   Assert<Same<z.infer<typeof LayoutNodeSchema>, LayoutNode>>,
   Assert<Same<z.infer<typeof RootLayoutSchema>, RootLayout>>,

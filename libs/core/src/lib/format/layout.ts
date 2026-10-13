@@ -220,6 +220,12 @@ export interface FieldNode {
    * at or focused. Its group's reason when left out.
    */
   readonlyReason?: string;
+  /**
+   * A letter of its label, as a work item's "Stat_e_": Alt with it takes the
+   * focus to the field, and the letter is underlined in the label. One letter
+   * or digit, in small letters; the first field shown with it wins.
+   */
+  hotkey?: string;
 }
 
 /** A table's line as a form of its own: its parts, as a page's. */
@@ -311,6 +317,30 @@ export interface ButtonNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
+  iconOnly?: boolean;
+  /**
+   * A toggle: pressed while this holds (read out as pressed), as Follow is
+   * while the record is followed; `pressedLabel` is shown and read meanwhile
+   * ("Following").
+   */
+  pressed?: Modifier;
+  pressedLabel?: string;
+  /**
+   * More choices beside it, under a chevron: a split button when it has steps
+   * or an action of its own (Save and Close, with Save in its menu), a menu
+   * button when it has neither. Each item runs as the record's gear menu's do.
+   */
+  menu?: MenuItem[];
+  /** The chevron's own icon and name, as Follow's gear: "Notification settings". A chevron, named by the button's label, unless said. */
+  menuIcon?: string;
+  menuLabel?: string;
+  /**
+   * The primary look while the record has changes to save, and the quiet one
+   * otherwise — still usable, as Save and Close is: with nothing changed it
+   * simply closes.
+   */
+  primaryWhenChanged?: boolean;
 }
 
 export interface TextNode {
@@ -606,6 +636,14 @@ export interface TabNode {
   invisible?: Modifier;
   roles?: Roles;
   children: LayoutNode[];
+  /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
+  iconOnly?: boolean;
+  /**
+   * A field whose count shows in a pill after it, as a work item's "Links 0":
+   * a number's value, a table's or links' lines, a field of files' files.
+   * Shown at 0 too, and read out with the tab's name ("Links, 0").
+   */
+  count?: string;
 }
 
 export interface TabsNode {
@@ -618,6 +656,12 @@ export interface TabsNode {
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
   children: TabNode[];
+  /**
+   * `head`: its tabs at the end of the record head's band, as a work item's
+   * Details, History, Links and Attachments, and its panels as the sheet's
+   * body. Only for tabs directly in a sheet with a `head`.
+   */
+  place?: 'head';
 }
 
 /** A step of a wizard. An invisible step is skipped, which is how surveys branch. */
@@ -826,11 +870,82 @@ export interface AttachmentPreview {
   roles?: Roles;
 }
 
+/**
+ * A record's head drawn as a work tracker draws a work item's: its kind's strip
+ * of colour along the start edge and a badge (the kind's icon, its name in
+ * capitals and the record's number) over the title; the title line, the
+ * number before the title; a row of people and links under it, the record's
+ * buttons at its end; a band of fields, their labels beside them, "Updated by"
+ * and the tabs at its end. In a dialog, the dialog's own title bar and foot
+ * give way to it: its maximise and close sit at the badge row's end.
+ */
+export interface SheetHead {
+  /** The record's kind: a strip of its colour along the head's start edge, and a badge — its icon, its name in capitals and the record's number — over the title. */
+  kind?: SheetKind;
+  /** The row under the title, from its start: fields (their labels hidden and read out) and links such as "1 Comment". */
+  meta?: (FieldNode | HeadLink)[];
+  /** The row's end: the record's buttons — Save and Close, Follow, Refresh, Undo — with the record's gear menu (`toolbar.menu`) last, as ⋮. */
+  actions?: ButtonNode[];
+  /** Fields on a band under the head, their labels beside them. */
+  band?: HeadBand;
+  /** "Updated by Mona Adel: Aug 25" at the band's top end, from a field naming who and a date; a press shows the tab `opens`. */
+  updated?: { byField: string; atField: string; opens?: string };
+  /** A Copy title button at the title's end while it is pointed at or focused; on unless false. */
+  copyTitle?: boolean;
+}
+
+/** A record's kind, as its head's strip and badge show it: one kind, or each kind of a field by its value. */
+export interface SheetKind {
+  /** The field that holds the kind: a selection, or a many2one. Without it, `label` names the one kind. */
+  field?: string;
+  label?: string;
+  /** The record's number in the badge; the record's id when left out. */
+  numberField?: string;
+  /** The colour and icon of a kind with no look of its own: `#rrggbb`, and an icon by name. */
+  colour?: string;
+  icon?: string;
+  /** Each kind's colour and icon, by the field's value: `{ "bug": { "colour": "#cc293d", "icon": "bug" } }`. */
+  looks?: { [value: string]: { colour: string; icon?: string } };
+}
+
+/** A link in a record head's row, "1 Comment": a number field's value, then its words, taking the reader to a part of the record or running steps — its words alone when it does neither. */
+export interface HeadLink {
+  type: 'link';
+  id: string;
+  icon?: string;
+  /** A number field: its value leads the words. */
+  field: string;
+  /** The words after the number, in the plural it needs: `{ "one": "Comment", "other": "Comments" }`. */
+  words: PluralWords;
+  /** The part it takes the reader to, by id: its tab shown, its group unfolded, scrolled into view, its first box focused. */
+  target?: string;
+  /** What a press does besides, as a button's steps. */
+  steps?: ActionStep[];
+  invisible?: Modifier;
+  roles?: Roles;
+}
+
+/** A band of fields under a record's head, their labels beside them, on a light ground. */
+export interface HeadBand {
+  /** Its columns' widths: pixels ("274px"), a share of the row ("50%") or of what is left ("1fr"); one to four. Two even columns unless said. */
+  tracks?: string[];
+  /** How wide its labels are, beside their values, in pixels: 76 unless said. */
+  labelWidth?: number;
+  /** Its fields, filling its columns row by row; each in the quiet look unless it says otherwise. */
+  children: LayoutNode[];
+}
+
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
 export interface SheetNode {
   type: 'sheet';
   id: string;
   title?: SheetTitle;
+  /**
+   * The record's head drawn as a work item's (see `SheetHead`). When given,
+   * the classic header bar, the statusbar, the badges and the stat buttons are
+   * not drawn: the head's actions and band take their place.
+   */
+  head?: SheetHead;
   statusbar?: Statusbar;
   buttons?: ButtonNode[];
   statButtons?: StatButton[];
@@ -1107,6 +1222,7 @@ export const FieldNodeSchema = z.strictObject({
   // The quiet look.
   quiet: z.boolean().optional(),
   readonlyReason: z.string().min(1).optional(),
+  hotkey: z.string().regex(/^[a-z0-9]$/, 'an access key is one letter or digit of the label, in small letters: "e"').optional(),
 }).superRefine((node, context) => {
   // A widget's own options, where the format knows them: an address with suggestions.
   if (node.widget !== 'address-search') return;
@@ -1135,6 +1251,15 @@ export const ButtonNodeSchema = z.strictObject({
   hotkey: z.string().regex(HOTKEY, 'a hotkey is a letter or a digit, in small letters, with shift+ before it for Alt+Shift: "v", "shift+g"').optional(),
   colspan: span,
   invisible, roles, hideOn,
+  iconOnly: z.boolean().optional(),
+  pressed: ModifierSchema.optional(),
+  pressedLabel: z.string().optional(),
+  get menu(): z.ZodOptional<z.ZodArray<typeof MenuItemSchema>> {
+    return z.array(MenuItemSchema).min(1).optional();
+  },
+  menuIcon: z.string().min(1).optional(),
+  menuLabel: z.string().optional(),
+  primaryWhenChanged: z.boolean().optional(),
 });
 
 export const TextNodeSchema = z.strictObject({
@@ -1325,6 +1450,8 @@ export const TabNodeSchema = z.strictObject({
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
+  iconOnly: z.boolean().optional(),
+  count: fieldName.optional(),
 }).meta({ id: 'TabNode' });
 
 export const TabsNodeSchema = z.strictObject({
@@ -1333,6 +1460,7 @@ export const TabsNodeSchema = z.strictObject({
   colspan: span,
   invisible, roles, hideOn,
   children: z.array(TabNodeSchema).min(1),
+  place: z.literal('head').optional(),
 }).meta({ id: 'TabsNode' });
 
 export const LayoutNodeSchema = z
@@ -1430,9 +1558,60 @@ export const MenuItemSchema = z
 
 export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible, roles });
 
+const colour = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is written #rrggbb: "#cc293d"');
+
+/** A record's kind: its field, or the one kind's words; its number; its colour and icon, by value. */
+export const SheetKindSchema = z
+  .strictObject({
+    field: fieldName.optional(),
+    label: z.string().optional(),
+    numberField: fieldName.optional(),
+    colour: colour.optional(),
+    icon: z.string().min(1).optional(),
+    looks: z.record(z.string(), z.strictObject({ colour, icon: z.string().min(1).optional() })).optional(),
+  })
+  .meta({ id: 'SheetKind' });
+
+/** A link in a record head's row: a number field's value and its words, taking the reader to a part or running steps. */
+export const HeadLinkSchema = z
+  .strictObject({
+    type: z.literal('link'),
+    id,
+    icon: z.string().min(1).optional(),
+    field: fieldName,
+    words: PluralWordsSchema,
+    target: id.optional(),
+    steps: ActionStepsSchema.optional(),
+    invisible,
+    roles,
+  })
+  .meta({ id: 'HeadLink' });
+
+/** A band of fields under a record's head: its columns, its labels' width, its fields. */
+export const HeadBandSchema = z
+  .strictObject({
+    tracks: z.array(z.string().regex(/^\d+(\.\d+)?(px|%|fr)$/, 'a column is as wide as pixels ("274px"), a share of the row ("50%") or of what is left ("1fr")')).min(1).max(4).optional(),
+    labelWidth: z.int().min(48).max(320).optional(),
+    children: z.array(LayoutNodeSchema),
+  })
+  .meta({ id: 'HeadBand' });
+
+/** A record's head drawn as a work item's: kind, row of people and links, actions, band, "Updated by", Copy title. */
+export const SheetHeadSchema = z
+  .strictObject({
+    kind: SheetKindSchema.optional(),
+    meta: z.array(z.discriminatedUnion('type', [FieldNodeSchema, HeadLinkSchema])).min(1).optional(),
+    actions: z.array(ButtonNodeSchema).min(1).optional(),
+    band: HeadBandSchema.optional(),
+    updated: z.strictObject({ byField: fieldName, atField: fieldName, opens: id.optional() }).optional(),
+    copyTitle: z.boolean().optional(),
+  })
+  .meta({ id: 'SheetHead' });
+
 export const SheetNodeSchema = z.strictObject({
   type: z.literal('sheet'),
   id,
+  head: SheetHeadSchema.optional(),
   title: z
     .strictObject({
       field: fieldName,

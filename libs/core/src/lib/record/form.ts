@@ -1,6 +1,6 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { JsonValue } from '../format/json';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
@@ -91,6 +91,8 @@ export interface NodeState {
   invisible: boolean;
   readonly: boolean;
   required: boolean;
+  /** A toggle button's: pressed while its `pressed` holds. Left out for every other part. */
+  pressed?: boolean;
 }
 
 /** localStorage fits this, and so does anything else with the same three methods. */
@@ -199,8 +201,14 @@ export interface Form {
   load(): Promise<void>;
   /** Write a field: a person's change unless told otherwise, and only a person's runs the page's `change` steps. */
   setValue(name: string, value: Value, how?: { by?: ChangeBy }): void;
-  /** Write several fields at once, worked out once: the app's change, never a person's. Throws for a field the page lacks. */
-  setValues(values: Values): void;
+  /**
+   * Write several fields at once, worked out once: the app's change, never a
+   * person's. Throws for a field the page lacks. With `stored`, they are the
+   * values the record already holds where it is kept — whether it is
+   * followed, how many comments it has: written as loaded ones are, they never
+   * count as a change to save.
+   */
+  setValues(values: Values, how?: { stored?: boolean }): void;
   node(id: string): NodeState;
   /** Whether the record is being edited, as conditions read `editing`: a view that locks it to be read says false, and parts follow. */
   setEditing(editing: boolean): void;
@@ -345,7 +353,9 @@ interface IndexedNode {
   required: CompiledModifier;
   /** The roles it is shown to, when it names any. */
   roles?: readonly string[];
-  source: LayoutNode | StepNode | ButtonNode | StatButton | MenuItem | RootLayout | { id: string; invisible?: Modifier };
+  /** A toggle button's condition for being pressed. */
+  pressed?: CompiledModifier;
+  source: LayoutNode | StepNode | ButtonNode | StatButton | MenuItem | HeadLink | RootLayout | { id: string; invisible?: Modifier };
 }
 
 /**
@@ -707,6 +717,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       invisible,
       readonly: readonly || (def !== undefined && lockedField(def)),
       required: node.required.evaluate(ctx, env) || def?.required === true,
+      ...(node.pressed ? { pressed: node.pressed.evaluate(ctx, env) } : {}),
     };
   }
 
@@ -1053,6 +1064,22 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     tellStep([]);
   }
 
+  /**
+   * Values the record holds where it is kept, written as loaded ones are: the
+   * starting point moves with them, so they are no change to save, and no
+   * change steps, draft or autosave follow. A change of the person's in the
+   * same field is taken over by them.
+   */
+  function store(written: Values) {
+    const names = Object.keys(written);
+    names.forEach(fieldDef);
+    if (!names.length) return;
+    const copy = structuredCopy(written);
+    baseline = { ...baseline, ...copy };
+    writeValues({ ...(state.values as Values), ...copy });
+    for (const name of names) changed(name, 'app');
+  }
+
   /** Write fields — a step's or the app's — worked out once, and tell each. */
   function write(written: Values, by: ChangeBy) {
     const names = Object.keys(written);
@@ -1234,6 +1261,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     reading,
     today,
     write: (values) => write(values, 'step'),
+    store: (values) => store(values),
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
     save: saving,
@@ -1310,7 +1338,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       changed(name, how?.by ?? 'person');
     },
 
-    setValues: (values) => write(values, 'app'),
+    setValues: (values, how) => (how?.stored ? store(values) : write(values, 'app')),
 
     node: nodeState,
 
@@ -1762,6 +1790,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     modifiers: { invisible?: Modifier; readonly?: Modifier; required?: Modifier; field?: string }
   ) => {
     const roles = (source as { roles?: readonly string[] }).roles;
+    const pressed = kind === 'button' ? (source as ButtonNode).pressed : undefined;
     index.set(source.id, {
       id: source.id,
       parent,
@@ -1771,8 +1800,11 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
       invisible: compileModifier(modifiers.invisible),
       readonly: compileModifier(modifiers.readonly),
       required: compileModifier(modifiers.required),
+      ...(pressed !== undefined ? { pressed: compileModifier(pressed) } : {}),
       source,
     });
+    // A button's menu: each item a button of the record, hidden with it.
+    if (kind === 'button') for (const item of (source as ButtonNode).menu ?? []) add(item, source.id, 'button', { invisible: item.invisible });
   };
   const walk = (nodes: LayoutNode[], parent: string) => {
     for (const node of nodes) {
@@ -1839,6 +1871,14 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     // Fields over and under the title, and on its line, are field nodes like any other.
     walk([...(root.title?.above ?? []), ...(root.title?.before ?? []), ...(root.title?.after ?? []), ...(root.title?.below ?? [])], root.id);
     walk(root.children, root.id);
+    // The head's row, buttons and band: its fields are field nodes, its link and buttons buttons of the record.
+    const head = root.head;
+    for (const part of head?.meta ?? []) {
+      if (part.type === 'field') walk([part], root.id);
+      else add(part, root.id, 'button', { invisible: part.invisible });
+    }
+    for (const button of head?.actions ?? []) add(button, root.id, 'button', { invisible: button.invisible });
+    walk(head?.band?.children ?? [], root.id);
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
     // The gear menu's items are buttons of the record; Archive shows while it is active, Unarchive while it is not.
     for (const item of root.toolbar?.menu ?? []) {

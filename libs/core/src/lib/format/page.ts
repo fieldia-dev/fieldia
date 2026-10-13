@@ -42,6 +42,12 @@ export interface PageLook {
    */
   helpShown?: HelpShown;
   /**
+   * Where a field locked by a rule shows its lock: by its label (the default),
+   * or at its value's start, as a work item shows Reason's — in a record
+   * head's band, in the room before the value.
+   */
+  lockAt?: 'label' | 'value';
+  /**
    * How a read-only field shows: as its value in words, as Flectra draws one
    * — a choice without its arrow, a long text wrapped, an amount with its
    * currency, a link's name — or in its greyed box (the default). A yes or
@@ -129,6 +135,7 @@ export const PageSchema = z
         labels: z.enum(['above', 'beside', 'hidden']).optional(),
         labelWidth: z.int().min(60).max(320).optional(),
         helpShown: HelpShownSchema.optional(),
+        lockAt: z.enum(['label', 'value']).optional(),
         readonlyShown: z.enum(['text', 'box']).optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
