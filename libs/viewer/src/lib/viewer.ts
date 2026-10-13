@@ -569,7 +569,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Pointing at a locked quiet value, or focusing it, says why too.
       const point = (on: boolean) => lock?.point(on && lockedNow && wrapper.hasAttribute('data-in-quiet'));
       if (reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
-      // Not an alert of its own: a refused save is announced once, naming every field to look at.
+      // Not an alert of its own: a refused save is announced once, naming every field to look at. A problem found as
+      // the box is left (min, max, a whole number, text that does not read) is said by it, once and politely.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
@@ -583,10 +584,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // mid-word. One already shown stays while they put it right, and goes once they have.
       let typing = false;
       let advice = '';
-      wrapper.addEventListener('focusin', () => (typing = true));
+      /** Leaving the field now: a problem it raises is said by its error, politely. */
+      let leaving = false;
+      wrapper.addEventListener('focusin', () => {
+        typing = true;
+        setAttr(error, 'aria-live', null);
+      });
       wrapper.addEventListener('focusout', (event) => {
         if (wrapper.contains(event.relatedTarget as Node | null)) return;
         typing = false;
+        // The field's own problem is said now, as its box is left; that it is required waits for Save.
+        leaving = true;
+        try {
+          form.leave(node.field);
+        } finally {
+          leaving = false;
+        }
         // Not at once: focus also leaves when a redraw removes the focused part
         // (a deleted line's button), and that redraw must finish first.
         queueMicrotask(() => update(form.getState()));
@@ -622,6 +635,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         }
         if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
         const message = state.errors[node.field];
+        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once.
+        if (leaving && message && message !== error.textContent) setAttr(error, 'aria-live', 'polite');
         setHidden(error, !message);
         setText(error, message ?? '');
         const now = state.warnings[node.field] ?? '';
