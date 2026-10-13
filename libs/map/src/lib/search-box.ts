@@ -71,6 +71,8 @@ export function searchBox(options: SearchBoxOptions) {
   /** What was last asked for, and whether its places came: the same again shows them, or waits for them. */
   let asked = '';
   let answered = false;
+  /** Whether the words in the box are the person's: a place picked writes its own, which Enter never searches for (each search may be paid for). */
+  let typed = false;
 
   /** The search waiting to go, or gone and not yet answered, dropped. */
   function drop() {
@@ -100,6 +102,7 @@ export function searchBox(options: SearchBoxOptions) {
   function choose(place: PlaceFound) {
     // A pause in typing ends here: nothing more is asked for these words, and no answer opens the list again.
     drop();
+    typed = false;
     input.value = place.label;
     close();
     options.say(null);
@@ -182,6 +185,7 @@ export function searchBox(options: SearchBoxOptions) {
   }
 
   input.addEventListener('input', () => {
+    typed = true;
     if (!options.asYouType) {
       close();
       return;
@@ -199,9 +203,9 @@ export function searchBox(options: SearchBoxOptions) {
     } else if (event.key === 'Enter') {
       // Never the form's own Enter.
       event.preventDefault();
-      // Enter takes the place chosen with the arrows, or the first: the one nearest and likeliest.
+      // Enter takes the place chosen with the arrows, or the first: the one nearest and likeliest; or searches the words typed, never a place's written by a pick.
       if (!list.hidden && places.length) choose(places[Math.max(active, 0)]);
-      else run();
+      else if (typed) run();
     } else if (event.key === 'Escape') {
       if (!list.hidden) {
         event.preventDefault();

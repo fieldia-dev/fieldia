@@ -1,4 +1,4 @@
-import type { Value } from '@fieldia/core';
+import type { Locale, Value } from '@fieldia/core';
 import type { WidgetContext } from '@fieldia/widgets';
 import type { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
@@ -30,7 +30,16 @@ const ADDRESS_CSS = `
 .fd-address-credit { display: block; padding: 3px 10px 5px; border-top: 1px solid var(--fd-border); font-size: 11px; line-height: 1.4; color: var(--fd-muted); text-align: end; text-decoration: none; }
 a.fd-address-credit:hover { text-decoration: underline; }
 .fd-address-credit img { height: 14px; vertical-align: middle; }
+.fd-address-note { margin-top: 4px; font-size: 12.5px; line-height: 1.4; color: var(--fd-error); }
 `;
+
+/** Said under the box when the address picked is not found on the map: loaded with the suggestions, not with every page that shows a map. */
+const NOT_PLACED: Record<Locale, string> = {
+  en: 'Not found on the map: no place was saved for this address.',
+  ar: 'لم يُعثر على هذا العنوان على الخريطة، فلم يُحفظ له مكان.',
+  fr: 'Introuvable sur la carte : aucun lieu n’a été enregistré pour cette adresse.',
+  de: 'Nicht auf der Karte gefunden: Für diese Adresse wurde kein Ort gespeichert.',
+};
 
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -47,12 +56,12 @@ export interface SuggestOptions {
   addressLine: typeof addressLine;
 }
 
-/** The suggestions on the field's box; what it gives back takes them off. */
-export function suggest({ settings, context, search, element, input, searchBox, addressLine }: SuggestOptions): () => void {
+/** The suggestions on the field's box: `described` says again what describes the box after the field's own update has, and `destroy` takes them off. */
+export function suggest({ settings, context, search, element, input, searchBox, addressLine }: SuggestOptions): { described: () => void; destroy: () => void } {
   const { form, name, node, id, document: doc } = context;
   const locale = context.locale ?? 'en';
   const options = node.options ?? {};
-  const words = addressLabels(locale, settings.labels?.[locale]);
+  const words = { notPlaced: NOT_PLACED[locale], ...addressLabels(locale, settings.labels?.[locale]) };
   const named = (key: string) => (typeof options[key] === 'string' ? (options[key] as string) : null);
   const [placeField, longitudeField, partsField] = [named('placeField'), named('longitudeField'), named('partsField')];
   const listed = options['countries'];
@@ -80,6 +89,26 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     input.value = text;
     form.setValue(name, text || null);
   };
+  /** Shown, and said, when the address picked is not found where it is: the console is not where a person looks. */
+  const note = doc.createElement('div');
+  note.className = 'fd-address-note';
+  note.id = `${id}-note`;
+  note.hidden = true;
+  /** Read with the box, beside what describes it already (its help, its error), while it is shown. */
+  const described = () => {
+    const ids = (input.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((one) => one && one !== note.id);
+    if (!note.hidden) ids.push(note.id);
+    if (ids.length) input.setAttribute('aria-describedby', ids.join(' '));
+    else input.removeAttribute('aria-describedby');
+  };
+  const notPlaced = (shown: boolean) => {
+    note.hidden = !shown;
+    note.textContent = shown ? words.notPlaced : '';
+    described();
+    if (shown) status.textContent = words.notPlaced;
+  };
+  const typedOn = () => notPlaced(false);
+  input.addEventListener('input', typedOn);
   let picking = 0;
 
   const box = searchBox({
@@ -97,6 +126,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose suggestions carry none).
     async pick(place: PlaceFound) {
       const mine = ++picking;
+      notPlaced(false);
       const whole = addressLine([place.label, place.detail], locale);
       write(whole);
       let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
@@ -104,8 +134,9 @@ export function suggest({ settings, context, search, element, input, searchBox, 
       if (!at && place.locate && (placeField || (partsField && !parts))) {
         const located = await place.locate().catch((error: Error) => (warnOnce(`Finding the address picked failed: ${error.message}`), null));
         if (mine !== picking) return;
-        // Not found where it is: no place written (a pin set by hand stays), its parts still are.
-        if (located) {
+        // Not found where it is: no place written (a pin set by hand stays), its parts still are; and the person is told.
+        if (!located) notPlaced(true);
+        else {
           at = located;
           parts = located.parts ?? parts;
           // The provider's own way of writing it, unless a person has typed since.
@@ -151,10 +182,16 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   }
   // A press on it keeps the box's focus, so the list stays open and a credit's link opens.
   popup.addEventListener('mousedown', (event) => event.preventDefault());
-  element.append(popup, status);
-  return () => {
-    box.destroy();
-    popup.remove();
-    status.remove();
+  element.append(popup, note, status);
+  return {
+    described,
+    destroy() {
+      box.destroy();
+      input.removeEventListener('input', typedOn);
+      notPlaced(false);
+      popup.remove();
+      note.remove();
+      status.remove();
+    },
   };
 }

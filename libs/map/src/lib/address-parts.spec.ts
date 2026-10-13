@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { sameName } from './address-parts';
+import { azurePlaces } from './address-parts';
 import { azureMaps, googleMaps, mapbox, openStreetMap } from './providers';
 
 /**
@@ -162,36 +162,31 @@ describe('an address in its parts', () => {
   });
 });
 
-describe('one place’s names, however a provider spells them', () => {
-  it('are one place’s in two spellings, or in Latin and in Arabic, as Azure names a town and its province', () => {
-    const same: [string, string][] = [
-      ['Giza', 'Al Jizah'],
-      ['Gizeh', 'الجيزة'],
-      ['Ḩā’il', "Ha'il"],
-      ['Ha’il', 'حائل'],
-      ['Amman', 'عمان'],
-      ['Cairo', 'القاهرة'],
-      ['Sharjah', 'Ash Shāriqah'],
-      ['Tabūk', 'Tabuk'],
-      ['Domiat', 'Dumyat'],
-      ['El Ismailia', "Al Isma'iliyah"],
-      ['Al Khubar', 'Al Khobar'],
-      ['الشيـخ زايد', 'الشيخ زايد'],
-    ];
-    expect(same.filter(([one, other]) => !sameName(one, other))).toEqual([]);
+describe('a place and the places around it, however alike their names', () => {
+  /** A suggestion of Azure's as its autocomplete gives one: a district of a city, in a province. */
+  const district = (name: string, city: string, province: string, code: string) => ({
+    type: 'Feature',
+    geometry: null,
+    properties: { typeGroup: 'Place', type: 'PopulatedPlace', address: { locality: name, adminDistricts: [{ name: province, shortName: code }, { name: city }], countryRegion: { ISO: 'SA', name: 'Saudi Arabia' } } },
   });
 
-  it('are not when only some of their letters agree: districts and their cities, names of one sound', () => {
-    const different: [string, string][] = [
-      ['Al Woroud', 'Riyadh'],
-      ['Al Olaya', 'Riyadh'],
-      ['Huqan', 'Al Khurmah'],
-      ['Jabal Amman', 'Amman'],
-      ['Dokki', 'Gise'],
-      ['Kalba', 'Ash Shāriqah'],
-      ['Tema', 'Suhaj'],
-      ['El Tahrir', 'Giza'],
+  it('says each, and writes its city: a district whose name sounds like its city’s, or like another district’s, is not that place', () => {
+    const alike: [string, string][] = [
+      ['Al Rawdah', 'Riyadh'],
+      ['Al Ruwaydah', 'Riyadh'],
+      ['Al Nada', 'Al Nahdah'],
+      ['Al Quds', 'Al Qadisiyah'],
+      ['Al Sahafa', 'Al Safa'],
+      ['Al Rabwah', 'Al Rabi'],
+      ['Al Zahraa', 'Al Zuhur'],
+      ['Maadi', 'Al Madi'],
     ];
-    expect(different.filter(([one, other]) => sameName(one, other))).toEqual([]);
+    const found = azurePlaces({ features: alike.map(([name, city]) => district(name, city, 'Riyadh', 'RIY')) }, 'en', '', true);
+    expect(found.map((place) => [place.label, place.detail, place.parts?.city])).toEqual(alike.map(([name, city]) => [name, city === 'Riyadh' ? 'Riyadh, Saudi Arabia' : `${city}, Riyadh, Saudi Arabia`, city]));
+  });
+
+  it('says a name once only where it is the same words, its accents, vowel marks and tatweel aside', () => {
+    const [olaya, zayed] = azurePlaces({ features: [district('Al Olaya', 'Riyadh', 'Riyadh', 'RIY'), district('الشيـخ زايد', 'الشيخ زايد', 'الجيزة', '')] }, 'ar');
+    expect([olaya.detail, zayed.detail]).toEqual(['Riyadh، المملكة العربية السعودية', 'الجيزة، المملكة العربية السعودية']);
   });
 });

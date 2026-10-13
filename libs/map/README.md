@@ -280,14 +280,20 @@ transaction); Google, for fifteen at most; Mapbox and Nominatim, for the list;
 Photon's answers are kept to them. Nearest `near` first (or where the app's
 maps open), so give a point in the page's own country: Azure ranks another
 country's suggestions by their distance from it. Addresses come before shops
-and malls where Google says which are which. A suggestion of Azure's is
-located when picked, asked for by its own district, town and region, and
-only there: a district named alike in another town is never taken for it.
-It is said to be only near (`precise: false`) when Azure finds the street but
-not the house, or the district alone; found nowhere in its town, no place is
-written, and its parts still are. A search still waiting when a suggestion
-is picked or the box is left is dropped, and the same words are not asked
-for twice.
+and malls where the provider says which are which (Google, Azure), and an
+address field asks Azure for no postcodes alone. A suggestion of Azure's is
+located when picked, asked of Azure's geocoding by its own address in its
+structured form (its street, district, governorate or province, postcode and
+country), and only there: a district named alike in another town is never
+taken for it, as no hit outside its own admin districts is. Its city is read
+from them each country's way (in Egypt and Saudi Arabia the governorate's
+city: Zamalek is Cairo's; in the emirate of Abu Dhabi, the city it is in).
+It is said to be only near (`precise: false`) when Azure is unsure of it, or
+finds only the street for a house, the district for a street, the town for a
+district; found nowhere in its own districts, no place is written (the field
+says so under the box), and its parts still are. A search still waiting when
+a suggestion is picked or the box is left is dropped, the same words are not
+asked for twice, and Enter never searches for the address a pick wrote.
 
 Google's costs, as its pricing pages put them (October 2026): a session of
 suggestions ended by a pick bills its first 12 requests (Autocomplete

@@ -289,7 +289,22 @@ describe('an address with suggestions', () => {
     expect(asked.map((request) => request.text)).toEqual(['26', '26 j']);
   });
 
-  it('writes a picked suggestion’s parts though it is not found on the map, and leaves the place as it was', async () => {
+  it('asks nothing for the words a pick wrote: Enter after a pick searches no more, until the person types', async () => {
+    const { box, asked } = await mount();
+    type(box, 'tahr');
+    await pause();
+    press(box, 'Enter');
+    expect(box.value).toBe('Tahrir Street 12, Downtown, Cairo, Egypt');
+    press(box, 'Enter');
+    await pause();
+    // The whole address written is not asked for: each search may be paid for, and it is the place picked.
+    expect(asked.map((request) => request.text)).toEqual(['tahr']);
+    type(box, ' 2');
+    press(box, 'Enter');
+    expect(asked.map((request) => request.text)).toEqual(['tahr', 'Tahrir Street 12, Downtown, Cairo, Egypt 2']);
+  });
+
+  it('writes a picked suggestion’s parts though it is not found on the map, leaves the place as it was, and says so under the box', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const locate = jest.fn(async () => Promise.reject(new Error('Azure Maps found "El Tahrir, Tema, Suhaj, Egypt" nowhere in its own district and town')));
     const { form, box, values } = await mount({ placeField: 'spot', partsField: 'parts' }, {}, [{ label: 'El Tahrir', detail: 'Tema, Suhaj, Egypt', locate, parts: { city: 'Tema', region: 'Suhaj', country: 'EG' } }]);
@@ -299,6 +314,34 @@ describe('an address with suggestions', () => {
     press(box, 'Enter');
     await pause(0);
     expect(values()).toMatchObject({ address: 'El Tahrir, Tema, Suhaj, Egypt', spot: { type: 'Point', coordinates: [31.42, 26.87] }, parts: { city: 'Tema', region: 'Suhaj', country: 'EG' } });
+    // Seen, read with the box, and said: never the console alone.
+    const note = document.querySelector('.fd-address-note') as HTMLElement;
+    expect([note.hidden, note.textContent]).toEqual([false, 'Not found on the map: no place was saved for this address.']);
+    expect(box.getAttribute('aria-describedby')?.split(' ')).toContain(note.id);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe('Not found on the map: no place was saved for this address.');
+    // Typing on, it goes.
+    type(box, ',');
+    expect([note.hidden, box.hasAttribute('aria-describedby')]).toEqual([true, false]);
+    warn.mockRestore();
+  });
+
+  it('says a pick not found on the map in the page’s language, beside the help the box is described by', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const locate = jest.fn(async () => Promise.reject(new Error('nowhere')));
+    const { box, widget, values } = await mount({ placeField: 'spot' }, {}, [{ label: 'الروضة', detail: 'الرياض، المملكة العربية السعودية', locate }], 'ar');
+    // The field's help, as the form describes its box.
+    const withHelp = () => widget.update({ value: values()['address'], values: values(), readonly: false, required: false, invalid: false, describedBy: 'fd-address-help' });
+    type(box, 'الرو');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    withHelp();
+    const note = document.querySelector('.fd-address-note') as HTMLElement;
+    expect(note.textContent).toBe('لم يُعثر على هذا العنوان على الخريطة، فلم يُحفظ له مكان.');
+    expect(box.getAttribute('aria-describedby')).toBe(`fd-address-help ${note.id}`);
+    type(box, 'x');
+    withHelp();
+    expect(box.getAttribute('aria-describedby')).toBe('fd-address-help');
     warn.mockRestore();
   });
 

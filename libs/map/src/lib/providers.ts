@@ -46,7 +46,7 @@ export interface PlaceFound {
   /** Where it is on the map; or, for a provider whose suggestions carry none (Google's), `locate` finds it when the place is picked. */
   lat?: number;
   lng?: number;
-  /** `precise: false` when the place found is only near it: the street of a house not found, the district of a street found elsewhere. */
+  /** `precise: false` when the place found is only near it: the street of a house not found, the district of a street not found, a hit the provider is unsure of. */
   locate?: () => Promise<{ lat: number; lng: number; address?: string; parts?: AddressParts; precise?: false }>;
   /** Its address in its parts, when the search asked for them (`parts`); for Google's, `locate` gives them. */
   parts?: AddressParts;
@@ -338,12 +338,12 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
     },
     async search(request) {
       const read = await reader();
-      const { text, locale, signal } = request;
-      // Its autocomplete reads a word half typed, as geocoding does not; its suggestions carry no place, so a picked one is geocoded then, by its own town and region, not by where the map is.
-      const found = await read.azureSearch((params) => ask('geocode:autocomplete', { 'api-version': '2026-01-01', top: 5, query: text, ...params }, locale, signal), request);
-      return found.map(({ country, address, ...place }) => ({
+      const { locale, signal } = request;
+      // Its autocomplete reads a word half typed, as geocoding does not; its suggestions carry no place, so a picked one is geocoded then, by its own address's parts.
+      const found = await read.azureSearch((params) => ask('geocode:autocomplete', { 'api-version': '2026-01-01', top: 5, ...params }, locale, signal), request);
+      return found.map(({ country, azure, ...place }) => ({
         ...place,
-        locate: () => read.azureLocate((params) => ask('geocode', { 'api-version': '2026-01-01', ...params }, locale), { ...place, country, address }, locale),
+        locate: () => read.azureLocate((params) => ask('geocode', { 'api-version': '2026-01-01', ...params }, locale), { ...place, country, azure }, locale),
       }));
     },
     async reverse({ lat, lng, locale, signal }) {

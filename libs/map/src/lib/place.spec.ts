@@ -98,7 +98,9 @@ describe('a provider that refuses', () => {
     widget.update({ value: null, values: form.getState().values, readonly: false, required: false, invalid: false });
     const search = document.querySelector('[role="combobox"]') as HTMLInputElement;
     for (let i = 0; i < 2; i++) {
+      // Typed, as a person types it: Enter searches the words typed.
       search.value = 'tahrir';
+      search.dispatchEvent(new Event('input', { bubbles: true }));
       search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       await new Promise((done) => setTimeout(done, 0));
     }

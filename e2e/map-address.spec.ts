@@ -238,12 +238,32 @@ test('on Azure Maps: its suggestions, the one picked located then, its parts fro
   // Azure's terms ask for nothing under its suggestions.
   await expect(field.locator('.fd-address-credit')).toHaveCount(0);
   await box.press('Enter');
-  // Azure finds the street only in another district (El Alaya): the place written is its own district's, El Sheikh Ali.
-  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.232658, 30.053436] });
+  // Asked of Azure's geocoding by its own address, in its structured form: the street, in Cairo's governorate and city.
+  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.237148, 30.054191] });
   // Its city where Azure keeps Egypt's, not its district.
   expect(await valueOf(page, 'parts')).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo', country: 'EG' });
   expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');
+  await expect(field.locator('.fd-address-note')).toBeHidden();
   expect(problems).toEqual([]);
+});
+
+test('on Azure Maps, a pick found nowhere on the map: no place written, and the field says so under the box, in sight, until the person types on', async ({ page }) => {
+  // Azure's geocoding finds nothing for the street, nor for its district.
+  await page.route((url) => url.hostname === 'atlas.microsoft.com' && url.pathname === '/geocode', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }), headers: { 'access-control-allow-origin': '*' } }));
+  const { field, box, options } = await openAddress(page, `${QUERY}&maps=azure`);
+  await box.pressSequentially('26 july', { delay: 60 });
+  await expect(options).toHaveCount(3);
+  await box.press('Enter');
+  const note = field.locator('.fd-address-note');
+  await expect(note).toHaveText('Not found on the map: no place was saved for this address.');
+  expect(await seen(note)).toBe(true);
+  await expect(box).toHaveAttribute('aria-describedby', new RegExp(`(^| )${await note.getAttribute('id')}$`));
+  expect(await valueOf(page, 'spot')).toBeFalsy();
+  expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');
+  await screen(page, 'map-address-not-placed', { viewport: true });
+  await box.press('End');
+  await box.pressSequentially(', 2nd floor', { delay: 30 });
+  await expect(note).toBeHidden();
 });
 
 test('read-only: the address is shown, and nothing is searched', async ({ page }) => {

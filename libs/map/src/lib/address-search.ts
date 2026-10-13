@@ -39,10 +39,10 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
       else input.removeAttribute('dir');
     };
     input.addEventListener('input', align);
-    let stop: (() => void) | null | undefined;
+    let shown: ReturnType<typeof import('./address-suggest').suggest> | null | undefined;
     // The place search's own combobox and line are handed over, as the page has them already: the suggestions' chunk carries neither.
     import('./address-suggest').then(({ suggest }) => {
-      if (stop === undefined) stop = suggest({ settings, context, search, element, input, searchBox, addressLine });
+      if (shown === undefined) shown = suggest({ settings, context, search, element, input, searchBox, addressLine });
     });
     return {
       ...plain,
@@ -50,10 +50,12 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
       update(state) {
         plain.update(state);
         align();
+        // The field says what describes its box; the suggestions' note too, while one is shown.
+        shown?.described();
       },
       destroy() {
-        stop?.();
-        stop = null;
+        shown?.destroy();
+        shown = null;
         plain.destroy?.();
       },
     };

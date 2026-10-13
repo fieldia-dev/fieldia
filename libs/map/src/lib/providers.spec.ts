@@ -140,10 +140,28 @@ describe('Azure Maps', () => {
     expect(first.lat).toBeUndefined();
     expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode:autocomplete?api-version=2026-01-01&top=5&query=26%20july%20st&coordinates=31.24%2C30.05&subscription-key=K');
     expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('en-US');
-    // Asked for as it reads, by its own district and town, not by where the map is. Its hit is in another district (El Alaya): its own district, said to be only near.
+    // Asked for by its own address, in Azure's structured form (the street without the house number Azure made of its name, its district, governorate and city, its country): the street, in Cairo, as Azure answers it.
+    expect(await first.locate!()).toEqual({ lat: 30.0541906885011, lng: 31.2371480131072, address: '26 July Street, El Sheikh Ali, Cairo, Egypt' });
+    expect(asked[1].url).toBe(
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&addressLine=26%20July%20Street&locality=El%20Sheikh%20Ali&adminDistrict=Cairo&adminDistrict2=Cairo&countryRegion=EG&subscription-key=K'
+    );
+    expect(asked).toHaveLength(2);
+  });
+
+  it('takes the district a street is in, only near, where its geocoding finds no street', async () => {
+    const { fetch, asked } = network({
+      'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete,
+      'https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&locality=El%20Sheikh%20Ali&': AZURE.geocodeDistrict,
+      'https://atlas.microsoft.com/geocode': { type: 'FeatureCollection', features: [] },
+    });
+    const [first] = await azureMaps({ key: 'K', fetch }).search!({ text: '26 july st', near: { lat: 30.05, lng: 31.24 }, locale: 'en' });
     expect(await first.locate!()).toEqual({ lat: 30.053436279296875, lng: 31.23265838623047, address: '26 July Street, El Sheikh Ali, Cairo, Egypt', precise: false });
-    expect(asked[1].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&query=26%20July%20Street%2C%20El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&subscription-key=K');
-    expect(asked[2].url).toBe('https://atlas.microsoft.com/geocode?api-version=2026-01-01&top=5&query=El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&subscription-key=K');
+    // The street by its parts, then by its two lines, then its district.
+    expect(asked.slice(1).map((request) => new URL(request.url).searchParams.get('addressLine') ?? new URL(request.url).searchParams.get('query') ?? new URL(request.url).searchParams.get('locality'))).toEqual([
+      '26 July Street',
+      '26 July Street, El Sheikh Ali, Cairo, Egypt',
+      'El Sheikh Ali',
+    ]);
   });
 
   it('suggests what a half-typed Arabic name may be, in Arabic, without direction marks', async () => {
@@ -157,8 +175,8 @@ describe('Azure Maps', () => {
   it('names a point without the direction marks Azure puts in Arabic, which would sit unseen in an address field', async () => {
     const { fetch } = network({ 'https://atlas.microsoft.com/reverseGeocode': AZURE.reverseArabic });
     const named = await azureMaps({ key: 'K', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' });
-    // Its town once, in the page's letters: Azure names it "Cairo" and "القاهرة".
-    expect(named).toBe('7 ميدان التحرير، القاهرة، مصر');
+    // Azure names its locality "Cairo", in Latin, beside its governorate "القاهرة", as its own formatted address does: both said, as no guess tells a name in two alphabets from two names.
+    expect(named).toBe('7 ميدان التحرير، Cairo، القاهرة، مصر');
     expect(named).not.toMatch(/[\u200e\u200f\u061c]/);
   });
 });

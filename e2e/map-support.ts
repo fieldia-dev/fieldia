@@ -172,7 +172,7 @@ export async function quietMapServers(context: BrowserContext) {
   );
   // Azure's address search, for an address field's suggestions: its recorded suggestions (Cairo's), and its place for one picked. As Azure
   // answers them: an autocomplete with no point or box to look near refused, one kept to another country (or to a list of them) empty; a
-  // street picked found in another district, and its own district found.
+  // street picked found by its parts, and its district asked for by its words found.
   await context.route('https://atlas.microsoft.com/geocode**', (r) => {
     const url = new URL(r.request().url());
     if (!url.pathname.endsWith('geocode:autocomplete')) return r.fulfill(json(url.searchParams.get('query')?.startsWith('El Sheikh Ali,') ? answers.geocodeDistrict : answers.geocode));
