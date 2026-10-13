@@ -405,12 +405,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The work item's parts loaded on first use (libs/widgets/src/lib/parts.ts, each a script beside this one): a record's
 // head with its band, its split and toggled buttons, a group's heading with its tools and the inset dialog's ⤢ and grip
 // (fieldia.head.js); the formatted text's editors, Markdown both ways, their menus and the links box (fieldia.text.js);
-// a path picker (fieldia.path.js); a list's filter bar (fieldia.filters.js) — their code and their stylesheets out of
-// this script, which keeps what every page draws at mount (the page's checks of a head, buttons, groups and list cells;
-// a list's backlog cells, nested rows and Fluent's list look; Fieldia's own lists and a state's dot; the access key and
-// lock at a value; help boxes and a group's tracks; the work item's icons, which any page may name; the dialog's choice
-// of its head) and the parts' loader with the table of names they share with it (1.9) — 100.7 less, to 525.3.
-const BUDGET_KB = 525.3;
+// a path picker (fieldia.path.js); a choice in Fieldia's own list (fieldia.choice.js); a list's filter bar
+// (fieldia.filters.js) — their code and their stylesheets out of this script, which keeps what every page draws at mount
+// (the page's checks of a head, buttons, groups and list cells, which checkPage gives at once; a list's backlog cells,
+// nested rows and Fluent's list look; a state's dot and the rows of Fieldia's lists it opens; the access key and a lock at
+// a value; help boxes and a group's tracks; the work item's icons, which any page may name; the dialog's choice of its
+// head) and the parts' loader with the table of names they share with it (1.9) — 104.4 less, to 521.6.
+const BUDGET_KB = 521.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -457,10 +458,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the second side-by-side (header rules, an unlit open, a help icon's tile, the picker's halo and bar, idle buttons
 // with their reasons, the grip's triangle, the tabs' pills, the filter bar's room), 0.7 more, to 185.0.
 // the work item's parts loaded on first use, each a script of its own (a record's head and its window, the formatted
-// text's editors with their Markdown and menus, a path picker, a filter bar): 26.2 less, to 158.8 — 16.1 over 0.19's 142.7,
-// for what a page draws at mount (page checks 2.5, a list's backlog cells and look 3.6, own lists and a state's dot 2.2,
-// the work item's icons 1.3, the dialog and the viewer's hooks 1.6, the loader 0.9, words, values the server keeps).
-const GZIP_BUDGET_KB = 158.8;
+// text's editors with their Markdown and menus, a path picker, Fieldia's own list for a choice, a filter bar): 27.1 less,
+// to 157.9 — 15.2 over 0.19's 142.7, for what a page draws at mount (listed with the raw budget above).
+const GZIP_BUDGET_KB = 157.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -560,17 +560,19 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Each part's budget, raw and gzipped, in KB, as measured when they were cut out of the main script: the head with its
 // window (record-head, rich-button, section-tools, dialog-window and their sheets: 33.8, 9.9); the text (html-field,
 // formatted-text, markdown, text-tools, text-menu, links and their sheet: 54.1, 18.0); the path picker and its sheet
-// (13.0, 5.1); the filter bar and its sheet (11.0, 4.2). Each carries esbuild's small helpers of its own (0.6).
-const PART_BUDGET_KB = { head: [33.8, 9.9], text: [54.1, 18.0], path: [13.0, 5.1], filters: [11.1, 4.2] };
+// (13.0, 5.1); Fieldia's own list for a choice and its sheet (5.4, 2.4); the filter bar and its sheet (11.1, 4.2). Each
+// carries esbuild's small helpers of its own (0.6).
+const PART_BUDGET_KB = { head: [33.8, 9.9], text: [54.1, 18.0], path: [13.0, 5.1], choice: [5.4, 2.4], filters: [11.1, 4.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu'],
   path: ['pathPickerWidget'],
+  choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', filters: 'filtersPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -649,16 +651,16 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
   await bug.drawn;
-  if (loaded() !== 'head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its head, path and text`);
-  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
-  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
+  if (loaded() !== 'choice, head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, head, path and text`);
+  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
+  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  if (loaded() !== 'filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'choice, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, path and text, and a backlog's filter bar, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, and a backlog's filter bar, each as first used");
 }

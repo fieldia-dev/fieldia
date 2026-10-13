@@ -1,5 +1,5 @@
 import type { ButtonNode, FieldNode, Page, SectionNode } from '@fieldia/core';
-import { lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { choicePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -16,7 +16,7 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart];
+const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -29,7 +29,7 @@ const markdownAlone = (node: SectionNode) => {
  * a record's head, a button split, toggled or shown by its icon alone, or a
  * group's work heading; the filters part for a list's filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
- * a path picker) — unless the app's `widgets` draw those fields; and those the
+ * a path picker, a choice in Fieldia's own list) — unless the app's `widgets` draw those fields; and those the
  * app's `slots` name for the slots the page has (a Discussion's).
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {

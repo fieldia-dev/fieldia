@@ -28,4 +28,4 @@ export type { MenuChoice, TextMenu } from './lib/text-menu';
 export { linkedWords } from './lib/linked-words';
 export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tool-names';
 export { lazyPart, settleParts, type Part } from './lib/parts';
-export { textPart, pathPart, partWidget, partFactory, type TextPart, type PathPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type PartFactory } from './lib/widget-parts';

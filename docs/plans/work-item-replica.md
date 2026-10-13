@@ -1005,6 +1005,7 @@ makes a chunk; in the script bundle it is a script beside fieldia.js, which fiel
 | head | viewer `head-part.ts` | fieldia.head.js | the record head and its tabs, split/toggled/icon buttons, a group's heading with its tools, the inset dialog's ⤢ and grip, their sheets (head-styles, group-styles) |
 | text | widgets `text-part.ts` | fieldia.text.js | the formatted text's editors, Markdown both ways, the menus, the links box, their sheet (styles-editor) |
 | path | widgets `path-part.ts` | fieldia.path.js | the path picker and its sheet (styles-path) |
+| choice | widgets `choice-part.ts` | fieldia.choice.js | a choice in Fieldia's own list (`list: "own"`) and its sheet (styles-choice) |
 | filters | viewer `filters-part.ts` | fieldia.filters.js | a list's filter bar and its sheet (filter-styles) |
 | discussion, history | chatter `discussion.ts`, `history.ts` | — (chatter is not in the script) | the Discussion (with the text part) and the History |
 
@@ -1015,6 +1016,6 @@ makes a chunk; in the script bundle it is a script beside fieldia.js, which fiel
 - A part's sheet goes between Fieldia's two (`installPartStyles`, `PART_RANK`): after the quiet look and the pickers',
   before the page's own looks, as its rules stood in FIELDIA_CSS.
 - What stays in every page: the page's checks of heads, buttons, groups and list cells (checkPage is synchronous), a
-  list's backlog cells, nested rows and Fluent's list look, Fieldia's own lists and a state's dot, the work item's icons
+  list's backlog cells, nested rows and Fluent's list look, a state's dot and the rows of the lists it opens, the work item's icons
   (any page may name them), the access key and a lock at a value, help boxes and a group's tracks.
 

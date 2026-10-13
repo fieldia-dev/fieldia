@@ -2,17 +2,22 @@ import type { FieldNode } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
+import type * as ChoiceModule from './choice-part';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
 /** The path part: a path picker, with its suggestions and its tree. */
 export type PathPart = typeof PathModule;
+/** The choice part: a choice in Fieldia's own list. */
+export type ChoicePart = typeof ChoiceModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
 /** A path picker, loaded the first time a page shows one. */
 export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-part'));
+/** A choice in Fieldia's own list, loaded the first time a page shows one. */
+export const choicePart: Part<ChoicePart> = lazyPart('choice', () => import('./choice-part'));
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

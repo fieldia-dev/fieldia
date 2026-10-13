@@ -2,6 +2,7 @@ import { describeState, maker, setAttr, setText } from './kind-parts';
 import { pickRow, scrollToRow, typeAhead, typedKey } from './pick-list';
 import { popup } from './popup';
 import { shownOptions } from './shuffle';
+import { installChoiceStyles } from './styles-choice';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -20,6 +21,7 @@ import type { WidgetFactory } from './widgets';
  * empty; in a boxed skin it is a box as a choice's.
  */
 export const ownListWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+  installChoiceStyles(document);
   const make = maker(document);
   const choices = shownOptions(field.type === 'selection' ? field.options : [], form, name, node);
   const listId = `${id}-list`;

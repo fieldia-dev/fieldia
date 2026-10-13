@@ -1,7 +1,7 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
-import { pathPart, textPart } from './widget-parts';
+import { choicePart, pathPart, textPart } from './widget-parts';
 import { createWidget, widgetPart, type Widget } from './widgets';
 
 /**
@@ -15,6 +15,7 @@ import { createWidget, widgetPart, type Widget } from './widgets';
 const fields: Record<string, Field> = {
   notes: { type: 'html', label: 'Notes' },
   area: { type: 'many2one', label: 'Area', relation: 'area' },
+  priority: { type: 'selection', label: 'Priority', options: [{ value: '1', label: '1' }, { value: '2', label: '2' }] },
 };
 const page = { fieldia: '0.1', id: 'p', title: 'P', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 's', children: [] } } as unknown as Page;
 const make = (node: FieldNode): Widget => {
@@ -48,6 +49,8 @@ describe('a part', () => {
     expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes' })).toBeUndefined();
     expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area', widget: 'path' })).toBe(pathPart);
     expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area' })).toBeUndefined();
+    expect(widgetPart(fields['priority'], { type: 'field', id: 'p', field: 'priority', options: { list: 'own' } })).toBe(choicePart);
+    expect(widgetPart(fields['priority'], { type: 'field', id: 'p', field: 'priority' })).toBeUndefined();
   });
 
   it('puts its sheet between Fieldia’s two, by its rank, once', () => {
@@ -83,6 +86,20 @@ describe('a widget made before its part came', () => {
     expect(document.getElementById('fieldia-editor-styles')).not.toBeNull();
     // From now on it is the part's own, at once.
     expect(make({ type: 'field', id: 'm', field: 'notes', options: { toolbar: 'focus' } }).element.classList.contains('fd-text')).toBe(true);
+    widget.destroy?.();
+  });
+
+  it('a choice in Fieldia’s own list: the browser’s list meanwhile, then Fieldia’s own with the value it was given', async () => {
+    expect(choicePart.loaded).toBeUndefined();
+    const widget = make({ type: 'field', id: 'p', field: 'priority', options: { list: 'own' } });
+    document.body.append(widget.element);
+    expect(widget.element.tagName).toBe('SELECT');
+    widget.update(state('2'));
+    await choicePart.load();
+    await Promise.resolve();
+    expect(widget.element.classList.contains('fd-own-box')).toBe(true);
+    expect(widget.element.textContent).toContain('2');
+    expect(document.getElementById('fieldia-choice-styles')).not.toBeNull();
     widget.destroy?.();
   });
 
