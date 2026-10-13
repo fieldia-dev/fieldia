@@ -1,5 +1,6 @@
 import type { Field } from '../format/field';
 import { checkValue } from './check';
+import { MESSAGES } from './messages';
 
 const F = (field: Record<string, unknown>) => ({ label: 'Name', ...field }) as Field;
 
@@ -19,6 +20,8 @@ describe('checkValue — required', () => {
 describe('checkValue — text', () => {
   it('limits length', () => {
     expect(checkValue(F({ type: 'char', size: 3 }), 'abcd', false)).toBe('Name takes at most 3 characters');
+    // Counted as a server counts: an emoji is one character.
+    expect(checkValue(F({ type: 'char', size: 3 }), '😀😀😀', false)).toBeUndefined();
     expect(checkValue(F({ type: 'char', size: 3 }), 'abc', false)).toBeUndefined();
   });
 
@@ -46,9 +49,34 @@ describe('checkValue — numbers', () => {
     expect(checkValue(rating, 3, false)).toBeUndefined();
   });
 
-  it('limits decimal places', () => {
+  it('limits decimal places, naming the field, in the plural form its number takes', () => {
     expect(checkValue(F({ type: 'float', digits: [16, 2] }), 1.234, false)).toBe('Name takes at most 2 decimal places');
+    expect(checkValue(F({ type: 'float', label: 'Floor area (m²)', digits: [10, 1] }), 12.345, false)).toBe('Floor area (m²) takes at most 1 decimal place');
+    expect(checkValue(F({ type: 'float', digits: [10, 0] }), 1.5, false)).toBe('Name must be a whole number');
     expect(checkValue(F({ type: 'monetary', digits: [16, 2] }), 1.23, false)).toBeUndefined();
+  });
+
+  it.each([
+    ['ar', 1, 'Name: منزلة عشرية واحدة على الأكثر'],
+    ['ar', 2, 'Name: منزلتان عشريتان على الأكثر'],
+    ['ar', 3, 'Name: 3 منازل عشرية على الأكثر'],
+    ['ar', 11, 'Name: 11 منزلة عشرية على الأكثر'],
+    ['fr', 1, 'Name accepte au plus une décimale'],
+    ['fr', 2, 'Name accepte au plus 2 décimales'],
+    ['de', 1, 'Name hat höchstens eine Nachkommastelle'],
+    ['de', 3, 'Name hat höchstens 3 Nachkommastellen'],
+  ] as const)('%s: %s decimal places', (locale, places, said) => {
+    expect(checkValue(F({ type: 'float', digits: [30, places] }), 0.123456789012, false, MESSAGES[locale])).toBe(said);
+  });
+
+  it('refuses a value past what a number keeps exactly, or past the field’s digits', () => {
+    expect(checkValue(F({ type: 'integer' }), 12345678901234567000, false)).toBe('Name takes at most 15 digits');
+    expect(checkValue(F({ type: 'integer' }), 1e30, false)).toBe('Name takes at most 15 digits');
+    expect(checkValue(F({ type: 'float' }), 1e16, false)).toBe('Name takes at most 15 digits');
+    expect(checkValue(F({ type: 'float', digits: [10, 1] }), 1e30, false)).toBe('Name takes at most 15 digits');
+    expect(checkValue(F({ type: 'float', digits: [10, 1] }), 1234567890, false)).toBe('Name takes at most 10 digits');
+    expect(checkValue(F({ type: 'float', digits: [10, 1] }), 123456789.5, false)).toBeUndefined();
+    expect(checkValue(F({ type: 'integer' }), 999999999999999, false)).toBeUndefined();
   });
 
   it('refuses infinity and NaN', () => {

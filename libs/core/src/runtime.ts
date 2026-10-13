@@ -126,7 +126,7 @@ export {
   type Value,
   type Values,
 } from './lib/record/values';
-export { checkValue, formatBytes, fileProblem, describeTypes } from './lib/record/check';
+export { checkValue, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
 export type {
   DataSource,
@@ -176,5 +176,36 @@ export {
 } from './lib/record/form';
 export type { ActionHost, ActionResult, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
+export {
+  stripMarks,
+  foldDigits,
+  oneLine,
+  charCount,
+  foldForSearch,
+  numberMarks,
+  readNumber,
+  couldBeNumber,
+  cleanPastedNumber,
+  readDuration,
+  readDate,
+  readTime,
+  placesOfCurrency,
+  placesOf,
+  MOST_DIGITS,
+  type NumberMarks,
+  type NumberProblem,
+  type NumberReading,
+  type NumberRead,
+  type NumberReadOptions,
+  type NumberLimits,
+  type NumberRefusal,
+  type PastedNumber,
+  type DurationProblem,
+  type DurationRead,
+  type DateOrder,
+  type DateProblem,
+  type DateRead,
+  type TimeRead,
+} from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
 export { ADDRESS_PARTS } from './lib/record/structures';
