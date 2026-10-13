@@ -79,6 +79,24 @@ if (call.saved) console.log(call.recordId, call.values);
 await openFormPanel({ page: callPage, dataSource, title: 'Log a call', side: 'top', height: 'short' });
 ```
 
+A record opened over its list, as a work tracker opens a bug over its backlog:
+
+```ts
+await openFormDialog({
+  page: bugPage, dataSource, recordId: 4127, title: 'Bug',
+  size: 'inset',        // 96px in from the window's sides, 46px from its top and bottom; the whole window under 760px
+  backdrop: 'clear',    // the list behind left as it is, not dimmed
+  maximise: true,       // ⤢ beside ×: the whole window, and Restore
+  resizable: true,      // a grip at the end-bottom corner, dragged or moved by the arrow keys
+});
+```
+
+A page whose sheet has a `head` (a work item's: its kind's strip and badge,
+the title line, Save and Close, Follow, the band of fields and the tabs) is
+the dialog's own head and foot: the dialog draws neither, its ⤢ and × sit at
+the end of the head's badge row, and Escape and × ask before changes go. A
+head button whose steps save and then close resolves with `saved: true`.
+
 `side` is where it comes from: `'end'` (the default: the end of the line, the
 right, or the left right to left) or `'start'`, as the page reads; or
 `'left'`, `'right'`, `'top'` or `'bottom'` of the screen, whatever the page's
