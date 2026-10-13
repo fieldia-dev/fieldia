@@ -3,6 +3,36 @@ import type { Locale } from '@fieldia/core';
 /** Every word the chatter shows. `{name}`, `{n}` and `{date}` are filled in. */
 export interface ChatterLabels {
   conversation: string;
+  /** The History tab: the State Graph's and the list's headings. */
+  stateGraph: string;
+  history: string;
+  /** What one change did, as a line of the history: `{name}` who, `{field}` the field's label, `{value}`, `{from}` and `{to}` its values. */
+  changedTo: string;
+  changedFromTo: string;
+  changedFromToMore: string;
+  madeChanges: string;
+  cleared: string;
+  /** `{kind}`: what the record is called (HistoryOptions.kind), else `recordKind`. */
+  created: string;
+  recordKind: string;
+  commented: string;
+  /** The history's groups by age; the first is `today`. */
+  yesterday: string;
+  thisWeek: string;
+  lastWeek: string;
+  thisMonth: string;
+  older: string;
+  filterHistory: string;
+  fieldChanges: string;
+  comments: string;
+  noHistory: string;
+  /** The value a change replaced, as a screen reader says it. */
+  wasValue: string;
+  /** A heading's tools, `{name}` its heading. */
+  maximiseNamed: string;
+  restoreNamed: string;
+  foldNamed: string;
+  unfoldNamed: string;
   sendMessage: string;
   logNote: string;
   send: string;
@@ -53,6 +83,30 @@ export interface ChatterLabels {
 export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
   en: {
     conversation: 'Conversation',
+    stateGraph: 'State Graph',
+    history: 'History',
+    changedTo: '{name} changed {field} to {value}',
+    changedFromTo: '{name} changed {field} from {from} to {to}',
+    changedFromToMore: '{name} changed {field} from {from} to {to} and made field changes',
+    madeChanges: '{name} made field changes',
+    cleared: '{name} cleared {field}',
+    created: '{name} created the {kind}',
+    recordKind: 'record',
+    commented: '{name} commented',
+    yesterday: 'Yesterday',
+    thisWeek: 'This week',
+    lastWeek: 'Last week',
+    thisMonth: 'This month',
+    older: 'Older',
+    filterHistory: 'Filter',
+    fieldChanges: 'Field changes',
+    comments: 'Comments',
+    noHistory: 'No changes yet',
+    wasValue: 'was {value}',
+    maximiseNamed: 'Maximise {name}',
+    restoreNamed: 'Restore {name}',
+    foldNamed: 'Collapse {name}',
+    unfoldNamed: 'Expand {name}',
     sendMessage: 'Send message',
     logNote: 'Log note',
     send: 'Send',
@@ -100,6 +154,30 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
   },
   ar: {
     conversation: 'المحادثة',
+    stateGraph: 'مخطط الحالات',
+    history: 'سجل التغييرات',
+    changedTo: 'غيّر {name} {field} إلى {value}',
+    changedFromTo: 'غيّر {name} {field} من {from} إلى {to}',
+    changedFromToMore: 'غيّر {name} {field} من {from} إلى {to} وغيّر حقولًا أخرى',
+    madeChanges: 'غيّر {name} حقولًا',
+    cleared: 'أفرغ {name} {field}',
+    created: 'أنشأ {name} {kind}',
+    recordKind: 'السجل',
+    commented: 'علّق {name}',
+    yesterday: 'أمس',
+    thisWeek: 'هذا الأسبوع',
+    lastWeek: 'الأسبوع الماضي',
+    thisMonth: 'هذا الشهر',
+    older: 'أقدم',
+    filterHistory: 'تصفية',
+    fieldChanges: 'تغييرات الحقول',
+    comments: 'التعليقات',
+    noHistory: 'لا تغييرات بعد',
+    wasValue: 'كان {value}',
+    maximiseNamed: 'تكبير {name}',
+    restoreNamed: 'إعادة {name} إلى حجمه',
+    foldNamed: 'طيّ {name}',
+    unfoldNamed: 'فتح {name}',
     sendMessage: 'إرسال رسالة',
     logNote: 'تسجيل ملاحظة',
     send: 'إرسال',
@@ -147,6 +225,30 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
   },
   de: {
     conversation: 'Unterhaltung',
+    stateGraph: 'Statusverlauf',
+    history: 'Verlauf',
+    changedTo: '{name} hat {field} in {value} geändert',
+    changedFromTo: '{name} hat {field} von {from} in {to} geändert',
+    changedFromToMore: '{name} hat {field} von {from} in {to} und weitere Felder geändert',
+    madeChanges: '{name} hat Felder geändert',
+    cleared: '{name} hat {field} geleert',
+    created: '{name} hat {kind} erstellt',
+    recordKind: 'den Datensatz',
+    commented: '{name} hat kommentiert',
+    yesterday: 'Gestern',
+    thisWeek: 'Diese Woche',
+    lastWeek: 'Letzte Woche',
+    thisMonth: 'Diesen Monat',
+    older: 'Älter',
+    filterHistory: 'Filtern',
+    fieldChanges: 'Feldänderungen',
+    comments: 'Kommentare',
+    noHistory: 'Noch keine Änderungen',
+    wasValue: 'war {value}',
+    maximiseNamed: '{name} maximieren',
+    restoreNamed: '{name} wiederherstellen',
+    foldNamed: '{name} einklappen',
+    unfoldNamed: '{name} ausklappen',
     sendMessage: 'Nachricht senden',
     logNote: 'Notiz erfassen',
     send: 'Senden',
@@ -194,6 +296,30 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
   },
   fr: {
     conversation: 'Conversation',
+    stateGraph: 'Graphique des états',
+    history: 'Historique',
+    changedTo: '{name} a changé {field} en {value}',
+    changedFromTo: '{name} a changé {field} de {from} en {to}',
+    changedFromToMore: '{name} a changé {field} de {from} en {to} et modifié d’autres champs',
+    madeChanges: '{name} a modifié des champs',
+    cleared: '{name} a vidé {field}',
+    created: '{name} a créé {kind}',
+    recordKind: 'l’enregistrement',
+    commented: '{name} a commenté',
+    yesterday: 'Hier',
+    thisWeek: 'Cette semaine',
+    lastWeek: 'La semaine dernière',
+    thisMonth: 'Ce mois-ci',
+    older: 'Plus ancien',
+    filterHistory: 'Filtrer',
+    fieldChanges: 'Modifications de champs',
+    comments: 'Commentaires',
+    noHistory: 'Pas encore de modification',
+    wasValue: 'était {value}',
+    maximiseNamed: 'Agrandir {name}',
+    restoreNamed: 'Rétablir {name}',
+    foldNamed: 'Replier {name}',
+    unfoldNamed: 'Déplier {name}',
     sendMessage: 'Envoyer un message',
     logNote: 'Noter',
     send: 'Envoyer',

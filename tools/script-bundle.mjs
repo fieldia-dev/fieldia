@@ -232,6 +232,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // they are typed, Remove link saying why — Markdown both ways written by hand (no library: a CommonMark subset, raw
 // HTML escaped) with its card, hint and Preview, asking before formatting is lost; a links box with Add link and its
 // menu; the sanitizer's spans, pictures and links in place; and their stylesheet (16 of it) — 62.5 more, to 536.
+// A work item's icons, drawn as Fieldia's own (icons-work.ts: its kind, its window's and toolbars' tools, history,
+// branch and pull request), which every part of the work item's popup names — 3.0 more, to 476.3.
 const BUDGET_KB = /*JOIN*/ 511.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -270,6 +272,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // their stylesheet and the replica's shared icons), 7 more, to 149.7.
 // a work item's body (groups' widths and heading tools, help boxes, the formatted text's editor with its Markdown, menus
 // and links in place, a links box, and their stylesheet), 19.4 more, to 162.1.
+// a work item's icons (icons-work.ts), 1.0 more, to 143.7.
 const GZIP_BUDGET_KB = /*JOIN*/ 152.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

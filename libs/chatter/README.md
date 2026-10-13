@@ -28,5 +28,11 @@ assignees, followers), `activityTypes` / `activities` / `schedule` / `markDone`
 missing is not shown. `createMemoryChatter` keeps everything in memory, for
 demos and tests.
 
+A record's history, as a work item's History tab shows it, fills a slot of
+its own from the same source: `historySlot({ source, stateField: 'state',
+reasonField: 'reason', kind: 'work item' })`. The State Graph shows how the
+state moved and why; under it, each change grouped by age, the one chosen
+beside the list with its new values and those they replaced.
+
 Message HTML is cleaned before it is shown; what people type is posted as
 escaped text. MIT.

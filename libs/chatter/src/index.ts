@@ -6,3 +6,4 @@ export * from './lib/chatter';
 export * from './lib/slot';
 export { mountDiscussion, type DiscussionOptions } from './lib/discussion';
 export { DISCUSSION_STYLES } from './lib/discussion-styles';
+export * from './lib/history';
