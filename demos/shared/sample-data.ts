@@ -82,8 +82,11 @@ export const pages: Record<string, Page> = {
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
   reading: reading as Page,
-  // A bug as a work item, its header in the quiet look: values plain words until pointed at or clicked.
+  // A bug as a work item, in the look the demo's switch picks: quiet, values plain words until pointed at or clicked.
   'work-item': workItem as Page,
+  // The same bug with its header quiet in any look, the rest as the switch says: a section choosing its own look.
+  // No card in the gallery: e2e/quiet-look.spec.ts opens it.
+  'work-item-mixed': quietHeader(workItem as Page),
   // What sits around a record: the gear menu, the pager and breadcrumbs, the PDF beside it (shared/vendor-bill.ts).
   'vendor-bill': vendorBill,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
@@ -293,6 +296,14 @@ function linkedHomes(homes: Record<number, Values>): Record<number, Values> {
     home['link'] = `?${to}`;
   }
   return homes;
+}
+
+/** A page with its header section in the quiet look whatever look the form wears. */
+function quietHeader(page: Page): Page {
+  const copy = structuredClone(page) as Page;
+  const header = (copy.layout as { children?: { id?: string; quiet?: boolean }[] }).children?.find((node) => node.id === 'header');
+  if (header) header.quiet = true;
+  return copy;
 }
 
 /** A customer to edit, and the records its relations point to. Sample data. */

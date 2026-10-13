@@ -30,9 +30,11 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   const shown = new Set(DEMOS.map((demo) => new URLSearchParams(demo.query ?? '').get('page') ?? 'signup'));
   // The 500-field page is for timing (e2e/perf.spec.ts), not for a visitor: it has no card on purpose.
   const forTiming = new Set(['big']);
+  // A section choosing its own look, for e2e/quiet-look.spec.ts: the work item's demo shows the switch whole.
+  const forTests = new Set(['work-item-mixed']);
   // A home's, a courier's and an order's own page: a record opened from its list's row or card, not a demo of its own.
   const opened = new Set(['map-home', 'map-courier', 'map-week-order']);
-  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !opened.has(name));
+  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !forTests.has(name) && !opened.has(name));
   expect(unnamed).toEqual([]);
 });
 

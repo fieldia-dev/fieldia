@@ -2,7 +2,7 @@
   "fieldia": "0.1",
   "id": "work-item",
   "title": "Bug 5140",
-  "description": "A work item as Azure DevOps draws one: its header quiet, each value plain words until it is pointed at or clicked; the rest in boxes.",
+  "description": "A work item as Azure DevOps draws one. In the quiet look each value reads as plain words until it is pointed at or clicked; Underline and Outlined put every field in a box.",
   "data": { "kind": "record", "model": "work.item" },
   "look": { "skin": "outlined", "density": "compact" },
   "fields": {
@@ -94,7 +94,6 @@
         "type": "section",
         "id": "header",
         "style": "card",
-        "quiet": true,
         "labels": "beside",
         "labelWidth": 100,
         "columns": { "wide": 2, "medium": 1 },
@@ -142,7 +141,7 @@
   "translations": {
     "ar": {
       "Bug 5140": "خلل 5140",
-      "A work item as Azure DevOps draws one: its header quiet, each value plain words until it is pointed at or clicked; the rest in boxes.": "بند عمل كما يعرضه Azure DevOps: رأسه هادئ، كل قيمة نص عادي حتى يُشار إليها أو يُنقر عليها، والباقي في مربعات.",
+      "A work item as Azure DevOps draws one. In the quiet look each value reads as plain words until it is pointed at or clicked; Underline and Outlined put every field in a box.": "بند عمل كما يعرضه Azure DevOps. في المظهر الهادئ تُقرأ كل قيمة نصًا عاديًا حتى يُشار إليها أو يُنقر عليها؛ ويضع مظهرا الخط السفلي والإطار كل حقل في مربع.",
       "Title": "العنوان",
       "Name the bug": "سمِّ الخلل",
       "State": "الحالة",
