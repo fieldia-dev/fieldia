@@ -1,10 +1,24 @@
 import type { FileValue, Form, FormState, RecordRequest } from '@fieldia/core';
+import type { TextReference } from '@fieldia/widgets';
 import { mountChatter, type ChatterOptions } from './chatter';
+import { mountDiscussion } from './discussion';
 import type { ChatterSource, RecordRef } from './source';
 
 export interface ChatterSlotOptions extends Omit<ChatterOptions, 'record'> {
   /** The model the conversation is about; the page's own by default. */
   model?: string;
+  /**
+   * `discussion`: drawn as a work item's Discussion — a card to write a
+   * comment in, then a card for each comment — with no messages and notes
+   * bar, no followers, no activities and no tracked changes.
+   */
+  look?: 'discussion';
+  /** A discussion's words in its empty comment box. */
+  placeholder?: string;
+  /** A discussion's records linked by a key as a comment is typed: "#" for a work item. */
+  references?: readonly TextReference[];
+  /** How many comments the discussion has, after each load and each one saved: for a count in the record's head. */
+  onCount?: (count: number, form: Form) => void;
 }
 
 /**
@@ -22,7 +36,11 @@ export function chatterSlot(options: ChatterSlotOptions): (element: HTMLElement,
     const recordOf = (state: FormState): RecordRef | null => (model && state.recordId != null ? { model, id: state.recordId } : null);
     let shown = recordOf(form.getState());
     let status = form.getState().status;
-    const chatter = mountChatter(element, { ...options, record: shown });
+    const { look, placeholder, references, onCount, ...rest } = options;
+    const chatter =
+      look === 'discussion'
+        ? mountDiscussion(element, { ...rest, record: shown, placeholder, references, onCount: (count) => onCount?.(count, form) })
+        : mountChatter(element, { ...rest, record: shown });
     const unsubscribe = form.subscribe((state) => {
       const next = recordOf(state);
       if (next?.id !== shown?.id) {

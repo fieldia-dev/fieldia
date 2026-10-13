@@ -40,6 +40,14 @@ export interface ChatterLabels {
   search: string;
   noOneFound: string;
   couldNotSend: string;
+  /** A discussion's comment box and cards: when a comment was written (`{date}`), Save with nothing typed, its Save and its name; Escape asking before typed words go. */
+  commentedOn: string;
+  writeFirst: string;
+  saveComment: string;
+  comment: string;
+  discardComment: string;
+  discard: string;
+  keepWriting: string;
 }
 
 export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
@@ -82,6 +90,13 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Search…',
     noOneFound: 'No one found',
     couldNotSend: 'Not sent: {reason}',
+    commentedOn: 'commented {date}',
+    writeFirst: 'Write a comment first.',
+    saveComment: 'Save',
+    comment: 'Comment',
+    discardComment: 'Discard your comment?',
+    discard: 'Discard',
+    keepWriting: 'Keep writing',
   },
   ar: {
     conversation: 'المحادثة',
@@ -122,6 +137,13 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'بحث…',
     noOneFound: 'لم يُعثر على أحد',
     couldNotSend: 'لم يُرسل: {reason}',
+    commentedOn: 'علّق في {date}',
+    writeFirst: 'اكتب تعليقًا أولاً.',
+    saveComment: 'حفظ',
+    comment: 'تعليق',
+    discardComment: 'هل تريد تجاهل تعليقك؟',
+    discard: 'تجاهل',
+    keepWriting: 'متابعة الكتابة',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -162,6 +184,13 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Suchen…',
     noOneFound: 'Niemand gefunden',
     couldNotSend: 'Nicht gesendet: {reason}',
+    commentedOn: 'hat am {date} kommentiert',
+    writeFirst: 'Schreiben Sie zuerst einen Kommentar.',
+    saveComment: 'Speichern',
+    comment: 'Kommentar',
+    discardComment: 'Kommentar verwerfen?',
+    discard: 'Verwerfen',
+    keepWriting: 'Weiterschreiben',
   },
   fr: {
     conversation: 'Conversation',
@@ -202,5 +231,12 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     search: 'Rechercher…',
     noOneFound: 'Personne trouvée',
     couldNotSend: 'Non envoyé : {reason}',
+    commentedOn: 'a commenté le {date}',
+    writeFirst: 'Écrivez d’abord un commentaire.',
+    saveComment: 'Enregistrer',
+    comment: 'Commentaire',
+    discardComment: 'Abandonner votre commentaire ?',
+    discard: 'Abandonner',
+    keepWriting: 'Continuer à écrire',
   },
 };
