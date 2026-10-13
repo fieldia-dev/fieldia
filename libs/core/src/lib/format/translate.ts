@@ -7,6 +7,13 @@ import type { Page } from './page';
  */
 const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason']);
 
+/** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link. */
+const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink']);
+
+/** A formatted text's kinds of record to link (`references`): each one's name is words; its key, model and icon stay. */
+const wordsOfReference = (text: (words: string) => string) => (reference: unknown) =>
+  reference !== null && typeof reference === 'object' && typeof (reference as { label?: unknown }).label === 'string' ? { ...reference, label: text((reference as { label: string }).label) } : reference;
+
 /**
  * Parts that hold names or data, never words to translate: which line fields
  * mark sections and notes, a link's filter, a default value, what the page's
@@ -45,10 +52,10 @@ const wordsOfLayer = (text: (words: string) => string) => (layer: unknown) => {
 /**
  * Every word a person reads in `value` passed through `text`, the rest copied
  * as it is. `enter` sees each object before its parts. In a widget's settings
- * (`widget`) only the keys ending in `Label` are words.
+ * (`widget`) only the keys ending in `Label`, and a few that are always words (`WIDGET_TEXT_KEYS`), are words.
  */
 function walk(value: unknown, key: string | null, text: (words: string) => string, enter?: (node: Record<string, unknown>) => void, widget = false): unknown {
-  if (typeof value === 'string') return key !== null && (key.endsWith('Label') || (!widget && TEXT_KEYS.has(key))) ? text(value) : value;
+  if (typeof value === 'string') return key !== null && (key.endsWith('Label') || (widget ? WIDGET_TEXT_KEYS : TEXT_KEYS).has(key)) ? text(value) : value;
   if (Array.isArray(value)) return value.map((item) => walk(item, null, text, enter, widget));
   if (value === null || typeof value !== 'object') return value;
   enter?.(value as Record<string, unknown>);
@@ -56,6 +63,7 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
   for (const [name, inner] of Object.entries(value)) {
     // A field node's `options` are its widget's settings, not a list of choices.
     if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
+    else if (widget && name === 'references' && Array.isArray(inner)) out[name] = inner.map(wordsOfReference(text));
     // A list's map names fields, but for the words after its card's values.
     else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
