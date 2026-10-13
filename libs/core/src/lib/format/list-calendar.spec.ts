@@ -1,4 +1,4 @@
-import { validatePage } from '../../index';
+import { pageWords, translatePage, validatePage, type ListNode, type Page } from '../../index';
 
 /**
  * A list's records on a calendar (`calendar` on a list node, drawn by
@@ -85,6 +85,14 @@ describe('a list on a calendar', () => {
     expect(problems(page({ start: 'start', title: 'patient', views: ['week', 'month'], view: 'day' }))).toEqual(['layout.calendar.view: "day" is not one of its views (week, month)']);
     expect(problems(page({ start: 'start', title: 'patient', hours: { start: 18, end: 9 } }))).toEqual(['layout.calendar.hours: the hours end at 9, before they start at 18']);
     expect(problems(page({ start: 'start', title: 'patient', views: ['week', 'week'] }))).toEqual(['layout.calendar.views[1]: "week" is offered twice']);
+  });
+
+  it('names fields, never words: a translation leaves it as it is', () => {
+    const named = page({ start: 'start', end: 'stop', title: 'patient', colour: 'kind', resource: 'doctor' }) as unknown as Page;
+    const after = translatePage(named, (words) => `«${words}»`);
+    expect((after.layout as ListNode).calendar).toEqual((named.layout as ListNode).calendar);
+    expect(validatePage(after).ok).toBe(true);
+    expect(pageWords(named)).not.toContain('patient');
   });
 
   it('opens one way: on its map or on its calendar, not both', () => {
