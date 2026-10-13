@@ -86,6 +86,15 @@ export interface MemoryDataSourceOptions {
    * fields' values are left out.
    */
   can?: Record<string, (values: Values, id: RecordId) => RecordPermissions | undefined>;
+  /**
+   * A store as slow, or as unreliable, as a real one, for demos and tests of
+   * files stored as they are picked: `bytesPerSecond` paces each upload, its
+   * progress told every tenth of a second; `fails` says which tries fail —
+   * true for a failure partway that Retry may mend, words for the store
+   * refusing the file as it is (its kind, its size). Each file's tries are
+   * counted by its name and size, from 1.
+   */
+  storage?: { bytesPerSecond?: number; fails?: (file: UploadFile, attempt: number) => boolean | string | undefined };
   /** Answer after this long, so a demo shows its loading states (an upload's progress, in four steps). */
   delayMs?: number;
   scheduler?: Scheduler;
@@ -116,6 +125,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
   let lineIds = 1000;
   let fileIds = 0;
+  /** Each file's tries at the store, by its name and size: what `storage.fails` is told. */
+  const tries = new Map<string, number>();
   /** Each record's version, by `model:id`, given when first asked. */
   const versions = new Map<string, RecordVersion>();
   let stamps = 0;
@@ -339,13 +350,30 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async upload(file: UploadFile, request: UploadRequest): Promise<UploadedFile> {
       calls.push({ method: 'upload', request: { ...request, file } });
       const stopped = () => Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
+      // A store slow or failing as `storage` says: a refusal at once, a failure partway, the bytes paced as they go.
+      const tried = `${file.name}:${file.size}`;
+      tries.set(tried, (tries.get(tried) ?? 0) + 1);
+      const failure = options.storage?.fails?.(file, tries.get(tried) as number);
+      if (typeof failure === 'string') throw saveRefused({ kind: 'rule', message: failure });
+      const pace = options.storage?.bytesPerSecond;
+      if (pace) {
+        const each = Math.max(1, Math.round(pace / 10));
+        for (let sent = 0; sent < file.size; ) {
+          await wait(100, options.scheduler);
+          if (request.signal?.aborted) throw stopped();
+          sent = Math.min(file.size, sent + each);
+          if (failure && sent >= file.size / 2) throw new Error('The store stopped answering: the upload failed partway');
+          request.onProgress?.(sent, file.size);
+        }
+      }
       // In four steps when it is slowed for a demo, so its progress shows.
-      const steps = options.delayMs ? 4 : 1;
-      for (let step = 1; step <= steps; step++) {
+      const steps = options.delayMs && !pace ? 4 : 1;
+      for (let step = 1; step <= steps && !pace; step++) {
         if (options.delayMs) await wait(options.delayMs / steps, options.scheduler);
         if (request.signal?.aborted) throw stopped();
         request.onProgress?.(Math.round((file.size * step) / steps), file.size);
       }
+      if (failure) throw new Error('The store stopped answering: the upload failed');
       // Kept as a data address, so a preview needs nothing else.
       const type = file.type || 'application/octet-stream';
       return { fileId: ++fileIds, url: `data:${type};base64,${base64(new Uint8Array(await file.arrayBuffer()))}`, name: file.name, size: file.size, type };

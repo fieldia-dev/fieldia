@@ -273,9 +273,23 @@ const LineSelection = z.object({ ...selection, options: z.array(OptionSchema).mi
  * between a list and the pictures, and whether a phone offers its camera, are
  * the layout node's `options` (`files`, `filesSwitch`, `camera`).
  */
+/**
+ * Photos made smaller before they are kept: the longest side in pixels, and
+ * the quality a JPEG or WebP is written at (0.3 to 1). A photo already that
+ * small is kept as it is, none is made larger, and its EXIF turn is kept.
+ * `false` keeps every photo as it was taken. Where the data source stores
+ * files (`upload`), a picture field makes its photos smaller without being
+ * told — 2048 pixels at 0.85 — and a file field when this says so.
+ */
+export const ShrinkSchema = z
+  .union([z.literal(false), z.object({ maxSide: z.int().min(160).max(16384).optional(), quality: z.number().min(0.3).max(1).optional() }).strict()])
+  .meta({ id: 'Shrink' });
+export type Shrink = z.infer<typeof ShrinkSchema>;
 const files = {
   /** Largest accepted file, in bytes. */
   maxSize: z.int().positive().optional(),
+  /** Photos made smaller before they are kept: see ShrinkSchema. */
+  shrink: ShrinkSchema.optional(),
   /** Several files: the value becomes a list of them. */
   multiple: z.boolean().optional(),
   /** With `multiple`: the fewest files an answer has, once it has any — `required` asks for one. */

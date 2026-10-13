@@ -18,6 +18,8 @@ import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
 import { loadedRecordOf, saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
+import { createUploads, fileBytesIn, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
+import type { UploadFile } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -66,6 +68,8 @@ export interface FormState {
   readonly choices: Readonly<Record<string, Choices>>;
   /** The definitions loaded for a properties field with `definitionsFrom`, by field, once asked for. */
   readonly definitions: Readonly<Record<string, Definitions>>;
+  /** Files on their way to the data source's store, in the order picked: each field shows its own (`upload`). */
+  readonly uploads: readonly FileUpload[];
 }
 
 /** A properties field's definitions from the app, as they load. */
@@ -325,6 +329,27 @@ export interface Form {
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   restoreDraft(): void;
   discardDraft(): void;
+  /**
+   * Whether a file picked for a file or picture field is stored at once,
+   * through the data source's `upload`. False without one: a file then
+   * travels inside the record as base64, as it always has.
+   */
+  canUpload(): boolean;
+  /**
+   * Store files picked for a file or picture field — or a field on a table's
+   * line (`how.line`) — through the data source's `upload`, each as soon as
+   * it is picked: `uploads` in the state shows each on its way, and once
+   * stored the field holds its link, a field of several in the order they
+   * were picked. Three go at once, the rest wait their turn; `how.prepare`
+   * makes each ready first, one at a time (a photo made smaller). A field of
+   * one file keeps the last one picked. Gives each upload's id. A save waits
+   * for those still going, and stops, under the field, for one that failed.
+   */
+  upload(field: string, files: readonly UploadFile[], how?: UploadHow): string[];
+  /** Stop an upload and drop its file, whether it is on its way, waiting, or failed. */
+  cancelUpload(id: string): void;
+  /** Send a file that failed again. */
+  retryUpload(id: string): void;
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -546,8 +571,29 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     saveProblem: null,
     choices: {},
     definitions: {},
+    uploads: [],
   };
   started = true;
+  /** Files on their way to the store: uploads.ts. */
+  const uploads = createUploads({
+    source: () => options.dataSource,
+    model: () => (page.data.kind === 'record' ? page.data.model : page.id),
+    recordId: () => state.recordId,
+    lineId: (field, key) => ((state.values[field] as Line[] | null) ?? []).find((line) => line.key === key)?.id,
+    fileField(field, line) {
+      const def = line ? (fields[line.field]?.type === 'one2many' ? (fields[line.field] as Extract<Field, { type: 'one2many' }>).fields[field] : undefined) : fields[field];
+      return def?.type === 'binary' || def?.type === 'image' ? def : null;
+    },
+    read: (field, line) => (line ? ((state.values[line.field] as Line[] | null) ?? []).find((l) => l.key === line.key)?.values[field] : state.values[field]),
+    write(field, line, value, quiet) {
+      if (!quiet) return line ? form.updateLine(line.field, line.key, field, value) : form.setValue(field, value);
+      // A link in place of the bytes, as a save stores them: nothing else follows from it.
+      const values = line ? { [line.field]: ((state.values[line.field] as Line[] | null) ?? []).map((l) => (l.key === line.key ? { ...l, values: { ...l.values, [field]: value } } : l)) } : { [field]: value };
+      writeValues({ ...(state.values as Values), ...values });
+    },
+    changed: (list) => set({ uploads: list }),
+    track,
+  });
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
   let serverErrors: Record<string, { message: string; value: string }> = {};
   let lineKeys = 0;
@@ -896,7 +942,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     draftTimer = scheduler.setTimeout(() => {
       draftTimer = null;
-      drafts.store.setItem(draftKey(), JSON.stringify({ savedAt: new Date().toISOString(), values: state.values }));
+      // Never a file's bytes: they would fill the browser's store (uploads.ts). A store that is full anyway keeps no draft.
+      try {
+        drafts.store.setItem(draftKey(), JSON.stringify({ savedAt: new Date().toISOString(), values: withoutFileBytes(fields, state.values) }));
+      } catch {
+        // The draft is a convenience: the form goes on without it.
+      }
     }, drafts.delayMs ?? 400);
   }
 
@@ -1001,6 +1052,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
    * and a stop keeps it unsaved; `afterSave` runs once it is saved.
    */
   async function saving(chain: readonly string[]): Promise<Stopped | null> {
+    // Files still on their way are waited for first: the state says how many, so the page can say why it waits.
+    if (uploads.going()) {
+      set({ status: 'saving', error: null, saveProblem: null });
+      await uploads.settled();
+      set({ status: 'ready' });
+    }
     if (page.on?.beforeSave) {
       const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
       if (!before.done) {
@@ -1012,15 +1069,23 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         return { reason: 'save', ...(before.message !== undefined ? { message: before.message } : {}) };
       }
     }
-    const errors = collectErrors();
+    // A file that did not reach the store stops it, under its field, with the form's own checks.
+    const errors = { ...collectErrors(), ...uploads.problems(messages) };
     if (Object.keys(errors).length) {
-      set({ errors });
+      set({ errors, ...unstored(errors) });
       return { reason: 'save', message: Object.values(errors)[0] };
     }
     const source = options.dataSource;
     serverErrors = {};
     set({ status: 'saving', errors: {}, error: null, saveProblem: null });
     try {
+      // Bytes still in the record — a signature drawn, a value the app set — go to the store first, where it keeps files.
+      await uploads.storeBytes(fileBytesIn(fields, state.values, page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty));
+      const failed = uploads.problems(messages);
+      if (Object.keys(failed).length) {
+        set({ errors: failed, ...unstored(failed) });
+        return { reason: 'save', message: Object.values(failed)[0] };
+      }
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
         const sent = shownValues();
@@ -1054,6 +1119,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ status: 'error', error: problem.message, saveProblem: problem, errors: { ...fields } });
       return { reason: 'save', message: problem.message };
     }
+  }
+
+  /** A save stopped by files that did not reach the store: shown under their fields, as a refused save's fields are. */
+  function unstored(errors: Record<string, string>): Partial<FormState> {
+    const files = uploads.problems(messages);
+    const only = Object.fromEntries(Object.entries(errors).filter(([key]) => key in files));
+    if (!Object.keys(only).length) return {};
+    return { status: 'error', error: Object.values(only)[0], saveProblem: { kind: 'fields', message: Object.values(only)[0], fields: only } };
   }
 
   /** The form has its values: told to the app, its `open` steps run, then the wizard step it shows is told. */
@@ -1228,6 +1301,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     serverErrors = {};
     told = null;
     showing = false;
+    uploads.clear();
     const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
@@ -1382,8 +1456,15 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     save: () => track(save()),
 
+    canUpload: () => typeof options.dataSource?.upload === 'function',
+    upload: (field, files, how = {}) => uploads.start(field, files, how),
+    cancelUpload: (id) => uploads.cancel(id),
+    retryUpload: (id) => uploads.retry(id),
+
     reset() {
       forgetDraft();
+      // Files on their way were changes too: they go with the rest.
+      uploads.clear();
       serverErrors = {};
       holding = setWhen.holding(baseline);
       const values = syncParts(structuredCopy(baseline), 'start');
@@ -1694,6 +1775,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     embedded: (id) => attached.get(id)?.inner.form ?? null,
 
     dispose() {
+      uploads.clear();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
       listeners.clear();
