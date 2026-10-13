@@ -316,7 +316,15 @@ street (its own, before its town), the town for a district; found nowhere in
 its own districts, no place is written (the field says so under the box),
 and its parts still are. A search still waiting when
 a suggestion is picked or the box is left is dropped, and Enter never searches
-for the address a pick wrote.
+for the address a pick wrote. The place and parts a pick wrote stay while the
+words are only edited (a flat added, a word taken out); once the box is left
+emptied, or with the address picked typed over (all of it selected, then typed
+or pasted), they go with it.
+
+Azure's and Google's suggestions, places and parts were checked against their
+live services in October 2026, in English and Arabic, across Egypt, Saudi
+Arabia, the UAE and Jordan. Mapbox's are read as its documentation describes
+them and have not yet been checked against its live service.
 
 Escape drops a search waiting or on its way, as more typing, a pick and
 leaving the box do, and no search is said to be going once it is dropped; a

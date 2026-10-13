@@ -132,6 +132,11 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   let picking = 0;
   /** Whether the box has been emptied since the last pick: the words it wrote all taken out, whatever is typed in their place. */
   let emptied = false;
+  /** The words that name the address picked (its first line, and the provider's own first piece): while the box still says one, it is that address, edited. */
+  let picked: string[] = [];
+  const plain = (text: string) => text.toLocaleLowerCase(locale).replace(/\s+/g, ' ').trim();
+  const firstPiece = (line: string) => plain(line.split(/[,،]/)[0] ?? '');
+  const typedOver = () => picked.length > 0 && !picked.some((words) => words && plain(input.value).includes(words));
   const typedOn = () => {
     tell(null);
     if (!input.value.trim()) emptied = true;
@@ -177,10 +182,12 @@ export function suggest({ settings, context, search, element, input, searchBox, 
       if (parts) wrote.parts = partsNow();
     }
   };
-  // Emptied and left: the address picked is no longer the box's, nor its place and parts (a delivery would go to it); words only edited keep them.
+  // Emptied and left, or typed over in one go (all of it selected, then typed or pasted): the address picked is no longer the
+  // box's, nor its place and parts (a delivery would go to it); words only edited, a flat added or a word taken out, keep them.
   const left = () => {
-    if (!emptied) return;
+    if (!emptied && !typedOver()) return;
     emptied = false;
+    picked = [];
     // A pick still finding its place writes nothing now.
     picking++;
     tell(null);
@@ -204,6 +211,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     async pick(place: PlaceFound) {
       const mine = ++picking;
       emptied = false;
+      picked = [plain(place.label)];
       tell(null);
       const whole = addressLine([place.label, place.detail], locale);
       write(whole);
@@ -223,7 +231,10 @@ export function suggest({ settings, context, search, element, input, searchBox, 
           at = located;
           parts = located.parts ?? parts;
           // The provider's own way of writing it, unless a person has typed since.
-          if (located.address && input.value === whole) write(addressLine([located.address], locale));
+          if (located.address && input.value === whole) {
+            write(addressLine([located.address], locale));
+            picked.push(firstPiece(located.address));
+          }
         }
       }
       // The pick before's place and parts, still as it wrote them, were another address's: they go, though nothing comes in their place.

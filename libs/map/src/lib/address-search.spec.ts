@@ -739,6 +739,13 @@ describe('an address with suggestions', () => {
     type(box, '5 Some Unknown Lane, Heliopolis');
     box.blur();
     expect(values()).toMatchObject({ address: '5 Some Unknown Lane, Heliopolis', spot: null, parts: { line2: 'Flat 3' } });
+    // Typed over in one go (all of it selected, then typed or pasted), and left: the box never stood empty, but the
+    // address picked is gone from it, and its place and parts with it.
+    box.value = '';
+    await pick();
+    typedAs('8 Road 9, Maadi');
+    box.blur();
+    expect(values()).toMatchObject({ address: '8 Road 9, Maadi', spot: null, parts: { line2: 'Flat 3' } });
     // Edited, a word taken out: the address picked still, its place and parts too.
     box.value = '';
     await pick();
