@@ -1,6 +1,6 @@
 import type { ButtonNode, Field, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, type Designer } from './designer';
-import { button, choose, field, mount, openTab, press, type } from './test-editor';
+import { button, choose, field, mount, openTab, press, type, typeAndLeave } from './test-editor';
 
 /**
  * The steps editor, as a person uses it on the panel: a body button's When
@@ -133,7 +133,7 @@ describe('When clicked, on a body button', () => {
     // Once it is saved: a step of its own, under it.
     button(clicked(host), 'Add a step once it’s saved')?.click();
     pick_('Say something');
-    type(field(clicked(host), 'Words'), 'Customer added');
+    typeAndLeave(field(clicked(host), 'Words'), 'Customer added');
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel', into: { customer: 'name' }, then: [{ do: 'say', message: 'Customer added' }] });
     expect(sayings(clicked(host))).toEqual(['Run the app’s action button', 'Open Customer in a panel, then put its answer in Customer', 'Say: Customer added']);
     // Under the step that opened the page.
@@ -162,9 +162,9 @@ describe('When clicked, on a body button', () => {
     expect([...(field(map, 'Its field') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Pick…', 'Name', 'Phone']);
     choose(field(map, 'Its field'), 'phone');
     const value = field(map, 'Phone gets') as HTMLInputElement;
-    type(value, 'customer');
+    typeAndLeave(value, 'customer');
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', values: { phone: 'customer' } });
-    type(value, "customer + ' (new)'");
+    typeAndLeave(value, "customer + ' (new)'");
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', values: { phone: "customer + ' (new)'" } });
     designer.undo();
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer' });
@@ -178,7 +178,7 @@ describe('When clicked, on a body button', () => {
     pick_('Open a web address');
     const address = field(clicked(host), 'Address') as HTMLInputElement;
     expect(document.activeElement).toBe(address);
-    type(address, "'https://portal.example/' + customer");
+    typeAndLeave(address, "'https://portal.example/' + customer");
     address.dispatchEvent(new Event('change', { bubbles: true }));
     expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://portal.example/' + customer" });
     const newTab = [...clicked(host).querySelectorAll('label')].find((l) => l.textContent === 'In a new tab')?.querySelector('input') as HTMLInputElement;
@@ -207,11 +207,11 @@ describe('When clicked, on a body button', () => {
     const { host } = mount(designer, { mode: 'advanced' });
     ([...clicked(host).querySelectorAll<HTMLButtonElement>('.fd-do-say')][1]).click();
     const to = field(clicked(host), 'To') as HTMLInputElement;
-    type(to, 'quantity *');
+    typeAndLeave(to, 'quantity *');
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'set', field: 'price', value: 'quantity * 2' });
-    type(to, 'quantity * 12.5');
+    typeAndLeave(to, 'quantity * 12.5');
     button(clicked(host), 'Only when…')?.click();
-    type(field(clicked(host), 'Runs only when') as HTMLInputElement, 'quantity > 0');
+    typeAndLeave(field(clicked(host), 'Runs only when') as HTMLInputElement, 'quantity > 0');
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'set', field: 'price', value: 'quantity * 12.5', when: 'quantity > 0' });
     expect(sayings(clicked(host))[1]).toBe('Set Price to Quantity × 12.5 when Quantity > 0');
   });
@@ -227,7 +227,7 @@ describe('When it changes, on a field’s Rules tab', () => {
     expect(changes.querySelector('.fd-prop-name')?.textContent).toBe('When it changes');
     button(changes, 'Add a step')?.click();
     pick_('Run one of the app’s actions');
-    type(field(changes, 'The app’s action'), 'check_stock');
+    typeAndLeave(field(changes, 'The app’s action'), 'check_stock');
     expect(designer.getPage().on).toEqual({ change: { product: [{ do: 'call', action: 'check_stock' }] } });
   });
 
@@ -253,7 +253,7 @@ describe('the form’s moments, on the page’s Rules tab', () => {
     pick_('Check the form');
     button(before, 'Add a step')?.click();
     pick_('Ask Yes or No');
-    type(field(before, 'Words'), 'Send the order?');
+    typeAndLeave(field(before, 'Words'), 'Send the order?');
     expect(designer.getPage().on).toEqual({ beforeSave: [{ do: 'check' }, { do: 'ask', message: 'Send the order?' }] });
     expect(sayings(before)).toEqual(['Check the form', 'Ask: Send the order?']);
   });
@@ -277,7 +277,7 @@ describe('a tab shown, on the page’s Rules tab', () => {
     expect(document.activeElement?.textContent).toBe('Add a step');
     button(shown, 'Add a step')?.click();
     pick_('Say something');
-    type(field(shown, 'Words'), 'Your invoices');
+    typeAndLeave(field(shown, 'Words'), 'Your invoices');
     expect(designer.getPage().on).toEqual({ show: { [tabs.children[1].id]: [{ do: 'say', message: 'Your invoices' }] } });
     // The tab with steps is no longer offered.
     expect([...(field(moments, 'Steps for a tab or step…') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Steps for a tab or step…', 'Tab 1']);

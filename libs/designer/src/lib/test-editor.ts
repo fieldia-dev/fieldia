@@ -50,6 +50,19 @@ export function type(input: HTMLInputElement | undefined, text: string): void {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/** The box left, as a person moves on from it: its change said, then its focus gone. A setting is kept as its box is left. */
+export function leave(input: HTMLInputElement | HTMLTextAreaElement | undefined): void {
+  if (!input) throw new Error('No box to leave');
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  input.blur();
+}
+
+/** Typed, then left: what a setting's box keeps. */
+export function typeAndLeave(input: HTMLInputElement | undefined, text: string): void {
+  type(input, text);
+  leave(input);
+}
+
 export function choose(select: HTMLSelectElement | undefined, value: string): void {
   if (!select) throw new Error('No list to choose from');
   select.value = value;

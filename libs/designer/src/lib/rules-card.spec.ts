@@ -71,6 +71,8 @@ describe('a survey card’s answer rules', () => {
     const name = (label: string) => (names.find(([l]) => l === label) as string[])[1];
     box.value = `${name('Adults')} + ${name('Children')}`;
     box.dispatchEvent(new Event('input', { bubbles: true }));
+    // Kept as the box is left.
+    box.blur();
     expect(designer.getPage().fields[name('Guests')].compute).toBe(`${name('Adults')} + ${name('Children')}`);
     expect(host.querySelector('.fd-q-selected .fd-formula-outcome')?.textContent).toBe('With Adults 120 and Children 80: 200');
     expect(host.querySelector('.fd-q-selected .fd-formula-reads')?.textContent).toBe('Reads: Adults + Children');
