@@ -58,10 +58,15 @@ export function kindTextField(def: LineField, kind: 'section' | 'note'): LineFie
 /** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
 export function lineForm(form: Form, field: string, key: string): Form {
   const values = () => (((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key)?.values ?? {});
+  // A cell's unread text is kept by its path in the record's form (`field.key.column`): the cell sees its own by its column.
+  const at = `${field}.${key}.`;
+  const unread = () => Object.fromEntries(Object.entries(form.getState().unread ?? {}).flatMap(([path, text]) => (path.startsWith(at) ? [[path.slice(at.length), text]] : [])));
   return {
     ...form,
-    getState: (): FormState => ({ ...form.getState(), values: values() }),
+    getState: (): FormState => ({ ...form.getState(), values: values(), unread: unread() }),
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
+    setUnread: (name: string, text) => form.setUnread(`${at}${name}`, text),
+    leave: (name: string) => form.leave(`${at}${name}`),
     search: (name: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }) => form.searchLine(field, key, name, query, limit, options),
     canCreate: (name: string) => form.canCreateLine(field, name),
     quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),

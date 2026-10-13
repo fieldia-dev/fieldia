@@ -315,15 +315,21 @@ describe('number widgets — typing a number is not one keystroke', () => {
     expect(input.value).toBe('2.00');
   });
 
-  it('passes text that is not a number on, so validation can name it', () => {
+  it('never holds words: letters a keyboard could not be stopped from typing are put back, with why', () => {
     const { form, el } = setup({ type: 'integer' });
-    type(q<HTMLInputElement>(el, 'input'), '12a');
-    expect(valueOf(form)).toBe('12a');
+    const input = q<HTMLInputElement>(el, 'input');
+    type(input, '12');
+    type(input, '12a');
+    expect(input.value).toBe('12');
+    expect(valueOf(form)).toBe(12);
   });
 
-  it('asks for a decimal keypad, or a numeric one for integers', () => {
-    expect(q<HTMLInputElement>(setup({ type: 'float' }).el, 'input').inputMode).toBe('decimal');
-    expect(q<HTMLInputElement>(setup({ type: 'integer' }).el, 'input').inputMode).toBe('numeric');
+  it('asks for digits alone, digits and a mark, or the full keyboard where a minus may be typed', () => {
+    expect(q<HTMLInputElement>(setup({ type: 'integer', min: 0 }).el, 'input').inputMode).toBe('numeric');
+    expect(q<HTMLInputElement>(setup({ type: 'float', min: 0 }).el, 'input').inputMode).toBe('decimal');
+    // An iPhone's number pad has no minus.
+    expect(q<HTMLInputElement>(setup({ type: 'float' }).el, 'input').inputMode).toBe('text');
+    expect(q<HTMLInputElement>(setup({ type: 'integer', min: -5 }).el, 'input').inputMode).toBe('text');
   });
 
   it('shows the currency’s symbol with a monetary amount', () => {

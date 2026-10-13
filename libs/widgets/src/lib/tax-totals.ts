@@ -1,7 +1,8 @@
-import type { JsonValue, RelatedRecord, Value } from '@fieldia/core';
-import { maker, wordsFor } from './kind-parts';
-import { formatMoney, formatNumber, normalizeNumber } from './numbers';
-import type { WidgetFactory } from './widgets';
+import { readNumber, type JsonValue, type RelatedRecord, type Value } from '@fieldia/core';
+import { fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
+import { guard, numberRules, refusalHint, unreadWords, type Guard } from './input-rules';
+import { formatMoney, formatNumber } from './numbers';
+import type { Widget, WidgetFactory, WidgetState } from './widgets';
 
 /**
  * Tax totals: Flectra's account-tax-totals-field. The app works the value out
@@ -57,6 +58,19 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
   const body = make('tbody');
   const element = make('table', { id, class: 'fd-tax-totals' }, body);
   let drawn = '';
+  /** What a tax box left says: an amount kept, or text that does not read. In a row of its own after the totals, said politely. */
+  const note = make('div', { class: 'fd-refusal-hint fd-tax-note', id: `${id}-note`, role: 'status', hidden: '' });
+  const noteRow = make('tr', { class: 'fd-tax-note-row' }, make('td', { colspan: '2' }, note));
+  const say = (words: string) => {
+    note.textContent = words;
+    setHidden(note, !words);
+  };
+  /** Text left in a tax box that does not read, by the group's place: kept in its box, marked, until it is put right. */
+  const unread = new Map<string, { text: string; message: string }>();
+  const placeOf = (group: Group) => JSON.stringify(group.at);
+  let guards: Guard[] = [];
+  /** The state last drawn from: drawn again from it once the boxes are left, even when the totals are the same. */
+  let last: WidgetState | null = null;
 
   /** The value with one group's amount typed in, and the total following. */
   function typed(group: Group, amount: number) {
@@ -73,10 +87,14 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
     form.setValue(name, value as JsonValue);
   }
 
-  return {
+  const widget: Widget = {
     element,
     focus: () => element.querySelector<HTMLInputElement>('input')?.focus(),
+    destroy: () => guards.forEach((g) => g.destroy()),
     update(state) {
+      last = state;
+      // The form lets text go once the value is written another way (the app's): its boxes do too.
+      if (!form.getState().unread?.[name]) unread.clear();
       const totals = read(state.value, words.untaxed);
       const holder = currencyField ? state.values[currencyField] : null;
       const code = fixed ?? (holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : typeof holder === 'string' ? holder : '');
@@ -86,6 +104,8 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
       // Drawn again only when what it shows changes, so a box being typed in stays.
       if (key === drawn || element.contains(document.activeElement)) return;
       drawn = key;
+      guards.forEach((g) => g.destroy());
+      guards = [];
       const row = (label: string, amount: string | HTMLElement, className: string) => make('tr', { class: className }, make('th', { scope: 'row' }, label), make('td', {}, amount));
       const rows: HTMLElement[] = [];
       for (const subtotal of totals?.subtotals ?? []) {
@@ -95,17 +115,59 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
             rows.push(row(group.name, money(group.amount), 'fd-tax-group'));
             continue;
           }
-          const box = make('input', { type: 'text', class: 'fd-input fd-number-input', inputmode: 'decimal', autocomplete: 'off', 'aria-label': group.name });
-          box.value = formatNumber(group.amount, 2, locale);
+          const box = make('input', { type: 'text', class: 'fd-input fd-number-input', inputmode: 'text', autocomplete: 'off', 'aria-label': group.name });
+          const left = unread.get(placeOf(group));
+          box.value = left ? left.text : formatNumber(group.amount, 2, locale);
+          setAttr(box, 'aria-invalid', left ? 'true' : null);
+          if (left) box.setAttribute('aria-describedby', note.id);
+          // The tax box's input rules: an amount, two places, in the record's currency (pasted with it too).
+          const rules = { label: group.name, locale, labels, limits: () => ({ places: 2 }), currency: () => (/^[A-Z]{3}$/.test(code) ? code : null) };
+          guards.push(guard(box, numberRules(rules), refusalHint(box)));
+          // Left, or Enter pressed, with an edit: what it says is read.
           box.addEventListener('change', () => {
-            const text = normalizeNumber(box.value.trim(), locale);
-            if (/^-?(\d+\.?\d*|\.\d+)$/.test(text)) typed(group, Number(text));
+            const text = box.value;
+            const problem = unreadWords(text, rules);
+            const read = readNumber(text, locale);
+            if (problem || !read.ok) {
+              // Kept as typed, marked, with why: the amount stays what it was.
+              const left = { text, message: problem ?? '' };
+              unread.set(placeOf(group), left);
+              form.setUnread(name, left);
+              setAttr(box, 'aria-invalid', 'true');
+              box.setAttribute('aria-describedby', note.id);
+              say(left.message);
+              return;
+            }
+            unread.delete(placeOf(group));
+            form.setUnread(name, [...unread.values()][0] ?? null);
+            setAttr(box, 'aria-invalid', null);
+            box.removeAttribute('aria-describedby');
+            if (read.value === null) {
+              // Emptied and left: it goes back to the amount kept, and says so.
+              box.value = formatNumber(group.amount, 2, locale);
+              say(fillIn(words.stillHolds, { label: group.name, value: money(group.amount) }));
+              return;
+            }
+            say('');
+            box.value = formatNumber(read.value, 2, locale);
+            if (read.value !== group.amount) typed(group, read.value);
           });
           rows.push(row(group.name, box, 'fd-tax-group'));
         }
       }
       if (totals) rows.push(row(words.total, money(totals.total), 'fd-tax-total'));
+      if (editable) rows.push(noteRow);
       body.replaceChildren(...rows);
     },
   };
+  // Drawn again once its boxes are left, even when the totals are the same.
+  element.addEventListener('focusout', (event) => {
+    if (element.contains(event.relatedTarget as Node | null)) return;
+    queueMicrotask(() => {
+      if (!last || element.contains(element.ownerDocument.activeElement)) return;
+      drawn = '';
+      widget.update(last);
+    });
+  });
+  return widget;
 };

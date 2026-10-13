@@ -1,3 +1,4 @@
+import { placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -14,7 +15,8 @@ import type {
   Values,
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
-import { formatNumber, formatPlain, normalizeNumber, ungroup } from './numbers';
+import { formatNumber, formatPlain, ungroup } from './numbers';
+import { guard, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -258,54 +260,41 @@ const textareaWidget: WidgetFactory = (context) => {
   }, context, area);
 };
 
-const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;
-const UNFINISHED = /^-?\.?$/;
-
 /**
  * Numbers are written as readers of the page's language write them, grouped,
- * with the field's decimals, and read back the same way. Entered, the box
- * shows the plain number, no grouping marks — a digit typed mid-number would
- * leave them in the wrong places ("600,1000.00") — and a whole-text selection
- * made on the way in holds, so typing replaces it. What is typed stays as
- * typed while focused: "1." means 1 now and 1.5 a keystroke later.
+ * with the field's decimals, and read back the same way (@fieldia/core's
+ * readNumber: Arabic digits, ٫ and ، too, a German or French decimal comma).
+ * Entered, the box shows the plain number, no grouping marks — a digit typed
+ * mid-number would leave them in the wrong places ("600,1000.00") — and a
+ * whole-text selection made on the way in holds, so typing replaces it. What
+ * is typed stays as typed while focused: "1." means 1 now and 1.5 a keystroke
+ * later. The input rules refuse, as they are typed or pasted, letters, a
+ * misplaced minus, a second decimal mark, places and digits past the
+ * field's; text left that does not read stays in the box, marked, and the
+ * field keeps the value it held (`FormState.unread`).
  */
 const numberWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document, locale = 'en' } = context;
+  const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const integer = field.type === 'integer';
-  const decimals = integer ? 0 : (field.type === 'float' || field.type === 'monetary' ? field.digits?.[1] : undefined) ?? 2;
-  const shown = (value: Value | undefined) => (typeof value === 'number' ? formatNumber(value, decimals, locale) : textOf(value));
+  /** The box's currency now: a money box's places, and an amount pasted with it, follow it. */
+  let currencyNow: string | null = field.type === 'monetary' ? currencyOf(field, form.getState().values) : null;
+  const digits = field.type === 'float' || field.type === 'monetary' ? field.digits : undefined;
+  /** The places a value is written with at rest: the field's, padded; a money field's currency's when it has no digits. */
+  const fieldPlaces = () => (integer ? 0 : (digits?.[1] ?? (field.type === 'monetary' ? placesOfCurrency(currencyNow) : 2)));
+  /** Never fewer places than the value has: the box never shows a rounded picture of a different value. */
+  const placesFor = (value: number) => Math.max(fieldPlaces(), Math.min(placesOf(value), 20));
+  const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? formatNumber(value, placesFor(value), locale) : '') : textOf(value));
+  const plain = (value: number) => formatPlain(value, placesFor(value), locale);
+  const min = 'min' in field && typeof field.min === 'number' ? field.min : undefined;
+  const limits = (): NumberLimits => ({
+    integer,
+    ...(integer ? {} : digits ? { places: digits[1] } : field.type === 'monetary' ? { places: placesOfCurrency(currencyNow) } : {}),
+    ...(digits ? { digits: digits[0] } : {}),
+    ...(min !== undefined ? { min } : {}),
+  });
   const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', autocomplete: 'off' });
-  input.inputMode = integer ? 'numeric' : 'decimal';
+  input.inputMode = numberKeyboard(limits());
   if (node.placeholder) input.placeholder = node.placeholder;
-
-  const parse = (raw: string): Value | undefined => {
-    const text = normalizeNumber(raw.trim(), locale);
-    if (text === '') return null;
-    if (NUMBER.test(text)) return Number(text);
-    if (UNFINISHED.test(text)) return undefined; // "-" or ".": keep typing
-    return text; // not a number: validation names it
-  };
-  input.addEventListener('input', () => {
-    const value = parse(input.value);
-    if (value !== undefined) form.setValue(name, value);
-  });
-  input.addEventListener('focus', () => {
-    // Once the browser has put its selection in the box: a selection made before focus() is put back only after
-    // the focus event, and a click places its caret after it, against the plain words.
-    queueMicrotask(() => {
-      const value = form.getState().values[name];
-      if (document.activeElement !== input || input.readOnly || typeof value !== 'number' || input.value !== shown(value)) return;
-      const grouped = input.value;
-      const [start, end] = [input.selectionStart ?? grouped.length, input.selectionEnd ?? grouped.length];
-      // Where the selection stands among the digits, the grouping marks taken out.
-      const at = (index: number) => ungroup(grouped.slice(0, index), locale).length;
-      input.value = ungroup(grouped, locale);
-      input.setSelectionRange(at(start), at(end));
-    });
-  });
-  input.addEventListener('blur', () => {
-    input.value = shown(form.getState().values[name]);
-  });
 
   // Money shows its currency beside the amount (options.symbol "after" puts it
   // after), or with options.pickCurrency the currency field's own widget, to change it.
@@ -332,25 +321,77 @@ const numberWidget: WidgetFactory = (context) => {
       ? make(document, 'span', { class: `fd-number${after ? ' fd-currency-after' : ''}${picker ? ' fd-currency-picked' : ''}` }, ...[first, input, last].filter((u): u is HTMLElement => !!u))
       : input;
 
+  // The input rules: refused keystrokes and pastes are said under the box (after the units round it).
+  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow };
+  const hint = refusalHint(input, element);
+  const checks = guard(input, numberRules(box), hint);
+  /** Unread text the form keeps for this box, and what the field held as the box was entered. */
+  const unreadNow = () => form.getState().unread?.[name];
+  let entered: Value | undefined;
+  input.addEventListener('focus', () => {
+    entered = form.getState().values[name];
+    // Once the browser has put its selection in the box: a selection made before focus() is put back only after
+    // the focus event, and a click places its caret after it, against the plain words.
+    queueMicrotask(() => {
+      const value = form.getState().values[name];
+      if (document.activeElement !== input || input.readOnly || typeof value !== 'number' || input.value !== shown(value)) return;
+      const grouped = input.value;
+      const [start, end] = [input.selectionStart ?? grouped.length, input.selectionEnd ?? grouped.length];
+      // Where the selection stands among the digits, the grouping and direction marks taken out.
+      const at = (index: number) => ungroup(grouped.slice(0, index), locale).length;
+      input.value = plain(value);
+      input.setSelectionRange(at(start), at(end));
+      checks.accept();
+    });
+  });
+  input.addEventListener('input', () => {
+    const reading = readNumber(input.value, locale);
+    // On its way to a number ("-", "1,"), or text that does not read: nothing is set; leaving the box says why.
+    if (!reading.ok) return;
+    form.setValue(name, reading.value);
+    if (unreadNow()) form.setUnread(name, null);
+  });
+  input.addEventListener('blur', () => {
+    if (input.readOnly) return;
+    const text = input.value;
+    const words = unreadWords(text, box);
+    if (words === null) {
+      if (unreadNow()) form.setUnread(name, null);
+      input.value = shown(form.getState().values[name]);
+      return;
+    }
+    // What does not read stays in the box, marked; the field keeps what it held as the box was entered.
+    if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
+    form.setUnread(name, { text, message: words });
+  });
+
   return {
     element,
     focus: () => input.focus(),
+    destroy: () => checks.destroy(),
     update(state) {
+      if (field.type === 'monetary') currencyNow = currencyOf(field, state.values, state.parent);
       const typing = document.activeElement === input;
-      const parsed = parse(input.value);
-      const showsSame = parsed === undefined || parsed === state.value;
-      if (!(typing && showsSame)) {
+      const unread = unreadNow();
+      if (typing) {
+        const reading = readNumber(input.value, locale);
         // A value changed under the person editing it shows as they edit: plain.
-        const text = typing && !state.readonly && typeof state.value === 'number' ? formatPlain(state.value, decimals, locale) : shown(state.value);
+        if (reading.ok && reading.value !== (state.value ?? null)) {
+          input.value = !state.readonly && typeof state.value === 'number' ? plain(state.value) : shown(state.value);
+          checks.accept();
+        }
+      } else {
+        // Text left that does not read stays as it was typed; anything else shows the value at rest.
+        const text = unread ? unread.text : shown(state.value);
         if (input.value !== text) input.value = text;
       }
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      describe(input, { ...state, describedBy: [state.describedBy, ...units.map((u) => u.id)].filter(Boolean).join(' ') });
+      describe(input, { ...state, invalid: state.invalid || (!!unread && !typing), describedBy: hint.describedBy([state.describedBy, ...units.map((u) => u.id)].filter(Boolean).join(' ')) });
       if (picker && currencyField) {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
-        const code = currencyOf(field, state.values, state.parent) ?? '';
+        const code = currencyNow ?? '';
         // By its symbol, or its code when the field's money look says so.
         setText(currency, /^[A-Z]{3}$/.test(code) && look?.currency !== 'code' ? currencySymbol(code, locale).text : code);
       }
