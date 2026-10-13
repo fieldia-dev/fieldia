@@ -63,7 +63,11 @@ export const BUSINESS_CSS = /* css */ `
 /* Too narrow for a date and the calendar's button beside it, the button goes under: a date is never cut. */
 .fd-range-box { flex: 1 1 8em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
-.fd-range-box > .fd-input[type="datetime-local"] { flex-basis: 13em; }
+.fd-range-box > .fd-input.fd-range-input:is([data-kind="datetime"]) { flex-basis: 13em; }
+/* Under the range, on a line of its own: a box's hint, and the end's own problem; nothing at all while there is none. */
+.fd-range-notes { flex: 1 0 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.fd-range-notes:not(:has(> :not([hidden]))) { display: none; }
+.fd-range-notes > .fd-refusal-hint { margin: 0; }
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
 .fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
 .fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }

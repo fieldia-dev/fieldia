@@ -850,6 +850,12 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-calendar-grid td button[aria-current="date"] { box-shadow: inset 0 0 0 1px var(--fd-accent); }
 .fd-calendar-grid td button[aria-selected="true"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
 .fd-calendar-grid td button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* A day past the field's limits: faint and struck through; pressed, the note under the month says why. */
+.fd-calendar-grid td button.fd-off { color: var(--fd-muted); opacity: 0.55; text-decoration: line-through; }
+.fd-calendar-note {
+  max-width: 17em; margin-block-start: 6px; padding: 3px 8px; border-radius: var(--fd-control-radius);
+  color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4; text-align: start;
+}
 .fd-properties { display: grid; gap: 8px; min-width: 0; }
 .fd-property { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
 .fd-property > label { color: var(--fd-muted); font-size: 13px; }

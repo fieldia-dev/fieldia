@@ -24,7 +24,7 @@ import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
-import { withCalendar } from './calendar';
+import { dateBoxWidget } from './date-box';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
@@ -59,7 +59,6 @@ import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
-import { openOnClick } from './quiet';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -609,60 +608,10 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   };
 }
 
-const dateWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
-  bounds(input, field, node);
-  input.addEventListener('input', () => form.setValue(name, input.value || null));
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = textOf(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      // Empty, its mask is no answer: read-only, it is not drawn.
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'date');
-  openOnClick(input);
-  return widget;
-};
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
+// A date, a date and time, and a time of day are typed in Fieldia's own box, a date's calendar beside it (date-box.ts).
+const dateWidget = dateBoxWidget('date');
 /** Shown in local time, stored as an ISO instant in UTC. */
-const dateTimeWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
-  bounds(input, field, node);
-  const local = (iso: Value | undefined) => {
-    if (typeof iso !== 'string' || !iso) return '';
-    const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-  input.addEventListener('input', () => {
-    if (!input.value) return form.setValue(name, null);
-    const d = new Date(input.value);
-    if (!Number.isNaN(d.getTime())) form.setValue(name, d.toISOString());
-  });
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = local(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'datetime');
-  openOnClick(input);
-  return widget;
-};
+const dateTimeWidget = dateBoxWidget('datetime');
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
@@ -704,7 +653,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
-  'char.time': textWidget('time'),
+  'char.time': dateBoxWidget('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,

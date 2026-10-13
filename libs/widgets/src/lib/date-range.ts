@@ -1,16 +1,25 @@
-import type { Locale, Value } from '@fieldia/core';
-import { describeState, maker, rightToLeft, setAttr, wordsFor } from './kind-parts';
+import type { Field, FieldNode, Locale, Value } from '@fieldia/core';
+import { dateBox } from './date-box';
+import { maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import { bounds } from './limits';
 import type { WidgetFactory } from './widgets';
 import { openOnClick } from './quiet';
 
 /**
  * A range of dates in one box, from → to: Flectra's widget="daterange". The
  * node's field is the first day, `options.endField` the last; each is typed in
- * its own date box, or the range is picked on a calendar — the first day, then
- * the last, put the right way round if picked the other way. A date and
- * time keeps its hours when its day is picked. The calendar is the ARIA date
- * picker: arrows by day and week, mirrored right to left, PageUp and PageDown
- * by month, Enter to pick, Escape to close.
+ * its own date box (Fieldia's, date-box.ts: the page's order, Arabic digits,
+ * a paste, text that does not read kept and said), or the range is picked on
+ * a calendar — the first day, then the last, put the right way round if picked
+ * the other way. A date and time keeps its hours when its day is picked. The
+ * calendar is the ARIA date picker: arrows by day and week, mirrored right to
+ * left, PageUp and PageDown by month, Enter to pick, Escape to close.
+ *
+ * The end is a field of its own: its required, earliest, latest and days, and
+ * that it is not before the start ("Ends can’t be before Starts"), are said
+ * under the range as either box is left, and at Save; its box is marked and
+ * described by them. Both boxes and the calendar keep each field's limits: a
+ * day past them is drawn faint, and picking it says why.
  */
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -24,14 +33,15 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const kind = field.type === 'datetime' ? 'datetime' : 'date';
-  const endName = typeof node.options?.['endField'] === 'string' ? (node.options['endField'] as string) : null;
-  const endLabel = endName ? (form.page.fields[endName]?.label ?? endName) : '';
+  const endName = typeof node.options?.['endField'] === 'string' && form.page.fields[node.options['endField'] as string] ? (node.options['endField'] as string) : null;
+  const endField = endName ? (form.page.fields[endName] as Field) : null;
+  const endLabel = endField?.label ?? '';
   const lang = locale === 'en' ? 'en-GB' : locale;
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const weekday = new Intl.DateTimeFormat(lang, { weekday: 'short' });
 
-  /** A field's value as its box shows it, and the day it falls on. */
+  /** A field's value as the calendar reads it, and the day it falls on. */
   const boxText = (value: Value | undefined) => {
     if (typeof value !== 'string' || !value) return '';
     if (kind === 'date') return value.slice(0, 10);
@@ -50,49 +60,86 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     return new Date(day.getFullYear(), day.getMonth(), day.getDate(), before?.getHours() ?? 0, before?.getMinutes() ?? 0).toISOString();
   };
 
-  const box = (fieldName: string, label: string, boxId?: string) => {
-    const input = make('input', { type: kind === 'date' ? 'date' : 'datetime-local', class: 'fd-input fd-range-input', 'aria-label': label, ...(boxId ? { id: boxId } : {}) });
-    input.addEventListener('input', () => {
-      if (!input.value) return form.setValue(fieldName, null);
-      if (kind === 'date') return form.setValue(fieldName, input.value);
-      const d = new Date(input.value);
-      if (!Number.isNaN(d.getTime())) form.setValue(fieldName, d.toISOString());
+  const element = make('div', { class: 'fd-range', role: 'group' });
+  // Under the range, on a line of their own: what a box refused or could not read, and the end's own problem.
+  const mark = make('span', { hidden: '' });
+  const endError = make('div', { class: 'fd-error fd-range-error', id: `${id}-end-error`, hidden: '' });
+  const notes = make('div', { class: 'fd-range-notes' }, mark, endError);
+  // Each box keeps its own field's limits, and says what it cannot read under the range.
+  const endNode: FieldNode = { type: 'field', id: `${node.id}.end`, field: endName ?? name };
+  /** A box of the range being left now: a problem of the end's it raises is said, politely; a refused Save says its own. */
+  let leaving = false;
+  const box = (fieldName: string, def: Field, at: FieldNode, label: string, boxId?: string) => {
+    const made = dateBox({ form, name: fieldName, field: def, kind, label, document, locale, labels, ...(boxId ? { id: boxId } : {}), limits: bounds(null, def, at), className: 'fd-range-input', anchor: mark, within: element });
+    made.input.setAttribute('aria-label', label);
+    openOnClick(made.input, () => calendar.hidden && open());
+    // The end is said as either box is left, once and politely: its own problems, and that it is not before the start.
+    made.input.addEventListener('blur', () => {
+      if (!endName) return;
+      leaving = true;
+      try {
+        form.leave(endName);
+      } finally {
+        leaving = false;
+      }
     });
-    openOnClick(input, () => calendar.hidden && open());
-    return input;
+    return made;
   };
-  const from = box(name, field.label, id);
-  const to = endName ? box(endName, endLabel) : null;
+  const fromBox = box(name, field, node, field.label, id);
+  const toBox = endName && endField ? box(endName, endField, endNode, endLabel) : null;
+  const [from, to] = [fromBox.input, toBox?.input ?? null];
   const button = make('button', { type: 'button', class: 'fd-calendar-button fd-range-button', 'aria-label': words.chooseDate, 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': `${id}-range` });
   button.innerHTML = CALENDAR; // a constant drawing, never words from the page
   const prev = make('button', { type: 'button', 'aria-label': words.previousMonth }, '‹');
   const next = make('button', { type: 'button', 'aria-label': words.nextMonth }, '›');
   const title = make('span', { class: 'fd-calendar-title', 'aria-live': 'polite' });
   const grid = make('table', { class: 'fd-calendar-grid', role: 'grid' });
-  const calendar = make('div', { id: `${id}-range`, class: 'fd-calendar fd-range-calendar', role: 'dialog', hidden: '' }, make('div', { class: 'fd-calendar-head' }, prev, title, next), grid);
-  const element = make('div', { class: 'fd-range', role: 'group' }, make('span', { class: 'fd-range-box' }, from, ...(to ? [make('span', { class: 'fd-range-arrow', 'aria-hidden': 'true' }, '→'), to] : [])), button, calendar);
+  // Why a day pressed was not picked: said politely under the month, which stays open.
+  const note = make('div', { class: 'fd-calendar-note', role: 'status', hidden: '' });
+  const calendar = make('div', { id: `${id}-range`, class: 'fd-calendar fd-range-calendar', role: 'dialog', hidden: '' }, make('div', { class: 'fd-calendar-head' }, prev, title, next), grid, note);
+  element.append(make('span', { class: 'fd-range-box' }, from, ...(to ? [make('span', { class: 'fd-range-arrow', 'aria-hidden': 'true' }, '→'), to] : [])), button, calendar, notes);
 
   let focused = new Date();
   /** The first day picked on the calendar, while the last is still to pick. */
   let starting: Date | null = null;
   let hovered: Date | null = null;
 
+  /** Why a day may not be picked for the start (or the end): its field's limits, in the page's words. */
+  const refused = (day: Date, end: boolean) => {
+    const values = form.getState().values;
+    return end && toBox && endName ? toBox.refuse(valueOn(day, values[endName])) : fromBox.refuse(valueOn(day, values[name]));
+  };
+  function say(words: string) {
+    setText(note, '');
+    setText(note, words);
+    setHidden(note, false);
+  }
+
   function pick(day: Date) {
     const values = form.getState().values;
     if (!endName) {
+      const why = refused(day, false);
+      if (why) return say(why);
       form.setValue(name, valueOn(day, values[name]));
       return close();
     }
     if (!starting) {
+      // The first day picked: one the start cannot be, nor the end, is said at once.
+      const why = refused(day, false) && refused(day, true);
+      if (why) return say(why);
+      setHidden(note, true);
       starting = day;
       focused = day;
       return draw(true);
     }
     const [first, last] = day < starting ? [day, starting] : [starting, day];
+    const why = refused(first, false) ?? refused(last, true);
+    if (why) return say(why);
     starting = null;
-    // Each as a person's change, so the page's own steps for either run.
+    // Each as a person's change, so the page's own steps for either run; text left in a box that did not read goes.
     form.setValue(name, valueOn(first, values[name]));
     form.setValue(endName, valueOn(last, values[endName]));
+    for (const at of [name, endName]) if (form.getState().unread?.[at]) form.setUnread(at, null);
     close();
   }
 
@@ -117,6 +164,8 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
         if (edge) button.setAttribute('aria-selected', 'true');
         if (start && end && d > start && d < end && !edge) button.classList.add('fd-in-range');
         if (sameDay(d, new Date())) button.setAttribute('aria-current', 'date');
+        // Past the limits of the day picked now — the start, then the end: faint, and a press says why.
+        if (starting ? refused(d, true) : refused(d, false) && (!endName || refused(d, true))) button.classList.add('fd-off');
         button.addEventListener('click', () => pick(d));
         button.addEventListener('pointerenter', () => {
           if (!starting) return;
@@ -161,6 +210,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   function open() {
     starting = null;
     hovered = null;
+    setHidden(note, true);
     focused = dayOf(form.getState().values[name]) ?? new Date();
     calendar.hidden = false;
     button.setAttribute('aria-expanded', 'true');
@@ -190,21 +240,29 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   };
   document.addEventListener('mousedown', outside);
 
+  /** The end's problem shown now (the start's is the field's own, which the page shows): said politely when it is new as a box is left. */
+  let endSaid = '';
   return {
     element,
     focus: () => from.focus(),
-    destroy: () => document.removeEventListener('mousedown', outside),
+    destroy: () => {
+      document.removeEventListener('mousedown', outside);
+      fromBox.destroy();
+      toBox?.destroy();
+    },
     update(state) {
-      for (const [input, value] of [[from, state.value], ...(to && endName ? [[to, state.values[endName]] as const] : [])] as const) {
-        const text = boxText(value);
-        if (document.activeElement !== input && input.value !== text) input.value = text;
-        if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-        input.classList.toggle('fd-blank', !text);
+      fromBox.update(state);
+      if (toBox && endName) {
+        const problem = form.getState().errors[endName] ?? '';
+        setAttr(endError, 'aria-live', leaving && !!problem && problem !== endSaid ? 'polite' : null);
+        endSaid = problem;
+        setText(endError, problem);
+        setHidden(endError, !problem);
+        toBox.update({ value: state.values[endName], readonly: state.readonly, invalid: !!problem, describedBy: problem ? endError.id : undefined });
       }
       button.hidden = state.readonly;
       if (state.readonly) calendar.hidden = true;
       setAttr(element, 'aria-labelledby', null);
-      describeState(from, state);
     },
   };
 };
