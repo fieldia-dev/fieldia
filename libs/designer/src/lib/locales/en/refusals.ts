@@ -175,4 +175,10 @@ export const refusals = {
   filterCondition: 'A filter needs a condition',
   buttonWords: 'A button needs words',
   listButtonAction: 'A button needs the name of its action, such as archive',
+  cellWidth: 'A column is 1 to 200 characters wide',
+  leadNeedsChoice: (label: string) => `An icon before the words comes from a choice’s value; ${label} is not a choice`,
+  dotNeedsChoice: (label: string) => `A state’s dot is for a choice; ${label} is not one`,
+  parentNotOwnLink: (label: string) => `Rows nest under a link to the list’s own records; ${label} is not one`,
+  notFilterable: (label: string) => `The filter bar cannot list the values of ${label}`,
+  chooseHasButtons: 'The list has buttons for the rows chosen: take them away before the box to choose a row',
 };

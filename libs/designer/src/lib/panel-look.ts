@@ -124,6 +124,16 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   number.addEventListener('input', () => width(number.value));
   const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
   const readonlyRow = rows[CHOICES.findIndex((c) => c.key === 'readonlyShown')];
+  // ---- what an empty quiet field shows at rest: what to add, or nothing ----
+  const quietHints = segmented<string>(
+    el,
+    w.quietHints,
+    (['say', 'nothing'] as const).map((value) => ({ value, words: w.quietHintWays[value] })),
+    (value) => designer.setLook({ quietHints: value === 'say' ? true : value === 'nothing' ? false : null }),
+    { toggle: true }
+  );
+  const quietRow = setting(el, 'look', 'Empty quiet fields', quietHints.element, { hint: w.quietHintsHint, words: w.quietHints });
+  rows.splice(CHOICES.findIndex((c) => c.key === 'readonlyShown') + 1, 0, quietRow);
   const labelsAt = CHOICES.findIndex((c) => c.key === 'labels');
   rows.splice(labelsAt + 1, 0, widthRow);
   // The skin after the theme, which brings one of its own, and the looks to start from.
@@ -144,6 +154,9 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
       for (const [key, seg] of segs) seg.set(look[key]);
       // Read-only fields are a record's: a survey's answers are all to be given.
       readonlyRow.hidden = page.data.kind !== 'record';
+      // A survey's empty question keeps saying “Your answer”: what an empty field shows is a record's choice.
+      quietRow.hidden = page.data.kind !== 'record';
+      quietHints.set(look.quietHints === undefined ? undefined : look.quietHints ? 'say' : 'nothing');
       widthRow.hidden = look.labels !== 'beside';
       const value = String(look.labelWidth ?? 140);
       if (number.ownerDocument.activeElement !== number) number.value = value;

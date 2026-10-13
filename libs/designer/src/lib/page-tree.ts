@@ -122,6 +122,8 @@ export function shownFields(page: Page): Set<string> {
     const read = (items: readonly FilterItem[]): string[] => items.flatMap((i) => ('any' in i ? read(i.any) : 'all' in i ? read(i.all) : [i.field]));
     for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => read(f.filter))]) shown.add(name);
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
+    // And in its cells' icons, its filter bar and the link its rows nest by.
+    for (const name of [...Object.values(root.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : [])), ...(root.filterFields ?? []), ...(root.parentField ? [root.parentField] : [])]) shown.add(name);
   }
   return shown;
 }

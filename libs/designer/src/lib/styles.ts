@@ -639,6 +639,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-canvas .fd-canvas-search { cursor: pointer; border-radius: var(--fd-control-radius); }
 .fd-list-canvas .fd-canvas-search:hover .fd-search-field { border-color: var(--fd-accent); }
 .fd-list-canvas .fd-canvas-search:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+/* A filter bar of fields: each field's name and chevron at the bar's end. */
+.fd-canvas-filter-fields { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; margin-inline-start: auto; padding-inline-end: 8px; color: var(--fd-muted); font-size: 14px; }
 .fd-search-placeholder { color: var(--fd-muted); font-size: 14px; padding: 5px 4px; }
 .fd-canvas-selection { display: flex; }
 .fd-canvas-selection-hint { color: var(--fd-muted); font-size: 12.5px; margin-inline-end: 4px; }

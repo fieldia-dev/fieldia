@@ -1,8 +1,9 @@
-import { cardLines, type ButtonNode, type Field, type FilterCondition, type ListMap, type ListNode, type MapTool, type Page, type Pin } from '@fieldia/core';
+import { cardLines, type ButtonNode, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
+import { FILTERABLE } from './list-commands';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -513,6 +514,21 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     });
   });
 
+  // A box to choose each row; the search bar, or a keyword and each field's values; rows under their parent.
+  const choose = el('input', { type: 'checkbox', 'aria-label': w.choose }) as HTMLInputElement;
+  choose.addEventListener('change', () => {
+    if (!designer.setListOptions({ choose: choose.checked })) choose.checked = !choose.checked;
+  });
+  const chooseRow = el('div', { class: 'fd-prop', 'data-part': 'choose' }, el('label', { class: 'fd-q-required' }, choose, el('span', {}, w.choose)), el('p', { class: 'fd-properties-hint' }, w.chooseHint));
+  const searchWay = select(el, w.searchWay, [['bar', w.searchWays.bar], ['fields', w.searchWays.fields]]);
+  searchWay.addEventListener('change', () => designer.setListOptions({ search: searchWay.value as 'bar' | 'fields' }));
+  const filterBox = el('div', { class: 'fd-list-filter-fields' });
+  const filterFieldsRow = el('div', { class: 'fd-prop', 'data-part': 'filter-fields' }, el('span', { class: 'fd-prop-name' }, w.filterFields), filterBox, el('p', { class: 'fd-properties-hint' }, w.filterFieldsNote));
+  const parent = el('select', { class: 'fd-input fd-select', 'aria-label': w.parentField }) as HTMLSelectElement;
+  parent.addEventListener('change', () => designer.setListOptions({ parentField: parent.value || null }));
+  const parentWhy = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noParentField);
+  const parentRow = el('label', { class: 'fd-prop', 'data-part': 'parent' }, el('span', { class: 'fd-prop-name' }, w.parentField), parent, parentWhy);
+
   const onMap = mapSection(el, designer);
   const element = el(
     'div',
@@ -520,6 +536,10 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     prop(el, w.rowsOnPage, size),
     prop(el, w.sortedBy, sortBy),
     directionRow,
+    chooseRow,
+    prop(el, w.searchWay, searchWay),
+    filterFieldsRow,
+    parentRow,
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.groupBy), groupsBox, addGroup),
@@ -569,6 +589,29 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       });
       while (filtersBox.children.length > drawn.length) filtersBox.lastElementChild?.remove();
 
+      choose.checked = list.choose !== false;
+      searchWay.value = list.search ?? 'bar';
+      // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.
+      filterFieldsRow.hidden = list.search !== 'fields';
+      const offered = list.filterFields ?? [];
+      const filterable = [...new Set([...offered, ...everyField(page, designer).filter(({ field }) => FILTERABLE.has(field.type)).map(({ name }) => name)])];
+      filterBox.replaceChildren(
+        ...filterable.map((name) => {
+          const label = page.fields[name]?.label ?? designer.modelFields().find((m) => m.name === name)?.field.label ?? name;
+          const box = el('input', { type: 'checkbox', 'aria-label': w.filterFieldNamed(label) }) as HTMLInputElement;
+          box.checked = offered.includes(name);
+          box.addEventListener('change', () => designer.setListOptions({ filterFields: box.checked ? [...offered, name] : offered.filter((n) => n !== name) }));
+          return el('label', { class: 'fd-q-required' }, box, el('span', {}, label));
+        })
+      );
+      // Rows under their parent: a link to the list's own records.
+      const own = page.data.kind === 'record' ? page.data.model : '';
+      const links = everyField(page, designer).filter(({ field }) => field.type === 'many2one' && field.relation === own);
+      parent.replaceChildren(el('option', { value: '' }, w.noParent), ...links.map(({ name, field }) => el('option', { value: name }, field.label)));
+      parent.value = list.parentField ?? '';
+      parentWhy.hidden = links.length > 0;
+      parentRow.hidden = !links.length && !list.parentField;
+
       const groups = list.groupBy ?? [];
       groupsBox.replaceChildren(
         ...groups.map((name) => {
@@ -605,7 +648,8 @@ export function columnProperties(el: ElementFactory, designer: Designer, name: s
   left.addEventListener('click', () => designer.moveColumn(name, at() - 1));
   right.addEventListener('click', () => designer.moveColumn(name, at() + 1));
   remove.addEventListener('click', () => designer.removeColumn(name));
-  const element = el('div', { class: 'fd-props' }, about, orderRow, el('div', { class: 'fd-props-actions' }, left, right, remove));
+  const cells = cellSettings(el, designer, name);
+  const element = el('div', { class: 'fd-props' }, about, orderRow, ...cells.rows, el('div', { class: 'fd-props-actions' }, left, right, remove));
   return {
     element,
     update(page) {
@@ -616,10 +660,96 @@ export function columnProperties(el: ElementFactory, designer: Designer, name: s
       orderRow.hidden = UNSORTABLE.has(field.type);
       const first = list.sort?.[0];
       order.value = first?.field === name ? (first.desc ? 'desc' : 'asc') : '';
+      cells.update(page);
       const index = list.columns.indexOf(name);
       left.hidden = index <= 0;
       right.hidden = index === list.columns.length - 1;
       remove.hidden = list.columns.length === 1;
+    },
+  };
+}
+
+// ---- a column's cells ------------------------------------------------------------------------------
+
+/**
+ * How a column draws its cells, as a work tracker's backlog does: a state's
+ * dot in each value's colour, an icon before the words by another field's
+ * value (a bug's, a task's), a width in characters, the side its words keep to.
+ */
+function cellSettings(el: ElementFactory, designer: Designer, name: string) {
+  const w = designer.words.list;
+  const cellNow = (): ListCell => ({ ...listOf(designer.getPage()).cells?.[name] });
+  const save = (cell: ListCell) => {
+    for (const key of Object.keys(cell) as (keyof ListCell)[]) if (cell[key] === undefined) delete cell[key];
+    return designer.setListCell(name, Object.keys(cell).length ? cell : null);
+  };
+  const widget = select(el, w.cellWidget, [['', w.cellWidgets.words], ['dot', w.cellWidgets.dot]]);
+  widget.addEventListener('change', () => save({ ...cellNow(), widget: widget.value || undefined, ...(widget.value ? {} : { options: undefined }) }));
+  const widgetRow = prop(el, w.cellWidget, widget);
+  const dots = el('div', { class: 'fd-list-cell-looks' });
+  const dotsRow = el('div', { class: 'fd-prop', 'data-part': 'dots' }, dots);
+  const lead = el('select', { class: 'fd-input fd-select', 'aria-label': w.leadFrom }) as HTMLSelectElement;
+  lead.addEventListener('change', () => save({ ...cellNow(), lead: lead.value ? { field: lead.value, looks: {} } : undefined }));
+  const leadLooks = el('div', { class: 'fd-list-cell-looks' });
+  const leadRow = el('div', { class: 'fd-prop', 'data-part': 'lead' }, el('span', { class: 'fd-prop-name' }, w.leadFrom), lead, leadLooks);
+  const width = el('input', { class: 'fd-input', type: 'number', min: '1', max: '200', 'aria-label': w.cellWidth }) as HTMLInputElement;
+  width.addEventListener('input', () => {
+    const value = width.value.trim();
+    if (value === '' || (Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 200)) save({ ...cellNow(), width: value === '' ? undefined : Number(value) });
+  });
+  const widthRow = el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), width, el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
+  const side = select(el, w.cellSide, [['', w.cellSides.auto], ['start', w.cellSides.start], ['end', w.cellSides.end]]);
+  side.addEventListener('change', () => save({ ...cellNow(), align: (side.value || undefined) as ListCell['align'] }));
+
+  /** A value's colour, and its icon for a lead: a row for each option of a choice. */
+  const optionRows = (field: Field | undefined, row: (value: string, label: string) => HTMLElement[]) =>
+    field?.type === 'selection' ? field.options.map((option) => el('div', { class: 'fd-list-cell-look' }, el('span', { class: 'fd-list-cell-look-name' }, option.label), ...row(String(option.value), option.label))) : [];
+
+  return {
+    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side)],
+    update(page: Page) {
+      const field = page.fields[name];
+      const cell = page.layout.type === 'list' ? (page.layout.cells?.[name] ?? {}) : {};
+      widget.value = cell.widget === 'dot' ? 'dot' : '';
+      widgetRow.hidden = field?.type !== 'selection';
+      // Each state's dot colour, when the column draws its dot.
+      dotsRow.hidden = cell.widget !== 'dot';
+      const colours = (cell.options?.['colours'] ?? {}) as Record<string, string>;
+      dots.replaceChildren(
+        ...optionRows(field, (value, label) => {
+          const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': w.dotColour(label) }) as HTMLInputElement;
+          colour.value = colours[value] ?? '#7e7e7e';
+          colour.addEventListener('input', () => save({ ...cellNow(), options: { ...cellNow().options, colours: { ...((cellNow().options?.['colours'] ?? {}) as Record<string, string>), [value]: colour.value } } }));
+          return [colour];
+        })
+      );
+      // An icon before the words: by a choice's value, each with its icon and colour.
+      const choices = everyField(page, designer).filter(({ field: f }) => f.type === 'selection');
+      lead.replaceChildren(el('option', { value: '' }, w.noLead), ...choices.map(({ name: n, field: f }) => el('option', { value: n }, f.label)));
+      lead.value = cell.lead?.field ?? '';
+      const from = cell.lead ? page.fields[cell.lead.field] : undefined;
+      leadLooks.replaceChildren(
+        ...optionRows(from, (value, label) => {
+          const look = cell.lead?.looks[value];
+          const icon = el('input', { class: 'fd-input', 'aria-label': w.leadIcon(label), placeholder: 'bug' }) as HTMLInputElement;
+          icon.value = look?.icon ?? '';
+          const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': w.leadColour(label) }) as HTMLInputElement;
+          colour.value = look?.colour ?? '#7e7e7e';
+          const write = () => {
+            const now = cellNow();
+            if (!now.lead) return;
+            const looks = { ...now.lead.looks };
+            if (icon.value.trim()) looks[value] = { icon: icon.value.trim(), ...(look?.colour || colour.value !== '#7e7e7e' ? { colour: colour.value } : {}) };
+            else delete looks[value];
+            save({ ...now, lead: { field: now.lead.field, looks } });
+          };
+          icon.addEventListener('change', write);
+          colour.addEventListener('input', write);
+          return [icon, colour];
+        })
+      );
+      if (!focused(width)) width.value = cell.width === undefined ? '' : String(cell.width);
+      side.value = cell.align ?? '';
     },
   };
 }
