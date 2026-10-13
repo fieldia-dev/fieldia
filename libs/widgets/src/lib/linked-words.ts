@@ -1,0 +1,35 @@
+import { drawIcon } from './icons';
+
+/**
+ * Words with `[words](address)` in them, drawn with those as links: web and
+ * mail addresses only, opened in a tab of their own, an icon after each that
+ * leaves the page. Anything else in brackets stays as it is written.
+ */
+const LINK = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g;
+
+export function linkedWords(doc: Document, text: string, options: { external?: boolean } = {}): Node[] {
+  const nodes: Node[] = [];
+  let at = 0;
+  for (const match of text.matchAll(LINK)) {
+    if (match.index > at) nodes.push(doc.createTextNode(text.slice(at, match.index)));
+    const link = doc.createElement('a');
+    link.href = match[2];
+    link.textContent = match[1];
+    if (/^https?:/i.test(match[2])) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    nodes.push(link);
+    const icon = options.external && /^https?:/i.test(match[2]) ? drawIcon(doc, 'external') : null;
+    if (icon) {
+      icon.classList.add('fd-external');
+      nodes.push(icon);
+    }
+    at = match.index + match[0].length;
+  }
+  if (at < text.length) nodes.push(doc.createTextNode(text.slice(at)));
+  return nodes;
+}
+
+/** Whether words hold any such link. */
+export const hasLinks = (text: string) => new RegExp(LINK.source).test(text);

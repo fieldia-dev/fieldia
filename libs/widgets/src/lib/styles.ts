@@ -5,6 +5,7 @@ import { PARTS_CSS } from './styles-parts';
 import { SHEET_CSS } from './styles-sheet';
 import { BUSINESS_CSS } from './styles-business';
 import { QUIET_CSS } from './styles-quiet';
+import { TEXT_CSS } from './styles-text';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -1023,7 +1024,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // Themes' tokens after the skins' and before the page's look; their own shapes after the parts they reshape, and
 // before the page's own looks for each kind of part, which win over a theme as the page's look does. The quiet look
 // after the themes' shapes, which it quietens.
-export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + TEXT_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

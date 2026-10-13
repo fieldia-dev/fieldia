@@ -21,3 +21,8 @@ export { countriesIn } from './lib/address';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
 export { wearsQuiet } from './lib/quiet';
+export { formattedText, decorateLinks, type FormattedText, type FormattedTextOptions, type TextEditor, type TextReference, type TextSuggestion } from './lib/formatted-text';
+export { markdownToHtml, htmlToMarkdown, markdownLoses } from './lib/markdown';
+export { linkedWords } from './lib/linked-words';
+export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tools';
+export { textMenu, type MenuChoice, type TextMenu } from './lib/text-menu';

@@ -43,6 +43,7 @@ import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
+import { linksWidget } from './links';
 import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
@@ -135,6 +136,13 @@ export interface Widget {
   update(state: WidgetState): void;
   focus(): void;
   destroy?(): void;
+  /**
+   * Buttons that act on the whole field, such as a Markdown text's Edit and
+   * Done. The widget draws them in its own element; where a group holds this
+   * field alone, its label out of sight, the viewer moves them to the group's
+   * heading.
+   */
+  tools?: HTMLElement[];
 }
 
 export type WidgetFactory = (context: WidgetContext) => Widget;
@@ -702,6 +710,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
   'many2many.table': linksTableWidget,
+  'many2many.links': linksWidget,
   reference: referenceWidget,
   one2many: linesWidget,
   'one2many.cards': cardsWidget,
