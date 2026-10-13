@@ -416,9 +416,11 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
    * One session token from the first letter typed to the place picked, a new
    * one after it. A session ended by Place Details Essentials (Fieldia's
    * fields) bills its first 12 suggestion requests (Autocomplete Requests)
-   * and the details; one never picked bills each request alike.
+   * and the details; one never picked bills each request alike. Its token
+   * goes with its first Place Details alone: Google bills a token used again
+   * as no session, so another of its places is located without one.
    */
-  let searching: string | undefined;
+  let searching: { token: string; located: boolean } | undefined;
   const newSession = () => (globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => ((Math.random() * 16) | (c === 'x' ? 0 : 8)).toString(16).slice(0, 1)));
   async function tilesOf(kind: BaseMap | 'traffic', locale: Locale): Promise<TileSpec | null> {
     if (!GOOGLE_MAP_TYPE[kind]) return null;
@@ -434,8 +436,8 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
     async search(request) {
       const { text, near, zoom, locale, signal } = request;
       const read = await reader();
-      searching ??= newSession();
-      const token = searching;
+      const session = (searching ??= { token: newSession(), located: false });
+      const { token } = session;
       const regions = read.googleRegions(request.countries);
       const answer = await getJson(fetchWith, 'https://places.googleapis.com/v1/places:autocomplete', {
         method: 'POST',
@@ -452,16 +454,19 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
       });
       // Picked, or located: the session is over, the next letter typed opens another.
       const end = () => {
-        if (searching === token) searching = undefined;
+        if (searching === session) searching = undefined;
       };
       return read.googlePlaces(
         answer,
         request,
-        (placeId) =>
-          getJson(fetchWith, `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?${query({ languageCode: locale, sessionToken: token })}`, {
-            // Place Details Essentials, its parts too when asked (the same price); its name is Pro's, and the suggestion gives it.
-            headers: { 'X-Goog-Api-Key': options.key, 'X-Goog-FieldMask': `location,formattedAddress${request.parts ? ',addressComponents' : ''}` },
-          }),
+        (placeId) => {
+          const ending = !session.located;
+          session.located = true;
+          return getJson(fetchWith, `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?${query({ languageCode: locale, sessionToken: ending ? token : undefined })}`, {
+            // Place Details Essentials, all three fields its SKU's: its parts name the country its line is written with, for a page that keeps no parts too. Its name is Pro's, and the suggestion gives it.
+            headers: { 'X-Goog-Api-Key': options.key, 'X-Goog-FieldMask': 'location,formattedAddress,addressComponents' },
+          });
+        },
         end
       );
     },

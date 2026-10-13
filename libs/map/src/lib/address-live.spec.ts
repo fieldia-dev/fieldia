@@ -294,11 +294,17 @@ describe('a point named by Azure', () => {
 /** An object's fields in one order, to compare. */
 const canonical = (value: Record<string, unknown>) => JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
 
+/** A place's details as Google gives them: only the fields its field mask asks for. */
+const masked = (body: unknown, init?: RequestInit) => {
+  const mask = String((init?.headers as Record<string, string> | undefined)?.['X-Goog-FieldMask'] ?? '').split(',');
+  return Object.fromEntries(Object.entries(body as Record<string, unknown>).filter(([field]) => mask.includes(field)));
+};
+
 /**
  * Google as it answered: the recorded suggestions, given back only to the
  * request sent live (its words, language, region and countries; a session
  * token of its own), unless `anyRequest`; and each place's details by its
- * id, asked for with an Essentials field mask.
+ * id, asked for with an Essentials field mask, as much as it asks for.
  */
 function google(suggestions: string, anyRequest = false) {
   const asked: { url: string; init?: RequestInit }[] = [];
@@ -312,28 +318,30 @@ function google(suggestions: string, anyRequest = false) {
       const same = typeof sessionToken === 'string' && typeof token === 'string' && canonical(sent) === canonical(live);
       return same || anyRequest ? json(200, recorded.body) : json(400, { error: { message: `not recorded: ${canonical(sent)}` } });
     }
-    expect(['location,formattedAddress', 'location,formattedAddress,addressComponents']).toContain((init?.headers as Record<string, string>)['X-Goog-FieldMask']);
+    // Place Details Essentials: its place, its line and its parts, all three at one price.
+    expect((init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress,addressComponents');
     const id = decodeURIComponent(url.split('/places/')[1].split('?')[0]);
     const details = Object.values(GOOGLE).find((r) => typeof r.request === 'object' && String(r.request.url).includes(`/places/${id}`));
-    return details ? json(details.status, details.body) : json(404, { error: { message: `not recorded: ${id}` } });
+    return details ? json(details.status, masked(details.body, init)) : json(404, { error: { message: `not recorded: ${id}` } });
   }) as typeof globalThis.fetch;
   return { fetch, asked };
 }
 
-/** A place's details as Google gave them, read as Fieldia reads a picked one. */
-async function picked(name: string, locale: 'en' | 'ar' = 'en', types = ['route', 'geocode']) {
+/** A place's details as Google gave them, read as Fieldia reads a picked one: for a page that asks for its parts, unless `parts` is false. */
+async function picked(name: string, locale: 'en' | 'ar' = 'en', types = ['route', 'geocode'], parts = true) {
   const recorded = GOOGLE[name];
   const id = String((recorded.request as { url: string }).url).split('/places/')[1].split('?')[0];
   const suggestions = { suggestions: [{ placePrediction: { placeId: decodeURIComponent(id), types, structuredFormat: { mainText: { text: 'Picked' } } } }] };
-  const fetch = (async (input: RequestInfo | URL) => (String(input).endsWith('places:autocomplete') ? json(200, suggestions) : json(200, recorded.body))) as typeof globalThis.fetch;
-  const [found] = await googleMaps({ key: 'G', fetch }).search!({ text: 'x', locale, parts: true });
+  const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => (String(input).endsWith('places:autocomplete') ? json(200, suggestions) : json(200, masked(recorded.body, init)))) as typeof globalThis.fetch;
+  const [found] = await googleMaps({ key: 'G', fetch }).search!({ text: 'x', locale, parts });
   return found.locate!();
 }
 
 describe('Google’s places, as it answers them', () => {
   it('names the city of an Egyptian address by its district: Google gives Egypt’s streets no locality', async () => {
     expect((await picked('pick-tahrir-square-en-route')).parts).toEqual({ street: 'El-Tahrir Square', city: 'Qasr El Nil', region: 'Cairo Governorate', country: 'EG' });
-    expect((await picked('pick-tahrir-street-ar-dokki-route', 'ar')).parts).toEqual({ street: 'شارع التحرير', city: 'قسم الدقي', region: 'محافظة الجيزة', country: 'EG' });
+    // Its district by its name, as English names it ("Dokki"), not with the word for the police district it is ("قسم").
+    expect((await picked('pick-tahrir-street-ar-dokki-route', 'ar')).parts).toEqual({ street: 'شارع التحرير', city: 'الدقي', region: 'محافظة الجيزة', country: 'EG' });
     expect((await picked('pick-road-9-maadi-en')).parts?.city).toBe('Maadi');
     expect((await picked('pick-street-90th-en')).parts?.city).toBe('New Cairo 1');
     // A locality where there is one: a city itself, Riyadh, Amman.
@@ -355,6 +363,21 @@ describe('Google’s places, as it answers them', () => {
   it('sets a Saudi address’s country apart, where Google writes no comma before it ("Riyadh Saudi Arabia")', async () => {
     expect((await picked('pick-king-fahd-road-riyadh-en')).address).toBe('King Fahd Rd, Riyadh, Saudi Arabia');
     expect((await picked('pick-king-fahd-road-riyadh-ar', 'ar')).address).toBe('طريق الملك فهد، الرياض، السعودية');
+  });
+
+  it('sets a Saudi address’s country apart for a page that asks for its place alone, not its parts', async () => {
+    const riyadh = await picked('pick-king-fahd-road-riyadh-en', 'en', undefined, false);
+    expect([riyadh.address, riyadh.parts]).toEqual(['King Fahd Rd, Riyadh, Saudi Arabia', undefined]);
+    expect((await picked('pick-king-fahd-road-riyadh-ar', 'ar', undefined, false)).address).toBe('طريق الملك فهد، الرياض، السعودية');
+  });
+
+  it('keeps a UAE address as Google writes it, its country set apart by a dash already: no dash left hanging before it', async () => {
+    const dubai = await picked('pick-sheikh-zayed-road-dubai-en');
+    expect([dubai.address, dubai.parts]).toEqual(['Sheikh Zayed Rd - Dubai - United Arab Emirates', { street: 'Sheikh Zayed Road', city: 'Dubai', region: 'Dubai', country: 'AE' }]);
+    expect((await picked('pick-sheikh-zayed-road-dubai-ar', 'ar')).address).toBe('شارع الشيخ زايد - دبي - الإمارات العربية المتحدة');
+    expect((await picked('pick-sheikh-zayed-road-dubai-en', 'en', undefined, false)).address).toBe('Sheikh Zayed Rd - Dubai - United Arab Emirates');
+    // A landmark's own name, then its address: Google's plus code before it left out, and the dash after the code too.
+    expect((await picked('pick-sheikh-zayed-road-landmark-en', 'en', ['tourist_attraction', 'point_of_interest', 'establishment'])).address).toBe('Picked, Sheikh Zayed Rd - Trade Center First - Dubai - United Arab Emirates');
   });
 
   it('keeps a Saudi postcode’s additional number, as a ZIP+4 keeps its four', async () => {
