@@ -52,6 +52,20 @@ function Chatter({ form }: SlotComponentProps) {
 </table>
 <p>${c('createMemoryChatter({ me, people, activityTypes, records })')} keeps everything in memory, for demos, tests and prototypes — it is what the <a href="/demos/">demos</a> run on.</p>
 
+<h2 id="history">Its history, as a tab</h2>
+<p>${c('historySlot')} fills a slot — a History tab — with the record's history, read from the same ${c('messages')}: events with ${c('tracking')} are its changes, messages its comments. On top, the <strong>State Graph</strong>: how the field ${c('stateField')} moved, in time order, each arrow with why above it (the new value of ${c('reasonField')}) and who and when under it, then the state it came to, its dot the colour the page's own ${c('dot')} gives it (its ${c('colours')}, else its ${c('tones')}). Under it, each change grouped by age — today, yesterday, this week, last week, this month, older — the one chosen beside the list with each field's new value and the one it replaced, struck through.</p>
+${code(
+  'ts',
+  `
+import { historySlot } from '@fieldia/chatter';
+
+mountViewer(host, {
+  page, dataSource, recordId: 7,
+  slots: { history: historySlot({ source, stateField: 'state', reasonField: 'reason', kind: 'work item' }) },
+});`
+)}
+<p>The page places ${c('{ "type": "slot", "id": "s-history", "name": "history" }')} in its History tab. The list is worked by keyboard: <kbd>↑</kbd> and <kbd>↓</kbd> move through the groups' headings and rows and choose, the change shown following; <kbd>Home</kbd> and <kbd>End</kbd>; <kbd>Enter</kbd> or <kbd>Space</kbd> on a heading folds its group. A filter at the list's heading shows field changes, comments or both. Under 760px the change goes under the list. On its own: ${c("mountHistory(element, { source, record: { model: 'work.item', id: 7 } })")}.</p>
+
 <h2 id="details">What it takes care of</h2>
 <ul>
   <li><strong>Safe to show.</strong> Message HTML is cleaned before it is shown — no scripts, no event handlers. What people type is posted as escaped text, a paragraph for each block.</li>
