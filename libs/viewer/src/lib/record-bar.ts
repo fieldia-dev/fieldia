@@ -3,6 +3,7 @@ import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
 import type { ViewerLabels } from './labels';
+import { barredWords } from './save-safety';
 
 /**
  * The records round the one shown, for the pager over it: how many there
@@ -143,6 +144,10 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   const printGroup = el('div', { role: 'group', 'aria-label': labels.print }, heading, ...printed.map((d) => d.button));
   const rule = el('div', { class: 'fd-record-menu-rule', role: 'separator' });
   menu.append(...(printed.length ? [printGroup] : []), ...(printed.length && acted.length ? [rule] : []), ...acted.map((d) => d.button));
+  // Why a built-in the record's source does not open to this person is not here: at the menu's foot, and with the gear for a screen reader.
+  const builtins = items.flatMap((item) => (item.builtin && !item.steps?.length && item.action === undefined ? [item.builtin] : []));
+  const note = el('div', { class: 'fd-record-menu-note', id: `${id}-note`, role: 'none', hidden: '' });
+  if (builtins.length) menu.append(note);
   const wrap = el('div', { class: 'fd-record-actions' }, gear, menu);
 
   const shown = () => drawn.filter((d) => !d.button.hidden).map((d) => d.button);
@@ -196,6 +201,11 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     setHidden(printGroup, !printed.some((d) => !d.button.hidden));
     setHidden(rule, printGroup.hidden || !acted.some((d) => !d.button.hidden));
     setHidden(wrap, !drawn.some((d) => !d.button.hidden));
+    if (!builtins.length) return;
+    const why = barredWords(form.getState().can, builtins, labels);
+    setHidden(note, !why);
+    setText(note, why ?? '');
+    setAttr(gear, 'aria-describedby', why ? note.id : null);
   });
   return wrap;
 }
