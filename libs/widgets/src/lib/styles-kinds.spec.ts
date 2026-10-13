@@ -8,7 +8,8 @@ describe('the question kinds’ stylesheet', () => {
   it('is installed with the rest, every rule scoped to Fieldia’s own parts', () => {
     document.head.replaceChildren();
     installStyles(document);
-    expect(document.getElementById('fieldia-styles')?.textContent).toContain(KINDS_CSS);
+    // In the second of Fieldia's two sheets, the page's own looks, which a part's sheet goes before.
+    expect(document.getElementById('fieldia-styles-looks')?.textContent).toContain(KINDS_CSS);
     const unscoped = KINDS_CSS.replace(/\/\*[\s\S]*?\*\//g, '')
       .split('}')
       .map((rule) => rule.split('{')[0].trim())

@@ -1,12 +1,13 @@
-import { FIELDIA_CSS } from './styles';
-import { HEAD_CSS } from './styles-head';
-import { QUIET_CSS } from './styles-quiet';
+import { installStyles } from '@fieldia/widgets';
+import { GROUP_CSS, installGroupStyles } from './group-styles';
+import { HEAD_PART_CSS as HEAD_CSS, installHeadStyles } from './head-styles';
 
 /**
- * A record's head and its dialog in the stylesheet: part of Fieldia's, after
- * the quiet look it draws its own way, every rule on Fieldia's own parts, and
- * every colour from the form's tokens — so a theme, a host's colours and the
- * dark scheme follow. How it looks is the browser gates' (e2e/wi-header.spec.ts).
+ * A record's head and its dialog in the head part's stylesheet: put among
+ * Fieldia's after the quiet look it draws its own way and before the page's
+ * own looks, every rule on Fieldia's own parts, and every colour from the
+ * form's tokens — so a theme, a host's colours and the dark scheme follow. How
+ * it looks is the browser gates' (e2e/wi-header.spec.ts).
  */
 
 const rules = (css: string) =>
@@ -17,8 +18,15 @@ const rules = (css: string) =>
     .filter(([selector]) => selector?.trim());
 
 describe('the record head’s stylesheet', () => {
-  it('is part of Fieldia’s, after the quiet look', () => {
-    expect(FIELDIA_CSS.indexOf(HEAD_CSS)).toBeGreaterThan(FIELDIA_CSS.indexOf(QUIET_CSS));
+  it('goes between Fieldia’s two sheets, after the quiet look and before the page’s own looks, the groups’ after it, once', () => {
+    document.head.replaceChildren();
+    installStyles(document);
+    installGroupStyles(document);
+    installHeadStyles(document);
+    installHeadStyles(document);
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id)).toEqual(['fieldia-styles', 'fieldia-head-styles', 'fieldia-group-styles', 'fieldia-styles-looks']);
+    expect(document.getElementById('fieldia-head-styles')?.textContent).toBe(HEAD_CSS);
+    expect(document.getElementById('fieldia-group-styles')?.textContent).toBe(GROUP_CSS);
   });
 
   it('styles only Fieldia’s own parts, and can sit in a template literal', () => {

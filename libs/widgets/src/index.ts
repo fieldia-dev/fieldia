@@ -21,8 +21,11 @@ export { countriesIn } from './lib/address';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
 export { wearsQuiet } from './lib/quiet';
-export { formattedText, decorateLinks, type FormattedText, type FormattedTextOptions, type TextEditor, type TextReference, type TextSuggestion } from './lib/formatted-text';
-export { markdownToHtml, htmlToMarkdown, markdownLoses } from './lib/markdown';
+// A work item's text editor, its Markdown, its menus and its links box come in the text part, loaded the first time a
+// page shows one: `(await textPart.load()).formattedText(…)`. Their types are here; their code is not.
+export type { FormattedText, FormattedTextOptions, TextEditor, TextReference, TextSuggestion } from './lib/formatted-text';
+export type { MenuChoice, TextMenu } from './lib/text-menu';
 export { linkedWords } from './lib/linked-words';
-export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tools';
-export { textMenu, type MenuChoice, type TextMenu } from './lib/text-menu';
+export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tool-names';
+export { lazyPart, settleParts, type Part } from './lib/parts';
+export { textPart, pathPart, partWidget, partFactory, type TextPart, type PathPart, type PartFactory } from './lib/widget-parts';

@@ -1,7 +1,8 @@
 import type { FileValue, Form, FormState, RecordRequest } from '@fieldia/core';
-import type { TextReference } from '@fieldia/widgets';
+import { textPart, type Part, type TextReference } from '@fieldia/widgets';
 import { mountChatter, type ChatterOptions } from './chatter';
-import { mountDiscussion } from './discussion';
+import { discussionPart } from './chatter-parts';
+import { drawnLater } from './later';
 import type { ChatterSource, RecordRef } from './source';
 
 export interface ChatterSlotOptions extends Omit<ChatterOptions, 'record'> {
@@ -30,17 +31,24 @@ export interface ChatterSlotOptions extends Omit<ChatterOptions, 'record'> {
  *
  *   mountViewer(host, { page, dataSource, slots: { chatter: chatterSlot({ source }) } })
  */
-export function chatterSlot(options: ChatterSlotOptions): (element: HTMLElement, context: { form: Form }) => () => void {
-  return (element, { form }) => {
+export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement, context: { form: Form }) => () => void) & { readonly parts: readonly Part[] } {
+  // A Discussion's code and its editor are parts loaded on first use: named, so the viewer draws the page once they are in.
+  const parts: readonly Part[] = options.look === 'discussion' ? [discussionPart, textPart] : [];
+  return Object.assign((element: HTMLElement, { form }: { form: Form }) => {
     const model = options.model ?? (form.page.data.kind === 'record' ? form.page.data.model : null);
     const recordOf = (state: FormState): RecordRef | null => (model && state.recordId != null ? { model, id: state.recordId } : null);
     let shown = recordOf(form.getState());
     let status = form.getState().status;
     const { look, placeholder, references, onCount, ...rest } = options;
+    // A discussion's code, and the editor of its comment box, come the first time one is shown: drawn whole once they have.
+    const discussion = (part: NonNullable<typeof discussionPart.loaded>, record: RecordRef | null) =>
+      part.mountDiscussion(element, { ...rest, record, placeholder, references, onCount: (count) => onCount?.(count, form) });
     const chatter =
-      look === 'discussion'
-        ? mountDiscussion(element, { ...rest, record: shown, placeholder, references, onCount: (count) => onCount?.(count, form) })
-        : mountChatter(element, { ...rest, record: shown });
+      look !== 'discussion'
+        ? mountChatter(element, { ...rest, record: shown })
+        : discussionPart.loaded && textPart.loaded
+          ? discussion(discussionPart.loaded, shown)
+          : drawnLater(element, shown, Promise.all([discussionPart.load(), textPart.load()]).then(([part]) => (record) => discussion(part, record)));
     const unsubscribe = form.subscribe((state) => {
       const next = recordOf(state);
       if (next?.id !== shown?.id) {
@@ -61,7 +69,7 @@ export function chatterSlot(options: ChatterSlotOptions): (element: HTMLElement,
       unpost();
       chatter.destroy();
     };
-  };
+  }, { parts });
 }
 
 /**

@@ -1,5 +1,6 @@
 import { drawIcon, type IconSet } from './icons';
 import type { WidgetLabels } from './labels';
+import type { TextTool } from './text-tool-names';
 
 /**
  * A formatted text's tools: what each is called, how it is drawn, and in
@@ -8,19 +9,7 @@ import type { WidgetLabels } from './labels';
  * text colour show the colour they give, as an editor's toolbar draws them.
  */
 
-export type TextTool =
-  | 'bold' | 'italic' | 'underline' | 'bulletList' | 'numberList' | 'highlight' | 'colour' | 'emoji' | 'outdent' | 'indent'
-  | 'strike' | 'size' | 'code' | 'mention' | 'reference' | 'clearFormatting' | 'image' | 'link' | 'unlink' | 'taskList' | 'heading' | 'attach';
-
-export const TEXT_TOOLS: readonly TextTool[] = [
-  'bold', 'italic', 'underline', 'bulletList', 'numberList', 'highlight', 'colour', 'emoji', 'outdent', 'indent',
-  'strike', 'size', 'code', 'mention', 'reference', 'clearFormatting', 'image', 'link', 'unlink', 'taskList', 'heading', 'attach',
-];
-
-/** The rich editor's tools when a page names none: bold to Remove link, as a work item's System Info has them. */
-export const RICH_TOOLS: readonly TextTool[] = ['bold', 'italic', 'underline', 'bulletList', 'numberList', 'highlight', 'colour', 'emoji', 'outdent', 'indent', 'strike', 'size', 'code', 'mention', 'reference', 'clearFormatting', 'image', 'link', 'unlink'];
-/** The Markdown editor's: a mention and links to records first, then the marks, the lists last. */
-export const MARKDOWN_TOOLS: readonly TextTool[] = ['mention', 'reference', 'attach', 'highlight', 'heading', 'bold', 'italic', 'code', 'link', 'bulletList', 'numberList', 'taskList'];
+export { MARKDOWN_TOOLS, RICH_TOOLS, TEXT_TOOLS, type TextTool } from './text-tool-names';
 
 /** Tools that open a list of choices: a colour, a size, a heading's level, an emoji. */
 export const CHOOSING: ReadonlySet<TextTool> = new Set(['highlight', 'colour', 'size', 'heading', 'emoji']);

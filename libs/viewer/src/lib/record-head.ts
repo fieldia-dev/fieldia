@@ -4,6 +4,7 @@ import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
 import type { Place } from './place';
 import { recordMenu } from './record-bar';
+import { installHeadStyles } from './head-styles';
 
 /**
  * A record's head as a work tracker draws a work item's (`SheetHead`): the
@@ -66,6 +67,7 @@ interface KindNow {
 
 export function recordHead(context: RecordHeadContext): RecordHead {
   const { el, form, page, sheet, head, labels, doc } = context;
+  installHeadStyles(doc);
   const id = context.uid('head');
   const watch = context.watch;
 

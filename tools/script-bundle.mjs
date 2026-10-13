@@ -18,7 +18,8 @@
  */
 import { build, transform } from 'esbuild';
 import { readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 
@@ -72,17 +73,165 @@ const common = {
   charset: 'ascii',
   define: { __FIELDIA_VERSION__: JSON.stringify(version) },
   tsconfig: join(WORKSPACE, 'tsconfig.base.json'),
+  absWorkingDir: WORKSPACE,
   logLevel: 'warning',
 };
 
-await build({
-  ...common,
-  entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-  plugins: [minifiedStyles, englishOnly],
-  globalName: 'Fieldia',
-  banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
-  outfile: OUT,
+// ---- the parts: code a page loads the first time it uses it, each a script of its own beside fieldia.js ----------------
+//
+// In the packages a part is a module asked for with import('./x-part') (libs/widgets/src/lib/parts.ts), which an app's
+// bundler makes a file of its own. Here the main script asks for fieldia.<name>.js instead (tools/script-parts.ts), and
+// each part is built against the main script: what it shares with it — the icons, the words, the helpers — it takes
+// from the main script's own modules, passed to it in a table both are built with (`SHARED`), never a copy of its own.
+
+/** What a part takes '@fieldia/core' as: the runtime the main script carries, never the format's schemas. */
+const CORE_RUNTIME = join(WORKSPACE, 'libs/core/src/runtime.ts');
+
+/**
+ * The main script: each `import('./x-part')` asks for fieldia.x.js instead — the call itself becomes loadPart('x')
+ * (tools/script-parts.ts), an import of the main script's own, so no module is made to wait on a lazy start — and
+ * `fieldia:shared` is the table of what the parts take from the main script's modules: for each module, an object of
+ * the names the parts use of it, in a fixed order (`table`: [file, names][]). Names alone, so the main script carries
+ * nothing more than it would — no module's every export kept for one name. (Every export the packages share is a const,
+ * a function or a class: a name's value never changes once the main script has started.) Any other import() would be
+ * bundled in whole, where it saves nothing: refused.
+ */
+const asksForParts = (table, parts) => ({
+  name: 'asks-for-parts',
+  setup(builder) {
+    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/[a-z-]+\.ts$/ }, ({ path }) => {
+      const source = readFileSync(path, 'utf8');
+      /** Whether code, its comments aside, calls import(). */
+      const callsImport = (code) => /\bimport\s*\(/.test(code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1'));
+      if (!callsImport(source)) return undefined;
+      const asking = source.replace(/\bimport\('\.\/([a-z]+)-part'\)/g, (_, part) => {
+        const file = join(dirname(path), `${part}-part.ts`);
+        if (parts.has(part) && parts.get(part) !== file) throw new Error(`two parts are named ${part}: ${parts.get(part)} and ${file}`);
+        parts.set(part, file);
+        return `__fieldiaPart(${JSON.stringify(part)})`;
+      });
+      if (callsImport(asking)) throw new Error(`${path} loads a module with import(): the script bundle loads only parts (a ./x-part module) on demand`);
+      return { contents: `import { loadPart as __fieldiaPart } from ${JSON.stringify(join(WORKSPACE, 'tools/script-parts.ts'))};\n${asking}`, loader: 'ts' };
+    });
+    builder.onResolve({ filter: /^fieldia:shared$/ }, () => ({ path: 'shared', namespace: 'fieldia-shared-table' }));
+    builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared-table' }, () => ({
+      contents: [
+        ...table.map(([file, names], i) => `import { ${names.map((name) => `${name} as m${i}_${name}`).join(', ')} } from ${JSON.stringify(file)};`),
+        `export const SHARED = [${table.map(([, names], i) => `{ ${names.map((name) => `${name}: m${i}_${name}`).join(', ')} }`).join(', ')}];`,
+      ].join('\n'),
+      resolveDir: WORKSPACE,
+      loader: 'js',
+    }));
+  },
 });
+
+/**
+ * A part: a module of the main script is taken from the table — `__fieldia`, its factory's argument — or, while the
+ * table is worked out (`table` null), left an import of its own, so the part's code says which names it uses of it.
+ */
+const takesShared = (inMain, table) => ({
+  name: 'takes-shared',
+  setup(builder) {
+    builder.onResolve({ filter: /.*/ }, async (args) => {
+      if (args.pluginData?.inner || args.kind === 'entry-point') return undefined;
+      const found = await builder.resolve(args.path === '@fieldia/core' ? CORE_RUNTIME : args.path, { kind: args.kind, importer: args.importer, resolveDir: args.resolveDir, pluginData: { inner: true } });
+      if (found.errors.length) return { errors: found.errors };
+      if (args.kind === 'dynamic-import') return { errors: [{ text: `${args.path} is loaded with import() from ${args.importer}, inside a part` }] };
+      if (!inMain.has(found.path)) return { path: found.path, sideEffects: found.sideEffects };
+      if (!table) return { path: found.path, external: true };
+      const i = table.findIndex(([file]) => file === found.path);
+      if (i < 0) return { errors: [{ text: `${found.path} is the main script's, but not in the parts' table` }] };
+      return { path: String(i), namespace: 'fieldia-shared' };
+    });
+    builder.onLoad({ filter: /.*/, namespace: 'fieldia-shared' }, ({ path: i }) => ({ contents: `module.exports = __fieldia[${i}];`, loader: 'js' }));
+  },
+});
+
+/** The names a part's code imports from each of the main script's modules, read from its build with them left out. */
+const namesUsed = (code) => {
+  const used = new Map();
+  const add = (file, names) => used.set(file, new Set([...(used.get(file) ?? []), ...names]));
+  const list = (inside) => inside.split(',').map((one) => one.trim().split(/\s+as\s+/)[0]).filter(Boolean);
+  for (const [, names, file] of code.matchAll(/\b(?:import|export)\s*\{([^}]*)\}\s*from\s*"([^"]+)"/g)) add(file, list(names));
+  for (const [, file] of code.matchAll(/\b(?:import\s*\*\s*as\s*\w+|export\s*\*)\s*from\s*"([^"]+)"/g)) throw new Error(`a part takes every name of ${file}: name the ones it uses`);
+  for (const [, file] of code.matchAll(/\bimport\s+\w+\s*(?:,\s*\{[^}]*\})?\s*from\s*"([^"]+)"/g)) add(file, ['default']);
+  return used;
+};
+
+const mainScript = async (table) => {
+  const parts = new Map();
+  const { metafile } = await build({
+    ...common,
+    entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
+    plugins: [minifiedStyles, englishOnly, asksForParts(table, parts)],
+    globalName: 'Fieldia',
+    banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
+    outfile: OUT,
+    metafile: true,
+  });
+  const inMain = new Set(Object.keys(metafile.inputs).filter((input) => input.startsWith('libs/') || input.startsWith('tools/')).map((input) => join(WORKSPACE, input)));
+  for (const [part, file] of parts) PART_SOURCES[part] = file;
+  return { inMain, parts: [...parts.keys()].sort(), metafile };
+};
+const partScript = (part, inMain, table) =>
+  build({
+    ...common,
+    stdin: { contents: `export * from ${JSON.stringify(PART_SOURCES[part])};`, resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
+    plugins: [minifiedStyles, englishOnly, takesShared(inMain, table)],
+    globalName: 'part',
+    // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
+    banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
+    footer: { js: 'return part; }]);' },
+    outfile: join(BUNDLE, `fieldia.${part}.js`),
+    metafile: true,
+  });
+/** What a part uses of the main script's modules: its code built as a module, theirs left out, unminified. */
+const partNeeds = async (part, inMain) => {
+  const { outputFiles } = await build({
+    ...common,
+    format: 'esm',
+    minify: false,
+    sourcemap: false,
+    write: false,
+    stdin: { contents: `export * from ${JSON.stringify(PART_SOURCES[part])};`, resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
+    plugins: [minifiedStyles, englishOnly, takesShared(inMain, null)],
+    outfile: join(BUNDLE, `fieldia.${part}.mjs`),
+  });
+  return namesUsed(outputFiles[0].text);
+};
+
+/** Each part's module, by its name, as the main script asks for it. */
+const PART_SOURCES = {};
+
+// The table settles in a round or two: the main script built with it may carry a module a part would otherwise have copied.
+let table = [];
+let main;
+for (let round = 0; ; round++) {
+  main = await mainScript(table);
+  const wanted = new Map(table.map(([file, names]) => [file, new Set(names)]));
+  for (const part of main.parts) for (const [file, names] of await partNeeds(part, main.inMain)) wanted.set(file, new Set([...(wanted.get(file) ?? []), ...names]));
+  const next = [...wanted].map(([file, names]) => [file, [...names].sort()]).sort(([a], [b]) => (a < b ? -1 : 1));
+  if (JSON.stringify(next) === JSON.stringify(table)) break;
+  if (round === 4) throw new Error('the parts\' table of shared names does not settle');
+  table = next;
+}
+const PARTS = main.parts;
+const partFiles = {};
+const partInputs = {};
+for (const part of PARTS) {
+  const { metafile } = await partScript(part, main.inMain, table);
+  partFiles[part] = join(BUNDLE, `fieldia.${part}.js`);
+  partInputs[part] = Object.keys(metafile.inputs).filter((input) => input.startsWith('libs/'));
+}
+// A part's own code is in it alone: never in the main script, never in another part (it would be a second copy, its state twice).
+for (const part of PARTS) {
+  const inBoth = partInputs[part].filter((input) => main.inMain.has(join(WORKSPACE, input)));
+  if (inBoth.length) throw new Error(`fieldia.${part}.js carries ${inBoth.join(', ')}, which the main script has too`);
+  for (const other of PARTS.filter((one) => one > part)) {
+    const twice = partInputs[part].filter((input) => partInputs[other].includes(input));
+    if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
+  }
+}
 
 // Each language's add-on: its words from the three packages, handed to the main script's addLanguage.
 for (const [locale, name] of Object.entries(LANGUAGES)) {
@@ -253,7 +402,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // halo and its own slim bar, Undo, Remove link and an empty comment's Save drawn idle with their reasons in their
 // tooltips, the grip's triangle, the head's tab pills and icons, the filter bar's measured room, and the CSS that says
 // why for each — 4.0 more, to 626.0.
-const BUDGET_KB = 626.0;
+// The work item's parts loaded on first use (libs/widgets/src/lib/parts.ts, each a script beside this one): a record's
+// head with its band, its split and toggled buttons, a group's heading with its tools and the inset dialog's ⤢ and grip
+// (fieldia.head.js); the formatted text's editors, Markdown both ways, their menus and the links box (fieldia.text.js);
+// a path picker (fieldia.path.js); a list's filter bar (fieldia.filters.js) — their code and their stylesheets out of
+// this script, which keeps what every page draws at mount (the page's checks of a head, buttons, groups and list cells;
+// a list's backlog cells, nested rows and Fluent's list look; Fieldia's own lists and a state's dot; the access key and
+// lock at a value; help boxes and a group's tracks; the work item's icons, which any page may name; the dialog's choice
+// of its head) and the parts' loader with the table of names they share with it (1.9) — 100.7 less, to 525.3.
+const BUDGET_KB = 525.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -299,7 +456,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the redrawn icons), 1.8 more, to 184.3.
 // the second side-by-side (header rules, an unlit open, a help icon's tile, the picker's halo and bar, idle buttons
 // with their reasons, the grip's triangle, the tabs' pills, the filter bar's room), 0.7 more, to 185.0.
-const GZIP_BUDGET_KB = 185.0;
+// the work item's parts loaded on first use, each a script of its own (a record's head and its window, the formatted
+// text's editors with their Markdown and menus, a path picker, a filter bar): 26.2 less, to 158.8 — 16.1 over 0.19's 142.7,
+// for what a page draws at mount (page checks 2.5, a list's backlog cells and look 3.6, own lists and a state's dot 2.2,
+// the work item's icons 1.3, the dialog and the viewer's hooks 1.6, the loader 0.9, words, values the server keeps).
+const GZIP_BUDGET_KB = 158.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -390,3 +551,114 @@ for (const locale of Object.keys(LANGUAGES)) {
   sizes.push(`${locale} ${(addOn.length / 1024).toFixed(1)} KB, ${(addOnGzipped / 1024).toFixed(1)} KB gzipped`);
 }
 console.log(`language add-ons: ${sizes.join('; ')}`);
+
+/**
+ * Each part: its own code alone (never a second copy of Fieldia), what it shares taken from the main script, and with
+ * it — after it, before it (a part's tag written into the page may run first) or twice — Fieldia then draws from it. A
+ * part of another version is refused with a warning, and what would have been drawn from it is drawn plainly.
+ */
+// Each part's budget, raw and gzipped, in KB, as measured when they were cut out of the main script: the head with its
+// window (record-head, rich-button, section-tools, dialog-window and their sheets: 33.8, 9.9); the text (html-field,
+// formatted-text, markdown, text-tools, text-menu, links and their sheet: 54.1, 18.0); the path picker and its sheet
+// (13.0, 5.1); the filter bar and its sheet (11.0, 4.2). Each carries esbuild's small helpers of its own (0.6).
+const PART_BUDGET_KB = { head: [33.8, 9.9], text: [54.1, 18.0], path: [13.0, 5.1], filters: [11.1, 4.2] };
+// What each part gives, by the names the packages draw from.
+const PART_GIVES = {
+  head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
+  text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu'],
+  path: ['pathPickerWidget'],
+  filters: ['filterBar', 'installFilterStyles'],
+};
+// The Fieldia object each part is reached through, as the packages ask for it.
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', filters: 'filtersPart' };
+if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
+const partSizes = [];
+for (const part of PARTS) {
+  const file = partFiles[part];
+  const partCode = readFileSync(file, 'utf8');
+  const name = `fieldia.${part}.js`;
+  if (/mountViewer|createForm/.test(partCode)) throw new Error(`${name} carries a copy of Fieldia: it must carry its own code alone`);
+  if (/ZodError|\$ZodType/.test(partCode)) throw new Error(`${name} carries zod`);
+  if (/\\u06[2-4][0-9a-f]/i.test(partCode)) throw new Error(`${name} carries Arabic letters: a part's words are the packages' tables', in the language add-ons`);
+  const [raw, gzip] = PART_BUDGET_KB[part];
+  const partBytes = statSync(file).size;
+  const partGzipped = gzipSync(partCode, { level: 9 }).length;
+  if (partBytes > raw * 1024) throw new Error(`${name} is ${(partBytes / 1024).toFixed(2)} KB, over its ${raw} KB budget`);
+  if (partGzipped > gzip * 1024) throw new Error(`${name} is ${(partGzipped / 1024).toFixed(1)} KB gzipped, over its ${gzip} KB budget`);
+  for (const order of [[OUT, file], [file, OUT], [OUT, file, file]]) {
+    const { Fieldia: withIt, warnings } = runTogether(order);
+    const loaded = order.map((f) => f.replace(BUNDLE + '/', '')).join(', then ');
+    const gives = await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, withIt ? { Fieldia: withIt } : {});
+    const missing = PART_GIVES[part].filter((one) => typeof gives?.[one] !== 'function');
+    if (missing.length) throw new Error(`${loaded}: ${name} does not give ${missing.join(', ')}`);
+    if (withIt[PART_OF[part]].loaded !== gives) throw new Error(`${loaded}: Fieldia.${PART_OF[part]} does not hold what ${name} gave`);
+    if (warnings.length) throw new Error(`${loaded}: ${warnings.join(' ')}`);
+  }
+  // A part of another version: refused with a warning, and the part asked for fails, so the page draws plainly.
+  const older = partCode.replace(`, ${JSON.stringify(version)}, function`, ', "0.0.0", function');
+  if (older === partCode) throw new Error(`${name} does not say its version where the main script reads it`);
+  const warned = [];
+  const host = { console: { warn: (message) => warned.push(message) } };
+  runInNewContext(readFileSync(OUT, 'utf8'), host);
+  runInNewContext(older, host);
+  const refused = await host.Fieldia[PART_OF[part]].load().then(() => false, () => true);
+  if (!refused || warned.length !== 1 || !warned[0].includes(`${name} is version 0.0.0`)) throw new Error(`${name} of another version is not refused with a warning`);
+  partSizes.push(`${part} ${(partBytes / 1024).toFixed(1)} KB, ${(partGzipped / 1024).toFixed(1)} KB gzipped`);
+}
+// Asked for with no address to load it from (no document here), a part not on the page fails — and is asked again next time.
+{
+  const host = { console: { warn: () => undefined } };
+  runInNewContext(readFileSync(OUT, 'utf8'), host);
+  const failed = await host.Fieldia.headPart.load().then(() => false, () => true);
+  runInNewContext(readFileSync(partFiles.head, 'utf8'), host);
+  const later = await host.Fieldia.headPart.load().then((gives) => typeof gives.recordHead === 'function', () => false);
+  if (!failed || !later) throw new Error('a part that could not come is not asked for again');
+}
+console.log(`parts: ${partSizes.join('; ')}`);
+
+/**
+ * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
+ * part, and for each part the first time a page uses one, from beside itself — a work item's head, text and path
+ * picker for its bug, the filter bar for its backlog — and the page is drawn whole once they have come.
+ */
+{
+  const { JSDOM, VirtualConsole } = await import('jsdom');
+  const problems = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (error) => problems.push(error.message));
+  virtualConsole.on('error', (message) => problems.push(String(message)));
+  const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body><div id="app"></div></body></html>', {
+    url: pathToFileURL(join(BUNDLE, 'page.html')).href,
+    runScripts: 'dangerously',
+    resources: 'usable',
+    pretendToBeVisual: true,
+    virtualConsole,
+  });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const { Fieldia: inPage, document: doc } = dom.window;
+  const loaded = () => PARTS.filter((part) => inPage[PART_OF[part]].loaded).join(', ');
+  const host = doc.getElementById('app');
+  const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
+  // A page of plain parts: drawn at once, nothing asked for.
+  const plain = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
+  await plain.drawn;
+  if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
+  plain.destroy();
+  // A work item's bug: its parts asked for, the page drawn once they came — nothing of it before.
+  const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
+  await bug.drawn;
+  if (loaded() !== 'head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its head, path and text`);
+  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
+  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
+  bug.destroy();
+  // Its backlog: the filter bar's part too.
+  const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
+  await backlog.drawn;
+  if (loaded() !== 'filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  backlog.destroy();
+  if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
+  dom.window.close();
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, path and text, and a backlog's filter bar, each as first used");
+}

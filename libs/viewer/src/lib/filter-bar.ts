@@ -1,6 +1,7 @@
 import { suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Page, type ResolvedFilter } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
+import { installFilterStyles } from './filter-styles';
 import type { ViewerLabels } from './labels';
 
 type FieldFacet = Extract<Facet, { kind: 'field' }>;
@@ -41,6 +42,7 @@ const KEYWORD_PAUSE = 250;
  */
 export function filterBar(context: FilterBarContext) {
   const { page, node, doc, el, labels, fill, uid } = context;
+  installFilterStyles(doc);
   const fields = (node.filterFields ?? []).filter((name) => page.fields[name]);
   const icon = (name: string, className?: string) => {
     const drawn = drawIcon(doc, name, context.icons);

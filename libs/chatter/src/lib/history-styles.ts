@@ -132,6 +132,27 @@ export const HISTORY_STYLES = /* css */ `
   .fd-history-detail-head { grid-template-columns: 40px minmax(0, 1fr); }
   .fd-history-detail-head > .fd-history-when { grid-column: 2; padding: 0; }
 }
+/* Its slim scroll bars, as a work tracker's window draws them on every system: 15px, a light track with a hairline at its
+   inner edge, a rounded thumb inset in it, no arrows (where the browser lets a page draw them: Chrome, Edge, Safari). A
+   part paints no logical border, so its sides are physical ones, swapped right to left. */
+.fd-history ::-webkit-scrollbar { width: 15px; height: 15px; }
+.fd-history ::-webkit-scrollbar-track, .fd-history ::-webkit-scrollbar-corner { background: color-mix(in srgb, var(--fd-text) 2.2%, var(--fd-surface)); }
+.fd-history ::-webkit-scrollbar-track:vertical {
+  border-left: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-right: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+[dir="rtl"] .fd-history ::-webkit-scrollbar-track:vertical {
+  border-left-color: color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface)); border-right-color: color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface));
+}
+.fd-history ::-webkit-scrollbar-track:horizontal {
+  border-top: 1px solid color-mix(in srgb, var(--fd-text) 10%, var(--fd-surface)); border-bottom: 1px solid color-mix(in srgb, var(--fd-text) 7.5%, var(--fd-surface));
+}
+.fd-history ::-webkit-scrollbar-thumb {
+  border: solid transparent; border-width: 3px 3px 3px 4px; border-radius: 8px; background: color-mix(in srgb, var(--fd-text) 24.5%, var(--fd-surface)) padding-box;
+}
+.fd-history ::-webkit-scrollbar-thumb:horizontal { border-width: 4px 3px 3px; }
+[dir="rtl"] .fd-history ::-webkit-scrollbar-thumb:vertical { border-width: 3px 4px 3px 3px; }
+.fd-history ::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
+.fd-history ::-webkit-scrollbar-button { display: none; }
 `;
 
 /** Puts the History tab's look in the document once. */

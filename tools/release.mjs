@@ -157,6 +157,54 @@ console.log(found.size);
 const lazy = run('node', ['lazy.mjs'], SMOKE).trim();
 console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
 
+// The parts the packages load the first time a page uses them (a work item's head, its text, a path picker, a filter
+// bar, a Discussion, a History): each import('./x') of the ES modules, and each require('./x') of CommonJS, is a file
+// that is there — and each loads, and gives what is asked of it, as an app's bundler would load it.
+const PARTS = {
+  widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'] },
+  viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'] },
+  chatter: { discussion: ['mountDiscussion'], history: ['mountHistory'] },
+};
+writeFileSync(
+  join(SMOKE, 'parts.mjs'),
+  `import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const expected = ${JSON.stringify(PARTS)};
+let count = 0;
+for (const [name, parts] of Object.entries(expected)) {
+  const dir = 'node_modules/@fieldia/' + name + '/src/lib';
+  const found = { mjs: new Set(), js: new Set() };
+  for (const file of readdirSync(dir)) {
+    const kind = file.endsWith('.mjs') ? 'mjs' : file.endsWith('.js') ? 'js' : null;
+    if (!kind) continue;
+    const code = readFileSync(join(dir, file), 'utf8');
+    const asked = kind === 'mjs' ? code.matchAll(/\\bimport\\((['"])(\\.[^'"]+)\\1\\)/g) : code.matchAll(/then\\(\\(\\) => require\\((['"])(\\.[^'"]+)\\1\\)\\)/g);
+    for (const [, , specifier] of asked) {
+      const target = join(dir, specifier);
+      const there = kind === 'mjs' ? existsSync(target) : (() => { try { return !!createRequire(join(process.cwd(), dir, file)).resolve(specifier); } catch { return false; } })();
+      if (!there) throw new Error('@fieldia/' + name + ': ' + file + ' loads ' + specifier + ', which is not there');
+      found[kind].add(specifier.replace(/^\\.\\//, '').replace(/\\.mjs$/, ''));
+      count++;
+    }
+  }
+  for (const [part, gives] of Object.entries(parts)) {
+    for (const kind of ['mjs', 'js']) if (!found[kind].has(part)) throw new Error('@fieldia/' + name + ' (' + kind + ') does not load ' + part + ' on demand');
+    const esm = await import(pathToFileURL(join(process.cwd(), dir, part + '.mjs')).href);
+    const cjs = createRequire(join(process.cwd(), dir, 'x.js'))('./' + part);
+    for (const [kind, loaded] of [['import', esm], ['require', cjs]]) {
+      const missing = gives.filter((one) => typeof loaded[one] !== 'function');
+      if (missing.length) throw new Error('@fieldia/' + name + '/' + part + ' (' + kind + ') gives no ' + missing.join(', '));
+    }
+  }
+}
+console.log(count);
+`
+);
+const partsLoaded = run('node', ['parts.mjs'], SMOKE).trim();
+console.log(`  the parts loaded on first use: ${partsLoaded} imports of them resolve, and each part loads`);
+
 // Types, both ways a project resolves them: an .mts file reads the ESM types, a .cts file the CommonJS ones.
 writeFileSync(
   join(SMOKE, 'types.mts'),
@@ -214,8 +262,17 @@ for (const locale of ['ar', 'de', 'fr']) {
   for (const file of [bundle, addOn]) runInNewContext(readFileSync(file, 'utf8'), page);
   if (page.Fieldia.MESSAGES[locale]?.locale !== locale || !page.Fieldia.VIEWER_LABELS[locale] || !page.Fieldia.WIDGET_LABELS[locale]) fail(`the packed fieldia.${locale}.js does not give the script bundle its words`);
 }
+// Each part beside it: after the main script, Fieldia draws from it (the main script asks for it from beside itself).
+for (const [part, holder, gives] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['filters', 'filtersPart', 'filterBar']]) {
+  const file = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`);
+  if (!existsSync(file)) fail(`@fieldia/viewer has no bundle/fieldia.${part}.js`);
+  const page = {};
+  for (const one of [bundle, file]) runInNewContext(readFileSync(one, 'utf8'), page);
+  const given = await runInNewContext(`Fieldia.${holder}.load()`, page);
+  if (typeof given?.[gives] !== 'function') fail(`the packed fieldia.${part}.js does not give the script bundle its part`);
+}
 
-console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle and its language add-ons all check`);
+console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle, its language add-ons and its parts all check`);
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {

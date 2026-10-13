@@ -3,6 +3,7 @@ import { floatUnder } from './float';
 import { drawIcon } from './icons';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
 import { scrollToRow } from './pick-list';
+import { installPathStyles } from './styles-path';
 import type { PreferenceStore } from './preferences';
 import type { Widget, WidgetFactory } from './widgets';
 
@@ -63,6 +64,7 @@ const names = (record: RelatedRecord): string[] => (record.path?.length ? record
 const keyOf = (path: readonly string[]) => path.join('\u0001');
 
 export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, document: doc, labels, locale, preferences }) => {
+  installPathStyles(doc);
   const words = wordsFor(labels, locale);
   const make = maker(doc);
   const relation = field.type === 'many2one' ? field.relation : '';

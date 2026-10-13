@@ -613,7 +613,7 @@ icon?: string;
 
   External links get `target="_blank" rel="noopener"` and the `external` icon after them when drawn.
 - **Discussion** (`chatterSlot({ …, look: 'discussion', me, placeholder, references, onCount })`):
-  - A composer card at the top (§2.6): the `me` avatar, then a box showing the placeholder. On focus it becomes the shared rich editor (exported from widgets as `formattedText(doc, options)`) with "switch to Markdown editor", Cancel and Save.
+  - A composer card at the top (§2.6): the `me` avatar, then a box showing the placeholder. On focus it becomes the shared rich editor (`formattedText(doc, options)`, in widgets' text part: `(await textPart.load()).formattedText`) with "switch to Markdown editor", Cancel and Save.
   - Ctrl+Enter saves. Escape cancels, asking first if words were typed.
   - Then a card per comment (kind `message`), newest first: avatar, author, "commented {date}" (a link to `#comment-<id>`), and the body.
   - Events (tracked changes) are **not** shown here: they belong to History.
@@ -992,3 +992,29 @@ For each state:
   - the Kanban board (third backlog screenshot): Grafloria's;
   - the browser chrome and the macOS dock in the screenshots;
   - DevOps's own product navigation, which the demo's shell replaces with generic words.
+
+## 10. Loaded on first use
+
+A page that uses none of the work item's parts pays almost nothing for them: each comes the first time a page uses it
+(`libs/widgets/src/lib/parts.ts`). In the packages a part is a module asked for with `import()`, which an app's bundler
+makes a chunk; in the script bundle it is a script beside fieldia.js, which fieldia.js adds from its own folder
+(`tools/script-parts.ts`, built by `tools/script-bundle.mjs` against the main script, sharing its modules by name).
+
+| Part | Module | Script | What it holds |
+| --- | --- | --- | --- |
+| head | viewer `head-part.ts` | fieldia.head.js | the record head and its tabs, split/toggled/icon buttons, a group's heading with its tools, the inset dialog's ⤢ and grip, their sheets (head-styles, group-styles) |
+| text | widgets `text-part.ts` | fieldia.text.js | the formatted text's editors, Markdown both ways, the menus, the links box, their sheet (styles-editor) |
+| path | widgets `path-part.ts` | fieldia.path.js | the path picker and its sheet (styles-path) |
+| filters | viewer `filters-part.ts` | fieldia.filters.js | a list's filter bar and its sheet (filter-styles) |
+| discussion, history | chatter `discussion.ts`, `history.ts` | — (chatter is not in the script) | the Discussion (with the text part) and the History |
+
+- The viewer finds a page's parts (`partsFor`) and draws the page once they are in: nothing of it before, so nothing
+  moves as they arrive; `openFormDialog` opens its box once they are in. `handle.drawn` settles when it is drawn;
+  `loadParts(page)` loads them ahead. A part that cannot come leaves what it would draw drawn plainly.
+- A widget made before its part came, outside the viewer, is drawn plainly and replaced in place by the part's.
+- A part's sheet goes between Fieldia's two (`installPartStyles`, `PART_RANK`): after the quiet look and the pickers',
+  before the page's own looks, as its rules stood in FIELDIA_CSS.
+- What stays in every page: the page's checks of heads, buttons, groups and list cells (checkPage is synchronous), a
+  list's backlog cells, nested rows and Fluent's list look, Fieldia's own lists and a state's dot, the work item's icons
+  (any page may name them), the access key and a lock at a value, help boxes and a group's tracks.
+

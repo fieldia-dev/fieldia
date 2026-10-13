@@ -5,6 +5,7 @@ import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
 import { textMenu, type MenuChoice } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
+import { installEditorStyles } from './styles-editor';
 
 /**
  * A formatted text's editor, on its own: the rich editor (words formatted in
@@ -89,6 +90,7 @@ let editors = 0;
 const isEmpty = (html: string) => !html.replace(/<br\s*\/?>|<\/?(p|div|span)>|&nbsp;|\s/gi, '');
 
 export function formattedText(doc: Document, options: FormattedTextOptions = {}): FormattedText {
+  installEditorStyles(doc);
   const make = maker(doc);
   const labels = options.labels ?? WIDGET_LABELS.en;
   const n = ++editors;

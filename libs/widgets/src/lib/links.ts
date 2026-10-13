@@ -5,6 +5,7 @@ import { WIDGET_LABELS } from './labels';
 import { linkedWords } from './linked-words';
 import { textMenu } from './text-menu';
 import { chevron } from './text-tools';
+import { installEditorStyles } from './styles-editor';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -21,6 +22,7 @@ import type { WidgetFactory } from './widgets';
  * new record of the relation in a dialog, and links it once saved.
  */
 export const linksWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
+  installEditorStyles(document);
   const def = field as Extract<Field, { type: 'many2many' }>;
   const make = maker(document);
   const options = node.options ?? {};

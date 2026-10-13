@@ -5,7 +5,7 @@
  * tools/build-demos.mjs).
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
@@ -42,8 +42,9 @@ for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'story.js', 's
 // The feature pages' pictures, taken from the real demos (tools/feature-shots.mjs).
 cpSync(join(WORKSPACE, 'site/img'), join(OUT, 'img'), { recursive: true });
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));
-// Each language's add-on beside it: the live form fetches one when its language is picked.
-for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `fieldia.${locale}.js`));
+// Each language's add-on beside it: the live form fetches one when its language is picked. And each part (a work item's
+// head, its text, a path picker, a filter bar), which fieldia.js asks for from beside itself the first time a page uses it.
+for (const file of readdirSync(dirname(BUNDLE)).filter((name) => /^fieldia\.[a-z]+\.js$/.test(name))) cpSync(join(dirname(BUNDLE), file), join(OUT, file));
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
 // The template library's pages, each beside its gallery: /templates/<id>.page.json.
 for (const file of readdirSync(join(WORKSPACE, 'examples/templates')).filter((f) => f.endsWith('.json'))) cpSync(join(WORKSPACE, 'examples/templates', file), join(OUT, 'templates', file));

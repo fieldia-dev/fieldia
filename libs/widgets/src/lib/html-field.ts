@@ -26,20 +26,6 @@ import type { Widget, WidgetContext } from './widgets';
  * Whichever the editor, the value is stored as clean HTML.
  */
 
-/** Whether a page asks this field for more than the classic toolbar. */
-export function usesEditor(options: Record<string, JsonValue> | undefined): boolean {
-  if (!options) return false;
-  return (
-    options['toolbar'] === 'focus' ||
-    options['toolbarAt'] !== undefined ||
-    Array.isArray(options['tools']) ||
-    options['editor'] !== undefined ||
-    options['switchEditor'] === true ||
-    options['mention'] !== undefined ||
-    options['references'] !== undefined
-  );
-}
-
 const isTool = (tool: unknown): tool is TextTool => typeof tool === 'string' && (TEXT_TOOLS as readonly string[]).includes(tool);
 const record = (value: JsonValue | undefined): Record<string, JsonValue> | null => (value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null);
 

@@ -20,11 +20,11 @@ import {
 import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
-import { filterBar } from './filter-bar';
 import type { ViewerLabels } from './labels';
 import { groupRow, type GroupContext, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { searchBar } from './search-bar';
+import { filtersPart } from './viewer-parts';
 
 export interface ListContext {
   page: Page;
@@ -610,9 +610,11 @@ export function listView(context: ListContext): ListView {
     void mapPart?.reload();
   };
   // The search bar, or a keyword and a list of values for each of a few fields.
+  // The filter bar comes in the filters part, which the viewer has waited for; the search bar where it could not come.
+  const filters = node.search === 'fields' ? filtersPart.loaded : undefined;
   const search =
-    node.search === 'fields'
-      ? filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
+    filters
+      ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, facets, onChange: searched });
 
   // ---- the map, beside the table or instead of it ----------------------------------

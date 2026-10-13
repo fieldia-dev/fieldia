@@ -1028,15 +1028,48 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // after the themes' shapes, which it quietens; the pickers' (a work tracker's lists, styles-picker) after the quiet
 // look; a record's head after them, which draws its boxes (and a dot in its lead slot) its own way; a work item's
 // text, groups and links (styles-text) after those.
-export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+// The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
+const BASE_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS;
+const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+/**
+ * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each
+ * put between this one's two halves — after the quiet look, the pickers', the head's and the text's own rules, and
+ * before the page's own looks — so they win and lose as they would inside it (`installPartStyles`).
+ */
+export const FIELDIA_CSS = BASE_CSS + LOOKS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
+const LOOKS_ID = 'fieldia-styles-looks';
 
-/** Add Fieldia's stylesheet to a document, once. */
+/** Add Fieldia's stylesheet to a document, once: two <style> elements, the page's own looks in the second, so a part's sheet can go between them. */
 export function installStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = FIELDIA_CSS;
-  (document.head ?? document.documentElement).append(style);
+  const base = document.createElement('style');
+  base.id = STYLE_ID;
+  base.textContent = BASE_CSS;
+  const looks = document.createElement('style');
+  looks.id = LOOKS_ID;
+  looks.textContent = LOOKS_CSS;
+  (document.head ?? document.documentElement).append(base, looks);
+}
+
+/**
+ * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: a path picker's after
+ * the pickers', a record's head after that, a work item's groups and its text editor after those. A sheet of a higher
+ * rank goes after one of a lower, all before the page's own looks.
+ */
+export const PART_RANK = { picker: 1, head: 2, groups: 3, text: 4 } as const;
+
+/** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
+export function installPartStyles(document: Document, id: string, css: string, rank: number): void {
+  if (document.getElementById(id)) return;
+  installStyles(document);
+  const sheet = document.createElement('style');
+  sheet.id = id;
+  sheet.setAttribute('data-fd-rank', String(rank));
+  sheet.textContent = css;
+  const later = [...document.querySelectorAll('style[data-fd-rank]')].find((other) => Number(other.getAttribute('data-fd-rank')) > rank);
+  const looks = later ?? document.getElementById(LOOKS_ID);
+  if (looks) looks.before(sheet);
+  else (document.head ?? document.documentElement).append(sheet);
 }

@@ -1,9 +1,9 @@
-import { fill, type Form, type FormState, type Locale } from '@fieldia/core';
+import { fill, type Locale } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
-import { ageOf, empty, firstDayOfWeek, HISTORY_AGES, historyEntries, stateColours, type HistoryAge, type HistoryEntry } from './history-data';
+import { ageOf, empty, firstDayOfWeek, HISTORY_AGES, historyEntries, type HistoryAge, type HistoryEntry } from './history-data';
 import type { ChatterSource, Person, RecordRef } from './source';
 
 export { HISTORY_STYLES, installHistoryStyles } from './history-styles';
@@ -536,41 +536,5 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
       closeMenu(false);
       root.remove();
     },
-  };
-}
-
-/**
- * What fills a page's history slot: the history of the record the form
- * shows, its State Graph's colours the page's own dot's. It follows the form
- * to another record, and fetches again after each save and each time the
- * record is loaded again.
- *
- *   mountViewer(host, { page, dataSource, slots: { history: historySlot({ source, stateField: 'state', reasonField: 'reason', kind: 'work item' }) } })
- */
-export function historySlot(options: HistoryOptions): (element: HTMLElement, context: { form: Form }) => () => void {
-  return (element, { form }) => {
-    const model = form.page.data.kind === 'record' ? form.page.data.model : null;
-    const recordOf = (state: FormState): RecordRef | null => (model && state.recordId != null ? { model, id: state.recordId } : null);
-    let shown = recordOf(form.getState());
-    let status = form.getState().status;
-    const history = mountHistory(element, {
-      ...options,
-      record: shown,
-      ...(options.stateField ? { stateColour: stateColours(form.page, options.stateField) } : {}),
-    });
-    const unsubscribe = form.subscribe((state) => {
-      const next = recordOf(state);
-      if (next?.id !== shown?.id) {
-        shown = next;
-        void history.setRecord(next);
-      } else if ((state.status === 'saved' && status !== 'saved') || (state.status === 'ready' && status === 'loading')) {
-        void history.refresh();
-      }
-      status = state.status;
-    });
-    return () => {
-      unsubscribe();
-      history.destroy();
-    };
   };
 }

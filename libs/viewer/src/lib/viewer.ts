@@ -44,7 +44,7 @@ import {
   MESSAGES,
   hotkeyWords,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, wearsQuiet, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView, type ListViewFactory, type OpenRowOptions } from './list';
 import type { MapPartFactory } from './map-part';
@@ -58,10 +58,11 @@ import { valueWords } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
 import { attachmentPreview } from './attachment-preview';
-import { applyTracks, helpBox, keepTools, loneFieldTools, sectionHeading, wordsWithLinks, workHeading, type HeadKit } from './section-head';
+import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHeading, type HeadKit } from './section-head';
 import { installRecordStyles } from './record-styles';
-import { recordHead, type RecordHead } from './record-head';
-import { isRichButton, nothingToUndo, richButton } from './button-parts';
+import type { RecordHead } from './record-head';
+import { isRichButton, nothingToUndo } from './button-parts';
+import { headPart, partsFor, type HeadPart } from './viewer-parts';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
@@ -72,8 +73,11 @@ import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
 
-/** Fill a slot with the app's own content. Return a function to clean up. */
-export type SlotRenderer = (element: HTMLElement, context: { form: Form; name: string }) => void | (() => void);
+/**
+ * Fill a slot with the app's own content. Return a function to clean up. A slot drawn from parts loaded on first use
+ * (a work item's Discussion: parts.ts in @fieldia/widgets) names them in `parts`: the page is drawn once they are in.
+ */
+export type SlotRenderer = ((element: HTMLElement, context: { form: Form; name: string }) => void | (() => void)) & { readonly parts?: readonly Part[] };
 
 export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   page: Page;
@@ -226,6 +230,11 @@ export interface ViewerHandle {
   setValues(values: Values): void;
   /** Run steps on the form, as a button would. */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
+  /**
+   * Settled once the page is drawn: at once, unless it draws from a part not loaded yet (a record's head, a filter bar, a
+   * work item's text, a path picker: parts.ts), which it waits for — its element empty and busy meanwhile.
+   */
+  readonly drawn: Promise<void>;
   destroy(): void;
 }
 
@@ -422,6 +431,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** Set once the viewer is on the page; set again when it is taken away. */
   let mounted = false;
   let gone = false;
+  /** Whether the form has opened a record yet (its `open` event). */
+  let opened = false;
 
   /** The columns a part spans in the grid it sits in; the stylesheet keeps it within the columns there at each width. */
   function spans(element: HTMLElement, colspan: number | undefined) {
@@ -709,8 +720,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     function buttonItem(node: ButtonNode): HTMLElement {
       // Its icon alone, a toggle, a menu beside it, a look that follows the record's changes: drawn by button-parts.ts.
-      if (isRichButton(node)) {
-        const rich = richButton({ doc, el, form, labels, icons: options.icons, uid, withIcon, press, say: (message, tone) => actionHost.say(message, tone), watch, cleanups }, node);
+      const head = isRichButton(node) ? headPart.loaded : undefined;
+      if (head) {
+        const rich = head.richButton({ doc, el, form, labels, icons: options.icons, uid, withIcon, press, say: (message, tone) => actionHost.say(message, tone), watch, cleanups }, node);
         spans(rich, node.colspan);
         return hiddenOn(node, rich);
       }
@@ -838,9 +850,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Its own column widths and gap; a heading with tools at its end, as a work item's group has.
       applyTracks(content, node);
       const own = loneFieldTools(node, content);
-      if (node.title && (workHeading(node) || own.length)) {
+      const tools = node.title && (workHeading(node) || own.length) ? headPart.loaded : undefined;
+      if (tools) {
         content.id = uid(`${node.id}-content`);
-        const head = sectionHeading(headKit, node, section, content, description, own);
+        const head = tools.sectionHeading(headKit, node, section, content, description, own);
         if (node.collapsible) folds.set(section, () => head.show(true));
         section.append(head.legend);
       } else if (node.title && node.collapsible) {
@@ -1491,7 +1504,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
 
   function sheetLayout(node: SheetNode): HTMLElement {
-    if (node.head) return headedLayout(node);
+    // A head comes in the head part, waited for before the page is drawn; where it could not come, the sheet is drawn plainly.
+    const part = node.head ? headPart.loaded : undefined;
+    if (part) return headedLayout(node, part);
     const pageBox = el('div', { class: 'fd-sheet-page', 'data-node': node.id });
     const actions = el('div', { class: 'fd-actions' });
     const save = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, labels.save);
@@ -1690,9 +1705,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * head). The record's breadcrumbs and pager, when the app gives them, over
    * it; its gear menu is the head's ⋮.
    */
-  function headedLayout(node: SheetNode): HTMLElement {
+  function headedLayout(node: SheetNode, part: HeadPart): HTMLElement {
     const pageBox = el('div', { class: 'fd-sheet-page fd-head-page', 'data-node': node.id });
-    const head = recordHead({
+    const head = part.recordHead({
       doc,
       el,
       form,
@@ -1757,45 +1772,71 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   let wizardForward: (() => Promise<void>) | null = null;
 
   const layout = page.layout;
-  let body: HTMLElement;
   /** A list page's way to ask for its records again (handle.reload). */
   let reloadList: (() => Promise<void>) | null = null;
   /** And its way to open a record as its row's press does (handle.openRecord). */
   let openInList: ((id: RecordId, options?: OpenRowOptions) => Promise<void>) | null = null;
-  if (layout.type === 'sheet') body = sheetLayout(layout);
-  else if (layout.type === 'wizard') body = wizardLayout(layout);
-  else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
-  else if (layout.type === 'list') {
-    const list = listView({
-      page,
-      node: layout,
-      form,
-      dataSource: options.dataSource,
-      doc,
-      el,
-      labels,
-      locale,
-      fill,
-      press,
-      withIcon,
-      uid,
-      icons: options.icons,
-      preferences,
-      onOpenRecord: options.onOpenRecord,
-      ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
-      ...(options.listViews ? { views: options.listViews } : {}),
-    });
-    cleanups.push(list.destroy);
-    reloadList = list.reload;
-    openInList = list.open;
-    body = list.element;
-  }
-  else body = sectionsLayout(layout);
 
-  const head = layout.type === 'sheet' ? null : pageHead();
-  // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
-  const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-  content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, draft, body);
+  /**
+   * The page itself — its layout, head and bar — drawn whole: at once when every part it draws from is in, else once
+   * they have come (or could not, when what they would have drawn is drawn plainly). Nothing of it is shown before, so
+   * nothing moves as a part arrives, and no focus is lost: there was nothing to have it.
+   */
+  function drawPage() {
+    let body: HTMLElement;
+    if (layout.type === 'sheet') body = sheetLayout(layout);
+    else if (layout.type === 'wizard') body = wizardLayout(layout);
+    else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
+    else if (layout.type === 'list') {
+      const list = listView({
+        page,
+        node: layout,
+        form,
+        dataSource: options.dataSource,
+        doc,
+        el,
+        labels,
+        locale,
+        fill,
+        press,
+        withIcon,
+        uid,
+        icons: options.icons,
+        preferences,
+        onOpenRecord: options.onOpenRecord,
+        ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
+        ...(options.listViews ? { views: options.listViews } : {}),
+      });
+      cleanups.push(list.destroy);
+      reloadList = list.reload;
+      openInList = list.open;
+      body = list.element;
+    }
+    else body = sectionsLayout(layout);
+
+    const head = layout.type === 'sheet' ? null : pageHead();
+    // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
+    const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
+    content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, draft, body);
+    pageDrawn = true;
+  }
+  let pageDrawn = false;
+  /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
+  const afterDrawing = <T>(then: () => Promise<T>): Promise<T> => (pageDrawn ? then() : drawn.then(then));
+  const awaited = partsFor(page, options.widgets, options.slots).filter((part) => !part.loaded);
+  let drawn: Promise<void> = Promise.resolve();
+  if (!awaited.length) drawPage();
+  else {
+    root.setAttribute('aria-busy', 'true');
+    drawn = settleParts(awaited).then(() => {
+      if (gone) return;
+      drawPage();
+      root.removeAttribute('aria-busy');
+      render(form.getState());
+      // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
+      if (opened) focusAsOpened(true);
+    });
+  }
   root.append(content, done, announcer);
   // The status leaves its place beside Save when the page wants it in a corner or across the top.
   if (options.saveStatus === 'toast') {
@@ -1983,22 +2024,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   mounted = true;
   // As the record opens, its focused field takes the focus — the first shown — unless the person is busy elsewhere:
   // only while nothing has the focus, or, the first time, while it is in this form (a dialog's first box).
-  let opened = false;
-  if (focusers.length) {
-    cleanups.push(
-      form.on('open', () => {
-        const first = !opened;
-        opened = true;
-        queueMicrotask(() => {
-          if (gone || !root.isConnected || root.closest('[hidden]') || (typeof root.checkVisibility === 'function' && !root.checkVisibility())) return;
-          const active = doc.activeElement;
-          const free = !active || active === doc.body || active === doc.documentElement;
-          if (!free && !(first && root.contains(active))) return;
-          focusers.find((one) => !one.wrapper.closest('[hidden]'))?.focus();
-        });
-      })
-    );
+  function focusAsOpened(first: boolean) {
+    if (!focusers.length) return;
+    queueMicrotask(() => {
+      if (gone || !root.isConnected || root.closest('[hidden]') || (typeof root.checkVisibility === 'function' && !root.checkVisibility())) return;
+      const active = doc.activeElement;
+      const free = !active || active === doc.body || active === doc.documentElement;
+      if (!free && !(first && root.contains(active))) return;
+      focusers.find((one) => !one.wrapper.closest('[hidden]'))?.focus();
+    });
   }
+  cleanups.push(
+    form.on('open', () => {
+      const first = !opened;
+      opened = true;
+      focusAsOpened(first);
+    })
+  );
   if (form.getState().status === 'idle') void form.load();
 
   return {
@@ -2035,13 +2077,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       render(form.getState());
     },
     isReadonly: () => locked,
-    reload: async () => {
-      if (reloadList) return reloadList();
-      await form.run([{ do: 'reload' }]);
-    },
-    openRecord: async (id, options) => {
-      await openInList?.(id, options);
-    },
+    reload: () =>
+      afterDrawing(async () => {
+        if (reloadList) return reloadList();
+        await form.run([{ do: 'reload' }]);
+      }),
+    openRecord: (id, options) =>
+      afterDrawing(async () => {
+        await openInList?.(id, options);
+      }),
     on: (event, listener) => {
       const off = form.on(event, listener);
       cleanups.push(off);
@@ -2049,6 +2093,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
     setValues: (values) => form.setValues(values),
     run: (steps, context) => form.run(steps, context),
+    drawn,
     destroy() {
       gone = true;
       unsubscribe();

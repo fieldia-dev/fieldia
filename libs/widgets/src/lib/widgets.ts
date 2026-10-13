@@ -43,13 +43,13 @@ import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
-import { linksWidget } from './links';
 import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
 import { ownListWidget } from './own-list';
-import { pathPickerWidget } from './path-picker';
+import { partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { dateRangeWidget } from './date-range';
@@ -157,7 +157,24 @@ export type WidgetFactory = (context: WidgetContext) => Widget;
 export function createWidget(given: WidgetContext, registry: Record<string, WidgetFactory> = given.widgets ?? {}): Widget {
   // The fields it draws of its own are found where it was.
   const context = given.widgets === registry ? given : { ...given, widgets: registry };
-  const { field, node } = context;
+  const { field } = context;
+  const factory = factoryFor(field, context.node, registry);
+  // Choices from the app's list: the same widget, drawn again as they load.
+  if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, context) : factory(context);
+  return pendingWidget(context);
+}
+
+/**
+ * The part a field's widget comes in (parts.ts) — a work item's text editor, its links box, a path picker — when
+ * its code is loaded the first time a page shows one; undefined for a widget that is always there. The viewer
+ * asks for these before it draws a page, so its widgets are drawn whole at once.
+ */
+export function widgetPart(field: Field, node: FieldNode, registry: Record<string, WidgetFactory> = {}): Part | undefined {
+  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node);
+}
+
+/** The factory for a field: the app's or the built-in one for `type.widget`, then for the type alone. */
+function factoryFor(field: Field, node: FieldNode, registry: Record<string, WidgetFactory>): WidgetFactory | undefined {
   const keys = [
     node.widget ? `${field.type}.${node.widget}` : null,
     field.type === 'selection' && field.multiple ? 'selection.checkboxes' : null,
@@ -167,10 +184,9 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   ].filter((key): key is string => key !== null);
   for (const key of keys) {
     const factory = registry[key] ?? builtInWidgets[key];
-    // Choices from the app's list: the same widget, drawn again as they load.
-    if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, context) : factory(context);
+    if (factory) return factory;
   }
-  return pendingWidget(context);
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -711,12 +727,13 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarWidget,
   // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).
-  'many2one.path': pathPickerWidget,
+  'many2one.path': partFactory(pathPart, (part) => part.pathPickerWidget, (context) => many2oneWidget(context)),
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
   'many2many.table': linksTableWidget,
-  'many2many.links': linksWidget,
+  // The links box comes with the text part, whose menus and words it shares; the tags meanwhile.
+  'many2many.links': partFactory(textPart, (part) => part.linksWidget, (context) => tagsWidget(context)),
   reference: referenceWidget,
   one2many: linesWidget,
   'one2many.cards': cardsWidget,

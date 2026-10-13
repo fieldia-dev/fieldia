@@ -1,10 +1,11 @@
 import { fill } from '@fieldia/core';
-import { decorateLinks, formattedText, installStyles, sanitizeHtml, WIDGET_LABELS, type TextReference } from '@fieldia/widgets';
+import { installStyles, sanitizeHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
 import type { ChatterMessage, Person } from './source';
 import { installDiscussionStyles } from './discussion-styles';
+import { drawnLater } from './later';
 
 /**
  * A record's discussion, as a work item draws it: a card to write a comment
@@ -29,6 +30,13 @@ export interface DiscussionOptions extends ChatterOptions {
 }
 
 export function mountDiscussion(host: HTMLElement, options: DiscussionOptions): ChatterHandle {
+  // Its comment box is the formatted text's editor, in the text part: drawn once that has come, when it has not yet.
+  const text = textPart.loaded;
+  if (text) return drawDiscussion(host, options, text);
+  return drawnLater(host, options.record, textPart.load().then((part) => (record) => drawDiscussion(host, { ...options, record }, part)));
+}
+
+function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorateLinks, formattedText }: TextPart): ChatterHandle {
   const doc = host.ownerDocument;
   installStyles(doc);
   installDiscussionStyles(doc);

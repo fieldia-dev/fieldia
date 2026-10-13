@@ -5,7 +5,7 @@
  */
 import { build } from 'esbuild';
 import { cpSync, existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
@@ -29,8 +29,9 @@ for (const variant of variants) {
     if (!existsSync(SCRIPT_BUNDLE)) throw new Error('demos/script needs the script bundle: run `npx nx build viewer` first');
     cpSync(join(WORKSPACE, 'demos/script'), join(OUT, 'script'), { recursive: true });
     cpSync(SCRIPT_BUNDLE, join(OUT, 'script/fieldia.js'));
-    // And each language's add-on beside it, for the demo in Arabic, German or French (?locale=ar).
-    for (const locale of ['ar', 'de', 'fr']) cpSync(SCRIPT_BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `script/fieldia.${locale}.js`));
+    // And each language's add-on beside it, for the demo in Arabic, German or French (?locale=ar); and each part, which
+    // fieldia.js asks for from beside itself the first time a page uses it (a work item's head, its text, a path picker).
+    for (const file of readdirSync(dirname(SCRIPT_BUNDLE)).filter((name) => /^fieldia\.[a-z]+\.js$/.test(name))) cpSync(join(dirname(SCRIPT_BUNDLE), file), join(OUT, 'script', file));
     console.log(`demo script: ${join('dist/demos', 'script')}`);
     continue;
   }
@@ -47,8 +48,9 @@ for (const variant of variants) {
   }
   // The plain demo is ES modules, split as an app's bundler splits them: the code editors' grammars and
   // VS Code's editor are files of their own (chunks/), loaded only by a page that shows them. Monaco's CSS
-  // is written beside it, as main.css, which its page links.
-  const split = variant === 'plain';
+  // is written beside it, as main.css, which its page links. The backlog too: the work item's parts — its head, its
+  // text, its path pickers, the list's filter bar — are chunks the page asks for the first time it draws one.
+  const split = variant === 'plain' || variant === 'backlog';
   await build({
     entryPoints: [entry],
     jsx: 'automatic',
@@ -67,7 +69,7 @@ for (const variant of variants) {
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
     },
   });
-  if (split) {
+  if (variant === 'plain') {
     // Monaco's workers, for the code page with ?workers=1: the editor's own and JSON's, each a module.
     const monaco = join(WORKSPACE, 'node_modules/monaco-editor/esm/vs');
     await build({

@@ -1,0 +1,72 @@
+import type { ButtonNode, FieldNode, Page, SectionNode } from '@fieldia/core';
+import { lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { isRichButton } from './button-parts';
+import type * as FiltersModule from './filters-part';
+import type * as HeadModule from './head-part';
+import { workHeading } from './section-head';
+
+/** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
+export type HeadPart = typeof HeadModule;
+/** The filters part: a list's filter bar. */
+export type FiltersPart = typeof FiltersModule;
+
+/** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
+export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
+/** A list's filter bar, loaded the first time a list draws one. */
+export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
+
+/** Every part the viewer can draw from, its own and its widgets'. */
+const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart];
+
+/** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
+const markdownAlone = (node: SectionNode) => {
+  const only = node.children.length === 1 ? node.children[0] : undefined;
+  return !!node.title && only?.type === 'field' && only.options?.['editor'] === 'markdown';
+};
+
+/**
+ * The parts a page draws from (parts.ts in @fieldia/widgets): the head part for
+ * a record's head, a button split, toggled or shown by its icon alone, or a
+ * group's work heading; the filters part for a list's filter bar; and the
+ * widgets' own for the fields that need them (a work item's text, a links box,
+ * a path picker) — unless the app's `widgets` draw those fields; and those the
+ * app's `slots` name for the slots the page has (a Discussion's).
+ */
+export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
+  const found = new Set<Part>();
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const node = value as { type?: unknown; [key: string]: unknown };
+    if (node.type === 'sheet' && node['head']) found.add(headPart);
+    else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
+    else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
+    else if (node.type === 'list' && node['search'] === 'fields') found.add(filtersPart);
+    else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) found.add(part);
+    else if (node.type === 'field' && typeof node['field'] === 'string') {
+      const field = page.fields[node['field']];
+      const part = field ? widgetPart(field, node as unknown as FieldNode, widgets) : undefined;
+      if (part) found.add(part);
+    }
+    for (const key of Object.keys(node)) {
+      const child = node[key];
+      if (child && typeof child === 'object') visit(child);
+    }
+  };
+  visit(page.layout);
+  return [...found];
+}
+
+/**
+ * The parts a page draws from, loaded — or, with no page, every part. The
+ * viewer and its dialogs wait for a page's parts themselves before they draw
+ * it; this is for an app that wants them in before it mounts, so the page is
+ * drawn whole the moment it is mounted. Rejects when one could not come (the
+ * viewer then draws plainly what it would have drawn from it).
+ */
+export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
+  await Promise.all((page ? partsFor(page, widgets, slots) : EVERY_PART).map((part) => part.load()));
+}

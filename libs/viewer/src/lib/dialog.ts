@@ -1,10 +1,11 @@
 import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
-import { drawIcon, WIDGET_LABELS } from '@fieldia/widgets';
+import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
+import { headPart, partsFor } from './viewer-parts';
 
 /**
  * A page in a dialog: a new related record, a line to edit, a quick task. The
@@ -106,10 +107,6 @@ export function openFormPanel(options: FormPanelOptions): Promise<FormDialogResu
   return openForm(options, `fd-form-panel ${side === 'top' || side === 'bottom' ? `fd-height-${options.height ?? 'medium'}` : `fd-width-${options.width ?? 'medium'}`}`, side);
 }
 
-/** How far the grip's arrow keys resize a dialog, in pixels; and the least it is resized to. */
-const RESIZE_STEP = 16;
-const LEAST = { width: 320, height: 240 };
-
 /**
  * A dialog or a panel (from its side): a page in a box with a head, a body that
  * scrolls and a foot; `shape` is the box's own classes. A page whose sheet has
@@ -118,12 +115,27 @@ const LEAST = { width: 320, height: 240 };
  * and the title, and asks before Escape or × drop changes, as a panel does.
  */
 function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): Promise<FormDialogResult> {
+  const doc = options.container?.ownerDocument ?? document;
+  // What has the focus as it is asked for gets it back as it closes, though the box waits for its parts.
+  const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
+  // The parts its page draws from, and the head part for a work item's window (inset, clear, ⤢, a grip): the box opens
+  // once they are in, drawn whole — at once when they are already.
+  const windowed = !side && (options.size === 'inset' || options.backdrop === 'clear' || !!options.maximise || !!options.resizable);
+  const parts = [...partsFor(options.page, options.widgets, options.slots), ...(windowed ? [headPart] : [])].filter((part) => !part.loaded);
+  if (!parts.length) return openNow(options, shape, side, opener);
+  return settleParts(parts).then(() => openNow(options, shape, side, opener));
+}
+
+function openNow(options: FormDialogOptions, shape: string, side: PanelSide | undefined, opener: HTMLElement | null): Promise<FormDialogResult> {
   const panel = !!side;
   const layout = options.page.layout;
-  const headed = !panel && layout.type === 'sheet' && !!layout.head;
+  /** The head part's window tools and look; drawn plainly where it could not come. */
+  const kit = headPart.loaded;
+  const headed = !panel && layout.type === 'sheet' && !!layout.head && !!kit;
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
-  const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
+  // The window's look (inset, clear, ⤢, its grip, a head as its own head) in the page before the box is.
+  if (kit && !panel && (headed || options.size === 'inset' || options.backdrop === 'clear' || options.maximise || options.resizable)) kit.installHeadStyles(doc);
   const labels = { ...VIEWER_LABELS[ownLocale(options.locale)], ...options.labels };
   const id = `fd-dialog-${++dialogs}`;
   const make = maker(doc);
@@ -134,8 +146,8 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   if (closeIcon) closeButton.append(closeIcon);
   else closeButton.textContent = '×';
   // ⤢ fills the window with it, and Restore puts it back.
-  const maximise = options.maximise && !panel ? make('button', { type: 'button', class: 'fd-dialog-max', 'aria-label': labels.maximise, title: labels.maximise }) : null;
-  const grip = options.resizable && !panel ? make('button', { type: 'button', class: 'fd-dialog-grip', 'aria-label': labels.resize, title: labels.resize, 'aria-keyshortcuts': 'ArrowLeft ArrowRight ArrowUp ArrowDown' }) : null;
+  const maximise = options.maximise && !panel && kit ? make('button', { type: 'button', class: 'fd-dialog-max', 'aria-label': labels.maximise, title: labels.maximise }) : null;
+  const grip = options.resizable && !panel && kit ? make('button', { type: 'button', class: 'fd-dialog-grip', 'aria-label': labels.resize, title: labels.resize, 'aria-keyshortcuts': 'ArrowLeft ArrowRight ArrowUp ArrowDown' }) : null;
   const body = make('div', { class: 'fd-form-dialog-body' });
   const discard = make('button', { type: 'button', class: 'fd-button' }, labels.discard);
   const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, panel && options.mode === 'values' ? labels.done : labels.saveClose);
@@ -197,8 +209,8 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
     if (names.length) box.setAttribute('aria-labelledby', names.join(' '));
     else box.setAttribute('aria-label', options.title);
   }
-  if (maximise) wireMaximise(box, maximise, labels, doc);
-  if (grip) wireGrip(box, grip, doc);
+  if (maximise) kit?.wireMaximise(box, maximise, labels, doc);
+  if (grip) kit?.wireGrip(box, grip, doc);
   let done = false;
   /** The saves made in it, and how many there were as the last run of steps ended: a run that saved, then closed, closes it saved. */
   let saves = 0;
@@ -325,77 +337,6 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
         void leave();
       } else keepTabIn(box, event);
     });
-  });
-}
-
-/** ⤢: the dialog fills the window, and Restore puts it back where it was, at its size. */
-function wireMaximise(box: HTMLElement, button: HTMLElement, labels: { maximise: string; restoreSize: string }, doc: Document) {
-  const face = (maximised: boolean) => {
-    const name = maximised ? labels.restoreSize : labels.maximise;
-    button.setAttribute('aria-label', name);
-    button.title = name;
-    button.replaceChildren(...[drawIcon(doc, maximised ? 'restore' : 'maximise')].filter((icon): icon is SVGSVGElement => !!icon));
-  };
-  face(false);
-  button.addEventListener('click', () => {
-    const maximised = !box.hasAttribute('data-maximised');
-    box.toggleAttribute('data-maximised', maximised);
-    face(maximised);
-  });
-}
-
-/**
- * The grip at the dialog's end-bottom corner: dragged, the corner follows the
- * pointer; focused, the arrow keys move it by 16 pixels — the way the page
- * reads, so right to left ArrowLeft widens it. The other corner stays put.
- */
-function wireGrip(box: HTMLElement, grip: HTMLElement, doc: Document) {
-  const view = doc.defaultView as Window;
-  const rtl = () => getComputedStyle(box).direction === 'rtl';
-  /** Held where it is, at the size it is: its own place from now on, not the window's inset. */
-  const hold = () => {
-    const at = box.getBoundingClientRect();
-    box.setAttribute('data-resized', '');
-    box.style.top = `${at.top}px`;
-    if (rtl()) {
-      box.style.right = `${view.innerWidth - at.right}px`;
-      box.style.left = 'auto';
-    } else {
-      box.style.left = `${at.left}px`;
-      box.style.right = 'auto';
-    }
-    box.style.bottom = 'auto';
-    return at;
-  };
-  const size = (width: number, height: number) => {
-    const at = box.getBoundingClientRect();
-    const roomX = rtl() ? at.right : view.innerWidth - at.left;
-    const roomY = view.innerHeight - at.top;
-    box.style.width = `${Math.round(Math.max(LEAST.width, Math.min(width, roomX)))}px`;
-    box.style.height = `${Math.round(Math.max(LEAST.height, Math.min(height, roomY)))}px`;
-  };
-  grip.addEventListener('pointerdown', (event) => {
-    if (box.hasAttribute('data-maximised')) return;
-    event.preventDefault();
-    const start = hold();
-    const from = { x: event.clientX, y: event.clientY };
-    grip.setPointerCapture?.(event.pointerId);
-    const move = (moved: PointerEvent) => size(start.width + (moved.clientX - from.x) * (rtl() ? -1 : 1), start.height + (moved.clientY - from.y));
-    const up = () => {
-      grip.removeEventListener('pointermove', move);
-      grip.removeEventListener('pointerup', up);
-      grip.removeEventListener('pointercancel', up);
-    };
-    grip.addEventListener('pointermove', move);
-    grip.addEventListener('pointerup', up);
-    grip.addEventListener('pointercancel', up);
-  });
-  grip.addEventListener('keydown', (event) => {
-    const by = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[event.key];
-    if (!by || box.hasAttribute('data-maximised')) return;
-    event.preventDefault();
-    const start = hold();
-    size(start.width + by[0] * RESIZE_STEP * (rtl() ? -1 : 1), start.height + by[1] * RESIZE_STEP);
   });
 }
 

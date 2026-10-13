@@ -23,6 +23,7 @@
         "^production",
         "{workspaceRoot}/tools/script-entry.ts",
         "{workspaceRoot}/tools/script-language.ts",
+        "{workspaceRoot}/tools/script-parts.ts",
         "{workspaceRoot}/tools/script-bundle.mjs"
       ],
       "options": {

@@ -1,8 +1,9 @@
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import type { JsonValue } from '@fieldia/core';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem } from './json-problem';
 import { linkAddress, sanitizeHtml } from './sanitize';
-import { modernHtml, usesEditor } from './html-field';
+import { partFactory, textPart } from './widget-parts';
 
 export { linkAddress, sanitizeHtml } from './sanitize';
 
@@ -17,8 +18,23 @@ export { linkAddress, sanitizeHtml } from './sanitize';
  * (`toolbar: 'focus'`), at its foot (`toolbarAt`), its own `tools`, Markdown
  * (`editor`), a switch between the two (`switchEditor`), people and records
  * linked in place (`mention`, `references`) — gets the work item's editor:
- * html-field.ts.
+ * html-field.ts, in the text part, loaded the first time a page shows one.
  */
+
+/** Whether a page asks this field for more than the classic toolbar. */
+export function usesEditor(options: Record<string, JsonValue> | undefined): boolean {
+  if (!options) return false;
+  return (
+    options['toolbar'] === 'focus' ||
+    options['toolbarAt'] !== undefined ||
+    Array.isArray(options['tools']) ||
+    options['editor'] !== undefined ||
+    options['switchEditor'] === true ||
+    options['mention'] !== undefined ||
+    options['references'] !== undefined
+  );
+}
+
 
 /** The toolbar's buttons: [label key, editing command, drawn icon]. */
 const TOOLS: [keyof WidgetLabels, string, string][] = [
@@ -35,7 +51,7 @@ const TOOLS: [keyof WidgetLabels, string, string][] = [
   ['link', 'createLink', '<svg viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2.3-2.3a3 3 0 0 0-4.2-4.2L8.2 3.6M9 7a3 3 0 0 0-4.2 0L2.5 9.3a3 3 0 0 0 4.2 4.2l1.1-1.1"/></svg>'],
 ];
 
-export const htmlWidget: WidgetFactory = (context) => (usesEditor(context.node.options) ? modernHtml(context) : classicHtml(context));
+export const htmlWidget: WidgetFactory = partFactory(textPart, (part) => part.modernHtml, (context) => classicHtml(context), (node) => usesEditor(node.options));
 
 /** The classic formatted text: its toolbar on top, always, as it was before a page could ask for more. */
 const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {

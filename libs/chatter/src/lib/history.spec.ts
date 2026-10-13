@@ -1,6 +1,7 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
-import { ageOf, firstDayOfWeek, historyEntries, mountHistory, historySlot, stateColours, type HistoryHandle } from './history';
+import { ageOf, firstDayOfWeek, historyEntries, mountHistory, stateColours, type HistoryHandle } from './history';
+import { historySlot } from './history-slot';
 import { createMemoryChatter } from './memory';
 import type { ChatterMessage, ChatterSource } from './source';
 
