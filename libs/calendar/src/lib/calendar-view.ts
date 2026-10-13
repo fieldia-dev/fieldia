@@ -16,7 +16,8 @@ const DRAG_FROM = 4;
 const NEW_LENGTH = 60;
 /** How many records a month's day shows before "+2 more". */
 const IN_A_DAY = 3;
-const CHEVRON = '<path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
+/** Back and on, as the line reads left to right: flipped right to left by the stylesheet. */
+const CHEVRON = (back: boolean) => `<path d="${back ? 'M10 3 5 8l5 5' : 'M6 3l5 5-5 5'}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
 
 let made = 0;
 
@@ -79,8 +80,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 16 16');
     svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML = CHEVRON;
-    if (!back) svg.style.transform = 'scaleX(-1)';
+    svg.innerHTML = CHEVRON(back);
     return svg;
   };
 
@@ -227,7 +227,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   }
 
   /** A record's block: its time, its words, its person; what it says to a screen reader; what a press does. */
-  function eventBlock(event: CalendarEvent, day: Date, compact: boolean): HTMLElement {
+  function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false): HTMLElement {
     const movable = canSave && event.record.can?.edit !== false;
     const why = canSave && !movable ? (event.record.can?.reason ?? labels.cannotMove) : '';
     const span = event.allDay ? '' : fill(labels.fromTo, { from: time(event.start), to: time(event.end) });
@@ -238,7 +238,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       'data-focus': `e:${event.id}:${dayKey(day)}`,
       'data-opens': canOpen ? '' : undefined,
       'data-moves': movable ? '' : undefined,
-      title: why || undefined,
+      // Its words whole when pointed at, as a narrow block cuts them; or why it stays where it is.
+      title: why || [span, event.title, event.resourceLabel].filter(Boolean).join(' · '),
     });
     block.style.setProperty('--fd-cal-c', colourOf(event.colour) ?? 'var(--fd-accent)');
     if (canOpen || movable) {
@@ -250,7 +251,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     const parts: (Node | string)[] = [];
     if (!event.allDay) parts.push(make('span', { class: 'fd-cal-event-time' }, view === 'agenda' ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
     parts.push(make('span', { class: 'fd-cal-event-title' }, make('bdi', {}, event.title)));
-    if (event.resourceLabel && !compact) parts.push(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
+    if (event.resourceLabel && !compact && !inOwnColumn) parts.push(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
     for (const part of parts) block.append(part);
     if (movable) {
       const menu = make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': labels.moveTo, title: labels.moveTo }, '⋯');
@@ -365,7 +366,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       });
       const placed = sideBySide(mine.map(({ event, start, end }) => ({ id: event.id, start, end })));
       for (const { event, start, end } of mine) {
-        const block = eventBlock(event, column.day, false);
+        // In a person's own column, the block need not name them again.
+        const block = eventBlock(event, column.day, false, !!column.resource);
         const top = (minutesOf(start) - from * 60) * (HOUR / 60);
         const length = (sameDay(end, column.day) ? minutesOf(end) : 24 * 60) - minutesOf(start);
         const height = Math.max(18, length * (HOUR / 60) - 2);

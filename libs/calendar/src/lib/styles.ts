@@ -54,7 +54,8 @@ export const CALENDAR_CSS = `
 .fd-cal-slot:focus { outline: none; }
 .fd-cal-slot:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; background: var(--fd-accent-soft); }
 .fd-cal-picking { position: absolute; inset-inline: 2px; z-index: 2; box-sizing: border-box; border: 1px dashed var(--fd-accent); border-radius: 4px; background: var(--fd-accent-soft); pointer-events: none; }
-.fd-cal-now { position: absolute; inset-inline: 0; z-index: 4; height: 2px; margin-top: -1px; background: var(--fd-error); pointer-events: none; }
+/* Under the records, so a record's words are never struck through. */
+.fd-cal-now { position: absolute; inset-inline: 0; z-index: 0; height: 2px; margin-top: -1px; background: var(--fd-error); pointer-events: none; }
 .fd-cal-now::before { content: ""; position: absolute; inset-inline-start: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--fd-error); }
 
 /* A record: a tint of the surface, a bar in its colour. */

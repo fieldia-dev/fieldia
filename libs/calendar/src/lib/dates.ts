@@ -45,7 +45,7 @@ export function firstDayOf(locale: Locale, own?: number): number {
 
 export const startOfWeek = (d: Date, firstDay: number) => addDays(startOfDay(d), -((d.getDay() - firstDay + 7) % 7));
 
-/** What a view shows from a day in it: its days, from the first moment of the first to the first of the day after the last. */
+/** What a view shows from a day in it — a day, its week, its month in whole weeks, or a week on from it (the agenda) — from the first moment of the first day to the first of the day after the last. */
 export interface Range {
   from: Date;
   to: Date;
@@ -55,9 +55,10 @@ export interface Range {
 export function rangeOf(view: CalendarView, anchor: Date, firstDay: number): Range {
   let from: Date;
   let count: number;
-  if (view === 'day') {
+  if (view === 'day' || view === 'agenda') {
+    // The agenda: what comes, the day shown and the six after it.
     from = startOfDay(anchor);
-    count = 1;
+    count = view === 'day' ? 1 : 7;
   } else if (view === 'month') {
     // Whole weeks round the month: from the week of its first day to the week of its last.
     from = startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1), firstDay);

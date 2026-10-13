@@ -31,7 +31,7 @@ describe("a calendar's days", () => {
     expect(firstDayOf('ar', 0)).toBe(0);
   });
 
-  it('shows a day, a week from its first day, a month in whole weeks, and an agenda of the week', () => {
+  it('shows a day, a week from its first day, a month in whole weeks, and an agenda of the week to come', () => {
     // Wednesday 14 October 2026.
     const wednesday = day('2026-10-14');
     expect(keys(rangeOf('day', wednesday, 1).days)).toEqual(['2026-10-14']);
@@ -42,7 +42,8 @@ describe("a calendar's days", () => {
     expect(month.days).toHaveLength(35);
     expect(dayKey(month.days[34])).toBe('2026-11-01');
     expect(dayKey(month.to)).toBe('2026-11-02');
-    expect(keys(rangeOf('agenda', wednesday, 6).days)).toEqual(keys(rangeOf('week', wednesday, 6).days));
+    // The agenda: what comes, from the day it shows.
+    expect(keys(rangeOf('agenda', wednesday, 6).days)).toEqual(['2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20']);
     // From the first moment of its first day to the first of the day after its last.
     const week = rangeOf('week', wednesday, 1);
     expect([dayKey(week.from), dayKey(week.to)]).toEqual(['2026-10-12', '2026-10-19']);

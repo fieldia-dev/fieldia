@@ -104,12 +104,15 @@ describe("a list's calendar", () => {
     expect(host.querySelector('.fd-cal-day[data-day="2026-09-28"]')?.hasAttribute('data-out')).toBe(true);
   });
 
-  it('lists the week as an agenda, each day that has something, and says so when none has', async () => {
+  it('lists the week to come as an agenda, each day that has something, and says so when none has', async () => {
     const host = await mount({}, clinicPage({ view: 'agenda' }));
+    expect(title(host)).toBe('14–20 Oct 2026');
     expect([...host.querySelectorAll('.fd-cal-agenda-head')].map((h) => h.textContent)).toEqual(['Wednesday 14 October', 'Thursday 15 October']);
     expect(block(host, 'Mona Adel').querySelector('.fd-cal-event-time')?.textContent).toBe('10:00 – 10:30');
     button(host, 'Next week').click();
-    await until(() => title(host) === '19–25 Oct 2026');
+    await until(() => title(host) === '21–27 Oct 2026');
+    await settle();
+    expect(block(host, 'Next week')).toBeDefined();
     button(host, 'Next week').click();
     await until(() => host.querySelector('.fd-cal-empty'));
     expect(host.querySelector('.fd-cal-empty')?.textContent).toBe('Nothing on these days.');
