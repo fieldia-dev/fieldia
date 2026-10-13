@@ -238,7 +238,7 @@ describe('an address with suggestions', () => {
     expect([list().hidden, late.box.getAttribute('aria-expanded')]).toEqual([true, 'false']);
   });
 
-  it('asks nothing more once a place is picked in a pause in typing, and opens no list for a late answer', async () => {
+  it('picks nothing on Enter from a list made for fewer words: the words in the box are asked for at once, once, and Enter picks from their list', async () => {
     const answers: ((found: PlaceFound[]) => void)[] = [];
     const later: SearchRequest[] = [];
     const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
@@ -248,12 +248,58 @@ describe('an address with suggestions', () => {
     answers[0]([TAHRIR, ZAMALEK]);
     await pause(0);
     expect(list().hidden).toBe(false);
-    // A letter more, and Enter at once: the list shown is picked from, and the letter's search never goes.
+    // The rest typed, and Enter at once: "tahr"'s first is not what "tahri" names.
     type(box, 'i');
     press(box, 'Enter');
+    expect([values()['address'], later.map((request) => request.text)]).toEqual(['tahri', ['tahr', 'tahri']]);
+    // Asked once: the pause after the letter asks nothing more.
     await pause();
-    expect(later).toHaveLength(1);
-    expect([values()['address'], list().hidden]).toEqual(['Tahrir Street 12, Downtown, Cairo, Egypt', true]);
+    expect(later).toHaveLength(2);
+    // Enter again while it is on its way: nothing picked, nothing asked.
+    press(box, 'Enter');
+    expect([values()['address'], later.length]).toEqual(['tahri', 2]);
+    answers[1]([ZAMALEK]);
+    await pause(0);
+    expect(options()).toEqual(['26 July StreetZamalek, Cairo, Egypt']);
+    press(box, 'Enter');
+    expect([values()['address'], list().hidden]).toEqual(['26 July Street, Zamalek, Cairo, Egypt', true]);
+  });
+
+  it('picks nothing on Enter from a list made for fewer words while their own search is on its way, nor a row marked before more was typed', async () => {
+    const answers: ((found: PlaceFound[]) => void)[] = [];
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
+    const { box, values } = await mount({}, { search, searchAsYouType: true });
+    type(box, 'tahr');
+    await pause();
+    answers[0]([TAHRIR, ZAMALEK]);
+    await pause(0);
+    // A row marked, then more typed: the mark was for the words before.
+    press(box, 'ArrowDown');
+    type(box, 'i');
+    expect([box.hasAttribute('aria-activedescendant'), list().querySelector('[aria-selected="true"]')]).toEqual([false, null]);
+    await pause();
+    expect(later.map((request) => request.text)).toEqual(['tahr', 'tahri']);
+    press(box, 'Enter');
+    expect([values()['address'], later.length]).toEqual(['tahri', 2]);
+    answers[1]([ZAMALEK]);
+    await pause(0);
+    press(box, 'Enter');
+    expect(values()['address']).toBe('26 July Street, Zamalek, Cairo, Egypt');
+  });
+
+  it('says no suggestions are shown once the list is closed, by Escape or by leaving the box', async () => {
+    const { box } = await mount();
+    const status = () => document.querySelector('[role="status"]')?.textContent;
+    type(box, 'tahr');
+    await pause();
+    expect(status()).toBe('Suggestions: 2');
+    press(box, 'Escape');
+    expect([list().hidden, status()]).toEqual([true, '']);
+    press(box, 'Enter');
+    expect([list().hidden, status()]).toEqual([false, 'Suggestions: 2']);
+    box.blur();
+    expect([list().hidden, status()]).toEqual([true, '']);
   });
 
   it('opens no list for an answer that comes after a place is picked from the list before it', async () => {
@@ -438,6 +484,66 @@ describe('an address with suggestions', () => {
     type(box, ',');
     expect([note.hidden, box.hasAttribute('aria-describedby')]).toEqual([true, false]);
     warn.mockRestore();
+  });
+
+  it('takes back the place and parts its own pick before wrote when the next pick is not found: never one address with another’s place', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const olaya: PlaceFound = { label: 'Al Olaya', detail: 'Riyadh, Saudi Arabia', lat: 24.694242, lng: 46.687294, parts: { city: 'Riyadh', region: 'Riyadh', country: 'SA' } };
+    // Google's way: no parts until it is found, and it is not.
+    const rawdah: PlaceFound = { label: 'Al Rawdah', detail: 'Riyadh, Saudi Arabia', locate: async () => Promise.reject(new Error('Google gave no place')) };
+    for (const fields of [{ placeField: 'spot' }, { placeField: 'lat', longitudeField: 'lng' }] as Record<string, string>[]) {
+      const { form, box, values } = await mount({ ...fields, partsField: 'parts' }, {}, [olaya, rawdah]);
+      form.setValue('parts', { line2: 'Villa 4' });
+      type(box, 'al ol');
+      await pause();
+      press(box, 'Enter');
+      await pause(0);
+      expect(values()['parts']).toEqual({ city: 'Riyadh', region: 'Riyadh', country: 'SA', line2: 'Villa 4' });
+      box.value = '';
+      type(box, 'al raw');
+      await pause();
+      press(box, 'ArrowDown');
+      press(box, 'ArrowDown');
+      press(box, 'Enter');
+      await pause(0);
+      // Al Olaya's place and parts were Al Olaya's: not Al Rawdah's. The line typed by a person under the street stays.
+      const { address, spot, lat, lng, parts } = values();
+      expect({ address, spot, lat, lng, parts }).toEqual({ address: 'Al Rawdah, Riyadh, Saudi Arabia', spot: null, lat: null, lng: null, parts: { line2: 'Villa 4' } });
+      expect((document.querySelector('.fd-address-note') as HTMLElement).hidden).toBe(false);
+    }
+    // A place set by hand since (a pin dragged) is not the pick's: it stays.
+    const { form, box, values } = await mount({ placeField: 'spot' }, {}, [olaya, rawdah]);
+    type(box, 'al ol');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    form.setValue('spot', { type: 'Point', coordinates: [46.69, 24.7] });
+    box.value = '';
+    type(box, 'al raw');
+    await pause();
+    press(box, 'ArrowDown');
+    press(box, 'ArrowDown');
+    press(box, 'Enter');
+    await pause(0);
+    expect(values()['spot']).toEqual({ type: 'Point', coordinates: [46.69, 24.7] });
+    warn.mockRestore();
+  });
+
+  it('says a place found only near the address picked is only near it, under the box, until the person types on', async () => {
+    const locate = jest.fn(async () => ({ lat: 25.3461, lng: 55.4211, address: '30 Street, Sharjah, United Arab Emirates', precise: false as const }));
+    const { box, values } = await mount({ placeField: 'spot' }, {}, [{ label: '30 Street', detail: 'Sharjah, United Arab Emirates', locate }]);
+    type(box, '30 st');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    // Written, as near is better than nothing; and said.
+    expect(values()['spot']).toEqual({ type: 'Point', coordinates: [55.4211, 25.3461] });
+    const note = document.querySelector('.fd-address-note') as HTMLElement;
+    expect([note.hidden, note.textContent]).toEqual([false, 'Placed only near this address: its exact place was not found on the map.']);
+    expect(box.getAttribute('aria-describedby')?.split(' ')).toContain(note.id);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(note.textContent);
+    type(box, ',');
+    expect(note.hidden).toBe(true);
   });
 
   it('says a pick not found on the map in the page’s language, beside the help the box is described by', async () => {
