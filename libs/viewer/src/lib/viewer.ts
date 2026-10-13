@@ -46,7 +46,7 @@ import {
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, wearsQuiet, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
-import { listView, type ListViewFactory } from './list';
+import { listView, type ListViewFactory, type OpenRowOptions } from './list';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
@@ -216,10 +216,10 @@ export interface ViewerHandle {
   reload(): Promise<void>;
   /**
    * A list page: open a record as its row's press does — the app's onOpenRecord, the row marked open (aria-current) while
-   * it is, then the records again and the focus back on its row — as when the app opens one from its address. A record
-   * page has no rows: nothing happens.
+   * it is, then the records again and the focus back on its row — as when the app opens one from its address; there
+   * `{ lit: false }` leaves its row unmarked, as no row was pressed. A record page has no rows: nothing happens.
    */
-  openRecord(id: RecordId): Promise<void>;
+  openRecord(id: RecordId, options?: OpenRowOptions): Promise<void>;
   /** Listen to one of the form's events — change, save, send, action, run, step, open; returns what stops listening. */
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   /** Write several fields at once, as the app: the page's change steps do not run for it. */
@@ -1761,7 +1761,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** A list page's way to ask for its records again (handle.reload). */
   let reloadList: (() => Promise<void>) | null = null;
   /** And its way to open a record as its row's press does (handle.openRecord). */
-  let openInList: ((id: RecordId) => Promise<void>) | null = null;
+  let openInList: ((id: RecordId, options?: OpenRowOptions) => Promise<void>) | null = null;
   if (layout.type === 'sheet') body = sheetLayout(layout);
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
@@ -2039,8 +2039,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (reloadList) return reloadList();
       await form.run([{ do: 'reload' }]);
     },
-    openRecord: async (id) => {
-      await openInList?.(id);
+    openRecord: async (id, options) => {
+      await openInList?.(id, options);
     },
     on: (event, listener) => {
       const off = form.on(event, listener);

@@ -163,7 +163,8 @@ test.describe('System Info, as Screenshots 20.22.25 and 20.22.28', () => {
       'Bold', 'Italic', 'Underline', 'Bulleted list', 'Numbered list', 'Highlight', 'Text colour', 'Emoji', 'Decrease indent', 'Increase indent',
       'Strikethrough', 'Text size', 'Code', 'Mention someone', 'Link work item', 'Link pull request', 'Clear formatting', 'Insert image', 'Link', 'Remove link',
     ]);
-    expect(names.every(([name, title]) => name === title)).toBe(true);
+    // Each tool's tooltip its name; Remove link's says too why it is idle, with no link where the caret is (20.22.28: greyed).
+    expect(names.every(([name, title]) => title === (name === 'Remove link' ? 'Remove link — Put the cursor in a link first.' : name))).toBe(true);
     // At the box's foot, inside it; its first tool where the screenshot has it.
     const bold = await box(bar.getByRole('button', { name: 'Bold' }));
     expect([bold.left, bold.top, bold.bottom]).toEqual([125, 655, 687]);

@@ -47,8 +47,10 @@ test.describe('the backlog', () => {
     await expect(page.locator('.bl-team')).toHaveText('Portal Team');
     await expect(page.getByRole('button', { name: 'New Work Item' })).toBeVisible();
     await expect(page.locator('.bl-pivots [aria-current="page"]')).toHaveText('Backlog');
-    // No product's name or mark in it.
+    // No product's name or mark in it: the tracker's own invented name in bold, then the organisation's with no slash.
     await expect(page.locator('#app')).not.toContainText(/Azure|DevOps|Microsoft|Contoso|Fabrikam|Northwind/);
+    expect(await page.locator('.bl-product').evaluate((a) => [a.textContent, getComputedStyle(a).fontWeight])).toEqual(['Trackline', '600']);
+    await expect(page.getByRole('navigation', { name: 'Where you are' }).getByRole('listitem')).toHaveText(['Harbor Supply', 'Portal', 'Boards', 'Backlogs']);
 
     // The filter bar: the team's default search, active bugs, its picks in strong words; the rest muted.
     const bar = page.locator('.fd-filter-bar');
@@ -89,7 +91,16 @@ test.describe('the backlog', () => {
     expect((await row(page, 4131).boundingBox())?.height).toBe(36);
     // The columns as wide as the tracker's (in pixels), their edges where its are; a ranked list: no header sorts it.
     const edges = await page.locator('thead th').evaluateAll((ths) => ths.map((th) => Math.round(th.getBoundingClientRect().right)));
-    expect(edges).toEqual([368, 427, 463, 1371, 1441, 1502, 1602, 1802, 2002]);
+    expect(edges).toEqual([368, 427, 463, 1374, 1442, 1503, 1603, 1803, 2003]);
+    // Their rules where the tracker's are: none after Order, the title's 42px in from its end (the room the tracker keeps
+    // for a row's tools), the rest at their column's end — in the pixels 463, 1331, 1441, 1502, 1602, 1802 and 2002 (08_18).
+    const rules = await page.locator('thead th').evaluateAll((ths) =>
+      ths.map((th) => {
+        const after = getComputedStyle(th, '::after');
+        return after.content === 'none' ? null : Math.round(th.getBoundingClientRect().right - parseFloat(after.right) - 1);
+      })
+    );
+    expect(rules).toEqual([null, null, 462, 1331, 1441, 1502, 1602, 1802, 2002]);
     await expect(page.locator('thead .fd-list-sort')).toHaveCount(0);
     await expect(page.locator('thead th[data-field="order"]')).toHaveAttribute('aria-sort', 'ascending');
     await expect(pick(page, 'iteration')).toHaveText('Iteration');
@@ -175,6 +186,9 @@ test.describe('the backlog', () => {
     await page.reload();
     await expect(dialog(page)).toBeVisible();
     await expect(page).toHaveURL(/[?&]workitem=4127\b/);
+    // No row was pressed: none is lit behind the popup (the screens from 20.21.54 on, after a reload).
+    await expect(row(page, 4127)).toBeVisible();
+    await expect(row(page, 4127)).not.toHaveAttribute('aria-current', 'true');
     await screen(page, 'wi-demo-popup', { viewport: true });
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);
@@ -312,10 +326,13 @@ test.describe('the popup, once the work item lanes have joined', () => {
   test.use({ viewport: { width: 1920, height: 983 } });
 
   test('08_19: an inset popup over the backlog, nothing dimmed, its head and three columns', async ({ page }) => {
-    await page.goto(`${BACKLOG}?workitem=4127`);
+    // Opened by a press on its row, as the user did.
+    await page.goto(BACKLOG);
+    await row(page, 4127).click();
+    await expect(dialog(page)).toBeVisible();
     const box = (await dialog(page).boundingBox())!;
     expect([box.x, box.width]).toEqual([96, 1728]);
-    // Behind it, the bug's row lit while it is open, and the backlog's card scrolling sideways in its own bar: its grid is
+    // Behind it, the bug's row lit while it is open (it was pressed), and the backlog's card scrolling sideways in its own bar: its grid is
     // wider than the window leaves it, the page itself does not scroll.
     await expect(row(page, 4127)).toHaveAttribute('aria-current', 'true');
     expect(await row(page, 4127).locator('td').first().evaluate((td) => getComputedStyle(td).backgroundColor)).toBe('rgb(222, 236, 249)');
@@ -326,6 +343,19 @@ test.describe('the popup, once the work item lanes have joined', () => {
     await expect(dialog(page).getByText('BUG 4127')).toBeVisible();
     await expect(dialog(page).getByRole('button', { name: 'Save and Close', exact: true })).toBeVisible();
     await expect(dialog(page).getByText('Updated by Mona Adel: Aug 25')).toBeVisible();
+    // Add Tag just after the comments' link (08_19: 9px on), a light fill hugging its words.
+    const comments = (await dialog(page).getByRole('button', { name: /1 Comment/ }).boundingBox())!;
+    const addTag = (await dialog(page).getByRole('button', { name: 'Add Tag' }).boundingBox())!;
+    expect(addTag.x - (comments.x + comments.width)).toBeLessThanOrEqual(8);
+    expect(addTag.width).toBeLessThanOrEqual(60);
+    // Revert changes with nothing changed: idle and lighter, its tooltip saying why; still a usable button.
+    const undo = dialog(page).getByRole('button', { name: 'Revert changes' });
+    await expect(undo).toHaveAttribute('data-idle', '');
+    await expect(undo).toHaveAttribute('title', 'Revert changes — Nothing has changed.');
+    await expect(undo).toBeEnabled();
+    // Development's help: its branch white on the code's orange tile, 28px by 30.
+    const tile = dialog(page).locator('[data-node="f-dev"] .fd-links-help-tile');
+    expect(await tile.evaluate((t) => [Math.round(t.getBoundingClientRect().width), Math.round(t.getBoundingClientRect().height), getComputedStyle(t).color])).toEqual([28, 30, 'rgb(255, 255, 255)']);
     await screen(page, 'wi-demo-popup-joined', { viewport: true });
     expect(await axeFindings(page, 'popup')).toEqual([]);
   });
@@ -343,10 +373,17 @@ test.describe('the popup, once the work item lanes have joined', () => {
     // Area: the person's one latest pick, then the tree.
     await dialog(page).locator('[data-node="f-area"] input').click();
     await expect(page.getByRole('group', { name: 'Suggestions' }).getByRole('treeitem')).toHaveText(['Portal']);
+    // The tree: the project's one area, nothing under it, so no chevron to open it.
+    await expect(page.locator('.fd-path-callout:popover-open [role=tree] > [role=treeitem]')).toHaveText(['Portal']);
+    await expect(page.locator('.fd-path-callout:popover-open .fd-path-twist')).toHaveCount(0);
     await page.keyboard.press('Escape');
     // Iteration: the latest picks in the order picked, the current one second as the screenshot has it, each with its dates.
     await dialog(page).locator('[data-node="f-iteration"] input').click();
     await expect(page.getByRole('tree')).toBeVisible();
+    // Its box typed into, its tree open: two pixels of the accent and a light halo of it outside (20.24.05).
+    const iterationBox = dialog(page).locator('[data-node="f-iteration"] input');
+    await expect.poll(() => iterationBox.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe('rgb(0, 120, 212)');
+    await expect.poll(() => iterationBox.evaluate((el) => getComputedStyle(el).boxShadow)).toMatch(/^rgb\(0, 120, 212\) 0px 0px 0px 1px, .+ 0px 0px 0px 3px$/);
     const suggestions = page.getByRole('group', { name: 'Suggestions' }).getByRole('treeitem');
     await expect(suggestions.locator('.fd-path-words, .fd-path-name').first()).toBeVisible();
     await expect(suggestions.nth(0)).toContainText('Portal\\Sprint 12');
@@ -392,8 +429,15 @@ test.describe('the popup, once the work item lanes have joined', () => {
     await page.goto(`${BACKLOG}?workitem=4127`);
     await expect(dialog(page).getByRole('button', { name: /1 Comment/ })).toBeVisible();
     await page.locator('.fd-composer-card .fd-text-area').click();
+    // Nothing typed yet: Save idle and lighter, its tooltip saying why (20.22.36), still usable; Remove link too, no link here.
+    const save = page.locator('.fd-composer-card').getByRole('button', { name: 'Save' });
+    await expect(save).toHaveAttribute('data-idle', '');
+    await expect(save).toHaveAttribute('title', 'Write a comment first.');
+    await expect(save).toBeEnabled();
+    await expect(page.locator('.fd-composer-card [data-tool="unlink"]')).toHaveAttribute('data-idle', '');
     await page.keyboard.type('The scanner is back: 3 of 15 left the shelf twice.');
-    await page.locator('.fd-composer-card').getByRole('button', { name: 'Save' }).click();
+    await expect(save).not.toHaveAttribute('data-idle', '');
+    await save.click();
     await expect(page.locator('li.fd-comment-card')).toHaveCount(2);
     await expect(dialog(page).getByRole('button', { name: /2 Comments/ })).toBeVisible();
     // Kept as the server has it: nothing for Save and Close to save.

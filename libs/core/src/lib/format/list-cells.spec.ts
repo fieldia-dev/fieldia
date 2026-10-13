@@ -76,6 +76,14 @@ describe('a list drawn as a backlog', () => {
     }
   });
 
+  it('takes its header’s rule: none, or set in 0px to 400px from the column’s end, before a tracker’s room for row tools', () => {
+    expect(problems(page({ cells: { number: { width: '59px', rule: false }, title: { width: '911px', rule: '42px' }, state: { rule: '0px' } } }))).toEqual([]);
+    expect(ListCellSchema.safeParse({ rule: '400px' }).success).toBe(true);
+    for (const rule of [true, '401px', '-1px', '4.5px', '42', 'px', '2em']) {
+      expect({ rule, problems: problems(page({ cells: { title: { rule } } })) }).toEqual({ rule, problems: [expect.stringMatching(/^layout\.cells\.title\.rule/)] });
+    }
+  });
+
   it('keeps its rank when headers do not sort, and gives a filter a name of its own', () => {
     expect(problems(page({ sortable: false, sort: [{ field: 'number' }] }))).toEqual([]);
     expect(problems(page({ sortable: 'no' }))[0]).toMatch(/^layout\.sortable/);

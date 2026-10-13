@@ -96,7 +96,8 @@ test.describe('wi-history', () => {
     // The list and the change side by side, filling the window to its foot, the list scrolling on its own.
     const list = await box(page, '.fd-history-list');
     const shown = await box(page, '.fd-history-detail');
-    expect(Math.abs(shown.x - (list.x + list.width))).toBeLessThanOrEqual(1);
+    // The list's scroll bar 2px short of the divider, as the tracker's (20.24.46).
+    expect(Math.round(shown.x - (list.x + list.width))).toBe(2);
     expect(Math.round(list.y + list.height)).toBe(1080 - 38);
     expect(await history(page).locator('.fd-history-list').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
     await page.mouse.move(1, 1);

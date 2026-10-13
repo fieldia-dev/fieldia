@@ -179,6 +179,7 @@ export const refusals = {
   buttonWords: 'A button needs words',
   listButtonAction: 'A button needs the name of its action, such as archive',
   cellWidth: 'A column is 1 to 200 characters wide, or 8 to 4000 pixels',
+  cellRule: 'A header’s rule is set in 0 to 400 pixels from the column’s end',
   filterLabelNotOffered: (label: string) => `The filter bar does not offer ${label}: tick it first`,
   leadNeedsChoice: (label: string) => `An icon before the words comes from a choice’s value; ${label} is not a choice`,
   dotNeedsChoice: (label: string) => `A state’s dot is for a choice; ${label} is not one`,

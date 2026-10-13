@@ -49,20 +49,22 @@ const activeRow = (page: Page) => callout(page).locator('[role=treeitem][data-ac
 test.use({ viewport: { width: 1920, height: 1080 } });
 
 test.describe('a path picker, as the work tracker’s Area and Iteration', () => {
-  test('Area open: its box edged in grey, its list as wide, "Suggestions" in 600, the value highlighted and framed, a divider, the tree', async ({ page }) => {
+  test('Area open: its box ringed with a halo, its list as wide, "Suggestions" in 600, the value highlighted and framed, a divider, the tree', async ({ page }) => {
     const problems = await visit(page);
     const input = node(page, 'f-area').locator('input');
     await expect(input).toHaveValue('Portal');
     await input.click();
     await expect(callout(page)).toBeVisible();
-    // The box: one pixel of the strong grey and no ring, as the work tracker's open picker (20.20.45): the tree's row
-    // with the focus is ringed, and that shows where the person is.
-    await expect.poll(() => drawn(input, 'border-top-color')).toBe(rgb('#7e7e7e'));
-    expect(await input.evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none');
-    // Closed by Escape, the box has its ring back.
+    // The box typed into, its tree open: ringed two pixels wide in the accent, a light halo of it outside, as the work
+    // tracker's open Iteration picker (20.24.05).
+    await expect.poll(() => drawn(input, 'border-top-color')).toBe(rgb('#0078d4'));
+    const shadows = await input.evaluate((el) => getComputedStyle(el).boxShadow);
+    expect(shadows).toMatch(/0px 0px 0px 1px, .*0px 0px 0px 3px$/);
+    expect(shadows).toContain('rgb(0, 120, 212) 0px 0px 0px 1px');
+    // Closed by Escape, the ring alone.
     await page.keyboard.press('Escape');
     await expect(callout(page)).toBeHidden();
-    await expect.poll(() => drawn(input, 'border-top-color')).toBe(rgb('#0078d4'));
+    await expect.poll(() => drawn(input, 'box-shadow')).toBe('rgb(0, 120, 212) 0px 0px 0px 1px');
     await input.press('ArrowDown');
     await expect(callout(page)).toBeVisible();
     // The list: right under the box, exactly as wide, with a callout's shadow.

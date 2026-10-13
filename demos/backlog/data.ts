@@ -35,12 +35,8 @@ const link = (record: { id: number; name: string }): RelatedRecord => ({ id: rec
 
 // ---- where the bugs sit: areas and iterations, each with its path from the top -----------------------------
 
-const AREAS = [
-  { id: 1, path: ['Portal'] },
-  { id: 2, path: ['Portal', 'Checkout'] },
-  { id: 3, path: ['Portal', 'Search'] },
-  { id: 4, path: ['Warehouse'] },
-];
+/** The team's one area, the project's own, as the tracker's screens have it (20.20.45): a root with nothing under it. */
+const AREAS = [{ id: 1, path: ['Portal'] }];
 
 /** Each sprint with its dates, as the iteration picker shows them at the end of its row. */
 const ITERATIONS = [
@@ -51,6 +47,29 @@ const ITERATIONS = [
   { id: 14, path: ['Portal', 'Sprint 14'], dates: '4/12/2027 - 5/25/2027' },
   { id: 15, path: ['Portal', 'Tasks and Activities'], dates: '7/16/2026 - 8/28/2026' },
   { id: 16, path: ['Portal', 'Invoices'], dates: '12/29/2027 - 2/9/2028' },
+  // The rest of the team's sprints and weeks, as a tree a few years old has them: the list scrolls a long way.
+  ...[
+    ['Week 15 Bugs', '4/1/2026 - 4/13/2026'],
+    ['Week 16 Bugs', '4/8/2026 - 4/20/2026'],
+    ['Week 17 Bugs', '4/15/2026 - 4/27/2026'],
+    ['Week 18 Bugs', '4/22/2026 - 5/4/2026'],
+    ['Week 19 Bugs', '4/29/2026 - 5/11/2026'],
+    ['Week 20 Bugs', '5/6/2026 - 5/18/2026'],
+    ['Sprint 10', '1/14/2026 - 2/4/2026'],
+    ['Sprint 11', '2/18/2026 - 3/11/2026'],
+    ['Sprint 15', '5/26/2027 - 6/16/2027'],
+    ['Sprint 16', '6/17/2027 - 7/8/2027'],
+    ['Release 2.0', '9/1/2025 - 10/15/2025'],
+    ['Release 2.1', '10/16/2025 - 11/30/2025'],
+    ['Hardening', '12/1/2025 - 12/19/2025'],
+    ['Data Migration', '1/5/2026 - 1/30/2026'],
+    ['Scanner Rollout', '2/2/2026 - 2/27/2026'],
+    ['Reports', '3/2/2026 - 3/20/2026'],
+    ['Mobile', '6/1/2026 - 7/10/2026'],
+    ['Payments', '7/13/2026 - 8/14/2026'],
+    ['Support Rotation', '8/17/2026 - 9/11/2026'],
+    ['Year End', '12/1/2026 - 12/31/2026'],
+  ].map(([name, dates], at) => ({ id: 20 + at, path: ['Portal', name], dates })),
 ];
 
 /** A record of a tree, named by its whole path ("Portal\Sprint 14"), as a backlog's column shows it. */

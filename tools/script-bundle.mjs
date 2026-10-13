@@ -248,7 +248,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // popup's own slim scroll bars and grip band, a state's list leaving its words bare, a path picker open without a ring,
 // Markdown's own tool drawings, a ladybird, a padlock, two rings for a link, a filter of three lines, and the CSS that
 // says why for each — 9.3 more, to 622.0.
-const BUDGET_KB = 622.0;
+// The second side-by-side: a list's header rules each column can drop or set in (and their page checks), a record
+// opened by the app with no row lit, the links help's icon on a tile of its colour, an open path picker ringed with a
+// halo and its own slim bar, Undo, Remove link and an empty comment's Save drawn idle with their reasons in their
+// tooltips, the grip's triangle, the head's tab pills and icons, the filter bar's measured room, and the CSS that says
+// why for each — 4.0 more, to 626.0.
+const BUDGET_KB = 626.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -292,7 +297,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // set side by side with the tracker's screens (a list's pixel columns, unsorted headers, a filter's own name, the open
 // row lit, Fluent's list as measured, slim scroll bars, the state's and path's open looks, Markdown's tool drawings,
 // the redrawn icons), 1.8 more, to 184.3.
-const GZIP_BUDGET_KB = 184.3;
+// the second side-by-side (header rules, an unlit open, a help icon's tile, the picker's halo and bar, idle buttons
+// with their reasons, the grip's triangle, the tabs' pills, the filter bar's room), 0.7 more, to 185.0.
+const GZIP_BUDGET_KB = 185.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

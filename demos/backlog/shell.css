@@ -19,6 +19,8 @@
   --bl-accent: #0078d4;
   --bl-tile: #2e7d6b;
   --bl-star: #b85c00;
+  --bl-story: #009ccc;
+  --bl-faint: #a8a8a8;
   --bl-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108);
   font: 14px/1.43 "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Helvetica, Ubuntu, Arial, "Noto Sans Arabic", sans-serif;
   color: var(--bl-ink);
@@ -42,22 +44,28 @@
   --bl-fill-hover: #3b3a39;
   --bl-accent: #2899f5;
   --bl-star: #f2b43c;
+  --bl-story: #3ab5e0;
+  --bl-faint: #797775;
   --bl-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.4), 0 0.6px 1.8px rgba(0, 0, 0, 0.3);
 }
 /* The page is the whole width: the demos' frame keeps its own header above it. */
 #app.bl { max-width: none; margin: 0; padding: 0; }
 .bl :focus-visible { outline: 2px solid var(--bl-accent); outline-offset: -2px; }
 .bl-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* The finer icons: one-pixel lines on their own grid, square ends, crisp at their size. */
+.bl-icon.bl-fine { stroke-width: 1; stroke-linecap: butt; stroke-linejoin: miter; }
 
-/* ---- the bar across the top: 48px and its line, white ---- */
-.bl-top { display: flex; align-items: center; gap: 12px; height: 49px; flex: none; box-sizing: border-box; padding-inline: 16px; background: var(--bl-bar); border-block-end: 1px solid var(--bl-bar-line); }
-.bl-mark { width: 20px; height: 20px; border-radius: 4px; background: var(--bl-accent); flex: none; }
+/* ---- the bar across the top: 48px and its line, white; the mark 14px in, the product's name in bold, then the
+   organisation's in grey with no slash, then the slashes, light, 15px each side (measured on 08_18) ---- */
+.bl-top { display: flex; align-items: center; gap: 12px; height: 49px; flex: none; box-sizing: border-box; padding-inline: 14px 16px; background: var(--bl-bar); border-block-end: 1px solid var(--bl-bar-line); }
+.bl-mark { width: 20px; height: 20px; border-radius: 4px; background: var(--bl-accent); flex: none; margin-inline-end: 2px; }
+.bl-product { flex: none; margin-inline-end: -2px; color: var(--bl-ink); font-weight: 600; text-decoration: none; }
+.bl-product:hover { text-decoration: underline; }
 .bl-crumbs { min-width: 0; flex: 1; }
 .bl-crumbs ol { display: flex; align-items: center; gap: 0; margin: 0; padding: 0; list-style: none; white-space: nowrap; overflow: hidden; }
 .bl-crumbs li { display: flex; align-items: center; min-width: 0; }
-.bl-crumbs li + li::before { content: '/'; padding-inline: 12px; color: var(--bl-muted); }
+.bl-crumbs li + li::before { content: '/'; padding-inline: 15px; color: var(--bl-faint); }
 .bl-crumbs a { color: var(--bl-muted); text-decoration: none; overflow: hidden; text-overflow: ellipsis; }
-.bl-crumbs li:first-child a { color: var(--bl-ink); font-weight: 600; }
 .bl-crumbs a:hover { text-decoration: underline; }
 /* A search box 200px by 32, then the person's four tools 32px each, 3px apart, then their picture (measured on 08_19). */
 .bl-search { display: flex; align-items: center; gap: 8px; width: 200px; height: 32px; box-sizing: border-box; padding-inline: 8px; border: 1px solid var(--bl-muted); border-radius: 2px; color: var(--bl-muted); }
@@ -92,7 +100,7 @@
 .bl-nav-sub { height: 40px; }
 .bl-nav-glyph { display: grid; place-items: center; width: 24px; height: 24px; flex: none; }
 .bl-tile-icon { width: 24px; height: 24px; }
-.bl-nav-sub .bl-icon { width: 14px; height: 14px; }
+.bl-nav-sub .bl-icon { width: 16px; height: 16px; }
 /* The part open, with what is under it: a darker ground and a 3px bar down its start; the page shown, a darker one still
    and the bar in the accent. */
 .bl-nav-group, .bl-nav-in { background: var(--bl-nav-open); box-shadow: inset 3px 0 var(--bl-nav-bar); }
@@ -108,10 +116,14 @@
 /* ---- the page: its head, its pivots, then Fieldia's list ---- */
 .bl-page { flex: 1; min-width: 0; box-sizing: border-box; padding: 18px 32px 17px; padding-inline: 32px 32px; background: var(--bl-page); }
 .bl-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 48px; }
-.bl-head-icon { display: grid; place-items: center; width: 28px; color: var(--bl-ink); }
-.bl-team { margin: 0 4px; font-size: 20px; font-weight: 600; line-height: 28px; }
-.bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-inline-start: auto; }
-.bl-button { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding-inline: 12px; border: 0; border-radius: 2px; background: var(--bl-fill); color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
+/* The team's levels icon 18px by 14 at the page's start, its name 16px after it, the teams' chevron close (08_18). */
+.bl-head-icon { display: grid; place-items: center; width: 20px; color: var(--bl-ink); }
+.bl-head-icon .bl-icon { width: 18px; height: 14px; }
+.bl-team { margin-block: 0; margin-inline: 10px 0; font-size: 20px; font-weight: 600; line-height: 28px; }
+.bl-team + .bl-tool { margin-inline-start: -4px; }
+/* The head's buttons 10px apart, their icons 12px before their words, the last 4px in from the page's end. */
+.bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-inline: auto 4px; }
+.bl-button { display: inline-flex; align-items: center; gap: 12px; height: 32px; padding-inline: 12px; border: 0; border-radius: 2px; background: var(--bl-fill); color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
 .bl-button:hover { background: var(--bl-fill-hover); }
 .bl-tool { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--bl-ink); cursor: pointer; }
 .bl-tool:hover { background: var(--bl-fill); }
@@ -122,9 +134,12 @@
 .bl-pivots a { position: relative; padding: 8px 4px; margin-inline-end: 12px; color: var(--bl-ink); text-decoration: none; }
 .bl-pivots a[aria-current="page"] { font-weight: 600; }
 .bl-pivots a[aria-current="page"]::after { content: ''; position: absolute; inset-inline: 0; bottom: 2px; height: 2px; background: var(--bl-accent); }
-.bl-tools { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
-.bl-level { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding-inline: 8px; border: 0; background: none; color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
-.bl-level .bl-icon:first-child { color: var(--bl-accent); }
+/* The level's button, then its tools 32px wide and 12px apart, 15px in from the page's end; the level's icon in its
+   kind's colour, the cog small (08_18). */
+.bl-tools { display: flex; align-items: center; gap: 12px; margin-inline: auto 15px; }
+.bl-tools .bl-icon-gear { width: 13px; height: 13px; stroke-width: 1.8; }
+.bl-level { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding-inline: 8px 10px; border: 0; background: none; color: var(--bl-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.bl-level .bl-icon:first-child { color: var(--bl-story); margin-inline-end: 3px; }
 .bl-level:hover { background: var(--bl-fill); }
 /* Fieldia's list fills the page: the page's own room round it is the app's, over the theme's own. */
 #app .bl-list > .fd-form > .fd-content { padding: 0; }

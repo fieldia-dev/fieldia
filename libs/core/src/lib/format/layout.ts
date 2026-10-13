@@ -1070,6 +1070,14 @@ export interface ListCell {
   width?: number | `${number}px`;
   /** The side its words keep to: `end` lines up an order's numbers. */
   align?: 'start' | 'end';
+  /**
+   * The short rule at its header's end, where a theme parts the columns
+   * (Fluent's): `false` for none, as a work tracker draws a column the
+   * person cannot size (its Order); a length in pixels ("44px", 0 to 400)
+   * draws it that far in from the column's end, before the room a tracker
+   * keeps there for a row's tools (its Title's).
+   */
+  rule?: false | `${number}px`;
 }
 
 /**
@@ -1755,7 +1763,7 @@ export const ListMapSchema = z
   })
   .meta({ id: 'ListMap' });
 
-/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side. */
+/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule. */
 export const ListCellSchema = z
   .strictObject({
     widget: z.string().min(1).optional(),
@@ -1774,6 +1782,13 @@ export const ListCellSchema = z
       ])
       .optional(),
     align: z.enum(['start', 'end']).optional(),
+    rule: z
+      .union([
+        z.literal(false),
+        // 0px to 400px, said in the pattern itself so the JSON Schema says it too.
+        z.string().regex(/^(\d|[1-9]\d|[1-3]\d{2}|400)px$/, 'a rule set in is a whole number of pixels from 0 to 400 and px, as "44px"') as unknown as z.ZodType<`${number}px`>,
+      ])
+      .optional(),
   })
   .meta({ id: 'ListCell' });
 

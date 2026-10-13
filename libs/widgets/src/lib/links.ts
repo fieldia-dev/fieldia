@@ -13,8 +13,9 @@ import type { WidgetFactory } from './widgets';
  * (`add: 'search'`) — then a row for each record linked, its name opening
  * it and × taking it away, never deleting it. While none is linked, a light
  * box says what to link (`help`, with [words](address) links in it and an
- * icon before them, `helpIcon`), or offers a link that finds an existing
- * record (`emptyLink`). `addLabel` words the button.
+ * icon before them, `helpIcon` — white on a tile of `helpTile`'s colour,
+ * `#rrggbb`, as a tracker marks its code's links), or offers a link that
+ * finds an existing record (`emptyLink`). `addLabel` words the button.
  *
  * Existing item searches with the dialog's Search more…; New item opens a
  * new record of the relation in a dialog, and links it once saved.
@@ -32,8 +33,12 @@ export const linksWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const menu = asMenu ? textMenu(document, add, { label: addWords, align: 'end', className: 'fd-links-menu' }) : null;
   const list = make('ul', { class: 'fd-links-list' });
   const helpText = words('help');
-  const helpIcon = typeof options['helpIcon'] === 'string' ? drawIcon(document, options['helpIcon']) : null;
-  helpIcon?.classList.add('fd-links-help-icon');
+  const drawn = typeof options['helpIcon'] === 'string' ? drawIcon(document, options['helpIcon']) : null;
+  const tile = typeof options['helpTile'] === 'string' && /^#[0-9a-fA-F]{6}$/.test(options['helpTile']) ? options['helpTile'] : null;
+  // Its icon in the muted colour, or white on a tile of the page's colour.
+  const helpIcon = drawn && tile ? make('span', { class: 'fd-links-help-icon fd-links-help-tile', 'aria-hidden': 'true' }, drawn) : drawn;
+  if (drawn && tile) helpIcon?.style.setProperty('--fd-tile', tile);
+  else drawn?.classList.add('fd-links-help-icon');
   const help = helpText ? make('div', { class: 'fd-links-help' }, ...(helpIcon ? [helpIcon] : []), make('p', {}, ...linkedWords(document, helpText))) : null;
   const emptyWords = words('emptyLink');
   const emptyButton = emptyWords ? make('button', { type: 'button', class: 'fd-links-empty-link' }, emptyWords) : null;

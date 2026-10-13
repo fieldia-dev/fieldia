@@ -47,7 +47,7 @@ const PATHS: Partial<Record<TextTool, string>> = {
   emoji: '<circle class="fd-text-face" cx="8" cy="8" r="6.6"/><path d="M5.4 9.6c1.4 1.6 3.8 1.6 5.2 0"/><circle class="fd-text-dot" cx="5.8" cy="6.3" r=".8"/><circle class="fd-text-dot" cx="10.2" cy="6.3" r=".8"/>',
   outdent: '<path d="M8 3.5h6.5M8 6.5h6.5M8 9.5h6.5M8 12.5h6.5"/><path class="fd-text-accent-line" d="M6 8H1.5M3.5 6L1.5 8l2 2"/>',
   indent: '<path d="M8 3.5h6.5M8 6.5h6.5M8 9.5h6.5M8 12.5h6.5"/><path class="fd-text-accent-line" d="M1.5 8H6M4 6l2 2-2 2"/>',
-  size: '<path d="M1.5 13L4.6 5.8 7.7 13M2.6 10.6h4M9.5 13l4.2-10.5 4.2 10.5M11 9.6h5.4"/>',
+  size: '<path d="M2 14l2.8-7.4L7.6 14M3 11.6h3.6M10 14l3.7-12.6L17.4 14M11.2 10h5"/>',
   code: '<path d="M5 4.5L1.5 8 5 11.5M11 4.5l3.5 3.5-3.5 3.5M9.3 3l-2.6 10"/>',
   clearFormatting: '<path d="M2.5 10L5.5 2l3 8M3.6 7.3h3.8"/><path class="fd-text-eraser" d="M9.3 12.6l3.6-3.6 2 2-3 3H10z"/>',
   image: '<rect x="1.5" y="3" width="13" height="10" rx=".6"/><path class="fd-text-accent-fill" d="M2 12.5l3.6-4 2.6 2.6 2-1.8 3.8 3.2z"/><circle cx="11" cy="6" r="1"/>',
@@ -112,7 +112,7 @@ export function moreIcon(doc: Document): Element {
   svg.setAttribute('viewBox', '0 0 16 16');
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('class', 'fd-text-icon');
-  svg.innerHTML = '<circle cx="3" cy="8" r="1.1"/><circle cx="8" cy="8" r="1.1"/><circle cx="13" cy="8" r="1.1"/>';
+  svg.innerHTML = '<circle cx="1.5" cy="8" r="0.5"/><circle cx="8" cy="8" r="0.5"/><circle cx="14.5" cy="8" r="0.5"/>';
   return svg;
 }
 

@@ -102,15 +102,22 @@ export interface ListViewPart {
 
 export type ListViewFactory = (context: ListViewContext) => ListViewPart;
 
+/** How a record is opened from the app rather than by a row's press. */
+export interface OpenRowOptions {
+  /** Its row marked open (aria-current, lit) while it is: true, as a press does; false when no row was pressed (the address). */
+  lit?: boolean;
+}
+
 export interface ListView {
   element: HTMLElement;
   /** Ask for the records again, keeping the page, the order and what is chosen where it still applies. */
   reload(): Promise<void>;
   /**
    * Open a record as its row's press does: the app's onOpenRecord, its row marked open meanwhile (aria-current); once the
-   * app's promise settles, the records again and the focus back on its row. For an app that opens one by its address too.
+   * app's promise settles, the records again and the focus back on its row. For an app that opens one by its address too:
+   * `{ lit: false }` leaves the row unmarked, as no row was pressed.
    */
-  open(id: RecordId): Promise<void>;
+  open(id: RecordId, options?: OpenRowOptions): Promise<void>;
   destroy(): void;
 }
 
@@ -195,6 +202,10 @@ export function listView(context: ListContext): ListView {
     const def = page.fields[name];
     // The name's header marked as its cells are, rows under their parent: a theme stands it over the name, past the toggles.
     const th = sized(el('th', { scope: 'col', 'data-field': name, class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }), name);
+    // The rule at its header's end, where a theme parts the columns: none, or set in from the column's end.
+    const rule = cellOf(name)?.rule;
+    if (rule === false) th.setAttribute('data-rule', 'none');
+    else if (rule) th.style.setProperty('--fd-rule-in', rule);
     // Words cut short say themselves whole when pointed at: past the characters given, or about a 12px word's 6.5px a letter.
     const width = cellOf(name)?.width;
     const cut = typeof width === 'number' ? def.label.length > width : typeof width === 'string' ? def.label.length * 6.5 > Number.parseInt(width, 10) - 16 : false;
@@ -274,11 +285,14 @@ export function listView(context: ListContext): ListView {
     }
   };
 
-  /** Open a record from its row; when the app answers with a promise, its row marked open meanwhile, ask again once it settles and go back to its row. */
-  async function openRow(id: RecordId) {
+  /**
+   * Open a record from its row; when the app answers with a promise, its row marked open meanwhile (unless `lit` is false),
+   * ask again once it settles and go back to its row.
+   */
+  async function openRow(id: RecordId, lit = true) {
     const answer = context.onOpenRecord?.(id);
     if (!isPromise(answer)) return;
-    openId = id;
+    if (lit) openId = id;
     markOpen();
     try {
       await answer;
@@ -693,7 +707,7 @@ export function listView(context: ListContext): ListView {
     reload: async () => {
       await Promise.all([load(), mapPart?.reload()]);
     },
-    open: (id) => openRow(id),
+    open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
       search.destroy();

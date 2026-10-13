@@ -64,6 +64,7 @@ export function mountDiscussion(host: HTMLElement, options: DiscussionOptions): 
     onInput: () => {
       problem.textContent = '';
       card.setAttribute('data-open', '');
+      idleSave();
     },
     onKey(event) {
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
@@ -83,6 +84,17 @@ export function mountDiscussion(host: HTMLElement, options: DiscussionOptions): 
   });
   const cancel = el('button', { type: 'button', class: 'fd-discussion-button' }, labels.cancel);
   const saveButton = el('button', { type: 'button', class: 'fd-discussion-button' }, labels.saveComment);
+  /**
+   * Save with nothing typed: drawn idle, its tooltip saying why — still a button, and a press says it too, so it is
+   * never greyed out without a reason.
+   */
+  function idleSave() {
+    const empty = !box.value();
+    saveButton.toggleAttribute('data-idle', empty);
+    if (empty) saveButton.title = labels.writeFirst;
+    else saveButton.removeAttribute('title');
+  }
+  idleSave();
   const problem = el('p', { class: 'fd-discussion-problem', role: 'status', 'aria-live': 'polite' });
   const actions = el('div', { class: 'fd-discussion-actions' }, problem, cancel, saveButton);
   const discardWords = el('span', {}, labels.discardComment);
@@ -106,6 +118,7 @@ export function mountDiscussion(host: HTMLElement, options: DiscussionOptions): 
   });
   function close() {
     box.setValue(null);
+    idleSave();
     problem.textContent = '';
     ask.hidden = true;
     card.removeAttribute('data-open');

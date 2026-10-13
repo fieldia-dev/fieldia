@@ -109,13 +109,17 @@ describe('a backlog’s cells', () => {
   it('take widths in pixels for the whole column; every column sized, the table keeps them', async () => {
     const sized: Page = {
       ...backlog,
-      layout: { ...backlog.layout, cells: { number: { width: '59px' }, work_type: { width: '36px' }, title: { width: '908px' }, state: { width: 8 } } } as Page['layout'],
+      layout: { ...backlog.layout, cells: { number: { width: '59px', rule: false }, work_type: { width: '36px' }, title: { width: '908px', rule: '42px' }, state: { width: 8 } } } as Page['layout'],
     };
     const host = await mount({}, sized);
     const head = (field: string) => host.querySelector(`thead th[data-field="${field}"]`) as HTMLElement;
     expect(head('title').hasAttribute('data-width-px')).toBe(true);
     expect(head('title').style.getPropertyValue('--fd-col-px')).toBe('908px');
     expect(head('state').getAttribute('data-width')).toBe('8');
+    // Its header's rule: none after the number, 42px in from the title's end, at the end of the others.
+    expect(head('number').getAttribute('data-rule')).toBe('none');
+    expect(head('title').style.getPropertyValue('--fd-rule-in')).toBe('42px');
+    expect([head('work_type').hasAttribute('data-rule'), head('work_type').style.getPropertyValue('--fd-rule-in')]).toEqual([false, '']);
     const [, , kind] = [...rows(host)[0].querySelectorAll('td')];
     expect(kind.style.getPropertyValue('--fd-col-px')).toBe('36px');
     // Cut in 36px, its header says itself whole; whole in 908px, it does not.
@@ -389,6 +393,15 @@ describe('a row opened in a dialog', () => {
     expect(marked()).toEqual(['1']);
     close();
     await until(() => marked().length === 0);
+    // Opened from the address with no row pressed ({ lit: false }): no row marked, the records again and its row's focus after.
+    rows(host)[0].focus();
+    const unlit = handle.openRecord(2, { lit: false });
+    expect(opened).toEqual([2, 1, 2]);
+    expect(marked()).toEqual([]);
+    close();
+    await unlit;
+    expect(marked()).toEqual([]);
+    expect((document.activeElement as HTMLElement).dataset['id']).toBe('2');
   });
 
   it('can be asked to load again by the app, keeping its search', async () => {

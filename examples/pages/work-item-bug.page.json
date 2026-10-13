@@ -386,6 +386,7 @@
                             "options": {
                               "add": "search",
                               "helpIcon": "branch",
+                              "helpTile": "#d84a12",
                               "help": "Link a [commit](https://example.com/help/commit), [pull request](https://example.com/help/pull-request) or [branch](https://example.com/help/branch) to see the status of your development. You can also [create a branch](https://example.com/help/new-branch) to get started."
                             }
                           }

@@ -3,7 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
-import { FILTERABLE, widthIsGood } from './list-commands';
+import { FILTERABLE, ruleIsGood, widthIsGood } from './list-commands';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -733,13 +733,26 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
   const widthRow = el('div', { class: 'fd-prop', 'data-part': 'width' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), el('div', { class: 'fd-list-width' }, width, unit), el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
   const side = select(el, w.cellSide, [['', w.cellSides.auto], ['start', w.cellSides.start], ['end', w.cellSides.end]]);
   side.addEventListener('change', () => save({ ...cellNow(), align: (side.value || undefined) as ListCell['align'] }));
+  // Its header's rule: at its end, none, or set in from its end by some pixels.
+  const rule = select(el, w.cellRule, [['', w.cellRules.end], ['none', w.cellRules.none], ['in', w.cellRules.in]]);
+  const ruleIn = el('input', { class: 'fd-input', type: 'number', min: '0', max: '400', 'aria-label': w.cellRuleIn }) as HTMLInputElement;
+  const saveRule = () => {
+    if (rule.value === 'none') return void save({ ...cellNow(), rule: false });
+    if (rule.value === '') return void save({ ...cellNow(), rule: undefined });
+    const next = `${Number(ruleIn.value.trim() || '0')}px` as `${number}px`;
+    if (ruleIsGood(next)) save({ ...cellNow(), rule: next });
+  };
+  rule.addEventListener('change', saveRule);
+  ruleIn.addEventListener('input', saveRule);
+  const ruleInRow = prop(el, w.cellRuleIn, ruleIn);
+  const ruleRow = el('div', { class: 'fd-prop', 'data-part': 'rule' }, el('span', { class: 'fd-prop-name' }, w.cellRule), rule, el('p', { class: 'fd-properties-hint' }, w.cellRuleHint));
 
   /** A value's colour, and its icon for a lead: a row for each option of a choice. */
   const optionRows = (field: Field | undefined, row: (value: string, label: string) => HTMLElement[]) =>
     field?.type === 'selection' ? field.options.map((option) => el('div', { class: 'fd-list-cell-look' }, el('span', { class: 'fd-list-cell-look-name' }, option.label), ...row(String(option.value), option.label))) : [];
 
   return {
-    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side)],
+    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side), ruleRow, ruleInRow],
     update(page: Page) {
       const field = page.fields[name];
       const cell = page.layout.type === 'list' ? (page.layout.cells?.[name] ?? {}) : {};
@@ -787,6 +800,9 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
       width.max = unit.value === 'px' ? '4000' : '200';
       width.min = unit.value === 'px' ? '8' : '1';
       side.value = cell.align ?? '';
+      if (!focused(rule)) rule.value = cell.rule === false ? 'none' : cell.rule ? 'in' : '';
+      if (!focused(ruleIn) && typeof cell.rule === 'string') ruleIn.value = String(Number.parseInt(cell.rule, 10));
+      ruleInRow.hidden = rule.value !== 'in';
     },
   };
 }

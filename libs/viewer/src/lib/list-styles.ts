@@ -179,13 +179,23 @@ export const LIST_STYLES = `
    small, semibold and muted, the columns parted by short rules; rows 35px tall with no lines between them. */
 /* Fluent's filter bar: a card 50px tall, its words a little above the middle, 16px over the table's card (measured). */
 .fd-form[data-fd-theme="fluent"] .fd-list:has(> .fd-list-bar > .fd-filter-bar) { row-gap: 16px; }
-.fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 4px 8px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 7px 5px; padding-inline-end: 10px; }
+/* Its fields 28px apart, word to word, each with a 12px chevron; the settings' small light cog close after them, the ×
+   12px wide further on (measured on 08_18). */
+.fd-form[data-fd-theme="fluent"] .fd-filter-fields { gap: 6px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-chevron { width: 19px; height: 19px; margin-inline-start: -2px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-tool:not(.fd-filter-clear) { margin-inline-start: -6px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-tool:not(.fd-filter-clear) svg { width: 13px; height: 13px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-clear { margin-inline-start: 4px; }
+.fd-form[data-fd-theme="fluent"] .fd-filter-clear svg { width: 19px; height: 19px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll { border: 0; border-radius: 4px; box-shadow: 0 1.6px 3.6px rgba(0, 0, 0, 0.132), 0 0.3px 0.9px rgba(0, 0, 0, 0.108); }
 /* Its header 38px and its rule, 39px in all whether a column's width is in pixels (its whole box) or characters. */
 .fd-form[data-fd-theme="fluent"] .fd-list-table th { position: relative; box-sizing: border-box; height: 39px; padding-block: 0; color: var(--fd-muted); border-block-end: 1px solid var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-head { font-size: 12px; font-weight: 600; }
-.fd-form[data-fd-theme="fluent"] .fd-list-table thead th:not(:first-child)::after { content: ''; position: absolute; inset-inline-end: 0; inset-block: 10px; width: 1px; background: var(--fd-border); }
+.fd-form[data-fd-theme="fluent"] .fd-list-table thead th:not(:first-child)::after { content: ''; position: absolute; inset-inline-end: var(--fd-rule-in, 0px); inset-block: 10px; width: 1px; background: var(--fd-border); }
 .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-tree::after, .fd-form[data-fd-theme="fluent"] .fd-list-table thead th.fd-list-check::after { content: none; }
+/* A column the page says has no rule (a tracker's Order, which the person cannot size). */
+.fd-form[data-fd-theme="fluent"] .fd-list-table thead th[data-rule="none"]::after { content: none; }
 /* Rows 36px apart (measured on the tracker's backlog: 17 rows from y 280 to 892); a cell's words 3px in from its column's
    start, its header's 7px, so a header stands a little in from the words under it. */
 .fd-form[data-fd-theme="fluent"] .fd-list-table td { height: 36px; padding-block: 0; padding-inline: 3px 8px; border-block-end: 0; }

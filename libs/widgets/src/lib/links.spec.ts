@@ -90,6 +90,17 @@ describe('a links box', () => {
     expect(help.hidden).toBe(true);
   });
 
+  it('draws its help’s icon white on a tile of helpTile’s colour; a colour it cannot read leaves the icon plain', () => {
+    const tiled = mountKind(field, { widget: 'links', options: { helpIcon: 'branch', helpTile: '#d84a12', help: 'Link a commit.' } }, { dialogs: dialogs() }).el;
+    const tile = tiled.querySelector('.fd-links-help-tile') as HTMLElement;
+    expect(tile.style.getPropertyValue('--fd-tile')).toBe('#d84a12');
+    expect(tile.getAttribute('aria-hidden')).toBe('true');
+    expect(tile.querySelector('svg')?.getAttribute('data-icon')).toBe('branch');
+    const plain = mountKind(field, { widget: 'links', options: { helpIcon: 'branch', helpTile: 'orange', help: 'Link a commit.' } }, { dialogs: dialogs() }).el;
+    expect(plain.querySelector('.fd-links-help-tile')).toBeNull();
+    expect(plain.querySelector('svg.fd-links-help-icon')?.getAttribute('data-icon')).toBe('branch');
+  });
+
   it('words its button as the page says, in the page’s language, and offers nothing to add when read-only or with no dialogs', () => {
     expect((mountKind(field, { widget: 'links', options: { addLabel: 'Link work' } }, { dialogs: dialogs() }).el.querySelector('.fd-links-add') as HTMLElement).textContent).toBe('Link work');
     const fr = mountKind(field, { widget: 'links', options: { add: 'menu' } }, { dialogs: dialogs(), locale: 'fr' });

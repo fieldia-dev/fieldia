@@ -57,5 +57,7 @@ export const workText = {
   addWords: 'Its words',
   helpWords: 'Help while empty',
   helpIcon: 'Help’s icon',
+  helpTiled: 'Icon on a tile',
+  helpTile: 'Tile’s colour',
   emptyLink: 'A link in the empty box',
 };

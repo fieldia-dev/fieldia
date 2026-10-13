@@ -40,7 +40,9 @@ describe('the rich editor', () => {
       'Bold', 'Italic', 'Underline', 'Bulleted list', 'Numbered list', 'Highlight', 'Text colour', 'Emoji', 'Decrease indent', 'Increase indent',
       'Strikethrough', 'Text size', 'Code', 'Mention someone', 'Link work item', 'Link pull request', 'Clear formatting', 'Insert image', 'Link', 'Remove link',
     ]);
-    for (const tool of el.querySelectorAll('.fd-text-tool')) expect(tool.getAttribute('title')).toBe(tool.getAttribute('aria-label'));
+    // Each tool's tooltip its name; Remove link's says too why it is idle, with no link where the caret is.
+    for (const tool of el.querySelectorAll('.fd-text-tool:not([data-tool="unlink"])')) expect(tool.getAttribute('title')).toBe(tool.getAttribute('aria-label'));
+    expect(el.querySelector('[data-tool="unlink"]')?.getAttribute('title')).toBe('Remove link — Put the cursor in a link first.');
     const box = el.querySelector('.fd-text-box') as HTMLElement;
     expect([...box.children].map((c) => c.classList[0])).toEqual(['fd-text-area', 'fd-link-row', 'fd-text-bar']);
     expect(el.getAttribute('data-toolbar')).toBe('focus');
@@ -118,6 +120,8 @@ describe('the rich editor', () => {
     const area = el.querySelector('.fd-text-area') as HTMLElement;
     const unlink = el.querySelector('[aria-label="Remove link"]') as HTMLButtonElement;
     expect(unlink.disabled).toBe(false);
+    // No link where the caret is: drawn idle, its tooltip saying why, still a button.
+    expect([unlink.hasAttribute('data-idle'), unlink.hasAttribute('aria-disabled'), unlink.title]).toEqual([true, false, 'Remove link — Put the cursor in a link first.']);
     unlink.click();
     expect(el.querySelector('.fd-text-say')?.textContent).toBe('Put the cursor in a link first.');
     expect(el.querySelector('.fd-text-say')?.getAttribute('role')).toBe('status');
@@ -128,6 +132,7 @@ describe('the rich editor', () => {
     document.getSelection()?.removeAllRanges();
     document.getSelection()?.addRange(range);
     document.dispatchEvent(new Event('selectionchange'));
+    expect([unlink.hasAttribute('data-idle'), unlink.title]).toEqual([false, 'Remove link']);
     unlink.click();
     expect(commands).toEqual([['unlink', undefined]]);
   });

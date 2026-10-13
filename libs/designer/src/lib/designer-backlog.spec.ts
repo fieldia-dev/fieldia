@@ -124,6 +124,14 @@ describe('a list drawn as a backlog, by the designer', () => {
     expect(list(designer).cells?.['title']).toEqual({ width: '908px' });
     expect(validatePage(designer.getPage()).ok).toBe(true);
     for (const width of ['7px', '4001px', '12.5px']) expect(designer.setListCell('title', { width: width as `${number}px` })).toBe(false);
+    // Its header's rule: none, as a tracker's Order; set in from its end, before the room a tracker keeps for a row's tools.
+    expect(designer.setListCell('order', { align: 'start', rule: false })).toBe(true);
+    expect(designer.setListCell('title', { width: '911px', rule: '42px' })).toBe(true);
+    expect(list(designer).cells?.['title']).toEqual({ width: '911px', rule: '42px' });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    for (const rule of ['401px', '-1px', '4.5px', true]) expect(designer.setListCell('title', { rule: rule as false })).toBe(false);
+    expect(designer.getState().issues).toEqual(['A header’s rule is set in 0 to 400 pixels from the column’s end']);
+    expect(designer.setListCell('order', { align: 'start' })).toBe(true);
     expect(designer.setListCell('title', { widget: 'dot' })).toBe(false);
     expect(designer.getState().issues).toEqual(['A state’s dot is for a choice; Title is not one']);
     expect(designer.setListCell('title', { lead: { field: 'area', looks: {} } })).toBe(false);
@@ -215,6 +223,17 @@ describe('the backlog’s settings, in the panels', () => {
     expect(control<HTMLInputElement>('Width').value).toBe('70');
     change(control<HTMLInputElement>('Width'), '');
     expect(list(designer).cells?.['state']?.width).toBeUndefined();
+    // Its header's rule: none, set in by some pixels (its number shown then), or back at its end.
+    const rule = control<HTMLSelectElement>('Its header’s rule');
+    expect(shown(control('Pixels in from its end'))).toBe(false);
+    change(rule, 'none');
+    expect(list(designer).cells?.['state']?.rule).toBe(false);
+    change(rule, 'in');
+    expect(shown(control('Pixels in from its end'))).toBe(true);
+    change(control<HTMLInputElement>('Pixels in from its end'), '42');
+    expect(list(designer).cells?.['state']?.rule).toBe('42px');
+    change(rule, '');
+    expect(list(designer).cells?.['state']?.rule).toBeUndefined();
     expect(shown(drawn)).toBe(true);
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });

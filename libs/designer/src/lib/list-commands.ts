@@ -47,7 +47,7 @@ export interface ListCommands {
   moveColumn(field: string, index: number): boolean;
   removeColumn(field: string): boolean;
   setListOptions(options: ListOptionsPatch): boolean;
-  /** How a column draws its cells: a widget, an icon from another field, a width, a side; null draws it as its kind does. */
+  /** How a column draws its cells: a widget, an icon from another field, a width, a side, its header’s rule; null draws it as its kind does. */
   setListCell(column: string, cell: ListCell | null): boolean;
   /** A named filter for the search bar. Returns its id. */
   addListFilter(label: string, filter: FilterCondition[]): string | false;
@@ -59,6 +59,9 @@ export interface ListCommands {
   updateListAction(id: string, patch: ListActionPatch): boolean;
   removeListAction(id: string): boolean;
 }
+
+/** Its header's rule: none (false), or set in "0px" to "400px" from the column's end. */
+export const ruleIsGood = (rule: unknown): boolean => rule === false || (typeof rule === 'string' && /^(\d|[1-9]\d|[1-3]\d{2}|400)px$/.test(rule));
 
 /** A column's width: 1 to 200 characters, or "8px" to "4000px" for the whole column. */
 export const widthIsGood = (width: unknown): boolean =>
@@ -253,6 +256,7 @@ export function listCommands(context: {
           if (!cell || !Object.keys(cell).length) delete cells[column];
           else {
             if (cell.width !== undefined && !widthIsGood(cell.width)) throw new Refusal((w) => w.refusals.cellWidth);
+            if (cell.rule !== undefined && !ruleIsGood(cell.rule)) throw new Refusal((w) => w.refusals.cellRule);
             const own = fieldFor(draft, column);
             if (cell.widget === 'dot' && own.type !== 'selection') throw new Refusal((w) => w.refusals.dotNeedsChoice(own.label));
             if (cell.lead) {

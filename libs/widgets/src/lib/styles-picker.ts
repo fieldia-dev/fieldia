@@ -83,14 +83,29 @@ export const PICKER_CSS = /* css */ `
   /* Pointed at, its edge in the strong border colour, as a work tracker's path box: darker than other boxes'. */
   .fd-form .fd-field[data-quiet] .fd-path:hover > .fd-path-input:not([readonly], :focus) { border-color: var(--fd-border-strong); }
 }
-/* Quiet, its tree open: the box keeps the strong edge and no ring, as a work tracker's path picker; the tree's row with
-   the focus is ringed, and that shows where the person is. Closed again (Escape), the ring is back. */
-.fd-form .fd-field[data-quiet] .fd-path.fd-combo > .fd-path-input[aria-expanded="true"]:focus { border-color: var(--fd-border-strong); box-shadow: none; }
+/* Quiet, its tree open (it closes as the focus leaves it): the box ringed two pixels wide in the accent with a light halo
+   of it outside, as a work tracker's path picker; closed again (Escape), the ring alone. */
+.fd-form .fd-field[data-quiet] .fd-path.fd-combo > .fd-path-input[aria-expanded="true"]:focus {
+  box-shadow: 0 0 0 1px var(--fd-accent), 0 0 0 3px color-mix(in srgb, var(--fd-accent) 20%, transparent);
+}
 .fd-path-callout {
   box-sizing: border-box; margin: 0; padding: 8px 0; overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 0 0 2px 2px;
   background: var(--fd-surface); color: var(--fd-text); font-family: var(--fd-font); font-size: 14px; line-height: 20px; text-align: start;
   box-shadow: 0 3.2px 7.2px rgba(0, 0, 0, 0.132), 0 0.6px 1.8px rgba(0, 0, 0, 0.108);
-  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fd-text) 20%, transparent) transparent;
+}
+/* Its scroll bar slim, as the tracker's (20.24.05): an 8px rounded thumb 3px in from its end, no track, no arrows, on
+   every system that lets a page draw one; elsewhere the browser's thin one. A part paints no logical border, so its
+   sides are physical ones, swapped right to left. Over a dialog's own bars (a work item's window), so said twice. */
+.fd-path-callout.fd-path-callout::-webkit-scrollbar { width: 15px; }
+.fd-path-callout.fd-path-callout::-webkit-scrollbar-track:vertical { margin-block: 8px; border: 0; background: transparent; }
+.fd-path-callout.fd-path-callout::-webkit-scrollbar-thumb:vertical {
+  border: solid transparent; border-width: 3px 3px 3px 4px; border-radius: 8px; background: color-mix(in srgb, var(--fd-text) 20%, var(--fd-surface)) padding-box;
+}
+[dir="rtl"] .fd-path-callout.fd-path-callout::-webkit-scrollbar-thumb:vertical { border-width: 3px 4px 3px 3px; }
+.fd-path-callout.fd-path-callout::-webkit-scrollbar-thumb:vertical:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
+.fd-path-callout.fd-path-callout::-webkit-scrollbar-button { display: none; }
+@supports not selector(::-webkit-scrollbar) {
+  .fd-path-callout { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fd-text) 20%, transparent) transparent; }
 }
 .fd-path-heading { height: 26px; padding-inline-start: 43px; font-weight: 600; line-height: 26px; white-space: nowrap; }
 .fd-path-row { display: grid; grid-template-columns: minmax(0, 1fr); height: 24px; margin: 0 0 2px; padding-inline: 8px; line-height: 24px; white-space: nowrap; cursor: pointer; }
@@ -123,7 +138,7 @@ export const PICKER_CSS = /* css */ `
 
 /* ---- tags added from a button: "Add Tag" in a light fill, the tags' box only while one is typed --------------- */
 .fd-tags-adder {
-  display: inline-flex; align-items: center; height: 19px; padding: 0 3px; border: 0; border-radius: 2px;
+  display: inline-flex; align-items: center; height: 19px; padding: 0 1px; border: 0; border-radius: 2px;
   background: var(--fd-fill, color-mix(in srgb, var(--fd-text) 6%, var(--fd-surface))); color: var(--fd-text);
   font: inherit; font-size: 14px; font-weight: 600; line-height: 19px; white-space: nowrap; cursor: pointer;
 }

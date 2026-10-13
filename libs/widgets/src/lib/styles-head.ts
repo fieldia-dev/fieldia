@@ -46,15 +46,19 @@ export const HEAD_CSS = /* css */ `
   color: var(--fd-text); border-radius: 2px;
 }
 .fd-form-dialog :is(.fd-dialog-max, .fd-head-window .fd-dialog-close) .fd-icon { width: 16px; height: 16px; margin: 0; }
-/* The grip at the end-bottom corner: two short lines, a finger's room round them. */
+/* The grip at the end-bottom corner: a small triangle in outline, in the words' colour, a finger's room round it (08_19). */
 .fd-dialog-grip {
   position: absolute; inset-inline-end: 0; inset-block-end: 0; width: 16px; height: 16px; padding: 0; border: 0; z-index: 2;
-  background: none; cursor: nwse-resize; color: var(--fd-muted); border-end-end-radius: 4px;
+  background: none; cursor: nwse-resize; color: color-mix(in srgb, var(--fd-text) 90%, var(--fd-surface)); border-end-end-radius: 4px;
 }
 .fd-dialog-grip:dir(rtl) { cursor: nesw-resize; }
 .fd-dialog-grip::before {
-  content: ""; position: absolute; inset-inline-end: 3px; inset-block-end: 3px; width: 6px; height: 6px;
+  content: ""; position: absolute; inset-inline-end: 4px; inset-block-end: 4px; box-sizing: border-box; width: 7px; height: 7px;
   border-inline-end: 1.5px solid currentColor; border-block-end: 1.5px solid currentColor;
+  background: linear-gradient(to top left, transparent calc(50% - 0.75px), currentColor calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+}
+.fd-dialog-grip:dir(rtl)::before {
+  background: linear-gradient(to top right, transparent calc(50% - 0.75px), currentColor calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
 }
 .fd-form-dialog:has(> .fd-dialog-grip) { position: relative; }
 /* The grip has a band of its own at the foot: the body's scrollbar ends above it, as a work item's window has it; a
@@ -141,6 +145,8 @@ export const HEAD_CSS = /* css */ `
 .fd-head-meta { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; }
 .fd-form .fd-head-meta > .fd-field { flex: 0 1 269px; min-width: 0; }
 .fd-form .fd-head-meta > .fd-field:is([data-type="many2many"], [data-widget="tags"]) { flex: 0 1 auto; }
+/* Tags with their "Add Tag" button: the button just after the comments' link, as the tracker's (08_19): no box room round it. */
+.fd-form .fd-head-meta .fd-field[data-quiet] .fd-tags:has(> .fd-tags-adder:not([hidden])) { padding-inline: 0; }
 .fd-head-link {
   display: inline-flex; align-items: center; gap: 2px; padding: 0 2px; border: 0; background: none; cursor: pointer;
   font: inherit; font-size: 14px; color: var(--fd-head-link); white-space: nowrap; border-radius: 2px;
@@ -169,6 +175,9 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-head .fd-head-more { width: 34px; padding: 0; background: none; color: var(--fd-head-icon); }
 .fd-head .fd-head-more:hover { background: var(--fd-head-fill); }
 .fd-head .fd-head-more[aria-expanded="true"] { background: var(--fd-head-pressed); }
+/* Undo with nothing changed: idle in a light grey, as the tracker's (08_19), still at 3:1 as a usable button's icon must
+   be; its tooltip and a press say why. */
+.fd-head .fd-button.fd-button-icon-only[data-idle]:not(.fd-button-primary) { color: color-mix(in srgb, var(--fd-text) 48%, var(--fd-surface)); }
 /* An arrow that points back points the other way right to left. */
 .fd-head .fd-icon[data-icon="undo"]:dir(rtl) { transform: scaleX(-1); }
 /* A toggle pressed: Following. */
@@ -181,7 +190,9 @@ span.fd-head-link { cursor: default; color: var(--fd-text); }
 .fd-split > .fd-button:first-child:not(:last-of-type) { border-start-end-radius: 0; border-end-end-radius: 0; }
 .fd-split > .fd-split-more { padding: 0; width: 30px; border-start-start-radius: 0; border-end-start-radius: 0; }
 .fd-split > .fd-split-more:has(> .fd-icon:not([data-icon="chevron-down"])) { width: 34px; }
-.fd-split > .fd-split-more > .fd-icon[data-icon="chevron-down"] { width: 14px; height: 14px; }
+/* Its chevron 13px across in a thin line; Follow's gear 12px (08_19). */
+.fd-split > .fd-split-more > .fd-icon[data-icon="chevron-down"] { width: 20px; height: 20px; stroke-width: 1.3; }
+.fd-split > .fd-split-more > .fd-icon:not([data-icon="chevron-down"]) { width: 13px; height: 13px; }
 .fd-split-alone > .fd-button .fd-split-icon { width: 14px; height: 14px; }
 .fd-split > .fd-button-menu { position: absolute; inset-block-start: calc(100% + 2px); inset-inline-start: 0; z-index: 40; }
 .fd-split > .fd-button-menu[data-end] { inset-inline-start: auto; inset-inline-end: 0; }
@@ -243,8 +254,11 @@ button.fd-head-updated:hover { text-decoration: underline; }
   border: 1px solid var(--fd-head-edge); border-block-end: 0; border-radius: 0; background: transparent;
   font: inherit; font-size: 14px; font-weight: 400; color: var(--fd-text); white-space: nowrap;
 }
-.fd-head-tabs .fd-tab:has(> .fd-tab-count) { padding-inline-end: 10px; }
+.fd-head-tabs .fd-tab:has(> .fd-tab-count) { padding-inline-end: 8px; }
 .fd-head-tabs .fd-tab .fd-icon { width: 16px; height: 16px; margin: 0; }
+/* An icon alone in thin lines, a little above the middle, as the tracker's; a link's and a paperclip's 12px across (08_19). */
+.fd-head-tabs .fd-tab-icon-only > .fd-icon { margin-block-end: 3px; stroke-width: 1.5; }
+.fd-head-tabs .fd-tab-icon-only > .fd-icon:is([data-icon="link"], [data-icon="attach"]) { width: 14px; height: 14px; stroke-width: 1.7; }
 .fd-head-tabs .fd-tab-icon-only > .fd-icon:only-child { margin-inline: 3px; }
 .fd-head-tabs .fd-tab[aria-selected="true"] { font-weight: 600; color: var(--fd-text); border-color: var(--fd-head-edge); }
 .fd-head-tabs .fd-tab[aria-selected="true"] .fd-icon { stroke-width: 2.3; }
@@ -252,10 +266,10 @@ button.fd-head-updated:hover { text-decoration: underline; }
 .fd-head-tabs .fd-tab[aria-selected="true"]::after {
   content: ""; position: absolute; inset-inline: 8px; inset-block-end: 4px; height: 2px; background: var(--fd-accent); border-radius: 1px;
 }
-.fd-head-tabs .fd-tab:has(> .fd-tab-count)[aria-selected="true"]::after { inset-inline-end: 10px; }
+.fd-head-tabs .fd-tab:has(> .fd-tab-count)[aria-selected="true"]::after { inset-inline-end: 8px; }
 .fd-head-tabs .fd-tab:hover { background: color-mix(in srgb, var(--fd-text) 4%, transparent); }
 .fd-tab-count {
-  display: inline-grid; place-items: center; min-width: 21px; height: 19px; padding: 0 6px; border-radius: 10px;
+  display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
   background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
 }
 .fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
@@ -264,6 +278,9 @@ button.fd-head-updated:hover { text-decoration: underline; }
 .fd-head-body { padding: 0 12px 12px; background: var(--fd-surface); min-width: 0; }
 .fd-head-body > .fd-alert { margin-block: 12px 0; }
 .fd-tabs.fd-tabs-in-head > .fd-tabpanel { padding-block: 0; }
+/* A tab of fields keeps room after its last ones, as the tracker's window scrolls on past them (20.22.25: 56px past a
+   929px window); a history fitting the window keeps its own. */
+.fd-form-dialog[data-headed] .fd-tabs.fd-tabs-in-head > .fd-tabpanel:not(:has(.fd-history)) { padding-block-end: 32px; }
 .fd-head-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 @media (min-width: 1534px) { .fd-head-layout:has(> .fd-side) { grid-template-columns: minmax(0, 1fr) minmax(320px, 0.6fr); } }
 .fd-form-dialog .fd-head-layout > .fd-side { display: none; }

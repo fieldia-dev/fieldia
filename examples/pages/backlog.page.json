@@ -49,10 +49,11 @@
     "pageSize": 100,
     "searchFields": ["title", "number", "tags"],
     "cells": {
-      "order": { "align": "start", "width": "59px" },
+      "order": { "align": "start", "width": "59px", "rule": false },
       "work_type": { "width": "36px" },
       "title": {
-        "width": "908px",
+        "width": "911px",
+        "rule": "42px",
         "lead": {
           "field": "work_type",
           "looks": {
@@ -64,7 +65,7 @@
       },
       "state": {
         "widget": "dot",
-        "width": "70px",
+        "width": "68px",
         "options": { "colours": { "new": "#b2b2b2", "active": "#007acc", "resolved": "#ff9d00", "closed": "#339933" } }
       },
       "story_points": { "width": "61px" },

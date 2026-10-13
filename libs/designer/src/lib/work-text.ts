@@ -244,14 +244,22 @@ export function linksPart(el: ElementFactory, designer: Designer, id: string): W
   help.addEventListener('input', () => widget({ help: help.value.trim() ? help.value : null }));
   const icon = el('select', { class: 'fd-inline-select', 'aria-label': w.helpIcon }, el('option', { value: '' }, w.noIcon), ...iconNames().map((name) => el('option', { value: name }, name))) as HTMLSelectElement;
   icon.addEventListener('change', () => widget({ helpIcon: icon.value || null }));
+  // The icon white on a tile of a colour, or plain.
+  const tiled = el('input', { type: 'checkbox', 'aria-label': w.helpTiled }) as HTMLInputElement;
+  const tile = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': w.helpTile }) as HTMLInputElement;
+  const saveTile = () => widget({ helpTile: tiled.checked ? tile.value : null });
+  tiled.addEventListener('change', saveTile);
+  tile.addEventListener('input', saveTile);
   const empty = text(w.emptyLink, 'emptyLink');
   const word = (label: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, label), control);
+  const tileWord = word(w.helpTile, tile);
   const box = el(
     'div',
     { class: 'fd-work-links' },
     el('div', { class: 'fd-inline-setting' }, el('span', {}, w.addWay), way.element),
     el('div', { class: 'fd-inline-row' }, word(w.addWords, words), word(w.emptyLink, empty)),
-    el('div', { class: 'fd-inline-row' }, word(w.helpWords, help), word(w.helpIcon, icon))
+    el('div', { class: 'fd-inline-row' }, word(w.helpWords, help), word(w.helpIcon, icon)),
+    el('div', { class: 'fd-inline-row' }, word(w.helpTiled, tiled), tileWord)
   );
   const element = el('div', { class: 'fd-kind-block' }, el('div', { class: 'fd-inline-setting' }, el('span', {}, w.shownAs), shown.element), box);
   return {
@@ -268,6 +276,9 @@ export function linksPart(el: ElementFactory, designer: Designer, id: string): W
       if (!focused(words)) words.value = value('addLabel');
       if (!focused(help)) help.value = value('help');
       icon.value = value('helpIcon');
+      tiled.checked = /^#[0-9a-fA-F]{6}$/.test(value('helpTile'));
+      if (!focused(tile)) tile.value = tiled.checked ? value('helpTile').toLowerCase() : '#d84a12';
+      tileWord.hidden = !tiled.checked;
       if (!focused(empty)) empty.value = value('emptyLink');
     },
   };

@@ -111,7 +111,8 @@ export const TEXT_CSS = /* css */ `
 /* The toolbar only while the text is worked in: no edge and no tools at rest, a light box when pointed at. */
 /* Not in Markdown, whose card keeps its own room; :where, so a host's own rule (a comment box's 0) still wins. */
 .fd-text[data-toolbar="focus"]:not(:where([data-editor="markdown"])) { padding-block-end: 17px; }
-.fd-text[data-toolbar="focus"] > .fd-text-box { border-color: transparent; background: transparent; }
+/* Words at rest, its box shown when pointed at or worked in, its corners as the quiet boxes' (4px, 20.22.25). */
+.fd-text[data-toolbar="focus"] > .fd-text-box { border-color: transparent; background: transparent; border-radius: max(var(--fd-control-radius, 2px), 4px); }
 .fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { background: var(--fd-surface); }
 .fd-text[data-toolbar="focus"] > .fd-text-box:hover { border-color: var(--fd-border); }
 .fd-text[data-toolbar="focus"]:focus-within > .fd-text-box { border-color: var(--fd-focus); }
@@ -138,9 +139,15 @@ export const TEXT_CSS = /* css */ `
 .fd-text-tool[hidden] { display: none; }
 /* A tool with a list: its icon, then the chevron; the size's two letters wider. */
 .fd-text-tool-choice { width: 46px; justify-content: flex-start; padding-inline-start: 5px; }
-.fd-text-tool-choice[data-tool="size"] { width: 56px; padding-inline-start: 8px; }
+/* The size's two letters 13px tall, its chevron 6px after them (20.22.28). */
+.fd-text-tool-choice[data-tool="size"] { width: 56px; padding-inline-start: 10px; }
+.fd-text-tool-choice[data-tool="size"] > .fd-text-chevron { margin-inline-start: 6px; }
 .fd-text-icon-size { width: 20px; }
 .fd-text-tool:hover { background: var(--fd-text-hover); }
+/* Unlink with the caret in no link: idle, light, its cross too (20.22.28), still at 3:1 as a usable tool's icon must be;
+   its tooltip and a press say why. */
+.fd-text-tool[data-idle] { color: color-mix(in srgb, var(--fd-text) 48%, var(--fd-surface)); }
+.fd-text-tool[data-idle] .fd-text-cross { opacity: 0.5; }
 .fd-text-tool:is([aria-pressed="true"], .fd-pressed, [aria-expanded="true"]) { background: var(--fd-text-pressed); }
 .fd-text-tool:focus-visible, .fd-text-menu-item:focus-visible, .fd-links-add:focus-visible, .fd-links-remove:focus-visible {
   outline: 1px solid var(--fd-focus); outline-offset: -1px; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--fd-focus) 25%, transparent);
@@ -171,7 +178,7 @@ export const TEXT_CSS = /* css */ `
 }
 .fd-text:not([data-editor="markdown"]) > .fd-md-card, .fd-text:not([data-editor="rich"]) > .fd-text-box { display: none; }
 .fd-md-input, .fd-md-preview {
-  display: block; width: 100%; min-width: 0; min-height: 84px; box-sizing: border-box; margin: 0; padding: 4px 4px;
+  display: block; width: 100%; min-width: 0; min-height: 84px; box-sizing: border-box; margin: 0; padding: 1px 4px 4px;
   border: 1px solid var(--fd-border); border-radius: 4px; background: var(--fd-surface); color: var(--fd-text);
   font: 14px/20px var(--fd-font); resize: vertical;
 }
@@ -181,6 +188,8 @@ export const TEXT_CSS = /* css */ `
 /* Its tools in the words' colour alone, as a Markdown toolbar draws them: no accent in a list's marks. */
 .fd-md-card .fd-text-bar :is(.fd-text-accent, .fd-text-accent-fill) { fill: currentColor; }
 .fd-md-card .fd-text-bar .fd-text-accent-line { stroke: currentColor; }
+/* A list's chevron there in the words' colour too, a little heavier and further from its icon (20.21.54). */
+.fd-md-card .fd-text-tool-choice > .fd-text-chevron { color: inherit; stroke-width: 1.3; margin-inline: 8px -4px; }
 .fd-md-input[hidden], .fd-md-preview[hidden] { display: none; }
 .fd-md-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin: 7px 0 0; color: var(--fd-muted); font-size: 12px; line-height: 16px; }
 .fd-md-hint > .fd-icon { width: 12px; height: 12px; stroke-width: 2; }
@@ -268,6 +277,12 @@ span.fd-links-name { color: var(--fd-text); cursor: default; }
 .fd-links-remove > svg { width: 14px; height: 14px; }
 .fd-links-help { position: relative; justify-self: stretch; display: block; padding: 10px 12px; padding-inline: 50px 12px; background: var(--fd-text-help); font-size: 14px; line-height: 17px; overflow-wrap: anywhere; }
 .fd-links-help > p { margin: 0; }
+/* Its icon white on a tile of the page's colour, 28px by 30 where the icon is, lit a little at its top (08_19). */
+.fd-links-help-tile {
+  display: grid; place-items: center; border-radius: 2px; color: #fff;
+  background: linear-gradient(color-mix(in srgb, var(--fd-tile) 88%, #fff), var(--fd-tile));
+}
+.fd-links-help-tile > .fd-icon { width: 18px; height: 18px; margin: 0; stroke-width: 1.6; }
 .fd-links-help[hidden], .fd-links-empty[hidden] { display: none; }
 .fd-links-empty { justify-self: stretch; padding: 10px; background: var(--fd-text-help); line-height: 17px; }
 .fd-links-empty-link { padding: 0; border: 0; background: none; color: var(--fd-text-link); font: 14px/17px var(--fd-font); text-align: start; text-decoration: underline; cursor: pointer; }

@@ -57,12 +57,14 @@ export const HISTORY_STYLES = /* css */ `
 .fd-history-dot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--fd-border-strong); }
 .fd-history-states[data-maximised] { position: fixed; inset: 0; z-index: 1000; padding: 0 20px 20px; overflow: auto; background: var(--fd-surface); }
 
-/* The list and the change it has chosen, side by side; one over the other on a narrow screen. */
-.fd-history-changes > .fd-history-head-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-block-end: 1px solid var(--fd-border); }
+/* The list and the change it has chosen, side by side, the list 2px short of half (20.24.46); one over the other on a
+   narrow screen. */
+.fd-history-changes > .fd-history-head-row { display: grid; grid-template-columns: minmax(0, calc(50% - 2px)) minmax(0, 1fr); border-block-end: 1px solid var(--fd-border); }
 .fd-history-head-row > .fd-history-head { border: 0; height: 50px; padding-inline-end: 10px; }
-.fd-history-panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-block-start: 4px; min-height: 0; }
+.fd-history-panes { display: grid; grid-template-columns: minmax(0, calc(50% - 2px)) minmax(0, 1fr); margin-block-start: 4px; min-height: 0; }
 .fd-history[data-fit] .fd-history-panes { height: max(240px, calc(var(--fd-history-room, 0px) - var(--fd-history-foot, 38px))); }
-.fd-history-list { min-height: 0; overflow-y: auto; padding: 1px 2px 0; }
+/* Its scroll bar 2px short of the divider, as the tracker's (20.24.46). */
+.fd-history-list { min-height: 0; overflow-y: auto; padding: 1px 2px 0; margin-inline-end: 2px; }
 .fd-history-detail { min-height: 0; overflow-y: auto; border-inline-start: 1px solid var(--fd-history-divider, color-mix(in srgb, var(--fd-text) 42.4%, var(--fd-surface))); }
 
 /* A group by age, folded by its heading. */

@@ -50,5 +50,7 @@ export const workText: DesignerWords['workText'] = {
   addWords: 'نصه',
   helpWords: 'المساعدة وهو فارغ',
   helpIcon: 'أيقونة المساعدة',
+  helpTiled: 'الأيقونة على مربع ملوّن',
+  helpTile: 'لون المربع',
   emptyLink: 'رابط في المربع الفارغ',
 };

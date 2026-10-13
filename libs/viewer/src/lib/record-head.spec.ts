@@ -130,17 +130,23 @@ describe('a record head', () => {
     const { host, part } = await draw();
     for (const [id, name] of [['b-refresh', 'Refresh'], ['b-undo', 'Revert changes']]) {
       expect(part(id).getAttribute('aria-label')).toBe(name);
-      expect(part(id).title).toBe(name);
       expect(part(id).textContent).toBe('');
     }
+    expect(part('b-refresh').title).toBe('Refresh');
+    // Nothing changed yet: Undo drawn idle, its tooltip saying why; still a button a press reaches.
+    expect(part('b-undo').hasAttribute('data-idle')).toBe(true);
+    expect(part('b-undo').title).toBe('Revert changes — Nothing has changed.');
+    expect([part('b-undo').hasAttribute('disabled'), part('b-undo').hasAttribute('aria-disabled')]).toEqual([false, false]);
     const more = host.querySelector('.fd-head-actions .fd-head-more') as HTMLButtonElement;
     expect(more.getAttribute('aria-label')).toBe('More actions');
     press(more);
     expect(host.querySelector('.fd-head-actions .fd-record-actions [role="menuitem"]')?.textContent).toBe('Copy link');
     press(part('b-undo'));
     expect(host.querySelector('.fd-says')?.textContent).toContain('Nothing has changed.');
-    // With a change, Undo puts it back.
+    // With a change, Undo is itself again and puts it back.
     handle?.form.setValue('area', 'Warehouse');
+    expect(part('b-undo').hasAttribute('data-idle')).toBe(false);
+    expect(part('b-undo').title).toBe('Revert changes');
     press(part('b-undo'));
     await settled();
     expect(handle?.form.getState().values['area']).toBe('Portal');

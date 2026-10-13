@@ -138,6 +138,10 @@ export const list = {
   cellWidthHint: 'In characters of its words, or in pixels for the whole column. Words longer than it end in “…”; a header cut short shows its whole name when pointed at. Empty: as wide as its values. Every column with a width: the table keeps them, and scrolls sideways when wider than the page.',
   cellSide: 'Its words keep to',
   cellSides: { auto: 'As its kind does', start: 'The start', end: 'The end' },
+  cellRule: 'Its header’s rule',
+  cellRules: { end: 'At its end', none: 'None', in: 'Set in from its end' },
+  cellRuleIn: 'Pixels in from its end',
+  cellRuleHint: 'The short line that parts it from the next column, where the theme draws one (Fluent’s). None, as a tracker draws a column people cannot size; set in, before the room a tracker keeps at a title’s end for a row’s tools.',
   // ---- a button for the rows chosen
   look: 'Look',
   actionHint: 'The name the app receives with the rows chosen; the app decides what it does.',

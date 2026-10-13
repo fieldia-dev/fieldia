@@ -173,11 +173,19 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
   });
   return box;
 
-  /** Its look and its words now: primary or quiet, pressed or not, hidden by its condition. */
+  /**
+   * Its look and its words now: primary or quiet, pressed or not, hidden by its condition. Undo with nothing changed is
+   * drawn idle, its tooltip saying why, and a press says it too: still a button, never greyed out without a reason.
+   */
   function paint(button: HTMLElement) {
     const at = form.node(node.id);
     if (button === main || !own) setHidden(menu ? box : button, at.invisible);
     for (const one of ['primary', 'secondary', 'subtle', 'danger', 'link']) button.classList.toggle(`fd-button-${one}`, one === look());
+    if (button === main && onlyResets(node.steps, node.action)) {
+      const idle = !form.getState().dirty.length;
+      setAttr(main, 'data-idle', idle ? '' : null);
+      if (node.iconOnly) main.title = idle ? `${node.label} — ${labels.nothingChanged}` : node.label;
+    }
     if (node.pressed === undefined || button !== main) return;
     const pressed = at.pressed === true;
     setAttr(main, 'aria-pressed', String(pressed));

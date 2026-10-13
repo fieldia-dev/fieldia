@@ -169,6 +169,18 @@ describe('a links box’s settings', () => {
     box('Help’s icon').dispatchEvent(new Event('change', { bubbles: true }));
     expect(node().options).toEqual({ add: 'menu', addLabel: 'Link work', emptyLink: 'Add an existing work item as a parent', help: 'Link a [commit](https://example.com/commit).', helpIcon: 'branch' });
     expect(card().querySelector('.fd-links-help a')?.textContent).toBe('commit');
+    // The icon white on a tile: its colour shown once ticked, gone again when unticked.
+    const tileWord = box('Tile’s colour').closest('label') as HTMLElement;
+    expect(tileWord.hidden).toBe(true);
+    box('Icon on a tile').click();
+    expect(node().options?.['helpTile']).toBe('#d84a12');
+    expect(tileWord.hidden).toBe(false);
+    box('Tile’s colour').value = '#0078d4';
+    box('Tile’s colour').dispatchEvent(new Event('input', { bubbles: true }));
+    expect(node().options?.['helpTile']).toBe('#0078d4');
+    expect(card().querySelector('.fd-links-help-tile')).not.toBeNull();
+    box('Icon on a tile').click();
+    expect(node().options?.['helpTile']).toBeUndefined();
     expectValid(designer.getPage());
     seg('Shown as', 'Tags').click();
     expect(node().widget).toBeUndefined();

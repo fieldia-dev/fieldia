@@ -510,9 +510,15 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     };
     const watcher = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fit());
     watcher?.observe(bar);
-    // Each tool says whether the selection has its format.
+    // Each tool says whether the selection has its format; Unlink, with no link where the caret is, is drawn idle, its
+    // tooltip saying why — still a button, and a press says it too: never greyed out without a reason.
     const reflect = () => {
       for (const stop of stops) {
+        if (stop.tool === 'unlink') {
+          const idle = !selectedLink();
+          stop.button.toggleAttribute('data-idle', idle);
+          stop.button.title = idle ? `${stop.label} — ${labels.cursorInLink}` : stop.label;
+        }
         if (!stop.button.hasAttribute('aria-pressed')) continue;
         const command = stop.tool === 'strike' ? 'strikeThrough' : stop.tool;
         stop.button.setAttribute('aria-pressed', String(!!doc.queryCommandState?.(command)));
@@ -528,7 +534,11 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   const mdTools = () => (options.editor === 'markdown' && options.tools ? options.tools : MARKDOWN_TOOLS);
 
   function drawRich() {
-    if (!richBar && toolbarWhen !== 'never') richBar = toolbar(richTools());
+    if (!richBar && toolbarWhen !== 'never') {
+      richBar = toolbar(richTools());
+      // Its tools as the text is now: Unlink idle until the caret is in a link.
+      richBar.reflect();
+    }
     const parts: HTMLElement[] = [area, linkRow];
     if (richBar) {
       if (element.getAttribute('data-bar-at') === 'top') parts.unshift(richBar.bar);

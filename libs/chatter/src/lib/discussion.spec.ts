@@ -96,6 +96,10 @@ describe('a discussion', () => {
     expect(host.querySelector('.fd-discussion-problem')?.getAttribute('role')).toBe('status');
     expect(source.posted).toEqual([]);
     expect(button('Save').disabled).toBe(false);
+    // Drawn idle meanwhile, its tooltip saying why, still a button; itself again once words are typed.
+    expect([button('Save').hasAttribute('data-idle'), button('Save').hasAttribute('aria-disabled'), button('Save').title]).toEqual([true, false, 'Write a comment first.']);
+    typeInto(area(), '<p>Shelf 4.</p>');
+    expect([button('Save').hasAttribute('data-idle'), button('Save').title]).toEqual([false, '']);
   });
 
   it('saves with Ctrl+Enter: the new comment first, the box empty, the count told', async () => {

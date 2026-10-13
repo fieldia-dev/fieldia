@@ -167,6 +167,7 @@ export const refusals: DesignerWords['refusals'] = {
   buttonWords: 'يحتاج الزر إلى نص',
   listButtonAction: 'يحتاج الزر إلى اسم إجرائه، مثل archive',
   cellWidth: 'عرض العمود من 1 إلى 200 حرف، أو من 8 إلى 4000 بكسل',
+  cellRule: 'يُزاح خط العنوان من 0 إلى 400 بكسل عن نهاية العمود',
   filterLabelNotOffered: (label: string) => `لا يعرض شريط التصفية ${label}: حدده أولًا`,
   leadNeedsChoice: (label) => `الأيقونة قبل الكلمات تأتي من قيمة حقل اختيار، و${q(label)} ليس حقل اختيار`,
   dotNeedsChoice: (label) => `نقطة الحالة لحقل اختيار، و${q(label)} ليس كذلك`,

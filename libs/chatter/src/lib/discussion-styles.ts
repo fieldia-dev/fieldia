@@ -38,6 +38,9 @@ export const DISCUSSION_STYLES = /* css */ `
 .fd-discussion-button:active { background: color-mix(in srgb, var(--fd-text) 20%, var(--fd-surface)); }
 .fd-discussion-button:focus-visible, .fd-comment-date:focus-visible { outline: 1px solid var(--fd-focus); outline-offset: 1px; }
 .fd-discussion-button[aria-busy="true"] { cursor: progress; }
+/* Save with nothing typed: its words lighter, as the tracker's (20.22.36), still reading at 4.5:1 on its fill as a usable
+   button's words must; its tooltip and a press say why. */
+.fd-discussion-button[data-idle] { color: color-mix(in srgb, var(--fd-text) 70%, var(--fd-surface)); }
 .fd-discussion-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-block-start: 6px; padding: 8px 10px; border-radius: 2px; background: var(--fd-warning-soft); font-size: 13px; }
 .fd-discussion-waiting { margin: 0; color: var(--fd-muted); }
 .fd-discussion-comments { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }

@@ -138,7 +138,8 @@ test.describe('at rest, as the screenshot of the bug shows it', () => {
     for (const [name, fromRight] of [['Refresh', 111], ['Revert changes', 66], ['More actions', 23]] as const) {
       const button = dialog(page).getByRole('button', { name, exact: true });
       near((await at(page, button)).fromRight, fromRight);
-      await expect(button).toHaveAttribute('title', name);
+      // Its tooltip its name; Revert changes, idle with nothing changed, says why too (greyed, as 08_19's).
+      await expect(button).toHaveAttribute('title', name === 'Revert changes' ? 'Revert changes — Nothing has changed.' : name);
     }
   });
 
