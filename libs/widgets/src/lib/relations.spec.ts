@@ -339,7 +339,7 @@ describe('tags added from a button', () => {
     const nobody = el.querySelector('.fd-link-nobody') as HTMLElement;
     expect(nobody.hidden).toBe(false);
     expect(nobody.getAttribute('aria-hidden')).toBe('true');
-    expect(nobody.querySelector('svg')?.getAttribute('data-icon')).toBe('user');
+    expect(nobody.querySelector('svg')?.getAttribute('data-icon')).toBe('nobody');
     expect((el.querySelector('.fd-link-avatar') as HTMLElement).hidden).toBe(true);
     form.setValue('owner', { id: 1, label: 'Mona Adel' });
     expect(nobody.hidden).toBe(true);

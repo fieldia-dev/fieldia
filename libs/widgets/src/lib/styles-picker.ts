@@ -43,7 +43,7 @@ export const PICKER_CSS = /* css */ `
 }
 :is(.fd-own-box, .fd-field[data-quiet] .fd-own-box) > .fd-own-button:focus-visible { outline: none; }
 .fd-own-box > .fd-own-button:disabled { cursor: default; }
-.fd-own-box > .fd-own-words { display: block; min-width: 0; font-size: inherit; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.fd-own-box > .fd-own-words { display: block; min-width: 0; min-height: 1lh; font-size: inherit; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .fd-own-box > .fd-own-words:empty::before { content: attr(data-placeholder); color: var(--fd-muted); }
 .fd-own-box:has(> .fd-own-button:is(:focus-visible, [aria-expanded="true"])) { border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
 .fd-own-box::after {
@@ -66,7 +66,11 @@ export const PICKER_CSS = /* css */ `
 .fd-path-chevron .fd-icon { width: 20px; height: 20px; margin: 0; stroke-width: 1.2; }
 .fd-path:has(> .fd-path-input[readonly]) > .fd-path-chevron { display: none; }
 .fd-form .fd-field[data-quiet] .fd-path:not(:focus-within) > .fd-path-chevron { visibility: hidden; }
-@media (hover: hover) { .fd-form .fd-field[data-quiet] .fd-path:hover > .fd-path-chevron { visibility: visible; } }
+@media (hover: hover) {
+  .fd-form .fd-field[data-quiet] .fd-path:hover > .fd-path-chevron { visibility: visible; }
+  /* Pointed at, its edge in the strong border colour, as a work tracker's path box: darker than other boxes'. */
+  .fd-form .fd-field[data-quiet] .fd-path:hover > .fd-path-input:not([readonly], :focus) { border-color: var(--fd-border-strong); }
+}
 .fd-path-callout {
   box-sizing: border-box; margin: 0; padding: 8px 0; overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 0 0 2px 2px;
   background: var(--fd-surface); color: var(--fd-text); font-family: var(--fd-font); font-size: 14px; line-height: 20px; text-align: start;

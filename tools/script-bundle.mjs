@@ -218,8 +218,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with its suggestions, the person's latest picks, the tree folded to the value, each row's words at its end and the
 // tree's keys; Fieldia's own list with a tick for a choice and a state's list; a state's exact colours and its dot in
 // a lead slot; tags added from a button; a person's outline while no one is picked; their checks on a page; their
-// stylesheet (6.6 of it) and the icons the replica's lanes share (3) — add 24.7, to 498.0.
-const BUDGET_KB = 498.0;
+// stylesheet (7 of it) and the icons the replica's lanes share (3) — add 25.3, to 498.6.
+const BUDGET_KB = 498.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -252,8 +252,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
 // the work item's pickers (a path picker and its tree, own lists with a tick, a state's colours, tags from a button,
-// their stylesheet and the replica's shared icons), 6.9 more, to 149.6.
-const GZIP_BUDGET_KB = 149.6;
+// their stylesheet and the replica's shared icons), 7 more, to 149.7.
+const GZIP_BUDGET_KB = 149.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

@@ -340,6 +340,9 @@ function tagAdder(doc: Document, words: string, box: Combobox, home: HTMLElement
 /** The words of a button that adds tags: the page's own, else "Add {label}". */
 const adderWords = (node: FieldNode, label: string, labels: WidgetLabels) => node.placeholder || fill(labels.addNamed, { label });
 
+/** A person's outline, as a work tracker draws one where no one is picked yet: a head over a bowl. */
+const NOBODY = { nobody: '<circle cx="12" cy="7" r="3.5"/><path d="M4.5 13.5h15a7.5 6.5 0 0 1-15 0z"/>' };
+
 /** Making a record from a typed name, unless the page turns it off or the data source cannot. */
 function creator(form: Form, name: string, node: FieldNode): ((text: string) => Promise<RelatedRecord>) | undefined {
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
@@ -411,7 +414,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   if (avatar && nobody) {
     nobody.className = 'fd-link-nobody';
     nobody.setAttribute('aria-hidden', 'true');
-    const outline = drawIcon(document, 'user');
+    const outline = drawIcon(document, 'nobody', NOBODY);
     if (outline) nobody.append(outline);
     box.element.prepend(avatar, nobody);
     box.element.setAttribute('data-avatar', '');

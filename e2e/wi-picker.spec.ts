@@ -211,6 +211,23 @@ test.describe('State, and Planning’s choices, in Fieldia’s own list', () => 
     await expect(state.locator('.fd-dot-button')).toBeFocused();
   });
 
+  test('in a field with a lead slot before its value (data-lead, as a work item’s band gives), the dot sits in it and the list starts at the box', async ({ page }) => {
+    await visit(page);
+    const state = node(page, 'f-state');
+    await state.evaluate((field) => field.setAttribute('data-lead', ''));
+    const [field, dot, words] = [await box(state.locator('.fd-dot-box')), await box(state.locator('.fd-dot')), await box(state.locator('.fd-dot-label'))];
+    // A 10px dot centred 12px before the box; the words where every value's start.
+    expect([dot.width, dot.height]).toEqual([10, 10]);
+    expect(Math.abs(field.x - (dot.x + dot.width / 2) - 12)).toBeLessThanOrEqual(1);
+    expect(words.x - field.x).toBeGreaterThanOrEqual(8);
+    expect(words.x - field.x).toBeLessThanOrEqual(12);
+    // A press on the words opens the list, at the box's start.
+    await state.locator('.fd-dot-label').click();
+    const menu = page.locator('.fd-dot-menu:not([hidden])');
+    expect((await box(menu)).x).toBe(field.x);
+    await screen(page, 'wi-picker-state-lead', { viewport: true });
+  });
+
   test('Planning: Priority and Severity read as words; clicked, Fieldia’s own list with a tick; the keys pick and Escape keeps', async ({ page }) => {
     await visit(page);
     await expect(node(page, 'f-priority').locator('.fd-own-words')).toHaveText('1');
