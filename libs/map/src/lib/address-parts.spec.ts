@@ -1,6 +1,7 @@
 /** @jest-environment node */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { sameName } from './address-parts';
 import { azureMaps, googleMaps, mapbox, openStreetMap } from './providers';
 
 /**
@@ -158,5 +159,39 @@ describe('an address in its parts', () => {
 
   it('says OpenStreetMap’s credit under suggestions shown without its map', () => {
     expect(openStreetMap().searchCredit).toEqual({ text: '© OpenStreetMap contributors', href: 'https://www.openstreetmap.org/copyright' });
+  });
+});
+
+describe('one place’s names, however a provider spells them', () => {
+  it('are one place’s in two spellings, or in Latin and in Arabic, as Azure names a town and its province', () => {
+    const same: [string, string][] = [
+      ['Giza', 'Al Jizah'],
+      ['Gizeh', 'الجيزة'],
+      ['Ḩā’il', "Ha'il"],
+      ['Ha’il', 'حائل'],
+      ['Amman', 'عمان'],
+      ['Cairo', 'القاهرة'],
+      ['Sharjah', 'Ash Shāriqah'],
+      ['Tabūk', 'Tabuk'],
+      ['Domiat', 'Dumyat'],
+      ['El Ismailia', "Al Isma'iliyah"],
+      ['Al Khubar', 'Al Khobar'],
+      ['الشيـخ زايد', 'الشيخ زايد'],
+    ];
+    expect(same.filter(([one, other]) => !sameName(one, other))).toEqual([]);
+  });
+
+  it('are not when only some of their letters agree: districts and their cities, names of one sound', () => {
+    const different: [string, string][] = [
+      ['Al Woroud', 'Riyadh'],
+      ['Al Olaya', 'Riyadh'],
+      ['Huqan', 'Al Khurmah'],
+      ['Jabal Amman', 'Amman'],
+      ['Dokki', 'Gise'],
+      ['Kalba', 'Ash Shāriqah'],
+      ['Tema', 'Suhaj'],
+      ['El Tahrir', 'Giza'],
+    ];
+    expect(different.filter(([one, other]) => sameName(one, other))).toEqual([]);
   });
 });

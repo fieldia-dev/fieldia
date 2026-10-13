@@ -1,6 +1,6 @@
 import type { Locale } from '@fieldia/core';
 import { pathOf } from './answers';
-import { addressLine } from './address-line';
+import { addressLine, directionOf } from './address-line';
 import { warnOnce } from './map-core';
 import type { PlaceFound, SearchRequest } from './providers';
 
@@ -118,37 +118,131 @@ function countryName(code: string, locale: Locale, own: unknown) {
 
 // ---- Azure Maps --------------------------------------------------------------------
 
+/** A name as compared: its letters and digits alone, in lower case, without accents, tatweel or vowel marks ("Ḩā’il" is "hail"). */
+const bare = (name: unknown) =>
+  text(name)
+    .normalize('NFD')
+    .replace(/[\p{M}\u0640]/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .trim();
+
+/** Arabic's letters as Latin spellings write them; its long vowels and "ع" as a vowel, which a spelling leaves out but at a word's start. */
+const SOUNDS: Record<string, string> = {
+  ا: 'a', ى: 'a', ع: 'a', ء: 'a', ب: 'b', ت: 't', ث: 't', ج: 'j', ح: 'h', خ: 'kh', د: 'd', ذ: 'd', ر: 'r', ز: 'z', س: 's', ش: 's', ص: 's', ض: 'd', ط: 't', ظ: 'z',
+  غ: 'gh', ف: 'f', ق: 'q', ك: 'k', ل: 'l', م: 'm', ن: 'n', ه: 'h', ة: 'h', و: 'w', ي: 'y',
+};
+const PAIRS: Record<string, string> = { kh: 'k', gh: 'k', sh: 's', th: 't', dh: 'd', ph: 'f' };
+const ARTICLES = new Set(['al', 'el', 'ad', 'ar', 'as', 'ash', 'at', 'az', 'an', 'ed', 'er', 'es', 'et', 'ez']);
+
 /**
- * Where Azure keeps a city. Its `locality` is the city in most countries, a
- * district or a neighbourhood in these: there the city is one of its admin
- * districts (coarsest first), the second in Egypt and Saudi Arabia (the
- * first a governorate or a region), the first in the UAE (an emirate) and
- * Jordan (the second a liwa).
+ * A name's consonants, as its spellings share them: "Giza", "Al Jizah",
+ * "Gizeh" and "الجيزة" are all "kz"; "Ḩā’il", "Ha'il" and "حائل", "hl";
+ * "Amman" and "عمان", "-mn". Its article is left out, and an "h" ending a
+ * word, and its vowels but a word's first (as one, "-"); the letters
+ * spellings trade (g, j, q, k) are one.
  */
-const AZURE_CITY: Record<string, number> = { EG: 1, SA: 1, AE: 0, JO: 0 };
+function skeleton(name: string) {
+  return bare(name)
+    .split(/[\s-]+/)
+    .filter((word) => word && !ARTICLES.has(word))
+    .map((word) =>
+      word
+        .replace(/^ال/, '')
+        .replace(/[\u0600-\u06FF]/g, (letter) => SOUNDS[letter] ?? '')
+        .replace(/kh|gh|sh|th|dh|ph/g, (pair) => PAIRS[pair])
+        .replace(/h$/, '')
+        .replace(/[gjqc]/g, 'k')
+        .replace(/^[aeiou]+/, '-')
+        .replace(/(?!^)[aeiouwy\d]/g, '')
+    )
+    .join('')
+    .replace(/(.)\1+/g, '$1');
+}
+
+/**
+ * Whether two names are one place's, however spelt: the same words, or the
+ * same consonants ("Giza", "Al Jizah"; "Al Khubar", "Al Khobar"), with their
+ * "h"s or without them, as a spelling may leave one out ("Cairo",
+ * "القاهرة").
+ */
+export function sameName(a: unknown, b: unknown) {
+  const [one, other] = [bare(a), bare(b)];
+  if (!one || !other) return false;
+  if (one === other) return true;
+  const [shape, theirs] = [skeleton(one), skeleton(other)];
+  const soft = (consonants: string) => consonants.replace(/h/g, '');
+  return (shape.length > 1 && shape === theirs) || (soft(shape).length > 1 && soft(shape) === soft(theirs));
+}
 
 const isoOf = (a: unknown) => (text(pathOf(a, 'countryRegion', 'ISO')) || text(pathOf(a, 'countryRegion', 'iso'))).toUpperCase();
 
-/** An address of Azure's where it is: its locality, its city and region (admin districts by name, or by short name in its geocoding's), its country. */
-function azureWhere(a: unknown) {
+/** An address's admin districts, coarsest first, each by every name Azure gives it: its name, its short name or code ("Riyadh", "RIY"). */
+function districtsOf(a: unknown): string[][] {
   const listed = pathOf(a, 'adminDistricts');
-  const districts = (Array.isArray(listed) ? listed : []).map((d) => text(pathOf(d, 'name')) || text(pathOf(d, 'shortName'))).filter(Boolean);
+  return (Array.isArray(listed) ? listed : []).map((d) => [text(pathOf(d, 'name')), text(pathOf(d, 'shortName'))].filter(Boolean));
+}
+
+/** A district's name without the word for its kind ("Ajman Emirate" is "Ajman", "منطقة الرياض" "الرياض"). */
+const KIND = /^(?:إمارة|امارة|منطقة|محافظة|لواء|قسم|مركز)\s+|\s+(?:emirate|governorate|province|region|district|sub-district|qesm|markaz)$/iu;
+const withoutKind = (name: string) => name.replace(KIND, '');
+
+/** The emirates that are a city and its quarters (Jabal Ali, Dubai Marina; Al Rumailah): their localities are quarters, their towns themselves. */
+const CITY_EMIRATES = ['Dubai', 'Ajman', 'Umm al-Quwain'];
+
+/**
+ * An address of Azure's where it is: its place (a quarter's name, the first
+ * of a locality such as "Zamâlek, Cairo"), its city, region and country.
+ * Its `locality` is the city in most countries, but a district or a
+ * neighbourhood in these, where the city is an admin district (coarsest
+ * first): in Egypt and Saudi Arabia the second, the first a governorate or a
+ * province, and where there is no second, the locality itself ("Al Khubar"
+ * in Eastern, "Sheikh Zayed City"); in Jordan the first (the second is a
+ * liwa); in the UAE, the emirate where it is a city and its quarters
+ * (Dubai, Ajman), the locality in the others, whose towns are many ("Kalba"
+ * in Sharjah) and whose admin district is not a city ("Abu Dhabi Emirate").
+ */
+function azureWhere(a: unknown) {
+  const districts = districtsOf(a).map(([name = '']) => name);
   const locality = text(pathOf(a, 'locality'));
+  const pieces = locality.split(',').map((piece) => piece.trim()).filter(Boolean);
+  const town = pieces[pieces.length - 1] ?? '';
   const country = isoOf(a);
-  const at = AZURE_CITY[country];
-  return { locality, country, region: districts[0] ?? '', city: at === undefined ? locality : (districts[at] ?? districts[0] ?? locality) };
+  const [region = '', second = ''] = districts;
+  const emirate = withoutKind(region);
+  const oneCity = districtsOf(a)[0]?.includes('DU') || CITY_EMIRATES.some((name) => sameName(name, emirate));
+  const city = { EG: second || town || region, SA: second || town || region, JO: region || town, AE: oneCity ? emirate : town || emirate }[country] ?? town;
+  return { place: pieces[0] ?? '', locality: pieces, country, region, city };
+}
+
+/**
+ * Names that say where a place is, each place once: of two spellings of one
+ * ("Giza", "Al Jizah"; "Amman", "عمان"), the one in the page's letters, or
+ * the first; none that says the name above it again (`said`).
+ */
+function oncePerPlace(names: unknown[], locale: Locale, said: unknown[]) {
+  const ours = locale === 'ar' ? 'rtl' : 'ltr';
+  const kept: string[] = [];
+  for (const name of names.map(text).filter(Boolean)) {
+    if (said.some((earlier) => sameName(earlier, name))) continue;
+    const at = kept.findIndex((earlier) => sameName(earlier, name));
+    if (at < 0) kept.push(name);
+    else if (directionOf(name) === ours && directionOf(kept[at]) !== ours) kept[at] = name;
+  }
+  return kept;
 }
 
 /**
  * An address of Azure's on one line from its own fields, in order (`first`,
  * then its neighbourhood and district, city, region, postcode and country),
- * the country named in the page's language: never its formatted address's
- * emirate codes ("DU"), spellings ("Mişr") and dashes ("King Fahd Road - Al
- * Olaya").
+ * each place once, the country named in the page's language: never its
+ * formatted address's emirate codes ("DU"), spellings ("Mişr") and dashes
+ * ("King Fahd Road - Al Olaya").
  */
 function azureLine(a: unknown, locale: Locale, first: string, before: unknown[] = []) {
   const { locality, city, region, country } = azureWhere(a);
-  return addressLine([first, pathOf(a, 'neighborhood'), locality, city, region, pathOf(a, 'postalCode'), countryName(country, locale, pathOf(a, 'countryRegion', 'name'))], locale, before);
+  const where = oncePerPlace([pathOf(a, 'neighborhood'), ...locality, city, region], locale, [first, ...before]);
+  return addressLine([first, ...where, pathOf(a, 'postalCode'), countryName(country, locale, pathOf(a, 'countryRegion', 'name'))], locale, before);
 }
 
 /** Digits as numbers, Arabic's too ("٢٦" is "26"). */
@@ -167,32 +261,29 @@ function azureStreet(a: unknown, typed: string) {
   return number && line === `${number} ${street}` && street.startsWith(`${number} `) && typedTimes < 2 ? street : line;
 }
 
-/** A place of Azure's, with what locating it takes: the whole address as Azure wrote it, its country, its address. */
+/** A place of Azure's, with what locating it takes: its country, its address as Azure gave it. */
 export interface AzurePlace extends PlaceFound {
-  whole: string;
   country: string;
   address: unknown;
 }
 
-/** Azure's places on two lines: the street (or the place's name), then where it is; their parts when asked. */
+/** Azure's places on two lines: the street, or the place's own name (a quarter's, a town's), then where it is; their parts when asked. */
 export function azurePlaces(found: unknown, locale: Locale, typed = '', withParts?: boolean): AzurePlace[] {
   const features = pathOf(found, 'features');
   if (!Array.isArray(features)) return [];
   return features.flatMap((feature) => {
-    const a = pathOf(feature, 'properties', 'address');
-    const line = text(pathOf(a, 'addressLine'));
+    const properties = pathOf(feature, 'properties');
+    const a = pathOf(properties, 'address');
     const street = azureStreet(a, typed);
-    let whole = text(pathOf(a, 'formattedAddress'));
-    const label = street || text(pathOf(feature, 'properties', 'name')) || whole.split(',')[0].trim();
-    if (!label) return [];
-    // A number made up is not asked for either.
-    if (street !== line && whole.startsWith(line)) whole = street + whole.slice(line.length);
     const where = azureWhere(a);
-    // Where it is, each piece said once, the name above it among them: "Sheikh Zayed City" is not said again under itself.
-    const detail = azureLine(a, locale, '', [label]) || addressLine(whole.split(/,| - /), locale, [label]);
+    // A quarter's or a town's own name: its neighbourhood, or its locality's first ("Zamâlek, Cairo", whose formatted address starts with Cairo).
+    const own = pathOf(properties, 'typeGroup') === 'Place' ? text(pathOf(a, 'neighborhood')) || where.place : '';
+    const label = street || text(pathOf(properties, 'name')) || own || text(pathOf(a, 'formattedAddress')).split(',')[0].trim();
+    if (!label) return [];
+    const detail = azureLine(a, locale, '', [label]);
     const [lng, lat] = (pathOf(feature, 'geometry', 'coordinates') as number[] | undefined) ?? [];
     const parts = withParts ? partsOf({ street, city: where.city, region: where.region, postcode: pathOf(a, 'postalCode'), country: where.country }) : undefined;
-    return [{ label, ...(detail ? { detail } : {}), ...(typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {}), ...(parts ? { parts } : {}), whole, country: where.country, address: a }];
+    return [{ label, ...(detail ? { detail } : {}), ...(typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {}), ...(parts ? { parts } : {}), country: where.country, address: a }];
   });
 }
 
@@ -210,12 +301,16 @@ const WORLD = '-180,-90,180,90';
 /** The most countries asked for one at a time; with more, Azure is asked once and its answer kept to them. */
 const ONE_AT_A_TIME = 10;
 
+/** The same two lines, said once: the first of them kept. */
+const onceEach = <T extends PlaceFound>(places: T[]) => places.filter((place, i) => places.findIndex((other) => other.label === place.label && other.detail === place.detail) === i);
+
 /**
  * Azure's suggestions: nearest the place the page gives first, or the whole
  * world's by prominence when it gives none; kept to the countries the page
  * names by Azure itself (`countryRegion`), one request for each (a tenth of
  * a Search transaction each; a list of them answers nothing), taken in
- * turn, five in all.
+ * turn, five in all. A row that reads as one before it (a road with no
+ * name, in the district that is listed itself) is left out.
  */
 export async function azureSearch(autocomplete: Ask, { text: typed, near, locale, countries, parts }: SearchRequest): Promise<AzurePlace[]> {
   const codes = knownCountries(countries);
@@ -229,42 +324,58 @@ export async function azureSearch(autocomplete: Ask, { text: typed, near, locale
   const lists = answers.map((answer) => (answer.status === 'fulfilled' ? azurePlaces(answer.value, locale, typed, parts) : []));
   const taken: AzurePlace[] = [];
   for (let i = 0; lists.some((list) => i < list.length); i++) taken.push(...lists.flatMap((list) => list.slice(i, i + 1)));
-  return taken.filter((place) => !codes.length || codes.includes(place.country)).slice(0, 5);
+  return onceEach(taken.filter((place) => !codes.length || codes.includes(place.country))).slice(0, 5);
 }
 
-/** Whether a geocoding hit is where a suggestion is: in its country, and in its district (or its town) by name. */
+/** Whether names given an admin district are one's: the same name, its kind said or not ("Ash Shāriqah", "Sharjah Emirate"; "منطقة الرياض", "الرياض"); a code ("RIY") only with a code. */
+function sameDistrict(ours: string[], theirs: string[]) {
+  const isCode = (name: string) => /^[A-Z]{2,3}$/.test(name);
+  const [ourCodes, theirCodes] = [ours.filter(isCode), theirs.filter(isCode)];
+  if (ourCodes.length && theirCodes.length) return ourCodes.some((code) => theirCodes.includes(code));
+  const [ourNames, theirNames] = [ours.filter((name) => !isCode(name)).map(withoutKind), theirs.filter((name) => !isCode(name)).map(withoutKind)];
+  return !ourNames.length || !theirNames.length || ourNames.some((one) => theirNames.some((other) => sameName(one, other)));
+}
+
+/**
+ * Whether a geocoding hit is where a suggestion is: in its country, in its
+ * admin districts (a district named alike in another city is not: "Al
+ * Nahdah" is in Riyadh, Jeddah and Dammam), and in its own district or town
+ * by name.
+ */
 function isThere(hit: unknown, address: unknown) {
   const a = pathOf(hit, 'properties', 'address');
   if (isoOf(address) && isoOf(a) && isoOf(address) !== isoOf(a)) return false;
-  const district = text(pathOf(address, 'locality')).toLowerCase();
-  return !district || [pathOf(a, 'locality'), pathOf(a, 'neighborhood'), ...text(pathOf(a, 'formattedAddress')).split(/,| - /)].some((name) => text(name).toLowerCase() === district);
+  const theirs = districtsOf(a);
+  if (districtsOf(address).some((names, i) => theirs[i] && !sameDistrict(names, theirs[i]))) return false;
+  const { place } = azureWhere(address);
+  const names = [...text(pathOf(a, 'locality')).split(','), pathOf(a, 'neighborhood'), ...theirs.flat(), ...text(pathOf(a, 'formattedAddress')).split(/,| - /).map((piece) => piece.replace(/\d+/g, ''))];
+  return !place || names.some((name) => sameName(name, place));
 }
 
 /**
  * Where a suggestion of Azure's is (its suggestions carry no place), as its
- * geocoding finds it: the first of its hits in the suggestion's own
- * district that Azure is sure of. Otherwise only near it (`precise:
- * false`): the street there, of a house not found; or the district itself.
- * Its first hit can lie in another district kilometres away ("King Fahd
- * Road - Al Olaya" found at Al Olaya Street, in Al Arid), or be a street for
- * a house, unsure ("Low", "UpHierarchy").
+ * geocoding finds the address as the person reads it, its town and region
+ * in it: the first of its hits there that Azure is sure of. Otherwise only
+ * near it (`precise: false`): the street there, of a house not found; or,
+ * for a street found elsewhere, its district. Its first hit can be a
+ * district named alike in another city ("Al Nahdah", Jeddah's, for
+ * Riyadh's), a street of the name in another district ("King Fahd Road" at
+ * Al Olaya Street, in Al Arid), or a street for a house, unsure ("Low",
+ * "UpHierarchy"). Never a place anywhere else: none is found then.
  */
 export async function azureLocate(geocode: Ask, place: AzurePlace, locale: Locale) {
-  const hits = (answer: unknown) => {
-    const features = pathOf(answer, 'features');
-    return (Array.isArray(features) ? features : []).filter((hit) => Array.isArray(pathOf(hit, 'geometry', 'coordinates')));
+  const hits = async (query: string) => {
+    const features = pathOf(await geocode({ top: 5, query }), 'features');
+    return (Array.isArray(features) ? features : []).filter((hit) => Array.isArray(pathOf(hit, 'geometry', 'coordinates')) && isThere(hit, place.address));
   };
   const address = addressLine([place.label, place.detail], locale);
-  const found = hits(await geocode({ top: 5, query: place.whole || address }));
-  const there = found.filter((hit) => isThere(hit, place.address));
+  // Its pieces as Azure reads them, joined by the comma it reads.
+  const there = await hits(addressLine([place.label, place.detail]));
   const sure = there.find((hit) => !(pathOf(hit, 'properties', 'matchCodes') as string[] | undefined)?.includes('UpHierarchy') && pathOf(hit, 'properties', 'confidence') !== 'Low');
   let hit = sure ?? there[0];
-  if (!hit) {
-    const { locality, city } = azureWhere(place.address);
-    if (locality) [hit] = hits(await geocode({ top: 1, query: addressLine([locality, city, pathOf(place.address, 'countryRegion', 'name')]) }));
-    hit ??= found[0];
-  }
-  if (!hit) throw new Error('Azure Maps found no place');
+  // A street found only elsewhere: its district, the line under it.
+  if (!hit && text(pathOf(place.address, 'addressLine')) && place.detail) [hit] = await hits(addressLine([place.detail]));
+  if (!hit) throw new Error(`Azure Maps found "${address}" nowhere in its own district and town`);
   const [lng, lat] = pathOf(hit, 'geometry', 'coordinates') as number[];
   return { lat, lng, address, ...(sure ? {} : { precise: false as const }) };
 }
@@ -276,6 +387,9 @@ const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{0,3}(\s|
 /** What Google may put before a house's number (": 15 شارع التحرير"). */
 const STRAY = /^[\s:;,،.\-–]+/u;
 
+/** One of Google's `addressComponents`, by its type. */
+const componentOf = (components: unknown, type: string) => (Array.isArray(components) ? components : []).find((c) => (pathOf(c, 'types') as string[] | undefined)?.includes(type));
+
 /**
  * Google's `addressComponents`, each by its type: the country by its short
  * code. Its number where Google's own line (`formatted`) puts it: before the
@@ -284,8 +398,7 @@ const STRAY = /^[\s:;,،.\-–]+/u;
  * none, and their district stands for it ("Qasr El Nil", "Maadi").
  */
 export const googleParts = (components: unknown, formatted?: unknown) => {
-  const list = Array.isArray(components) ? components : [];
-  const of = (type: string, short?: boolean) => text(pathOf(list.find((c) => (pathOf(c, 'types') as string[] | undefined)?.includes(type)), short ? 'shortText' : 'longText'));
+  const of = (type: string, short?: boolean) => text(pathOf(componentOf(components, type), short ? 'shortText' : 'longText'));
   const number = of('street_number').replace(STRAY, '');
   const line = text(formatted);
   const numberAt = number ? line.search(new RegExp(`(^|\\P{N})${number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!\\p{N})`, 'u')) : -1;
@@ -332,7 +445,12 @@ export function googlePlaces(answer: unknown, { locale, addresses, parts }: Sear
           const lat = pathOf(at, 'location', 'latitude');
           const lng = pathOf(at, 'location', 'longitude');
           if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Google gave no place');
-          const pieces = text(pathOf(at, 'formattedAddress')).split(/[,،]/);
+          // Its country set apart where Google writes none before it ("King Fahd Rd, Riyadh Saudi Arabia"), when its parts name it.
+          const country = text(pathOf(componentOf(pathOf(at, 'addressComponents'), 'country'), 'longText'));
+          const pieces = text(pathOf(at, 'formattedAddress'))
+            .split(/[,،]/)
+            .map((piece) => piece.trim())
+            .flatMap((piece) => (country && piece !== country && piece.endsWith(` ${country}`) ? [piece.slice(0, -country.length), country] : [piece]));
           pieces[0] = pieces[0].replace(STRAY, '').replace(PLUS_CODE, '');
           const address = addressLine(named ? [label, ...pieces] : pieces, locale);
           const own = parts ? googleParts(pathOf(at, 'addressComponents'), pathOf(at, 'formattedAddress')) : undefined;

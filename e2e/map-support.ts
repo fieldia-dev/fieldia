@@ -171,10 +171,11 @@ export async function quietMapServers(context: BrowserContext) {
       : r.fulfill({ status: 200, contentType: 'image/png', body: TILE, headers: { 'access-control-allow-origin': '*' } })
   );
   // Azure's address search, for an address field's suggestions: its recorded suggestions (Cairo's), and its place for one picked. As Azure
-  // answers them: an autocomplete with no point or box to look near refused, one kept to another country (or to a list of them) empty.
+  // answers them: an autocomplete with no point or box to look near refused, one kept to another country (or to a list of them) empty; a
+  // street picked found in another district, and its own district found.
   await context.route('https://atlas.microsoft.com/geocode**', (r) => {
     const url = new URL(r.request().url());
-    if (!url.pathname.endsWith('geocode:autocomplete')) return r.fulfill(json(answers.geocode));
+    if (!url.pathname.endsWith('geocode:autocomplete')) return r.fulfill(json(url.searchParams.get('query')?.startsWith('El Sheikh Ali,') ? answers.geocodeDistrict : answers.geocode));
     if (!url.searchParams.has('coordinates') && !url.searchParams.has('bbox')) return r.fulfill({ ...json({ error: { code: 'BadRequest', message: 'Either Bbox or Coordinates is required.' } }), status: 400 });
     const country = url.searchParams.get('countryRegion');
     return r.fulfill(json(country && country.toUpperCase() !== 'EG' ? { type: 'FeatureCollection', features: [] } : answers.autocomplete));

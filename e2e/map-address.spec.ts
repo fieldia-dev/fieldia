@@ -199,7 +199,8 @@ test('on Azure Maps: its suggestions, the one picked located then, its parts fro
   // Azure's terms ask for nothing under its suggestions.
   await expect(field.locator('.fd-address-credit')).toHaveCount(0);
   await box.press('Enter');
-  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.230021, 30.056579] });
+  // Azure finds the street only in another district (El Alaya): the place written is its own district's, El Sheikh Ali.
+  await expect.poll(() => valueOf(page, 'spot')).toEqual({ type: 'Point', coordinates: [31.232658, 30.053436] });
   // Its city where Azure keeps Egypt's, not its district.
   expect(await valueOf(page, 'parts')).toEqual({ street: '26 July Street', city: 'Cairo', region: 'Cairo', country: 'EG' });
   expect(await valueOf(page, 'address')).toBe('26 July Street, El Sheikh Ali, Cairo, Egypt');

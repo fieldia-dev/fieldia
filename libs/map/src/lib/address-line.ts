@@ -13,7 +13,8 @@ import type { Locale } from '@fieldia/core';
  */
 
 const MARKS = /[‎‏؜‪-‮⁦-⁩]/g;
-const words = (piece: string) => piece.toLowerCase().split(/\s+/);
+/** A piece's words as compared: without the tatweel and the vowel marks Arabic may carry ("الشيـخ" is "الشيخ"). */
+const words = (piece: string) => piece.replace(/\p{Mn}|\u0640/gu, '').toLowerCase().split(/\s+/);
 /** Whether `few` are in `many`, one after another, as whole words. */
 const within = (few: string[], many: string[]) => many.some((_, at) => few.every((word, i) => many[at + i] === word));
 
@@ -31,4 +32,21 @@ export function addressLine(pieces: unknown[], locale?: Locale, before: unknown[
     kept.push(text);
   }
   return kept.join(locale === 'ar' ? '، ' : ', ');
+}
+
+/** Letters written right to left: Arabic's and Hebrew's. */
+const RTL = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+
+/**
+ * The direction most of a text's letters are written in, for a box or a
+ * line that shows an address in its own words: "rtl" for one mostly in
+ * Arabic, though it starts with a Latin street ("El Tahrir، الإسماعيلية،
+ * مصر"), "ltr" for one mostly in Latin on an Arabic page ("1 Mohammed
+ * Mahmoud"); "" when there are no letters, or as many each way: the page's.
+ */
+export function directionOf(text: string): 'ltr' | 'rtl' | '' {
+  const letters = text.match(/\p{L}/gu) ?? [];
+  const rtl = letters.filter((letter) => RTL.test(letter)).length;
+  const ltr = letters.length - rtl;
+  return rtl > ltr ? 'rtl' : ltr > rtl ? 'ltr' : '';
 }

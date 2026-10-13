@@ -101,8 +101,8 @@ export async function googleRoute(ask: { fetchWith: Fetch; key: string }, { poin
     }),
   });
   const route = (pathOf(answer, 'routes') as unknown[] | undefined)?.[0];
-  // Its bicycle routes do not cover every country: in Egypt and Dubai it answers with nothing.
-  if (!route && mode === 'bike') throw new Error("Google has no bicycle routes here: its bicycle routing does not cover every country (none in Egypt or Dubai)");
+  // Its bicycle routes do not cover every country: in Egypt, Saudi Arabia, the UAE and Jordan it answers with nothing.
+  if (!route && mode === 'bike') throw new Error('Google has no bicycle routes here: its bicycle routing does not cover every country (none in Egypt, Saudi Arabia, the UAE or Jordan)');
   const encoded = pathOf(route, 'polyline', 'encodedPolyline');
   const line = typeof encoded === 'string' ? decodePolyline(encoded) : [];
   // Its duration is words ("489s"); its zeros are left out, as a spot's way to itself has: no metres, one point.

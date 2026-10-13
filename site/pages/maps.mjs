@@ -104,7 +104,7 @@ handle.form.setValues({ courier_lat: 30.0512, courier_lng: 31.2337 });`
   <thead><tr><th>Provider</th><th>Routes</th></tr></thead>
   <tbody>
     <tr><td>${c('azureMaps')}</td><td>By car and on foot (Route Directions of 2025), with the time in traffic when it gives one.</td></tr>
-    <tr><td>${c('googleMaps')}</td><td>By car (with traffic, which Google bills as Compute Routes Pro) and on foot; by bike where Google has bicycle routes, none in Egypt or Dubai. Through Google's Routes API: enable it for the key. Up to 25 stops; more than 10 are billed as Pro.</td></tr>
+    <tr><td>${c('googleMaps')}</td><td>By car (with traffic, which Google bills as Compute Routes Pro) and on foot; by bike where Google has bicycle routes, none in Egypt, Saudi Arabia, the UAE or Jordan. Through Google's Routes API: enable it for the key. Up to 25 stops; more than 10 are billed as Pro.</td></tr>
     <tr><td>${c('mapbox')}</td><td>By car (with traffic), bike and on foot.</td></tr>
     <tr><td>${c('openStreetMap')}</td><td>OSRM's public demo server, by car alone, for trying things out; or a copy you run (${c('osrmUrl')}).</td></tr>
     <tr><td>${c('tiles')}, or any</td><td>The app's own: ${c('route: ({ points, mode }) => ({ line, metres, seconds })')}.</td></tr>

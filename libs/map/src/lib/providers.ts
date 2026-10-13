@@ -338,12 +338,12 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
     },
     async search(request) {
       const read = await reader();
-      const { text, near, locale, signal } = request;
-      // Its autocomplete reads a word half typed, as geocoding does not; its suggestions carry no place, so a picked one is geocoded then.
+      const { text, locale, signal } = request;
+      // Its autocomplete reads a word half typed, as geocoding does not; its suggestions carry no place, so a picked one is geocoded then, by its own town and region, not by where the map is.
       const found = await read.azureSearch((params) => ask('geocode:autocomplete', { 'api-version': '2026-01-01', top: 5, query: text, ...params }, locale, signal), request);
-      return found.map(({ whole, country, address, ...place }) => ({
+      return found.map(({ country, address, ...place }) => ({
         ...place,
-        locate: () => read.azureLocate((params) => ask('geocode', { 'api-version': '2026-01-01', ...params, coordinates: near ? `${near.lng},${near.lat}` : undefined }, locale), { ...place, whole, country, address }, locale),
+        locate: () => read.azureLocate((params) => ask('geocode', { 'api-version': '2026-01-01', ...params }, locale), { ...place, country, address }, locale),
       }));
     },
     async reverse({ lat, lng, locale, signal }) {
