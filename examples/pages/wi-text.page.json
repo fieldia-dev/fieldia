@@ -391,7 +391,6 @@
                 "style": "line",
                 "collapsible": true,
                 "foldAt": "end",
-                "collapsed": true,
                 "children": [
                   {
                     "type": "field",

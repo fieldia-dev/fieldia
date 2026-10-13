@@ -67,13 +67,15 @@ describe('a group’s heading with tools at its end', () => {
     const effort = node('g-effort');
     const fold = effort.querySelector('[data-tool="fold"]') as HTMLButtonElement;
     const content = effort.querySelector(':scope > .fd-grid') as HTMLElement;
-    expect([fold.getAttribute('aria-label'), fold.getAttribute('aria-expanded'), content.hidden]).toEqual(['Expand Effort (Hours)', 'false', true]);
+    expect([fold.getAttribute('aria-label'), fold.getAttribute('aria-expanded'), content.hidden]).toEqual(['Collapse Effort (Hours)', 'true', false]);
     expect(fold.getAttribute('aria-controls')).toBe(content.id);
+    expect(fold.querySelector('svg')?.getAttribute('data-icon')).toBe('chevron-up');
+    fold.click();
+    expect([fold.getAttribute('aria-label'), fold.getAttribute('aria-expanded'), content.hidden]).toEqual(['Expand Effort (Hours)', 'false', true]);
     expect(fold.querySelector('svg')?.getAttribute('data-icon')).toBe('chevron-down');
     expect(effort.classList.contains('fd-section-folded')).toBe(true);
     fold.click();
-    expect([fold.getAttribute('aria-label'), fold.getAttribute('aria-expanded'), content.hidden]).toEqual(['Collapse Effort (Hours)', 'true', false]);
-    expect(fold.querySelector('svg')?.getAttribute('data-icon')).toBe('chevron-up');
+    expect(content.hidden).toBe(false);
   });
 
   it('shows the group alone over the body with ⤢, and puts it back with ⤢ or Escape', async () => {
@@ -99,7 +101,7 @@ describe('a group’s heading with tools at its end', () => {
   it('says its tools in the page’s language', async () => {
     await show({ locale: 'ar', dir: 'rtl' });
     expect(tools('g-repro')).toEqual(['تكبير خطوات إعادة الإنتاج', 'طي خطوات إعادة الإنتاج', 'تعديل خطوات إعادة الإنتاج']);
-    expect(tools('g-effort')).toEqual(['توسيع الجهد (ساعات)']);
+    expect(tools('g-effort')).toEqual(['طي الجهد (ساعات)']);
   });
 });
 

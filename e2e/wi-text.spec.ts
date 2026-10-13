@@ -334,6 +334,9 @@ test.describe('Add link, as Screenshot 20.23.03', () => {
   test('its menu under the button, its end at the button’s, two 31px rows; Effort (Hours) folded with ⌄', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     const { problems } = await visit(page);
+    // Effort (Hours) folded first, as in the screenshot.
+    await node(page, 'g-effort').hover();
+    await tool(page, 'g-effort', 'Collapse Effort (Hours)').click();
     const add = node(page, 'f-related').getByRole('button', { name: 'Add link' });
     await add.click();
     const menu = page.getByRole('menu', { name: 'Add link' });
