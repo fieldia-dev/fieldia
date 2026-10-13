@@ -120,7 +120,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         }
         return null;
       })
-      .filter((record): record is RelatedRecord => record !== null && (!records || byId.has(String(record.id))));
+      // One the whole tree no longer holds is gone; a tree too big to hold whole may simply not show it.
+      .filter((record): record is RelatedRecord => record !== null && (!records || records.length >= TREE_LIMIT || byId.has(String(record.id))));
   }
   function remember(record: RelatedRecord) {
     if (!store || !relation) return;
