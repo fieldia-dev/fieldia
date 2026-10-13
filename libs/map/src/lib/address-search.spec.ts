@@ -179,11 +179,127 @@ describe('an address with suggestions', () => {
     expect(asked[0]).toMatchObject({ countries: ['EG', 'SA', 'GB'], near: { lat: 21.42, lng: 39.82 } });
   });
 
-  it('shows each suggestion in its own words’ direction: a Latin street on an Arabic page keeps its number before it', async () => {
+  it('shows each suggestion in its own words’ direction, both lines at the page’s side: a Latin street on an Arabic page keeps its number before it', async () => {
     const { box } = await mount({}, {}, [{ label: '1 Mohammed Mahmoud', detail: 'ميدان التحرير، قسم قصر النيل', lat: 30.0436, lng: 31.2371 }], 'ar');
     type(box, '1 moh');
     await pause();
-    expect([...document.querySelectorAll('.fd-map-result-name, .fd-map-result-detail')].map((span) => span.getAttribute('dir'))).toEqual(['auto', 'auto']);
+    const lines = [...document.querySelectorAll<HTMLElement>('.fd-map-result-name, .fd-map-result-detail')];
+    // The lines themselves take the page's direction, so both start at its side; their words, set apart, their own.
+    expect(lines.map((line) => line.getAttribute('dir'))).toEqual([null, null]);
+    expect(lines.map((line) => [line.firstElementChild?.tagName, line.firstElementChild?.getAttribute('dir'), line.textContent])).toEqual([
+      ['BDI', 'ltr', '1 Mohammed Mahmoud'],
+      ['BDI', 'rtl', 'ميدان التحرير، قسم قصر النيل'],
+    ]);
+  });
+
+  it('lists two suggestions that read alike once, from any provider', async () => {
+    const twin: PlaceFound = { ...TAHRIR, lat: 30.05, lng: 31.24 };
+    const { box } = await mount({}, {}, [TAHRIR, twin, ZAMALEK]);
+    type(box, 'tahr');
+    await pause();
+    expect(options()).toEqual(['Tahrir Street 12Downtown, Cairo, Egypt', '26 July StreetZamalek, Cairo, Egypt']);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe('Suggestions: 2');
+  });
+
+  it('reads the box in the direction most of its words are written in: an Arabic address that starts with a Latin street still starts at the right', async () => {
+    const { form, box } = await mount({}, {}, [{ label: '1 Mohammed Mahmoud', lat: 30.0436, lng: 31.2371 }], 'ar');
+    form.setValue('address', 'El Tahrir، الإسماعيلية، القاهرة، مصر');
+    expect(box.dir).toBe('rtl');
+    type(box, '');
+    box.value = '1 Mohammed Mahmoud';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(box.dir).toBe('ltr');
+    // Empty, the page's.
+    form.setValue('address', null);
+    expect(box.hasAttribute('dir')).toBe(false);
+  });
+
+  it('opens no list after the box is left: a search waiting, or on its way, is dropped', async () => {
+    const { box, asked } = await mount();
+    type(box, 'tahr');
+    box.blur();
+    await pause();
+    expect([asked.length, list().hidden]).toEqual([0, true]);
+    // Asked, and left before the answer: the answer opens nothing over the next box.
+    let answer: (found: PlaceFound[]) => void = () => undefined;
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => (answer = done)));
+    const late = await mount({}, { search, searchAsYouType: true });
+    type(late.box, 'tahr');
+    await pause();
+    expect(later).toHaveLength(1);
+    late.box.blur();
+    answer([TAHRIR]);
+    await pause(0);
+    expect([list().hidden, late.box.getAttribute('aria-expanded')]).toEqual([true, 'false']);
+  });
+
+  it('asks nothing more once a place is picked in a pause in typing, and opens no list for a late answer', async () => {
+    const answers: ((found: PlaceFound[]) => void)[] = [];
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
+    const { box, values } = await mount({}, { search, searchAsYouType: true });
+    type(box, 'tahr');
+    await pause();
+    answers[0]([TAHRIR, ZAMALEK]);
+    await pause(0);
+    expect(list().hidden).toBe(false);
+    // A letter more, and Enter at once: the list shown is picked from, and the letter's search never goes.
+    type(box, 'i');
+    press(box, 'Enter');
+    await pause();
+    expect(later).toHaveLength(1);
+    expect([values()['address'], list().hidden]).toEqual(['Tahrir Street 12, Downtown, Cairo, Egypt', true]);
+  });
+
+  it('opens no list for an answer that comes after a place is picked from the list before it', async () => {
+    const answers: ((found: PlaceFound[]) => void)[] = [];
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
+    const { box, values } = await mount({}, { search, searchAsYouType: true });
+    type(box, 'tahr');
+    await pause();
+    answers[0]([TAHRIR, ZAMALEK]);
+    await pause(0);
+    // A letter more: its search goes, slowly, as on a phone; the list shown is picked from meanwhile.
+    type(box, 'i');
+    await pause();
+    expect([later.length, list().hidden]).toEqual([2, false]);
+    press(box, 'ArrowDown');
+    press(box, 'Enter');
+    answers[1]([ZAMALEK]);
+    await pause(0);
+    expect([values()['address'], list().hidden, box.getAttribute('aria-expanded')]).toEqual(['Tahrir Street 12, Downtown, Cairo, Egypt', true, 'false']);
+  });
+
+  it('asks for the same words once: a space typed, or Enter after Escape, shows what came', async () => {
+    const { box, asked } = await mount();
+    type(box, '26');
+    await pause();
+    type(box, ' ');
+    await pause();
+    expect(asked.map((request) => request.text)).toEqual(['26']);
+    press(box, 'Escape');
+    expect(list().hidden).toBe(true);
+    press(box, 'Enter');
+    expect([asked.length, list().hidden]).toEqual([1, false]);
+    // Other words are asked for.
+    type(box, 'j');
+    await pause();
+    expect(asked.map((request) => request.text)).toEqual(['26', '26 j']);
+  });
+
+  it('writes a picked suggestion’s parts though it is not found on the map, and leaves the place as it was', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const locate = jest.fn(async () => Promise.reject(new Error('Azure Maps found "El Tahrir, Tema, Suhaj, Egypt" nowhere in its own district and town')));
+    const { form, box, values } = await mount({ placeField: 'spot', partsField: 'parts' }, {}, [{ label: 'El Tahrir', detail: 'Tema, Suhaj, Egypt', locate, parts: { city: 'Tema', region: 'Suhaj', country: 'EG' } }]);
+    form.setValue('spot', { type: 'Point', coordinates: [31.42, 26.87] });
+    type(box, 'el tah');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    expect(values()).toMatchObject({ address: 'El Tahrir, Tema, Suhaj, Egypt', spot: { type: 'Point', coordinates: [31.42, 26.87] }, parts: { city: 'Tema', region: 'Suhaj', country: 'EG' } });
+    warn.mockRestore();
   });
 
   it('says a suggestion is picked though nothing is looked up for it: a provider’s session ends there', async () => {

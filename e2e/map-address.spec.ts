@@ -137,6 +137,45 @@ test('in Arabic, right to left: the list under the box from its right edge, its 
   await screen(page, 'map-address-arabic-picked');
 });
 
+test('in Arabic, a suggestion named in Latin: both its lines at the right, its number before its street, and the address picked read from the right', async ({ page }) => {
+  // Google and Azure answer an Arabic page in Latin where the person types Latin, its place's line in Arabic.
+  const latin: PhotonPlace = { lat: 30.0436, lon: 31.2371, type: 'street', name: '1 Mohammed Mahmoud', district: 'ميدان التحرير', city: 'القاهرة', state: 'محافظة القاهرة', country: 'مصر', countrycode: 'EG' };
+  const { box, options } = await openAddress(page, `${QUERY}&locale=ar&dir=rtl`, [latin]);
+  await box.pressSequentially('1 moh', { delay: 60 });
+  await expect(options).toHaveCount(1);
+  const [row, name, detail] = await Promise.all([options.nth(0), options.nth(0).locator('.fd-map-result-name bdi'), options.nth(0).locator('.fd-map-result-detail bdi')].map((target) => target.boundingBox()));
+  // Both lines end at the row's right edge, as the page reads.
+  expect(Math.abs(name!.x + name!.width - (detail!.x + detail!.width))).toBeLessThanOrEqual(1);
+  expect(row!.x + row!.width - (name!.x + name!.width)).toBeLessThanOrEqual(12);
+  // "1" left of "Mohammed": the Latin words in their own order.
+  const [one, street] = await options.nth(0).locator('.fd-map-result-name bdi').evaluate((el) => {
+    const text = el.firstChild!;
+    const at = (from: number) => {
+      const range = document.createRange();
+      range.setStart(text, from);
+      range.setEnd(text, from + 1);
+      return range.getBoundingClientRect().x;
+    };
+    return [at(0), at(2)];
+  });
+  expect(one).toBeLessThan(street);
+  await screen(page, 'map-address-arabic-latin', { viewport: true });
+  await box.press('Enter');
+  await expect(box).toHaveValue('1 Mohammed Mahmoud، ميدان التحرير، القاهرة، مصر');
+  // Mostly Arabic: read from the right, the street first.
+  expect(await box.evaluate((el) => [el.getAttribute('dir'), getComputedStyle(el).direction])).toEqual(['rtl', 'rtl']);
+  await screen(page, 'map-address-arabic-latin-picked', { viewport: true });
+});
+
+test('left at once, by Tab: the search that was to go opens no list over the next box', async ({ page }) => {
+  const { field, box, asked } = await openAddress(page);
+  await box.pressSequentially('tahr', { delay: 30 });
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(600);
+  await expect(field.getByRole('listbox')).toBeHidden();
+  expect(asked.filter((url) => url.includes('photon.komoot.io/api'))).toEqual([]);
+});
+
 for (const skin of ['outlined', 'underline']) {
   test(`in the ${skin} skin the box is drawn as the page's other text boxes are, the list under it`, async ({ page }) => {
     const { box, options } = await openAddress(page, `page=map-address&skin=${skin}`);

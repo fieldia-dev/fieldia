@@ -18,14 +18,9 @@ import { installMapStyles } from './styles';
  * suggestion picked writes.
  */
 
-/**
- * The list as the place search draws it, in a box of its own with the credit under it; hidden with the list. The address
- * in its own words' direction: one that starts in Latin on an Arabic page ("1 Mohammed Mahmoud، ميدان التحرير") keeps its
- * number first, and an empty box stays the page's way round.
- */
+/** The list as the place search draws it, in a box of its own with the credit under it; hidden with the list. */
 const ADDRESS_CSS = `
 .fd-address-search { position: relative; min-width: 0; }
-.fd-address-search input { unicode-bidi: plaintext; }
 .fd-address-popup {
   position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 1100; overflow: hidden;
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
@@ -108,11 +103,14 @@ export function suggest({ settings, context, search, element, input, searchBox, 
       let parts = place.parts;
       if (!at && place.locate && (placeField || (partsField && !parts))) {
         const located = await place.locate().catch((error: Error) => (warnOnce(`Finding the address picked failed: ${error.message}`), null));
-        if (mine !== picking || !located) return;
-        at = located;
-        parts = located.parts ?? parts;
-        // The provider's own way of writing it, unless a person has typed since.
-        if (located.address && input.value === whole) write(addressLine([located.address], locale));
+        if (mine !== picking) return;
+        // Not found where it is: no place written (a pin set by hand stays), its parts still are.
+        if (located) {
+          at = located;
+          parts = located.parts ?? parts;
+          // The provider's own way of writing it, unless a person has typed since.
+          if (located.address && input.value === whole) write(addressLine([located.address], locale));
+        }
       }
       if (at && placeField) {
         if (form.page.fields[placeField]?.type !== 'float') form.setValue(placeField, asJson(writePoint(at)));

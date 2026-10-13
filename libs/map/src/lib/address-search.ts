@@ -1,5 +1,5 @@
 import { createWidget, type WidgetFactory } from '@fieldia/widgets';
-import { addressLine } from './address-line';
+import { addressLine, directionOf } from './address-line';
 import { searchBox } from './search-box';
 import type { MapSettings } from './settings';
 
@@ -20,7 +20,9 @@ import type { MapSettings } from './settings';
  *
  * The box is the app's own text box, there at once; the suggestions come
  * with their code, loaded the first time an address field is shown. With no
- * address search to ask, the text box is all there is.
+ * address search to ask, the text box is all there is. Its words read in
+ * the direction most of them are written in: an address mostly in Arabic
+ * that starts with a Latin street still starts at an Arabic page's right.
  */
 export function addressSearchWidget(settings: MapSettings): WidgetFactory {
   return (context) => {
@@ -31,6 +33,12 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
     const element = context.document.createElement('div');
     element.className = 'fd-address-search';
     element.append(plain.element);
+    const align = () => {
+      const dir = directionOf(input.value);
+      if (dir) input.dir = dir;
+      else input.removeAttribute('dir');
+    };
+    input.addEventListener('input', align);
     let stop: (() => void) | null | undefined;
     // The place search's own combobox and line are handed over, as the page has them already: the suggestions' chunk carries neither.
     import('./address-suggest').then(({ suggest }) => {
@@ -39,6 +47,10 @@ export function addressSearchWidget(settings: MapSettings): WidgetFactory {
     return {
       ...plain,
       element,
+      update(state) {
+        plain.update(state);
+        align();
+      },
       destroy() {
         stop?.();
         stop = null;

@@ -1,4 +1,5 @@
 import type { Locale } from '@fieldia/core';
+import { directionOf } from './address-line';
 import type { LatLng } from './geo';
 import type { MapLabels } from './labels';
 import { warnOnce } from './map-core';
@@ -9,7 +10,11 @@ import type { AddressSearch, PlaceFound } from './providers';
  * under it. As people type, when the provider's terms allow it; otherwise
  * when Enter is pressed. The arrow keys move through the places, Enter picks
  * one, Escape closes the list and then empties the box (unless what is typed
- * is an answer itself: `freeText`). Read-only, it searches nothing.
+ * is an answer itself: `freeText`). Read-only, it searches nothing. A search
+ * still waiting when a place is picked or the box is left is dropped, so its
+ * list never opens after them; the same words, near the same place, are not
+ * asked for twice (a space typed, Enter after Escape), as each request may be
+ * paid for.
  */
 
 export interface SearchBoxOptions {
@@ -63,6 +68,17 @@ export function searchBox(options: SearchBoxOptions) {
   let active = -1;
   let asking: AbortController | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** What was last asked for, and whether its places came: the same again shows them, or waits for them. */
+  let asked = '';
+  let answered = false;
+
+  /** The search waiting to go, or gone and not yet answered, dropped. */
+  function drop() {
+    clearTimeout(timer);
+    if (asking && !answered) asked = '';
+    asking?.abort();
+    asking = null;
+  }
 
   function close() {
     list.hidden = true;
@@ -82,6 +98,8 @@ export function searchBox(options: SearchBoxOptions) {
   }
 
   function choose(place: PlaceFound) {
+    // A pause in typing ends here: nothing more is asked for these words, and no answer opens the list again.
+    drop();
     input.value = place.label;
     close();
     options.say(null);
@@ -90,33 +108,33 @@ export function searchBox(options: SearchBoxOptions) {
   }
 
   function show(found: PlaceFound[]) {
-    places = found;
+    // Two rows that read alike are one to the person reading them: the first is kept.
+    places = found.filter((place, i) => found.findIndex((other) => other.label === place.label && other.detail === place.detail) === i);
     list.replaceChildren(
-      ...found.map((place, i) => {
+      ...places.map((place, i) => {
         const option = doc.createElement('li');
         option.id = `${listId}-${i}`;
         option.setAttribute('role', 'option');
         option.setAttribute('aria-selected', 'false');
-        // The place on one line, where it is on the next, as a map's own search shows them; each in its own words' direction ("1 Mohammed Mahmoud" on an Arabic page).
-        const name = doc.createElement('span');
-        name.className = 'fd-map-result-name';
-        name.dir = 'auto';
-        name.textContent = place.label;
-        option.append(name);
-        if (place.detail) {
-          const detail = doc.createElement('span');
-          detail.className = 'fd-map-result-detail';
-          detail.dir = 'auto';
-          detail.textContent = place.detail;
-          option.append(detail);
-        }
+        // The place on one line, where it is on the next, as a map's own search shows them: both at the page's side, each in its own words' direction ("1 Mohammed Mahmoud" on an Arabic page).
+        const line = (className: string, words: string) => {
+          const span = doc.createElement('span');
+          span.className = className;
+          const own = doc.createElement('bdi');
+          own.dir = directionOf(words) || 'auto';
+          own.textContent = words;
+          span.append(own);
+          return span;
+        };
+        option.append(line('fd-map-result-name', place.label));
+        if (place.detail) option.append(line('fd-map-result-detail', place.detail));
         // Picked on the press, the box keeping its focus.
         option.addEventListener('mousedown', (event) => event.preventDefault());
         option.addEventListener('click', () => choose(place));
         return option;
       })
     );
-    const any = found.length > 0;
+    const any = places.length > 0;
     list.hidden = !any;
     input.setAttribute('aria-expanded', String(any));
     active = -1;
@@ -126,19 +144,36 @@ export function searchBox(options: SearchBoxOptions) {
   function run() {
     clearTimeout(timer);
     const text = input.value.trim();
-    asking?.abort();
     if (text.length < (options.asYouType ? 2 : 1)) {
+      drop();
+      asked = '';
       close();
       options.say(null);
       return;
     }
+    const near = options.near();
+    const zoom = options.zoom?.();
+    const these = JSON.stringify([text, near, zoom]);
+    if (these === asked) {
+      // Its places are on their way, or here already: shown again if the list was closed.
+      if (answered && list.hidden) show(places);
+      return;
+    }
+    asking?.abort();
     const mine = (asking = new AbortController());
+    asked = these;
+    answered = false;
     options.say(labels.searching);
     options
-      .search({ text, near: options.near(), zoom: options.zoom?.(), locale: options.locale, signal: mine.signal })
-      .then((found) => mine === asking && show(found))
+      .search({ text, near, zoom, locale: options.locale, signal: mine.signal })
+      .then((found) => {
+        if (mine !== asking) return;
+        answered = true;
+        show(found);
+      })
       .catch((error: Error) => {
         if (mine !== asking || error.name === 'AbortError') return;
+        asked = '';
         close();
         options.say(labels.searchFailed, 'error');
         // The reader is told to try again; the developer, why it failed.
@@ -178,15 +213,16 @@ export function searchBox(options: SearchBoxOptions) {
       }
     }
   });
-  input.addEventListener('blur', () => close());
+  // Left: nothing waiting goes on to open the list over the next box.
+  input.addEventListener('blur', () => {
+    drop();
+    close();
+  });
 
   return {
     element,
     input,
     list,
-    destroy() {
-      clearTimeout(timer);
-      asking?.abort();
-    },
+    destroy: drop,
   };
 }

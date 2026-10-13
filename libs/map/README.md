@@ -252,7 +252,7 @@ pin, or the bubble, that holds the place they were on.
 | Provider | Road | Dark | Satellite | Traffic | Address search | Routes | Reachable area |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `azureMaps({ key })` or `({ token, clientId })` | yes | yes | yes | yes, from zoom 6, in dark colours on the dark map, drawn again every four minutes | yes, as people type | car, foot | car |
-| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car (with traffic), foot; bike where Google has bicycle routes, none in Egypt or Dubai (Routes API) | no: Google's Isochrones API is in preview, and Fieldia does not use it yet |
+| `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | yes, its traffic layer | Places API, as people type | car (with traffic), foot; bike where Google has bicycle routes, none in Egypt, Saudi Arabia, the UAE or Jordan (Routes API) | no: Google's Isochrones API is in preview, and Fieldia does not use it yet |
 | `mapbox({ token, trafficStyle })` | yes | yes | yes | from `trafficStyle`, a style of yours with Mapbox Traffic's lines alone | yes, as people type | car (traffic), bike, foot | car, bike, foot |
 | `tiles({ url, credit, trafficUrl, route, reach })` | the app's own map images | | | the app's own (`trafficUrl`) | the app's own | the app's own | the app's own |
 | `openStreetMap()` | yes, **for demos only** | no | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) | OSRM's demo server, car only (or `osrmUrl`) | no |
@@ -281,9 +281,13 @@ Photon's answers are kept to them. Nearest `near` first (or where the app's
 maps open), so give a point in the page's own country: Azure ranks another
 country's suggestions by their distance from it. Addresses come before shops
 and malls where Google says which are which. A suggestion of Azure's is
-located when picked: in its own district, or said to be only near it
-(`precise: false`) when Azure finds the street but not the house, or the
-district alone.
+located when picked, asked for by its own district, town and region, and
+only there: a district named alike in another town is never taken for it.
+It is said to be only near (`precise: false`) when Azure finds the street but
+not the house, or the district alone; found nowhere in its town, no place is
+written, and its parts still are. A search still waiting when a suggestion
+is picked or the box is left is dropped, and the same words are not asked
+for twice.
 
 Google's costs, as its pricing pages put them (October 2026): a session of
 suggestions ended by a pick bills its first 12 requests (Autocomplete
