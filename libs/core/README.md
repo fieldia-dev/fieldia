@@ -45,6 +45,42 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+## Two people, one record
+
+A source that keeps versions returns each record with its version, and what this
+person may do with it, through `loadedRecord`. The form sends the version back
+with each save; a source that finds the record changed since throws a
+`ConflictError` naming who changed it and when:
+
+```ts
+import { ConflictError, loadedRecord } from '@fieldia/core';
+
+async load({ model, id }) {
+  const row = await api.read(model, id);
+  return loadedRecord(row.values, {
+    version: { token: row.etag, by: row.changedBy, at: row.changedAt },
+    can: { edit: row.isMine, delete: false, readonlyFields: ['commission'], reason: 'Only Mona can change it.' },
+  });
+},
+async save({ model, id, changes, version }) {
+  const response = await api.write(model, id, changes.values, { ifMatch: version?.token });
+  if (response.status === 409) throw new ConflictError({ version: response.body.version, theirs: response.body.values });
+  return { id, version: response.body.version };
+},
+```
+
+The form keeps it in its state — `version`, `can`, and after a refused save
+`conflict` (who, when, the fields they changed and those both changed) — and
+offers the two ways on: `form.reloadTheirs()` loads the record as they left it
+and sets this person's changes aside in `setAside`, each put back with
+`form.putBack(field)`; `form.keepMine()` saves them over the record as it is
+now, their values kept wherever this person changed nothing. What `can` does
+not allow is kept to before any source is asked: fields locked or hidden (and
+left out of what a save sends), a save refused with the source's `reason`, the
+gear menu's Archive, Duplicate and Delete and the buttons whose steps would do
+them hidden. `createMemoryDataSource({ versions: { by: 'Sara' }, can })` does
+it all in memory, and `changeElsewhere` changes a record as someone else would.
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its
