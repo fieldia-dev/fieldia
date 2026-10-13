@@ -1,0 +1,78 @@
+{
+  "fieldia": "0.1",
+  "id": "lead",
+  "title": "Lead",
+  "description": "A buyer's lead at an estate agency, open in two tabs at once: whoever saves second is told who changed it first, and chooses.",
+  "data": { "kind": "record", "model": "lead" },
+  "fields": {
+    "name": { "type": "char", "label": "Lead", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "email": { "type": "char", "label": "Email" },
+    "stage": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        { "value": "new", "label": "New" },
+        { "value": "visit", "label": "Visit" },
+        { "value": "offer", "label": "Offer" },
+        { "value": "won", "label": "Won" }
+      ],
+      "default": "new"
+    },
+    "agent": { "type": "char", "label": "Agent" },
+    "budget": { "type": "monetary", "label": "Budget", "currency": "EGP", "digits": [12, 0] },
+    "commission": { "type": "float", "label": "Commission, %", "digits": [4, 1] },
+    "notes": { "type": "text", "label": "Notes" },
+    "active": { "type": "boolean", "label": "Active", "default": true }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "Who is buying, and what" },
+    "statusbar": { "field": "stage", "clickable": true },
+    "toolbar": {
+      "menu": [
+        { "id": "m-brochure", "label": "Brochure", "group": "print", "action": "print_brochure" },
+        { "id": "m-archive", "builtin": "archive" },
+        { "id": "m-unarchive", "builtin": "unarchive" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete" }
+      ]
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
+          { "type": "field", "id": "f-agent", "field": "agent" },
+          { "type": "field", "id": "f-budget", "field": "budget" },
+          { "type": "field", "id": "f-commission", "field": "commission" },
+          { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Lead": "العميل المحتمل",
+      "A buyer's lead at an estate agency, open in two tabs at once: whoever saves second is told who changed it first, and chooses.": "عميل محتمل لدى وكالة عقارية، مفتوح في تبويبين معًا: من يحفظ ثانيًا يُخبَر بمن غيّره أولًا، ويختار.",
+      "Phone": "الهاتف",
+      "Email": "البريد الإلكتروني",
+      "Stage": "المرحلة",
+      "New": "جديد",
+      "Visit": "معاينة",
+      "Offer": "عرض",
+      "Won": "تم البيع",
+      "Agent": "الوكيل",
+      "Budget": "الميزانية",
+      "Commission, %": "العمولة، ٪",
+      "Notes": "ملاحظات",
+      "Active": "نشط",
+      "Who is buying, and what": "من يشتري، وماذا",
+      "Brochure": "الكتيّب"
+    }
+  }
+}

@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { backlogSnippets, listMapSnippets, snippets } from './snippets.mjs';
+import { backlogSnippets, listMapSnippets, saveSafetySnippets, snippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -189,7 +189,15 @@ function drawCode() {
   const ownPage = demo?.code === 'list-map';
   // A tracker's backlog of its own: the list's page, the bug's page, and the app's script.
   const backlog = demo?.code === 'backlog';
-  const tabs = backlog
+  // One record in two tabs: the page, the demo's own script, and a data source of your own that tells versions and rights.
+  const safety = demo?.code === 'save-safety';
+  const tabs = safety
+    ? [
+        ['json', 'Page JSON', 'The lead both tabs show: plain JSON, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'The demo’s own script: one data source with versions and rights, the lead in two tabs.'],
+        ['server', 'Your server', 'A data source of your own: the version and the rights from your server, a conflict thrown back.'],
+      ]
+    : backlog
     ? [
         ['json', 'Backlog JSON', 'The list the backlog shows: plain JSON, the same the browser tests drive.'],
         ['bug', 'Bug JSON', 'The bug the popup shows: its head, its three columns of groups, its tabs.'],
@@ -229,8 +237,8 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
-    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
+    const written = safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', server: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

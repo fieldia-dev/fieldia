@@ -344,3 +344,107 @@ const asked = new URLSearchParams(location.search).get('workitem');
 if (asked) openBug(Number(asked));`;
   return { json: JSON.stringify(listPage ?? {}, null, 2), bug: JSON.stringify(bugPage ?? {}, null, 2), js };
 }
+
+/**
+ * One record in two tabs (the two-tabs and viewer-role demos): the lead's page JSON, the demo's own script as it runs —
+ * one memory data source that keeps versions and says what each person may do, the lead mounted in two tabs, the
+ * second saving in Mona's name — and a data source of your own that does the same against your server.
+ */
+export function saveSafetySnippets(page, params) {
+  const name = page?.id ?? 'lead';
+  const viewer = params?.get('role') === 'viewer';
+  const js = `import { ConflictError, createMemoryDataSource, loadedRecordOf } from '@fieldia/core';
+import { mountViewer } from '@fieldia/viewer';
+import page from './${name}.page.json';
+
+// One data source for both tabs. Each save moves the lead's version on, and a save
+// from a page that opened an older one is refused as a conflict: "Mona changed this
+// record at 10:42", with Reload and Keep mine.
+const dataSource = createMemoryDataSource({
+  records: { lead: { 1: { name: 'Villa in Sheikh Zayed', phone: '+20 100 123 4567', stage: 'new', budget: 4000000, commission: 2.5 } } },
+  versions: { by: 'Sara' },
+  // What this person may do with each lead: kept to by the form, and by the source.
+  can: {
+    lead: () => ${
+      viewer
+        ? `({
+      edit: false, archive: false, duplicate: false, delete: false, // Omar only reads it
+      hiddenFields: ['commission'],
+      reason: 'Omar is a viewer: he can read leads, but not change them.',
+    })`
+        : `({
+      delete: false, // an agent never deletes a lead
+      readonlyFields: ['commission'], // nor sets the commission
+      reason: 'Only a manager sets the commission or deletes a lead.',
+    })`
+    },
+  },
+});
+${
+  viewer
+    ? `
+// Omar's tab: no Save, no Archive, Duplicate or Delete, the commission not shown,
+// and the reason over the record.
+mountViewer(document.getElementById('omar'), { page, dataSource, recordId: 1 });`
+    : `
+// Your tab, Sara's.
+mountViewer(document.getElementById('you'), { page, dataSource, recordId: 1 });
+
+// Mona's tab, on the same records: her saves go in her name, refused as a
+// conflict when someone saved after she opened the lead, as a server refuses.
+const asMona = {
+  ...dataSource,
+  async save(request) {
+    const { version: now } = loadedRecordOf(await dataSource.load(request));
+    if (request.version && request.version.token !== now.token) {
+      throw new ConflictError({ version: now, theirs: { ...dataSource.records.lead[request.id] } });
+    }
+    const version = dataSource.changeElsewhere('lead', request.id, request.changes.values, { by: 'Mona' });
+    return { id: request.id, values: { ...dataSource.records.lead[request.id] }, version };
+  },
+};
+const mona = mountViewer(document.getElementById('mona'), { page, dataSource: asMona, recordId: 1 });
+
+// "Someone else edits this": Mona moves the lead on and raises its budget, and saves.
+async function someoneElseEdits() {
+  await mona.reload();
+  const { budget } = mona.form.getState().values;
+  mona.setValues({ stage: 'visit', budget: budget + 500000 });
+  await mona.save();
+}`
+}`;
+  const server = `import { ConflictError, loadedRecord, saveRefused } from '@fieldia/core';
+import { mountViewer } from '@fieldia/viewer';
+import page from './${name}.page.json';
+
+// Your own data source, talking to your server. Its load tells the record's
+// version and what this person may do with it; its save sends the version back,
+// and your server refuses a save over someone else's (HTTP 409 here).
+const dataSource = {
+  async load({ model, id }) {
+    const row = await (await fetch(\`/api/\${model}/\${id}\`)).json();
+    return loadedRecord(row.values, {
+      version: { token: row.etag, by: row.changedBy, at: row.changedAt },
+      can: { edit: row.canEdit, delete: row.canDelete, readonlyFields: row.lockedFields, hiddenFields: row.hiddenFields, reason: row.why },
+    });
+  },
+  async save({ model, id, changes, version }) {
+    const response = await fetch(\`/api/\${model}/\${id ?? ''}\`, {
+      method: id === null ? 'POST' : 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(version ? { 'If-Match': version.token } : {}) },
+      body: JSON.stringify(changes.values),
+    });
+    const row = await response.json();
+    // Someone saved in between: who, when, and the record as they left it.
+    if (response.status === 409) throw new ConflictError({ version: { token: row.etag, by: row.changedBy, at: row.changedAt }, theirs: row.values });
+    // Not this person's to change: the form shows why.
+    if (response.status === 403) throw saveRefused({ kind: 'rule', message: row.why });
+    return { id: row.id, values: row.values, version: { token: row.etag, by: row.changedBy, at: row.changedAt } };
+  },
+};
+
+// The form does the rest: who changed it and when, Reload and Keep mine; no Save,
+// Archive, Duplicate or Delete where the person may not, and why, in words.
+mountViewer(document.getElementById('lead'), { page, dataSource, recordId: 1 });`;
+  return { json: JSON.stringify(page ?? {}, null, 2), js, server };
+}
