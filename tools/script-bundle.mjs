@@ -214,7 +214,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // unsaid, "/month" on a rent) in every list, field and card, a map card's lines, units and link checked on a
 // page and translated with it — 2.7 more, to 460.0.
 // Together in 0.19, the address's checks, the quiet look and the money look: 473.3.
-const BUDGET_KB = 473.3;
+// A list drawn as a work tracker's backlog: its cells (a state's dot in its colour, a kind's icon before the title, a
+// width in characters with "…" past it, the side its words keep to) and their page checks, no box to choose a row, the
+// filter bar (a keyword, each field's values to tick from its choices or its records, the gear that chooses the
+// fields, × that clears them, with their keys), rows nested under their parent with Expand all and Collapse all,
+// the list asking again when a row's dialog closes, Fluent's list look, empty quiet fields that say nothing, and the
+// work item's icons (3 of it, shared with the record head, the pickers, the text and the history), a dialog's focus past
+// a hidden box and a quiet field's Escape after its record came — 21.5 more, to 494.8.
+const BUDGET_KB = 494.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -246,7 +253,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the quiet look, a third skin: its stylesheet, the empty field’s words, Escape, the lock and why, 2.4 more, to 141.5.
 // an amount's money look, and a map card's lines, units and link checked and translated, 0.7 more, to 139.8.
 // together in 0.19 (an address's checks, the quiet look, the money look), to 142.7.
-const GZIP_BUDGET_KB = 142.7;
+// a list drawn as a backlog (cells, the filter bar, rows under their parent, Fluent's list look) and the work item's icons, 6.6 more, to 149.3.
+const GZIP_BUDGET_KB = 149.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -272,7 +280,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // What an amount is for — /day, /night, /week, /month, /year — five words in each: Arabic's to 23.1, German's
 // to 9.9 (4.2 gzipped) and French's to 10.0.
 // Both together in 0.19: Arabic's to 23.3 and 4.9, German's 10.0 and 4.2, French's 10.1 and 4.1.
-const ADD_ON_BUDGET_KB = { ar: [23.3, 4.9], de: [10.0, 4.2], fr: [10.1, 4.1] };
+// A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
+// Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
+const ADD_ON_BUDGET_KB = { ar: [23.7, 4.9], de: [10.2, 4.3], fr: [10.3, 4.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

@@ -103,6 +103,18 @@ export interface ViewerLabels {
   none: string;
   loadMore: string;
   /**
+   * A list's filter bar (`search: "fields"`): its keyword box, the button that
+   * clears every filter, each field's list of values (`{label}`, the field's),
+   * and the gear that chooses which fields it offers. A list of nested rows:
+   * the header's buttons that open and close every parent.
+   */
+  filterByKeyword: string;
+  clearFilters: string;
+  expandAll: string;
+  collapseAll: string;
+  filterNamed: string;
+  filterSettings: string;
+  /**
    * A saved form placed in another, in its place when it cannot be shown
    * (`{page}`, its title or id): not found, placed inside itself (`{chain}`,
    * the forms round it), laid out as no form can hold, or with problems of its
@@ -217,6 +229,12 @@ const en: ViewerLabels = {
   no: 'No',
   none: 'None',
   loadMore: 'Show {n} more',
+  filterByKeyword: 'Filter by keyword',
+  clearFilters: 'Clear filters',
+  expandAll: 'Expand all',
+  collapseAll: 'Collapse all',
+  filterNamed: 'Filter by {label}',
+  filterSettings: 'Filter settings',
   formMissing: 'The saved form “{page}” cannot be found.',
   formInItself: 'The saved form “{page}” is not shown here: it would be placed inside itself ({chain}).',
   formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',

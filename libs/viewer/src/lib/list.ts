@@ -14,11 +14,13 @@ import {
   type ResolvedFilter,
   type RunResult,
   type SortOrder,
+  type Tone,
   type Value,
 } from '@fieldia/core';
-import { displayValue, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
+import { filterBar } from './filter-bar';
 import type { ViewerLabels } from './labels';
 import { groupRow, type GroupContext, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
@@ -41,7 +43,8 @@ export interface ListContext {
   icons?: IconSet;
   /** Where the list's favourite searches are kept. */
   preferences: PreferenceStore;
-  onOpenRecord?: (id: RecordId) => void;
+  /** A row opened. A promise answered (the record in a dialog, closed): the list asks again once it settles, and its row takes the focus back. */
+  onOpenRecord?: (id: RecordId) => void | Promise<unknown>;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
   /** Other ways of showing the records, by name: `map` for a list with `map`. */
@@ -107,6 +110,12 @@ export interface ListView {
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
 /** Fields no list can put in order. */
 const UNSORTABLE = new Set(['one2many', 'many2many', 'binary', 'image', 'html', 'json', 'properties']);
+const TONES = new Set<string>(['info', 'success', 'warning', 'danger', 'muted']);
+const COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+/** A link's id, or a value as it is: what a row's parent and a lead's look are found by. */
+const plain = (value: Value | undefined): unknown => (value !== null && typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as { id: unknown }).id : value);
+const isPromise = (value: unknown): value is Promise<unknown> => !!value && typeof (value as Promise<unknown>).then === 'function';
 
 /**
  * Records as a table: one page at a time, in the order a header asks for, each
@@ -134,19 +143,42 @@ export function listView(context: ListContext): ListView {
   let asking = 0;
   let destroyed = false;
 
-  // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent).
-  const fields = [...new Set(node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]))];
+  /** A box to choose each row, unless the list says none; rows under their parent, when it names the field. */
+  const choose = node.choose !== false;
+  /** A filter bar of fields over the list (search "fields"): the pager goes under the table. */
+  const fieldsSearch = node.search === 'fields';
+  const parentField = node.parentField && page.fields[node.parentField] ? node.parentField : null;
+  const cellOf = (name: string) => node.cells?.[name];
+  const leads = Object.values(node.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : []));
+  // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent);
+  // the fields the cells' icons come from, and each row's parent.
+  const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : [])])];
   const show = (name: string, values: Record<string, Value>) => displayValue(page.fields[name] as LineField, values[name], values, locale);
+  /** Its words keep to the end: a number's, unless its cell says otherwise. */
+  const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
+  /** A column of a given width, its words cut with "…" past it. */
+  const sized = (cell: HTMLTableCellElement, name: string) => {
+    const width = cellOf(name)?.width;
+    if (!width) return cell;
+    cell.setAttribute('data-width', String(width));
+    cell.style.setProperty('--fd-col-width', String(width));
+    return cell;
+  };
+  /** The columns before the fields': the box to choose a row, and the parents' toggles. */
+  const leading = (choose ? 1 : 0) + (parentField ? 1 : 0);
 
   // ---- the table ---------------------------------------------------------------
 
   const chooseAll = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': labels.selectAll });
   const headers = node.columns.map((name) => {
     const def = page.fields[name];
-    const th = el('th', { scope: 'col', 'data-field': name, class: NUMBERS.has(def.type) ? 'fd-num' : undefined });
-    if (UNSORTABLE.has(def.type)) th.append(def.label);
+    const th = sized(el('th', { scope: 'col', 'data-field': name, class: atEnd(name) ? 'fd-num' : undefined }), name);
+    // Words cut short say themselves whole when pointed at.
+    const width = cellOf(name)?.width;
+    const head = el('span', { class: 'fd-list-head', title: width && def.label.length > width ? def.label : undefined }, def.label);
+    if (UNSORTABLE.has(def.type)) th.append(head);
     else {
-      const button = el('button', { type: 'button', class: 'fd-list-sort' }, def.label);
+      const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
       button.addEventListener('click', () => {
         // The header's field leads; the list's own order breaks the ties.
         const desc = sort[0]?.field === name ? !sort[0].desc : false;
@@ -158,11 +190,24 @@ export function listView(context: ListContext): ListView {
     }
     return th;
   });
+  // Every parent opened, or closed, at once.
+  const expandAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.expandAll, title: labels.expandAll }, el('span', { 'aria-hidden': 'true' }, '+'));
+  const collapseAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.collapseAll, title: labels.collapseAll }, el('span', { 'aria-hidden': 'true' }, '\u2212'));
   const body = el('tbody');
   const table = el(
     'table',
     { class: 'fd-list-table', 'aria-label': page.title },
-    el('thead', {}, el('tr', {}, el('th', { class: 'fd-list-check', scope: 'col' }, chooseAll), ...headers)),
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        ...(choose ? [el('th', { class: 'fd-list-check', scope: 'col' }, chooseAll)] : []),
+        ...(parentField ? [el('th', { class: 'fd-list-tree', scope: 'col' }, el('span', { class: 'fd-list-folds' }, expandAll, collapseAll))] : []),
+        ...headers
+      )
+    ),
     body
   );
   const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
@@ -170,44 +215,106 @@ export function listView(context: ListContext): ListView {
   const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
   retry.addEventListener('click', () => void load());
 
+  /** A cell's words, with what its column draws before them: a state's dot, a kind's icon. */
+  function cellContent(name: string, values: Record<string, Value>): Node[] {
+    const cell = cellOf(name);
+    const words = show(name, values);
+    const before: Node[] = [];
+    const look = cell?.lead?.looks[String(plain(values[cell.lead.field]))];
+    const leadIcon = look ? drawIcon(doc, look.icon, context.icons) : null;
+    if (leadIcon) {
+      leadIcon.setAttribute('aria-hidden', 'true');
+      leadIcon.classList.add('fd-list-lead');
+      if (look?.colour) leadIcon.style.color = look.colour;
+      before.push(leadIcon);
+    }
+    if (cell?.widget === 'dot' && words) {
+      // Its colour by value: the page's own, else its tone, else grey.
+      const value = String(plain(values[name]));
+      const colours = (cell.options?.['colours'] ?? {}) as Record<string, unknown>;
+      const tones = (cell.options?.['tones'] ?? {}) as Record<string, unknown>;
+      const colour = typeof colours[value] === 'string' && COLOUR.test(colours[value] as string) ? (colours[value] as string) : null;
+      const tone = typeof tones[value] === 'string' && TONES.has(tones[value] as string) ? (tones[value] as Tone) : 'muted';
+      const dot = el('span', { class: 'fd-list-dot', 'aria-hidden': 'true', 'data-tone': colour ? undefined : tone });
+      if (colour) dot.style.setProperty('--fd-dot', colour);
+      before.push(dot);
+    }
+    // Each value in its own direction: a phone number or an amount reads left to right on a right-to-left page.
+    return [...before, el('bdi', {}, words)];
+  }
+
+  /** Open a record from its row; when the app answers with a promise, ask again once it settles and go back to its row. */
+  async function openRow(id: RecordId) {
+    const answer = context.onOpenRecord?.(id);
+    if (!isPromise(answer)) return;
+    try {
+      await answer;
+    } catch {
+      // The app's own trouble: the list still asks again.
+    }
+    if (destroyed) return;
+    await load();
+    // Back on its row, unless the person went somewhere else meanwhile.
+    const active = doc.activeElement;
+    if (destroyed || (active && active !== doc.body && !element.contains(active))) return;
+    [...body.querySelectorAll<HTMLElement>('.fd-list-row')].find((tr) => tr.dataset['id'] === String(id) && !tr.hidden)?.focus();
+  }
+
+  /** The row shown next to this one, down or up, past those folded under a parent. */
+  const shownBeside = (tr: Element, down: boolean) => {
+    let next = down ? tr.nextElementSibling : tr.previousElementSibling;
+    while (next && (next as HTMLElement).hidden) next = down ? next.nextElementSibling : next.previousElementSibling;
+    return next as HTMLElement | null;
+  };
+
+  /** What names a record: its first column of words, else its first column. */
+  const nameColumn = node.columns.find((name) => page.fields[name].type === 'char') ?? node.columns[0];
+
   function row(record: Row, level = 0): HTMLTableRowElement {
-    const name = show(node.columns[0], record.values) || String(record.id);
-    const box = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) });
-    box.checked = chosen.has(record.id);
-    box.addEventListener('change', () => {
-      if (box.checked) chosen.add(record.id);
-      else chosen.delete(record.id);
-      drawChoice();
-      mapPart?.chosenChanged();
-    });
+    const name = show(nameColumn, record.values) || String(record.id);
+    const box = choose ? el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) }) : null;
+    if (box) {
+      box.checked = chosen.has(record.id);
+      box.addEventListener('change', () => {
+        if (box.checked) chosen.add(record.id);
+        else chosen.delete(record.id);
+        drawChoice();
+        mapPart?.chosenChanged();
+      });
+    }
     const tr = el(
       'tr',
       { class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row', tabindex: '0', 'data-id': String(record.id), 'data-level': level ? String(level) : undefined },
-      el('td', { class: 'fd-list-check' }, box),
-      // Each value in its own direction: a phone number or an amount reads left to right on a right-to-left page.
-      ...node.columns.map((name) => el('td', { class: NUMBERS.has(page.fields[name].type) ? 'fd-num' : undefined }, el('bdi', {}, show(name, record.values))))
+      ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
+      ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
+      ...node.columns.map((name) => sized(el('td', { class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }, ...cellContent(name, record.values)), name))
     );
     tr.addEventListener('click', (event) => {
       const cell = (event.target as Element).closest('td');
-      // The box's own cell is a bigger target for the box.
+      // The box's own cell is a bigger target for the box; a parent's toggle is its own.
       if (cell?.classList.contains('fd-list-check')) {
-        if (event.target === cell) box.click();
+        if (event.target === cell) box?.click();
         return;
       }
-      context.onOpenRecord?.(record.id);
+      if ((event.target as Element).closest('.fd-list-twisty')) return;
+      void openRow(record.id);
     });
     tr.addEventListener('keydown', (event) => {
       if (event.target !== tr) return;
+      const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
       if (event.key === 'Enter') {
         event.preventDefault();
-        context.onOpenRecord?.(record.id);
-      } else if (event.key === ' ') {
+        void openRow(record.id);
+      } else if (event.key === ' ' && box) {
         event.preventDefault();
         box.click();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
-        const next = event.key === 'ArrowDown' ? tr.nextElementSibling : tr.previousElementSibling;
-        (next as HTMLElement | null)?.focus();
+        shownBeside(tr, event.key === 'ArrowDown')?.focus();
+      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && tr.hasAttribute('data-parent-of')) {
+        // A parent opens towards the line's end, closes towards its start: flipped right to left.
+        event.preventDefault();
+        fold(String(record.id), event.key !== forward);
       }
     });
     // Under the pointer or the focus: its pin on the map lights up.
@@ -217,6 +324,85 @@ export function listView(context: ListContext): ListView {
     recordOf.set(tr, record);
     return tr;
   }
+
+  // ---- rows under their parent -------------------------------------------------------
+
+  /** The parents closed, by id: kept while the list asks again. */
+  const closed = new Set<string>();
+
+  /** A page of records with each under its parent, depth first, where the parent is on the page too; the rest at the top. */
+  function nest(records: Row[]): HTMLTableRowElement[] {
+    if (!parentField) return records.map((record) => row(record));
+    const ids = new Set(records.map((record) => String(record.id)));
+    const parentOf = (record: Row) => {
+      const parent = plain(record.values[parentField]);
+      return parent !== null && parent !== undefined && ids.has(String(parent)) && String(parent) !== String(record.id) ? String(parent) : null;
+    };
+    const children = new Map<string, Row[]>();
+    for (const record of records) {
+      const parent = parentOf(record);
+      if (parent) children.set(parent, [...(children.get(parent) ?? []), record]);
+    }
+    const drawn: HTMLTableRowElement[] = [];
+    const placed = new Set<string>();
+    const place = (record: Row, depth: number, hiddenUnder: boolean) => {
+      const id = String(record.id);
+      // A loop of parents is drawn once, where it is first met.
+      if (placed.has(id)) return;
+      placed.add(id);
+      const tr = row(record);
+      tr.style.setProperty('--fd-depth', String(depth));
+      tr.setAttribute('data-depth', String(depth));
+      tr.hidden = hiddenUnder;
+      const under = children.get(id) ?? [];
+      // Before its name: the parent's toggle, or room the size of one, so names line up at each depth.
+      const cell = tr.querySelector<HTMLElement>(':scope > td[data-name]');
+      if (under.length) {
+        tr.setAttribute('data-parent-of', String(under.length));
+        tr.setAttribute('aria-expanded', String(!closed.has(id)));
+        const twisty = el('button', { type: 'button', class: 'fd-list-twisty', tabindex: '-1', 'aria-expanded': String(!closed.has(id)), 'aria-label': show(nameColumn, record.values) || id });
+        twisty.addEventListener('click', () => fold(id, twisty.getAttribute('aria-expanded') === 'true'));
+        cell?.prepend(twisty);
+      } else if (children.size) cell?.prepend(el('span', { class: 'fd-list-twisty-room', 'aria-hidden': 'true' }));
+      drawn.push(tr);
+      for (const child of under) place(child, depth + 1, hiddenUnder || closed.has(id));
+    };
+    for (const record of records) if (!parentOf(record)) place(record, 0, false);
+    // Whatever a loop of parents left out, at the top.
+    for (const record of records) place(record, 0, false);
+    return drawn;
+  }
+
+  /** Close a parent, or open it: the rows under it hide, or show as their own parents left them. */
+  function fold(id: string, close: boolean) {
+    if (close) closed.add(id);
+    else closed.delete(id);
+    drawFolds();
+  }
+
+  function drawFolds() {
+    /** The depths of the parents above the row being looked at, and whether any of them is closed. */
+    const stack: { depth: number; closed: boolean }[] = [];
+    for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-depth]')) {
+      const depth = Number(tr.dataset['depth']);
+      while (stack.length && stack[stack.length - 1].depth >= depth) stack.pop();
+      tr.hidden = stack.some((parent) => parent.closed);
+      const id = tr.dataset['id'] ?? '';
+      const twisty = tr.querySelector(':scope > td > .fd-list-twisty');
+      twisty?.setAttribute('aria-expanded', String(!closed.has(id)));
+      if (twisty) tr.setAttribute('aria-expanded', String(!closed.has(id)));
+      if (tr.hasAttribute('data-parent-of')) stack.push({ depth, closed: closed.has(id) });
+    }
+  }
+
+  expandAll.addEventListener('click', () => {
+    closed.clear();
+    drawFolds();
+  });
+  collapseAll.addEventListener('click', () => {
+    for (const tr of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row[data-parent-of]')) closed.add(tr.dataset['id'] ?? '');
+    drawFolds();
+  });
 
   // ---- what is chosen, and the buttons for it --------------------------------------
 
@@ -256,6 +442,7 @@ export function listView(context: ListContext): ListView {
     chooseAll.indeterminate = onPage > 0 && onPage < shown.length;
     selection.hidden = chosen.size === 0;
     count.textContent = fill(labels.selected, { n: chosen.size });
+    if (!choose) return;
     for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
       tr.setAttribute('aria-selected', String([...chosen].some((id) => String(id) === tr.dataset['id'])));
     }
@@ -277,7 +464,8 @@ export function listView(context: ListContext): ListView {
   });
 
   function drawPager() {
-    pager.hidden = total === 0;
+    // Under a filter bar, the pager shows only when there is more than one page.
+    pager.hidden = total === 0 || (fieldsSearch && offset === 0 && total <= pageSize);
     range.textContent = fill(labels.range, { from: offset + 1, to: Math.min(offset + rows.length, total), total });
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
@@ -313,7 +501,7 @@ export function listView(context: ListContext): ListView {
     dataSource: source,
     model,
     fields,
-    columns: node.columns.length + 1,
+    columns: node.columns.length + leading,
     pageSize,
     sort: () => sort,
     recordRow: row,
@@ -346,7 +534,7 @@ export function listView(context: ListContext): ListView {
         }
         rows = answer.records;
         total = answer.total;
-        drawn = rows.map((record) => row(record));
+        drawn = nest(rows);
       }
       failed.hidden = true;
     } catch {
@@ -362,24 +550,17 @@ export function listView(context: ListContext): ListView {
     changed();
   }
 
-  const search = searchBar({
-    page,
-    node,
-    doc,
-    el,
-    labels,
-    fill,
-    uid: context.uid,
-    icons: context.icons,
-    preferences: context.preferences,
-    facets,
-    onChange(next) {
-      facets = next;
-      offset = 0;
-      void load();
-      void mapPart?.reload();
-    },
-  });
+  const searched = (next: Facet[]) => {
+    facets = next;
+    offset = 0;
+    void load();
+    void mapPart?.reload();
+  };
+  // The search bar, or a keyword and a list of values for each of a few fields.
+  const search =
+    node.search === 'fields'
+      ? filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, facets, onChange: searched });
 
   // ---- the map, beside the table or instead of it ----------------------------------
 
@@ -411,7 +592,7 @@ export function listView(context: ListContext): ListView {
         drawChoice();
         mapPart?.chosenChanged();
       },
-      ...(context.onOpenRecord ? { open: context.onOpenRecord } : {}),
+      ...(context.onOpenRecord ? { open: (id: RecordId) => void openRow(id) } : {}),
       highlight(id) {
         for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
           const hot = id !== null && tr.dataset['id'] === String(id);
@@ -459,10 +640,11 @@ export function listView(context: ListContext): ListView {
 
   const element = el(
     'div',
-    { class: 'fd-list', 'data-node': node.id },
-    el('div', { class: 'fd-list-bar' }, search.element, views, pager),
-    selection,
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed), mapHolder)
+    { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none' },
+    el('div', { class: 'fd-list-bar' }, search.element, views, ...(fieldsSearch ? [] : [pager])),
+    // A list with no box to choose a row has nothing to act on.
+    ...(choose ? [selection] : []),
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), mapHolder)
   );
   showAs(view);
   void load();

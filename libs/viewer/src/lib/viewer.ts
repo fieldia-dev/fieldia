@@ -152,8 +152,13 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * key: every word of the page goes through it. Record data never does.
    */
   translate?: (text: string) => string;
-  /** A list page: a row was opened, by a click or by Enter. The app shows the record. */
-  onOpenRecord?: (id: RecordId) => void;
+  /**
+   * A list page: a row was opened, by a click or by Enter. The app shows the
+   * record. When it answers with a promise — the record in a dialog, closed —
+   * the list asks for its records again once it settles, and puts the focus
+   * back on the row.
+   */
+  onOpenRecord?: (id: RecordId) => void | Promise<unknown>;
   /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
   listFilter?: ResolvedFilter[];
   /**
@@ -202,6 +207,8 @@ export interface ViewerHandle {
   /** Lock or unlock the whole form. */
   setReadonly(readonly: boolean): void;
   isReadonly(): boolean;
+  /** Ask the data source again: a list page's records, keeping its page, order and search; else the record, as a reload step does. */
+  reload(): Promise<void>;
   /** Listen to one of the form's events — change, save, send, action, run, step, open; returns what stops listening. */
   on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   /** Write several fields at once, as the app: the page's change steps do not run for it. */
@@ -430,10 +437,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Empty and quiet, it says what to add, unless the page gives it words of its own: "Add story points", or for a
       // question "Your answer". A field of several boxes, each with its own label (an address), says it in none of them.
       const ownWords = !!node.placeholder || labelsAt === 'hidden' || def.type === 'json' || def.type === 'properties';
-      const hint = quietHint(labelText, locale, labels);
+      // Unless the page says empty quiet fields show nothing at rest (quietHints false): then its label alone says what it is.
+      const hint = page.look?.quietHints === false ? null : quietHint(labelText, locale, labels);
       const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
       // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
-      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : hint);
+      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelText : (hint ?? ''));
       const quietSelect = widget.element instanceof HTMLSelectElement ? widget.element.querySelector<HTMLOptionElement>(':scope > option[value=""]') : null;
       const richText = widget.element.matches('.fd-richtext') ? widget.element : widget.element.querySelector<HTMLElement>(':scope > .fd-richtext');
       const stateWords = widget.element.querySelector<HTMLElement>(':scope > .fd-dot-label');
@@ -526,6 +534,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       wrapper.addEventListener('focusin', (event) => {
         if (!wrapper.contains(event.relatedTarget as Node | null)) entered = form.getState().values[node.field];
       });
+      // Entered before the record came (a dialog takes the focus at once): what it held is what the record brought.
+      cleanups.push(form.on('open', ({ values }) => {
+        if (wrapper.contains(doc.activeElement)) entered = values[node.field];
+      }));
       wrapper.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape' || event.defaultPrevented || !wrapper.hasAttribute('data-quiet')) return;
         if (JSON.stringify(form.getState().values[node.field] ?? null) === JSON.stringify(entered ?? null)) return;
@@ -1594,6 +1606,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   const layout = page.layout;
   let body: HTMLElement;
+  /** A list page's way to ask for its records again (handle.reload). */
+  let reloadList: (() => Promise<void>) | null = null;
   if (layout.type === 'sheet') body = sheetLayout(layout);
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
@@ -1618,6 +1632,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       ...(options.listViews ? { views: options.listViews } : {}),
     });
     cleanups.push(list.destroy);
+    reloadList = list.reload;
     body = list.element;
   }
   else body = sectionsLayout(layout);
@@ -1857,6 +1872,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       render(form.getState());
     },
     isReadonly: () => locked,
+    reload: async () => {
+      if (reloadList) return reloadList();
+      await form.run([{ do: 'reload' }]);
+    },
     on: (event, listener) => {
       const off = form.on(event, listener);
       cleanups.push(off);
