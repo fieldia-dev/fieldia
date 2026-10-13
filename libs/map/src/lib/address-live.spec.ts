@@ -21,7 +21,7 @@ interface Recorded {
 }
 const AZURE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-live.json'), 'utf8')) as Record<string, Recorded>;
 const GOOGLE = JSON.parse(readFileSync(join(__dirname, 'fixtures/google-live.json'), 'utf8')) as Record<string, Recorded>;
-// Google's answers of 13 Oct 2026: a UAE landmark, in English and Arabic; a word in a street's number.
+// Google's answers of 13 Oct 2026: a UAE landmark, in English and Arabic; a word in a street's number; suggestions whose line under them starts with their name.
 Object.assign(GOOGLE, JSON.parse(readFileSync(join(__dirname, 'fixtures/google-live-oct13.json'), 'utf8')));
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -425,6 +425,22 @@ describe('Google’s places, as it answers them', () => {
         expect(landmark.address).toBe(line);
         expect(landmark.parts).toEqual(parts ? own : undefined);
       }
+    }
+  });
+
+  it('says where a suggestion is under its name, not its name again: Google’s line under a road, or a place named for one, may start with it', async () => {
+    const DUBAI = { lat: 25.2048, lng: 55.2708 };
+    const CAIRO = { lat: 30.0444, lng: 31.2357 };
+    // Dubai's road and the landmark named for it then read alike: the list shows them once (search-box.ts).
+    for (const [name, text, locale, near, country, rows] of [
+      ['ac-sheikh-zayed-road-ae-en', 'Sheikh Zayed Road', 'en', DUBAI, 'AE', ['Sheikh Zayed Road | Dubai, United Arab Emirates', 'Sheikh Zayed Road | Dubai, United Arab Emirates']],
+      ['ac-tahrir-square-eg-ar', 'ميدان التحرير', 'ar', CAIRO, 'EG', ['ميدان التحرير | قصر الدوبارة، قسم قصر النيل، مصر', 'ميدان التحرير | محطة السادات، قسم قصر النيل، مصر']],
+      ['ac-abbas-akkad-eg-ar', 'عباس العقاد', 'ar', CAIRO, 'EG', ['عباس العقاد | المنطقة الأولى، مدينة نصر، مصر', 'عباس العقاد | جزيرة الدهب، قسم الجيزة، مصر']],
+    ] as const) {
+      const { fetch } = google(name);
+      const found = await googleMaps({ key: 'G', fetch }).search!({ text, near, zoom: 12, locale, countries: [country], addresses: true, parts: true });
+      expect(found.slice(0, 2).map((place) => `${place.label} | ${place.detail}`)).toEqual(rows);
+      for (const place of found) expect([place.label, place.detail?.startsWith(place.label)]).toEqual([place.label, false]);
     }
   });
 

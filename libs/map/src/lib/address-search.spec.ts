@@ -27,6 +27,7 @@ const page = {
 
 const TAHRIR: PlaceFound = { label: 'Tahrir Street 12', detail: 'Downtown, Cairo, Egypt', lat: 30.0487, lng: 31.2391, parts: { street: 'Tahrir Street 12', city: 'Cairo', country: 'EG' } };
 const ZAMALEK: PlaceFound = { label: '26 July Street', detail: 'Zamalek, Cairo, Egypt', lat: 30.0626, lng: 31.2197 };
+const KASR: PlaceFound = { label: 'Kasr El Nil Street', detail: 'Downtown, Cairo, Egypt', lat: 30.0478, lng: 31.2405 };
 
 const pause = (ms = 300) => new Promise((done) => setTimeout(done, ms));
 /** Until something is so, or two seconds have passed: a provider's code loads the first time it is asked. */
@@ -317,6 +318,8 @@ describe('an address with suggestions', () => {
     expect([later.length, list().hidden]).toEqual([2, false]);
     press(box, 'ArrowDown');
     press(box, 'Enter');
+    // Called back: the address is found.
+    expect(later[1].signal?.aborted).toBe(true);
     answers[1]([ZAMALEK]);
     await pause(0);
     expect([values()['address'], list().hidden, box.getAttribute('aria-expanded')]).toEqual(['Tahrir Street 12, Downtown, Cairo, Egypt', true, 'false']);
@@ -360,12 +363,114 @@ describe('an address with suggestions', () => {
     await pause();
     expect([later.length, status()]).toEqual([2, 'Searching…']);
     press(box, 'Escape');
-    expect([later[1].signal?.aborted, status()]).toEqual([true, '']);
+    // Not called back: the provider has its request already, and may bill it.
+    expect([later[1].signal?.aborted, status()]).toEqual([false, '']);
     answers[1]([TAHRIR]);
     await pause(0);
     expect([list().hidden, box.getAttribute('aria-expanded')]).toEqual([true, 'false']);
     // The words stay, as an address field's do.
     expect(box.value).toBe('tahrir squ');
+    // Its answer was kept: Enter shows it, and asks nothing.
+    press(box, 'Enter');
+    expect([later.length, options()]).toEqual([2, ['Tahrir Street 12Downtown, Cairo, Egypt']]);
+  });
+
+  it('asks for the same words once on a slow line: a search dropped on its way is let come back, its answer kept, and waited for when its words come back', async () => {
+    const answers: ((found: PlaceFound[]) => void)[] = [];
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
+    const { box } = await mount({}, { search, searchAsYouType: true });
+    const status = () => document.querySelector('[role="status"]')?.textContent;
+    // Escape while it is on its way, and Enter before it comes: waited for, not asked again.
+    type(box, 'zamal');
+    await pause();
+    press(box, 'Escape');
+    expect([later.length, status()]).toEqual([1, '']);
+    press(box, 'Enter');
+    expect([later.length, status()]).toEqual([1, 'Searching…']);
+    answers[0]([ZAMALEK, TAHRIR]);
+    await pause(0);
+    expect([options().length, status()]).toEqual([2, 'Suggestions: 2']);
+
+    // Typed on while the next is on its way, and taken back: the first words' answer again.
+    type(box, 'ek');
+    await pause();
+    expect(later.map((request) => request.text)).toEqual(['zamal', 'zamalek']);
+    box.value = 'zamal';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await pause();
+    expect([later.length, options().length, status()]).toEqual([2, 2, 'Suggestions: 2']);
+    // The dropped search's answer comes later: kept, not shown over the list of the words in the box.
+    answers[1]([ZAMALEK]);
+    await pause(0);
+    expect(options().length).toBe(2);
+    type(box, 'ek');
+    await pause();
+    expect([later.length, options()]).toEqual([2, ['26 July StreetZamalek, Cairo, Egypt']]);
+
+    // Taken back to words dropped while still on their way: waited for, then shown.
+    type(box, ' st');
+    await pause();
+    type(box, 'r');
+    await pause();
+    expect(later.map((request) => request.text)).toEqual(['zamal', 'zamalek', 'zamalek st', 'zamalek str']);
+    box.value = 'zamalek st';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await pause();
+    expect([later.length, status()]).toEqual([4, 'Searching…']);
+    answers[3]([TAHRIR]);
+    await pause(0);
+    expect(options()).toEqual(['26 July StreetZamalek, Cairo, Egypt']);
+    answers[2]([KASR]);
+    await pause(0);
+    expect([options(), status()]).toEqual([['Kasr El Nil StreetDowntown, Cairo, Egypt'], 'Suggestions: 1']);
+  });
+
+  it('calls back what is still on its way when a place is picked: its words are a new address’s after it, asked for anew', async () => {
+    const answers: ((found: PlaceFound[]) => void)[] = [];
+    const later: SearchRequest[] = [];
+    const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
+    const { box, values } = await mount({}, { search, searchAsYouType: true });
+    type(box, 'tahr');
+    await pause();
+    answers[0]([TAHRIR, ZAMALEK]);
+    await pause(0);
+    type(box, 'i');
+    await pause();
+    press(box, 'Escape');
+    press(box, 'Enter');
+    expect([later.length, later[1].signal?.aborted]).toEqual([2, false]);
+    // The list for "tahr" is gone with Escape; Enter waits for "tahri". Typed back to "tahr", its list, and a pick from it.
+    box.value = 'tahr';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await pause();
+    press(box, 'ArrowDown');
+    press(box, 'Enter');
+    expect([values()['address'], later[1].signal?.aborted]).toEqual(['Tahrir Street 12, Downtown, Cairo, Egypt', true]);
+    answers[1]([ZAMALEK]);
+    await pause(0);
+    expect(list().hidden).toBe(true);
+    box.value = '';
+    type(box, 'tahri');
+    await pause();
+    expect(later.map((request) => request.text)).toEqual(['tahr', 'tahri', 'tahri']);
+  });
+
+  it('marks the last row on ArrowUp from none, the first on ArrowDown, and goes round from either end', async () => {
+    const { box } = await mount({}, {}, [TAHRIR, ZAMALEK, KASR]);
+    type(box, 'tahr');
+    await pause();
+    const marked = () => box.getAttribute('aria-activedescendant');
+    press(box, 'ArrowUp');
+    expect([marked(), list().querySelector('[aria-selected="true"]')?.id]).toEqual(['fd-address-places-2', 'fd-address-places-2']);
+    press(box, 'ArrowDown');
+    expect(marked()).toBe('fd-address-places-0');
+    press(box, 'ArrowUp');
+    expect(marked()).toBe('fd-address-places-2');
+    press(box, 'Escape');
+    press(box, 'Enter');
+    press(box, 'ArrowDown');
+    expect(marked()).toBe('fd-address-places-0');
   });
 
   it('says no search is going once it is dropped by leaving the box: under a place’s map too', async () => {
@@ -376,7 +481,8 @@ describe('an address with suggestions', () => {
     await pause();
     expect(document.querySelector('[role="status"]')?.textContent).toBe('Searching…');
     box.blur();
-    expect([later[0].signal?.aborted, document.querySelector('[role="status"]')?.textContent]).toEqual([true, '']);
+    // Not called back, its answer kept for the words; no longer said to be going.
+    expect([later[0].signal?.aborted, document.querySelector('[role="status"]')?.textContent]).toEqual([false, '']);
 
     const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }), search, searchAsYouType: true });
     const form = createForm({ page });
@@ -564,6 +670,104 @@ describe('an address with suggestions', () => {
     withHelp();
     expect(box.getAttribute('aria-describedby')).toBe('fd-address-help');
     warn.mockRestore();
+  });
+
+  it('says the map did not answer when a pick’s place could not be asked for (the line dropped, the provider down), not that it is not on the map', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const NO_ANSWER = 'The map did not answer, so no place was saved for this address: check the connection, then pick it again.';
+    const NOT_FOUND = 'Not found on the map: no place was saved for this address.';
+    const pickFailing = async (error: Error, locale?: 'ar', settings: Partial<MapSettings> = {}) => {
+      const { box, values } = await mount({ placeField: 'spot' }, settings, [{ label: 'Zamalek', detail: 'Cairo, Egypt', locate: async () => Promise.reject(error) }], locale);
+      type(box, 'zam');
+      await pause();
+      press(box, 'Enter');
+      await pause(0);
+      expect(values()['spot']).toBeNull();
+      return (document.querySelector('.fd-address-note') as HTMLElement).textContent;
+    };
+    // fetch's own failure when nothing comes back; a provider down, or refusing.
+    expect(await pickFailing(new TypeError('Failed to fetch'))).toBe(NO_ANSWER);
+    expect(await pickFailing(new Error('https://places.googleapis.com/v1/places/Z1 answered 503: The service is currently unavailable.'))).toBe(NO_ANSWER);
+    expect(await pickFailing(new Error('https://atlas.microsoft.com/geocode answered 429'))).toBe(NO_ANSWER);
+    expect(await pickFailing(new TypeError('Failed to fetch'), 'ar')).toBe('لم تُجب الخريطة، فلم يُحفظ مكان لهذا العنوان: تحقّق من الاتصال، ثم اختره مرة أخرى.');
+    // Answered, and found nowhere: not on the map. A place the provider does not know (its 404) is not either.
+    expect(await pickFailing(new Error('Google gave no place'))).toBe(NOT_FOUND);
+    expect(await pickFailing(new Error('https://places.googleapis.com/v1/places/Z1 answered 404: Not found'))).toBe(NOT_FOUND);
+    // The browser offline: whatever the failure says.
+    const offline = jest.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    expect(await pickFailing(new Error('nowhere'))).toBe(NO_ANSWER);
+    offline.mockRestore();
+    // An app's own words, for this and for a place only near.
+    expect(await pickFailing(new TypeError('Failed to fetch'), undefined, { labels: { en: { locateFailed: 'No connection: pick it again.' } } })).toBe('No connection: pick it again.');
+    warn.mockRestore();
+  });
+
+  it('takes an app’s own words for a place found only near the address picked', async () => {
+    const locate = jest.fn(async () => ({ lat: 25.3461, lng: 55.4211, precise: false as const }));
+    const { box } = await mount({ placeField: 'spot' }, { labels: { en: { placedNear: 'Roughly here.' } } }, [{ label: '30 Street', detail: 'Sharjah, United Arab Emirates', locate }]);
+    type(box, '30 st');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    expect((document.querySelector('.fd-address-note') as HTMLElement).textContent).toBe('Roughly here.');
+  });
+
+  it('takes back the place and parts a pick wrote once the box is emptied and left, other words typed in their place or none; words only edited keep them', async () => {
+    const { form, box, values } = await mount({ placeField: 'spot', partsField: 'parts' });
+    const pick = async () => {
+      type(box, 'tahr');
+      await pause();
+      press(box, 'Enter');
+      await pause(0);
+      expect(values()).toMatchObject({ spot: { type: 'Point' }, parts: { city: 'Cairo' } });
+    };
+    const typedAs = (text: string) => {
+      box.value = text;
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    form.setValue('parts', { line2: 'Flat 3' });
+    await pick();
+    // Emptied, they stay while the person is in the box; left, they go. The line typed under the street stays.
+    typedAs('');
+    expect(values()['spot']).toMatchObject({ type: 'Point' });
+    box.blur();
+    expect(values()).toMatchObject({ spot: null, parts: { line2: 'Flat 3' } });
+    expect(values()['parts']).toEqual({ line2: 'Flat 3' });
+    // Emptied, another address typed by hand, and left: not the address picked, nor its place.
+    await pick();
+    typedAs('');
+    type(box, '5 Some Unknown Lane, Heliopolis');
+    box.blur();
+    expect(values()).toMatchObject({ address: '5 Some Unknown Lane, Heliopolis', spot: null, parts: { line2: 'Flat 3' } });
+    // Edited, a word taken out: the address picked still, its place and parts too.
+    box.value = '';
+    await pick();
+    const { spot, parts } = values();
+    typedAs('Tahrir Street 12, Cairo, Egypt');
+    box.blur();
+    expect(values()).toMatchObject({ address: 'Tahrir Street 12, Cairo, Egypt', spot, parts });
+    // A place set by hand since (a pin dragged) is not the pick's: it stays when the box is emptied.
+    box.value = '';
+    await pick();
+    form.setValue('spot', { type: 'Point', coordinates: [31.24, 30.05] });
+    typedAs('');
+    box.blur();
+    expect(values()).toMatchObject({ spot: { type: 'Point', coordinates: [31.24, 30.05] }, parts: { line2: 'Flat 3' } });
+  });
+
+  it('writes nothing for a pick still finding its place when the box is emptied and left', async () => {
+    let found: (at: { lat: number; lng: number }) => void = () => undefined;
+    const locate = () => new Promise<{ lat: number; lng: number }>((done) => (found = done));
+    const { box, values } = await mount({ placeField: 'spot' }, {}, [{ label: 'Zamalek', detail: 'Cairo, Egypt', locate }]);
+    type(box, 'zam');
+    await pause();
+    press(box, 'Enter');
+    box.value = '';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    box.blur();
+    found({ lat: 30.06, lng: 31.22 });
+    await pause(0);
+    expect(values()['spot']).toBeNull();
   });
 
   it('says a suggestion is picked though nothing is looked up for it: a provider’s session ends there', async () => {

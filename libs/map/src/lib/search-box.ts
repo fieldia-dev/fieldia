@@ -13,13 +13,16 @@ import type { AddressSearch, PlaceFound } from './providers';
  * words typed since, it searches them at once), Escape closes the list and
  * then empties the box (unless what is typed is an answer itself:
  * `freeText`). Read-only, it searches nothing. A search
- * waiting to go, or on its way, when Escape is pressed, a place is picked or
- * the box is left is dropped, so its list never opens after them and no
- * search is said to be going. Each request may be paid for: the same words,
+ * waiting to go, or on its way, when Escape is pressed, more is typed, a
+ * place is picked or the box is left is dropped, so its list never opens
+ * after them and no search is said to be going. Each request may be paid
+ * for, once it is sent, whether or not its answer is read: the same words,
  * near the same place, are asked for once while one address is typed (a
- * space typed, a letter taken back, Enter after Escape), until a place is
- * picked (Google's suggestions are its session's, which a pick ends); Enter
- * on the place picked asks nothing.
+ * space typed, a letter taken back, Enter after Escape), a dropped search's
+ * answer kept for them as it comes, and waited for while it is on its way;
+ * until a place is picked (Google's suggestions are its session's, which a
+ * pick ends), which calls back what is still on its way. Enter on the place
+ * picked asks nothing.
  */
 
 export interface SearchBoxOptions {
@@ -71,25 +74,39 @@ export function searchBox(options: SearchBoxOptions) {
 
   let places: PlaceFound[] = [];
   let active = -1;
-  let asking: AbortController | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  /** What the search on its way asks for, and the places each search brought until a place is picked: the same words (near the same place) wait for them, or show them again. */
-  let waiting = '';
+  /**
+   * The places each search brought, by its words (near the same place), and
+   * the searches on their way, by theirs, until a place is picked: the same
+   * words show them again, or wait for them. A search dropped is not called
+   * back, as the provider has its request (and may bill it): its answer is
+   * kept when it comes, and only not shown.
+   */
   const answers = new Map<string, PlaceFound[]>();
+  const going = new Map<string, AbortController>();
+  /** The words whose answer opens the list when it comes, and which the search is said to be going for: none once it is dropped. */
+  let wanted = '';
   /** The search whose places the list shows, and the words it asked for. */
   let showing = '';
   let listed = '';
   /** A place picked, and nothing typed since: Enter asks nothing. */
   let picked = false;
 
-  /** The search waiting to go, or gone and not yet answered, dropped: no longer said to be going. */
+  /** The search waiting to go never goes; the one on its way opens nothing when it comes, and is no longer said to be going. */
   function drop() {
     clearTimeout(timer);
     timer = undefined;
-    if (!asking) return;
-    asking.abort();
-    asking = null;
+    if (!wanted) return;
+    wanted = '';
     options.say(null);
+  }
+
+  /** The address is found, or the box gone: what is on its way is of no use, and called back; the next words are asked for anew (a provider's session ends with the pick). */
+  function stop() {
+    drop();
+    going.forEach((asked) => asked.abort());
+    going.clear();
+    answers.clear();
   }
 
   function close() {
@@ -114,9 +131,7 @@ export function searchBox(options: SearchBoxOptions) {
 
   function choose(place: PlaceFound) {
     // A pause in typing ends here: nothing more is asked for these words, and no answer opens the list again.
-    drop();
-    // The address is found: the next is a new one, its words asked for anew (a provider's session ends with the pick).
-    answers.clear();
+    stop();
     picked = true;
     input.value = place.label;
     close();
@@ -174,35 +189,42 @@ export function searchBox(options: SearchBoxOptions) {
     const near = options.near();
     const zoom = options.zoom?.();
     const these = JSON.stringify([text, near, zoom]);
-    // On their way already: waited for.
-    if (asking && these === waiting) return;
     const had = answers.get(these);
     if (had) {
-      // Here already: shown, unless they are, and nothing else asked for.
+      // Here already: shown, unless they are, and nothing else waited for.
       drop();
       if (list.hidden || showing !== these) show(had, these, text);
       return;
     }
-    asking?.abort();
-    const mine = (asking = new AbortController());
-    waiting = these;
+    // On their way and waited for already.
+    if (wanted === these) return;
+    wanted = these;
     options.say(labels.searching);
-    options
-      .search({ text, near, zoom, locale: options.locale, signal: mine.signal })
-      .then((found) => {
-        if (mine !== asking) return;
-        asking = null;
+    // On their way though dropped (Escape, a letter more): waited for again, not asked again.
+    if (going.has(these)) return;
+    const mine = new AbortController();
+    going.set(these, mine);
+    // Its answer is kept, whether or not its words are still waited for, and shown if they are. Called back (by a pick), it is nobody's.
+    options.search({ text, near, zoom, locale: options.locale, signal: mine.signal }).then(
+      (found) => {
+        if (mine.signal.aborted) return;
+        going.delete(these);
         answers.set(these, found);
+        if (wanted !== these) return;
+        wanted = '';
         show(found, these, text);
-      })
-      .catch((error: Error) => {
-        if (mine !== asking || error.name === 'AbortError') return;
-        asking = null;
+      },
+      (error: Error) => {
+        if (mine.signal.aborted) return;
+        going.delete(these);
+        if (wanted !== these) return;
+        wanted = '';
         close();
         options.say(labels.searchFailed, 'error');
         // The reader is told to try again; the developer, why it failed.
         warnOnce(`The address search failed: ${error.message}`);
-      });
+      }
+    );
   }
 
   input.addEventListener('input', () => {
@@ -222,7 +244,8 @@ export function searchBox(options: SearchBoxOptions) {
       if (list.hidden) return;
       event.preventDefault();
       const step = event.key === 'ArrowDown' ? 1 : -1;
-      mark((active + step + places.length) % places.length);
+      // From no row marked, Down marks the first and Up the last (as from the first); each goes round at the end.
+      mark(((active < 0 && step < 0 ? 0 : active) + step + places.length) % places.length);
     } else if (event.key === 'Enter') {
       // Never the form's own Enter.
       event.preventDefault();
@@ -232,7 +255,7 @@ export function searchBox(options: SearchBoxOptions) {
       else if (!picked) run();
     } else if (event.key === 'Escape') {
       // The list closed, and the search that would open it again dropped, waiting or on its way.
-      if (!list.hidden || asking || timer) {
+      if (!list.hidden || wanted || timer) {
         event.preventDefault();
         close();
         drop();
@@ -253,6 +276,6 @@ export function searchBox(options: SearchBoxOptions) {
     element,
     input,
     list,
-    destroy: drop,
+    destroy: stop,
   };
 }

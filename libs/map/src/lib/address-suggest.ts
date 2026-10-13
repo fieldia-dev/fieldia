@@ -40,6 +40,13 @@ const NOT_PLACED: Record<Locale, string> = {
   fr: 'Introuvable sur la carte : aucun lieu n’a été enregistré pour cette adresse.',
   de: 'Nicht auf der Karte gefunden: Für diese Adresse wurde kein Ort gespeichert.',
 };
+/** Said when the place could not be asked for (the line dropped, the provider down or refusing): it may well be on the map. */
+const LOCATE_FAILED: Record<Locale, string> = {
+  en: 'The map did not answer, so no place was saved for this address: check the connection, then pick it again.',
+  ar: 'لم تُجب الخريطة، فلم يُحفظ مكان لهذا العنوان: تحقّق من الاتصال، ثم اختره مرة أخرى.',
+  fr: 'La carte n’a pas répondu, aucun lieu n’a donc été enregistré pour cette adresse : vérifiez la connexion, puis choisissez-la de nouveau.',
+  de: 'Die Karte hat nicht geantwortet, daher wurde für diese Adresse kein Ort gespeichert: Prüfen Sie die Verbindung und wählen Sie sie dann erneut.',
+};
 /** Said when only a place near it is found (`precise: false`): its street, district or town, kilometres off perhaps. */
 const PLACED_NEAR: Record<Locale, string> = {
   en: 'Placed only near this address: its exact place was not found on the map.',
@@ -49,6 +56,14 @@ const PLACED_NEAR: Record<Locale, string> = {
 };
 
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
+/**
+ * Whether a lookup failed for want of an answer, not because the provider
+ * found no such place: nothing came back (fetch fails with a TypeError, as
+ * on a line dropped), the page is offline, or the provider refused or failed
+ * (answers.ts says what it answered: a 503, a 429, a 403); not its 404, a
+ * place it does not know.
+ */
+const unanswered = (error: Error, offline: boolean) => offline || error.name === 'TypeError' || / answered (?!404)\d{3}\b/.test(error.message);
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export interface SuggestOptions {
@@ -68,7 +83,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
   const { form, name, node, id, document: doc } = context;
   const locale = context.locale ?? 'en';
   const options = node.options ?? {};
-  const words = { notPlaced: NOT_PLACED[locale], placedNear: PLACED_NEAR[locale], ...addressLabels(locale, settings.labels?.[locale]) };
+  const words = { notPlaced: NOT_PLACED[locale], placedNear: PLACED_NEAR[locale], locateFailed: LOCATE_FAILED[locale], ...addressLabels(locale, settings.labels?.[locale]) };
   const named = (key: string) => (typeof options[key] === 'string' ? (options[key] as string) : null);
   const [placeField, longitudeField, partsField] = [named('placeField'), named('longitudeField'), named('partsField')];
   const listed = options['countries'];
@@ -114,9 +129,14 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     described();
     if (said) status.textContent = said;
   };
-  const typedOn = () => tell(null);
-  input.addEventListener('input', typedOn);
   let picking = 0;
+  /** Whether the box has been emptied since the last pick: the words it wrote all taken out, whatever is typed in their place. */
+  let emptied = false;
+  const typedOn = () => {
+    tell(null);
+    if (!input.value.trim()) emptied = true;
+  };
+  input.addEventListener('input', typedOn);
 
   const now = () => form.getState().values;
   const inFloats = () => !!placeField && form.page.fields[placeField]?.type === 'float';
@@ -126,8 +146,47 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     const held = partsField ? now()[partsField] : null;
     return JSON.stringify(isObject(held) ? { ...held, line2: undefined } : (held ?? null));
   };
-  /** What the last pick wrote, while the form still holds it as written: a pick that finds no place, or no parts, takes them back (they were another address's); a place set since by hand (a pin dragged) stays. */
+  /** What the last pick wrote, while the form still holds it as written: a pick that finds no place, or no parts, takes them back (they were another address's), as the box emptied and left does; a place set since by hand (a pin dragged) stays. */
   let wrote: { place?: string; parts?: string } = {};
+  const setPlace = (at: LatLng | null) => {
+    if (!placeField) return;
+    const point = at && { lat: round6(at.lat), lng: round6(at.lng) };
+    if (!inFloats()) form.setValue(placeField, point && asJson(writePoint(point)));
+    else if (longitudeField) {
+      form.setValue(placeField, point && point.lat);
+      form.setValue(longitudeField, point && point.lng);
+    }
+  };
+  /** Its parts, the line under the street kept as the person typed it. */
+  const setParts = (parts: AddressParts | undefined) => {
+    if (!partsField) return;
+    const held = now()[partsField];
+    const line2 = isObject(held) && typeof held['line2'] === 'string' ? { line2: held['line2'] } : null;
+    form.setValue(partsField, parts || line2 ? ({ ...parts, ...line2 } as AddressParts as Value) : null);
+  };
+  /** A pick's place and parts written; where it found none, the last pick's taken back, while the form still holds them as that pick wrote them. */
+  const writeFound = (at: LatLng | null, parts: AddressParts | undefined) => {
+    const before = wrote;
+    wrote = {};
+    if (placeField && (at || before.place === placeNow())) {
+      setPlace(at);
+      if (at) wrote.place = placeNow();
+    }
+    if (partsField && (parts || before.parts === partsNow())) {
+      setParts(parts);
+      if (parts) wrote.parts = partsNow();
+    }
+  };
+  // Emptied and left: the address picked is no longer the box's, nor its place and parts (a delivery would go to it); words only edited keep them.
+  const left = () => {
+    if (!emptied) return;
+    emptied = false;
+    // A pick still finding its place writes nothing now.
+    picking++;
+    tell(null);
+    writeFound(null, undefined);
+  };
+  input.addEventListener('blur', left);
 
   const box = searchBox({
     document: doc,
@@ -144,16 +203,22 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose suggestions carry none).
     async pick(place: PlaceFound) {
       const mine = ++picking;
+      emptied = false;
       tell(null);
       const whole = addressLine([place.label, place.detail], locale);
       write(whole);
       let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
       let parts = place.parts;
       if (!at && place.locate && (placeField || (partsField && !parts))) {
-        const located = await place.locate().catch((error: Error) => (warnOnce(`Finding the address picked failed: ${error.message}`), null));
+        let failed = false;
+        const located = await place.locate().catch((error: Error) => {
+          failed = unanswered(error, doc.defaultView?.navigator.onLine === false);
+          warnOnce(`Finding the address picked failed: ${error.message}`);
+          return null;
+        });
         if (mine !== picking) return;
-        // Not found where it is: no place written, its parts still are; and the person is told. Only near it: written, and said.
-        tell(!located ? words.notPlaced : located.precise === false ? words.placedNear : null);
+        // Not found where it is: no place written, its parts still are; and the person is told, or told the map did not answer (it may well be on it). Only near it: written, and said.
+        tell(!located ? (failed ? words.locateFailed : words.notPlaced) : located.precise === false ? words.placedNear : null);
         if (located) {
           at = located;
           parts = located.parts ?? parts;
@@ -161,24 +226,8 @@ export function suggest({ settings, context, search, element, input, searchBox, 
           if (located.address && input.value === whole) write(addressLine([located.address], locale));
         }
       }
-      const before = wrote;
-      wrote = {};
       // The pick before's place and parts, still as it wrote them, were another address's: they go, though nothing comes in their place.
-      if (placeField && (at || before.place === placeNow())) {
-        const point = at && { lat: round6(at.lat), lng: round6(at.lng) };
-        if (!inFloats()) form.setValue(placeField, point && asJson(writePoint(point)));
-        else if (longitudeField) {
-          form.setValue(placeField, point && point.lat);
-          form.setValue(longitudeField, point && point.lng);
-        }
-        if (at) wrote.place = placeNow();
-      }
-      if (partsField && (parts || before.parts === partsNow())) {
-        const held = now()[partsField];
-        const line2 = isObject(held) && typeof held['line2'] === 'string' ? { line2: held['line2'] } : null;
-        form.setValue(partsField, parts || line2 ? ({ ...parts, ...line2 } as AddressParts as Value) : null);
-        if (parts) wrote.parts = partsNow();
-      }
+      writeFound(at, parts);
     },
   });
 
@@ -212,6 +261,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     destroy() {
       box.destroy();
       input.removeEventListener('input', typedOn);
+      input.removeEventListener('blur', left);
       tell(null);
       popup.remove();
       note.remove();

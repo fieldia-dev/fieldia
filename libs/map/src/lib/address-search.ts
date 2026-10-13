@@ -13,7 +13,8 @@ import type { MapSettings } from './settings';
  * Point, or a float field's latitude with `longitudeField` for its
  * longitude) and its parts into an address field (`partsField`, a
  * `json.address`: street, city, region, postcode and country, the line under
- * the street kept as typed). `countries` (ISO codes) keeps the suggestions to
+ * the street kept as typed); the box emptied and left, the place and parts a
+ * pick wrote go with it. `countries` (ISO codes) keeps the suggestions to
  * those countries; `near` (`{ "lat", "lng" }`, in the page's own country)
  * puts those near it first, as where the app's maps open does unless it
  * says. Addresses come before shops and malls.
