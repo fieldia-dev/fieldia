@@ -21,6 +21,11 @@ export const ALLOWED: readonly { rule: string; where: string; why: string }[] = 
     where: 'class="fd-search-list"',
     why: 'Search more…’s list is worked from its search box: the arrow keys move the active option (aria-activedescendant) and scroll it into view, so every row is reached by keyboard. axe looks only for focus inside the list.',
   },
+  {
+    rule: 'scrollable-region-focusable',
+    where: 'class="fd-path-callout"',
+    why: 'A path picker’s tree is worked from its box: the arrow keys, Home and End move the active row (aria-activedescendant) and scroll it into view, so every row is reached by keyboard. axe looks only for focus inside the list.',
+  },
 ];
 
 /** `where` is matched against the element's selector and its opening tag. */

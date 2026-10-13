@@ -33,6 +33,7 @@ import workItem from '../../examples/pages/work-item.page.json';
 import { customPage } from './custom-page';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
+import { wiPicker } from './wi-picker';
 import { businessData, businessPage } from './business';
 import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
@@ -65,6 +66,8 @@ export const pages: Record<string, Page> = {
   'map-zone': mapZone as Page,
   // An address on one line with the map service's suggestions, filling a place and an address's parts.
   'map-address': mapAddress as Page,
+  // The work item's pickers, for their browser test: shared/wi-picker.ts.
+  ...wiPicker.pages,
   // A list's records on a map, and the record each opens: shared/homes.ts.
   'map-homes': mapHomes as Page,
   'map-home': mapHome as Page,
@@ -301,11 +304,12 @@ export function sampleDataSource() {
     lists: appLists,
     attachments: billAttachments(),
     // What links show of their records besides their names: an address, a picture, a colour.
-    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' } },
+    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows },
     records: {
       ...READING,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
+      ...wiPicker.records,
       courier: sampleCouriers(),
       'food.order': { 1: sampleOrder() },
       'delivery.round': { 1: sampleRound() },
