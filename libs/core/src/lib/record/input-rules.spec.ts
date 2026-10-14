@@ -306,6 +306,9 @@ describe('readDate and readTime', () => {
     expect(readDate('31/02/2026')).toEqual({ ok: false, problem: 'noSuchDay', year: 2026, month: 2, days: 28 });
     expect(readDate('1/13/2026')).toEqual({ ok: false, problem: 'noSuchMonth' });
     expect(readDate('1/1/20261')).toEqual({ ok: false, problem: 'yearDigits' });
+    // Four digits from 1000, for every box that reads a date: year 2 is no year people write.
+    expect(readDate('13/10/0002')).toEqual({ ok: false, problem: 'yearDigits' });
+    expect(readDate('0002-10-13')).toEqual({ ok: false, problem: 'yearDigits' });
     expect(readDate('13/10')).toEqual({ ok: false, problem: 'unfinished' });
     expect(readDate('13/10/')).toEqual({ ok: false, problem: 'unfinished' });
   });

@@ -14,13 +14,14 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, lineKind, type ButtonNode, type DateOrder, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import { blockOf, readPastedCell } from './cell-paste';
 import {
   cellText,
   columnTotal,
   currencyOf,
+  dateOrderOf,
   createWidget,
   distributionIds,
   distributionModel,
@@ -1734,7 +1735,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const from = shownColumns.indexOf(startColumn);
     if (from < 0) return;
     const all = lines();
-    const dateOrder = (form.page.look as { dateOrder?: DateOrder } | undefined)?.dateOrder;
+    const dateOrder = dateOrderOf(form);
     let pasted = 0;
     const missed: string[] = [];
     let beyond = false;

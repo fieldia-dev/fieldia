@@ -13,6 +13,7 @@ export * from './lib/numbers';
 // package draws: a cell's editor, a filter, a designer's setting.
 export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
+export { dateExample, dateOrderOf, dateShape, readDateText, type DateKind, type DateReader, type DateReading } from './lib/date-box';
 export * from './lib/progress';
 export * from './lib/label';
 export * from './lib/statusbar';

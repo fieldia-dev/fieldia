@@ -510,7 +510,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 /**
  * A typed date, in the page's order (`order`, day/month/year unless told):
  * separators / . - or a space; ISO yyyy-mm-dd always; Arabic and Persian
- * digits; a two-digit year is 20xx, else a year has four digits. With
+ * digits; a two-digit year is 20xx, else a year has four digits, from 1000. With
  * `time`, a time may follow ("13/10/2026 14:30", "… 2:30 pm", "… ٢:٣٠ م"),
  * and the value is yyyy-mm-ddTHH:MM. Unfinished or impossible dates say why
  * (31/02 → 'noSuchDay' with the days that month has).
@@ -534,6 +534,8 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
   const yearText = pieces[at.y];
   if (yearText.length !== 2 && yearText.length !== 4) return { ok: false, problem: 'yearDigits' };
   const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
+  // Four digits from 1000: year 2, which a box half typed once made, is no year people write.
+  if (year < 1000) return { ok: false, problem: 'yearDigits' };
   const month = Number(pieces[at.m]);
   const day = Number(pieces[at.d]);
   if (pieces[at.m].length > 2 || month < 1 || month > 12) return { ok: false, problem: 'noSuchMonth' };

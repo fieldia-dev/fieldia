@@ -134,13 +134,26 @@ describe('a custom filter’s date', () => {
     expect(names()).toEqual(['Amira Clinics', 'Nile Traders']);
   });
 
-  it('says what a date looks like when the one typed is no day', async () => {
+  it('says why a date typed is no day, as a date box does, and keeps it', async () => {
     const { choose, apply, chips, hint } = await open();
     const box = choose('since', '>');
     type(box, '30/02/2026');
     apply();
     expect(chips()).toEqual([]);
-    expect(hint()?.textContent).toMatch(/^Enter a date, like \d{2}\/\d{2}\/\d{4}$/);
+    expect(box.value).toBe('30/02/2026');
+    expect(hint()?.textContent).toBe('Since: February 2026 has 28 days');
+    type(box, '1/1/0002');
+    apply();
+    expect(chips()).toEqual([]);
+    expect(hint()?.textContent).toBe('Since: the year has 4 digits, like 2026');
+  });
+
+  it('says what a date looks like when none is typed', async () => {
+    const { choose, apply, chips, hint } = await open();
+    choose('since', '>');
+    apply();
+    expect(chips()).toEqual([]);
+    expect(hint()?.textContent).toMatch(/^Enter a date, like 31\/12\/\d{4}$/);
   });
 });
 

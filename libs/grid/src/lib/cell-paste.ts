@@ -1,4 +1,5 @@
-import { cleanPastedNumber, couldBeNumber, foldForSearch, oneLine, placesOfCurrency, readDate, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { cleanPastedNumber, couldBeNumber, foldForSearch, oneLine, placesOfCurrency, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { readDateText } from '@fieldia/widgets';
 
 /**
  * Pasting a block on the grid's cells: the grid's own, so a page with no grid
@@ -77,7 +78,8 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     }
     case 'date':
     case 'datetime': {
-      const read = readDate(text, { order: reading.dateOrder, time: def.type === 'datetime' });
+      // As the cell's own date box reads it: a day, or a date and time as the instant its field keeps.
+      const read = readDateText(text, { kind: def.type, order: reading.dateOrder ?? 'dmy', locale: reading.locale, label: def.label });
       return read.ok ? { value: read.value } : null;
     }
     case 'selection': {

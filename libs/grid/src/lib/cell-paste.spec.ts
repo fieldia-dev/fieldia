@@ -43,6 +43,10 @@ describe('a block pasted on a table', () => {
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '13/10/2026', { locale: 'en' })).toEqual({ value: '2026-10-13' });
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '١٣/١٠/٢٠٢٦', { locale: 'ar' })).toEqual({ value: '2026-10-13' });
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '31/02/2026', { locale: 'en' })).toBeNull();
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '13/10/0002', { locale: 'en' })).toBeNull();
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '10/13/2026', { locale: 'en', dateOrder: 'mdy' })).toEqual({ value: '2026-10-13' });
+    // A date and time, as its cell's box keeps one: the instant, never a local time with no zone.
+    expect(readPastedCell({ type: 'datetime', label: 'Starts' } as LineField, '13/10/2026 14:30', { locale: 'en' })).toEqual({ value: new Date(2026, 9, 13, 14, 30).toISOString() });
     const state = { type: 'selection', label: 'State', options: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] } as LineField;
     expect(readPastedCell(state, 'done', { locale: 'en' })).toEqual({ value: 'done' });
     expect(readPastedCell(state, 'DRAFT', { locale: 'en' })).toEqual({ value: 'draft' });

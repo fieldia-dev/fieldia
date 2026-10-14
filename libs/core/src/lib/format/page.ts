@@ -8,6 +8,7 @@ export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
 
 import { FORMAT_VERSION } from './version';
+import type { DateOrder } from '../record/input-rules';
 export { FORMAT_VERSION } from './version';
 
 /**
@@ -76,7 +77,7 @@ export interface PageLook {
    * English, Arabic, French and German pages write dates), month first (`mdy`), or year first (`ymd`). A date
    * written year first, 2026-10-13, is read whatever the order.
    */
-  dateOrder?: 'dmy' | 'mdy' | 'ymd';
+  dateOrder?: DateOrder;
 }
 
 export interface Page {

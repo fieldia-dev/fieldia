@@ -39,9 +39,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
 /** A language as Intl writes its dates: English as in Britain, day first, as Fieldia writes dates at rest. */
 const langOf = (locale: Locale) => (locale === 'en' ? 'en-GB' : locale);
 
-/** The order a page types its dates in: day/month/year unless its look says otherwise. */
+/**
+ * The order a page types its dates in: day/month/year unless its look says otherwise. Every box that reads a date —
+ * a field's, a table's cell, a list's custom filter — asks this, so a page's dates are typed one way throughout.
+ */
 export function dateOrderOf(form: Pick<Form, 'page'>): DateOrder {
-  const order = (form.page?.look as { dateOrder?: unknown } | undefined)?.dateOrder;
+  const order: unknown = form.page?.look?.dateOrder;
   return order === 'mdy' || order === 'ymd' ? order : 'dmy';
 }
 
@@ -157,8 +160,6 @@ export function readDateText(text: string, reader: DateReader): DateReading {
     }
   }
   if (read.value === null) return { ok: true, value: null };
-  // Four digits from 1000: year 2, which a box half typed once made, is no year people write.
-  if (Number(read.value.slice(0, 4)) < 1000) return { ok: false, words: fillIn(words.yearDigits, { label }) };
   return { ok: true, value: kind === 'date' ? read.value : instantOf(read.value) };
 }
 

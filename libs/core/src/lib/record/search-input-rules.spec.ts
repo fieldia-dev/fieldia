@@ -59,6 +59,13 @@ describe('words typed in a list’s search', () => {
     expect(offered('٢').find((s) => s.field === 'name')?.value).toBe('2');
     expect(found('foods 2', 'name')).toEqual(['Delta Foods ٢']);
   });
+
+  it('find Arabic words as a link’s search does: written without hamza, with ه for ة, ي for ى', () => {
+    const ilike = (name: string, typed: string) => matchesFilter({ name }, [{ field: 'name', op: 'ilike', value: offered(typed).find((s) => s.field === 'name')?.value ?? '' }]);
+    expect(ilike('أحمد للتجارة', 'احمد')).toBe(true);
+    expect(ilike('مكتبة مصطفى', 'مكتبه مصطفي')).toBe(true);
+    expect(ilike('أحمد للتجارة', 'محمود')).toBe(false);
+  });
 });
 
 describe('a phone column searched', () => {
