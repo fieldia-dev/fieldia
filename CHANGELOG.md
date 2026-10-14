@@ -58,3 +58,18 @@
   characters a paste brings are dropped; a ":" typed before the @ is refused
   with words. An address saved with one of these marks before its @ no longer
   passes the email check.
+- **Fieldia's own date box comes in a part of its own.** A date, a date and
+  time, a time of day and a range of dates are drawn by the date part, loaded
+  the first time a page shows one — `fieldia.date.js` beside `fieldia.js`, or
+  a chunk an app's bundler makes — so a page with no date never downloads the
+  box, its calendar or a range's (7 KB gzipped). The viewer waits for it
+  before it draws a page with a date, a table whose lines have one, or
+  properties, as it waits for 0.20's parts: nothing moves as it comes. A
+  saved form placed in a page waits for its own parts the same way, under its
+  placeholder. React's and Vue's `<FieldiaForm>` render their fields and
+  slots when such a page is drawn after the component mounted (Vue's left
+  them out). The reader stays in the main script for every box that reads a
+  date (`readDateText`, `dateOrderOf`, `dateShape`, `dateExample`,
+  `isoWeek`), and a date drawn before its part came is a plain box on that
+  reader (`plainDateWidget`). `withCalendar` now comes from the part:
+  `(await datePart.load()).withCalendar(…)`.

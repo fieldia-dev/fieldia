@@ -453,7 +453,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // code never changing the colour held (0.3); an email's link and zero-width characters cleaned, and its ":" refused
 // (0.4); their English words (0.3) — 3.4 more; with the numbers' gaps above, measured together, to 579.8 (measured
 // 579.75).
-const BUDGET_KB = 579.8;
+// Fieldia's own date box loaded on first use (0.20.1): the box with its guard and what it keeps once left, a date's
+// calendar and a range of dates on its own calendar out of this script, into fieldia.date.js (date-box, calendar,
+// date-range: 19.8 of code). This script keeps what every box that reads a date shares (date-text.ts) — the reader in
+// the page's order, a date's words at rest and while typed, its placeholder and example, the ISO week (3.0) — and a
+// plain box on that reader for a date drawn before its part came, or if it cannot come (1.0); the parts a table's lines
+// and a properties field draw from, found before a page is drawn, and a saved form placed in a page waiting for its own
+// as the page does (0.4); the date part's names in the parts' table and its wiring (0.3) — 15.0 less, to 564.8
+// (measured 564.71).
+const BUDGET_KB = 564.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -518,8 +526,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // left, a tax amount's places; listed with the raw budget above), 1.0 more, to 177.9 (measured 177.86); the input
 // rules' last gaps (dates as written at rest, a year of two digits said, the calendar never over why, a colour's code,
 // an email's link; listed with the raw budget above), 1.3 more; with the numbers', measured together, to 179.3
-// (measured 179.22).
-const GZIP_BUDGET_KB = 179.3;
+// (measured 179.22). Fieldia's own date box, its calendar and a range of dates loaded on first use, in fieldia.date.js
+// (7.0 gzipped), the reader they share with tables, pastes and filters kept, and a plain box on it for a date drawn
+// before its part came (listed with the raw budget above): 4.9 less, to 174.4 (measured 174.35) — 16.5 over 0.20.0's
+// 157.9 for the input rules every page draws at mount.
+const GZIP_BUDGET_KB = 174.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -634,7 +645,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // bar's keyword read in the page's language — its marks, Arabic digits — as every box reads a number (filters 11.2).
 // Words typed in a path picker and left — by a click, Tab or Enter, before or after their list came — taking the
 // record they name exactly, by its path or its own name, or saying that nothing or several are called so (path 14.4, 5.7).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2] };
+// Fieldia's own date box (0.20.1) — its guard and what it keeps once left — with a date's calendar and a range of dates
+// on its own calendar, cut out of the main script (date-box, calendar, date-range: 18.9, 7.1, as measured, 18.89 and 7.02).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [18.9, 7.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -642,9 +655,10 @@ const PART_GIVES = {
   path: ['pathPickerWidget'],
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
+  date: ['dateBox', 'dateBoxWidget', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -732,7 +746,13 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await backlog.drawn;
   if (loaded() !== 'choice, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
+  // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
+  const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
+  await signup.drawn;
+  if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  signup.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, and a backlog's filter bar, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
 }
