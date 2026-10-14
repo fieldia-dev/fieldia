@@ -40,7 +40,10 @@ export const partners = () =>
     },
   });
 
-/** Wait, up to two seconds, for something the list does after an answer comes back. */
+/** Wait, up to two seconds, for something the list does after an answer comes back; still not so by then, the test fails here. */
 export async function until(check: () => unknown) {
-  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+  for (let waited = 0; !check(); waited += 10) {
+    if (waited >= 2000) throw new Error(`Waited two seconds, and it never held: ${check.toString()}`);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
 }
