@@ -87,6 +87,8 @@ test.describe('a rule across fields', () => {
     // Read in words above the box, and tried on made-up days under it.
     await expect(card().locator('.fd-answer-rule-across .fd-formula-reads')).toHaveText('Reads: Contract ends ≥ Start date');
     await expect(card().locator('.fd-answer-rule-across .fd-formula-outcome')).toHaveText(/^With Contract ends \d{4}-\d\d-\d\d and Start date \d{4}-\d\d-\d\d: holds$/);
+    // Kept as the box is left, all of it read.
+    await box.press('Tab');
     await expect(card().locator('.fd-answer-rule-say')).toHaveText(['Must hold: Contract ends ≥ Start date']);
     await card().getByRole('textbox', { name: 'Message when it does not fit' }).fill('Contract ends must not be before Start date');
     await shot(page, '02-across-kept');

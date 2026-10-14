@@ -275,13 +275,13 @@ test.describe('several files in the screen designer', () => {
     });
     const panel = page.locator('.fd-properties');
     await panel.getByRole('switch', { name: 'More than one file' }).click();
-    const most = panel.getByRole('spinbutton', { name: 'At most' });
+    const most = panel.getByRole('textbox', { name: 'At most' });
     await most.fill('3');
     await most.press('Tab');
     await panel.getByRole('group', { name: 'Show chosen files as' }).getByRole('button', { name: 'Thumbnails' }).click();
     const card = page.locator('.fd-canvas-field.fd-editing');
     await expect(card.getByRole('switch', { name: 'More than one file' })).toHaveAttribute('aria-checked', 'true');
-    await expect(card.getByRole('spinbutton', { name: 'At most' })).toHaveValue('3');
+    await expect(card.getByRole('textbox', { name: 'At most' })).toHaveValue('3');
     // The card says what it takes.
     await expect(card.locator('.fd-file-limits')).toHaveText('up to 10 MB each · up to 3 files');
     await expect(card.locator('.fd-file')).toHaveClass(/fd-files-thumbs/);
@@ -296,7 +296,7 @@ test.describe('several files in the screen designer', () => {
       designer.select(id);
     });
     await expect(panel.getByRole('combobox', { name: 'Camera on phones' })).toHaveValue('environment');
-    await expect(panel.getByRole('spinbutton', { name: 'At most' })).toHaveValue('6');
+    await expect(panel.getByRole('textbox', { name: 'At most' })).toHaveValue('6');
     await screen(page, 'files-designer-photos', { viewport: true });
 
     await page.getByRole('button', { name: 'Try it' }).click();

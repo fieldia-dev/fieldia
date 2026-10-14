@@ -74,11 +74,12 @@ test.describe('rules in the designers', () => {
     await expect(panel(page).locator('[data-setting="Worked out from"] .fd-properties-hint')).toContainText('cannot type in it');
     await check(page, 'worked-out');
 
-    // A formula that does not read: what is wrong, under the box, its place marked.
+    // A formula that does not read: what is wrong, under the box, its place marked, and the formula the page keeps.
     const box = panel(page).getByRole('combobox', { name: 'Worked out from' });
+    await box.press('Tab');
     await box.press('End');
     await page.keyboard.type(' *');
-    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem-words')).toHaveText(/^Something is missing after “\*” at \d+$/);
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem-words')).toHaveText(/^Not in force yet: Something is missing after “\*” at \d+\. The page keeps \S+ \* \S+\.$/);
     await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem mark')).toHaveText('*');
     await check(page, 'formula-problem');
     await page.keyboard.press('Backspace');
@@ -109,7 +110,7 @@ test.describe('rules in the designers', () => {
     await expect(card().getByRole('button', { name: 'Add a rule' })).toBeFocused();
     await page.keyboard.press('Enter');
     await page.getByRole('menuitem', { name: 'A length' }).click();
-    await expect(card().getByRole('spinbutton', { name: 'Shortest' })).toBeFocused();
+    await expect(card().getByRole('textbox', { name: 'Shortest' })).toBeFocused();
     await expect(card().locator('.fd-answer-rule-say')).toHaveText(['At least 2 letters']);
     await expect(card().getByRole('button', { name: 'Stops sending' })).toHaveAttribute('aria-pressed', 'true');
     await check(page, 'survey-length');

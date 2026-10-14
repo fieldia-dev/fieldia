@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { stubMaps } from './map-support';
 import { node, open, screen } from './support';
 
 /**
@@ -332,6 +333,77 @@ test.describe('the designer’s number settings', () => {
       await screen(page, `input-tables-designer-rows-${locale}`, { viewport: true });
     });
   }
+});
+
+test.describe('the designer’s maps', () => {
+  const built = (page: Page) => page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage());
+  /** The maps on the page being built, wherever they sit. */
+  const reach = async (page: Page) => {
+    const found: { layers: { reachable?: { minutes: number }; label?: string }[] }[] = [];
+    const walk = (n: any) => {
+      if (!n || typeof n !== 'object') return;
+      if (n.type === 'map') found.push(n);
+      for (const v of Object.values(n)) walk(v);
+    };
+    walk((await built(page)).layout);
+    return found[0].layers[1];
+  };
+
+  for (const [locale, query, minutesName] of [
+    ['en', '', 'Minutes'],
+    ['ar', '&locale=ar&dir=rtl', 'الدقائق'],
+  ] as const) {
+    test(`${locale}: a kitchen’s reachable minutes and a layer’s words are typed whole, the box keeping the focus`, async ({ page }) => {
+      const problems: string[] = [];
+      page.on('pageerror', (error) => problems.push(error.message));
+      await stubMaps(page);
+      await page.goto(`/screen/?start=kitchen&ride=off${query}`);
+      await page.locator('.fd-map-preview.fd-canvas-block').click();
+      const near = page.locator('.fd-map-layer:not(.fd-map-fence)').nth(1);
+      const minutes = near.getByRole('textbox', { name: minutesName, exact: true });
+      await minutes.click();
+      await minutes.press('Control+A');
+      await minutes.pressSequentially(locale === 'ar' ? '٤٥' : '45');
+      await expect(minutes).toBeFocused();
+      await minutes.press('Tab');
+      await expect.poll(async () => (await reach(page)).reachable?.minutes).toBe(45);
+      await minutes.click();
+      await minutes.press('Control+A');
+      await minutes.pressSequentially('600');
+      await minutes.press('Tab');
+      await expect(minutes).toHaveValue('45');
+      await expect(near.locator('.fd-refusal-hint')).toContainText('120');
+      expect((await reach(page)).reachable?.minutes).toBe(45);
+      const words = near.locator('input').first();
+      await words.click();
+      await words.press('Control+A');
+      await words.pressSequentially('Delivery zone');
+      await expect(words).toBeFocused();
+      await expect.poll(async () => (await reach(page)).label).toBe('Delivery zone');
+      await near.scrollIntoViewIfNeeded();
+      await screen(page, `input-tables-designer-minutes-${locale}`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
+
+  test('homes: a fit zoom past 22 is refused with its range, never brought into it in silence', async ({ page }) => {
+    await stubMaps(page);
+    await page.goto('/screen/?start=homes');
+    const map = page.locator('[data-part="map"]');
+    const zoom = map.getByLabel('Closest it zooms to show the records');
+    await zoom.click();
+    await zoom.press('Control+A');
+    await zoom.pressSequentially('14');
+    await zoom.press('Tab');
+    await expect.poll(async () => (await built(page)).layout.map.fitZoom).toBe(14);
+    await zoom.click();
+    await zoom.press('Control+A');
+    await zoom.pressSequentially('30');
+    await zoom.press('Tab');
+    await expect(zoom).toHaveValue('14');
+    await expect(map.locator('.fd-refusal-hint')).toHaveText('Closest it zooms to show the records is a whole number from 1 to 22. It stays 14.');
+    expect((await built(page)).layout.map.fitZoom).toBe(14);
+  });
 });
 
 test.describe('the refusal hints’ look', () => {
