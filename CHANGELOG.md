@@ -108,9 +108,11 @@
   "ahmedali@example.com", "#1x23" never #112233. Left so, all that was typed
   stays, and the field says why.
 - **A time's one-digit minute is never quietly :03.** "14:3" could be 14:03
-  or 14:30, and "14.5" half past two: a time, a date and time, hours and a
-  pasted cell keep it unread and name both ("“14:3” could be 14:03 or 14:30;
-  write the minutes with two digits"). "14:7" can only be 14:07, and is read.
+  or 14:30, and "14.5" 14:05, half past two or 14:50: a time, a date and
+  time, hours and a pasted cell keep it unread and name each time it could be
+  ("“14:3” could be 14:03 or 14:30; write the minutes with two digits"),
+  joined as the page's language offers a choice. "14:7" can only be 14:07,
+  and is read.
 - **A date and time pasted into a date says its time was left out**, and a
   pasted cell of a date never takes an instant's day in silence.
 - **A block pasted into a per cent or hours column keeps to its places and
