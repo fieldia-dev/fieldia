@@ -98,26 +98,47 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       if (from?.isConnected) from.focus();
       resolve({ saved, recordId: state.recordId ?? null, values: state.values as Values });
     };
-    /** One question at a time: another way out while it is asked is the same question. */
+    /**
+     * One question at a time: another way out while it is asked is the same question. `afterSave`: what is unsaved
+     * counts whole, as after a save (a change made while it ran); else only what Reload set aside, files on their way.
+     */
     let asking = false;
-    const endAsking = (saved: boolean) => {
+    const endAsking = (saved: boolean, afterSave = saved) => {
       if (done || asking) return;
-      if (!(saved ? workLeft(opened.form, sent.values()) : keptWork(opened.form.getState()))) return end(saved);
+      if (!(afterSave ? workLeft(opened.form, sent.values()) : keptWork(opened.form.getState()))) return end(saved);
       asking = true;
-      void askDiscard(opened.element, opener.discardWords, () => (asking = false)).then((discarding) => discarding && end(saved));
+      void askDiscard(opened.element, opener.discardWords, () => (asking = false)).then((discarding) => (discarding ? end(saved) : (stayedAt = saves)));
     };
+    /**
+     * The saves made in it, how many there were as the last run of steps ended (a run that saved, then closed), and
+     * as the person last chose to stay: a save they were asked about once does not ask again as it settles.
+     */
+    let saves = 0;
+    let savesBefore = 0;
+    let stayedAt = -1;
     root.hidden = true;
     // Where the app keeps a trail, this record joins it as the way back.
     const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => endAsking(false) }] : undefined;
-    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => endAsking(false) } });
+    // A `close` step returns without, as it always has; after a save in the same run, a change made while it ran is asked about.
+    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => endAsking(false, saves > savesBefore) } });
     const sent = lastSent(opened.form);
+    opened.on('save', () => saves++);
+    opened.on('send', () => saves++);
+    opened.on('run', ({ id: run }) => {
+      if (!run.startsWith('on.')) savesBefore = saves;
+    });
     const back = doc.createElement('button');
     back.type = 'button';
     back.className = 'fd-button fd-button-link fd-back';
     back.textContent = opener.back;
     back.addEventListener('click', () => endAsking(false));
     if (!opened.element.querySelector('.fd-breadcrumbs')) opened.element.prepend(back);
-    const leave = () => void opened.form.settled().then(() => endAsking(true));
+    const leave = () => {
+      const at = saves;
+      void opened.form.settled().then(() => {
+        if (stayedAt < at) endAsking(true);
+      });
+    };
     opened.on('save', leave);
     opened.on('send', leave);
     (focusField(opened.element) ?? opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();

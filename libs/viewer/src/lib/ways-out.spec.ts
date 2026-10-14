@@ -50,6 +50,17 @@ const lead: Page = {
 /** Another lead, as the page a button opens in this one's place shows it. */
 const other: Page = { ...lead, id: 'lead-other', layout: { ...(lead.layout as Extract<Page['layout'], { type: 'sheet' }>), buttons: [] } };
 
+/** Another lead, opened in this one's place by "Open to close", whose own button saves, then closes it. */
+const closing: Page = {
+  ...lead,
+  id: 'lead-closing',
+  layout: { ...(lead.layout as Extract<Page['layout'], { type: 'sheet' }>), buttons: [{ type: 'button', id: 'done', label: 'Save and close', steps: [{ do: 'save' }, { do: 'close' }] }] },
+};
+const opensClosing: Page = {
+  ...lead,
+  layout: { ...(lead.layout as Extract<Page['layout'], { type: 'sheet' }>), buttons: [{ type: 'button', id: 'to-close', label: 'Open to close', steps: [{ do: 'open', page: 'lead-closing', as: 'page', record: '2' }] }] },
+};
+
 /** The same lead with buttons of its own at its foot, in place of Discard and Save & Close. */
 const withFooter: Page = {
   ...lead,
@@ -261,6 +272,39 @@ describe('the record’s own ways to another record', () => {
     expect(handle.element.hidden).toBe(true);
     expect(ds.records['lead'][2]).toMatchObject({ phone: '+201009998887', budget: 2500000 });
     expect(input(opened(), 'budget').value).toMatch(/2[,.\s]?600[,.\s]?000/);
+  });
+
+  it('a page in this one’s place whose button saves, then closes it: a change made while it saved is asked about first', async () => {
+    const ds = source({ delayMs: 30 });
+    const { host, handle } = await mount({ page: opensClosing, dataSource: ds, pages: { 'lead-closing': closing } });
+    const opened = () => [...host.querySelectorAll<HTMLElement>('.fd-form')].find((form) => form !== handle.element) as HTMLElement | undefined;
+    const openIt = async () => {
+      button(host, 'Open to close').click();
+      await until(() => opened() && input(opened() as HTMLElement, 'phone')?.value === (ds.records['lead'][2]['phone'] as string));
+      await pause();
+      return opened() as HTMLElement;
+    };
+    let page = await openIt();
+    type(page, 'phone', '+201009998887');
+    button(page, 'Save and close').click();
+    await typeWhileSaving(ds, page, 'budget', '2600000');
+    await asked(page);
+    answer('Cancel', page);
+    await pause();
+    expect(handle.element.hidden).toBe(true);
+    expect(ds.records['lead'][2]).toMatchObject({ phone: '+201009998887', budget: 2500000 });
+    expect(input(page, 'budget').value).toMatch(/2[,.\s]?600[,.\s]?000/);
+    expect(page.querySelectorAll('[role="alertdialog"]')).toHaveLength(0);
+    // Saved again, nothing typed meanwhile: it gives way back, asking nothing.
+    button(page, 'Save and close').click();
+    await until(() => !handle.element.hidden);
+    expect(question()).toBeNull();
+    expect(ds.records['lead'][2]).toMatchObject({ budget: 2600000 });
+    // As before 0.21, a close with nothing left unsaved gives way at once.
+    page = await openIt();
+    button(page, 'Save and close').click();
+    await until(() => !handle.element.hidden);
+    expect(question()).toBeNull();
   });
 });
 
