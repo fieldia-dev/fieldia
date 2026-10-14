@@ -174,6 +174,14 @@ export interface SaveRequest {
   /** Every value, for sources that save whole records. */
   values: Values;
   /**
+   * True when the save carries some of the record's fields, not all of it:
+   * `values` then holds the fields in `changes` alone and `fields` names
+   * them alone — a save from outside a form, which never had the rest, as a
+   * calendar's move and its Undo. A source that saves whole records writes
+   * these over the record as stored and keeps every other field.
+   */
+  partial?: boolean;
+  /**
    * The version the record was opened at — from its load, or from the last
    * save — for a source that refuses a save over someone else's. None for a
    * new record, nor from a source that tells no versions. "Keep mine" after
