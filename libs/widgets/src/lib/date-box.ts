@@ -1,5 +1,6 @@
-import { checkValue, couldBeMonth, foldDigits, MESSAGES, readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Field, type Form, type Locale, type Value } from '@fieldia/core';
+import { checkValue, couldBeMonth, foldDigits, MESSAGES, stripMarks, type Field, type Form, type Locale, type Value } from '@fieldia/core';
 import { withCalendar } from './calendar';
+import { dateExample, dateOrderOf, dateShape, localOf, readDateText, restingText, typingText, type DateKind, type DateReader } from './date-text';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
 import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -12,6 +13,11 @@ import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widget
  * which follows the browser's language rather than the page's, ignores a
  * paste and Arabic digits, and fixes a year segment when the limits share a
  * year — so 20/10/2026 typed in full became the 26th.
+ *
+ * It comes in the date part (date-part.ts), with its calendar and a range of
+ * dates, the first time a page shows one; the reader it types with
+ * (date-text.ts) is the main script's, shared with every box that reads a
+ * date — a table's cell, a pasted block, a list's custom filter.
  *
  * - Typed in the page's order: day/month/year on English, Arabic, French and
  *   German pages, as Fieldia writes dates at rest; `look.dateOrder` may say
@@ -39,143 +45,7 @@ import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widget
  *   anything else is refused with words.
  */
 
-export type DateKind = 'date' | 'datetime' | 'time';
-
 const pad = (n: number) => String(n).padStart(2, '0');
-/** A language as Intl writes its dates: English as in Britain, day first, as Fieldia writes dates at rest. */
-const langOf = (locale: Locale) => (locale === 'en' ? 'en-GB' : locale);
-
-/**
- * The order a page types its dates in: day/month/year unless its look says otherwise. Every box that reads a date —
- * a field's, a table's cell, a list's custom filter — asks this, so a page's dates are typed one way throughout.
- */
-export function dateOrderOf(form: Pick<Form, 'page'>): DateOrder {
-  const order: unknown = form.page?.look?.dateOrder;
-  return order === 'mdy' || order === 'ymd' ? order : 'dmy';
-}
-
-/** A date field's value as a day of the calendar where the person is, a date and time's as its local day and hours; null for what is no date. */
-function localOf(value: Value | undefined, kind: DateKind): Date | null {
-  if (typeof value !== 'string' || !value) return null;
-  if (kind === 'date') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
-  }
-  if (kind === 'time') return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-/** A day written the page's way for typing: 13/10/2026, 13.10.2026 on a German page, 10/13/2026, 2026-10-13. */
-function typedDay(d: Date, order: DateOrder, locale: Locale): string {
-  const [y, m, day] = [String(d.getFullYear()).padStart(4, '0'), pad(d.getMonth() + 1), pad(d.getDate())];
-  if (order === 'ymd') return `${y}-${m}-${day}`;
-  const mark = locale === 'de' ? '.' : '/';
-  return order === 'mdy' ? `${m}/${day}/${y}` : `${day}${mark}${m}${mark}${y}`;
-}
-
-/**
- * A value as its box shows it while it is typed in: 13/10/2026, 13/10/2026 14:30, 14:30. A value from outside that
- * is no date is shown as its own text.
- */
-export function typingText(value: Value | undefined, kind: DateKind, order: DateOrder, locale: Locale): string {
-  if (value === null || value === undefined || value === '') return '';
-  if (kind === 'time') return String(value);
-  const d = localOf(value, kind);
-  if (!d) return String(value);
-  return kind === 'date' ? typedDay(d, order, locale) : `${typedDay(d, order, locale)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-const restingFormats = new Map<string, Intl.DateTimeFormat>();
-
-/** A value in words, as its box shows it once left: 13 Oct 2026, 13 Oct 2026, 14:30, 14:30. */
-export function restingText(value: Value | undefined, kind: DateKind, locale: Locale): string {
-  if (value === null || value === undefined || value === '') return '';
-  if (kind === 'time') return String(value);
-  const d = localOf(value, kind);
-  if (!d) return String(value);
-  const key = `${locale}:${kind}`;
-  let format = restingFormats.get(key);
-  if (!format) {
-    format = new Intl.DateTimeFormat(langOf(locale), {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      numberingSystem: 'latn',
-      ...(kind === 'datetime' ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : {}),
-    });
-    restingFormats.set(key, format);
-  }
-  return format.format(d);
-}
-
-/** The placeholder: the page's order in its words, "dd/mm/yyyy", "TT.MM.JJJJ hh:mm", "hh:mm". */
-export function dateShape(kind: DateKind, order: DateOrder, words: WidgetLabels): string {
-  if (kind === 'time') return words.timeShape;
-  if (kind === 'datetime' && order === 'dmy') return words.dateTimeShape;
-  const day = order === 'mdy' ? words.dateShapeMdy : order === 'ymd' ? words.dateShapeYmd : words.dateShape;
-  return kind === 'datetime' ? `${day} ${words.timeShape}` : day;
-}
-
-/** Text typed in a box, read: its value (null for nothing), or why it does not read, in words, and the reader's name for why. */
-export type DateReading = { ok: true; value: string | null } | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' };
-
-/** What a box reads text with: its kind, its page's order and language, its label and words. */
-export interface DateReader {
-  kind: DateKind;
-  order: DateOrder;
-  locale: Locale;
-  label: string;
-  labels?: WidgetLabels;
-}
-
-/** A local date and time read ("2026-10-13T14:30") as the instant a date and time field keeps. */
-const instantOf = (local: string) => {
-  const [, y, mo, d, h, mi] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(local) as RegExpExecArray;
-  return new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)).toISOString();
-};
-
-/**
- * Typed text as a date, a date and time or a time, in the page's order: the value its field keeps (a day,
- * 2026-10-13; an instant; 14:30), or why not, in the page's words — "Start date: February 2026 has 28 days".
- */
-export function readDateText(text: string, reader: DateReader): DateReading {
-  const words = wordsFor(reader.labels, reader.locale);
-  const { kind, label } = reader;
-  const t = text.trim();
-  if (!stripMarks(t)) return { ok: true, value: null };
-  if (kind === 'time') {
-    const time = readTime(t);
-    return time.ok ? { ok: true, value: time.value } : { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
-  }
-  const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale });
-  if (!read.ok) {
-    switch (read.problem) {
-      case 'noSuchDay': {
-        const month = new Intl.DateTimeFormat(langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
-        return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }), problem: 'noSuchDay' };
-      }
-      case 'noSuchMonth':
-        return { ok: false, words: fillIn(words.noSuchMonth, { label }), problem: 'noSuchMonth' };
-      case 'yearDigits':
-        return { ok: false, words: fillIn(words.yearDigits, { label }), problem: 'yearDigits' };
-      case 'shortYear':
-        return { ok: false, words: fillIn(words.yearInFull, { label, short: quoted(read.short), early: read.early, late: read.late }), problem: 'shortYear' };
-      case 'time':
-        return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: 'time' };
-      default:
-        return { ok: false, words: fillIn(words.dateUnfinished, { label, text: quoted(t), example: dateExample(reader) }), problem: 'unfinished' };
-    }
-  }
-  if (read.value === null) return { ok: true, value: null };
-  return { ok: true, value: kind === 'date' ? read.value : instantOf(read.value) };
-}
-
-/** A date in the page's order, as words point to one: the year's last day, whose 31 shows which part is the day. */
-export function dateExample(reader: Pick<DateReader, 'kind' | 'order' | 'locale'>): string {
-  const last = new Date(new Date().getFullYear(), 11, 31, 14, 30);
-  return reader.kind === 'datetime' ? `${typedDay(last, reader.order, reader.locale)} 14:30` : typedDay(last, reader.order, reader.locale);
-}
 
 /**
  * The Arabic letters a time's am and pm are written with, ص and م, made from their code points: the one-tag script

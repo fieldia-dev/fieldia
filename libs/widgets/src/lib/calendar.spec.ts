@@ -1,7 +1,7 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { createWidget } from './widgets';
 import { WIDGET_LABELS } from './labels';
-import { isoWeek } from './calendar';
+import { isoWeek } from './date-text';
 
 function mountDate(type: 'date' | 'datetime', value: string | null, locale: 'en' | 'de' = 'en') {
   const page = {

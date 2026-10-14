@@ -1,4 +1,5 @@
 import type { Locale, Value } from '@fieldia/core';
+import { isoWeek } from './date-text';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
@@ -19,6 +20,9 @@ import { openOnClick } from './quiet';
  * for anything but the month (Tab to its button, or past it) closes it, as
  * does the focus leaving the field from inside it; and opened on text left
  * unread, the month says why under it.
+ *
+ * It comes in the date part (date-part.ts), with the date box it is beside:
+ * `(await datePart.load()).withCalendar(…)`.
  */
 
 /** How a calendar is drawn, and what it keeps to. */
@@ -29,14 +33,6 @@ export interface CalendarOptions {
   refuse?: (value: string) => string | undefined;
   /** The element the box and its calendar are drawn in: a new one unless given. */
   into?: HTMLElement;
-}
-
-/** The ISO 8601 week a day falls in: weeks start on Monday, week 1 holds the year's first Thursday. */
-export function isoWeek(day: Date): number {
-  const t = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()));
-  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
-  const yearStart = Date.UTC(t.getUTCFullYear(), 0, 1);
-  return Math.ceil(((t.getTime() - yearStart) / 86400000 + 1) / 7);
 }
 
 /**

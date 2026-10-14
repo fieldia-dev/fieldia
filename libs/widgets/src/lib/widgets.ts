@@ -25,7 +25,7 @@ import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
-import { dateBoxWidget } from './date-box';
+import { plainDateWidget, type DateKind } from './date-text';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
@@ -50,11 +50,10 @@ import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
-import { choicePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import { choicePart, datePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
 import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
-import { dateRangeWidget } from './date-range';
 import { timerWidget } from './timer';
 import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
@@ -673,10 +672,12 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   };
 }
 
-// A date, a date and time, and a time of day are typed in Fieldia's own box, a date's calendar beside it (date-box.ts).
-const dateWidget = dateBoxWidget('date');
-/** Shown in local time, stored as an ISO instant in UTC. */
-const dateTimeWidget = dateBoxWidget('datetime');
+// A date, a date and time, and a time of day are typed in Fieldia's own box, a date's calendar beside it (date-box.ts),
+// which comes in the date part: a plain box of the same reader meanwhile. A date and time is shown in local time, stored
+// as an ISO instant in UTC.
+const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateBoxWidget(kind), plainDateWidget(kind));
+/** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
+const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
@@ -718,7 +719,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
-  'char.time': dateBoxWidget('time'),
+  'char.time': dateBoxOf('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,
@@ -753,8 +754,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.copy': copyWidget,
   'text.copy': copyWidget,
   // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
-  'date.daterange': dateRangeWidget,
-  'datetime.daterange': dateRangeWidget,
+  'date.daterange': dateRangeOf('date'),
+  'datetime.daterange': dateRangeOf('datetime'),
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
   'float.timer': timerWidget,
   'datetime.timer': timerWidget,
@@ -775,8 +776,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.image-choice': imageChoiceWidget,
   'selection.ranking': rankingWidget,
   'selection.statusbar': statusbarWidget,
-  date: dateWidget,
-  datetime: dateTimeWidget,
+  date: dateBoxOf('date'),
+  datetime: dateBoxOf('datetime'),
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarWidget,
   // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).
