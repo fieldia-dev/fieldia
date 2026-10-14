@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { addField, editing, watch } from './designer-support';
+import { addField, editing, inAdvanced, watch } from './designer-support';
 import { mapReady, mapOf, stubMaps } from './map-support';
 import { node, open, screen } from './support';
 
@@ -317,6 +317,116 @@ test.describe('the designer: a setting refused because of another', () => {
     }
     expect(problems).toEqual([]);
   });
+});
+
+test.describe('the designer’s typed numbers', () => {
+  const panel = (page: Page) => page.locator('.fd-properties');
+  const fieldOf = (page: Page, label: string) =>
+    page.evaluate((l) => Object.values((window as any).fieldiaDesigner.designer.getPage().fields as Record<string, any>).find((f) => f.label === l), label);
+
+  for (const [locale, query, words, typed, expected] of [
+    ['en', '', { rules: 'Rules', setWhen: 'Set when…', setTo: 'Set to', as: 'Set' }, '1,5', '1.5'],
+    ['ar', '?locale=ar&dir=rtl', { rules: 'القواعد', setWhen: 'يُضبط عندما…', setTo: 'يُضبط على', as: 'يُضبط' }, '٥٠', '50'],
+  ] as const) {
+    test(`${locale}: a value set when, typed "${typed}" in its number box, is ${expected}; "1e3" is never 13 or 1000`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await inAdvanced(page);
+      const problems = watch(page);
+      await page.goto(`/screen/${query}`);
+      await addField(page, 'number', 'Quantity');
+      await addField(page, 'number', 'Price');
+      await panel(page).getByRole('tab', { name: words.rules, exact: true }).click();
+      await panel(page).getByRole('button', { name: words.setWhen, exact: true }).click();
+      const to = panel(page).getByRole('textbox', { name: words.setTo, exact: true });
+      // Never the browser's number box, which reads by the browser's language and empties itself on Arabic digits.
+      await expect(to).toHaveAttribute('type', 'text');
+      const as = panel(page).getByRole('combobox', { name: words.as, exact: true });
+      await as.selectOption((await as.locator('option', { hasText: 'Quantity' }).getAttribute('value')) as string);
+      await to.click();
+      await to.pressSequentially(typed);
+      await to.press('Tab');
+      await expect.poll(async () => (await fieldOf(page, 'Price'))?.setWhen?.[0]?.value).toBe(expected);
+      // An exponent cannot be typed: the e is refused, the 3 after it waits with it, and leaving keeps what was set.
+      await to.click();
+      await to.press('ControlOrMeta+a');
+      await to.pressSequentially('1e3');
+      await expect(to).toHaveValue('1');
+      await to.press('Tab');
+      await expect(to).toHaveValue(expected);
+      const hint = to.locator('xpath=following-sibling::*[contains(@class,"fd-refusal-hint")][1]');
+      await expect(hint).toBeVisible();
+      await expect(hint).toContainText(expected);
+      expect((await fieldOf(page, 'Price'))?.setWhen?.[0]?.value).toBe(expected);
+      await screen(page, `input-numbers-designer-set-to-${locale}`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
+
+  for (const [locale, query, only, has] of [
+    ['en', '', 'Only where', 'has the value'],
+    ['ar', '&locale=ar&dir=rtl', 'فقط حيث', 'قيمته'],
+  ] as const) {
+    test(`${locale}: a link’s filter value is read as every box reads a number: "٥" is 5, "1,5" one and a half, "0x10" and "1e3" words`, async ({ page }) => {
+      const problems = watch(page);
+      await page.goto(`/screen/?start=blank${query}`);
+      await expect(page.locator('.fd-toolbox')).toBeVisible();
+      await addField(page, 'links', 'Tags');
+      const setting = (name: string) => editing(page).card.getByLabel(name, { exact: true });
+      await setting(only).click();
+      await setting(only).pressSequentially('level');
+      await setting(only).press('Tab');
+      for (const [typed, expected] of [
+        ['٥', 5],
+        ['۵', 5],
+        ['1,5', 1.5],
+        ['0x10', '0x10'],
+        ['1e3', '1e3'],
+      ] as const) {
+        await setting(has).click();
+        await setting(has).press('ControlOrMeta+a');
+        await setting(has).pressSequentially(typed);
+        await setting(has).press('Tab');
+        await expect.poll(async () => [typed, (await fieldOf(page, 'Tags'))?.filter?.[0]?.value]).toEqual([typed, expected]);
+      }
+      expect(problems).toEqual([]);
+    });
+  }
+});
+
+test.describe('tax amounts in the record’s currency', () => {
+  let problems: string[] = [];
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  });
+  test.afterEach(() => expect(problems).toEqual([]));
+  const taxOf = (page: Page) =>
+    page.evaluate(() => ((window as any).fieldiaDemo.handle.form.getState().values['tax_totals'] as any).groups_by_subtotal['Untaxed Amount'][0].tax_group_amount as number);
+
+  for (const [locale, query, typed, shown, pasted] of [
+    ['en', '', '12.345', '12.345', 'KWD 1.250'],
+    ['ar', '&locale=ar&dir=rtl', '١٢٫٣٤٥', /^12[.٫]345$/, 'KWD 1.250'],
+    ['fr', '&locale=fr', '12,345', '12,345', '1,250 KWD'],
+  ] as const) {
+    test(`${locale}: a Kuwaiti dinar amount takes its three places, typed or pasted with its currency`, async ({ page }) => {
+      ({ problems } = await open(page, 'plain', `page=business&skin=underline${query}`));
+      await page.getByRole('tab', { name: 'Invoicing' }).click();
+      // The record's currency: the Kuwaiti dinar, which has three places.
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.form.setValue('currency_id', { id: 9001, label: 'KWD' }));
+      const tax = node(page, 'f-tax-totals').locator('input').first();
+      await enter(tax);
+      await tax.pressSequentially(typed);
+      await expect(node(page, 'f-tax-totals').locator('.fd-refusal-hint').first()).toBeHidden();
+      await page.keyboard.press('Tab');
+      await expect.poll(() => taxOf(page)).toBe(12.345);
+      // Shown as it is, never a rounded picture of another amount.
+      await expect(tax).toHaveValue(shown);
+      await enter(tax);
+      await paste(page, tax, pasted);
+      await expect(node(page, 'f-tax-totals').locator('.fd-refusal-hint').first()).toBeHidden();
+      await page.keyboard.press('Tab');
+      await expect.poll(() => taxOf(page)).toBe(1.25);
+    });
+  }
 });
 
 test.describe('a place’s coordinates', () => {
