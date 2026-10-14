@@ -31,6 +31,10 @@ export const LAYOUT_CSS = /* css */ `
 .fd-form { --fd-ground: transparent; }
 .fd-card, .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-section[data-style="card"][data-on-page] { --fd-ground: var(--fd-surface); }
 fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
+/* A group's title, its words and its parts, one under another. A column of flex items, not a grid's rows: Safari never
+   lays a title out again in a grid that narrows (a window made narrower, a tablet turned, a side panel opened), and the
+   title kept its old width, past the group's edge and the page's. */
+fieldset.fd-section { display: flex; flex-direction: column; }
 .fd-form .fd-section[data-style="line"] > .fd-section-title { border-block-end: 1px solid var(--fd-border); padding-block-end: 8px; }
 .fd-form .fd-section[data-style="plain"] > .fd-section-title { border-block-end: 0; padding-block-end: 0; }
 .fd-form .fd-section[data-style="framed"] {

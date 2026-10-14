@@ -422,7 +422,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // it, tells the console and onError, and the rest of the form goes on — libs/widgets/src/lib/contain.ts and the viewer's
 // guards, the box's words and look), and the page format's versions (upgradePage, and checks that say a page is newer
 // than this Fieldia) — 5.2 more, to 530.4.
-const BUDGET_KB = 530.4;
+// What Firefox and WebKit showed (a centred line written as a style in Firefox, an old align attribute kept as one, a
+// group's parts in a flex column, as Safari lays a narrowed group's title out again only there) — 0.2 more, to 530.6.
+const BUDGET_KB = 530.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -476,8 +478,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
 // 0.21's safety kit (errors kept to their part, with the box that names it; the page format's versions and upgradePage,
-// listed with the raw budget above), 1.9 more, to 161.3.
-const GZIP_BUDGET_KB = 161.3;
+// listed with the raw budget above), 1.9 more, to 161.3; what Firefox and WebKit showed (listed there too), 0.1, to 161.4.
+const GZIP_BUDGET_KB = 161.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
