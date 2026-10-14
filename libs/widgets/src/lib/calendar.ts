@@ -1,17 +1,30 @@
 import type { Locale, Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import { rightToLeft, setHidden, setText } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
 import { openOnClick } from './quiet';
 
 /**
- * A calendar beside a date, for when the person needs the week numbers
- * (`options.weekNumbers` on a date or date-and-time node). The ARIA
- * date-picker dialog: a grid of days, Monday first, an ISO 8601 week number at
- * the start of each row, arrow keys by day and week, PageUp and PageDown by
- * month, Enter to pick, Escape to close. A pick says so: a bubbling
- * `fd-picked` event, its `detail.value` the value set, for what holds the
- * field — a grid's cell closes on it.
+ * A calendar beside a date: Fieldia's own date box has one, with the week
+ * numbers when the person needs them (`options.weekNumbers` on a date or
+ * date-and-time node). The ARIA date-picker dialog: a grid of days, Monday
+ * first, an ISO 8601 week number at the start of each row when asked, arrow
+ * keys by day and week (mirrored right to left), PageUp and PageDown by
+ * month, Enter to pick, Escape to close. A day past the field's limits is
+ * drawn faint, and picking it says why under the month, and picks nothing. A
+ * pick says so: a bubbling `fd-picked` event, its `detail.value` the value
+ * set, for what holds the field — a grid's cell closes on it.
  */
+
+/** How a calendar is drawn, and what it keeps to. */
+export interface CalendarOptions {
+  /** ISO week numbers at the start of each row: shown unless false. */
+  weekNumbers?: boolean;
+  /** Why a day — as the field would hold it — may not be picked (before the earliest, after the latest, a day of the week it may not fall on), in words; undefined when it may. */
+  refuse?: (value: string) => string | undefined;
+  /** The element the box and its calendar are drawn in: a new one unless given. */
+  into?: HTMLElement;
+}
 
 /** The ISO 8601 week a day falls in: weeks start on Monday, week 1 holds the year's first Thursday. */
 export function isoWeek(day: Date): number {
@@ -19,6 +32,19 @@ export function isoWeek(day: Date): number {
   t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
   const yearStart = Date.UTC(t.getUTCFullYear(), 0, 1);
   return Math.ceil(((t.getTime() - yearStart) / 86400000 + 1) / 7);
+}
+
+/**
+ * A day of the week as a calendar's column heads it: its short name ("Mon", "lun", "Mo"), or — where the short name
+ * is a whole word, as Arabic's are (الاثنين) — its narrow one (ن), which fits the column; the head's `abbr` says it whole.
+ */
+export function weekdayHead(lang: string): (day: Date) => string {
+  const short = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const narrow = new Intl.DateTimeFormat(lang, { weekday: 'narrow' });
+  return (day) => {
+    const name = short.format(day).replace(/\.$/, '');
+    return [...name].length > 4 ? narrow.format(day) : name;
+  };
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -41,13 +67,13 @@ function dayOf(kind: 'date' | 'datetime', value: Value | undefined): Date | null
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date' | 'datetime'): Widget {
+export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date' | 'datetime', options: CalendarOptions = {}): Widget {
   const { form, name, id, document: doc, locale = 'en' as Locale } = context;
   const labels: WidgetLabels = context.labels ?? WIDGET_LABELS.en;
   const lang = locale === 'en' ? 'en-GB' : locale;
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const weekdayShort = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const weekdayShort = weekdayHead(lang);
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
 
   const button = doc.createElement('button');
@@ -94,23 +120,41 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   const grid = doc.createElement('table');
   grid.className = 'fd-calendar-grid';
   grid.setAttribute('role', 'grid');
-  dialog.append(head, grid);
+  // Why the day pressed was not picked: said politely, under the month, while the month stays open.
+  const note = doc.createElement('div');
+  note.className = 'fd-calendar-note';
+  note.setAttribute('role', 'status');
+  note.hidden = true;
+  dialog.append(head, grid, note);
+  const weeks = options.weekNumbers !== false;
 
-  const element = doc.createElement('span');
-  element.className = 'fd-date-pick';
+  const element = options.into ?? doc.createElement('span');
+  element.classList.add('fd-date-pick');
   element.append(inner.element, button, dialog);
 
   let focused = new Date();
   let readonly = false;
 
+  /** A day as the field would hold it: the date, or the day at the hours the field has. */
+  function valueOn(day: Date): string {
+    if (kind === 'date') return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+    const was = dayOf('datetime', form.getState().values[name]);
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), was?.getHours() ?? 0, was?.getMinutes() ?? 0).toISOString();
+  }
+
   function pick(day: Date) {
-    if (kind === 'date') {
-      form.setValue(name, `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`);
-    } else {
-      const was = dayOf('datetime', form.getState().values[name]);
-      const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), was?.getHours() ?? 0, was?.getMinutes() ?? 0);
-      form.setValue(name, at.toISOString());
+    const value = valueOn(day);
+    const refused = options.refuse?.(value);
+    if (refused) {
+      // Said again when the same day is pressed twice: the region is emptied first.
+      setText(note, '');
+      setText(note, refused);
+      setHidden(note, false);
+      return;
     }
+    form.setValue(name, value);
+    // A day picked is what the box holds now: text left in it that did not read goes.
+    if (form.getState().unread?.[name]) form.setUnread(name, null);
     close();
     // A day picked is the whole answer: what holds the field (a table's cell) may close on it.
     element.dispatchEvent(new CustomEvent('fd-picked', { bubbles: true, detail: { value: form.getState().values[name] } }));
@@ -125,16 +169,18 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
     const start = addDays(first, -((first.getDay() + 6) % 7)); // back to Monday
     const headRow = doc.createElement('tr');
-    const weekHead = doc.createElement('th');
-    weekHead.scope = 'col';
-    weekHead.textContent = labels.weekShort;
-    weekHead.setAttribute('abbr', labels.week);
-    headRow.append(weekHead);
+    if (weeks) {
+      const weekHead = doc.createElement('th');
+      weekHead.scope = 'col';
+      weekHead.textContent = labels.weekShort;
+      weekHead.setAttribute('abbr', labels.week);
+      headRow.append(weekHead);
+    }
     for (let i = 0; i < 7; i++) {
       const d = addDays(start, i);
       const th = doc.createElement('th');
       th.scope = 'col';
-      th.textContent = weekdayShort.format(d).replace(/\.$/, '');
+      th.textContent = weekdayShort(d);
       th.setAttribute('abbr', weekdayLong.format(d));
       headRow.append(th);
     }
@@ -143,11 +189,13 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     const tbody = doc.createElement('tbody');
     for (let row = start; row <= new Date(focused.getFullYear(), focused.getMonth() + 1, 0); row = addDays(row, 7)) {
       const tr = doc.createElement('tr');
-      const week = doc.createElement('th');
-      week.scope = 'row';
-      week.className = 'fd-week';
-      week.textContent = String(isoWeek(row));
-      tr.append(week);
+      if (weeks) {
+        const week = doc.createElement('th');
+        week.scope = 'row';
+        week.className = 'fd-week';
+        week.textContent = String(isoWeek(row));
+        tr.append(week);
+      }
       for (let i = 0; i < 7; i++) {
         const d = addDays(row, i);
         const cell = doc.createElement('td');
@@ -159,6 +207,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
         if (d.getMonth() !== focused.getMonth()) day.classList.add('fd-outside');
         if (chosen && sameDay(d, chosen)) day.setAttribute('aria-selected', 'true');
         if (sameDay(d, today)) day.setAttribute('aria-current', 'date');
+        // Past the field's limits: faint, and a press says why.
+        if (options.refuse?.(valueOn(d))) day.classList.add('fd-off');
         day.disabled = readonly;
         day.addEventListener('click', () => pick(d));
         day.addEventListener('keydown', (event) => onKey(event, d));
@@ -177,9 +227,11 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   }
 
   function onKey(event: KeyboardEvent, day: Date) {
+    // Right to left the week runs from the right: the arrows follow the screen.
+    const rtl = rightToLeft(element);
     const moves: Record<string, () => Date> = {
-      ArrowLeft: () => addDays(day, -1),
-      ArrowRight: () => addDays(day, 1),
+      ArrowLeft: () => addDays(day, rtl ? 1 : -1),
+      ArrowRight: () => addDays(day, rtl ? -1 : 1),
       ArrowUp: () => addDays(day, -7),
       ArrowDown: () => addDays(day, 7),
       PageUp: () => addMonths(day, -1),
@@ -198,6 +250,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   function open() {
     focused = dayOf(kind, form.getState().values[name]) ?? new Date();
+    setText(note, '');
+    setHidden(note, true);
     dialog.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     draw(true);

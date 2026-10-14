@@ -1,4 +1,4 @@
-import { placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
+import { foldForSearch, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -25,7 +25,7 @@ import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
-import { withCalendar } from './calendar';
+import { dateBoxWidget } from './date-box';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
@@ -36,9 +36,9 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, fillIn, maker, setAttr, setText, wordsFor } from './kind-parts';
+import { clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
-import { bounds, counted, grower } from './limits';
+import { counted, grower } from './limits';
 import { currencySymbol } from './units';
 import { currencyOf } from './display';
 import { drawIcon } from './icons';
@@ -60,7 +60,6 @@ import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
-import { openOnClick } from './quiet';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -214,12 +213,12 @@ function describe(element: HTMLElement, state: WidgetState) {
 
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 
-/** The text box each input type is: a line of words, a password, a phone number, an email, a web address. A time is a box of its own. */
+/** The text box each input type is: a line of words, a password, a phone number, an email, a web address. A time is a date box's (date-box.ts). */
 const TEXT_KINDS: Record<string, TextKind | undefined> = { text: 'line', password: 'password', tel: 'phone', email: 'email', url: 'url' };
 
 function textWidget(inputType: string): WidgetFactory {
   return (context) => {
-    const { form, name, field, node, id, document } = context;
+    const { form, name, node, id, document } = context;
     // An email or a web address in a text box: the browser's own would keep an international domain as punycode
     // (ali@xn--mgbh0fb.xn--wgbh1c) and trim as it is typed. A phone still shows its keyboard for them.
     const written = inputType === 'email' || inputType === 'url';
@@ -231,7 +230,6 @@ function textWidget(inputType: string): WidgetFactory {
       autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off',
       ...(written ? { inputmode: inputType } : {}),
     });
-    if (inputType === 'time') bounds(input, field, node);
     if (node.placeholder) input.placeholder = node.placeholder;
     // No maxlength: the browser would cut a paste without a word. The box refuses a key at the most, and says so.
     const kind = TEXT_KINDS[inputType];
@@ -485,15 +483,37 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const other = field.type === 'selection' && field.other === true;
     const otherChoice = other ? make(document, 'input', { type: kind, name: id, value: 'other', id: `${id}-other` }) : null;
     const otherBox = other ? make(document, 'input', { type: 'text', class: 'fd-input fd-other-input', 'aria-label': words.otherAnswer, autocomplete: 'off' }) : null;
-    if (otherChoice && otherBox) {
-      group.append(make(document, 'div', { class: 'fd-choice fd-choice-other' }, make(document, 'label', { class: 'fd-choice-other-pick', for: `${id}-other` }, otherChoice, make(document, 'span', {}, words.other)), otherBox));
+    const otherRow = otherChoice && otherBox ? make(document, 'div', { class: 'fd-choice fd-choice-other' }, make(document, 'label', { class: 'fd-choice-other-pick', for: `${id}-other` }, otherChoice, make(document, 'span', {}, words.other)), otherBox) : null;
+    // An answer of one's own that is one of the options, said under it as it is ticked.
+    const said = otherBox && otherRow ? refusalHint(otherBox, otherRow) : null;
+    /** The most ticked already: one more ticks nothing, and says why. */
+    const atMost = () => !!limit?.most && (Array.isArray(form.getState().values[name]) ? (form.getState().values[name] as unknown[]).length : 0) >= limit.most;
+    const fold = (text: string) => foldForSearch(text).trim();
+    if (otherChoice && otherBox && otherRow) {
+      group.append(otherRow);
       // Typing picks "Other"; picking "Other" puts the cursor in its box.
       otherBox.addEventListener('input', () => {
-        if (!otherChoice.checked) otherChoice.checked = true;
+        said?.hide();
+        if (!otherChoice.checked) {
+          if (kind === 'checkbox' && atMost()) return limit?.say(fillIn(words.chooseUpTo, { max: limit.most }));
+          otherChoice.checked = true;
+        }
         save(otherChoice);
       });
       otherChoice.addEventListener('change', () => {
         if (otherChoice.checked) otherBox.focus();
+      });
+      // Left, the answer is held trimmed; one that names an option, by its value or its words, ticks that option and says so.
+      otherBox.addEventListener('blur', () => {
+        const text = otherBox.value.trim();
+        if (text !== otherBox.value) otherBox.value = text;
+        const at = text ? choices.findIndex((option) => fold(option.label) === fold(text) || fold(String(option.value)) === fold(text)) : -1;
+        if (at === -1) return;
+        otherBox.value = '';
+        otherChoice.checked = false;
+        inputs[at].checked = true;
+        save(inputs[at]);
+        said?.show(fillIn(words.isAnOption, { text: choices[at].label }));
       });
     }
     if (limit?.element) group.append(limit.element);
@@ -505,7 +525,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         inputs.forEach((input, i) => input !== ticked && (alone || choices[i].exclusive) && (input.checked = false));
         if (alone && otherChoice) otherChoice.checked = false;
       }
-      const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value : null;
+      const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value.trim() : null;
       if (kind === 'radio') {
         const chosen = inputs.findIndex((input) => input.checked);
         form.setValue(name, chosen !== -1 ? choices[chosen].value : own);
@@ -516,7 +536,14 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       }
     }
     group.addEventListener('change', (event) => {
-      if (event.target !== otherBox) save(event.target);
+      if (event.target === otherBox) return;
+      // At the most a question takes, one more is not ticked: the box says why, and stays as it was.
+      const ticked = event.target;
+      if (kind === 'checkbox' && ticked instanceof HTMLInputElement && ticked.checked && atMost() && !(choices[inputs.indexOf(ticked)]?.exclusive === true)) {
+        ticked.checked = false;
+        return limit?.say(fillIn(words.chooseUpTo, { max: limit.most }));
+      }
+      save(ticked);
     });
     const known = new Set(choices.map((o) => o.value as unknown));
     const picked = () => inputs.some((input) => input.checked) || otherChoice?.checked === true;
@@ -534,22 +561,21 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
-        // At the most a question takes, the boxes not ticked wait; "None of these" stays open.
-        const full = !!limit?.full(Array.isArray(state.value) ? state.value.length : 0);
+        // At the most a question takes, "Up to 3" says so; a box more, pressed, says why (hide, never disable).
+        limit?.full(Array.isArray(state.value) ? state.value.length : 0);
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
-          const off = state.readonly || (full && !input.checked && !choices[i].exclusive);
-          if (input.disabled !== off) input.disabled = off;
+          if (input.disabled !== state.readonly) input.disabled = state.readonly;
         });
         if (otherChoice && otherBox) {
           // A value not among the options is an answer of its own: "Other", with its words.
           const own = chosen.find((v) => typeof v === 'string' && !known.has(v));
-          // Picked with its box still empty, "Other" stays picked until something else is.
+          // Picked with its box still empty, "Other" stays picked until something else is; while its words are typed, too.
+          const typing = document.activeElement === otherBox && otherChoice.checked && !!otherBox.value.trim();
           const waiting = otherChoice.checked && !otherBox.value.trim() && (kind === 'checkbox' || chosen.every((v) => v === null || v === undefined));
-          otherChoice.checked = own !== undefined || waiting;
+          otherChoice.checked = own !== undefined || waiting || typing;
           if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
-          const off = state.readonly || (full && !otherChoice.checked);
-          if (otherChoice.disabled !== off) otherChoice.disabled = otherBox.disabled = off;
+          if (otherChoice.disabled !== state.readonly) otherChoice.disabled = otherBox.disabled = state.readonly;
         }
         clear?.allow(state);
         clear?.show(picked());
@@ -591,7 +617,10 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     group.addEventListener('keydown', (event) => {
       const current = form.getState().values[name];
       const value = typeof current === 'number' ? current : min - 1;
-      const step = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+      // Right to left the points run from the right: ← goes to the next one on screen, a higher value.
+      const back = rightToLeft(group);
+      const steps: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, ArrowRight: back ? -1 : 1, ArrowLeft: back ? 1 : -1 };
+      const step = steps[event.key] ?? 0;
       if (!step) return;
       event.preventDefault();
       const next = Math.min(max, Math.max(min, value + step));
@@ -630,60 +659,10 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   };
 }
 
-const dateWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
-  bounds(input, field, node);
-  input.addEventListener('input', () => form.setValue(name, input.value || null));
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = textOf(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      // Empty, its mask is no answer: read-only, it is not drawn.
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'date');
-  openOnClick(input);
-  return widget;
-};
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
+// A date, a date and time, and a time of day are typed in Fieldia's own box, a date's calendar beside it (date-box.ts).
+const dateWidget = dateBoxWidget('date');
 /** Shown in local time, stored as an ISO instant in UTC. */
-const dateTimeWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
-  bounds(input, field, node);
-  const local = (iso: Value | undefined) => {
-    if (typeof iso !== 'string' || !iso) return '';
-    const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-  input.addEventListener('input', () => {
-    if (!input.value) return form.setValue(name, null);
-    const d = new Date(input.value);
-    if (!Number.isNaN(d.getTime())) form.setValue(name, d.toISOString());
-  });
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = local(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'datetime');
-  openOnClick(input);
-  return widget;
-};
+const dateTimeWidget = dateBoxWidget('datetime');
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
@@ -725,7 +704,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
-  'char.time': textWidget('time'),
+  'char.time': dateBoxWidget('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,

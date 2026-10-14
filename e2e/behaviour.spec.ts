@@ -274,7 +274,8 @@ test.describe('every field', () => {
     await expect(field(page, 'f-password')).toHaveValue('nile-12th-floor');
     await expect(node(page, 'f-readiness').getByRole('radio', { name: '3', exact: true })).toHaveAttribute('aria-checked', 'true');
     await expect(node(page, 'f-rating').getByRole('radio', { name: '4 of 5' })).toHaveAttribute('aria-checked', 'true');
-    await expect(field(page, 'f-kickoff')).toHaveValue('2026-10-12T10:00');
+    // Fieldia's own box, the date and time in words once left.
+    await expect(field(page, 'f-kickoff')).toHaveValue('12 Oct 2026, 10:00');
     await expect(node(page, 'f-source').locator('select')).toHaveValue('partner');
     await expect(node(page, 'f-services').getByLabel('Design', { exact: true })).toBeChecked();
     await expect(node(page, 'f-services').getByLabel('After-care')).not.toBeChecked();

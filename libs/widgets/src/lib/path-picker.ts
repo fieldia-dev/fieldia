@@ -1,6 +1,7 @@
-import type { JsonValue, RelatedRecord } from '@fieldia/core';
+import { foldDigits, foldForSearch, stripMarks, type JsonValue, type RelatedRecord } from '@fieldia/core';
 import { floatUnder } from './float';
 import { drawIcon } from './icons';
+import { quoted, refusalHint } from './input-rules';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
 import { scrollToRow } from './pick-list';
 import { installPathStyles } from './styles-path';
@@ -28,8 +29,14 @@ import type { Widget, WidgetFactory } from './widgets';
  * group named by their heading. ↓ and ↑ move, → opens a branch or goes to its
  * first child, ← closes it or goes to its parent (the other way round right
  * to left), Home and End go to the first and the last, Enter picks, Escape
- * puts back what the box showed and closes, Tab leaves keeping the value.
- * The focus stays in the box all along; the row reached is its active one.
+ * puts back what the box showed and closes, Tab leaves keeping the value — or
+ * taking the match that typing reached. The focus stays in the box all along;
+ * the row reached is its active one.
+ *
+ * Typed words find a path as a search finds words: in any case, Arabic
+ * letters in any of their forms, digits in any script, and its separator
+ * written "\", "/" or with spaces round it — "Portal / Sprint 13" finds
+ * "Portal\Sprint 13".
  */
 
 /** As many records as the tree is built from: a tree of more is searched, as typed. */
@@ -62,6 +69,8 @@ interface Row {
 
 const names = (record: RelatedRecord): string[] => (record.path?.length ? record.path : [record.label]);
 const keyOf = (path: readonly string[]) => path.join('\u0001');
+/** Words as a path is found by them: folded, and a separator — the picker's, "\\" or "/", spaces round it or not — as one. */
+const findable = (text: string, separator: string) => foldForSearch(text.split(separator).join('\\')).replace(/\s*[\\/]\s*/g, '\u0001');
 
 export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, document: doc, labels, locale, preferences }) => {
   installPathStyles(doc);
@@ -86,6 +95,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   const callout = make('div', { class: 'fd-path-callout', hidden: '' }, tree, empty);
   const element = make('div', { class: 'fd-combo fd-path' }, input, chevron, callout);
   const floating = floatUnder(input, callout, { sameWidth: true, maxHeight: 278, gap: 0 });
+  // Words left that name no record: put back, and said under the box.
+  const hint = refusalHint(input, element);
 
   let current: RelatedRecord | null = null;
   let readonly = false;
@@ -324,7 +335,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   function lookUp(query: string) {
     clearTimeout(timer);
     const mine = ++seq;
-    const wanted = query.trim().toLocaleLowerCase();
+    const wanted = findable(query.trim(), separator);
     const show = (found: RelatedRecord[]) => {
       if (mine !== seq || doc.activeElement !== input) return;
       matches = wanted ? found : null;
@@ -340,14 +351,15 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       if (withTree) await load();
       const all = records && records.length < TREE_LIMIT ? records : null;
       const found = all
-        ? all.filter((record) => textOf(record).toLocaleLowerCase().includes(wanted) || record.label.toLocaleLowerCase().includes(wanted))
-        : await form.search(name, query.trim(), 50).catch(() => [] as RelatedRecord[]);
+        ? all.filter((record) => findable(textOf(record), separator).includes(wanted) || findable(record.label, separator).includes(wanted))
+        : await form.search(name, foldDigits(stripMarks(query.trim())), 50).catch(() => [] as RelatedRecord[]);
       show(found);
     }, records ? 0 : DEBOUNCE_MS);
   }
 
   const forward = () => (getComputedStyle(element).direction === 'rtl' || rightToLeft(element) ? 'ArrowLeft' : 'ArrowRight');
   input.addEventListener('input', () => {
+    hint.hide();
     if (readonly) return;
     editing = true;
     lookUp(input.value);
@@ -428,18 +440,25 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         restore();
         return;
       case 'Tab':
+        // A match that typing reached goes with the person; else, left, the box puts back what it held.
+        if (matches && here?.record) return choose(here);
         close();
-        restore();
         return;
     }
   });
   input.addEventListener('blur', () => {
     close();
-    // Emptied and left: no value.
-    const emptied = editing && input.value.trim() === '' && current !== null;
+    const text = input.value.trim();
+    // Emptied and left: no value. Words that name no record: what it held comes back, and it says so.
+    const emptied = editing && text === '' && current !== null;
+    const unmatched = editing && text !== '' && text !== textOf(current);
     editing = false;
-    if (emptied) form.setValue(name, null);
-    else restore();
+    if (emptied) return form.setValue(name, null);
+    restore();
+    if (!unmatched) return;
+    const label = node.label ?? field.label;
+    const said = fillIn(words.noMatch, { label, text: quoted(text) });
+    hint.show(current ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
   });
 
   return {
@@ -457,7 +476,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       if (!editing && input.value !== textOf(current)) input.value = textOf(current);
       setAttr(input, 'aria-invalid', String(state.invalid));
       setAttr(input, 'aria-required', String(state.required));
-      setAttr(input, 'aria-describedby', state.describedBy || null);
+      setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
     },
   } satisfies Widget;
 };

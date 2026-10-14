@@ -125,3 +125,14 @@ describe('a pick from the calendar, announced', () => {
     expect(el.isConnected).toBe(true);
   });
 });
+
+describe('a calendar’s days of the week', () => {
+  it('head their columns by short names, or narrow ones where the short name is a whole word, as in Arabic', async () => {
+    const { weekdayHead } = await import('./calendar');
+    const monday = new Date(2024, 0, 1);
+    const week = (lang: string) => Array.from({ length: 7 }, (_, i) => weekdayHead(lang)(new Date(2024, 0, 1 + i)));
+    expect(week('en-GB')).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+    expect(week('ar').every((name) => [...name].length <= 2)).toBe(true);
+    expect(weekdayHead('de')(monday)).toBe('Mo');
+  });
+});

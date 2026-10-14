@@ -54,7 +54,7 @@ test.describe('the choice kinds in the viewer', () => {
     await expect(guide.locator('.fd-error')).toBeHidden();
   });
 
-  test('checkboxes in two columns take three at most, the rest waiting, and “None of these” goes alone', async ({ page }) => {
+  test('checkboxes in two columns take three at most, one more saying why (never turned off), and “None of these” goes alone', async ({ page }) => {
     const bring = node(page, 'q-bring');
     await bring.scrollIntoViewIfNeeded();
     const box = (name: string) => bring.getByRole('checkbox', { name, exact: true });
@@ -63,10 +63,14 @@ test.describe('the choice kinds in the viewer', () => {
     expect(Math.abs((first?.y ?? 0) - (second?.y ?? 0))).toBeLessThan(4);
     expect(second?.x ?? 0).toBeGreaterThan(first?.x ?? 0);
     for (const name of ['My screen', 'Plants', 'Photos']) await box(name).check();
-    await expect(box('My chair')).toBeDisabled();
-    await expect(box('A lamp')).toBeDisabled();
+    await expect(box('My chair')).toBeEnabled();
     await expect(box('None of these')).toBeEnabled();
     await expect(bring.getByRole('status')).toHaveText('Up to 3');
+    // A fourth, pressed: nothing ticked, and why, in the limit's place.
+    await box('My chair').click();
+    await expect(box('My chair')).not.toBeChecked();
+    expect(await valueOf(page, 'bring')).toEqual(['screen', 'plants', 'photos']);
+    await expect(bring.getByRole('status')).toHaveText('You can choose 3; untick one to choose another');
     await screen(page, 'choices-checkboxes-limit', { viewport: true });
     await box('None of these').check();
     expect(await valueOf(page, 'bring')).toEqual(['nothing']);
@@ -147,13 +151,15 @@ test.describe('the choice kinds in the viewer', () => {
     await miss.scrollIntoViewIfNeeded();
     const pick = (name: string) => miss.locator('.fd-rank-pool').getByRole('button', { name, exact: true });
     for (const name of ['The park', 'The view', 'Parking']) await pick(name).click();
-    await expect(pick('The station')).toBeDisabled();
+    // Full: the rest wait, never turned off; one more, pressed, says why.
+    await pick('The station').click();
+    await expect(miss.locator('.fd-choice-limit')).toHaveText('Only the top 3 are ranked; take one out to rank another');
     await expect(miss.locator('.fd-rank-words')).toHaveText(['The park', 'The view', 'Parking']);
     await miss.getByRole('button', { name: 'Move Parking up' }).click();
     expect(await valueOf(page, 'miss')).toEqual(['park', 'parking', 'view']);
     await screen(page, 'choices-ranking-top', { viewport: true });
     await miss.getByRole('button', { name: 'Remove The view' }).click();
-    await expect(pick('The station')).toBeEnabled();
+    await expect(miss.locator('.fd-choice-limit')).toHaveText('Up to 3');
     expect(await valueOf(page, 'miss')).toEqual(['park', 'parking']);
   });
 
@@ -382,7 +388,7 @@ test.describe('the choice kinds in the survey designer', () => {
     const pool = tried(page).locator('.fd-rank-pool');
     await pool.getByRole('button', { name: 'Option 2' }).click();
     await pool.getByRole('button', { name: 'Option 1' }).click();
-    await expect(pool.getByRole('button', { name: 'Option 3' })).toBeDisabled();
+    await pool.getByRole('button', { name: 'Option 3' }).click();
     await expect(tried(page).locator('.fd-rank-words')).toHaveText(['Option 2', 'Option 1']);
     await tried(page).getByRole('radio', { name: 'Row 1: Column 1' }).check();
     await tried(page).getByRole('radio', { name: 'Row 2: Column 1' }).check();

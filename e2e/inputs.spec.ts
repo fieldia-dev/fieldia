@@ -40,9 +40,10 @@ test.describe('the inputs’ details in the viewer', () => {
   const send = (page: Page) => page.getByRole('button', { name: 'Submit' }).click();
 
   test('a day keeps its limits and its working days, the picker too, and says which', async ({ page }) => {
+    // Fieldia's own date box keeps them, for its calendar; a date written year first is always read.
     const day = node(page, 'q-move-day').locator('input');
-    await expect(day).toHaveAttribute('min', dayFrom(0));
-    await expect(day).toHaveAttribute('max', dayFrom(60));
+    await expect(day).toHaveAttribute('data-min', dayFrom(0));
+    await expect(day).toHaveAttribute('data-max', dayFrom(60));
     await day.fill(dayFrom(1, 5));
     await send(page);
     await expect(errorOf(page, 'q-move-day')).toHaveText('Which day shall we move your things? can’t be on a Friday or Saturday');
@@ -56,8 +57,8 @@ test.describe('the inputs’ details in the viewer', () => {
 
   test('a time of day steps by a quarter hour between its earliest and latest', async ({ page }) => {
     const time = node(page, 'q-arrival').locator('input');
-    await expect(time).toHaveAttribute('type', 'time');
-    await expect(time).toHaveAttribute('step', '900');
+    await expect(time).toHaveAttribute('type', 'text');
+    await expect(time).toHaveAttribute('data-step', '15');
     await time.fill('06:30');
     await send(page);
     await expect(errorOf(page, 'q-arrival')).toHaveText('What time will you arrive on your first day? can’t be before 07:00');
@@ -305,18 +306,18 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await setting(page, 'Days after today, latest').press('Tab');
     await setting(page, 'Weekends').selectOption('fri-sat');
     await card(page).getByRole('switch', { name: 'Starts on today' }).click();
-    await expect(card(page).locator('.fd-canvas-widget input[type=date]')).toHaveAttribute('max', dayFrom(30));
+    await expect(card(page).locator('.fd-canvas-widget input.fd-date')).toHaveAttribute('data-max', dayFrom(30));
     await screen(page, 'inputs-designer-date', { viewport: true });
 
     await addField(page, 'date-time', 'Meeting');
     await setting(page, 'Minutes').selectOption('15');
-    await expect(card(page).locator('.fd-canvas-widget input[type=datetime-local]')).toHaveAttribute('step', '900');
+    await expect(card(page).locator('.fd-canvas-widget input.fd-datetime')).toHaveAttribute('data-step', '15');
 
     await addField(page, 'time', 'Arrival');
     await setting(page, 'Earliest time').fill('09:00');
     await setting(page, 'Latest time').fill('17:00');
     await setting(page, 'Minutes').selectOption('30');
-    await expect(card(page).locator('.fd-canvas-widget input[type=time]')).toHaveAttribute('min', '09:00');
+    await expect(card(page).locator('.fd-canvas-widget input.fd-time')).toHaveAttribute('data-min', '09:00');
     await screen(page, 'inputs-designer-time', { viewport: true });
 
     await addField(page, 'keywords', 'Materials');
@@ -337,7 +338,8 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await expect(tried.locator('.fd-rating-thumb')).toBeVisible();
     await expect(tried.locator('.fd-nps')).toBeVisible();
     // Starts on today, and a Friday is refused once the answers are checked.
-    await expect(tried.getByLabel('Visit day')).toHaveValue(dayFrom(0));
+    // Today, in words, as Fieldia's own date box shows a date once left.
+    await expect(tried.getByLabel('Visit day')).toHaveValue(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date()));
     await tried.getByLabel('Visit day').fill(dayFrom(1, 5));
     await tried.getByLabel('Arrival').fill('08:00');
     const materials = tried.getByRole('combobox');

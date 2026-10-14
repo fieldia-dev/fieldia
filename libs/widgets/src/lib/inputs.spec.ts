@@ -40,9 +40,10 @@ describe('an empty date', () => {
   it('is marked blank, so read-only it draws no mask; with a value it is not', () => {
     for (const type of ['date', 'datetime']) {
       const { el, form } = mountKind({ type });
-      expect(el.classList.contains('fd-blank')).toBe(true);
+      const box = input(el);
+      expect(box.classList.contains('fd-blank')).toBe(true);
       form.setValue('x', type === 'date' ? '2026-10-07' : '2026-10-07T09:30:00.000Z');
-      expect(el.classList.contains('fd-blank')).toBe(false);
+      expect(box.classList.contains('fd-blank')).toBe(false);
     }
   });
 });
@@ -244,7 +245,7 @@ describe('a scale coloured as NPS', () => {
   });
 });
 
-describe('a date’s, a date and time’s and a time’s limits on the input', () => {
+describe('a date’s, a date and time’s and a time’s limits on its box', () => {
   const pad = (n: number) => String(n).padStart(2, '0');
   const day = (offset: number) => {
     const d = new Date();
@@ -252,22 +253,24 @@ describe('a date’s, a date and time’s and a time’s limits on the input', (
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   };
 
-  it('gives a date’s picker its earliest and latest day, fixed or counted from today', () => {
+  const limits = (box: HTMLInputElement) => ['data-min', 'data-max', 'data-step'].map((name) => box.getAttribute(name));
+
+  it('gives a date’s box and calendar its earliest and latest day, fixed or counted from today', () => {
     const date = input(mountKind({ type: 'date', min: 'today', max: 'today+30' }).el);
-    expect([date.min, date.max]).toEqual([day(0), day(30)]);
+    expect(limits(date)).toEqual([day(0), day(30), null]);
     const fixed = input(mountKind({ type: 'date', min: '2026-03-02' }).el);
-    expect([fixed.min, fixed.max]).toEqual(['2026-03-02', '']);
+    expect(limits(fixed)).toEqual(['2026-03-02', null, null]);
   });
 
-  it('gives a date and time’s picker the whole of its first and last day, and its minutes’ step', () => {
+  it('gives a date and time’s box its first and last day, and its minutes’ step', () => {
     const at = input(mountKind({ type: 'datetime', min: 'today', max: '2030-01-31' }, { options: { step: 15 } }).el);
-    expect([at.min, at.max, at.step]).toEqual([`${day(0)}T00:00`, '2030-01-31T23:59', '900']);
+    expect(limits(at)).toEqual([day(0), '2030-01-31', '15']);
   });
 
-  it('is a time box for a time of day, its earliest, latest and step from the page', () => {
+  it('is Fieldia’s own box for a time of day, its earliest, latest and step from the page', () => {
     const { el, form } = mountKind({ type: 'char' }, { widget: 'time', options: { min: '09:00', max: '17:30', step: 30 } });
     const time = input(el);
-    expect([time.type, time.min, time.max, time.step]).toEqual(['time', '09:00', '17:30', '1800']);
+    expect([time.type, ...limits(time)]).toEqual(['text', '09:00', '17:30', '30']);
     typeInto(time, '10:30');
     expect(form.getState().values['x']).toBe('10:30');
   });

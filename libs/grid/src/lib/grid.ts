@@ -530,19 +530,9 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       else if (event.key === 'Escape') params.cell.cancel(key, this.before);
     });
     // A day picked from a date's calendar is the whole answer: the cell keeps it and closes, as a
-    // spreadsheet's does. The browser says change while a date is typed too (once the year makes
-    // one), so a change right after a key is typing, which Enter or Tab commits. A date with a time
+    // spreadsheet's does. A date typed stays open until Enter or Tab commits it. A date with a time
     // stays open for its time, and a whole line open at once stays open.
-    if (def.type === 'date' && !cell.rowMode) {
-      let typedAt = 0;
-      this.box.addEventListener('keydown', () => (typedAt = Date.now()), true);
-      this.box.addEventListener('change', (event) => {
-        if ((event.target as HTMLInputElement).type !== 'date' || Date.now() - typedAt < 500) return;
-        params.stopEditing();
-      });
-      // Fieldia's own calendar (options.weekNumbers) sets the day itself, and says it was picked.
-      this.box.addEventListener('fd-picked', () => params.stopEditing());
-    }
+    if (def.type === 'date' && !cell.rowMode) this.box.addEventListener('fd-picked', () => params.stopEditing());
     // Like a spreadsheet, a cell reached from the keyboard has its text selected,
     // so typing replaces it; a click still puts the caret where it lands.
     let pointing = false;
@@ -706,7 +696,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
 /**
  * A box's text selected so typing replaces it, shown from its start: a
  * browser scrolls a long value to its end as it is selected, and its start is
- * what reads. (A date's own input has no text selection to set.)
+ * what reads.
  */
 function selectFromStart(input: HTMLInputElement) {
   try {

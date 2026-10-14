@@ -33,7 +33,8 @@ describe('a range of dates', () => {
     const { el, from, to } = mount('date', { request_date_from: '2026-10-12', request_date_to: '2026-10-15' });
     expect(el.getAttribute('role')).toBe('group');
     expect(from.id).toBe('fd-dates');
-    expect([from.value, to.value]).toEqual(['2026-10-12', '2026-10-15']);
+    // Fieldia's own boxes, each showing its date in words once left.
+    expect([from.type, from.value, to.value]).toEqual(['text', '12 Oct 2026', '15 Oct 2026']);
     expect([from.getAttribute('aria-label'), to.getAttribute('aria-label')]).toEqual(['From', 'To']);
     expect(el.querySelector('.fd-range-arrow')?.getAttribute('aria-hidden')).toBe('true');
   });
@@ -88,5 +89,108 @@ describe('a range of dates', () => {
     refresh(true);
     expect(from.readOnly && to.readOnly).toBe(true);
     expect((el.querySelector('.fd-range-button') as HTMLButtonElement).hidden).toBe(true);
+  });
+});
+
+/** Keys pressed one by one where the caret is, each a beforeinput the box may refuse. */
+function keys(input: HTMLInputElement, text: string) {
+  for (const char of [...text]) {
+    if (!input.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: char, cancelable: true, bubbles: true }))) continue;
+    const start = input.selectionStart ?? input.value.length;
+    input.setRangeText(char, start, input.selectionEnd ?? start, 'end');
+    input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: char, bubbles: true }));
+  }
+}
+const retype = (input: HTMLInputElement, text: string) => {
+  input.focus();
+  input.setSelectionRange(0, input.value.length);
+  keys(input, text);
+};
+
+/** A stay from → to whose end has limits of its own: required, from 1 October, Sunday to Thursday. */
+function stay(locale: 'en' | 'ar' = 'en') {
+  const page = {
+    fieldia: '0.1',
+    id: 'stay',
+    data: { kind: 'responses' },
+    fields: { from_day: { type: 'date', label: 'From', min: '2026-10-01' }, to_day: { type: 'date', label: 'To', required: true, min: '2026-10-01', days: [7, 1, 2, 3, 4] } },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-stay', field: 'from_day', widget: 'daterange', options: { endField: 'to_day' } }] },
+  } as unknown as Page;
+  const form = createForm({ page });
+  const node = (page.layout as { children: FieldNode[] }).children[0];
+  const widget = createWidget({ form, name: 'from_day', field: page.fields['from_day'] as Field, node, id: 'fd-stay', document, labels: WIDGET_LABELS[locale], locale });
+  const host = document.createElement('div');
+  if (locale === 'ar') host.dir = 'rtl';
+  host.append(widget.element);
+  document.body.replaceChildren(host);
+  const refresh = () => widget.update({ value: form.getState().values['from_day'], values: form.getState().values, readonly: false, required: false, invalid: false });
+  form.subscribe(refresh);
+  refresh();
+  const [from, to] = [...widget.element.querySelectorAll('input')] as HTMLInputElement[];
+  const endError = widget.element.querySelector('.fd-range-error') as HTMLElement;
+  return { form, el: widget.element, from, to, endError, values: () => form.getState().values };
+}
+
+describe('a range’s end, a field of its own', () => {
+  it('says “To can’t be before From” as either box is left, marks the end’s box and describes it', () => {
+    const { from, to, endError, values } = stay();
+    retype(from, '11/11/2026');
+    from.blur();
+    retype(to, '20/10/2026');
+    to.blur();
+    expect(values()).toMatchObject({ from_day: '2026-11-11', to_day: '2026-10-20' });
+    expect([endError.hidden, endError.textContent]).toEqual([false, 'To can’t be before From']);
+    expect(endError.getAttribute('aria-live')).toBe('polite');
+    expect(to.getAttribute('aria-invalid')).toBe('true');
+    expect(to.getAttribute('aria-describedby')).toContain(endError.id);
+    // Put right from the other box: it goes.
+    retype(from, '15/10/2026');
+    from.blur();
+    expect(endError.hidden).toBe(true);
+    expect(to.getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it('keeps its own earliest, latest and days on its box and in the calendar, which says why it picks nothing', () => {
+    const { el, from, to, endError, values } = stay();
+    expect([from.getAttribute('data-min'), to.getAttribute('data-min')]).toEqual(['2026-10-01', '2026-10-01']);
+    retype(from, '12/10/2026');
+    from.blur();
+    retype(to, '17/10/2026');
+    to.blur();
+    expect(endError.textContent).toBe('To can’t be on a Friday or Saturday');
+    (el.querySelector('.fd-range-button') as HTMLButtonElement).click();
+    day(el, 13).click();
+    expect(day(el, 16).classList.contains('fd-off')).toBe(true);
+    day(el, 16).click();
+    const note = el.querySelector('.fd-range-calendar .fd-calendar-note') as HTMLElement;
+    expect([note.hidden, note.textContent]).toEqual([false, 'To can’t be on a Friday or Saturday']);
+    day(el, 15).click();
+    expect(values()).toMatchObject({ from_day: '2026-10-13', to_day: '2026-10-15' });
+  });
+
+  it('reads Arabic digits in either box, and keeps an impossible end’s text with why, the end keeping its day', () => {
+    const { form, from, to, endError, values } = stay('ar');
+    retype(from, '١٢/١٠/٢٠٢٦');
+    from.blur();
+    retype(to, '١٤/١٠/٢٠٢٦');
+    to.blur();
+    expect(values()).toMatchObject({ from_day: '2026-10-12', to_day: '2026-10-14' });
+    retype(to, '٣١/٠٢/٢٠٢٦');
+    to.blur();
+    expect(values()['to_day']).toBe('2026-10-14');
+    expect(to.value).toBe('٣١/٠٢/٢٠٢٦');
+    expect(endError.textContent).toBe('To: في فبراير 2026 28 يومًا');
+    expect(form.validate()).toBe(false);
+  });
+
+  it('is required at Save, never as its box is left', () => {
+    const { form, from, to, endError } = stay();
+    retype(from, '12/10/2026');
+    from.blur();
+    to.focus();
+    to.blur();
+    expect(endError.hidden).toBe(true);
+    expect(form.validate()).toBe(false);
+    expect(endError.textContent).toBe('To is required');
   });
 });

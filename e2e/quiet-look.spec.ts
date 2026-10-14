@@ -64,8 +64,9 @@ test.describe('at rest, pointed at, worked in', () => {
     await expect(area).not.toBeFocused();
     // A date shows its calendar, a link its ×.
     const due = node(page, 'f-due').locator('input');
+    await expect(node(page, 'f-due').locator('.fd-calendar-button')).toBeHidden();
     await due.hover();
-    await expect.poll(() => due.evaluate((el) => getComputedStyle(el, '::-webkit-calendar-picker-indicator').opacity)).toBe('1');
+    await expect(node(page, 'f-due').locator('.fd-calendar-button')).toBeVisible();
     const assigned = node(page, 'f-assigned');
     await expect(assigned.locator('.fd-combo-clear')).toBeHidden();
     await assigned.locator('input').hover();
@@ -94,9 +95,12 @@ test.describe('at rest, pointed at, worked in', () => {
     await screen(page, 'quiet-state-open', { viewport: true });
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
-    // A date opens its calendar at the click; tabbed into, it is typed in.
+    // A date opens its calendar at the click — Fieldia's own, beside its own box; tabbed into, it is typed in.
     await node(page, 'f-due').locator('input').click();
-    expect(await page.evaluate(() => (window as unknown as { pickers: string[] }).pickers)).toEqual(['f-due']);
+    await expect(node(page, 'f-due').getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(node(page, 'f-due').getByRole('dialog')).toBeHidden();
+    expect(await page.evaluate(() => (window as unknown as { pickers: string[] }).pickers)).toEqual([]);
     // A link: its list.
     await node(page, 'f-assigned').locator('input').click();
     await expect(node(page, 'f-assigned').getByRole('listbox')).toBeVisible();

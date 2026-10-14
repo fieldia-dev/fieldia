@@ -263,7 +263,8 @@ describe('a date’s earliest and latest day, its days and its start', () => {
     choose(inline(host, 'Earliest') ?? undefined, 'day');
     enter(inline(host, 'Earliest day'), '2026-03-02');
     expect(fieldOf(designer, id)).toMatchObject({ min: '2026-03-02' });
-    expect((card(host).querySelector('input[type=date]') as HTMLInputElement).min).toBe('2026-03-02');
+    // Fieldia's own date box keeps it, for its calendar.
+    expect(card(host).querySelector('input.fd-date')?.getAttribute('data-min')).toBe('2026-03-02');
     choose(inline(host, 'Earliest') ?? undefined, '');
     expect(fieldOf(designer, id)).not.toHaveProperty('min');
   });
@@ -286,7 +287,7 @@ describe('a date’s earliest and latest day, its days and its start', () => {
     choose(inline(host, 'Minutes') ?? undefined, '15');
     expect(fieldOf(designer, id)).toMatchObject({ type: 'datetime', min: 'today' });
     expect(nodeOf(designer, id).options).toEqual({ step: 15 });
-    expect((card(host).querySelector('input[type=datetime-local]') as HTMLInputElement).step).toBe('900');
+    expect(card(host).querySelector('input.fd-datetime')?.getAttribute('data-step')).toBe('15');
     expect(inline(host, 'Starts on today')).toBeNull();
     choose(inline(host, 'Minutes') ?? undefined, '1');
     expect(nodeOf(designer, id).options).toBeUndefined();
@@ -309,8 +310,8 @@ describe('a time of day', () => {
     enter(inline(host, 'Latest time'), '17:30');
     choose(inline(host, 'Minutes') ?? undefined, '30');
     expect(nodeOf(designer, id).options).toEqual({ min: '09:00', max: '17:30', step: 30 });
-    const time = card.querySelector('input[type=time]') as HTMLInputElement;
-    expect([time.min, time.max, time.step]).toEqual(['09:00', '17:30', '1800']);
+    const time = card.querySelector('input.fd-time') as HTMLInputElement;
+    expect(['data-min', 'data-max', 'data-step'].map((name) => time.getAttribute(name))).toEqual(['09:00', '17:30', '30']);
     enter(inline(host, 'Earliest time'), '');
     expect(nodeOf(designer, id).options).toEqual({ max: '17:30', step: 30 });
   });

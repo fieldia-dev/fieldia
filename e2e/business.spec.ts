@@ -68,7 +68,7 @@ test.describe('the business widgets', () => {
     await calendar.getByRole('button', { name: /20 October 2026/ }).click();
     await calendar.getByRole('button', { name: /14 October 2026/ }).click();
     expect([await valueOf(page, 'date_from'), await valueOf(page, 'date_to')]).toEqual(['2026-10-14', '2026-10-20']);
-    await expect(range.getByLabel('Ends')).toHaveValue('2026-10-20');
+    await expect(range.getByLabel('Ends')).toHaveValue('20 Oct 2026');
   });
 
   test('properties follow the project, and one is added in place', async ({ page }) => {

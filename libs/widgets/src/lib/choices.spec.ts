@@ -85,7 +85,7 @@ describe('a yes or no as two buttons', () => {
 describe('checkboxes with a limit', () => {
   const limited = (atMost = 2) => mountKind({ type: 'selection', multiple: true, options: ROOMS }, { widget: 'checkboxes', validate: [{ atMost }] });
 
-  it('turns the rest off once the most are ticked, and says how many it takes', () => {
+  it('says how many it takes once the most are ticked; one more, pressed, ticks nothing and says why (never turned off)', () => {
     const { el, value } = limited();
     const note = el.querySelector('.fd-choice-limit') as HTMLElement;
     expect(note.getAttribute('role')).toBe('status');
@@ -93,10 +93,12 @@ describe('checkboxes with a limit', () => {
     boxes(el)[0].click();
     boxes(el)[2].click();
     expect(value()).toEqual(['kitchen', 'gym']);
-    expect(boxes(el).map((b) => b.disabled)).toEqual([false, true, false, true, false]);
-    expect(note.textContent).toBe('Up to 2');
-    boxes(el)[0].click();
     expect(boxes(el).some((b) => b.disabled)).toBe(false);
+    expect(note.textContent).toBe('Up to 2');
+    boxes(el)[1].click();
+    expect(value()).toEqual(['kitchen', 'gym']);
+    expect(note.textContent).toBe('You can choose 2; untick one to choose another');
+    boxes(el)[0].click();
     expect(note.textContent).toBe('');
   });
 
@@ -278,14 +280,17 @@ describe('a ranking kept as it is shown', () => {
     add('Kitchen');
     expect(value()).toEqual(['gym', 'kitchen']);
     expect([...el.querySelectorAll('.fd-rank-item .fd-rank-words')].map((w) => w.textContent)).toEqual(['Gym', 'Kitchen']);
-    // Full: the rest wait.
-    expect(pick('Library').disabled).toBe(true);
+    // Full: the rest wait, never turned off; one pressed says why.
+    expect(pick('Library').disabled).toBe(false);
+    add('Library');
+    expect(value()).toEqual(['gym', 'kitchen']);
+    expect(el.querySelector('.fd-choice-limit')?.textContent).toBe('Only the top 2 are ranked; take one out to rank another');
     expect(pick('Gym').hidden).toBe(true);
     (el.querySelector('[aria-label="Move Kitchen up"]') as HTMLButtonElement).click();
     expect(value()).toEqual(['kitchen', 'gym']);
     (el.querySelector('[aria-label="Remove Gym"]') as HTMLButtonElement).click();
     expect(value()).toEqual(['kitchen']);
-    expect(pick('Library').disabled).toBe(false);
+    expect(el.querySelector('.fd-choice-limit')?.textContent).toBe('Up to 2');
     expect(pick('Gym').hidden).toBe(false);
   });
 });

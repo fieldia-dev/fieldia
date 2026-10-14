@@ -1,6 +1,6 @@
-import type { FileValue } from '@fieldia/core';
+import { fileProblem, MESSAGES, type FileValue } from '@fieldia/core';
 import { readFile } from './files';
-import { describeState, maker, wordsFor } from './kind-parts';
+import { describeState, maker, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -13,7 +13,9 @@ import type { WidgetFactory } from './widgets';
  * `options.color` (#rrggbb) and `options.penWidth` set the pen; the node's
  * `placeholder` is the words on the blank pad ("Sign here"); `options.footerLabel`
  * the words kept under it; `options.upload` lets a picture of a signature be
- * uploaded as a third way.
+ * uploaded as a third way — checked as a file field checks one: a picture
+ * (or the kinds the field takes), no larger than its `maxSize`. A file
+ * refused keeps the signature there was, and says which and why.
  */
 
 /** The pad's own size, in the picture's pixels; it is drawn at whatever width its box has. */
@@ -48,12 +50,15 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   // A picture of a signature, from this computer or a phone's camera.
   const upload = options['upload'] === true ? button(words.uploadSignature) : null;
   const file = make('input', { type: 'file', accept: 'image/*', class: 'fd-sr-only', tabindex: '-1', 'aria-hidden': 'true' });
+  // Why a picture uploaded was not taken: said politely, under the pad's tools.
+  const refused = make('div', { class: 'fd-help fd-file-note fd-signature-note', role: 'status', hidden: '' });
   const element = make(
     'div',
     { id, class: 'fd-signature', role: 'group' },
     make('div', { class: 'fd-signature-box' }, canvas, image, hint),
     ...(typeof footerWords === 'string' && footerWords ? [make('span', { class: 'fd-signature-footer' }, footerWords)] : []),
-    make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear)
+    make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear),
+    refused
   );
 
   const pen = () => {
@@ -154,6 +159,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
 
   // A name typed is drawn in a hand's script, in place of whatever was drawn.
   typed.addEventListener('input', () => {
+    setHidden(refused, true);
     showPad();
     strokes = [];
     typedName = typed.value.trim() || null;
@@ -171,10 +177,18 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   file.addEventListener('change', () => {
     const chosen = file.files?.[0];
     file.value = '';
-    if (chosen) void readFile(chosen).then((value) => form.setValue(name, value));
+    if (!chosen) return;
+    // A picture, as the field takes one, no larger than it allows: else the signature there was stays, and it says why.
+    const own = field.type === 'binary' ? field : null;
+    const problem = fileProblem({ type: 'binary', label: field.label, accept: own?.accept ?? ['image/*'], ...(own?.maxSize !== undefined ? { maxSize: own.maxSize } : {}) }, chosen, MESSAGES[locale ?? 'en'] ?? MESSAGES.en);
+    setText(refused, '');
+    setText(refused, problem ?? '');
+    setHidden(refused, !problem);
+    if (!problem) void readFile(chosen).then((value) => form.setValue(name, value));
   });
 
   clear.addEventListener('click', () => {
+    setHidden(refused, true);
     wipe();
     mine = null;
     typed.value = '';

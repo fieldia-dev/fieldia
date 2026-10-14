@@ -574,7 +574,8 @@ describe('dates', () => {
   it('reads and writes YYYY-MM-DD', () => {
     const { form, el } = setup({ type: 'date' });
     const input = q<HTMLInputElement>(el, 'input');
-    expect(input.type).toBe('date');
+    // Fieldia's own box (date-box.ts): a date written year first is always read.
+    expect(input.type).toBe('text');
     type(input, '2026-10-02');
     expect(valueOf(form)).toBe('2026-10-02');
   });
@@ -582,7 +583,7 @@ describe('dates', () => {
   it('stores a date and time as ISO in UTC, shown in local time', () => {
     const { form, el } = setup({ type: 'datetime' });
     const input = q<HTMLInputElement>(el, 'input');
-    expect(input.type).toBe('datetime-local');
+    expect(input.type).toBe('text');
     type(input, '2026-10-02T10:30');
     const stored = valueOf(form) as string;
     expect(new Date(stored).getTime()).toBe(new Date(2026, 9, 2, 10, 30).getTime());

@@ -1,8 +1,8 @@
-import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/core';
+import { foldDigits, foldForSearch, stripMarks, type FieldNode, type Form, type ReferenceValue, type RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { floatUnder } from './float';
+import { guard, quoted, refusalHint } from './input-rules';
 import { setAttr, setHidden } from './kind-parts';
-import { guard, refusalHint } from './input-rules';
 import { drawIcon } from './icons';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -27,7 +27,28 @@ interface Combobox {
   setText(text: string): void;
   setReadonly(readonly: boolean): void;
   close(): void;
+  /** The box's own aria-describedby (`base`) with its hint's, while one shows. */
+  describedBy(base: string | undefined): string | undefined;
 }
+
+/**
+ * What typed words come to (the input rules, 7): Enter takes the match the arrows reached, else the only match,
+ * else the record of that exact name — and never sends the form; leaving the box takes the exact name, else puts
+ * back what it held. When nothing is called so, the box says it under itself, politely.
+ */
+interface TypedRules {
+  /** The field's label, as the words name it. */
+  label: string;
+  /** Leaving with words typed takes the exact name: unless false (an adder button, which goes back to itself). */
+  leave?: boolean;
+  /** Enter with nothing matching: true when the widget made something of it (a new tag). */
+  unmatched?: (text: string) => boolean;
+}
+
+/** Words as a search compares them: case, Arabic letter forms and digits folded. */
+const folded = (text: string) => foldForSearch(text).trim();
+/** A query as the data source gets it: digits in any script as 0-9, no direction marks. */
+const asQuery = (text: string) => foldDigits(stripMarks(text));
 
 /**
  * A text box with a list of matches under it. `search` finds records,
@@ -50,6 +71,8 @@ function combobox(options: {
   placeholder?: string;
   /** Further choices at the end of the list: each acts on the typed text and may hand back a record to pick. */
   more?: (typed: string, overflow: boolean) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
+  /** What Enter and leaving make of typed words: a record's box's rules. Left out, Enter acts only on a match reached. */
+  typed?: TypedRules;
 }): Combobox {
   const { document: doc, id, labels } = options;
   const listId = `${id}-list`;
@@ -69,6 +92,8 @@ function combobox(options: {
   element.className = 'fd-combo';
   element.append(input, list);
   const floating = floatUnder(input, list);
+  // Why typed words were not taken, under the box: polite, gone at the next key.
+  const hint = options.typed ? refusalHint(input, element) : null;
 
   let shown = '';
   /** The "Create …" choice in the list, and the text it would make a record from. */
@@ -146,7 +171,7 @@ function combobox(options: {
     clearTimeout(timer);
     const mine = ++seq;
     timer = setTimeout(async () => {
-      const found = await options.search(query).catch(() => [] as RelatedRecord[]);
+      const found = await options.search(asQuery(query)).catch(() => [] as RelatedRecord[]);
       if (mine !== seq || doc.activeElement !== input) return; // a newer search, or the person left
       // A record the arrow keys reached stays reached if the answer still lists it.
       const reached = results[active];
@@ -158,7 +183,7 @@ function combobox(options: {
       // Nothing found by that name: offer to make it.
       const typed = query.trim();
       creating = null;
-      if (options.create && typed && !found.some((record) => record.label.trim().toLowerCase() === typed.toLowerCase())) {
+      if (options.create && typed && !found.some((record) => folded(record.label) === folded(typed))) {
         creatingText = typed;
         creating = { id: '__create__', label: fill(labels.createNamed, { name: typed }) };
         results = [...results, creating];
@@ -172,8 +197,30 @@ function combobox(options: {
     }, DEBOUNCE_MS);
   }
 
+  /**
+   * The record typed words name: the only match (on Enter), else the one of that exact name, in any case and with
+   * Arabic letters in any of their forms; null for none.
+   */
+  async function named(text: string, onlyMatch: boolean): Promise<RelatedRecord | null> {
+    const found = await options.search(asQuery(text.trim())).catch(() => [] as RelatedRecord[]);
+    const hidden = options.exclude?.() ?? new Set();
+    const kept = found.filter((record) => !hidden.has(record.id));
+    if (onlyMatch && kept.length === 1) return kept[0];
+    return kept.find((record) => folded(record.label) === folded(text)) ?? null;
+  }
+  /** Nothing is called what was typed: said under the box, with what the field still holds. */
+  function noMatch(text: string) {
+    if (!hint || !options.typed) return;
+    const { label } = options.typed;
+    const words = fill(options.create ? labels.noMatchCreate : labels.noMatch, { label, text: quoted(text) });
+    hint.show(shown ? `${words}. ${fill(labels.stillHolds, { label, value: shown })}` : words);
+  }
+  /** Words left typed in the box: one of every Enter or leaving, the latest, is acted on. */
+  let typedSeq = 0;
+
   input.addEventListener('input', () => {
     editing = true;
+    hint?.hide();
     if (!readonly) lookUp(input.value);
   });
   input.addEventListener('focus', () => {
@@ -196,12 +243,38 @@ function combobox(options: {
         list.children[active]?.scrollIntoView?.({ block: 'nearest' });
         return;
       }
-      case 'Enter':
+      case 'Enter': {
         if (!list.hidden && active >= 0) {
           event.preventDefault();
           choose(active);
+          return;
         }
+        const text = input.value;
+        // Words typed: never the form's Enter. The only match, or the exact name, is taken; else it says so.
+        if (!options.typed || !editing || !text.trim()) return;
+        event.preventDefault();
+        const mine = ++typedSeq;
+        void named(text, true).then((record) => {
+          if (mine !== typedSeq || input.value !== text) return;
+          if (record) {
+            close();
+            editing = false;
+            hint?.hide();
+            options.pick(record);
+          } else if (!options.typed?.unmatched?.(text.trim())) {
+            // The list closed, so the words under the box can be read; ↓ opens it again.
+            close();
+            noMatch(text.trim());
+          }
+        });
         return;
+      }
+      case 'Tab': {
+        // A record the arrows reached goes with the person, as Enter would take it (never a Create… or Search more…).
+        const reached = results[active];
+        if (options.typed && !list.hidden && reached && reached !== creating && !extras.has(reached)) choose(active);
+        return;
+      }
       case 'Escape':
         if (!list.hidden) event.preventDefault();
         close();
@@ -217,10 +290,23 @@ function combobox(options: {
     seq++;
     clearTimeout(timer);
     close();
-    const emptied = editing && input.value.trim() === '' && shown !== '';
+    const text = input.value;
+    const emptied = editing && text.trim() === '' && shown !== '';
+    const left = editing && text.trim() !== '' && text !== shown && options.typed && options.typed.leave !== false;
     editing = false;
-    if (emptied) options.onCommitEmpty?.();
-    else input.value = shown;
+    if (emptied) return options.onCommitEmpty?.();
+    if (!left) {
+      input.value = shown;
+      return;
+    }
+    // Words left in the box: the record of that exact name is taken; else what it held comes back, and it says so.
+    const mine = ++typedSeq;
+    void named(text, false).then((record) => {
+      if (mine !== typedSeq || doc.activeElement === input || editing) return;
+      if (record) return options.pick(record);
+      input.value = shown;
+      noMatch(text.trim());
+    });
   });
 
   return {
@@ -236,6 +322,7 @@ function combobox(options: {
       if (next) close();
     },
     close,
+    describedBy: (base) => (hint ? hint.describedBy(base) : base || undefined),
   };
 }
 
@@ -366,6 +453,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     onCommitEmpty: () => form.setValue(name, null),
     create: creator(form, name, node),
     placeholder: node.placeholder,
+    typed: { label: node.label ?? field.label },
     // With dialogs: make a record in its own page, or pick from a full list when the short one has no room.
     more: (typed, overflow) => {
       if (!dialogs || readonly) return [];
@@ -451,7 +539,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
       }
       setAttr(box.input, 'aria-invalid', String(state.invalid));
       setAttr(box.input, 'aria-required', String(state.required));
-      if (state.describedBy) setAttr(box.input, 'aria-describedby', state.describedBy);
+      setAttr(box.input, 'aria-describedby', box.describedBy(state.describedBy) ?? null);
     },
   } satisfies Widget;
 };
@@ -460,6 +548,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const relation = field.type === 'many2many' ? field.relation : '';
   const own = shows(node);
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
+  const createTag = creator(form, name, node);
   const element = document.createElement('div');
   element.className = 'fd-tags';
   element.setAttribute('role', 'group');
@@ -484,6 +573,19 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
     },
     create: creator(form, name, node),
     placeholder: node.placeholder,
+    // Added from a button, Enter with no tag of that name makes one; leaving goes back to the button.
+    typed: {
+      label: node.label ?? field.label,
+      leave: node.options?.['adder'] !== 'button',
+      unmatched: (text) => {
+        if (node.options?.['adder'] !== 'button' || !createTag) return false;
+        void createTag(text).then((record) => {
+          if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
+          adder?.added();
+        }, () => undefined);
+        return true;
+      },
+    },
     // With dialogs: pick from a full list when the short one has no room.
     more: (_typed, overflow) => (dialogs && overflow ? [{ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) }] : []),
   });
@@ -495,24 +597,8 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
           if (saved && saved.label !== record.label) form.setValue(name, current().map((r) => (r.id === record.id ? saved : r)));
         }
       : undefined;
-  // Added from a button, "Add Tag": Enter adds the tag typed, an existing one by its name or a new one.
+  // Added from a button, "Add Tag": Enter adds the tag typed, an existing one by its name or a new one (`typed` above).
   const adder = node.options?.['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels), box, element) : null;
-  const createTag = creator(form, name, node);
-  if (adder) {
-    box.input.addEventListener('keydown', (event) => {
-      const typed = box.input.value.trim();
-      if (event.key !== 'Enter' || event.defaultPrevented || !typed) return;
-      event.preventDefault();
-      void (async () => {
-        const found = await form.search(name, typed, SHOWN).catch(() => [] as RelatedRecord[]);
-        const same = found.find((record) => record.label.trim().toLowerCase() === typed.toLowerCase());
-        const record = same ?? (createTag ? await createTag(typed).catch(() => null) : null);
-        if (!record) return;
-        if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
-        adder.added();
-      })();
-    });
-  }
   element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let readonly = false;
   let drawn = '';
@@ -528,7 +614,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (adder) adder.setReadonly(readonly);
       else box.element.hidden = readonly;
       box.input.setAttribute('aria-invalid', String(state.invalid));
-      if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
+      setAttr(box.input, 'aria-describedby', box.describedBy(state.describedBy) ?? null);
       if (key === drawn) return;
       drawn = key;
       drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)), open, own);
@@ -812,6 +898,7 @@ export const referenceWidget: WidgetFactory = (context: WidgetContext) => {
     search: (query) => (model ? form.search(name, query, 8, { model }) : Promise.resolve([])),
     pick: (record) => form.setValue(name, { model, id: record.id, label: record.label }),
     onCommitEmpty: () => form.setValue(name, null),
+    typed: { label: context.node.label ?? field.label },
   });
   element.append(select, box.element);
   return {

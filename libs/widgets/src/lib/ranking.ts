@@ -1,5 +1,5 @@
 import type { Option } from '@fieldia/core';
-import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { announcer, describeState, fillIn, maker, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
 
@@ -14,7 +14,9 @@ import type { WidgetFactory } from './widgets';
  * lines in an order of the form's own, so none is first for being written first.
  * "Keep this order" answers it as it is shown. With `options.top` set, only
  * that many are ranked (a Top choice): each picked from the rest, then put in
- * order, and taken out with its ×; "Up to 3" says how many.
+ * order, and taken out with its ×; "Up to 3" says how many, and a pick past
+ * them says why it ranks nothing. Hide, never disable: the first line's ↑ and
+ * the last's ↓ are out of sight, keeping their places.
  */
 
 interface Item {
@@ -40,12 +42,9 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
   const pool = make('div', { class: 'fd-rank-pool' });
   const keepAsShown = make('button', { type: 'button', class: 'fd-button fd-rank-keep' }, words.keepOrder);
   keepAsShown.addEventListener('click', () => form.setValue(name, shown.map((item) => item.option.value)));
-  const element = make(
-    'div',
-    { id, class: 'fd-ranking', role: 'group' },
-    ...(top ? [make('div', { class: 'fd-choice-limit' }, fillIn(words.upTo, { n: top })), pool, list] : [list, keepAsShown]),
-    voice.element
-  );
+  // "Up to 3", and — in its place, politely — why a pick past them ranks nothing.
+  const limit = make('div', { class: 'fd-choice-limit', role: 'status' }, fillIn(words.upTo, { n: top }));
+  const element = make('div', { id, class: 'fd-ranking', role: 'group' }, ...(top ? [limit, pool, list] : [list, keepAsShown]), voice.element);
 
   const items: Item[] = options.map((option) => {
     const label = option.label;
@@ -59,7 +58,12 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     if (top) {
       // Picked from the rest to the end of those ranked; its × takes it out again.
       const pick = make('button', { type: 'button', class: 'fd-rank-pick' }, label);
-      pick.addEventListener('click', () => !readonly && shown.length < top && keep([...shown, item], item));
+      pick.addEventListener('click', () => {
+        if (readonly) return;
+        if (shown.length < top) return keep([...shown, item], item);
+        limit.textContent = '';
+        limit.textContent = fillIn(words.rankTop, { max: top });
+      });
       const out = make('button', { type: 'button', class: 'fd-rank-move fd-rank-out', 'aria-label': fillIn(words.remove, { name: label }) }, '×');
       out.addEventListener('click', () => {
         voice.say(fillIn(words.removed, { name: label }));
@@ -86,8 +90,9 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     next.forEach((item, i) => {
       if (list.children[i] !== item.element) list.insertBefore(item.element, list.children[i] ?? null);
       item.place.textContent = String(i + 1);
-      item.up.disabled = i === 0;
-      item.down.disabled = i === next.length - 1;
+      // At an end a move is no use: out of sight, keeping its place, never turned off.
+      item.up.style.visibility = i === 0 ? 'hidden' : '';
+      item.down.style.visibility = i === next.length - 1 ? 'hidden' : '';
     });
     // Ranking the top few, those not ranked wait among the rest.
     while (list.children.length > next.length) list.lastElementChild?.remove();
@@ -171,7 +176,7 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
   draw(top ? [] : shown);
   return {
     element,
-    focus: () => (items.find((item) => item.pick && !item.pick.hidden && !item.pick.disabled)?.pick ?? (shown[0]?.down.disabled ? shown[0]?.up : shown[0]?.down))?.focus(),
+    focus: () => (items.find((item) => item.pick && !item.pick.hidden)?.pick ?? (shown[0]?.down.style.visibility === 'hidden' ? shown[0]?.up : shown[0]?.down))?.focus(),
     update(state) {
       readonly = state.readonly;
       element.classList.toggle('fd-ranking-locked', readonly);
@@ -181,11 +186,12 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
         item.up.hidden = item.down.hidden = readonly;
         if (item.pick) {
           item.pick.hidden = shown.includes(item);
-          item.pick.disabled = readonly || shown.length >= top;
+          item.pick.disabled = readonly;
           (item.element.querySelector('.fd-rank-out') as HTMLElement).hidden = readonly;
         }
       }
       keepAsShown.hidden = readonly || (Array.isArray(state.value) && state.value.length > 0);
+      if (top) setText(limit, fillIn(words.upTo, { n: top }));
       giveBackFocus();
       describeState(element, state);
     },
