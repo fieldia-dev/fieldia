@@ -238,6 +238,15 @@ export interface Form {
    * whole number, decimals, a pattern — is shown now, in the words Save would use. That it is required waits for Save.
    */
   leave(path: string): void;
+  /**
+   * How a box that reads what is typed in it as it is left — a number, hours, a date, a colour's code — reads it
+   * now, while it still has the focus: every save and send, every check and step forward runs these first
+   * (`settle`), so Ctrl+Enter, a button's key or the app's own save keep what the box shows, or refuse it with its
+   * words, and never save a value passed on the way ("1" of "1.5"). Returns what stops it, for when the box goes.
+   */
+  settling(read: () => void): () => void;
+  /** Read what is typed and not yet read in every box (`settling`), as if each were left: a save does it first. */
+  settle(): void;
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
@@ -478,6 +487,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   for (const node of index.values()) if (node.kind === 'form') parts.set(node.id, node.source as FormNode);
   /** Those given their page, with the inner form that holds their answers. */
   const attached = new Map<string, { name: string; inner: InnerForm }>();
+  /** How each box with text typed and not yet read reads it now (`settling`). */
+  const readers = new Set<() => void>();
+  /** Every box's text read now, this form's and its saved forms' placed on the page, before it is checked or saved. */
+  function readTyped() {
+    for (const read of [...readers]) read();
+    for (const part of attached.values()) part.inner.form.settle();
+  }
   /** The page's fields, and each saved form's answers as a JSON value: what is loaded, told as changed and saved. */
   const fields: Fields = { ...page.fields };
   for (const part of parts.values()) fields[part.name] = { type: 'json', label: part.title || part.name };
@@ -1140,6 +1156,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
    * and a stop keeps it unsaved; `afterSave` runs once it is saved.
    */
   async function saving(chain: readonly string[]): Promise<Stopped | null> {
+    // What is still typed in a box is read first: it is what is saved, or why nothing is.
+    readTyped();
     if (page.on?.beforeSave) {
       const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
       if (!before.done) {
@@ -1256,6 +1274,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** Check the form, or only these fields, showing what is found as sending does. */
   function check(names: readonly string[] | undefined): Stopped | null {
     names?.forEach(fieldDef);
+    readTyped();
     const all = collectErrors();
     const found = names ? Object.fromEntries(Object.entries(all).filter(([key]) => names.some((name) => key === name || key.startsWith(`${name}.`)))) : all;
     set({ errors: found });
@@ -1543,7 +1562,15 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ errors: { ...state.errors, [path]: problem } });
     },
 
+    settling(read) {
+      readers.add(read);
+      return () => void readers.delete(read);
+    },
+
+    settle: readTyped,
+
     validate() {
+      readTyped();
       const errors = collectErrors();
       set({ errors });
       return Object.keys(errors).length === 0;
@@ -1654,6 +1681,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     next() {
       if (!state.step) return false;
+      readTyped();
       // A step skipped before and gone back to is answered now, and checked like any other.
       if (state.skipped.includes(state.step)) set({ skipped: state.skipped.filter((id) => id !== state.step) });
       const errors = collectErrors(state.step);
@@ -1696,6 +1724,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         set({ step: target, errors: {} });
         return true;
       }
+      readTyped();
       const skipped = [...state.skipped];
       for (const id of visible.slice(at, to)) {
         if (skipped.includes(id)) continue;
