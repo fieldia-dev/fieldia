@@ -46,7 +46,7 @@ import {
   uploadGoing,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
-import { brokenBox, describeFailure, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
+import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { upgradePage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView, type ListViewFactory, type OpenRowOptions } from './list';
@@ -543,7 +543,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const span = drawn.style.getPropertyValue('--fd-span');
         if (span) box.style.setProperty('--fd-span', span);
         if (drawn.dataset['hideOn']) box.dataset['hideOn'] = drawn.dataset['hideOn'];
+        // The focus it held comes to its box, which says what failed: a keyboard keeps its place.
+        const focused = drawn.contains(doc.activeElement);
         drawn.replaceWith(box);
+        if (focused) box.focus();
       } else spans(box, node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
       part.box = box;
       return box;
@@ -621,11 +624,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // labelled natively. Only a wrapper with a role (a radio group, say) may
         // carry a name; ARIA forbids naming a plain div or span.
         // A group inside a box of its own (a radio group with "Clear selection" under it) is named too.
+        // A field's box when its widget could not be drawn is named by its own words, which name the field.
         const named = widget.element.getAttribute('role') ? widget.element : widget.element.querySelector(`[id="${id}"][role]`);
-        named?.setAttribute('aria-labelledby', label.id);
+        if (!named?.classList.contains('fd-broken')) named?.setAttribute('aria-labelledby', label.id);
         // Not a press on its (?) or the help bubble beside it: they show the help, and must not open a picker's list.
         label.addEventListener('click', (event) => {
           if (!(event.target as Element).closest?.('.fd-help-tip-wrap, .fd-lock-wrap')) widget.focus();
+        });
+      } else {
+        // Once its widget has failed, a press on the label takes the focus to the box in its place, as it did to the box.
+        label.addEventListener('click', (event) => {
+          if (widget.element.matches('.fd-broken') && !(event.target as Element).closest?.('.fd-help-tip-wrap, .fd-lock-wrap')) widget.focus();
         });
       }
       const helpText = node.help ?? def.help;
@@ -873,10 +882,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const element = el('div', { class: 'fd-slot', 'data-slot': node.name, 'data-node': node.id });
       // The app's own content: one that throws leaves a box in the slot, and its clean-up is kept from throwing too.
       const where = (stage: FailureStage): PartFailure => ({ stage, part: 'slot', name: node.name, node: node.id });
+      const held = focusHeld(element);
       /** Its box, beside what the app drew (a framework still owns that): once, however often it fails. */
       const broken = (error: unknown, stage: FailureStage) => {
         report(error, where(stage));
-        if (!element.querySelector(':scope > .fd-broken')) element.append(brokenBox(doc, widgetLabels.brokenPart));
+        if (element.querySelector(':scope > .fd-broken')) return;
+        // The focus that was in it — on what its framework then drew as nothing — comes to the box, which says what failed.
+        const focused = held();
+        const box = brokenBox(doc, widgetLabels.brokenPart);
+        element.append(box);
+        if (focused) box.focus();
       };
       try {
         const cleanup = options.slots?.[node.name]?.(element, { form, name: node.name, fail: (error) => broken(error, 'update') });

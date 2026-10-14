@@ -5,6 +5,7 @@ import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
+import { formBehind } from './handed';
 
 /**
  * File and image fields. A chosen or dropped file is read into the value as
@@ -56,8 +57,9 @@ export const INLINE_FILE_WARNING = 1024 * 1024;
 const warned = new WeakSet<object>();
 function warnInline(form: Form, files: { name: string; size: number }[]) {
   const large = files.find((file) => file.size > INLINE_FILE_WARNING);
-  if (!large || warned.has(form)) return;
-  warned.add(form);
+  // Once for the page's form, whichever field's widget it was handed through (contain.ts).
+  if (!large || warned.has(formBehind(form))) return;
+  warned.add(formBehind(form));
   console.warn(
     `Fieldia: ${large.name} (${formatBytes(large.size)}) goes inside the record as base64, because the data source has no upload(). ` +
       'Give it upload() — uploadTo({ url }) for a plain endpoint — to store each file as it is picked and keep only its link.'

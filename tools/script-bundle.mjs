@@ -451,7 +451,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The four lanes joined (the safety kit, files, save safety, the calendar), 0.05 more than the sum of their own: Save
 // shown for a file on its way only where the person may edit, a reset letting go of both the uploads and the conflict,
 // and the minifier's names a little longer with all four in one scope — 0.1 more, to 566.0.
-const BUDGET_KB = 566.0;
+// A field that fails on the person's change keeps nothing it never showed (lane w1-fix-safety): the form each widget
+// is handed notes what it writes in its field, the field goes back to the value it last showed and its box says so
+// with that value, the focus it held goes to the box (named by its words, in the order the field had), a framework's
+// component says what it drew, and a slot's or a part's box takes the focus too — 2.4 more, to 568.4.
+const BUDGET_KB = 568.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -515,7 +519,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.21's calendar (a list's `calendar` and its checks, the switcher open to other views and a new record asked of the
 // app; the calendar itself is @fieldia/calendar's), 1.0 more, to 173.5.
 // The four lanes joined (listed with the raw budget above), 0.04 more than their sum, 0.1 more, to 173.6.
-const GZIP_BUDGET_KB = 173.6;
+// A field that fails on the person's change goes back to what it showed, says so, and hands its focus to its box
+// (listed with the raw budget above), 0.8 more, to 174.4.
+const GZIP_BUDGET_KB = 174.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -566,7 +572,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The three lanes' words joined: each lane rounded its own figures, and gzip does not add up a word at a time —
 // measured 32.82 and 6.32 in Arabic, 14.05 and 5.47 in German, 14.31 and 5.40 in French: Arabic's to 32.9, German's
 // gzipped to 5.5, French's to 14.4 and 5.5.
-const ADD_ON_BUDGET_KB = { ar: [32.9, 6.4], de: [14.1, 5.5], fr: [14.4, 5.5] };
+// A field's change not kept, and what it went back to or that it is empty again (lane w1-fix-safety): two sentences
+// in each, measured 33.22 and 6.37 in Arabic, 14.22 and 5.52 in German, 14.52 and 5.46 in French: Arabic's to 33.3,
+// German's to 14.3 and 5.6, French's to 14.6.
+const ADD_ON_BUDGET_KB = { ar: [33.3, 6.4], de: [14.3, 5.6], fr: [14.6, 5.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

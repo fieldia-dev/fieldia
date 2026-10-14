@@ -224,3 +224,152 @@ describe('a widget that works', () => {
     expect(update).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("a widget that fails on the person's change", () => {
+  /** A price box that writes as it is typed in, and cannot draw 13. Drawn and kept up to date as the viewer would. */
+  const typed: Record<string, WidgetFactory> = {
+    'float.fancy': ({ form, name, id, document: doc }) => {
+      const input = doc.createElement('input');
+      input.id = id;
+      input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : Number(input.value)));
+      return {
+        element: input,
+        update(next) {
+          if (next.value === 13) throw boom;
+          if (doc.activeElement !== input) input.value = String(next.value ?? '');
+        },
+        focus: () => input.focus(),
+      };
+    },
+  };
+  function shown(registry: Record<string, WidgetFactory>, more: Partial<WidgetContext> = {}, start: number | null = 12) {
+    const made = setup(registry, more);
+    const follow = () => made.widget.update(state(made.form.getState().values['price']));
+    made.form.setValues({ price: start }, { stored: true });
+    follow();
+    made.form.subscribe(follow);
+    return made;
+  }
+  function type(input: HTMLInputElement, text: string) {
+    input.focus();
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('goes back to the value it showed, says so with it, and takes the focus to its box', async () => {
+    const onError = jest.fn();
+    const { form, host } = shown(typed, { onError });
+    type(host.querySelector('input') as HTMLInputElement, '13');
+    const box = host.querySelector('.fd-broken') as HTMLElement;
+    expect(box.querySelector('.fd-broken-words')?.textContent).toBe('This field could not be shown: Price');
+    expect(box.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to 12.00.');
+    // The keyboard keeps its place: on the box, which says what failed — named by its words, the value after them.
+    expect(document.activeElement).toBe(box);
+    expect(box.tabIndex).toBe(0);
+    expect(document.getElementById(box.getAttribute('aria-labelledby') as string)?.textContent).toBe('This field could not be shown: Price');
+    expect(document.getElementById(box.getAttribute('aria-describedby') as string)?.textContent).toBe('Your change was not kept: it is back to 12.00.');
+    await settled();
+    // What it showed is what the form holds, and saves: not the change it never showed.
+    expect(form.getState().values['price']).toBe(12);
+    expect(form.getState().dirty).not.toContain('price');
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('empty before: it is empty again, and says that', async () => {
+    const { form, host } = shown(typed, {}, null);
+    type(host.querySelector('input') as HTMLInputElement, '13');
+    expect(host.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is empty again.');
+    await settled();
+    expect(form.getState().values['price']).toBeNull();
+  });
+
+  it("says it in the page's language", async () => {
+    for (const [locale, kept] of [
+      ['ar', 'لم يُحتفَظ بتغييرك: عادت القيمة إلى 12.00.'],
+      ['fr', 'Votre modification n’a pas été conservée : le champ est revenu à 12,00.'],
+      ['de', 'Ihre Änderung wurde nicht übernommen: Der Wert ist wieder 12,00.'],
+    ] as [Locale, string][]) {
+      const { host } = shown(typed, { locale });
+      type(host.querySelector('input') as HTMLInputElement, '13');
+      expect(host.querySelector('.fd-broken-kept')?.textContent).toBe(kept);
+      await settled();
+    }
+  });
+
+  it('a value it was given, not changed in it — loaded, or written by the app — is left as it is, unsaid', async () => {
+    const { form, host } = shown(typed);
+    form.setValues({ price: 13 });
+    expect(host.querySelector('.fd-broken')?.textContent).toBe('This field could not be shown: Price');
+    expect(host.querySelector('.fd-broken-kept')).toBeNull();
+    await settled();
+    expect(form.getState().values['price']).toBe(13);
+  });
+
+  it('the focus elsewhere stays there', async () => {
+    const { form, host } = shown(typed);
+    const other = document.createElement('input');
+    host.after(other);
+    type(host.querySelector('input') as HTMLInputElement, '14');
+    other.focus();
+    form.setValues({ price: 13 });
+    expect(host.querySelector('.fd-broken')).not.toBeNull();
+    expect(document.activeElement).toBe(other);
+  });
+
+  it('drawn later, by a framework: back to the value it last said it drew, and the focus its removed box held goes to the box', async () => {
+    let drawn: (() => void) | undefined;
+    const later: Record<string, WidgetFactory> = {
+      'float.fancy': ({ form, name, document: doc, fail, drew }) => {
+        const element = doc.createElement('div');
+        let next: unknown;
+        // As React or Vue does: the update is drawn after it returns, or the component throws and is drawn as nothing.
+        drawn = () => {
+          if (next === 13) {
+            element.replaceChildren();
+            fail?.(boom);
+            return;
+          }
+          const input = doc.createElement('input');
+          input.value = String(next ?? '');
+          input.addEventListener('input', () => form.setValue(name, Number(input.value)));
+          element.replaceChildren(input);
+          drew?.(next as never);
+        };
+        return { element, update: (state) => void (next = state.value), focus: () => element.querySelector('input')?.focus() };
+      },
+    };
+    const { form, host } = shown(later);
+    drawn?.();
+    type(host.querySelector('input') as HTMLInputElement, '13');
+    drawn?.();
+    const box = host.querySelector('.fd-broken') as HTMLElement;
+    expect(box.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to 12.00.');
+    expect(document.activeElement).toBe(box);
+    await settled();
+    expect(form.getState().values['price']).toBe(12);
+  });
+
+  it("in a table's cell: the line goes back to what the cell showed", async () => {
+    const page = {
+      fieldia: '0.1',
+      id: 't',
+      data: { kind: 'responses' },
+      fields: { lines: { type: 'one2many', label: 'Lines', fields: { qty: { type: 'float', label: 'Quantity' } } } as unknown as Field },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-lines', field: 'lines', cells: { qty: { widget: 'fancy' } } }] },
+    } as unknown as Page;
+    const form = createForm({ page });
+    form.setValues({ lines: [{ key: 'a', values: { qty: 2 } }] } as never);
+    const table = createWidget({ form, name: 'lines', field: page.fields['lines'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-lines', document }, typed);
+    document.body.replaceChildren(table.element);
+    const follow = () => table.update({ value: form.getState().values['lines'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    follow();
+    form.subscribe(follow);
+    type(document.querySelector('td[data-column="qty"] input') as HTMLInputElement, '13');
+    const cell = document.querySelector('td[data-column="qty"]') as HTMLElement;
+    expect(cell.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to 2.00.');
+    expect(document.activeElement).toBe(cell.querySelector('.fd-broken'));
+    await settled();
+    expect((form.getState().values['lines'] as { values: { qty: number } }[])[0].values.qty).toBe(2);
+  });
+});

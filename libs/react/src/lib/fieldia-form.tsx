@@ -6,6 +6,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -121,6 +122,8 @@ function CustomField(props: {
   const state = useSyncExternalStore(props.state.subscribe, props.state.get, props.state.get);
   const Component = props.component();
   const { context } = props;
+  // What it drew, once React has put it on the page: a component that throws on the person's next change puts this back.
+  useLayoutEffect(() => context.drew?.(state.value));
   if (!Component) return null;
   return (
     <Component

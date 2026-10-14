@@ -1,4 +1,5 @@
 import type { FieldNode } from '@fieldia/core';
+import { formBehind } from './handed';
 
 /**
  * Options shuffled when a question's `options.shuffle` is true, as a survey
@@ -12,7 +13,9 @@ import type { FieldNode } from '@fieldia/core';
 const seeds = new WeakMap<object, number>();
 
 /** The form's seed, drawn the first time it is asked for. */
-function seedOf(form: object): number {
+function seedOf(handed: object): number {
+  // The page's own form: each widget is handed one of its own, which sees through to it (contain.ts).
+  const form = formBehind(handed);
   let seed = seeds.get(form);
   if (seed === undefined) {
     seed = Math.floor(Math.random() * 0x100000000) >>> 0;

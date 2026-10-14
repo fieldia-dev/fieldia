@@ -23,7 +23,7 @@ export { countriesIn } from './lib/address';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
 export { wearsQuiet } from './lib/quiet';
-export { brokenBox, reportFailure, describeFailure, type ErrorHandler, type FailureStage, type PartFailure } from './lib/contain';
+export { brokenBox, focusHeld, reportFailure, describeFailure, type ErrorHandler, type FailureStage, type PartFailure } from './lib/contain';
 // A work item's text editor, its Markdown, its menus and its links box come in the text part, loaded the first time a
 // page shows one: `(await textPart.load()).formattedText(…)`. Their types are here; their code is not.
 export type { FormattedText, FormattedTextOptions, TextEditor, TextReference, TextSuggestion } from './lib/formatted-text';
