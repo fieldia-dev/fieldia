@@ -424,7 +424,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // address, the memory source as a slow store, a field's files on their way (a bar, × and Retry, said to a screen
 // reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
 // the viewer saying why Save waits — 20.8 more, to 546.0.
-const BUDGET_KB = 546.0;
+// A photo picked in a table's cell stored as its line's, the cell showing its line's on their way (form.uploading), 0.2 more, to 546.2.
+const BUDGET_KB = 546.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
