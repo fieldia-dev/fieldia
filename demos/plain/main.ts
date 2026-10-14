@@ -16,6 +16,7 @@ import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
 import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
 import { wiTextDiscussion } from '../shared/wi-text';
+import { photosBar } from '../shared/listing-photos';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -164,5 +165,8 @@ if (name === 'fields') {
   const dir = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   document.getElementById('app')?.before(panelBar({ dataSource, pages: appPages, skin, locale, dir, look: page.look }, panelResults));
 }
+
+// The listing has a bar over it: ten photos as a phone takes them, added at once (shared/listing-photos.ts).
+if (name === 'listing-photos') document.getElementById('app')?.before(photosBar());
 
 Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults } });

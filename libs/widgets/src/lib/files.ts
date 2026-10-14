@@ -3,7 +3,7 @@ import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
-import { askFirst, describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
+import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -160,11 +160,13 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     let readonly = false;
     let files: FileValue[] = [];
     let shown: unknown;
-    const say = (lines: string[], said?: 'uploads') => {
-      // What came of the uploads is news, not a warning: it wears the help's colour.
-      if (said) note.dataset['said'] = said;
-      else delete note.dataset['said'];
-      note.replaceChildren(...lines.map((line) => make('div', {}, line)));
+    const say = (lines: string[]) => note.replaceChildren(...lines.map((line) => make('div', {}, line)));
+    // What came of the uploads, on a line of its own, so it never takes the place of why files were not added.
+    const news = make('div', { class: 'fd-help fd-file-news', role: 'status' });
+    note.after(news);
+    const tell = (text: string, failed = false) => {
+      setAttr(news, 'data-failed', failed ? '' : null);
+      setText(news, text);
     };
     /** This field's files on their way to the store, as the form has them. */
     const goingNow = (): readonly FileUpload[] => (form.getState().uploads ?? []).filter((upload) => upload.field === name && !upload.line);
@@ -197,6 +199,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       };
       if (storing) {
         // Each to the store as it is picked; its picture shown from the file meanwhile.
+        tell('');
         const ids = form.upload(name, kept, shrink ? { prepare: (file) => smaller(file as File) } : {});
         ids.forEach((upload, at) => previews.set(upload, /^image\//.test(kept[at].type) && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(kept[at]) : ''));
         // Drawn as the form told of them, before their pictures were known: drawn again with them.
@@ -256,13 +259,13 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         if (item.element.parentNode !== list || item.element !== list.lastElementChild) list.append(item.element);
         // Said once, as it fails: the bar alone would not tell a screen reader.
         if (upload.status === 'failed' || upload.status === 'refused') {
-          if (!saidFailed.has(upload.id)) say([fill(words.notUploadedNamed, { name: upload.name })]);
+          if (!saidFailed.has(upload.id)) tell(fill(words.notUploadedNamed, { name: upload.name }), true);
           saidFailed.add(upload.id);
         } else saidFailed.delete(upload.id);
       }
       // Once nothing is on its way, how many got there.
       if (!going.some(uploadGoing) && uploadedSince) {
-        say([uploadedSince === 1 ? words.fileUploaded : fill(words.filesUploaded, { n: uploadedSince })], 'uploads');
+        tell(uploadedSince === 1 ? words.fileUploaded : fill(words.filesUploaded, { n: uploadedSince }));
         uploadedSince = 0;
       }
       if (focusAt >= 0) (list.children[Math.min(focusAt, list.children.length - 1)]?.querySelector<HTMLElement>('button') ?? input).focus();

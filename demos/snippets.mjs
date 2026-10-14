@@ -344,3 +344,75 @@ const asked = new URLSearchParams(location.search).get('workitem');
 if (asked) openBug(Number(asked));`;
   return { json: JSON.stringify(listPage ?? {}, null, 2), bug: JSON.stringify(bugPage ?? {}, null, 2), js };
 }
+
+/**
+ * A listing whose photos are stored as they are picked (the listing-photos demo): the page's JSON, the
+ * demo's own script — the memory source as a slow store, one photo failing once — and the store an app
+ * gives instead: uploadTo for its own endpoint, or Azure Blob through an address its server signs.
+ */
+export function uploadsSnippets(page, params) {
+  const name = page?.id ?? 'listing-photos';
+  const look = looks(params);
+  const js = `import { mountViewer } from '@fieldia/viewer';
+import { createMemoryDataSource } from '@fieldia/core';
+import page from './${name}.page.json';
+
+// The demo's store: the memory source, as slow as a phone sending on mobile data
+// (150 KB a second), the balcony's photo failing on its first try so Retry shows.
+// Your app gives its own upload() instead: see Your store.
+const dataSource = createMemoryDataSource({
+  records: { listing: { 1: { name: 'Garden flat with a view of the Nile', offer: 'sale', price: 9800000, district: 'zamalek', bedrooms: 3, photos: [] } } },
+  storage: {
+    bytesPerSecond: 150_000,
+    fails: (file, attempt) => /^Balcony/.test(file.name) && attempt === 1,
+  },
+});
+
+// Each photo picked is made smaller (the field's shrink: 1600 px at 0.82), then stored at once:
+// the field keeps { url, name, size, type, fileId }, and Save waits for those still going.
+mountViewer(document.getElementById('app'), {
+  page,
+  dataSource,
+  recordId: 1,${look.map(([key, value]) => `\n  ${key}: ${value},`).join('')}
+});`;
+  const store = `import { uploadTo } from '@fieldia/core';
+
+// Your data source, with upload() for its files: each goes as soon as it is picked, and the
+// field keeps the link the answer gives — JSON { url, id }, or a Location header.
+const dataSource = {
+  ...yourDataSource,
+  upload: uploadTo({ url: '/api/files', headers: { 'X-CSRF-Token': csrfToken } }),
+};
+
+// Or straight to Azure Blob storage, PUT to an address your server signs for each file:
+// write-only, for ten minutes. The field keeps the blob's address, without the signature.
+const toAzure = uploadTo({
+  method: 'PUT',
+  url: async (file) => (await fetch(\`/api/upload-address?name=\${encodeURIComponent(file.name)}\`)).text(),
+  headers: { 'x-ms-blob-type': 'BlockBlob' },
+});
+
+// ---- your server (Node): the signed address, from the storage account's key — no SDK -----
+import { createHmac, randomUUID } from 'node:crypto';
+
+const ACCOUNT = 'yourstorage';
+const CONTAINER = 'listings';
+const KEY = process.env.AZURE_STORAGE_KEY; // the account's key, base64, as the portal gives it
+
+/** A service SAS for one new blob: create and write (cw), over HTTPS, until it expires. */
+export function uploadAddress(fileName) {
+  const blob = \`\${new Date().toISOString().slice(0, 10)}/\${randomUUID()}-\${fileName.replace(/[^\\w.-]+/g, '-')}\`;
+  const expiry = new Date(Date.now() + 10 * 60_000).toISOString().replace(/\\.\\d+Z$/, 'Z');
+  const version = '2022-11-02';
+  const signed = [
+    'cw', '', expiry, \`/blob/\${ACCOUNT}/\${CONTAINER}/\${blob}\`, // permissions, start, expiry, resource
+    '', '', 'https', version, 'b', // identifier, IP, protocol, version, a blob
+    '', '', '', '', '', '', '', // snapshot, encryption scope, and the five response headers
+  ].join('\\n');
+  const sig = createHmac('sha256', Buffer.from(KEY, 'base64')).update(signed, 'utf8').digest('base64');
+  const query = new URLSearchParams({ sv: version, spr: 'https', se: expiry, sr: 'b', sp: 'cw', sig });
+  return \`https://\${ACCOUNT}.blob.core.windows.net/\${CONTAINER}/\${blob}?\${query}\`;
+}
+// The account's CORS rules let your site PUT, with the x-ms-blob-type and Content-Type headers.`;
+  return { json: JSON.stringify(page ?? {}, null, 2), js, store };
+}

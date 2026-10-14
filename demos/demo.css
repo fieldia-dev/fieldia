@@ -34,3 +34,6 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-note { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
 .demo-hello { margin: 0; }
 #app:has(.fd-designer) { max-width: 1320px; }
+/* The listing's bar: the shell's own colours, so it follows the reader's scheme. */
+.demo-photos-bar { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
+.demo-photos-said { flex: 1 1 24em; color: var(--dh-muted, #5b6470); font-size: 13px; }

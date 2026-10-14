@@ -423,8 +423,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // failed, a file's bytes stored by the save and never kept in a draft — uploadTo for a plain endpoint or a signed
 // address, the memory source as a slow store, a field's files on their way (a bar, × and Retry, said to a screen
 // reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
-// the viewer saying why Save waits — 20.2 more, to 545.4.
-const BUDGET_KB = 545.4;
+// the viewer saying why Save waits — 20.8 more, to 546.0.
+const BUDGET_KB = 546.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -478,8 +478,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
 // files stored as they are picked (the form's uploads and a save that waits for them, uploadTo, files on their way
-// with a bar, × and Retry and their stylesheet, photos made smaller, the viewer saying why Save waits), 7.3 more, to 166.7.
-const GZIP_BUDGET_KB = 166.7;
+// with a bar, × and Retry and their stylesheet, photos made smaller, the viewer saying why Save waits), 7.5 more, to 166.9.
+const GZIP_BUDGET_KB = 166.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

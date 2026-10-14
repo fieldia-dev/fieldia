@@ -42,6 +42,7 @@ export const UPLOADS_CSS = /* css */ `
 .fd-files-thumbs .fd-file-going[data-status="refused"] .fd-file-state { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 /* × stays in sight while a file is on its way, a pointer or not. */
 :is(.fd-files-thumbs, .fd-files-cards) .fd-file-going .fd-file-remove { opacity: 1; }
-/* What came of the uploads, said in the help's own colour: the refusals' note keeps the warning's. */
-.fd-file-note[data-said="uploads"] { color: var(--fd-muted); }
+/* What came of the uploads, on its own line in the help's colour — the error's for one not uploaded. */
+.fd-file-news:empty { display: none; }
+.fd-file-news[data-failed] { color: var(--fd-error); }
 `;

@@ -74,6 +74,7 @@ const pdf = (name: string) => new File(['%PDF'], name, { type: 'application/pdf'
 const going = (el: Element) => [...el.querySelectorAll<HTMLElement>('.fd-file-going')];
 const words = (el: Element | null | undefined) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
 const note = (el: Element) => words(el.querySelector('.fd-file-note'));
+const news = (el: Element) => words(el.querySelector('.fd-file-news'));
 
 describe('a file field where the source stores files', () => {
   it('shows each file on its way — picture, name, size, a bar — then among the stored, holding its link alone', async () => {
@@ -103,7 +104,8 @@ describe('a file field where the source stores files', () => {
       { url: 'https://files.example/Kitchen.jpg', name: 'Kitchen.jpg', size: 6, type: 'image/jpeg' },
     ]);
     expect([...el.querySelectorAll('.fd-file-item .fd-file-thumb')].map((img) => img.getAttribute('src'))).toEqual(['https://files.example/Living room.jpg', 'https://files.example/Kitchen.jpg']);
-    expect(note(el)).toBe('2 files uploaded');
+    expect(news(el)).toBe('2 files uploaded');
+    expect(el.querySelector('.fd-file-news')?.getAttribute('role')).toBe('status');
     // The pictures shown meanwhile are let go, and so is every address the photos were read through.
     expect(revoked).toEqual(expect.arrayContaining(['blob:1', 'blob:2']));
     expect(made.filter((url) => !revoked.includes(url))).toEqual([]);
@@ -136,7 +138,8 @@ describe('a file field where the source stores files', () => {
     const retry = item.querySelector('.fd-file-retry') as HTMLButtonElement;
     expect([retry.hidden, words(retry), retry.getAttribute('aria-label')]).toEqual([false, 'Retry', 'Retry Balcony view.jpg']);
     expect(item.querySelector('.fd-file-cancel')?.getAttribute('aria-label')).toBe('Remove Balcony view.jpg');
-    expect(note(el)).toBe('Balcony view.jpg was not uploaded');
+    expect(news(el)).toBe('Balcony view.jpg was not uploaded');
+    expect(el.querySelector('.fd-file-news')?.hasAttribute('data-failed')).toBe(true);
     retry.focus();
     retry.click();
     await tick();
@@ -170,6 +173,11 @@ describe('a file field where the source stores files', () => {
     choose(el, pdf('a.pdf'), pdf('b.pdf'), pdf('c.pdf'));
     await tick();
     expect(store.sent.map((s) => s.file.name)).toEqual(['a.pdf', 'b.pdf']);
+    expect([...el.querySelectorAll('.fd-file-note > *')].map(words)).toEqual(['a.pdf: already added', 'Up to 2 files: 1 not added']);
+    // Once they are in, the news is said on a line of its own: why some were not added stays.
+    store.sent.forEach((s) => s.end());
+    await until(() => news(el));
+    expect(news(el)).toBe('2 files uploaded');
     expect([...el.querySelectorAll('.fd-file-note > *')].map(words)).toEqual(['a.pdf: already added', 'Up to 2 files: 1 not added']);
     expect((el.querySelector('.fd-file-pick') as HTMLElement).hidden).toBe(true);
   });
