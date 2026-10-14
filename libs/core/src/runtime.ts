@@ -182,6 +182,7 @@ export { uploadTo, type UploadAnswer, type UploadTarget, type UploadToOptions } 
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {
   createForm,
+  unsavedWork,
   type Form,
   type FormOptions,
   type FormUser,

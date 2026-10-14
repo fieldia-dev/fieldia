@@ -1,7 +1,7 @@
 import type { Page } from '../format/page';
 import { validatePage } from '../format/validate';
 import { ConflictError, type DataSource, type SaveRequest } from './data-source';
-import { createForm, type Form } from './form';
+import { createForm, unsavedWork, type Form } from './form';
 import { createMemoryDataSource, type MemoryDataSourceOptions } from './memory-data-source';
 import { MESSAGES } from './messages';
 import type { Scheduler } from './scheduler';
@@ -381,5 +381,137 @@ describe('what the person may do with a record, as its source says', () => {
     expect((await form.runAction('win')).done).toBe(true);
     expect(form.getState().can).toEqual({ edit: false, reason: 'A won lead is closed.' });
     expect(form.node('f-phone').readonly).toBe(true);
+  });
+});
+
+describe('saving twice in a row is never a conflict with yourself', () => {
+  it('a second save waits for the first and carries the version it got back: both go through, and no conflict is said', async () => {
+    const ds = source({ delayMs: 20 });
+    const form = await opened(ds);
+    form.setValue('phone', '+201009998887');
+    // Ctrl+Enter, twice, quickly.
+    const first = form.save();
+    const second = form.save();
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(form.getState()).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });
+    const [a, b] = saves(ds);
+    expect(b.version?.token).not.toBe(a.version?.token);
+    expect(b.version).toEqual(expect.objectContaining({ by: 'Sara' }));
+    expect(ds.records['lead'][1]['phone']).toBe('+201009998887');
+  });
+
+  it('a new record saved twice at once is made once: the second save is of the record the first made', async () => {
+    const ds = source({ delayMs: 20 });
+    const form = createForm({ page: lead, dataSource: ds, values: { name: 'Chalet in Sahel', commission: 0.01 } });
+    const first = form.save();
+    const second = form.save();
+    expect([await first, await second]).toEqual([true, true]);
+    expect(Object.keys(ds.records['lead'])).toHaveLength(3);
+    const [a, b] = saves(ds);
+    expect(a.id).toBeNull();
+    expect(b.id).toBe(form.getState().recordId);
+  });
+
+  it('a save asked for while the first waits for its beforeSave steps runs after it, and a save those steps ask for runs inside it', async () => {
+    const ds = source({ delayMs: 5 });
+    const page: Page = { ...lead, on: { beforeSave: [{ do: 'set', field: 'budget', value: '4100000' }, { do: 'save' }] } };
+    const form = createForm({ page, dataSource: ds, recordId: 1 });
+    await form.load();
+    form.setValue('phone', '+201009998887');
+    const first = form.save();
+    const second = form.save();
+    const both = Promise.all([first, second]);
+    // Never waiting on itself: both end.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const ended = await Promise.race([both, new Promise((resolve) => (timer = setTimeout(() => resolve('stuck'), 2000)))]);
+    clearTimeout(timer);
+    expect(ended).toEqual([true, true]);
+    expect(form.getState().conflict).toBeNull();
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', budget: 4100000 });
+  });
+});
+
+describe('Keep mine never saves blind', () => {
+  /** A source whose conflict names who and when but not the record, and whose reads can fail. */
+  function unreadable() {
+    const ds = source();
+    let down = false;
+    const whole: DataSource = {
+      ...ds,
+      async load(request) {
+        if (down) throw new TypeError('Failed to fetch');
+        return ds.load(request);
+      },
+      async save(request) {
+        try {
+          return await ds.save(request);
+        } catch (error) {
+          throw error instanceof ConflictError ? new ConflictError({ version: error.conflict.version }) : error;
+        }
+      },
+    };
+    return { ds, whole, down: (is: boolean) => (down = is) };
+  }
+
+  it('their version cannot be read: nothing is saved over it, the person is told, and may try again once it can', async () => {
+    const { ds, whole, down } = unreadable();
+    const form = await opened(whole);
+    form.setValue('phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit', budget: 4500000 }, { by: 'Mona' });
+    expect(await form.save()).toBe(false);
+    down(true);
+    expect(await form.keepMine()).toBe(false);
+    // No save went out: Mona's work stands, and mine is still in the form, to save.
+    expect(saves(ds)).toHaveLength(1);
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201001234567', stage: 'visit', budget: 4500000 });
+    expect(form.getState()).toMatchObject({ status: 'error', error: MESSAGES.en.theirsUnread, conflict: { unread: true, version: { by: 'Mona' } }, dirty: ['phone'] });
+    expect(form.getState().saveProblem).toMatchObject({ kind: 'conflict', message: MESSAGES.en.theirsUnread });
+    down(false);
+    expect(await form.keepMine()).toBe(true);
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', stage: 'visit', budget: 4500000 });
+    expect(form.getState()).toMatchObject({ status: 'saved', conflict: null });
+  });
+
+  it('a source with no load cannot tell theirs either: Keep mine saves nothing over it', async () => {
+    let tries = 0;
+    const blind: DataSource = {
+      async save() {
+        tries++;
+        throw new ConflictError({ version: { token: 'v9', by: 'Mona' } });
+      },
+    };
+    const form = createForm({ page: lead, dataSource: blind, recordId: 1, values: { name: 'Villa in Sheikh Zayed', commission: 0.02 } });
+    form.setValue('phone', '+201009998887');
+    expect(await form.save()).toBe(false);
+    expect(await form.keepMine()).toBe(false);
+    expect(tries).toBe(1);
+    expect(form.getState().conflict).toMatchObject({ unread: true });
+  });
+
+  it('says so in Arabic, French and German too', () => {
+    for (const locale of ['ar', 'fr', 'de'] as const) expect(MESSAGES[locale].theirsUnread).not.toBe(MESSAGES.en.theirsUnread);
+  });
+});
+
+describe('after Reload, the changes set aside are work not saved', () => {
+  it('counts as unsaved work until put back or let go, though nothing differs from the record', async () => {
+    const ds = source();
+    const form = await opened(ds);
+    expect(unsavedWork(form.getState())).toBe(false);
+    form.setValue('phone', '+201009998887');
+    form.setValue('budget', 4200000);
+    ds.changeElsewhere('lead', 1, { stage: 'visit', budget: 4500000 }, { by: 'Mona' });
+    await form.save();
+    await form.reloadTheirs();
+    expect(form.getState().dirty).toEqual([]);
+    expect(unsavedWork(form.getState())).toBe(true);
+    form.putBack('phone');
+    expect(unsavedWork(form.getState())).toBe(true);
+    expect(await form.save()).toBe(true);
+    // Budget is still set aside, unsaved.
+    expect(unsavedWork(form.getState())).toBe(true);
+    form.discardSetAside();
+    expect(unsavedWork(form.getState())).toBe(false);
   });
 });

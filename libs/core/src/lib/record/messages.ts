@@ -85,6 +85,11 @@ export interface Messages {
   mayNotArchive: string;
   mayNotDuplicate: string;
   mayNotDelete: string;
+  /**
+   * Keep mine, after a conflict whose record as they left it was not told and
+   * could not be read again: nothing is saved over work the person never saw.
+   */
+  theirsUnread: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -150,6 +155,7 @@ const en: Messages = {
   mayNotArchive: 'You cannot archive this record.',
   mayNotDuplicate: 'You cannot duplicate this record.',
   mayNotDelete: 'You cannot delete this record.',
+  theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   locale: 'en',
 };
 

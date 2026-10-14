@@ -332,9 +332,13 @@ export interface UploadSignal {
 }
 
 export interface UploadRequest {
-  /** The page's model. */
+  /** The page's model: for a saved form placed in a record, the record's. */
   model: string;
-  /** The file or picture field the file is for. */
+  /**
+   * The file or picture field the file is for. In a saved form placed in a
+   * record, whose answers the record keeps under the part's name, the field's
+   * place in them: `consent.doc`, as a line's table is `consent.items`.
+   */
   field: string;
   /** The record it is for; null while that record is new — its first save links the file to it. */
   recordId: RecordId | null;

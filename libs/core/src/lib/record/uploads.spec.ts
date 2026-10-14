@@ -12,6 +12,7 @@ import {
   type UploadedFile,
   type UploadFile,
   type UploadRequest,
+  unsavedWork,
 } from '../../index';
 
 /**
@@ -424,7 +425,7 @@ describe('a save waits for the files on their way, and stops for one that did no
   });
 });
 
-describe('a draft never keeps a file’s bytes', () => {
+describe('a draft never keeps a file’s bytes where files are stored apart', () => {
   const store = () => {
     const items = new Map<string, string>();
     return { items, getItem: (k: string) => items.get(k) ?? null, setItem: (k: string, v: string) => void items.set(k, v), removeItem: (k: string) => void items.delete(k) };
@@ -432,7 +433,7 @@ describe('a draft never keeps a file’s bytes', () => {
 
   it('leaves out a field holding a file as its bytes, keeps one holding links, and a line’s file the same', async () => {
     const kept = store();
-    const { form } = setup({ drafts: { store: kept, delayMs: 0 } });
+    const { form } = setup({ upload: handStore().upload, drafts: { store: kept, delayMs: 0 } });
     form.setValue('name', 'Garden flat');
     form.setValue('plan', { name: 'plan.pdf', type: 'application/pdf', size: 3, data: 'AQID' });
     form.setValue('photos', [{ name: 'a.jpg', type: 'image/jpeg', size: 3, url: 'https://files.example/a.jpg' }]);
@@ -444,6 +445,22 @@ describe('a draft never keeps a file’s bytes', () => {
     expect(draft.values['photos']).toEqual([{ name: 'a.jpg', type: 'image/jpeg', size: 3, url: 'https://files.example/a.jpg' }]);
     expect(draft.values['rooms'][0].values).toEqual({ name: 'Hall' });
     expect(JSON.stringify(draft)).not.toContain('AQID');
+  });
+
+  it('without upload, keeps every file as it always has: restored, the file and the signature are back', async () => {
+    const kept = store();
+    const { form, state } = setup({ drafts: { store: kept, delayMs: 0 } });
+    form.setValue('name', 'Garden flat');
+    form.setValue('plan', { name: 'plan.pdf', type: 'application/pdf', size: 3, data: 'AQID' });
+    form.setValue('signature', { name: 'signature.png', type: 'image/png', size: 3, data: 'AQID' });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const draft = JSON.parse([...kept.items.values()][0]);
+    expect(draft.values['plan']).toEqual({ name: 'plan.pdf', type: 'application/pdf', size: 3, data: 'AQID' });
+    // Another visit: the draft brings both back.
+    const again = createForm({ page: listing(), dataSource: createMemoryDataSource(), drafts: { store: kept, restore: 'auto' } });
+    expect(again.getState().values['plan']).toMatchObject({ data: 'AQID' });
+    expect(again.getState().values['signature']).toMatchObject({ data: 'AQID' });
+    void state;
   });
 
   it('goes on when the browser’s store is full', async () => {
@@ -479,5 +496,244 @@ describe('the memory source as a store that is slow, or fails', () => {
     await expect(ds.upload(file(5, 'balcony.jpg'), request)).resolves.toMatchObject({ name: 'balcony.jpg', fileId: 1 });
     await expect(ds.upload(file(5, 'scan.tiff'), request)).rejects.toMatchObject({ problem: { kind: 'rule', message: 'The store takes JPEG and PNG only' } });
     expect(tries).toEqual([1, 2, 1]);
+  });
+});
+
+describe('a change made while a save is on its way is never taken as saved', () => {
+  /** A listing whose saves wait until the test lets each go, as a slow network does. */
+  async function slowSaves(upload = handStore().upload) {
+    const ds = createMemoryDataSource({ records: { listing: { 1: { name: 'Nile view flat', photos: [], plan: null, signature: null, rooms: [] } } } });
+    const gates: (() => void)[] = [];
+    const sent: SaveRequest[] = [];
+    const source: DataSource = {
+      ...ds,
+      upload,
+      save: async (request) => {
+        sent.push(request);
+        await new Promise<void>((go) => gates.push(go));
+        return ds.save(request);
+      },
+    };
+    const form = createForm({ page: listing(), dataSource: source, recordId: 1 });
+    await form.load();
+    return { ds, form, gates, sent, state: () => form.getState() };
+  }
+
+  it('a file picked while it saves, and stored before it returns, stays a change — shown, unsaved, and saved next', async () => {
+    const store = handStore();
+    const { ds, form, gates, sent, state } = await slowSaves(store.upload);
+    form.setValue('name', 'Garden flat');
+    const saved = form.save();
+    await tick();
+    expect(gates).toHaveLength(1);
+    // Picked while the save is on its way; stored before it returns.
+    form.upload('plan', [photo('plan.jpg')]);
+    await tick();
+    store.sent[0].end();
+    await tick();
+    expect(state().values['plan']).toMatchObject({ url: 'https://files.example/plan.jpg' });
+    gates[0]();
+    expect(await saved).toBe(true);
+    expect(ds.records['listing'][1]).toMatchObject({ name: 'Garden flat', plan: null });
+    expect(sent[0].changes.values).toEqual({ name: 'Garden flat' });
+    // The field still shows it, and it is a change still to save — never "saved" unsent.
+    expect(state().values['plan']).toMatchObject({ url: 'https://files.example/plan.jpg' });
+    expect(state().dirty).toEqual(['plan']);
+    expect(unsavedWork(state())).toBe(true);
+    const again = form.save();
+    await tick();
+    gates[1]();
+    expect(await again).toBe(true);
+    expect(ds.records['listing'][1]['plan']).toMatchObject({ url: 'https://files.example/plan.jpg', fileId: 1 });
+    expect(state().dirty).toEqual([]);
+  });
+
+  it('words typed while it saves stay typed, and unsaved', async () => {
+    const { ds, form, gates, state } = await slowSaves();
+    form.setValue('name', 'Garden flat');
+    const saved = form.save();
+    await tick();
+    form.setValue('name', 'Garden flat, Zamalek');
+    gates[0]();
+    expect(await saved).toBe(true);
+    expect(ds.records['listing'][1]['name']).toBe('Garden flat');
+    expect(state().values['name']).toBe('Garden flat, Zamalek');
+    expect(state().dirty).toEqual(['name']);
+  });
+
+  it('a line added before it and changed while it saves keeps the id the save gave it: the next save changes it, never makes it twice', async () => {
+    const { ds, form, gates, sent, state } = await slowSaves();
+    const key = form.addLine('rooms', { name: 'Hall' });
+    const saved = form.save();
+    await tick();
+    form.updateLine('rooms', key, 'name', 'Entrance hall');
+    gates[0]();
+    expect(await saved).toBe(true);
+    const lines = state().values['rooms'] as Line[];
+    expect(lines).toEqual([expect.objectContaining({ key, id: expect.anything(), values: expect.objectContaining({ name: 'Entrance hall' }) })]);
+    expect(state().dirty).toEqual(['rooms']);
+    const again = form.save();
+    await tick();
+    gates[1]();
+    expect(await again).toBe(true);
+    expect(sent[1].changes.lines['rooms']).toEqual([{ op: 'update', id: lines[0].id, values: { name: 'Entrance hall' } }]);
+    expect((ds.records['listing'][1]['rooms'] as Line[]).map((line) => line.values['name'])).toEqual(['Entrance hall']);
+  });
+});
+
+describe('Retry that stores a failed file takes the save’s problem with it', () => {
+  it('the form no longer says the record was not saved for that file: status, error and problem are clear', async () => {
+    const store = handStore();
+    const { form, state } = setup({ upload: store.upload, recordId: 1 });
+    await form.load();
+    form.setValue('name', 'Garden flat');
+    form.upload('photos', [photo('phone-a.jpg')]);
+    await tick();
+    store.sent[0].fail(new Error('500'));
+    await form.settled();
+    expect(await form.save()).toBe(false);
+    expect(state()).toMatchObject({ status: 'error', error: 'phone-a.jpg was not uploaded: try again, or remove it' });
+    form.retryUpload(state().uploads[0].id);
+    await tick();
+    store.sent[1].end();
+    await form.settled();
+    expect(state()).toMatchObject({ status: 'ready', error: null, saveProblem: null, errors: {} });
+    // Still a change to save.
+    expect(state().dirty).toEqual(['name', 'photos']);
+  });
+
+  it('removing the failed file does the same; a second one still failing keeps the save stopped', async () => {
+    const store = handStore();
+    const { form, state } = setup({ upload: store.upload, recordId: 1 });
+    await form.load();
+    form.upload('photos', [photo('a.jpg'), photo('b.jpg')]);
+    await tick();
+    store.sent[0].fail(new Error('500'));
+    store.sent[1].fail(new Error('500'));
+    await form.settled();
+    expect(await form.save()).toBe(false);
+    form.cancelUpload(state().uploads[0].id);
+    expect(state().status).toBe('error');
+    form.cancelUpload(state().uploads[0].id);
+    expect(state()).toMatchObject({ status: 'ready', error: null, saveProblem: null });
+  });
+});
+
+describe('a saved form placed in a record keeps to the same rules for files', () => {
+  const consent: Page = {
+    fieldia: '0.1',
+    id: 'consent',
+    title: 'Owner’s consent',
+    data: { kind: 'responses' },
+    fields: {
+      owner: { type: 'char', label: 'Owner' },
+      sig: { type: 'binary', label: 'Signature' },
+      deed: { type: 'binary', label: 'Deed' },
+      rooms: { type: 'one2many', label: 'Rooms', relation: 'room', fields: { name: { type: 'char', label: 'Room' }, photo: { type: 'image', label: 'Photo' } } },
+    },
+    layout: { type: 'sections', id: 'root', children: ['owner', 'sig', 'deed', 'rooms'].map((field) => ({ type: 'field', id: `c-${field}`, field })) },
+  } as Page;
+  const handover: Page = {
+    fieldia: '0.1',
+    id: 'handover',
+    data: { kind: 'record', model: 'listing' },
+    fields: { name: { type: 'char', label: 'Name' } },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'form', id: 'p-consent', page: 'consent', name: 'consent', title: 'Owner’s consent' }] },
+  } as Page;
+
+  async function placed(upload?: DataSource['upload'], drafts?: { store: DraftStore; delayMs?: number }) {
+    const ds = createMemoryDataSource({ records: { listing: { 1: { name: 'Nile view flat' } } } });
+    const saves: SaveRequest[] = [];
+    const save = ds.save.bind(ds);
+    const form = createForm({ page: handover, dataSource: { ...ds, save: (request) => (saves.push(request), save(request)), upload }, recordId: 1, ...(drafts ? { drafts } : {}) });
+    const inner = form.embed('p-consent', consent);
+    await form.load();
+    return { ds, form, inner, saves };
+  }
+
+  it('a signature drawn in it goes to the store before the save, for the record, and only its link is saved', async () => {
+    const store = handStore();
+    const { form, inner, saves } = await placed(store.upload);
+    inner.setValue('sig', { name: 'signature.png', type: 'image/png', size: 3, data: 'AQID' });
+    const key = inner.addLine('rooms', { name: 'Hall', photo: { name: 'hall.png', type: 'image/png', size: 3, data: 'AQID' } });
+    const saved = form.save();
+    await tick();
+    // For the record it is in — its model and id — the field where it sits in it.
+    expect(store.sent.map((s) => s.request)).toEqual([
+      expect.objectContaining({ model: 'listing', recordId: 1, field: 'consent.sig' }),
+      expect.objectContaining({ model: 'listing', recordId: 1, field: 'photo', line: { field: 'consent.rooms', key } }),
+    ]);
+    store.sent.forEach((s) => s.end());
+    expect(await saved).toBe(true);
+    expect(saves[0].changes.values['consent']).toMatchObject({ sig: { url: 'https://files.example/signature.png', fileId: 1 } });
+    expect(JSON.stringify(saves[0])).not.toContain('AQID');
+    expect(form.getState().dirty).toEqual([]);
+  });
+
+  it('a file picked in it is stored for the record; the save waits for it, and stops under its field when it fails', async () => {
+    const store = handStore();
+    const { ds, form, inner, saves } = await placed(store.upload);
+    const [id] = inner.upload('deed', [photo('deed.jpg')]);
+    await tick();
+    expect(store.sent[0].request).toMatchObject({ model: 'listing', recordId: 1, field: 'consent.deed' });
+    // The record's form shows it on its way, under the part's name, and leaving would lose it.
+    expect(form.getState().uploads).toEqual([expect.objectContaining({ id: `consent/${id}`, field: 'consent.deed', status: 'uploading' })]);
+    expect(unsavedWork(form.getState())).toBe(true);
+    form.setValue('name', 'Garden flat');
+    const saved = form.save();
+    await tick();
+    expect(form.getState().status).toBe('saving');
+    expect(saves).toHaveLength(0);
+    store.sent[0].fail(new Error('503'));
+    expect(await saved).toBe(false);
+    expect(saves).toHaveLength(0);
+    expect(form.getState().errors).toEqual({ 'consent.deed': 'deed.jpg was not uploaded: try again, or remove it' });
+    expect(inner.getState().errors).toEqual({ deed: 'deed.jpg was not uploaded: try again, or remove it' });
+    // Retry, from the record's form: stored, the problem gone with it, and the save goes.
+    form.retryUpload(form.getState().uploads[0].id);
+    await tick();
+    store.sent[1].end();
+    await form.settled();
+    expect(form.getState()).toMatchObject({ status: 'ready', saveProblem: null, errors: {} });
+    expect(inner.getState().errors).toEqual({});
+    expect(await form.save()).toBe(true);
+    expect(ds.records['listing'][1]['consent']).toMatchObject({ deed: { url: 'https://files.example/deed.jpg', fileId: 1 } });
+  });
+
+  it('a save waits for a file still going in it, and saves its link', async () => {
+    const store = handStore();
+    const { ds, form, inner } = await placed(store.upload);
+    inner.upload('deed', [photo('deed.jpg')]);
+    await tick();
+    const saved = form.save();
+    await tick();
+    store.sent[0].end();
+    expect(await saved).toBe(true);
+    expect(ds.records['listing'][1]['consent']).toMatchObject({ deed: { url: 'https://files.example/deed.jpg' } });
+    expect(form.getState().dirty).toEqual([]);
+  });
+
+  it('a draft keeps none of its file bytes, and restored, leaves that file as the record holds it', async () => {
+    const items = new Map<string, string>();
+    const kept: DraftStore = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) };
+    const { inner } = await placed(handStore().upload, { store: kept, delayMs: 0 });
+    inner.setValue('owner', 'Sara Adel');
+    inner.setValue('sig', { name: 'signature.png', type: 'image/png', size: 3, data: 'AQID' });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const draft = JSON.parse([...items.values()][0]);
+    expect(draft.values['consent']['owner']).toBe('Sara Adel');
+    expect('sig' in draft.values['consent']).toBe(false);
+    expect(JSON.stringify(draft)).not.toContain('AQID');
+  });
+
+  it('without upload, as always: its bytes are saved inside the record, and a draft keeps them', async () => {
+    const items = new Map<string, string>();
+    const kept: DraftStore = { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) };
+    const { form, inner, saves } = await placed(undefined, { store: kept, delayMs: 0 });
+    inner.setValue('sig', { name: 'signature.png', type: 'image/png', size: 3, data: 'AQID' });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(JSON.parse([...items.values()][0]).values['consent']['sig']).toMatchObject({ data: 'AQID' });
+    expect(await form.save()).toBe(true);
+    expect(saves[0].changes.values['consent']).toMatchObject({ sig: { data: 'AQID' } });
   });
 });

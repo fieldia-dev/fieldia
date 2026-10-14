@@ -59,5 +59,6 @@ export const fr: Messages = {
   mayNotArchive: 'Vous ne pouvez pas archiver cet enregistrement.',
   mayNotDuplicate: 'Vous ne pouvez pas dupliquer cet enregistrement.',
   mayNotDelete: 'Vous ne pouvez pas supprimer cet enregistrement.',
+  theirsUnread: 'Leur version n’a pas pu être lue : la vôtre n’a donc pas été enregistrée par-dessus. Réessayez Garder les miennes, ou Recharger.',
   locale: 'fr',
 };
