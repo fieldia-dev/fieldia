@@ -80,8 +80,15 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * calling back what is still on its way; ArrowUp from no row marking the
  * last: 30 bytes more for a place and an area (2 under its 25.6), 59 more
  * for all, 16 over 45.2, which goes to 45.3.
+ * A place's coordinates read by Fieldia's one number reader (Persian digits,
+ * direction marks, never grouped) and guarded as every number box is: a
+ * letter refused as it is typed and said under its box, the keys after it
+ * held, and leaving with them saying why in the note, its hint giving way —
+ * about 165 bytes more for a place and an area (26,378: 25.6 goes to 25.8),
+ * 95 over 45.3 for all (46,482: 45.4). The reader and the guard are @fieldia/core's and @fieldia/widgets',
+ * which every form carries already.
  */
-const BUDGET = { fields: 25.6, all: 45.3, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 25.8, all: 45.4, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
