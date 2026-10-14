@@ -146,6 +146,15 @@ describe('a custom filter’s date', () => {
     apply();
     expect(chips()).toEqual([]);
     expect(hint()?.textContent).toBe('Since: the year has 4 digits, like 2026');
+    // A year of two digits is never given a century: the filter waits, naming both it could be.
+    type(box, '1/1/25');
+    apply();
+    expect(chips()).toEqual([]);
+    expect(hint()?.textContent).toBe('Since: “⁨25⁩” could be 1925 or 2025; write the year in full');
+    // A date as a list shows one at rest reads.
+    type(box, '1 Jan 2025');
+    apply();
+    expect(chips()).toEqual(['Since greater than 1 Jan 2025']);
   });
 
   it('says what a date looks like when none is typed', async () => {

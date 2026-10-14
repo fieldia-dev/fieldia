@@ -14,6 +14,11 @@ import { openOnClick } from './quiet';
  * drawn faint, and picking it says why under the month, and picks nothing. A
  * pick says so: a bubbling `fd-picked` event, its `detail.value` the value
  * set, for what holds the field — a grid's cell closes on it.
+ *
+ * It never covers why the box's text was not read: the focus leaving the box
+ * for anything but the month (Tab to its button, or past it) closes it, as
+ * does the focus leaving the field from inside it; and opened on text left
+ * unread, the month says why under it.
  */
 
 /** How a calendar is drawn, and what it keeps to. */
@@ -250,8 +255,10 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   function open() {
     focused = dayOf(kind, form.getState().values[name]) ?? new Date();
-    setText(note, '');
-    setHidden(note, true);
+    // Over the field's error, the month says it too: why the text typed was not read.
+    const unread = form.getState().unread?.[name]?.message ?? '';
+    setText(note, unread);
+    setHidden(note, !unread);
     dialog.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     draw(true);
@@ -268,10 +275,15 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     if (shift) dialog.style.translate = `${Math.round(shift)}px 0`;
   }
 
-  function close() {
+  /** Closed where the focus already is: the person moved on. */
+  function hide() {
     if (dialog.hidden) return;
     dialog.hidden = true;
     button.setAttribute('aria-expanded', 'false');
+  }
+  function close() {
+    if (dialog.hidden) return;
+    hide();
     button.focus();
   }
 
@@ -299,6 +311,17 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     }
   };
   doc.addEventListener('mousedown', outside);
+  // Typed in and left for anything but the month — Tab to its button or past it — the month goes, and with it
+  // nothing over the words that say why the text was not read. (Focus going nowhere, a press inside the month that
+  // is no button, keeps it: a press outside is the mousedown's.)
+  inner.element.addEventListener('blur', (event) => {
+    const to = (event as FocusEvent).relatedTarget;
+    if (to instanceof Node && !dialog.contains(to)) hide();
+  });
+  element.addEventListener('focusout', (event) => {
+    const to = event.relatedTarget;
+    if (to instanceof Node && !element.contains(to)) hide();
+  });
 
   return {
     element,
