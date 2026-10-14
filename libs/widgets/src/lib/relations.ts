@@ -261,7 +261,11 @@ function combobox(options: {
             editing = false;
             hint?.hide();
             options.pick(record);
-          } else if (!options.typed?.unmatched?.(text.trim())) noMatch(text.trim());
+          } else if (!options.typed?.unmatched?.(text.trim())) {
+            // The list closed, so the words under the box can be read; ↓ opens it again.
+            close();
+            noMatch(text.trim());
+          }
         });
         return;
       }

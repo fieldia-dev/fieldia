@@ -1,4 +1,5 @@
 import type { Field, FieldNode, Locale, Value } from '@fieldia/core';
+import { weekdayHead } from './calendar';
 import { dateBox } from './date-box';
 import { maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { bounds } from './limits';
@@ -39,7 +40,8 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const lang = locale === 'en' ? 'en-GB' : locale;
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const weekday = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const weekday = weekdayHead(lang);
+  const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
 
   /** A field's value as the calendar reads it, and the day it falls on. */
   const boxText = (value: Value | undefined) => {
@@ -152,7 +154,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     calendar.setAttribute('aria-label', label);
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
     const monday = addDays(first, -((first.getDay() + 6) % 7));
-    const head = make('tr', {}, ...Array.from({ length: 7 }, (_, i) => make('th', { scope: 'col' }, weekday.format(addDays(monday, i)).replace(/\.$/, ''))));
+    const head = make('tr', {}, ...Array.from({ length: 7 }, (_, i) => make('th', { scope: 'col', abbr: weekdayLong.format(addDays(monday, i)) }, weekday(addDays(monday, i)))));
     const body = make('tbody');
     for (let row = monday; row <= new Date(focused.getFullYear(), focused.getMonth() + 1, 0); row = addDays(row, 7)) {
       const tr = make('tr');

@@ -86,6 +86,8 @@ describe('a link typed into', () => {
     expect(form.getState().values['country_id']).toEqual({ id: 1, label: 'Egypt' });
     expect(hintSays()).toBe('Country: nothing is called “⁨Narnia⁩”; pick one from the list. Country still holds Egypt');
     expect(input.getAttribute('aria-describedby')).toContain((document.querySelector('.fd-refusal-hint') as HTMLElement).id);
+    // Its list closed, so the words under the box can be read.
+    expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('takes the exact name typed and left, and puts the held record back for words that name none, saying so', async () => {

@@ -34,6 +34,19 @@ export function isoWeek(day: Date): number {
   return Math.ceil(((t.getTime() - yearStart) / 86400000 + 1) / 7);
 }
 
+/**
+ * A day of the week as a calendar's column heads it: its short name ("Mon", "lun", "Mo"), or — where the short name
+ * is a whole word, as Arabic's are (الاثنين) — its narrow one (ن), which fits the column; the head's `abbr` says it whole.
+ */
+export function weekdayHead(lang: string): (day: Date) => string {
+  const short = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const narrow = new Intl.DateTimeFormat(lang, { weekday: 'narrow' });
+  return (day) => {
+    const name = short.format(day).replace(/\.$/, '');
+    return [...name].length > 4 ? narrow.format(day) : name;
+  };
+}
+
 const pad = (n: number) => String(n).padStart(2, '0');
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
@@ -60,7 +73,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   const lang = locale === 'en' ? 'en-GB' : locale;
   const monthName = new Intl.DateTimeFormat(lang, { month: 'long', year: 'numeric', numberingSystem: 'latn' });
   const dayName = new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
-  const weekdayShort = new Intl.DateTimeFormat(lang, { weekday: 'short' });
+  const weekdayShort = weekdayHead(lang);
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
 
   const button = doc.createElement('button');
@@ -167,7 +180,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
       const d = addDays(start, i);
       const th = doc.createElement('th');
       th.scope = 'col';
-      th.textContent = weekdayShort.format(d).replace(/\.$/, '');
+      th.textContent = weekdayShort(d);
       th.setAttribute('abbr', weekdayLong.format(d));
       headRow.append(th);
     }
