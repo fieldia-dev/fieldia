@@ -517,20 +517,20 @@ export type DurationProblem = 'unfinished' | 'minutes' | 'duration' | 'numbersOn
 export type DurationRead =
   | { ok: true; value: number | null }
   | { ok: false; problem: DurationProblem }
-  /** Minutes of one digit that could be either of two ("6:3", 6:03 or 6:30): never one of them in silence. */
-  | { ok: false; problem: 'minuteDigits'; early: string; late: string };
+  /** Minutes of one digit that could be more than one time ("6:3", 6:03 or 6:30): never one of them in silence. */
+  | { ok: false; problem: 'minuteDigits'; times: string[] };
 
 /**
- * A minute written with one digit, `digit`, after `mark` (a colon, an h or a point): the two times it could be, or
- * null when it can only be the one written. After a colon or an h, "3" is :03 or :30, while "0" and "6" to "9" can only
- * be :00 and :06 to :09 (60 and more are no minutes). After a point, as "14.5", hours with a decimal are as likely as
- * a clock's minutes: any digit but 0 could be either.
+ * A minute written with one digit, `digit`, after `mark` (a colon, an h or a point): the minutes it could be, earliest
+ * first, or null when it can only be the one written. After a colon or an h, "3" is :03 or :30, while "0" and "6" to
+ * "9" can only be :00 and :06 to :09 (60 and more are no minutes). After a point, as "14.5", hours with a decimal are
+ * as likely as a clock's minutes: "14.5" is 14:05, half past two or 14:50, "14.7" 14:07 or 14:42; only "14.0" is one.
  */
-function oneDigitMinute(digit: string, mark: string): { early: string; late: string } | null {
+function oneDigitMinute(digit: string, mark: string): string[] | null {
   const m = Number(digit);
   if (m === 0) return null;
-  if (mark === '.') return { early: `0${m}`, late: m <= 5 ? `${m}0` : pad2(Math.round(m * 6)) };
-  return m <= 5 ? { early: `0${m}`, late: `${m}0` } : null;
+  const minutes = new Set([m, ...(m <= 5 ? [m * 10] : []), ...(mark === '.' ? [m * 6] : [])]);
+  return minutes.size > 1 ? [...minutes].sort((a, b) => a - b).map(pad2) : null;
 }
 
 /**
@@ -538,8 +538,8 @@ function oneDigitMinute(digit: string, mark: string): { early: string; late: str
  * (seconds only when :00), Arabic digits too; a leading minus. Minutes past 59
  * do not read ('minutes'), nor do "6 30" or other shapes ('duration'); "6:"
  * and "-" are on their way ('unfinished'). Minutes of one digit that could be
- * either of two ("6:3": 6:03 or 6:30) are never read as one ('minuteDigits',
- * naming both); "6:7" can only be 6:07.
+ * more than one ("6:3": 6:03 or 6:30) are never read as one ('minuteDigits',
+ * naming each); "6:7" can only be 6:07.
  */
 export function readDuration(text: string, locale: string): DurationRead {
   const t = folded(text).trim();
@@ -558,7 +558,7 @@ export function readDuration(text: string, locale: string): DurationRead {
     const either = m.length === 1 ? oneDigitMinute(m, ':') : null;
     if (either) {
       const minus = sign.negative ? '-' : '';
-      return { ok: false, problem: 'minuteDigits', early: `${minus}${Number(h)}:${either.early}`, late: `${minus}${Number(h)}:${either.late}` };
+      return { ok: false, problem: 'minuteDigits', times: either.map((minutes) => `${minus}${Number(h)}:${minutes}`) };
     }
     if (Number(m) > 59) return { ok: false, problem: 'minutes' };
     if (s !== undefined && Number(s) !== 0) return { ok: false, problem: 'duration' };
@@ -583,8 +583,8 @@ export type DateRead =
   /** Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in silence. */
   | { ok: true; value: string | null; timeLeftOut?: string }
   | { ok: false; problem: DateProblem }
-  /** A time whose minutes have one digit that could be either of two times ("14:3"): both named. */
-  | { ok: false; problem: 'minuteDigits'; early: string; late: string }
+  /** A time whose minutes have one digit that could be more than one time ("14:3"): each named. */
+  | { ok: false; problem: 'minuteDigits'; times: string[] }
   | { ok: false; problem: 'noSuchDay'; year: number; month: number; days: number }
   /** A year of two digits ("85"): never given a century in silence; the two it could be are named. */
   | { ok: false; problem: 'shortYear'; short: string; early: number; late: number };
@@ -721,15 +721,15 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
   return { ok: true, value: `${date}T${time.value}` };
 }
 
-export type TimeRead = { ok: true; value: string | null } | { ok: false; problem: 'unfinished' | 'time' } | { ok: false; problem: 'minuteDigits'; early: string; late: string };
+export type TimeRead = { ok: true; value: string | null } | { ok: false; problem: 'unfinished' | 'time' } | { ok: false; problem: 'minuteDigits'; times: string[] };
 
 /**
  * A typed time of day: 24-hour "14:30" (or "14.30", "14h30", "1430"), or
  * twelve-hour with am/pm or ص/م; Arabic digits; seconds only when :00.
  * The value is HH:MM. Minutes of one digit are read as written only when they
  * can be one time alone ("14:7" is 14:07, "14:0" 14:00); "14:3" could be
- * 14:03 or 14:30, and "14.5" half past two as well: those are never read, and
- * both times are named ('minuteDigits').
+ * 14:03 or 14:30, and "14.5" 14:05, half past two or 14:50: those are never
+ * read, and each time it could be is named ('minuteDigits').
  */
 export function readTime(text: string): TimeRead {
   const t = folded(text).trim();
@@ -747,9 +747,9 @@ export function readTime(text: string): TimeRead {
     hours = (hours % 12) + (pm ? 12 : 0);
   }
   if (hours > 23 || minutes > 59) return { ok: false, problem: 'time' };
-  // One digit of minutes that could be either of two times: both are named, neither taken.
+  // One digit of minutes that could be more than one time: each is named, none taken.
   const either = m !== undefined && m.length === 1 ? oneDigitMinute(m, /^\d{1,2}\s*([:.hH])/.exec(t)?.[1] ?? ':') : null;
-  if (either) return { ok: false, problem: 'minuteDigits', early: `${pad2(hours)}:${either.early}`, late: `${pad2(hours)}:${either.late}` };
+  if (either) return { ok: false, problem: 'minuteDigits', times: either.map((minutes) => `${pad2(hours)}:${minutes}`) };
   return { ok: true, value: `${pad2(hours)}:${pad2(minutes)}` };
 }
 
