@@ -64,6 +64,16 @@ function warnInline(form: Form, files: { name: string; size: number }[]) {
   );
 }
 const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-icon', 'data-kind': kindOf(file), 'aria-hidden': 'true' }, extension(file.name) || '?');
+/**
+ * A file's picture, or — where the browser cannot draw it (random bytes
+ * named .jpg, a HEIC photo in Chrome) — `instead` in its place: never the
+ * browser's broken-picture mark.
+ */
+function picture(make: Make, src: string, instead: () => HTMLElement, attrs: Record<string, string> = { class: 'fd-file-thumb', alt: '' }): HTMLElement {
+  const image = make('img', { ...attrs, src }) as HTMLImageElement;
+  image.addEventListener('error', () => image.parentNode?.replaceChild(instead(), image), { once: true });
+  return image;
+}
 /** The pictures' ways in the switch: cards, a picture over a line of words; thumbnails, pictures alone. A list has the list's icon. */
 const VIEWS = {
   cards: '<path d="M3 3h8v8H3zM13 3h8v8h-8zM3 15h8M13 15h8M3 19h5M13 19h5"/>',
@@ -248,8 +258,9 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         let item = goingItems.get(upload.id)?.item;
         if (!item) {
           const preview = previews.get(upload.id);
-          const picture = preview ? make('img', { class: 'fd-file-thumb', src: preview, alt: '' }) : icon(make, { name: upload.name, type: upload.type, size: upload.size });
-          item = goingItem(make, words, display === 'cards' ? make('span', { class: 'fd-file-picture' }, picture) : picture, (text) => (display === 'cards' ? namedOnCard : named)(make, text), {
+          const about = { name: upload.name, type: upload.type, size: upload.size };
+          const shown = preview ? picture(make, preview, () => icon(make, about)) : icon(make, about);
+          item = goingItem(make, words, display === 'cards' ? make('span', { class: 'fd-file-picture' }, shown) : shown, (text) => (display === 'cards' ? namedOnCard : named)(make, text), {
             cancel: () => form.cancelUpload(upload.id),
             retry: () => form.retryUpload(upload.id),
           });
@@ -313,7 +324,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
               'button',
               // Named whole: the name's two parts would be read as two words.
               { type: 'button', class: 'fd-file-open', 'data-at': String(at), 'aria-haspopup': 'dialog', 'aria-label': `${file.name}, ${formatBytes(file.size)}` },
-              ...[kindOf(file) === 'image' && source(file) ? make('img', { class: 'fd-file-thumb', src: source(file), alt: '' }) : icon(make, file)].map((picture) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, picture) : picture)),
+              ...[kindOf(file) === 'image' && source(file) ? picture(make, source(file), () => icon(make, file)) : icon(make, file)].map((shown) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, shown) : shown)),
               (display === 'cards' ? namedOnCard : named)(make, file.name),
               make('span', { class: 'fd-file-size' }, formatBytes(file.size))
             ),
@@ -362,7 +373,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         download.href = url;
         download.download = file.name;
         const kind = kindOf(file);
-        if (kind === 'image') return body.replaceChildren(make('img', { src: url, alt: file.name }));
+        if (kind === 'image') return body.replaceChildren(picture(make, url, () => none(file), { alt: file.name }));
         if (kind === 'pdf') return body.replaceChildren(make('iframe', { src: url, title: file.name }));
         if (!asText(file)) return body.replaceChildren(none(file));
         const pre = make('pre', { tabindex: '0' });

@@ -47,6 +47,7 @@ import { CONTAINED_RECORDS, containedPage } from './contained';
 import listingPhotos from '../../examples/pages/listing-photos.page.json';
 import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
 import { calendarDemo } from './calendar';
+import { listingHandover } from './listing-handover';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -116,6 +117,8 @@ export const pages: Record<string, Page> = {
   'listing-photos': listingPhotos as Page,
   // A list's records on a calendar, and the record each opens: a clinic's day by doctor, the booking desk's week (shared/calendar.ts).
   ...calendarDemo.pages,
+  // A listing's handover with the owner's consent placed in it, its files the listing's: shared/listing-handover.ts.
+  ...listingHandover.pages,
 };
 
 /**
@@ -173,6 +176,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
  * sign-up in French through an app's own catalog.
  */
 export function optionsFromQuery(params: URLSearchParams): {
+  drafts?: { store: Storage };
   user?: FormUser;
   context?: Record<string, JsonValue>;
   records?: (string | number)[];
@@ -197,6 +201,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
+    // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
+    ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
   };
 }
 
@@ -235,7 +241,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
-export const savedForms: Record<string, Page> = { address: address as Page };
+export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };
 
 /** The pages a step opens by their id: a new customer in a side panel, and a customer's record in the order's place. */
 export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page, ...real.opened };
@@ -565,6 +571,8 @@ export function sampleDataSource() {
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
+  // `?store=none`: no store at all, as an app before 0.21 — files go inside the record as base64.
+  if (params.get('store') === 'none') delete (source as { upload?: unknown }).upload;
   return source;
 }
 

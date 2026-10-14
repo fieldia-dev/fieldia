@@ -56,9 +56,15 @@ export const uploadGoing = (upload: FileUpload) => going(upload.status);
 /** What the form gives the uploads: where files go, where their links are put, and how the state is told. */
 export interface UploadsHost {
   source(): DataSource | undefined;
-  /** The page's model, or a page of responses' id. */
+  /** The page's model, or a page of responses' id; for a saved form placed in a record, the record's. */
   model(): string;
   recordId(): RecordId | null;
+  /**
+   * Where the form's fields sit in the record its files are for, before each
+   * field's name: a saved form placed in a record keeps its answers under the
+   * part's name, so its field `doc` is `consent.doc` there. Empty otherwise.
+   */
+  under?: string;
   /** A line's id, once it is saved. */
   lineId(field: string, key: string): RecordId | undefined;
   /** A field's or a line field's definition, or null when it holds no files. */
@@ -255,11 +261,13 @@ export function createUploads(host: UploadsHost) {
     entry.stop = () => stop.abort();
     tell();
     const lineId = entry.line ? host.lineId(entry.line.field, entry.line.key) : undefined;
+    const under = host.under ?? '';
     const request: UploadRequest = {
       model: host.model(),
-      field: entry.field,
+      // A line's field is named on its own, its table where it sits.
+      field: entry.line ? entry.field : `${under}${entry.field}`,
       recordId: host.recordId(),
-      ...(entry.line ? { line: { ...entry.line, ...(lineId !== undefined ? { id: lineId } : {}) } } : {}),
+      ...(entry.line ? { line: { ...entry.line, field: `${under}${entry.line.field}`, ...(lineId !== undefined ? { id: lineId } : {}) } } : {}),
       signal: stop.signal,
       onProgress: (sent, total) => {
         if (entry.status !== 'uploading' || !entries.includes(entry)) return;

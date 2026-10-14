@@ -1,5 +1,5 @@
 import { ConflictError, createMemoryDataSource, type MemoryDataSourceOptions, type Page, type RecordPermissions, type Values } from '@fieldia/core';
-import { openFormDialog } from './dialog';
+import { openFormDialog, openFormPanel } from './dialog';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -55,6 +55,7 @@ const lead: Page = {
 
 const leads = (): Record<string, Values> => ({
   1: { name: 'Villa in Sheikh Zayed', phone: '+201001234567', stage: 'new', budget: 4000000, commission: 0.025, active: true },
+  2: { name: 'Flat in Maadi', phone: '+201112223334', stage: 'visit', budget: 2500000, commission: 0.02, active: true },
 });
 
 const source = (more: MemoryDataSourceOptions = {}) => createMemoryDataSource({ records: { lead: leads() }, versions: { by: 'Sara' }, ...more });
@@ -241,5 +242,125 @@ describe('what the source says the person may do with the record', () => {
     expect(button(dialog(), 'Save & Close')).toBeUndefined();
     button(dialog(), 'Close')?.click();
     expect((await opened).saved).toBe(false);
+  });
+});
+
+describe('saving twice in a row', () => {
+  it('Ctrl+Enter pressed twice quickly saves twice, as the same person: no conflict, and Saved', async () => {
+    const ds = source({ delayMs: 20 });
+    const { host, handle } = await mount({ dataSource: ds });
+    type(host, 'phone', '+201009998887');
+    const input = host.querySelector('[data-field="phone"] input') as HTMLInputElement;
+    for (let i = 0; i < 2; i++) input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+    await until(() => ds.calls.filter((call) => call.method === 'save').length === 2 && handle.form.getState().status === 'saved');
+    await handle.form.settled();
+    expect(handle.form.getState()).toMatchObject({ status: 'saved', conflict: null });
+    expect(shown(conflict(host))).toBe(false);
+    expect(host.querySelector('.fd-status')?.textContent).toBe('Saved');
+  });
+});
+
+describe('after Reload, the changes set aside are asked about before they are left behind', () => {
+  async function reloaded(options: Partial<ViewerOptions> = {}) {
+    const ds = source();
+    const mounted = await mount({ dataSource: ds, ...options });
+    type(mounted.host, 'phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
+    expect(await mounted.handle.save()).toBe(false);
+    button(conflict(mounted.host), 'Reload')?.click();
+    await until(() => shown(aside(mounted.host)));
+    expect(mounted.handle.form.getState().dirty).toEqual([]);
+    return { ...mounted, ds };
+  }
+  const question = (host: Element) => host.querySelector('[role="alertdialog"]') as HTMLElement | null;
+  const answer = (host: Element, words: string) => [...(question(host)?.querySelectorAll('button') ?? [])].find((b) => b.textContent === words) as HTMLButtonElement;
+
+  it('the pager asks first: Cancel stays on the record with them, the focus back on the pager; Discard moves on', async () => {
+    const { host, handle } = await reloaded({ records: [1, 2] });
+    const next = host.querySelectorAll<HTMLButtonElement>('.fd-record-pager button')[1];
+    next.focus();
+    next.click();
+    await until(() => question(host));
+    expect(question(host)?.textContent).toContain('Discard your changes?');
+    // The safe answer has the focus: Enter keeps them.
+    expect(document.activeElement).toBe(answer(host, 'Cancel'));
+    answer(host, 'Cancel').click();
+    await until(() => !question(host));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(handle.form.getState()).toMatchObject({ recordId: 1, setAside: { phone: '+201009998887' } });
+    expect(shown(aside(host))).toBe(true);
+    expect(document.activeElement).toBe(next);
+    next.click();
+    await until(() => question(host));
+    answer(host, 'Discard').click();
+    await until(() => handle.form.getState().recordId === 2);
+    expect(handle.form.getState().setAside).toBeNull();
+  });
+
+  it('a panel asks first on Escape, and keeps them on Cancel', async () => {
+    const ds = source();
+    const result = openFormPanel({ page: lead, dataSource: ds, recordId: 1, title: 'Lead' });
+    const panel = () => document.querySelector('.fd-form-panel') as HTMLElement;
+    await until(() => panel()?.querySelector('[data-field="phone"] input'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    type(panel(), 'phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
+    (panel().querySelector('.fd-form-dialog-foot .fd-button-primary') as HTMLButtonElement).click();
+    await until(() => shown(conflict(panel())));
+    button(conflict(panel()), 'Reload')?.click();
+    await until(() => shown(aside(panel())));
+    const phone = panel().querySelector('[data-field="phone"] input') as HTMLInputElement;
+    phone.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await until(() => question(panel()));
+    expect(question(panel())?.textContent).toContain('Discard your changes?');
+    answer(panel(), 'Cancel').click();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(panel()).not.toBeNull();
+    expect(shown(aside(panel()))).toBe(true);
+    phone.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await until(() => question(panel()));
+    answer(panel(), 'Discard').click();
+    expect((await result).saved).toBe(false);
+  });
+});
+
+describe('Keep mine, when their version cannot be read', () => {
+  it('saves nothing, and the banner says so — again on each try — keeping Reload and Keep mine', async () => {
+    const ds = source();
+    let down = false;
+    const unread = {
+      ...ds,
+      load: async (request: Parameters<NonNullable<typeof ds.load>>[0]) => {
+        if (down) throw new TypeError('Failed to fetch');
+        return ds.load(request);
+      },
+      save: async (request: Parameters<typeof ds.save>[0]) => {
+        try {
+          return await ds.save(request);
+        } catch (error) {
+          throw error instanceof ConflictError ? new ConflictError({ version: error.conflict.version }) : error;
+        }
+      },
+    };
+    const { host, handle } = await mount({ dataSource: unread });
+    type(host, 'phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
+    expect(await handle.save()).toBe(false);
+    down = true;
+    const keep = button(conflict(host), 'Keep mine') as HTMLButtonElement;
+    keep.click();
+    await until(() => (handle.form.getState().conflict as { unread?: boolean } | null)?.unread);
+    await until(() => !conflict(host).hasAttribute('aria-busy'));
+    const words = conflict(host).querySelector('[role="alert"]') as HTMLElement;
+    expect(words.textContent).toContain('Their version could not be read, so yours was not saved over it.');
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201001234567', stage: 'visit' });
+    expect(shown(button(conflict(host), 'Reload') ?? null)).toBe(true);
+    expect(shown(keep)).toBe(true);
+    // Pressed again, still unread: said again, by the announcer.
+    keep.click();
+    await until(() => !conflict(host).hasAttribute('aria-busy') && host.querySelector('.fd-announce')?.textContent);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(host.querySelector('.fd-announce')?.textContent).toContain('Their version could not be read');
+    expect(ds.calls.filter((call) => call.method === 'save')).toHaveLength(1);
   });
 });

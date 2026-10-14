@@ -118,7 +118,12 @@ In plain words:
   other person's work wherever this person changed nothing. For a source that
   saves whole records, the page sends `values` as `theirs` with this person's
   changes laid over them. If a third person saved in between, the result is
-  another conflict, which is the right answer.
+  another conflict, which is the right answer. When the conflict carries no
+  `theirs` and the record cannot be read again (no `load`, or it fails), Keep
+  mine saves nothing: the form says so (`FormConflict.unread`), and the person
+  tries again or reloads.
+- **One save at a time.** A save asked for while another is on its way waits
+  for it, and carries the version that save returned.
 
 No `force` flag exists. Saving with the current version is the way to save
 anyway, so an adapter needs no second code path for it.
@@ -184,6 +189,11 @@ In plain words:
 - **A new record.** `recordId` is `null`. The source keeps the file, and the
   record's first save links it: the save carries the field's
   `{ url, fileId }` values, which the adapter connects to the record.
+- **A saved form placed in a record.** Its files are the record's: `model`
+  and `recordId` are the record's, and `field` is the file field's place in
+  the answers the record keeps under the part's name (`consent.deed`; a
+  table's line in it has `line.field` `consent.rooms`). The record's save
+  waits for them and stops for one that failed, as for its own.
 - **Progress.** The field draws a bar from `onProgress(sent, total)`. A source
   that never calls it gets a bar that moves without a number.
 - **Failure.** Throwing any error offers **Retry**. Throwing

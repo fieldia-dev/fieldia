@@ -74,7 +74,11 @@ and `form.uploading(field)` gives one field's own;
 `form.cancelUpload(id)` and `form.retryUpload(id)` stop one and send a failed
 one again. A file picked in a table's cell goes as its line's (`request.line`). `form.save()` waits for those still going, stops under the field for
 one that failed, and stores bytes still in the record (a signature drawn) first.
-A draft never keeps a file's bytes.
+A saved form placed in a record keeps to the same: its files are stored for the
+record (`model` and `recordId` are the record's, `field` is where it sits:
+`consent.deed`), and the record's save waits for them. A file picked while a save
+is on its way stays a change, to save next. A draft never keeps a file's bytes
+where the source has `upload`; without it, a draft keeps them, as before.
 
 ```ts
 import { uploadTo } from '@fieldia/core';
@@ -122,7 +126,11 @@ offers the two ways on: `form.reloadTheirs()` loads the record as they left it
 and sets this person's changes aside in `setAside`, each put back with
 `form.putBack(field)`; `form.keepMine()` saves them over the record as it is
 now, their values kept wherever this person changed nothing (read again first
-when the conflict did not carry the record, so `values` never wipes theirs). What `can` does
+when the conflict did not carry the record, so `values` never wipes theirs; when
+it cannot be read, nothing is saved and `conflict.unread` says so). A second save
+while one is on its way waits for it and carries the version it got back.
+`unsavedWork(state)` says whether leaving would lose anything — changes, files
+on their way, or changes Reload set aside — for an app's own leave guards. What `can` does
 not allow is kept to before any source is asked: fields locked or hidden (and
 left out of what a save sends), a save refused with the source's `reason`, the
 gear menu's Archive, Duplicate and Delete and the buttons whose steps would do

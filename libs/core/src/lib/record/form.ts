@@ -32,7 +32,7 @@ import {
   type SaveProblem,
   type UploadFile,
 } from './data-source';
-import { createUploads, fileBytesIn, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
+import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -108,6 +108,20 @@ export interface FormConflict {
   readonly changed: readonly string[];
   /** Those of them this person changed too, each to something else. */
   readonly both: readonly string[];
+  /**
+   * Keep mine was pressed, and the record as they left it could not be read:
+   * nothing was saved over their work, and the person may try again or Reload.
+   */
+  readonly unread?: boolean;
+}
+
+/**
+ * Whether leaving the record now would lose the person's work: changes not
+ * saved, files still on their way to the store, or changes Reload set aside
+ * and not yet put back or let go. Every way out of a record asks this.
+ */
+export function unsavedWork(state: FormState): boolean {
+  return state.dirty.length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing);
 }
 
 /** A properties field's definitions from the app, as they load. */
@@ -465,6 +479,38 @@ interface InnerForm {
   errorsNow(): Record<string, string>;
   /** Show the problems the form round it found inside it. */
   show(errors: Record<string, string>): void;
+  /** Its files, which the form round it saves with its answers. */
+  files: PartFiles;
+}
+
+/**
+ * A saved form's files, as the form it is placed in reaches them: those on
+ * their way, what stops a save, and the bytes it still holds — its own and
+ * those of the saved forms placed in it, each named as it names them.
+ */
+interface PartFiles {
+  /** Whether any is still on its way. */
+  going(): boolean;
+  /** Resolves once none is. */
+  settled(): Promise<void>;
+  /** A file that failed, or that the store refused, under its field. */
+  problems(): Record<string, string>;
+  /** Store each file it holds as its bytes (a signature drawn), and wait for them: its answers are sent whole. */
+  storeBytes(): Promise<void>;
+  /** Its answers as a draft keeps them: no file's bytes. */
+  draft(values: Readonly<Values>): Values;
+  /** Stop every upload: the changes they were for are gone. */
+  clear(): void;
+}
+
+/**
+ * The record a form's files are stored for: its model and id and, for a
+ * saved form placed in it, where that form's fields sit in it (`consent.`).
+ */
+interface Place {
+  model(): string;
+  recordId(): RecordId | null;
+  under: string;
 }
 
 type Sync = 'start' | 'edit' | 'fresh';
@@ -473,8 +519,12 @@ const isRecord = (value: unknown): value is Values => value !== null && typeof v
 /** A saved form's answers, as the one value they are in the form round it. */
 const asValue = (values: Readonly<Values>) => values as unknown as Value;
 
-/** `within` are the pages round this one, outermost first: a page among them placed again would hold itself. */
-function innerForm(options: FormOptions, within: string[]): InnerForm {
+/**
+ * `within` are the pages round this one, outermost first: a page among them
+ * placed again would hold itself. `place`, for a saved form placed in a
+ * record: the record its files are stored for.
+ */
+function innerForm(options: FormOptions, within: string[], place?: Place): InnerForm {
   const { page } = options;
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
@@ -646,11 +696,20 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   started = true;
   /** Fields showing a file that did not reach the store: shown until it is sent again or taken away, whatever else changes. */
   const unstoredShown = new Set<string>();
+  /** The record this form's files are for: its own, or — a saved form placed in one — that record, its fields under the part's name. */
+  const where: Place = place ?? { model: () => (page.data.kind === 'record' ? page.data.model : page.id), recordId: () => state.recordId, under: '' };
+  /** This form's own files on their way; the state's `uploads` adds those of each saved form placed in it. */
+  let ownUploads: readonly FileUpload[] = [];
+  /** The problem a save was stopped by for files that did not reach the store: it goes once none of them is one. */
+  let filesProblem: SaveProblem | null = null;
+  /** Above 0 while a save stores the bytes held in saved forms placed here: their links in place of bytes are no change of the person's. */
+  let quietParts = 0;
   /** Files on their way to the store: uploads.ts. */
   const uploads = createUploads({
     source: () => options.dataSource,
-    model: () => (page.data.kind === 'record' ? page.data.model : page.id),
-    recordId: () => state.recordId,
+    model: where.model,
+    recordId: where.recordId,
+    under: where.under,
     lineId: (field, key) => ((state.values[field] as Line[] | null) ?? []).find((line) => line.key === key)?.id,
     fileField(field, line) {
       const def = line ? (fields[line.field]?.type === 'one2many' ? (fields[line.field] as Extract<Field, { type: 'one2many' }>).fields[field] : undefined) : fields[field];
@@ -664,15 +723,81 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       writeValues({ ...(state.values as Values), ...values });
     },
     changed(list) {
-      // A file sent again, or taken away, takes its problem with it.
-      const problems = uploads.problems(messages);
-      const gone = [...unstoredShown].filter((key) => !(key in problems));
-      for (const key of gone) unstoredShown.delete(key);
-      const errors = gone.length ? Object.fromEntries(Object.entries(state.errors).filter(([key]) => !gone.includes(key))) : null;
-      set({ uploads: list, ...(errors ? { errors } : {}) });
+      ownUploads = list;
+      filesChanged();
     },
     track,
   });
+
+  /**
+   * Files on their way changed, here or in a saved form placed here: the
+   * state shows them all, and a file sent again, or taken away, takes its
+   * problem with it — and the save it stopped is no longer said to be stopped
+   * once none of its files is a problem.
+   */
+  function filesChanged() {
+    const problems = fileProblems();
+    const gone = [...unstoredShown].filter((key) => !(key in problems));
+    for (const key of gone) unstoredShown.delete(key);
+    const errors = gone.length ? Object.fromEntries(Object.entries(state.errors).filter(([key]) => !gone.includes(key))) : null;
+    const stopped = filesProblem;
+    const mended = stopped !== null && state.saveProblem === stopped && !Object.keys(stopped.fields ?? {}).some((key) => key in problems);
+    if (mended) filesProblem = null;
+    set({ uploads: allUploads(), ...(errors ? { errors } : {}), ...(mended ? { status: 'ready' as const, error: null, saveProblem: null } : {}) });
+  }
+
+  /** Every file on its way: this form's, then each saved form's placed in it, its id and field under the part's name. */
+  function allUploads(): readonly FileUpload[] {
+    if (!attached.size) return ownUploads;
+    const all = [...ownUploads];
+    for (const part of attached.values()) for (const upload of part.inner.form.getState().uploads) all.push(underPart(part.name, upload));
+    return all;
+  }
+
+  /** What stops a save for files: this form's, and each saved form's placed in it under `name.field`. */
+  function fileProblems(): Record<string, string> {
+    const found = uploads.problems(messages);
+    for (const part of attached.values()) for (const [key, message] of Object.entries(part.inner.files.problems())) found[`${part.name}.${key}`] = message;
+    return found;
+  }
+
+  const filesGoing = (): boolean => uploads.going() || [...attached.values()].some((part) => part.inner.files.going());
+
+  async function filesSettled(): Promise<void> {
+    while (filesGoing()) await Promise.all([uploads.settled(), ...[...attached.values()].map((part) => part.inner.files.settled())]);
+  }
+
+  /** Store each file still held as its bytes in these fields — a saved form placed here holding one, among them — and wait for them all. */
+  async function storeBytes(names: readonly string[]): Promise<void> {
+    quietParts++;
+    try {
+      const inParts = [...attached.values()].filter((part) => names.includes(part.name)).map((part) => part.inner.files.storeBytes());
+      await Promise.all([uploads.storeBytes(fileBytesIn(fields, state.values, names)), ...inParts]);
+    } finally {
+      quietParts--;
+    }
+  }
+
+  /** Values as a draft keeps them where files are stored apart: no file's bytes, a saved form's answers included. */
+  function draftOf(values: Readonly<Values>): Values {
+    const kept = withoutFileBytes(fields, values);
+    for (const part of attached.values()) if (isRecord(kept[part.name])) kept[part.name] = asValue(part.inner.files.draft(kept[part.name] as Values));
+    return kept;
+  }
+
+  /** Stop every upload, here and in the saved forms placed here. */
+  function clearFiles() {
+    filesProblem = null;
+    uploads.clear();
+    for (const part of attached.values()) part.inner.files.clear();
+  }
+
+  /** The saved form placed here an upload's id names (`consent/upload-3`), with the id it knows it by; null for this form's own. */
+  function partUpload(id: string): { form: Form; id: string } | null {
+    const at = id.indexOf('/');
+    const part = at < 0 ? undefined : [...attached.values()].find((p) => p.name === id.slice(0, at));
+    return part ? { form: part.inner.form, id: id.slice(at + 1) } : null;
+  }
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
   let serverErrors: Record<string, { message: string; value: string }> = {};
   let lineKeys = 0;
@@ -1019,7 +1144,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       else delete serverErrors[name];
     }
     // A file that did not reach the store stays said under its field.
-    const unstoredNow = uploads.problems(messages);
+    const unstoredNow = fileProblems();
     for (const key of unstoredShown) if (unstoredNow[key]) kept[key] ??= unstoredNow[key];
     return kept;
   }
@@ -1030,13 +1155,25 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     draftTimer = scheduler.setTimeout(() => {
       draftTimer = null;
-      // Never a file's bytes: they would fill the browser's store (uploads.ts). A store that is full anyway keeps no draft.
+      // Where files are stored apart, never a file's bytes: they would fill the browser's store (uploads.ts). Without, kept as always.
+      // A store that is full anyway keeps no draft.
+      const values = options.dataSource?.upload ? draftOf(state.values) : state.values;
       try {
-        drafts.store.setItem(draftKey(), JSON.stringify({ savedAt: new Date().toISOString(), values: withoutFileBytes(fields, state.values) }));
+        drafts.store.setItem(draftKey(), JSON.stringify({ savedAt: new Date().toISOString(), values }));
       } catch {
         // The draft is a convenience: the form goes on without it.
       }
     }, drafts.delayMs ?? 400);
+  }
+
+  /** The values with a draft's over them: a field it left out — a file's bytes — as the record holds it, in a saved form placed here too. */
+  function withDraft(kept: Values): Values {
+    const values: Values = { ...(state.values as Values), ...kept };
+    for (const part of attached.values()) {
+      const now = state.values[part.name];
+      if (isRecord(now) && isRecord(kept[part.name])) values[part.name] = asValue({ ...now, ...(kept[part.name] as Values) });
+    }
+    return values;
   }
 
   function forgetDraft() {
@@ -1057,7 +1194,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       drafts.store.removeItem(draftKey());
       return;
     }
-    if (drafts.restore === 'auto') writeValues({ ...state.values, ...draft.values }, { draft: null }, true);
+    if (drafts.restore === 'auto') writeValues(withDraft(draft.values), { draft: null }, true);
     else set({ draft: { savedAt: draft.savedAt } });
   }
 
@@ -1155,17 +1292,44 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
    * run first — before its own check, so they may fill in what it asks for —
    * and a stop keeps it unsaved; `afterSave` runs once it is saved.
    */
-  async function saving(chain: readonly string[]): Promise<Stopped | null> {
+  /** The save running now: the next one waits for it. */
+  let saveRunning: Promise<unknown> | null = null;
+
+  /**
+   * One save at a time: a second — Ctrl+Enter pressed twice, or while the
+   * first waits for files — waits for the first, then saves what is left to
+   * save with the version the first got back, never as someone else's. A save
+   * the page's own beforeSave steps ask for runs inside the one that set them off.
+   */
+  function saving(chain: readonly string[]): Promise<Stopped | null> {
+    if (chain.includes('on.beforeSave')) return savingNow(chain);
+    const before = saveRunning;
+    const mine = (async () => {
+      if (before) await before;
+      return savingNow(chain);
+    })();
+    const done = mine.then(
+      () => undefined,
+      () => undefined
+    );
+    saveRunning = done;
+    void done.then(() => {
+      if (saveRunning === done) saveRunning = null;
+    });
+    return mine;
+  }
+
+  async function savingNow(chain: readonly string[]): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
       const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? messages.mayNotEdit };
       set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
       return { reason: 'save', message: problem.message };
     }
-    // Files still on their way are waited for first: the state says how many, so the page can say why it waits.
-    if (uploads.going()) {
+    // Files still on their way are waited for first — a saved form's placed here too: the state says how many, so the page can say why it waits.
+    if (filesGoing()) {
       set({ status: 'saving', error: null, saveProblem: null });
-      await uploads.settled();
+      await filesSettled();
       set({ status: 'ready' });
     }
     if (page.on?.beforeSave) {
@@ -1180,7 +1344,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       }
     }
     // A file that did not reach the store stops it, under its field, with the form's own checks.
-    const errors = { ...collectErrors(), ...uploads.problems(messages) };
+    const errors = { ...collectErrors(), ...fileProblems() };
     if (Object.keys(errors).length) {
       set({ errors, ...unstored(errors) });
       return { reason: 'save', message: Object.values(errors)[0] };
@@ -1189,9 +1353,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     serverErrors = {};
     set({ status: 'saving', errors: {}, error: null, saveProblem: null, conflict: null });
     try {
-      // Bytes still in the record — a signature drawn, a value the app set — go to the store first, where it keeps files.
-      await uploads.storeBytes(fileBytesIn(fields, state.values, page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty));
-      const failed = uploads.problems(messages);
+      // Bytes still in the record — a signature drawn, a value the app set, in a saved form placed here too — go to the store first, where it keeps files.
+      await storeBytes(page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty);
+      const failed = fileProblems();
       if (Object.keys(failed).length) {
         set({ errors: failed, ...unstored(failed) });
         return { reason: 'save', message: Object.values(failed)[0] };
@@ -1207,6 +1371,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         return null;
       }
       if (!source?.save) throw new Error('This page has no data source to save to');
+      // What is sent: a change made while it is on its way is not in it, and stays a change to save.
+      const sent = state.values as Values;
       const result = await source.save({
         model: page.data.model,
         id: state.recordId,
@@ -1217,11 +1383,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
       });
       forgetDraft();
-      // Lines the save brings back load again, in their tables' orders, as Flectra's reload after a save.
-      const values = syncParts(startFrom(result.values ? ordered({ ...(state.values as Values), ...result.values }, Object.keys(result.values)) : (state.values as Values)), 'start');
-      baseline = structuredCopy(values);
+      const { values, dirty } = afterSave(sent, result.values);
       // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
-      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
+      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
+      // Changed while it saved: kept in a draft, and saved as any change is.
+      if (dirty.length) {
+        scheduleDraft();
+        scheduleAutosave();
+      }
       emit('save', { recordId: state.recordId, values: state.values });
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
@@ -1234,13 +1403,40 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     }
   }
 
+  /**
+   * The record as a save left it — what was sent, with what the save brought
+   * back, lines loaded again in their tables' orders, as Flectra's reload after
+   * a save — as the new starting point. What the person changed while it was
+   * on its way (a file stored meanwhile) was not sent: it is laid over that,
+   * still a change to save, never taken as saved.
+   */
+  function afterSave(sent: Values, back: Values | undefined): { values: Values; dirty: string[] } {
+    const stored = (from: Values) => (back ? ordered({ ...from, ...back }, Object.keys(back)) : from);
+    const since = Object.keys(fields).filter((name) => state.values[name] !== sent[name] && !sameValue(fields[name], state.values[name], sent[name]));
+    if (!since.length) {
+      const values = syncParts(startFrom(stored(state.values as Values)), 'start');
+      baseline = structuredCopy(values);
+      return { values, dirty: [] };
+    }
+    const record = stored(sent);
+    const mine: Values = { ...record };
+    for (const name of since) mine[name] = keepIds(fields[name], state.values[name], record[name]);
+    const values = syncParts(startFrom(mine), 'start');
+    // The starting point is the record as stored: those fields as it holds them.
+    const base: Values = { ...values };
+    for (const name of since) base[name] = record[name];
+    baseline = structuredCopy(computed.apply(base));
+    return { values, dirty: dirtyFields(values) };
+  }
+
   /** A save stopped by files that did not reach the store: shown under their fields, as a refused save's fields are. */
   function unstored(errors: Record<string, string>): Partial<FormState> {
-    const files = uploads.problems(messages);
+    const files = fileProblems();
     const only = Object.fromEntries(Object.entries(errors).filter(([key]) => key in files));
     for (const key of Object.keys(only)) unstoredShown.add(key);
     if (!Object.keys(only).length) return {};
-    return { status: 'error', error: Object.values(only)[0], saveProblem: { kind: 'fields', message: Object.values(only)[0], fields: only } };
+    filesProblem = { kind: 'fields', message: Object.values(only)[0], fields: only };
+    return { status: 'error', error: Object.values(only)[0], saveProblem: filesProblem };
   }
 
   /** The form has its values: told to the app, its `open` steps run, then the wizard step it shows is told. */
@@ -1415,7 +1611,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     serverErrors = {};
     told = null;
     showing = false;
-    uploads.clear();
+    clearFiles();
     const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
@@ -1574,13 +1770,21 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     canUpload: () => typeof options.dataSource?.upload === 'function',
     upload: (field, files, how = {}) => uploads.start(field, files, how),
     uploading: (field) => state.uploads.filter((upload) => upload.field === field && !upload.line),
-    cancelUpload: (id) => uploads.cancel(id),
-    retryUpload: (id) => uploads.retry(id),
+    cancelUpload(id) {
+      const inner = partUpload(id);
+      if (inner) inner.form.cancelUpload(inner.id);
+      else uploads.cancel(id);
+    },
+    retryUpload(id) {
+      const inner = partUpload(id);
+      if (inner) inner.form.retryUpload(inner.id);
+      else uploads.retry(id);
+    },
 
     reset() {
       forgetDraft();
       // Files on their way were changes too: they go with the rest.
-      uploads.clear();
+      clearFiles();
       serverErrors = {};
       holding = setWhen.holding(baseline);
       const values = syncParts(structuredCopy(baseline), 'start');
@@ -1834,7 +2038,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const raw = options.drafts?.store.getItem(draftKey());
       if (!raw) return;
       const draft = JSON.parse(raw) as { values: Values };
-      writeValues({ ...(state.values as Values), ...draft.values }, { draft: null }, true);
+      writeValues(withDraft(draft.values), { draft: null }, true);
     },
 
     discardDraft() {
@@ -1861,13 +2065,21 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       let version = conflict?.version;
       // Not told the record as they left it: read as it is now, so a source that saves whole records keeps their work.
       const source = options.dataSource;
-      if (conflict && !told && source?.load && state.recordId != null && page.data.kind === 'record') {
-        try {
-          const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
-          told = now.values;
-          version = now.version ?? version;
-        } catch {
-          // Unread: mine go over it as they are, `changes` saying which are mine.
+      if (conflict && !told) {
+        if (source?.load && state.recordId != null && page.data.kind === 'record') {
+          try {
+            const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
+            told = now.values;
+            version = now.version ?? version;
+          } catch {
+            // Unread: said below.
+          }
+        }
+        // Still unread: saving now would go over work this person never saw. Nothing is saved; they are told, and choose again.
+        if (!told) {
+          const message = messages.theirsUnread;
+          set({ status: 'error', error: message, saveProblem: { kind: 'conflict', message, conflict: { version: conflict.version } }, conflict: { ...conflict, unread: true } });
+          return false;
         }
       }
       if (told) {
@@ -1925,18 +2137,26 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
           messages,
           now: options.now,
         },
-        chain
+        chain,
+        // Its files are the record's: stored for it, under the part's name.
+        { model: where.model, recordId: where.recordId, under: `${where.under}${part.name}.` }
       );
       attached.set(id, { name: part.name, inner: made });
       // A change inside it is told as a change of its answers here, whoever made it.
       made.form.on('change', ({ by }) => {
         if (!syncing) changed(part.name, by);
       });
-      // A change made inside it is a change of this form's: shown, kept in a draft, saved.
+      // A change made inside it is a change of this form's: shown, kept in a draft, saved. Its files on their way are this form's too.
+      let seenUploads = made.form.getState().uploads;
       made.form.subscribe((inside) => {
+        if (inside.uploads !== seenUploads) {
+          seenUploads = inside.uploads;
+          filesChanged();
+        }
         if (syncing || inside.values === state.values[part.name]) return;
         writeValues({ ...(state.values as Values), [part.name]: asValue(inside.values) });
-        afterEdit(part.name);
+        // A link a save put in place of bytes is no change of the person's.
+        if (!quietParts) afterEdit(part.name);
       });
       // What it starts with, its defaults and worked-out values filled in, is this form's starting point too — unless changed already.
       const start = asValue(made.form.getState().values);
@@ -1949,7 +2169,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     embedded: (id) => attached.get(id)?.inner.form ?? null,
 
     dispose() {
-      uploads.clear();
+      clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
       listeners.clear();
@@ -1975,7 +2195,21 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     show(errors) {
       if (JSON.stringify(errors) !== JSON.stringify(state.errors)) set({ errors });
     },
+    files: {
+      going: filesGoing,
+      settled: filesSettled,
+      problems: fileProblems,
+      // Its answers are sent whole: every field's bytes are stored.
+      storeBytes: () => storeBytes(Object.keys(fields)),
+      draft: draftOf,
+      clear: clearFiles,
+    },
   };
+}
+
+/** A file on its way in a saved form placed in another, as that one names it: its id and its field under the part's name. */
+function underPart(name: string, upload: FileUpload): FileUpload {
+  return { ...upload, id: `${name}/${upload.id}`, ...(upload.line ? { line: { ...upload.line, field: `${name}.${upload.line.field}` } } : { field: `${name}.${upload.field}` }) };
 }
 
 /** The problems found inside a saved form, by its own fields' names. */
@@ -2034,6 +2268,13 @@ function rightsUsed(source: ButtonNode | StatButton | MenuItem): RecordRight[] {
     else if (name === 'duplicate' || name === 'delete') rights.add(name);
   }
   return [...rights];
+}
+
+/** A table's lines as the person has them, each new one given the id a save just gave it, by its key: the next save changes it, never makes it again. */
+function keepIds(def: Field, mine: Value | undefined, stored: Value | undefined): Value {
+  if (def.type !== 'one2many' || !Array.isArray(mine) || !Array.isArray(stored)) return mine as Value;
+  const ids = new Map((stored as Line[]).filter((line) => line.id !== undefined).map((line) => [line.key, line.id as RecordId]));
+  return (mine as Line[]).map((line) => (line.id === undefined && ids.has(line.key) ? { ...line, id: ids.get(line.key) } : line)) as unknown as Value;
 }
 
 /** Two values of a field the same: a link by the record it points to, whatever name it is shown by; the rest as written. */

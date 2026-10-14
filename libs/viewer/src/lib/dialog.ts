@@ -1,5 +1,5 @@
 import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
-import { uploadGoing } from '@fieldia/core';
+import { unsavedWork } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
@@ -282,8 +282,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       });
     /** Escape and ×: a panel, or a dialog round a page with a head, asks first when there are changes in it; any other dialog closes at once, as it always has. */
     const leave = async () => {
-      // A file still on its way to the store is a change too.
-      const changed = handle.form.getState().dirty.length || (handle.form.getState().uploads ?? []).some(uploadGoing);
+      // A file still on its way to the store is a change too, and so are changes Reload set aside.
+      const changed = unsavedWork(handle.form.getState());
       if (!(panel || headed) || !changed || (await ask())) close(false);
     };
     saveClose.addEventListener('click', async () => {

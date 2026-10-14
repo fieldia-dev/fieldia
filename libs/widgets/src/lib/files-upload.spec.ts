@@ -248,3 +248,27 @@ describe('a file field where the source does not store files', () => {
     expect(shown?.element.getAttribute('src')).toMatch(/^blob:1#/);
   });
 });
+
+describe('a picture the browser cannot draw', () => {
+  it('shows its file icon on its way, refused, and stored — never the browser’s broken-picture mark', async () => {
+    const store = handStore();
+    const { el, form } = setup({ type: 'image', multiple: true, maxSize: 5 * 1024 * 1024 }, { upload: store.upload, node: { files: 'cards' } });
+    choose(el, jpeg('broken.jpg'));
+    await tick();
+    const card = going(el)[0];
+    const picture = card.querySelector('img.fd-file-thumb') as HTMLImageElement;
+    expect(picture).not.toBeNull();
+    // The browser could not read its bytes as a picture.
+    picture.dispatchEvent(new Event('error'));
+    expect(card.querySelector('img')).toBeNull();
+    expect(words(card.querySelector('.fd-file-icon'))).toBe('JPG');
+    store.sent[0].end();
+    await until(() => !going(el).length);
+    // Stored, it shows from its link: that cannot be drawn either.
+    const stored = el.querySelector('.fd-file-item:not(.fd-file-going) img.fd-file-thumb') as HTMLImageElement;
+    stored.dispatchEvent(new Event('error'));
+    expect(el.querySelector('.fd-file-item:not(.fd-file-going) img')).toBeNull();
+    expect(words(el.querySelector('.fd-file-item:not(.fd-file-going) .fd-file-icon'))).toBe('JPG');
+    void form;
+  });
+});

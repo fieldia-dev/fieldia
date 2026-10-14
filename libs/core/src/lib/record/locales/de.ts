@@ -59,5 +59,6 @@ export const de: Messages = {
   mayNotArchive: 'Sie können diesen Datensatz nicht archivieren.',
   mayNotDuplicate: 'Sie können diesen Datensatz nicht duplizieren.',
   mayNotDelete: 'Sie können diesen Datensatz nicht löschen.',
+  theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
   locale: 'de',
 };
