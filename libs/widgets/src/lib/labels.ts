@@ -7,9 +7,12 @@ export interface WidgetLabels {
   noResults: string;
   /**
    * The box drawn where a part could not be shown, its error kept to it (contain.ts): a field's widget (`{label}`, the
-   * field's label), or another part of the page, without a name and with one (`{label}`, its title).
+   * field's label), or another part of the page, without a name and with one (`{label}`, its title). A field that failed
+   * on the person's change says it went back to what it held (`{value}`), or that it is empty again.
    */
   brokenField: string;
+  brokenKept: string;
+  brokenKeptEmpty: string;
   brokenPart: string;
   brokenPartNamed: string;
   remove: string;
@@ -261,6 +264,8 @@ const en: WidgetLabels = {
   search: 'Search…',
   noResults: 'No results',
   brokenField: 'This field could not be shown: {label}',
+  brokenKept: 'Your change was not kept: it is back to {value}.',
+  brokenKeptEmpty: 'Your change was not kept: it is empty again.',
   brokenPart: 'This part could not be shown',
   brokenPartNamed: 'This part could not be shown: {label}',
   remove: 'Remove {name}',

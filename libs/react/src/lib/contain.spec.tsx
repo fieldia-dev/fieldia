@@ -80,3 +80,26 @@ describe('<FieldiaForm> with a component that throws', () => {
     expect(container.querySelector('[data-node="f-nickname"] input')).not.toBeNull();
   });
 });
+
+/** The app's price tag: typed in, and it throws as it renders a four-digit price. */
+function Tag({ value, id, onChange }: FieldComponentProps) {
+  if (typeof value === 'number' && value >= 1000) throw new Error('four digits');
+  return <input id={id} aria-label="price" value={String(value ?? '')} onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))} />;
+}
+
+describe("<FieldiaForm> with a component that throws on the person's change", () => {
+  it('keeps no half-typed value: the field goes back to what it showed, the box says so and takes the focus', async () => {
+    let handle: { form: { getState(): { values: Record<string, unknown> } } } | null = null;
+    const { container } = render(<FieldiaForm page={page} values={{ price: 450 }} fieldTypes={{ 'float.fancy': Tag }} slots={{ feed: Feed }} onReady={(ready) => (handle = ready as never)} />);
+    await act(async () => undefined);
+    const input = container.querySelector('input[aria-label="price"]') as HTMLInputElement;
+    expect(input.value).toBe('450');
+    input.focus();
+    // A person clicks into it and types 1200: the first key makes 4501.
+    await act(async () => fireEvent.change(input, { target: { value: '4501' } }));
+    const box = container.querySelector('[data-node="f-price"] .fd-broken') as HTMLElement;
+    expect(box.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to 450.00.');
+    expect(document.activeElement).toBe(box);
+    expect(handle!.form.getState().values['price']).toBe(450);
+  });
+});

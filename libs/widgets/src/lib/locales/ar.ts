@@ -5,6 +5,8 @@ export const ar: WidgetLabels = {
   search: 'بحث…',
   noResults: 'لا توجد نتائج',
   brokenField: 'تعذّر عرض هذا الحقل: {label}',
+  brokenKept: 'لم يُحتفَظ بتغييرك: عادت القيمة إلى {value}.',
+  brokenKeptEmpty: 'لم يُحتفَظ بتغييرك: عاد الحقل فارغًا.',
   brokenPart: 'تعذّر عرض هذا الجزء',
   brokenPartNamed: 'تعذّر عرض هذا الجزء: {label}',
   remove: 'إزالة {name}',

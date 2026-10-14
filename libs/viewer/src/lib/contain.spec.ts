@@ -140,6 +140,71 @@ describe("a field's widget that throws", () => {
   });
 });
 
+describe("a field's widget that throws on the person's change, as they type", () => {
+  /** The app's price tag: a box that writes as it is typed in, and cannot draw a four-digit price. */
+  const tag: Record<string, WidgetFactory> = {
+    'float.fancy': ({ form, name, document: doc, id }) => {
+      const input = doc.createElement('input');
+      input.id = id;
+      input.className = 'fd-input';
+      input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : Number(input.value)));
+      return {
+        element: input,
+        update(state) {
+          if (typeof state.value === 'number' && state.value >= 1000) throw boom;
+          if (doc.activeElement !== input) input.value = String(state.value ?? '');
+        },
+        focus: () => input.focus(),
+      };
+    },
+  };
+  const stored = () => createMemoryDataSource({ records: { order: { 1: { name: 'Nile Traders', price: 450, notes: 'Back door' } } } });
+  /** A key typed at the end of what the box holds, as a person does after clicking into it. */
+  function press(input: HTMLInputElement, key: string) {
+    input.focus();
+    input.value += key;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('keeps no half-typed value: the field goes back to what it showed, the box says so, takes the focus, and the save stores the rest', async () => {
+    const onError = jest.fn<void, [unknown, PartFailure]>();
+    const dataSource = stored();
+    const { host, form } = mount({ widgets: tag, dataSource, recordId: 1, onError });
+    await settled();
+    const input = at(host, 'n-price').querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('450');
+    // "1200", key by key: the first makes 4501, which the tag cannot draw.
+    press(input, '1');
+    const shown = box(host, 'n-price') as HTMLElement;
+    expect(shown.querySelector('.fd-broken-words')?.textContent).toBe('This field could not be shown: Price');
+    expect(shown.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to 450.00.');
+    // The keys after it land on the box, which says what failed: none goes to the page, none is kept unseen.
+    expect(document.activeElement).toBe(shown);
+    await settled();
+    expect(form.getState().values['price']).toBe(450);
+    expect(form.getState().dirty).toEqual([]);
+    // The rest saves; the price stored is the one the person saw.
+    type(at(host, 'n-name').querySelector('input') as HTMLInputElement, 'Delta Foods');
+    type(at(host, 'n-notes').querySelector('input') as HTMLInputElement, 'Call before noon');
+    expect(await handle?.save()).toBe(true);
+    expect(dataSource.records['order'][1]).toMatchObject({ name: 'Delta Foods', price: 450, notes: 'Call before noon' });
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('a price it was handed, by the record or a step, is kept and not said to be put back', async () => {
+    const dataSource = createMemoryDataSource({ records: { order: { 1: { name: 'Nile Traders', price: 4501 } } } });
+    const { host, form } = mount({ widgets: tag, dataSource, recordId: 1 });
+    await settled();
+    expect(box(host, 'n-price')?.textContent).toBe('This field could not be shown: Price');
+    expect(form.getState().values['price']).toBe(4501);
+    expect(form.getState().dirty).toEqual([]);
+    // Its box still takes the focus where the field had it, and a press on its label brings it there.
+    (at(host, 'n-price').querySelector('.fd-label') as HTMLElement).click();
+    expect(document.activeElement).toBe(box(host, 'n-price'));
+  });
+});
+
 describe('a slot that throws', () => {
   const slot = { type: 'slot', id: 'n-feed', name: 'feed' };
 
@@ -160,6 +225,27 @@ describe('a slot that throws', () => {
     expect(onError).toHaveBeenCalledWith(boom, { stage: 'draw', part: 'slot', name: 'feed', node: 'n-feed' });
     type(at(host, 'n-notes').querySelector('input') as HTMLInputElement, 'ok');
     expect(form.getState().values['notes']).toBe('ok');
+  });
+
+  it('later, through fail, as its framework drew nothing where the focus was: the box takes the focus', () => {
+    let fail: ((error: unknown) => void) | undefined;
+    const { host } = mount({
+      page: page(slot),
+      slots: {
+        feed: (element, context) => {
+          fail = context.fail;
+          const button = document.createElement('button');
+          button.textContent = 'Load more';
+          element.append(button);
+        },
+      },
+    });
+    const feed = at(host, 'n-feed');
+    (feed.querySelector('button') as HTMLButtonElement).focus();
+    // As React does: what threw is taken out, and then the binding says so.
+    feed.querySelector('button')?.remove();
+    fail?.(boom);
+    expect(document.activeElement).toBe(feed.querySelector('.fd-broken'));
   });
 
   it('as it is cleaned up: told, and the rest of the page is still taken down', () => {

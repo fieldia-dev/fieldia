@@ -100,6 +100,13 @@ export interface WidgetContext {
    * `createWidget` gives every widget its own.
    */
   fail?: (error: unknown) => void;
+  /**
+   * Said by a widget that draws after its update returns — a React or Vue component, drawn as its framework next
+   * renders — each time it has drawn: the value it drew. Until a widget first says it, each value its update took
+   * without throwing counts as drawn. A widget that fails on a change the person made in it, never having drawn it,
+   * puts back the value it last drew (contain.ts). `createWidget` gives every widget its own.
+   */
+  drew?: (value: Value | undefined) => void;
 }
 
 /** What a widget may ask of the page around it in a dialog. The viewer provides these. */
@@ -171,8 +178,8 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
   const { field } = context;
   const factory = factoryFor(field, context.node, registry);
   // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
-  return containWidget((fail) => {
-    const own = { ...context, fail };
+  return containWidget((kept) => {
+    const own = { ...context, ...kept };
     // Choices from the app's list: the same widget, drawn again as they load.
     if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, own) : factory(own);
     return pendingWidget(own);

@@ -9,6 +9,7 @@ import {
   onErrorCaptured,
   onMounted,
   onScopeDispose,
+  onUpdated,
   ref,
   shallowRef,
   Teleport,
@@ -55,6 +56,8 @@ interface Portal {
   render: () => VNodeChild;
   /** Said when what it renders throws: the viewer shows the field's or the slot's box, and tells onError. */
   fail?: (error: unknown) => void;
+  /** Said each time what it renders is on the page: a field's component says the value it drew. */
+  drew?: () => void;
 }
 
 /**
@@ -63,9 +66,19 @@ interface Portal {
  */
 const Contained = defineComponent({
   name: 'FieldiaContained',
-  props: { render: { type: Function as PropType<() => VNodeChild>, required: true }, fail: { type: Function as PropType<(error: unknown) => void>, default: undefined } },
+  props: {
+    render: { type: Function as PropType<() => VNodeChild>, required: true },
+    fail: { type: Function as PropType<(error: unknown) => void>, default: undefined },
+    drew: { type: Function as PropType<() => void>, default: undefined },
+  },
   setup(props) {
     const failed = ref(false);
+    // Drawn, and on the page: said after Vue has patched it, unless what it rendered threw.
+    const drawn = () => {
+      if (!failed.value) props.drew?.();
+    };
+    onMounted(drawn);
+    onUpdated(drawn);
     const fail = (error: unknown) => {
       if (failed.value) return;
       failed.value = true;
@@ -195,6 +208,8 @@ export const FieldiaForm = defineComponent({
             key: `field:${context.node.id}`,
             element: box,
             fail: context.fail,
+            // What it drew: a component that throws on the person's next change puts this back.
+            drew: () => context.drew?.(state.value.value),
             render: () => {
               const component = props.fieldTypes?.[key];
               return component
@@ -316,7 +331,7 @@ export const FieldiaForm = defineComponent({
 
     return () => [
       h('div', { ref: host }),
-      ...portals.value.map((portal) => h(Teleport, { to: portal.element, key: portal.key }, [h(Contained, { render: portal.render, fail: portal.fail })])),
+      ...portals.value.map((portal) => h(Teleport, { to: portal.element, key: portal.key }, [h(Contained, { render: portal.render, fail: portal.fail, drew: portal.drew })])),
     ];
   },
 });

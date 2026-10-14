@@ -5,6 +5,8 @@ export const fr: WidgetLabels = {
   search: 'Rechercher…',
   noResults: 'Aucun résultat',
   brokenField: 'Ce champ n’a pas pu être affiché : {label}',
+  brokenKept: 'Votre modification n’a pas été conservée : le champ est revenu à {value}.',
+  brokenKeptEmpty: 'Votre modification n’a pas été conservée : le champ est de nouveau vide.',
   brokenPart: 'Cette partie n’a pas pu être affichée',
   brokenPartNamed: 'Cette partie n’a pas pu être affichée : {label}',
   remove: 'Retirer {name}',

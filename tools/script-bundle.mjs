@@ -457,7 +457,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // files for the record, its uploads shown, waited for and stopping the save; Retry taking the save's problem with it;
 // drafts keeping files as before where there is no store; changes set aside asked about by every way out; a picture
 // the browser cannot draw shown as its file's icon — 3.4 more (565.95 measured before, 569.33 after), to 569.4.
-const BUDGET_KB = 569.4;
+// A field that fails on the person's change keeps nothing it never showed (lane w1-fix-safety): the form each widget
+// is handed notes what it writes in its field, the field goes back to the value it last showed and its box says so
+// with that value, the focus it held goes to the box (named by its words, in the order the field had), a framework's
+// component says what it drew, and a slot's or a part's box takes the focus too — 2.4 more, to 568.4.
+// The two mended lanes joined (w1-fix-save, w1-fix-safety): 565.95 measured before either, 571.69 with both — their
+// sum, nothing more for the join — to 571.7.
+const BUDGET_KB = 571.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -522,7 +528,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // app; the calendar itself is @fieldia/calendar's), 1.0 more, to 173.5.
 // The four lanes joined (listed with the raw budget above), 0.04 more than their sum, 0.1 more, to 173.6.
 // Wave 1's save safety mended (listed with the raw budget above): 173.54 measured before, 174.84 after, to 174.9.
-const GZIP_BUDGET_KB = 174.9;
+// A field that fails on the person's change goes back to what it showed, says so, and hands its focus to its box
+// (listed with the raw budget above), 0.8 more, to 174.4.
+// The two mended lanes joined (listed with the raw budget above): 173.54 measured before either, 175.63 with both,
+// to 175.7.
+const GZIP_BUDGET_KB = 175.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -577,7 +587,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // saved nothing — measured 32.82 and 6.32 before, 33.32 and 6.39 after in Arabic (its letters escaped), 14.05 and 5.47,
 // 14.21 and 5.53 in German, 14.31 and 5.40, 14.48 and 5.45 in French: Arabic's to 33.4, German's to 14.3 and 5.6,
 // French's to 14.5.
-const ADD_ON_BUDGET_KB = { ar: [33.4, 6.4], de: [14.3, 5.6], fr: [14.5, 5.5] };
+// A field's change not kept, and what it went back to or that it is empty again (lane w1-fix-safety): two sentences
+// in each, measured 33.22 and 6.37 in Arabic, 14.22 and 5.52 in German, 14.52 and 5.46 in French: Arabic's to 33.3,
+// German's to 14.3 and 5.6, French's to 14.6.
+// The two mended lanes' words joined (w1-fix-save, w1-fix-safety): three sentences in each, measured 33.72 and 6.44
+// in Arabic, 14.38 and 5.57 in German, 14.68 and 5.51 in French: Arabic's to 33.8 and 6.5, German's to 14.4 and 5.6,
+// French's to 14.7 and 5.6.
+const ADD_ON_BUDGET_KB = { ar: [33.8, 6.5], de: [14.4, 5.6], fr: [14.7, 5.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
