@@ -36,6 +36,15 @@ function keys(input: HTMLInputElement, text: string) {
     input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: key }));
   }
 }
+/** Backspace, as a keyboard says it: a key held after a refused one is taken back; else the character before the caret. */
+function backspace(input: HTMLInputElement) {
+  const typing = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'deleteContentBackward' });
+  input.dispatchEvent(typing);
+  if (typing.defaultPrevented) return;
+  const at = input.selectionStart ?? input.value.length;
+  input.setRangeText('', Math.max(0, at - 1), input.selectionEnd ?? at, 'end');
+  input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }));
+}
 /** Everything in the box chosen, then typed over and the box left. */
 function retype(input: HTMLInputElement, text: string) {
   input.focus();
@@ -107,7 +116,10 @@ describe('the designer’s number box', () => {
     expect(hint.textContent).toBe('Height: numbers only');
     expect(hint.getAttribute('role')).toBe('status');
     expect(input.getAttribute('aria-describedby')).toContain(hint.id);
-    keys(input, '.');
+    // The letters were held: Backspace takes them back, and a fraction of a whole number is refused once it is one.
+    for (const _ of 'abc') backspace(input);
+    keys(input, '٫٥');
+    expect(input.value).toBe('600٫');
     expect(hint.textContent).toBe('Height must be a whole number');
     // The second point never lands (typed after the 600 the box held).
     const decimal = box({ integer: false, min: undefined });
@@ -115,6 +127,19 @@ describe('the designer’s number box', () => {
     expect(hintOf(decimal.input)?.textContent).toBe('A number has only one decimal mark');
     expect(decimal.input.value).toBe('6001.2');
     expect(commits).toEqual([]);
+  });
+
+  it.each([
+    ['1.5', 'Most characters is a whole number, 1 or more. It stays 80.'],
+    ['٢٫٥', 'Most characters is a whole number, 1 or more. It stays 80.'],
+    ['-5', 'Most characters is a whole number, 1 or more. It stays 80.'],
+    ['1e3', 'Most characters is a whole number, 1 or more. It stays 80.'],
+  ])('never keeps a number made by dropping a key: "%s" is never 15, 25, 5 or 13', (typed, said) => {
+    const { input, commits } = box({ label: 'Most characters', min: 1, saved: () => 80 });
+    retype(input, typed);
+    expect(commits).toEqual([]);
+    expect(input.value).toBe('80');
+    expect(hintOf(input)?.textContent).toBe(said);
   });
 
   it('keeps the setting when what is left in the box does not fit, says the range, and shows what it keeps', () => {
@@ -204,6 +229,21 @@ describe('the number settings of a field', () => {
     retype(inline(host, 'From'), '1,5');
     expect(fieldOf(designer, id)['min']).toBe(1.5);
     expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('a From refused because of To is said at From, in words a screen reader hears, never only far above', () => {
+    for (const locale of [undefined, 'ar'] as const) {
+      const { designer, id, host } = screenWith('number', locale);
+      const [from, to] = locale ? [inline(host, 'من'), inline(host, 'إلى')] : [inline(host, 'From'), inline(host, 'To')];
+      retype(to, '2');
+      expect(fieldOf(designer, id)['max']).toBe(2);
+      retype(from, '5');
+      expect(fieldOf(designer, id)['min']).toBeUndefined();
+      const hint = hintOf(from) as HTMLElement;
+      expect(hint.textContent).toBe(locale ? '«من» ليس أصغر من «إلى»' : 'From is not less than To');
+      expect(hint.hidden).toBe(false);
+      expect(from.getAttribute('aria-describedby')).toContain(hint.id);
+    }
   });
 
   it('on an Arabic designer, ٣٠ in Most characters is 30, and words are Arabic', () => {

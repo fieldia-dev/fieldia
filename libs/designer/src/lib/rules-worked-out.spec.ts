@@ -162,6 +162,37 @@ describe('set when', () => {
     expect(def('kind').setWhen).toBeUndefined();
   });
 
+  it('takes a number in the designer’s number box: Arabic and Persian digits and a decimal comma read, never 15 for 1,5', () => {
+    const { panel, def } = screen('price');
+    (button(panel(), 'Set when…') as HTMLButtonElement).click();
+    const to = field(panel(), 'Set to') as HTMLInputElement;
+    // Never the browser's number box, which reads by the browser's language and empties itself on Arabic digits.
+    expect(to.type).toBe('text');
+    typeAndLeave(to, '1,5');
+    typeAndLeave(field(panel(), 'When'), 'qty > 10');
+    expect(def('price').setWhen).toEqual([{ when: 'qty > 10', value: '1.5' }]);
+    for (const [typed, expected] of [
+      ['٥٠', '50'],
+      ['۵۰', '50'],
+      ['1.234,5', '1234.5'],
+    ] as const) {
+      typeAndLeave(field(panel(), 'Set to'), typed);
+      expect([typed, def('price').setWhen?.[0]?.value]).toEqual([typed, expected]);
+    }
+  });
+
+  it('keeps a whole number’s value whole, and says so under the box, never a value it did not read', () => {
+    const { panel, def } = screen('qty');
+    (button(panel(), 'Set when…') as HTMLButtonElement).click();
+    const to = field(panel(), 'Set to') as HTMLInputElement;
+    typeAndLeave(to, '1.5');
+    typeAndLeave(field(panel(), 'When'), 'price > 10');
+    expect(def('qty').setWhen).toBeUndefined();
+    expect(to.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Set to must be a whole number');
+    typeAndLeave(field(panel(), 'Set to'), '3');
+    expect(def('qty').setWhen).toEqual([{ when: 'price > 10', value: '3' }]);
+  });
+
   it('offers a choice’s options, and yes or no, to set', () => {
     const state = screen('state');
     (button(state.panel(), 'Set when…') as HTMLButtonElement).click();

@@ -1,4 +1,4 @@
-import { ADDRESS_PARTS, type FieldNode, type Page } from '@fieldia/core';
+import { ADDRESS_PARTS, readNumber, type FieldNode, type Page } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -211,10 +211,12 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     const create = toggle(w.canCreate, (on) => widget({ create: on ? null : false }));
     const where = textBox(w.onlyWhere, 'active');
     const value = textBox(w.hasTheValue, 'true');
-    // Saved once typed and left: "true" and "false" are yes and no, a number a number.
+    // Saved once typed and left: "true" and "false" are yes and no, a number a number — read as every box reads one,
+    // in the designer's language (٥ is 5, 1,5 one and a half), never hex or an exponent ("0x10" and "1e3" stay words).
     const save = () => {
       const typed = value.value.trim();
-      designer.setLinkFilter(id, where.value.trim() ? { field: where.value, value: typed === 'true' ? true : typed === 'false' ? false : typed !== '' && Number.isFinite(Number(typed)) ? Number(typed) : typed } : null);
+      const read = readNumber(typed, designer.locale ?? 'en');
+      designer.setLinkFilter(id, where.value.trim() ? { field: where.value, value: typed === 'true' ? true : typed === 'false' ? false : read.ok && read.value !== null ? read.value : typed } : null);
     };
     where.addEventListener('change', save);
     value.addEventListener('change', save);
