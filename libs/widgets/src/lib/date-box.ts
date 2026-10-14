@@ -121,6 +121,53 @@ export interface DateBox {
   destroy(): void;
 }
 
+/**
+ * The input rules of a box a date, a date and time or a time of day is typed in, read by `reader` (its label and order
+ * as they stand at each edit): a key no date or time is written with is refused, with words (a word on its way to a
+ * month's name is not one);
+ * a paste is read as typing is, a whole date taking the box's place written the page's way, a piece of one put where
+ * the caret is, anything else refused whole with words. A field's box keeps to them, and so does every other box a
+ * date is typed into — a designer's setting.
+ */
+export function dateRules(input: HTMLInputElement, reader: DateReader): InputRules {
+  const { kind, locale } = reader;
+  const words = wordsFor(reader.labels, locale);
+  return {
+    judge(next, before) {
+      if (strangers(next, kind, locale) <= strangers(before, kind, locale)) return null;
+      const label = reader.label;
+      return kind === 'time' ? fillIn(words.timeUnfinished, { label, text: quoted(next) }) : fillIn(words.dateUnfinished, { label, text: quoted(next), example: dateExample(reader) });
+    },
+    paste(text) {
+      const plain = stripMarks(text).replace(/(\r\n|[\r\n])$/, '').trim();
+      if (/[\t\n\r]/.test(plain)) return { refuse: fillIn(words.severalValues, { label: reader.label }) };
+      let read = readDateText(plain, reader);
+      // A date and time pasted in a date's box: its day.
+      if (kind === 'date' && !read.ok) {
+        const timed = readDateText(plain, { ...reader, kind: 'datetime' });
+        if (timed.ok && timed.value) read = { ok: true, value: typingDate(new Date(timed.value)) };
+      }
+      const replacing = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) >= input.value.length;
+      if (read.ok && read.value) {
+        // A whole date takes the box's place, written the page's way.
+        input.setSelectionRange(0, input.value.length);
+        return { text: typingText(read.value, kind, reader.order, locale) };
+      }
+      // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
+      if (plain && !replacing && !strangers(plain, kind, locale)) return { text: plain };
+      // A date it cannot tell the century of, or a date whose time does not read (seconds a box kept to the minute would
+      // drop), is a date all the same: why it was not taken is said.
+      if (!read.ok && (read.problem === 'shortYear' || (read.problem === 'time' && kind === 'datetime'))) return { refuse: read.words };
+      return { refuse: fillIn(words.notPastedDate, { text: quoted(text) }) };
+    },
+  };
+}
+
+/** A day as a date field keeps it, 2026-10-13. */
+function typingDate(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** A date box, writing its field as typing reads and as it is left. */
 export function dateBox(options: DateBoxOptions): DateBox {
   const { form, name, field, kind, label, document, locale, labels, limits } = options;
@@ -133,35 +180,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
   markBounds(input, limits);
 
   const hint = refusalHint(input, options.anchor ?? input);
-  const rules: InputRules = {
-    judge(next, before) {
-      if (strangers(next, kind, locale) <= strangers(before, kind, locale)) return null;
-      return kind === 'time' ? fillIn(words.timeUnfinished, { label, text: quoted(next) }) : fillIn(words.dateUnfinished, { label, text: quoted(next), example: dateExample(reader) });
-    },
-    paste(text) {
-      const plain = stripMarks(text).replace(/(\r\n|[\r\n])$/, '').trim();
-      if (/[\t\n\r]/.test(plain)) return { refuse: fillIn(words.severalValues, { label }) };
-      let read = readDateText(plain, reader);
-      // A date and time pasted in a date's box: its day.
-      if (kind === 'date' && !read.ok) {
-        const timed = readDateText(plain, { ...reader, kind: 'datetime' });
-        if (timed.ok && timed.value) read = { ok: true, value: typingDate(new Date(timed.value)) };
-      }
-      const replacing = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) >= input.value.length;
-      if (read.ok && read.value) {
-        // A whole date takes the box's place, written the page's way.
-        input.setSelectionRange(0, input.value.length);
-        return { text: typingText(read.value, kind, order, locale) };
-      }
-      // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
-      if (plain && !replacing && !strangers(plain, kind, locale)) return { text: plain };
-      // A date it cannot tell the century of, or a date whose time does not read (seconds a box kept to the minute would
-      // drop), is a date all the same: why it was not taken is said.
-      if (!read.ok && (read.problem === 'shortYear' || (read.problem === 'time' && kind === 'datetime'))) return { refuse: read.words };
-      return { refuse: fillIn(words.notPastedDate, { text: quoted(text) }) };
-    },
-  };
-  const checks = guard(input, rules, hint);
+  const checks = guard(input, dateRules(input, reader), hint);
 
   /** The value the box last wrote or showed: a value changed by anyone else shows as it comes. */
   let held: Value | undefined = form.getState().values[name];
@@ -271,10 +290,6 @@ export function dateBox(options: DateBoxOptions): DateBox {
       checks.destroy();
     },
   };
-
-  function typingDate(d: Date): string {
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
 }
 
 /**

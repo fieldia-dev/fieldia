@@ -5,8 +5,10 @@
  * (date-range.ts). Loaded the first time a page shows one, through
  * `datePart`; a plain text box with the same reader meanwhile
  * (`plainDateWidget`, date-text.ts). The reader itself is the main script's:
- * a table's cell, a pasted block and a list's filter read dates with it.
+ * a table's cell, a pasted block and a list's filter read dates with it. The
+ * box's input rules (`dateRules`) guard any other box a date is typed into: a
+ * designer's setting.
  */
-export { dateBox, dateBoxWidget, type DateBox, type DateBoxOptions } from './date-box';
+export { dateBox, dateBoxWidget, dateRules, type DateBox, type DateBoxOptions } from './date-box';
 export { weekdayHead, withCalendar, type CalendarOptions } from './calendar';
 export { dateRangeWidget } from './date-range';
