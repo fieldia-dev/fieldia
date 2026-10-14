@@ -332,3 +332,25 @@ describe('a calendar of days, and in other languages', () => {
     if (locale === 'ar') expect(host.querySelector('.fd-cal-head-day')?.getAttribute('aria-label')).toMatch(/^السبت/);
   });
 });
+
+describe('the pointer', () => {
+  /** A pointer's event as the calendar reads one: its button and where it is. */
+  const pointer = (type: string, clientY = 0) => new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientY });
+
+  it('lets go of a stretch the browser takes away, the record drawn as it was and the pointer followed no more', async () => {
+    const source = clinicSource();
+    const host = await mount({ dataSource: source });
+    const height = block(host, 'Mona Adel').style.height;
+    (block(host, 'Mona Adel').querySelector('.fd-cal-resize') as HTMLElement).dispatchEvent(pointer('pointerdown', 10));
+    document.dispatchEvent(pointer('pointermove', 300));
+    expect(block(host, 'Mona Adel').style.height).not.toBe(height);
+    // A touch become a scroll: the browser's pointercancel, never a pointerup.
+    document.dispatchEvent(pointer('pointercancel'));
+    expect(block(host, 'Mona Adel').style.height).toBe(height);
+    expect(block(host, 'Mona Adel').hasAttribute('data-moving')).toBe(false);
+    document.dispatchEvent(pointer('pointermove', 500));
+    document.dispatchEvent(pointer('pointerup', 500));
+    expect(block(host, 'Mona Adel').style.height).toBe(height);
+    expect(source.records['clinic.appointment'][1]['stop']).toBe(at(14, 10, 30));
+  });
+});

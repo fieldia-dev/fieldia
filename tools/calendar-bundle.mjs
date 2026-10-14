@@ -18,6 +18,11 @@
  * record, records and slots never under 24 pixels (an hour of 96 where slots
  * are a quarter of an hour), a short record kept to one line, and a record
  * from the night before taken by its morning's part — 0.5 more, to 15.5.
+ * Then the calendar's 960 lines split into four along their sections (the
+ * drawing, the pointer's gestures, the keys, Move to…), which share what the
+ * calendar shows through an object whose property names a bundler keeps
+ * where it shortened the closure's own, and a stretch the browser takes
+ * away let go of — 0.5 more, to 16 (15.7 measured).
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -26,7 +31,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 15.5 };
+const BUDGET = { page: 0.8, calendar: 16 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
