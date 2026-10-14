@@ -265,9 +265,10 @@ describe('a save over someone else’s: a conflict, with Reload and Keep mine', 
     expect(ds.records['lead'][1]['phone']).toBe('+201001234567');
   });
 
-  it('a conflict, and what was set aside, go with Discard and with another record', async () => {
+  it('a conflict, and what was set aside, go with Discard and with another record — asked first, through the one check', async () => {
     const ds = source();
-    const form = await opened(ds);
+    const asked: string[] = [];
+    const form = await opened(ds, 1, { confirm: (message) => (asked.push(message), true) });
     form.setValue('phone', '+201009998887');
     ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
     await form.save();
@@ -277,8 +278,9 @@ describe('a save over someone else’s: a conflict, with Reload and Keep mine', 
     await form.save();
     await form.reloadTheirs();
     expect(form.getState().setAside).not.toBeNull();
-    await form.openRecord(2);
-    expect(form.getState()).toMatchObject({ conflict: null, setAside: null });
+    expect(await form.openRecord(2)).toBe(true);
+    expect(asked).toEqual(['Discard your changes?']);
+    expect(form.getState()).toMatchObject({ recordId: 2, conflict: null, setAside: null });
   });
 });
 

@@ -66,7 +66,7 @@ function handStore() {
   return { sent, upload };
 }
 
-function setup(options: { upload?: DataSource['upload']; recordId?: number; page?: Page; drafts?: { store: DraftStore; delayMs?: number } } = {}) {
+function setup(options: { upload?: DataSource['upload']; recordId?: number; page?: Page; drafts?: { store: DraftStore; delayMs?: number }; confirm?: (message: string) => boolean } = {}) {
   const ds = createMemoryDataSource({ records: { listing: { 1: { name: 'Nile view flat', photos: [], plan: null, signature: null, rooms: [] } } } });
   const saves: SaveRequest[] = [];
   const save = ds.save.bind(ds);
@@ -75,7 +75,7 @@ function setup(options: { upload?: DataSource['upload']; recordId?: number; page
     save: (request) => (saves.push(request), save(request)),
     upload: options.upload,
   };
-  const form = createForm({ page: options.page ?? listing(), dataSource: source, recordId: options.recordId ?? null, ...(options.drafts ? { drafts: options.drafts } : {}) });
+  const form = createForm({ page: options.page ?? listing(), dataSource: source, recordId: options.recordId ?? null, ...(options.drafts ? { drafts: options.drafts } : {}), ...(options.confirm ? { confirm: options.confirm } : {}) });
   return { form, ds, saves, state: () => form.getState(), photos: () => (form.getState().values['photos'] as FileValue[] | null) ?? [] };
 }
 
@@ -256,9 +256,10 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(form.uploading('photos')).toEqual([]);
   });
 
-  it('stops every upload when the changes are discarded, or another record is opened', async () => {
+  it('stops every upload when the changes are discarded, or another record is opened — asked first, through the one check', async () => {
     const store = handStore();
-    const { form, state } = setup({ upload: store.upload, recordId: 1 });
+    const asked: string[] = [];
+    const { form, state } = setup({ upload: store.upload, recordId: 1, confirm: (message) => (asked.push(message), true) });
     await form.load();
     form.upload('photos', [photo('a.jpg'), photo('b.jpg')]);
     await tick();
@@ -267,7 +268,8 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(state().uploads).toEqual([]);
     form.upload('photos', [photo('c.jpg')]);
     await tick();
-    await form.openRecord(null);
+    expect(await form.openRecord(null)).toBe(true);
+    expect(asked).toEqual(['Discard your changes?']);
     expect(store.sent[2].aborted()).toBe(true);
     expect(state().uploads).toEqual([]);
   });

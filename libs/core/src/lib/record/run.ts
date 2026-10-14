@@ -196,7 +196,7 @@ export interface RunScope {
   line?: { field: string; key: string; values: Values };
   lines?: ChosenLines;
   chain: readonly string[];
-  /** Set once a save in this run went through: whatever is unsaved after it, a step leaving the record asks about. */
+  /** Set once a save in this run went through: a change the person makes while the run goes on is one no save took. */
   saved?: boolean;
 }
 
@@ -215,9 +215,12 @@ export interface RunForm {
   addLine(field: string, values: Values): void;
   check(fields: readonly string[] | undefined): Stopped | null;
   save(chain: readonly string[]): Promise<Stopped | null>;
-  /** Load the record again from its data source; a new record cannot be. */
+  /** Load the record again from its data source, once the form's one check let what is shown go; a new record cannot be. */
   reload(): Promise<Stopped | null>;
-  reset(): void;
+  /** Reset the form, once its one check let what is shown go. */
+  reset(): Stopped | null | Promise<Stopped | null>;
+  /** Close it through the host, once its one check let what is shown go. */
+  close(): Stopped | null | Promise<Stopped | null>;
   /** Go to a wizard's step; `undefined` when the target is none of its steps (a tab). */
   goTo(target: string, chain: readonly string[]): Stopped | null | undefined;
   /** Run `show` of the host while `chain` is the run's, so a tab it shows knows who showed it. */
@@ -230,15 +233,15 @@ export interface RunForm {
   /** Whether something changed since the record was loaded or saved: a file still on its way is a change coming. */
   changed(): boolean;
   /**
-   * Before the record is left for another in this form's place — its copy, a
-   * record the app's answer names — whether the person's work it holds may go:
-   * null when there is none, or they said Discard; else why the run stops.
-   * `saved`, after a save in the same run — one made for this way out, or a
-   * `save` step before it: whatever is still unsaved counts (a change made
-   * while it ran). Without, only what Reload set aside and
-   * files on their way: a change not saved is the step's to drop, as it was.
+   * The form's one check, asked by a step before something that cannot be
+   * taken back — a copy made, the record archived, the page left for an
+   * address — whose way out passes the check only after: null to go on,
+   * else why the run stops. Every way out passes it anyway; asked first, it
+   * is not asked again.
    */
-  letGo(saved: boolean): Promise<Stopped | null>;
+  letGo(): Stopped | null | Promise<Stopped | null>;
+  /** The record is being deleted: the person's work in it goes with it, unasked. */
+  forget(): void;
   /**
    * The record's own operations through the data source, each only when the
    * data source has it; without, the app's action of the step's name is called.
@@ -246,7 +249,7 @@ export interface RunForm {
   archive?(archive: boolean): Promise<void>;
   copy?(): Promise<RecordId>;
   remove?(): Promise<void>;
-  /** Show another record in this form's place, loaded as a pager loads it; a new one for null. */
+  /** Show another record in this form's place, loaded as a pager loads it, once the one check let this one go; a new one for null. */
   showRecord(id: RecordId | null): Promise<Stopped | null>;
   /** The record was archived (or brought back), copied, or deleted: told to the app. Deleted, the form leaves it unless a listener moved it on. */
   told(event: { archived: boolean } | { copied: RecordId } | { deleted: true }, id: RecordId): void;
@@ -447,9 +450,6 @@ export function createRunner(form: RunForm) {
       if (stopped) return stopped;
     }
     if (answer.record !== undefined) {
-      // After a save in this run, a change made while it ran is asked about too.
-      const kept = await form.letGo(scope.saved === true);
-      if (kept) return kept;
       const moved = await form.showRecord(answer.record);
       if (moved) return moved;
     }
@@ -491,6 +491,9 @@ export function createRunner(form: RunForm) {
     if (barred) return cannot(barred);
     if (name === 'archive' || name === 'unarchive') {
       if (!form.archive) return instead(name, 'archive', scope);
+      // Loaded again once archived: the person's work is asked about before anything is.
+      const kept = await form.letGo();
+      if (kept) return kept;
       await form.archive(name === 'archive');
       form.told({ archived: name === 'archive' }, id);
       return form.reload();
@@ -501,9 +504,8 @@ export function createRunner(form: RunForm) {
       if (form.changed()) {
         const saved = await form.save(scope.chain);
         if (saved) return saved;
-        scope.saved = true;
       }
-      const kept = await form.letGo(scope.saved === true);
+      const kept = await form.letGo();
       if (kept) return kept;
       if (!form.copy) {
         const stopped = await instead(name, 'copy', scope);
@@ -517,6 +519,8 @@ export function createRunner(form: RunForm) {
       form.told({ copied }, id);
       return null;
     }
+    // Deleted: what the person had not saved in it goes with it, unasked — they chose to delete it.
+    form.forget();
     if (!form.remove) {
       const stopped = await instead(name, 'delete', scope);
       if (!stopped) form.told({ deleted: true }, id);
@@ -557,8 +561,7 @@ export function createRunner(form: RunForm) {
         return stopped;
       }
       case 'reset':
-        form.reset();
-        return null;
+        return form.reset();
       case 'goTo': {
         const stepped = form.goTo(step.target, scope.chain);
         if (stepped !== undefined) return stepped;
@@ -576,12 +579,9 @@ export function createRunner(form: RunForm) {
         return call(step, scope);
       case 'open':
         return open(step, scope);
-      case 'close': {
-        const close = form.host?.close;
-        if (!close) return cannot('Nothing can close this form: it has no host, or was not opened in a dialog or panel');
-        close.call(form.host);
-        return null;
-      }
+      case 'close':
+        if (!form.host?.close) return cannot('Nothing can close this form: it has no host, or was not opened in a dialog or panel');
+        return form.close();
       case 'reload':
         return form.reload();
       case 'openUrl': {
@@ -589,6 +589,11 @@ export function createRunner(form: RunForm) {
         if (!openUrl) return cannot('Nothing can open a web address here: the form has no host that opens one');
         const url = read(step.url, false);
         if (typeof url !== 'string' || !url.trim()) return cannot(`"${step.url}" gives no address to open`);
+        // In this tab, the page goes: the person's work is asked about first.
+        if (step.newTab === false) {
+          const kept = await form.letGo();
+          if (kept) return kept;
+        }
         openUrl.call(form.host, url.trim(), step.newTab ?? true);
         return null;
       }
