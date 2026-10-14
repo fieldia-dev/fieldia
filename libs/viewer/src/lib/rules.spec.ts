@@ -122,12 +122,15 @@ describe('a warning from an answer rule', () => {
 });
 
 describe('an error from an answer rule', () => {
-  it('stops the form, with its message under the field, and the warning gives way to it', async () => {
+  it('is said as the field is left, its warning giving way to it, and stops the form', async () => {
     const { host, form, dataSource } = mount();
     type(input(host, 'f-postcode'), '12');
     input(host, 'f-qty').focus();
     await flush();
-    expect(shown(warningOf(host, 'f-postcode'))).toBe(true);
+    // A pattern is the field's own problem: said once the box is left, politely, as Save would say it.
+    expect(shown(errorOf(host, 'f-postcode'))).toBe(true);
+    expect(errorOf(host, 'f-postcode').getAttribute('aria-live')).toBe('polite');
+    expect(shown(warningOf(host, 'f-postcode'))).toBe(false);
     expect(await form.save()).toBe(false);
     expect(dataSource.responses).toHaveLength(0);
     expect(shown(errorOf(host, 'f-postcode'))).toBe(true);

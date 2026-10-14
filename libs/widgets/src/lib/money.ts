@@ -1,4 +1,4 @@
-import { compileModifier, isRightToLeft, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
+import { compileModifier, isRightToLeft, stripMarks, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { formatNumber } from './numbers';
 import { currencySymbol } from './units';
@@ -12,8 +12,6 @@ import { currencySymbol } from './units';
  * and a symbol such as "E£" is kept whole, never turned round to "£E".
  */
 
-/** The marks Intl puts round Arabic numbers to say their direction: the text says its own. */
-const MARKS = /[\u200e\u200f\u061c]/g;
 /**
  * A symbol set apart on a right-to-left page, in the direction of its first letter: "E£" and "US$" stay
  * whole left to right, and an Arabic one ("ر.س.") keeps its dots where they were, right to left.
@@ -25,7 +23,8 @@ const shortFormats = new Map<Locale, Intl.NumberFormat>();
 export function shortNumber(value: number, locale: Locale = 'en'): string {
   let found = shortFormats.get(locale);
   if (!found) shortFormats.set(locale, (found = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 })));
-  return found.format(value).replace(MARKS, '');
+  // Without the marks Intl puts round Arabic numbers to say their direction: the text says its own.
+  return stripMarks(found.format(value));
 }
 
 const PER_KEYS: Record<Period, keyof WidgetLabels> = { day: 'perDay', night: 'perNight', week: 'perWeek', month: 'perMonth', year: 'perYear' };
@@ -59,7 +58,7 @@ export function writeMoney(value: number, currency: string | null, decimals: num
   if (currency && currency !== look.home) {
     const code = /^[A-Z]{3}$/.test(currency);
     const where = code ? currencySymbol(currency, locale) : null;
-    const text = (look.currency === 'code' || !where ? currency : where.text).replace(MARKS, '');
+    const text = stripMarks(look.currency === 'code' || !where ? currency : where.text);
     const after = look.at ? look.at === 'after' : !!where?.after;
     // Only letters ("EGP") keep their order anywhere; a symbol is kept whole on a right-to-left page.
     const said = isRightToLeft(locale) && !/^\p{L}+$/u.test(text) ? isolate(text) : text;

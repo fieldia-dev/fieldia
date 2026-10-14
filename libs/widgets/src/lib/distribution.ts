@@ -1,6 +1,7 @@
-import type { Field, Form, FormState, JsonValue, Locale, RecordId, RelatedRecord, Value } from '@fieldia/core';
-import { fillIn, maker, setHidden, setText, wordsFor } from './kind-parts';
-import { formatNumber, normalizeNumber } from './numbers';
+import { readNumber, type Field, type Form, type FormState, type JsonValue, type Locale, type RecordId, type RelatedRecord, type Value } from '@fieldia/core';
+import { fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import { guard, numberRules, refusalHint, unreadWords, type Guard, type NumberBox, type RefusalHint } from './input-rules';
+import { formatNumber } from './numbers';
 import { many2oneWidget } from './relations';
 import type { Widget, WidgetFactory } from './widgets';
 
@@ -22,6 +23,11 @@ interface Row {
   account: Widget;
   input: HTMLInputElement;
   remove: HTMLButtonElement;
+  /** Its share's box's input rules, and their hint. */
+  checks: Guard;
+  hint: RefusalHint;
+  /** Text left in its share's box that does not read, and why: the share keeps what it held. */
+  unread: { text: string; message: string } | null;
 }
 
 /** The model a distribution's accounts are records of: its `options.model`, else Flectra's analytic accounts. */
@@ -70,10 +76,17 @@ export const distributionWidget: WidgetFactory = (context) => {
     make('tfoot', {}, make('tr', { class: 'fd-lines-totals' }, make('td', {}, words.total), total, make('td')))
   );
   const add = make('button', { type: 'button', class: 'fd-button fd-button-link fd-lines-add fd-distribution-add' }, `+ ${words.addAccount}`);
-  const off = make('div', { class: 'fd-warning fd-distribution-off', role: 'status', hidden: '' });
+  const off = make('div', { class: 'fd-warning fd-distribution-off', id: `${id}-off`, role: 'status', hidden: '' });
   const element = make('div', { id, class: 'fd-distribution', role: 'group' }, make('div', { class: 'fd-lines-scroll' }, table), add, off);
   let rows: Row[] = [];
   let readonly = false;
+  // A share is a per cent of 0 or more, with two places at most; "25%" and "٢٥٪" read too.
+  const shareBox: NumberBox & { percent: boolean } = { label: words.share, locale, labels, limits: () => ({ min: 0, places: 2, percent: true }), percent: true };
+  /** The share boxes' unread text is the field's: Save refuses while one holds any. */
+  function sayUnread() {
+    const first = rows.find((row) => row.unread)?.unread ?? null;
+    form.setUnread(name, first);
+  }
 
   /** The value the lines say: those with an account, in their order. */
   function save() {
@@ -102,21 +115,57 @@ export const distributionWidget: WidgetFactory = (context) => {
     const accountField = { type: 'many2one', label: words.account, relation: model } as Field;
     row.account = many2oneWidget({ ...context, form: own, name: 'account', field: accountField, node: { type: 'field', id: `${node.id}.account`, field: 'account', options: { create: false } }, id: cellId });
     row.input = make('input', { type: 'text', class: 'fd-input fd-number-input fd-share', inputmode: 'decimal', autocomplete: 'off', 'aria-label': words.share });
+    row.unread = null;
+    const shareCell = make('span', { class: 'fd-number' }, row.input, make('span', { class: 'fd-unit' }, '%'));
+    row.hint = refusalHint(row.input, shareCell);
+    row.checks = guard(row.input, numberRules(shareBox), row.hint);
     row.input.addEventListener('input', () => {
-      const text = normalizeNumber(row.input.value.trim(), locale);
-      if (!/^\d+\.?\d*$|^\.\d+$/.test(text)) return;
-      row.share = Number(text);
+      const read = readNumber(row.input.value, locale, { percent: true });
+      // Half-typed, emptied or not reading yet: the share waits for the box to be left.
+      if (!read.ok || read.value === null) return;
+      // Saved first: the value and the lines agree before anything else is told.
+      row.share = read.value;
+      const had = !!row.unread;
+      row.unread = null;
       save();
+      if (had) sayUnread();
+    });
+    let entered = row.share;
+    row.input.addEventListener('focus', () => (entered = row.share));
+    row.input.addEventListener('blur', () => {
+      const text = row.input.value;
+      const words = unreadWords(text, shareBox);
+      if (words) {
+        // Kept as typed, marked, with why; the share keeps what it held as the box was entered.
+        if (row.share !== entered) {
+          row.share = entered;
+          save();
+        }
+        row.unread = { text, message: words };
+        sayUnread();
+        draw();
+        return;
+      }
+      // Emptied and left, a share is 0, and the total shows it.
+      const read = readNumber(text, locale, { percent: true });
+      row.share = read.ok && read.value !== null ? read.value : 0;
+      const had = !!row.unread;
+      row.unread = null;
+      save();
+      if (had) sayUnread();
+      draw();
     });
     row.remove = make('button', { type: 'button', class: 'fd-line-delete', 'aria-label': words.deleteLine }, '×');
     row.remove.addEventListener('click', () => {
       rows = rows.filter((other) => other !== row);
       row.account.destroy?.();
+      row.checks.destroy();
       row.element.remove();
+      if (row.unread) sayUnread();
       save();
       draw();
     });
-    row.element = make('tr', {}, make('td', {}, make('label', { class: 'fd-sr-only', for: cellId }, words.account), row.account.element), make('td', { class: 'fd-distribution-share' }, make('span', { class: 'fd-number' }, row.input, make('span', { class: 'fd-unit' }, '%'))), make('td', { class: 'fd-lines-tools' }, row.remove));
+    row.element = make('tr', {}, make('td', {}, make('label', { class: 'fd-sr-only', for: cellId }, words.account), row.account.element), make('td', { class: 'fd-distribution-share' }, shareCell), make('td', { class: 'fd-lines-tools' }, row.remove));
     return row;
   }
 
@@ -149,13 +198,18 @@ export const distributionWidget: WidgetFactory = (context) => {
     const sum = rows.reduce((total, row) => total + row.share, 0);
     setText(total, percent(Math.round(sum * 100) / 100));
     const wrong = rows.some((row) => row.key) && Math.abs(sum - 100) > 0.001;
-    setText(off, wrong ? fillIn(words.sharesOff, { n: percent(Math.round(sum * 100) / 100) }) : '');
-    setHidden(off, !wrong);
+    // A share left that does not read is said first: the total cannot be trusted until it is fixed.
+    const unread = rows.find((row) => row.unread)?.unread?.message ?? '';
+    setText(off, unread || (wrong ? fillIn(words.sharesOff, { n: percent(Math.round(sum * 100) / 100) }) : ''));
+    setHidden(off, !unread && !wrong);
     setHidden(add, readonly);
     for (const row of rows) {
       row.account.update({ value: row.key ? { id: row.key, label: nameOf(row.key) } : null, values: {}, readonly, required: false, invalid: false });
-      const text = formatNumber(row.share, Number.isInteger(row.share) ? 0 : 2, locale);
+      // A box holding text that does not read keeps it, marked, until it is put right.
+      const text = row.unread ? row.unread.text : formatNumber(row.share, Number.isInteger(row.share) ? 0 : 2, locale);
       if (document.activeElement !== row.input && row.input.value !== text) row.input.value = text;
+      setAttr(row.input, 'aria-invalid', row.unread ? 'true' : null);
+      setAttr(row.input, 'aria-describedby', row.hint.describedBy(row.unread ? off.id : undefined) ?? null);
       row.input.readOnly = readonly;
       if (readonly) row.remove.remove();
       else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
@@ -165,14 +219,21 @@ export const distributionWidget: WidgetFactory = (context) => {
   return {
     element,
     focus: () => (rows[0]?.input ?? add).focus(),
-    destroy: () => rows.forEach((row) => row.account.destroy?.()),
+    destroy: () =>
+      rows.forEach((row) => {
+        row.account.destroy?.();
+        row.checks.destroy();
+      }),
     update(state) {
       readonly = state.readonly;
       const shares = sharesOf(state.value);
       // Lines follow the value: those it holds, in its order, and a new one still without its account.
       const same = shares.length === rows.filter((row) => row.key).length && shares.every(([key, share], i) => rows.filter((row) => row.key)[i]?.key === key && rows.filter((row) => row.key)[i]?.share === share);
       if (!same) {
-        for (const row of rows) row.account.destroy?.();
+        for (const row of rows) {
+          row.account.destroy?.();
+          row.checks.destroy();
+        }
         const waiting = rows.filter((row) => !row.key);
         rows = shares.map(([key, share]) => makeRow(key, share));
         rows.push(...waiting.map((row) => makeRow('', row.share)));

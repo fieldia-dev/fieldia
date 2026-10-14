@@ -178,6 +178,22 @@ const SKINS_CSS = /* css */ `
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px;
   padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start;
 }
+/* A keystroke or a paste a box refused, said right under it until the next one it takes (input-rules.ts): the
+   warning's colours, never the error's — nothing is wrong yet, the character simply did not land. */
+.fd-refusal-hint {
+  color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4;
+  padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start; width: fit-content; max-width: 100%;
+  box-sizing: border-box; margin-block-start: 4px; text-align: start;
+}
+.fd-field > .fd-refusal-hint { margin-block-start: 0; }
+/* In a table's cell or a grid's editor it floats just under the box, over the line below, never making the row taller. */
+:is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint { position: absolute; inset-block-start: calc(100% + 2px); inset-inline-start: 0; z-index: 6; margin: 0; width: max-content; max-width: 320px; flex: none; box-shadow: 0 2px 8px rgb(0 0 0 / 0.14); }
+:is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint[data-above] { inset-block-start: auto; inset-block-end: calc(100% + 2px); }
+.fd-lines-table td:has(.fd-refusal-hint:not([hidden])), .fd-grid-editor { position: relative; }
+.ag-cell-inline-editing:has(.fd-refusal-hint:not([hidden])), .ag-row:has(.fd-refusal-hint:not([hidden])) { overflow: visible; z-index: 6; }
+.fd-progressbar-edit:has(> .fd-refusal-hint) { flex-wrap: wrap; }
+.fd-progressbar-edit > .fd-refusal-hint { flex-basis: 100%; }
+.fd-tax-note-row > td { padding: 0; border: 0; }
 
 /* underline: label beside the value, the way a Flectra sheet reads. A field whose page or group
    says where its label goes (data-labels) is laid out by those rules instead, in either skin. */
@@ -270,6 +286,11 @@ const SKINS_CSS = /* css */ `
 .fd-currency { color: var(--fd-muted); font-size: 12.5px; font-weight: 600; }
 /* With the currency after it, the amount ends right beside it. */
 .fd-currency-after > .fd-number-input { text-align: end; }
+/* Right to left, a number is read as a number — "-5" and "12 34" as typed, never "5-" or "34 12" — while it is edited (it
+   carries no direction mark then) and when text that does not read is left in it: its words run left to right, where
+   they stood. Its side is said outright, as a paragraph of its own takes start and end from its words. */
+.fd-number-input:dir(rtl) { unicode-bidi: plaintext; text-align: right; }
+:is(.fd-currency-after > .fd-number-input, .fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input, .fd-tax-totals .fd-input, .fd-grid-editor:is([data-type="integer"], [data-type="float"], [data-type="monetary"]) input):dir(rtl) { text-align: left; }
 /* A picked currency is a small box of its own beside the amount. */
 .fd-currency-picked { align-items: center; }
 .fd-currency-picked > :not(.fd-number-input) { flex: 0 0 104px; min-width: 0; }

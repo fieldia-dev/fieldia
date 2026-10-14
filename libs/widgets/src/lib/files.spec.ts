@@ -149,7 +149,8 @@ describe('properties', () => {
     form.setValue('x', { floor: 12, lift_access: 'Freight lift', sprinklers: true });
     expect(labelsOf(el)).toEqual(['Floor', 'Lift access', 'Sprinklers']);
     const boxes = [...el.querySelectorAll('.fd-property input')] as HTMLInputElement[];
-    expect([boxes[0].inputMode, boxes[1].type, boxes[2].type]).toEqual(['numeric', 'text', 'checkbox']);
+    // A whole number that may be negative: the full keyboard, as an iPhone's number pad has no minus.
+    expect([boxes[0].inputMode, boxes[1].type, boxes[2].type]).toEqual(['text', 'text', 'checkbox']);
     expect(boxes[2].checked).toBe(true);
   });
 

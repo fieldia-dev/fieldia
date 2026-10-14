@@ -383,16 +383,23 @@ test('the receipt at a phone’s width: nothing scrolls sideways, and the button
   expect(problems).toEqual([]);
 });
 
-test('a quantity typed with two decimal marks is said to be no number at once, and nothing is worked out from it', async ({ page }) => {
+test('a quantity typed past its places or with a second decimal mark is refused as it is typed, saying why, and nothing is worked out from it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { problems } = await open(page, 'plain', PRODUCTION);
   const quantity = page.locator('[data-node="f-product-qty"] input').first();
+  const hint = page.locator('[data-node="f-product-qty"] .fd-refusal-hint');
   await quantity.click();
   await page.keyboard.press('End');
   await page.keyboard.type('1234567.5');
+  // Two places at most: the keys that would pass them never land, and the box says why under it.
+  await expect(quantity).toHaveValue('4.00');
+  await expect(hint).toHaveText('To Produce takes at most 2 decimal places');
+  await page.keyboard.type('.');
+  await expect(hint).toHaveText('A number has only one decimal mark');
   await page.keyboard.press('Tab');
-  await expect(quantity).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('[data-node="f-product-qty"] .fd-error')).toHaveText(/must be a number/);
+  await expect(hint).toBeHidden();
+  await expect(quantity).toHaveAttribute('aria-invalid', 'false');
+  expect(await value(page, 'product_qty')).toBe(4);
   // The components' quantities and the work orders' durations keep what they held: no NaN anywhere.
   await expect(page.locator('body')).not.toContainText('NaN');
   expect(problems).toEqual([]);

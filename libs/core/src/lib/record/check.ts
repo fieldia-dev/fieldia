@@ -1,12 +1,13 @@
 import type { Field, LineField } from '../format/field';
 import { checkDay } from './limits';
 import { fill, MESSAGES, type Messages } from './messages';
+import { charCount, MOST_DIGITS, placesOf } from './input-rules';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
  * Check one value against its field. Returns the message to show, or
- * undefined when the value is fine. The wording follows the React engine's
- * ("Name is required", "Maximum 120 characters allowed").
+ * undefined when the value is fine, naming the field ("Name is required",
+ * "Bio takes at most 120 characters").
  *
  * An empty optional value passes everything: a pattern or a minimum applies
  * to what someone typed, not to a field they left alone.
@@ -29,7 +30,7 @@ export function checkValue(
     case 'text':
     case 'html': {
       if (typeof value !== 'string') return say('text');
-      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && value.length > field.size) {
+      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && charCount(value) > field.size) {
         return say('maxLength', { max: field.size });
       }
       if (field.type === 'char' && field.pattern !== undefined && !new RegExp(field.pattern).test(value)) {
@@ -44,9 +45,14 @@ export function checkValue(
       if (field.type === 'integer' && !Number.isInteger(value)) return say('integer');
       if (field.min !== undefined && value < field.min) return say('min', { min: field.min });
       if (field.max !== undefined && value > field.max) return say('max', { max: field.max });
-      if (field.type !== 'integer' && field.digits && decimals(value) > field.digits[1]) {
-        return say('decimals', { digits: field.digits[1] });
-      }
+      const digits = field.type === 'integer' ? undefined : field.digits;
+      if (digits && placesOf(value) > digits[1]) return digits[1] === 0 ? say('integer') : say(decimalsKey(digits[1], messages.locale), { digits: digits[1] });
+      // Past what a number keeps exactly (15 digits, a safe whole number), or past the field's own digits[0]: a value
+      // from outside, as a box never takes one. The whole part counts, and the places the field keeps.
+      const integerPart = Math.trunc(Math.abs(value));
+      const whole = integerPart === 0 ? 0 : integerPart < 1e21 ? String(integerPart).length : 22;
+      if (whole > MOST_DIGITS || (field.type === 'integer' && !Number.isSafeInteger(value))) return say('digits', { n: MOST_DIGITS });
+      if (digits && whole > digits[0] - digits[1]) return say('digits', { n: digits[0] });
       return undefined;
     }
     case 'boolean':
@@ -116,11 +122,29 @@ function checkMatrix(
   return undefined;
 }
 
-function decimals(value: number): number {
-  const text = String(value);
-  if (text.includes('e-')) return Number(text.split('e-')[1]);
-  const dot = text.indexOf('.');
-  return dot === -1 ? 0 : text.length - dot - 1;
+/** A field takes at most `places` decimal places, in its language's words and plural form ("Area takes at most 1 decimal place"). */
+export function decimalsWords(label: string, places: number, messages: Messages = MESSAGES.en): string {
+  return fill(places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
+}
+
+const pluralRules = new Map<string, Intl.PluralRules>();
+
+/**
+ * The decimals message for `places`, in the plural form the language takes for
+ * it: one; two (Arabic's dual); 3 to 10; 11 and more (Arabic's singular after them).
+ */
+function decimalsKey(places: number, locale: string): 'decimals' | 'decimalsOne' | 'decimalsTwo' | 'decimalsMany' {
+  let rules = pluralRules.get(locale);
+  if (!rules) {
+    try {
+      rules = new Intl.PluralRules(locale);
+    } catch {
+      rules = new Intl.PluralRules('en');
+    }
+    pluralRules.set(locale, rules);
+  }
+  const form = rules.select(places);
+  return form === 'one' ? 'decimalsOne' : form === 'two' ? 'decimalsTwo' : form === 'many' || (form === 'other' && locale === 'ar') ? 'decimalsMany' : 'decimals';
 }
 
 function isRecord(value: unknown): value is RelatedRecord {

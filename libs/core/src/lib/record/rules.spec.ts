@@ -73,7 +73,7 @@ describe('answer rules — what each asks', () => {
   it('asks for a length', () => {
     expect(errorFor({ name: [{ minLength: 2 }] }, 'name', 'A')).toBe('Name must be at least 2 characters');
     expect(errorFor({ name: [{ minLength: 2 }] }, 'name', 'Al')).toBeUndefined();
-    expect(errorFor({ name: [{ maxLength: 5 }] }, 'name', 'Abcdef')).toBe('Maximum 5 characters allowed');
+    expect(errorFor({ name: [{ maxLength: 5 }] }, 'name', 'Abcdef')).toBe('Name takes at most 5 characters');
     expect(errorFor({ name: [{ maxLength: 5 }] }, 'name', 'Abcde')).toBeUndefined();
   });
 

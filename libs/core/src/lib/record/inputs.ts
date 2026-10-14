@@ -22,6 +22,16 @@ const FORMATS: Record<string, RegExp> = {
 
 export function checkInput(field: Field, node: FieldNode, value: Value | undefined, messages: Messages): string | undefined {
   const widget = node.widget ?? '';
+  // A bar a person types into keeps to its own range — its options' min and max, else the field's, else 0 to 100 —
+  // so the bar and its box never disagree. A maximum read from another field (maxField) is the bar's alone.
+  if (widget === 'progressbar' && node.options?.['editable'] === true && typeof value === 'number' && (field.type === 'integer' || field.type === 'float' || field.type === 'monetary')) {
+    const options = node.options;
+    const label = node.label ?? field.label;
+    const min = typeof options['min'] === 'number' ? options['min'] : (field.min ?? 0);
+    const max = typeof options['maxField'] === 'string' ? undefined : typeof options['max'] === 'number' ? options['max'] : (field.max ?? 100);
+    if (value < min) return fill(messages.min, { label, min });
+    if (max !== undefined && value > max) return fill(messages.max, { label, max });
+  }
   if (field.type !== 'char') return checkStructure(field, node, value, messages);
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const text = value.trim();

@@ -66,6 +66,18 @@ export interface FormState {
   readonly choices: Readonly<Record<string, Choices>>;
   /** The definitions loaded for a properties field with `definitionsFrom`, by field, once asked for. */
   readonly definitions: Readonly<Record<string, Definitions>>;
+  /**
+   * Text a person left in a box that does not read as its field's value — "12 34" in a number, "31/02/2026" in a
+   * date — by its path (`field`, or a line's `field.lineKey.subfield`), with why in words. The field keeps the
+   * value it held as the box was entered; validate and save refuse with the words until the text is fixed.
+   */
+  readonly unread: Readonly<Record<string, UnreadText>>;
+}
+
+/** Text left in a box that does not read, and why, as `FormState.unread` keeps it. */
+export interface UnreadText {
+  readonly text: string;
+  readonly message: string;
 }
 
 /** A properties field's definitions from the app, as they load. */
@@ -215,6 +227,17 @@ export interface Form {
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
+  /**
+   * Keep text a person left in a box that does not read (`FormState.unread`), by its path — `field`, or a line's
+   * `field.lineKey.subfield` — with why in words; null once it reads, or is let go. Nothing is shown until the box
+   * is left (`leave`) or the form is checked.
+   */
+  setUnread(path: string, unread: UnreadText | null): void;
+  /**
+   * A person left a field's box, by its path: its own problem — text that does not read, a format, min or max, a
+   * whole number, decimals, a pattern — is shown now, in the words Save would use. That it is required waits for Save.
+   */
+  leave(path: string): void;
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
@@ -379,6 +402,9 @@ interface InnerForm {
 }
 
 type Sync = 'start' | 'edit' | 'fresh';
+
+/** A line's cell whose line is no longer there. */
+const gone: unique symbol = Symbol('gone');
 
 const isRecord = (value: unknown): value is Values => value !== null && typeof value === 'object' && !Array.isArray(value);
 /** A saved form's answers, as the one value they are in the form round it. */
@@ -546,6 +572,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     saveProblem: null,
     choices: {},
     definitions: {},
+    unread: {},
   };
   started = true;
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
@@ -721,8 +748,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     };
   }
 
-  /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now. */
-  function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field'): IndexedNode[] {
+  /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now; `field`'s alone, when named. */
+  function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field', field?: string): IndexedNode[] {
     const inside = (node: IndexedNode) => {
       if (!root) return true;
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (at === root) return true;
@@ -734,7 +761,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (state.skipped.includes(at)) return true;
       return false;
     };
-    return [...index.values()].filter((node) => node.kind === kind && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
+    return [...index.values()].filter((node) => node.kind === kind && (field === undefined || node.field === field) && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
   /** What a field node's answer rules say of its value now: the first error and the first warning. */
@@ -786,8 +813,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** Errors for the visible fields under `root`, without publishing them. */
   function collectErrors(root?: string): Record<string, string> {
     const errors: Record<string, string> = {};
+    const seen = new Set<string>();
     for (const node of visibleFieldNodes(root)) {
       const name = node.field as string;
+      seen.add(name);
       if (errors[name]) continue;
       const def = page.fields[name];
       const message = nodeError(node);
@@ -808,12 +837,59 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         }
       }
     }
+    // Text left in a box that does not read answers for its field, in the words it was left with.
+    for (const [path, unread] of Object.entries(state.unread)) if (seen.has(path.split('.')[0])) errors[path] = unread.message;
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
       if (part) for (const [key, message] of Object.entries(part.inner.errorsNow())) errors[`${part.name}.${key}`] = message;
     }
     return errors;
+  }
+
+  /** The value at a path: a field's, or a line's cell (`field.lineKey.subfield`); `gone` when the line is not there. */
+  function valueAt(values: Readonly<Values>, path: string): Value | undefined | typeof gone {
+    const parts = path.split('.');
+    if (parts.length < 3) return values[path];
+    const [field, sub] = [parts[0], parts[parts.length - 1]];
+    const key = parts.slice(1, -1).join('.');
+    const line = ((values[field] as Line[] | null) ?? []).find((l) => l.key === key);
+    return line ? line.values[sub] : gone;
+  }
+
+  /** Unread text whose field has since been written another way — a value typed that reads, the app's — is let go. */
+  function unreadKept(values: Readonly<Values>): Readonly<Record<string, UnreadText>> {
+    let kept: Record<string, UnreadText> | null = null;
+    for (const path of Object.keys(state.unread)) {
+      const now = valueAt(values, path);
+      if (now !== gone && now === valueAt(state.values, path)) continue;
+      kept ??= { ...state.unread };
+      delete kept[path];
+    }
+    return kept ?? state.unread;
+  }
+
+  /** A field's own problem as its box is left, never that it is required: undefined when it has none, or is not shown. */
+  function leftProblem(path: string): string | undefined {
+    const parts = path.split('.');
+    const field = parts[0];
+    const shown = visibleFieldNodes(undefined, 'field', field);
+    if (!shown.length) return undefined;
+    if (state.unread[path]) return state.unread[path].message;
+    if (parts.length === 1) {
+      const value = state.values[field];
+      if (isEmpty(fieldDef(field), value)) return undefined;
+      return (
+        shown.map((node) => checkInput(page.fields[field], node.source as FieldNode, value, messages)).find(Boolean) ??
+        checkValue(checked(field), value, false, messages, today()) ??
+        shown.map((node) => ruleCheck(node).error).find(Boolean)
+      );
+    }
+    const def = lineField(field);
+    const sub = def.fields[parts[parts.length - 1]] as LineField | undefined;
+    const value = valueAt(state.values, path);
+    if (!sub || value === gone || isEmpty(sub, value)) return undefined;
+    return checkValue(sub, value, false, messages, today());
   }
 
   /**
@@ -862,20 +938,26 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
     const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
-    let errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
-    // Words typed where a number goes are said at once, as Flectra marks a box it cannot read; what is missing waits for sending.
-    const unread: Record<string, string> = {};
+    // Text left unread in a box goes once its field is written another way, and its words with it.
+    const unread = unreadKept(values);
+    const before = state;
+    state = { ...state, unread };
+    let errors = Object.keys(before.errors).length ? revalidateShown(values) : before.errors;
+    state = before;
+    // Words where a number goes — from a server or an old draft: a box never sets them — are said at once; what is
+    // missing waits for sending.
+    const words: Record<string, string> = {};
     for (const name of Object.keys(written)) {
       const def = page.fields[name];
       if (written[name] === state.values[name] || !def) continue;
-      if (notANumber(def, written[name])) unread[name] = checkValue(def, written[name], false, messages) as string;
+      if (notANumber(def, written[name])) words[name] = checkValue(def, written[name], false, messages) as string;
       if (def.type !== 'one2many') continue;
       for (const line of (written[name] as Line[] | null) ?? []) {
-        for (const [sub, v] of Object.entries(line.values)) if (notANumber(def.fields[sub] as Field | undefined, v)) unread[`${name}.${line.key}.${sub}`] = checkValue(def.fields[sub], v, false, messages) as string;
+        for (const [sub, v] of Object.entries(line.values)) if (notANumber(def.fields[sub] as Field | undefined, v)) words[`${name}.${line.key}.${sub}`] = checkValue(def.fields[sub], v, false, messages) as string;
       }
     }
-    if (Object.keys(unread).length) errors = { ...errors, ...unread };
-    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), ...extra });
+    if (Object.keys(words).length) errors = { ...errors, ...words };
+    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), unread, ...extra });
   }
 
   /** Once errors are on screen, keep them current as the person fixes things. */
@@ -1043,7 +1125,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       // Lines the save brings back load again, in their tables' orders, as Flectra's reload after a save.
       const values = syncParts(startFrom(result.values ? ordered({ ...(state.values as Values), ...result.values }, Object.keys(result.values)) : (state.values as Values)), 'start');
       baseline = structuredCopy(values);
-      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
+      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings), unread: {} });
       emit('save', { recordId: state.recordId, values: state.values });
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
@@ -1208,7 +1290,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), unread: {} });
       if (again) return;
       offerDraft();
       void track(opening());
@@ -1227,7 +1309,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     serverErrors = {};
     told = null;
     showing = false;
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, unread: {} };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       return load();
@@ -1366,11 +1448,36 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
+      if (state.unread[name]) return state.unread[name].message;
       const own =
         shown.map(unticked).find(Boolean) ??
         shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
         checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages, today());
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
+    },
+
+    setUnread(path, unread) {
+      const field = path.split('.')[0];
+      fieldDef(field);
+      if (path.includes('.')) lineField(field);
+      const had = state.unread[path];
+      if (!unread && !had) return;
+      if (unread && had && had.text === unread.text && had.message === unread.message) return;
+      const next = { ...state.unread };
+      if (unread) next[path] = { text: unread.text, message: unread.message };
+      else delete next[path];
+      // Problems on screen stay current: an unread text put right takes its words with it.
+      const before = state;
+      state = { ...state, unread: next };
+      const errors = Object.keys(before.errors).length ? revalidateShown(state.values) : before.errors;
+      state = before;
+      set({ unread: next, errors });
+    },
+
+    leave(path) {
+      const problem = leftProblem(path);
+      if (!problem || state.errors[path] === problem) return;
+      set({ errors: { ...state.errors, [path]: problem } });
     },
 
     validate() {
@@ -1386,7 +1493,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       serverErrors = {};
       holding = setWhen.holding(baseline);
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, unread: {} });
     },
 
     changes,
@@ -1712,7 +1819,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (how !== 'start') return writeValues({ ...initialValues(page.fields, today()), ...values }, {}, how === 'fresh');
       baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
       const start = syncParts(structuredCopy(baseline), 'start');
-      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null });
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {} });
     },
     errorsNow: () => collectErrors(),
     show(errors) {

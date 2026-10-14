@@ -30,6 +30,7 @@ import { tables } from './tables';
 import { mapPart } from './map-part';
 import { head } from './head';
 import { workText } from './work-text';
+import { inputs } from './inputs';
 
 /** The designer's words in English: the source every other language's table follows, area by area. */
-export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, head, workText };
+export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, head, workText, inputs };

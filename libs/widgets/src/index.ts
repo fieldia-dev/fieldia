@@ -9,6 +9,9 @@ export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
 export * from './lib/preferences';
 export * from './lib/numbers';
+// The input rules' side of a box — its guard on keystrokes, pastes and drops, and its hint — for every box an app or another
+// package draws: a cell's editor, a filter, a designer's setting.
+export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export * from './lib/progress';
 export * from './lib/label';
