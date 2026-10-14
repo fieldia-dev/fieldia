@@ -95,9 +95,13 @@ export function readColour(text: string): string | null {
 /**
  * A colour as #rrggbb text: picked with the browser's own picker, or typed or
  * pasted as its code in the box beside it — #rgb or #rrggbb, with or without
- * its #, in any case — which refuses anything else, and says why. An empty
- * colour shows as no colour, never black; one that need not be given can be
- * cleared. Read-only, its swatch and its code alone.
+ * its #, in any case — which refuses anything else, and says why. A code
+ * is taken as soon as it reads; text that does not read never changes the
+ * colour: the one held as the box was entered stays (and comes back if a
+ * code read on the way, "#123" on the way to "#12345"), and the box keeps the
+ * text, marked, with why — said as it is left, for its picker or its × too.
+ * An empty colour shows as no colour, never black; one that need not be
+ * given can be cleared. Read-only, its swatch and its code alone.
  */
 const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
@@ -120,18 +124,37 @@ const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, label
     if (unread()) form.setUnread(name, null);
     form.setValue(name, colour);
   };
+  /** The colour held as the code box was entered: text that does not read leaves the field holding it. */
+  let entered: string | null = null;
+  const held = () => {
+    const value = form.getState().values[name];
+    return typeof value === 'string' ? value : null;
+  };
+  const keepEntered = () => {
+    if (held() !== entered) form.setValue(name, entered);
+  };
   input.addEventListener('input', () => take(input.value));
+  // Text left unread put the colour back as it was left: entered again, that is still the one held.
+  code.addEventListener('focus', () => (entered = held()));
   code.addEventListener('input', () => {
-    // A whole code is taken as it is typed; one on its way waits.
+    // A whole code is taken as it is typed; one on its way, or past what a code is, leaves the colour as it was.
     const colour = readColour(code.value);
     if (colour) take(colour);
-    else if (code.value.trim() === '' && form.getState().values[name] !== null) take(null);
+    else if (code.value.trim() === '') {
+      if (form.getState().values[name] !== null) take(null);
+    } else keepEntered();
   });
-  code.addEventListener('blur', () => {
+  code.addEventListener('blur', (event) => {
     if (code.readOnly) return;
     const text = code.value.trim();
     // A code left half typed stays, marked, and says what a code is; the colour stays what it was.
-    if (text && !readColour(text)) form.setUnread(name, { text: code.value, message: words.colourCode });
+    if (text && !readColour(text)) {
+      keepEntered();
+      form.setUnread(name, { text: code.value, message: words.colourCode });
+    }
+    // Left for its picker or its ×: still the box left, and the page round it hears so (a focusout of its own), to say why now.
+    const to = (event as FocusEvent).relatedTarget;
+    if (to instanceof Node && element.contains(to)) code.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
   });
   clear.addEventListener('click', () => {
     take(null);

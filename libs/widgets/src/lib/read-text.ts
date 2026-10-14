@@ -45,11 +45,13 @@ export interface ReadText {
  * The link a mail, phone or web address read-only goes to, or null when it is
  * none: a number dialled in 0-9 whatever script it was typed in, an address
  * without its direction marks, a web address typed without https:// given
- * it — and never a link of another kind (javascript:, data:).
+ * it — and never a link of another kind (javascript:, data:), nor a link
+ * kept as an address (mailto:mailto:…).
  */
 function hrefOf(widget: string | undefined, value: string): string | null {
   const text = stripMarks(value).trim();
-  if (widget === 'email') return /^[^\s@]+@[^\s@]+$/.test(text) ? `mailto:${text}` : null;
+  // An address with a ":" before its @ (a link's "mailto:" kept from outside) is none: never mailto:mailto:….
+  if (widget === 'email') return /^[^\s@()<>[\]:;\\,"]+@[^\s@]+$/.test(text) ? `mailto:${text}` : null;
   if (widget === 'phone') {
     const number = foldDigits(text);
     return /^\+?[\d\s().-]{3,}$/.test(number) ? `tel:${number.replace(/\s/g, '')}` : null;

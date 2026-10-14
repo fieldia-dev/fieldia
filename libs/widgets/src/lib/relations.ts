@@ -663,7 +663,8 @@ function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boole
  * Free-text tags on a text field, kept as "oak, glass": Enter adds what was
  * typed, and so does a separator — the page's (`options.separator`, "," unless
  * set), and always "," and the Arabic "،" an Arabic keyboard's comma key types
- * — or a line break, so a list pasted on lines is one tag a line. Backspace in
+ * — or a line break or a tab, so a list pasted on lines, or a row of cells
+ * copied from a spreadsheet, is one tag a line or a cell. Backspace in
  * an empty box takes the last one away, and the node's `options.suggestions`
  * are offered as you type. A tag already there, in any case, is not added
  * twice: the hint under the box says so and its chip is marked. With
@@ -680,8 +681,8 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
   const suggestions = Array.isArray(options['suggestions']) ? options['suggestions'].filter((s): s is string => typeof s === 'string') : [];
   const split = (text: unknown) =>
     typeof text === 'string' ? text.split(separator).map((t) => t.trim()).filter((t) => t !== '') : [];
-  /** Typed or pasted text in its tags: at the page's separator, a comma in either script, and a line break. */
-  const pieces = (text: string) => text.split(separator).flatMap((part) => part.split(/[,\u060c\r\n]/));
+  /** Typed or pasted text in its tags: at the page's separator, a comma in either script, a line break, and a tab (cells copied side by side). */
+  const pieces = (text: string) => text.split(separator).flatMap((part) => part.split(/[,\u060c\r\n\t]/));
   const current = () => split(form.getState().values[name]);
   const write = (tags: string[]) => form.setValue(name, tags.length ? tags.join(`${separator} `) : null);
   /** A tag added, or why not: nothing typed, there already (in any case), or the most there already. */
