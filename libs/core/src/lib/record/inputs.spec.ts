@@ -7,6 +7,7 @@ import { createForm } from './form';
 import { dayOf } from './limits';
 import { MESSAGES } from './messages';
 import { initialValues } from './values';
+import { settledText } from './inputs';
 
 /** One question on a page of its own, as the form checks it. */
 function ask(field: Record<string, unknown>, node: Partial<FieldNode> = {}, options: { now?: Date; locale?: keyof typeof MESSAGES } = {}) {
@@ -86,6 +87,20 @@ describe('an email', () => {
       expect(email('sara example.com')).toBe('Enter an email address, like name@example.com');
       expect(email('sara@example.com')).toBeNull();
     }
+  });
+
+  it('has no ":" or other mark no address has before its @: a link’s "mailto:" is no part of one', () => {
+    const email = ask({ type: 'char' }, { widget: 'email' });
+    for (const bad of ['mailto:ahmed@example.com', 'MAILTO:ahmed@example.com', 'ahmed;sara@example.com', 'ahmed,sara@example.com', 'Ahmed<ahmed@example.com']) {
+      expect({ bad, says: email(bad) }).toEqual({ bad, says: 'Enter an email address, like name@example.com' });
+    }
+    expect(email('ahmed.ali+news@example.com')).toBeNull();
+    expect(email("o'brien@example.com")).toBeNull();
+  });
+
+  it('is kept with no zero-width character once left, as its direction marks are not', () => {
+    expect(settledText('ahmed\u200b@example.com', { widget: 'email' })).toBe('ahmed@example.com');
+    expect(settledText('\u200fahmed@exam\u200dple.com\u2060', { widget: 'email' })).toBe('ahmed@example.com');
   });
 
   it('keeps the field’s own pattern where the page has one of its own', () => {

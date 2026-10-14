@@ -502,22 +502,96 @@ export type DateProblem = 'unfinished' | 'noSuchMonth' | 'yearDigits' | 'time';
 export type DateRead =
   | { ok: true; value: string | null }
   | { ok: false; problem: DateProblem }
-  | { ok: false; problem: 'noSuchDay'; year: number; month: number; days: number };
+  | { ok: false; problem: 'noSuchDay'; year: number; month: number; days: number }
+  /** A year of two digits ("85"): never given a century in silence; the two it could be are named. */
+  | { ok: false; problem: 'shortYear'; short: string; early: number; late: number };
 
 const daysIn = (year: number, month: number) => [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 const pad2 = (n: number) => String(n).padStart(2, '0');
+/** A moment as the local day and time it is, as the readers give a date and time: yyyy-mm-ddTHH:MM. */
+const localOf = (d: Date) => `${String(d.getFullYear()).padStart(4, '0')}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+/** An instant as a server or a spreadsheet writes one, with its zone: 2026-10-15T14:30:00Z, 2026-10-15T16:30:00.000+02:00. */
+const INSTANT = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)$/i;
+
+/** The languages whose month names a date may be written with, whatever the page's: the four Fieldia speaks. */
+const MONTH_LANGUAGES = ['en-GB', 'en-US', 'ar', 'fr', 'de'];
+const monthsByLocale = new Map<string, Map<string, number>>();
+/** A month's name as it is looked up: folded as a search folds it, its dot ("oct.", "Okt.") let go. */
+const monthKey = (name: string) => foldForSearch(name).replace(/\.+$/, '').trim();
+
+/**
+ * Every name a month is written with — long and short, alone and inside a date, as Intl writes them — in English,
+ * Arabic, French and German, and the page's own language: by its folded name, its number. Made from Intl, so no
+ * language's words are carried in the code (the one-tag script carries none).
+ */
+function monthNames(locale?: string): Map<string, number> {
+  const key = locale ?? '';
+  let found = monthsByLocale.get(key);
+  if (found) return found;
+  found = new Map();
+  for (const language of new Set([...MONTH_LANGUAGES, ...(locale ? [locale] : [])])) {
+    for (const month of ['long', 'short'] as const) {
+      let alone: Intl.DateTimeFormat;
+      let inDate: Intl.DateTimeFormat;
+      try {
+        alone = new Intl.DateTimeFormat(language, { month, calendar: 'gregory' });
+        inDate = new Intl.DateTimeFormat(language, { day: 'numeric', month, year: 'numeric', calendar: 'gregory' });
+      } catch {
+        continue; // a language Intl does not know: its names are not read
+      }
+      for (let m = 0; m < 12; m++) {
+        const day = new Date(2000, m, 15);
+        for (const name of [alone.format(day), inDate.formatToParts(day).find((part) => part.type === 'month')?.value ?? '']) {
+          const folded = monthKey(name);
+          if (folded && !/\d/.test(folded) && !found.has(folded)) found.set(folded, m + 1);
+        }
+      }
+    }
+  }
+  monthsByLocale.set(key, found);
+  return found;
+}
+
+/** Whether `word` is how a month's name begins, in any of the languages its names are read in: typing it is on its way. */
+export function couldBeMonth(word: string, locale?: string): boolean {
+  const wanted = monthKey(word);
+  if (!wanted) return false;
+  for (const name of monthNames(locale).keys()) if (name.startsWith(wanted)) return true;
+  return false;
+}
 
 /**
  * A typed date, in the page's order (`order`, day/month/year unless told):
  * separators / . - or a space; ISO yyyy-mm-dd always; Arabic and Persian
- * digits; a two-digit year is 20xx, else a year has four digits, from 1000. With
- * `time`, a time may follow ("13/10/2026 14:30", "… 2:30 pm", "… ٢:٣٠ م"),
- * and the value is yyyy-mm-ddTHH:MM. Unfinished or impossible dates say why
- * (31/02 → 'noSuchDay' with the days that month has).
+ * digits; a year of four digits, from 1000 — one of two digits could be either
+ * century, so it is never read as one ('shortYear', naming both). Its month
+ * may be a word, as Fieldia writes a date at rest — "15 Oct 2026", "15
+ * أكتوبر 2026", "15 oct. 2026", "15. Okt. 2026", "Oct 15, 2026" — in
+ * English, Arabic, French, German or the page's language (`locale`); the
+ * numbers beside a month in words are its day and its year of four digits,
+ * in either order. With `time`, a time may follow ("13/10/2026 14:30", "…,
+ * 2:30 pm", "… ٢:٣٠ م"), and the value is yyyy-mm-ddTHH:MM. An instant with
+ * its zone (2026-10-15T14:30:00Z) is the local day and time it is — with
+ * `time`, its seconds :00, never dropped. Unfinished or impossible dates say
+ * why (31/02 → 'noSuchDay' with the days that month has).
  */
-export function readDate(text: string, options: { order?: DateOrder; time?: boolean } = {}): DateRead {
-  const t = folded(text).trim();
+export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string } = {}): DateRead {
+  let t = folded(text).trim();
   if (!t) return { ok: true, value: null };
+  const instant = INSTANT.exec(t);
+  if (instant) {
+    const [, y, mo, d, h, mi, seconds = '0', fraction = '0', zone] = instant;
+    // A time is kept to the minute: seconds are never dropped in silence. A date's box takes the instant's day alone.
+    if (options.time && (Number(seconds) !== 0 || Number(fraction) !== 0)) return { ok: false, problem: 'time' };
+    const offset = /^z$/i.test(zone) ? 'Z' : zone.length === 3 ? `${zone}:00` : `${zone.slice(0, 3)}:${zone.slice(-2)}`;
+    const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:00${offset}`);
+    if (Number.isNaN(at.getTime())) return { ok: false, problem: 'unfinished' };
+    const local = localOf(at);
+    return { ok: true, value: options.time ? local : local.slice(0, 10) };
+  }
+  // A comma before a space sets a date's parts apart ("Oct 15, 2026") or its time ("15 Oct 2026, 14:30"): no part of either.
+  t = t.replace(/\s*[,\u060c](?=\s)/g, '');
   let datePart = t;
   let timePart = '';
   if (options.time) {
@@ -525,22 +599,37 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
     if (split) [datePart, timePart] = [split[1], split[2]];
   }
   const pieces = datePart.split(/\s*[/.\-\s]\s*/).filter((p, i, all) => p !== '' || i < all.length - 1);
-  if (pieces.some((p) => !/^\d*$/.test(p))) return { ok: false, problem: 'unfinished' };
   if (pieces.length < 3 || pieces.some((p) => p === '')) return { ok: false, problem: 'unfinished' };
   if (pieces.length > 3) return { ok: false, problem: 'unfinished' };
-  // ISO, whatever the page's order: a four-digit year first.
-  const order = pieces[0].length === 4 ? 'ymd' : (options.order ?? 'dmy');
-  const at = { d: order.indexOf('d'), m: order.indexOf('m'), y: order.indexOf('y') };
-  const yearText = pieces[at.y];
-  if (yearText.length !== 2 && yearText.length !== 4) return { ok: false, problem: 'yearDigits' };
-  const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
+  let yearText: string;
+  let monthText: string;
+  let dayText: string;
+  let month: number;
+  const named = pieces.findIndex((p) => !/^\d*$/.test(p));
+  if (named >= 0) {
+    // A month in words: the other two are its day and its year, the year the one of four digits (else the last).
+    const numbers = pieces.filter((_, i) => i !== named);
+    const found = monthNames(options.locale).get(monthKey(pieces[named]));
+    if (!found || numbers.some((p) => !/^\d+$/.test(p))) return { ok: false, problem: 'unfinished' };
+    const at = numbers[0].length > 2 && numbers[1].length <= 2 ? 0 : 1;
+    [yearText, dayText] = [numbers[at], numbers[1 - at]];
+    monthText = String(found);
+    month = found;
+  } else {
+    // ISO, whatever the page's order: a four-digit year first.
+    const order = pieces[0].length === 4 ? 'ymd' : (options.order ?? 'dmy');
+    [yearText, monthText, dayText] = [pieces[order.indexOf('y')], pieces[order.indexOf('m')], pieces[order.indexOf('d')]];
+    month = Number(monthText);
+  }
+  if (yearText.length === 2) return { ok: false, problem: 'shortYear', short: yearText, early: 1900 + Number(yearText), late: 2000 + Number(yearText) };
+  if (yearText.length !== 4) return { ok: false, problem: 'yearDigits' };
+  const year = Number(yearText);
   // Four digits from 1000: year 2, which a box half typed once made, is no year people write.
   if (year < 1000) return { ok: false, problem: 'yearDigits' };
-  const month = Number(pieces[at.m]);
-  const day = Number(pieces[at.d]);
-  if (pieces[at.m].length > 2 || month < 1 || month > 12) return { ok: false, problem: 'noSuchMonth' };
+  const day = Number(dayText);
+  if (monthText.length > 2 || month < 1 || month > 12) return { ok: false, problem: 'noSuchMonth' };
   const days = daysIn(year, month);
-  if (pieces[at.d].length > 2 || day < 1 || day > days) return { ok: false, problem: 'noSuchDay', year, month, days };
+  if (dayText.length > 2 || day < 1 || day > days) return { ok: false, problem: 'noSuchDay', year, month, days };
   const date = `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
   if (!options.time) return { ok: true, value: date };
   if (!timePart) return { ok: true, value: `${date}T00:00` };

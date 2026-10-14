@@ -188,6 +188,7 @@ export {
   cleanPastedNumber,
   readDuration,
   readDate,
+  couldBeMonth,
   readTime,
   placesOfCurrency,
   placesOf,
@@ -209,5 +210,5 @@ export {
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
-export { webAddress, settledText, hasPattern } from './lib/record/inputs';
+export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';

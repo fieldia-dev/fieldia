@@ -17,7 +17,8 @@ import type { Value } from './values';
  * answer is `required`'s to judge.
  */
 const FORMATS: Record<string, RegExp> = {
-  email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/u,
+  // Before its @, none of the marks an address can only have inside quotes: a link's "mailto:" is no part of one.
+  email: /^[^@\s()<>[\]:;\\,"]+@[^@\s]+\.[^@\s]+$/u,
   phone: /^\+?[\p{Nd}\s.()-]+$/u,
   time: /^([01]\d|2[0-3]):[0-5]\d$/,
 };
@@ -55,18 +56,25 @@ export function webAddress(text: string): 'ok' | 'scheme' | 'bad' {
   return labels.length === 1 || ([...top].length >= 2 && !/^\d+$/.test(top)) ? 'ok' : 'bad';
 }
 
+/** The characters no one sees between the letters of an address — a zero-width space, joiner or non-joiner, a word joiner, a soft hyphen — that make one no mail reaches. */
+const ZERO_WIDTH = /[\u200b-\u200d\u2060\u00ad]/g;
+/** What no part of an email address can be: before its @, the marks it can only have inside quotes. */
+export const EMAIL_LOCAL_STRAYS = /[()<>[\]:;\\,"]/g;
+
 /**
  * The text a one-line box keeps once it is left, in place of what was typed:
  * a phone number and an answer a pattern checks with their digits as 0-9
- * and no direction marks; an email and a web address with no direction
- * marks; any other text with none at its ends — each trimmed, spaces alone
- * being nothing. A password is kept as it is.
+ * and no direction marks; an email with no direction marks and no
+ * zero-width characters, a web address with no direction marks; any other
+ * text with none at its ends — each trimmed, spaces alone being nothing. A
+ * password is kept as it is.
  */
 export function settledText(text: string, kind: { widget?: string; pattern?: boolean }): string {
   const { widget, pattern } = kind;
   if (widget === 'password') return text;
   if (widget === 'phone' || pattern) return foldDigits(stripMarks(text)).trim();
-  if (widget === 'email' || widget === 'url') return stripMarks(text).trim();
+  if (widget === 'email') return stripMarks(text).replace(ZERO_WIDTH, '').trim();
+  if (widget === 'url') return stripMarks(text).trim();
   return stripMarks(text, 'ends').trim();
 }
 
