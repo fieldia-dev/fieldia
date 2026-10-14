@@ -59,20 +59,19 @@ async function expectTargets(sample: Locator) {
 }
 
 /**
- * A date typed into a date box as its reader types it: day first where the
- * box shows days first, month first where it shows months first.
+ * A date typed into Fieldia's date box as a person types it: in the order its
+ * placeholder shows, day first, over what was there; left, it shows the date
+ * in words.
  */
 async function typeDate(page: Page, box: Locator, iso: string) {
   const [year, month, day] = iso.split('-');
-  // Clicked at its start, as a person does: the cursor is on its first part.
-  const start = async () => box.click({ position: { x: 14, y: ((await box.boundingBox())?.height ?? 32) / 2 } });
-  await start();
-  await page.keyboard.type(`${day}${month}${year}`);
-  if ((await box.inputValue()) !== iso) {
-    await start();
-    await page.keyboard.type(`${month}${day}${year}`);
-  }
-  await expect(box).toHaveValue(iso);
+  await expect(box).toHaveAttribute('placeholder', 'dd/mm/yyyy');
+  await box.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type(`${day}/${month}/${year}`);
+  await box.press('Tab');
+  const words = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(Number(year), Number(month) - 1, Number(day)));
+  await expect(box).toHaveValue(words);
 }
 
 /** Customer picked, on the Rules tab, with a length rule added from Add a rule. */
