@@ -6,7 +6,9 @@ import leadPage from '../../examples/pages/lead.page.json';
  * One lead, open in two tabs on one data source: Sara's (yours) and Mona's.
  * "Someone else edits this" has Mona move the lead on in her tab and save;
  * when Sara saves next, the source refuses it as a conflict and the form says
- * who changed the record and when, with Reload and Keep mine. With
+ * who changed the record and when, with Reload and Keep mine. Sara's tab has
+ * a pager over her two leads, which asks before her changes set aside by
+ * Reload are left behind. With
  * `?role=viewer` the lead is opened by Omar, whom the source lets only read
  * it. `?locale=ar` and `?scheme=dark|light` say the language and the scheme.
  * Sample data.
@@ -75,6 +77,7 @@ const dataSource = createMemoryDataSource({
   records: {
     lead: {
       1: { name: locale === 'ar' ? 'فيلا في الشيخ زايد' : 'Villa in Sheikh Zayed', phone: '+20 100 123 4567', email: 'karim.f@example.com', stage: 'new', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 4000000, commission: 2.5, notes: WORDS.notes, active: true },
+      2: { name: locale === 'ar' ? 'شقة في المعادي' : 'Flat in Maadi', phone: '+20 111 222 3334', email: 'nadia.s@example.com', stage: 'visit', agent: locale === 'ar' ? 'سارة' : 'Sara', budget: 2500000, commission: 2, notes: '', active: true },
     },
   },
   versions: { by: locale === 'ar' ? 'سارة' : 'Sara' },
@@ -140,7 +143,8 @@ const shared = { page, recordId: 1, locale, dir: dir === 'rtl' ? ('rtl' as const
 const yours = tab('you', viewer ? WORDS.omar : WORDS.you, viewer ? WORDS.omarWho : WORDS.sara);
 const tabs = el('div', { class: 'ss-tabs' }, yours.box);
 app.append(bar, tabs);
-const handle: ViewerHandle = mountViewer(yours.place, { ...shared, dataSource });
+// Sara's tab has her leads round this one, with the pager over it.
+const handle: ViewerHandle = mountViewer(yours.place, { ...shared, dataSource, records: [1, 2] });
 
 let monaHandle: ViewerHandle | null = null;
 if (!viewer) {
