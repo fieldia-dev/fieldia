@@ -1,5 +1,5 @@
 import { readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Form, type Locale, type Value } from '@fieldia/core';
-import { quoted } from './input-rules';
+import { minuteDigitsWords, quoted } from './input-rules';
 import { fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import type { WidgetFactory } from './widgets';
@@ -134,14 +134,14 @@ export function readDateText(text: string, reader: DateReader): DateReading {
     const time = readTime(t);
     if (time.ok) return { ok: true, value: time.value };
     // "14:3" could be 14:03 or 14:30: both are named, neither taken.
-    if (time.problem === 'minuteDigits') return { ok: false, words: fillIn(words.minuteDigits, { label, text: quoted(t), early: time.early, late: time.late }), problem: 'minuteDigits' };
+    if (time.problem === 'minuteDigits') return { ok: false, words: minuteDigitsWords(label, t, time.times, words, reader.locale), problem: 'minuteDigits' };
     return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
   }
   const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale });
   if (!read.ok) {
     switch (read.problem) {
       case 'minuteDigits':
-        return { ok: false, words: fillIn(words.minuteDigits, { label, text: quoted(t), early: read.early, late: read.late }), problem: 'minuteDigits' };
+        return { ok: false, words: minuteDigitsWords(label, t, read.times, words, reader.locale), problem: 'minuteDigits' };
       case 'noSuchDay': {
         const month = new Intl.DateTimeFormat(langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
         return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }), problem: 'noSuchDay' };

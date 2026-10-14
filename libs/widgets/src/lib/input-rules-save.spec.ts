@@ -164,6 +164,19 @@ describe('a save reads what is typed first, never a value passed on the way', ()
     expect(value() ?? null).toBeNull();
     expect(form.getState().unread['x']).toEqual({ text: '14:3', message: words });
   });
+
+  it.each([
+    ['en', `Opens: “${q('14.5')}” could be 14:05, 14:30, or 14:50; write the minutes with two digits`],
+    ['ar', `Opens: «${q('14.5')}» قد تعني 14:05 أو 14:30 أو 14:50؛ اكتب الدقائق برقمين`],
+    ['fr', `Opens : « ${q('14.5')} » peut être 14:05, 14:30 ou 14:50 ; écrivez les minutes avec deux chiffres`],
+    ['de', `Opens: „${q('14.5')}“ kann 14:05, 14:30 oder 14:50 sein; schreiben Sie die Minuten mit zwei Ziffern`],
+  ] as const)('%s: "14.5" is never quietly 14:05: half past two, as hours, and 14:50 are named with it', (locale, words) => {
+    const { input, form, value } = box({ type: 'char', label: 'Opens' }, { widget: 'time' }, locale);
+    keys(input, '14.5');
+    leave(input);
+    expect(value() ?? null).toBeNull();
+    expect(form.getState().unread['x']).toEqual({ text: '14.5', message: words });
+  });
 });
 
 describe('a text box holds the keys typed after a refused one', () => {

@@ -252,7 +252,7 @@ export interface WidgetLabels {
   stillHolds: string;
   /** Hours with minutes past 59. */
   minutes: string;
-  /** A time or hours whose minutes have one digit, `{text}` as typed, which could be `{early}` or `{late}`: never one of them in silence. */
+  /** A time or hours whose minutes have one digit, `{text}` as typed, which could be any of `{times}` ("6:03 or 6:30", joined in the page's language): never one of them in silence. */
   minuteDigits: string;
   /** Hours that do not read: `{decimal}` is 6.5 or 6,5, as the page writes it. */
   duration: string;
@@ -512,7 +512,7 @@ const en: WidgetLabels = {
   notPastedNumber: '“{text}” is not a number, so it was not pasted',
   stillHolds: '{label} still holds {value}',
   minutes: '{label}: minutes go from 0 to 59, like 6:30',
-  minuteDigits: '{label}: “{text}” could be {early} or {late}; write the minutes with two digits',
+  minuteDigits: '{label}: “{text}” could be {times}; write the minutes with two digits',
   duration: '{label}: write hours and minutes, like 6:30, or hours, like {decimal}',
   charactersOver: '{n} characters too many',
   charactersOverOne: '{n} character too many',

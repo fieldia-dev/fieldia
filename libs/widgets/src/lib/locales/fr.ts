@@ -183,7 +183,7 @@ export const fr: WidgetLabels = {
   notPastedNumber: '« {text} » n’est pas un nombre : rien n’a été collé',
   stillHolds: '{label} garde {value}',
   minutes: '{label} : les minutes vont de 0 à 59, par exemple 6:30',
-  minuteDigits: '{label} : « {text} » peut être {early} ou {late} ; écrivez les minutes avec deux chiffres',
+  minuteDigits: '{label} : « {text} » peut être {times} ; écrivez les minutes avec deux chiffres',
   duration: '{label} : écrivez heures et minutes, par exemple 6:30, ou des heures, par exemple {decimal}',
   charactersOver: '{n} caractères en trop',
   charactersOverOne: '{n} caractère en trop',

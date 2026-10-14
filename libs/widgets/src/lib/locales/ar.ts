@@ -183,7 +183,7 @@ export const ar: WidgetLabels = {
   notPastedNumber: '«{text}» ليس رقمًا، فلم يُلصق',
   stillHolds: 'ما زالت القيمة في {label}: {value}',
   minutes: '{label}: الدقائق من 0 إلى 59، مثل 6:30',
-  minuteDigits: '{label}: «{text}» قد تعني {early} أو {late}؛ اكتب الدقائق برقمين',
+  minuteDigits: '{label}: «{text}» قد تعني {times}؛ اكتب الدقائق برقمين',
   duration: '{label}: اكتب الساعات والدقائق مثل 6:30، أو الساعات مثل {decimal}',
   charactersOver: 'أحرف زائدة: {n}',
   charactersOverOne: 'حرف زائد: {n}',

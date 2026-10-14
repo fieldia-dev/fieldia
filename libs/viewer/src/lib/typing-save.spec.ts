@@ -114,7 +114,7 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: Ctrl+Enter with a box still type
     ['Floor area "12.34"', 'f-area', 'area', locale === 'fr' ? '12,34' : '12.34', () => decimalsWords('Floor area (m²)', 1, messages)],
     ['Margin "25.555"', 'f-margin', 'margin', locale === 'fr' ? '25,555' : '25.555', () => decimalsWords('Margin', 2, messages)],
     ['Time on site "6:305"', 'f-time-on-site', 'time_on_site', '6:305', () => unreadWords('6:305', { label: 'Time on site', locale, labels: words, duration: true }) as string],
-    ['Time on site "6:3"', 'f-time-on-site', 'time_on_site', '6:3', () => fill(words.minuteDigits, { label: 'Time on site', text: '⁨6:3⁩', early: '6:03', late: '6:30' })],
+    ['Time on site "6:3"', 'f-time-on-site', 'time_on_site', '6:3', () => fill(words.minuteDigits, { label: 'Time on site', text: '⁨6:3⁩', times: new Intl.ListFormat(locale, { type: 'disjunction' }).format(['6:03', '6:30']) })],
   ] as const)('%s is never saved as the value passed on the way: refused, with its words', async (_, node, field, typed, said) => {
     const { host, form, record } = await mount(locale);
     const input = box(host, node);

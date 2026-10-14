@@ -373,6 +373,25 @@ export function quoted(text: string): string {
   return `\u2068${short}\u2069`;
 }
 
+const orLists = new Map<string, Intl.ListFormat>();
+
+/**
+ * Why a time or hours whose minutes have one digit is not read: `text` as typed, and each time it could be (`times`),
+ * joined as the page's language offers a choice — "6:03 or 6:30", "14:05, 14:30 or 14:50", "6:03 أو 6:30".
+ */
+export function minuteDigitsWords(label: string, text: string, times: readonly string[], words: WidgetLabels, locale: string): string {
+  let list = orLists.get(locale);
+  if (!list) {
+    try {
+      list = new Intl.ListFormat(locale, { type: 'disjunction' });
+    } catch {
+      list = new Intl.ListFormat('en', { type: 'disjunction' });
+    }
+    orLists.set(locale, list);
+  }
+  return fillIn(words.minuteDigits, { label, text: quoted(text), times: list.format(times) });
+}
+
 /** The words for a refusal of a number box. */
 export function refusalWords(refusal: NumberRefusal, box: Pick<NumberBox, 'label' | 'locale' | 'labels' | 'messages'>): string {
   const words = wordsFor(box.labels, box.locale);
@@ -411,7 +430,7 @@ export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale
   if (box.duration) {
     const read = readDuration(text, box.locale);
     if (read.ok) return null;
-    if (read.problem === 'minuteDigits') return fillIn(words.minuteDigits, { label, text: quoted(text), early: read.early, late: read.late });
+    if (read.problem === 'minuteDigits') return minuteDigitsWords(label, text, read.times, words, box.locale);
     if (read.problem === 'minutes') return fillIn(words.minutes, { label });
     if (read.problem === 'severalValues') return fillIn(words.severalValues, { label });
     return fillIn(words.duration, { label, decimal: formatNumber(6.5, 1, box.locale) });
