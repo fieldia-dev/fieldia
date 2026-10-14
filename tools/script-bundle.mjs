@@ -647,7 +647,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // record they name exactly, by its path or its own name, or saying that nothing or several are called so (path 14.4, 5.7).
 // Fieldia's own date box (0.20.1) — its guard and what it keeps once left — with a date's calendar and a range of dates
 // on its own calendar, cut out of the main script (date-box, calendar, date-range: 18.9, 7.1, as measured, 18.89 and 7.02).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [18.9, 7.1] };
+// The date box's input rules given to every other box a date is typed into — a designer's day, time and value set
+// when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.1, 7.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -655,7 +657,7 @@ const PART_GIVES = {
   path: ['pathPickerWidget'],
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
-  date: ['dateBox', 'dateBoxWidget', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
 const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };

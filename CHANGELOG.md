@@ -73,3 +73,13 @@
   `isoWeek`), and a date drawn before its part came is a plain box on that
   reader (`plainDateWidget`). `withCalendar` now comes from the part:
   `(await datePart.load()).withCalendar(…)`.
+- **The designer's dates and times are Fieldia's own box**, never the
+  browser's date or time box: a date's earliest or latest day, a time's
+  earliest and latest, and the value a rule sets a date or a date and time to
+  ("Set to") are typed in the page's order (15/10/2026), Arabic and Persian
+  digits read, am and pm too. What does not read (31/02) keeps the setting and
+  says why under its box; at rest a day shows in words (15 Oct 2026). A day
+  and time set by a rule is still kept as the browser's box kept it,
+  2026-10-15T14:30. The date box's input rules are the date part's
+  `dateRules`, for any box a date is typed into, and `typingText` and
+  `restingText` write a date as a box shows it while typed and at rest.
