@@ -69,18 +69,25 @@ export const CALENDAR_CSS = `
 .fd-cal-event:hover, .fd-cal-event.fd-cal-hot { background: color-mix(in srgb, var(--fd-cal-c) 26%, var(--fd-surface)); }
 .fd-cal-event:focus { outline: none; }
 .fd-cal-event:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; z-index: 3; }
-.fd-cal-col > .fd-cal-event { position: absolute; z-index: 1; box-shadow: 0 0 0 1px var(--fd-surface); }
+.fd-cal-col > .fd-cal-event { position: absolute; z-index: 1; box-shadow: 0 0 0 1px var(--fd-surface); line-height: 16px; container: fd-cal-ev / inline-size; }
+/* Its words in the whole lines its height holds (--fd-cal-lines, by linesIn): none cut through. */
+.fd-cal-col > .fd-cal-event > .fd-cal-event-text { display: block; max-height: calc(var(--fd-cal-lines, 1) * 16px); overflow: hidden; text-overflow: ellipsis; }
+/* Each word whole, a long one cut with "…"; too narrow for its time, the name alone (the hours say when). */
+.fd-cal-col .fd-cal-event-title { overflow-wrap: normal; }
+.fd-cal-col .fd-cal-event-who { overflow: hidden; text-overflow: ellipsis; }
+@container fd-cal-ev (max-width: 56px) { .fd-cal-col .fd-cal-event-time, .fd-cal-col .fd-cal-event-who { display: none; } }
 .fd-cal-event[data-moving] { opacity: 0.9; z-index: 6; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22); pointer-events: none; }
 .fd-cal-event[aria-busy="true"] { opacity: 0.75; }
 .fd-cal-event-time { font-variant-numeric: tabular-nums; }
-.fd-cal-event-title { font-weight: 600; overflow-wrap: anywhere; }
+.fd-cal-event-title { font-weight: 600; overflow-wrap: anywhere; text-align: match-parent; }
 .fd-cal-event-who { display: block; opacity: 0.85; }
 /* 24 pixels at least, so a finger or a pointer can hit each (WCAG 2.5.8). */
-.fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event { position: relative; min-height: 24px; box-sizing: border-box; line-height: 20px; white-space: nowrap; text-overflow: ellipsis; padding-inline-end: 24px; }
+.fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event { position: relative; min-height: 24px; box-sizing: border-box; line-height: 20px; white-space: nowrap; padding-inline-end: 24px; }
 .fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-who { display: none; }
-/* A short record keeps to one line, cut with "…": its words whole when pointed at, and to a screen reader. */
-.fd-cal-col > .fd-cal-event[data-short] { white-space: nowrap; text-overflow: ellipsis; }
-.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title { overflow-wrap: normal; }
+/* One line (a short record, a month's day, all day): the name cut with "…" at its own end, so a Latin one right to left
+   keeps its start; whole when pointed at, and to a screen reader. */
+.fd-cal-col > .fd-cal-event[data-short] > .fd-cal-event-text, .fd-cal-allday .fd-cal-event-text, .fd-cal-day .fd-cal-event-text { display: flex; gap: 0.3em; white-space: nowrap; }
+:is(.fd-cal-col > .fd-cal-event[data-short], .fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event) .fd-cal-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .fd-cal-resize { position: absolute; inset-inline: 0; bottom: 0; height: 8px; cursor: ns-resize; touch-action: none; }
 .fd-cal-event-menu {
   position: absolute; top: 0; inset-inline-end: 0; z-index: 2; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px;

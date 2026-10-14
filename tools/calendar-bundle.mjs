@@ -22,7 +22,11 @@
  * drawing, the pointer's gestures, the keys, Move to…), which share what the
  * calendar shows through an object whose property names a bundler keeps
  * where it shortened the closure's own, and a stretch the browser takes
- * away let go of — 0.5 more, to 16 (15.7 measured).
+ * away let go of — 0.5 more, to 16 (15.7 measured). Then a record's words
+ * in the whole lines its height holds, each word whole or cut with "…" at
+ * the name's own end (a Latin name right to left keeps its start), and the
+ * name alone in a block too narrow for its time — 0.4 more, to 16.4 (16.1
+ * measured).
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -31,7 +35,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 16 };
+const BUDGET = { page: 0.8, calendar: 16.4 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

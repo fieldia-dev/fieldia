@@ -29,6 +29,11 @@ export interface CalendarState {
   resources: Column['resource'][];
 }
 
+/** A line of a record's words in the hours, in pixels: the stylesheet's line-height there (styles.ts). */
+const LINE = 16;
+/** How many whole lines of words a record's block of this height shows under its 2 pixels of padding: one at least. */
+export const linesIn = (height: number) => Math.max(1, Math.floor((height - 2) / LINE));
+
 /** An element with its attributes (those undefined left off) and its children. */
 export type Make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs?: Record<string, string | undefined>, ...children: (Node | string)[]) => HTMLElementTagNameMap[K];
 

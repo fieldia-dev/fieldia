@@ -1,4 +1,4 @@
-import type { CalendarCore, Column } from './calendar-core';
+import { linesIn, type CalendarCore, type Column } from './calendar-core';
 import { addMinutes, atMinutes, minutesOf } from './dates';
 import { moved, whereTo, type CalendarEvent } from './events';
 import { fill } from './labels';
@@ -162,7 +162,9 @@ export function stretch(cal: CalendarCore, e: PointerEvent, event: CalendarEvent
     block.setAttribute('data-moving', '');
     const minutes = Math.max(startMinutes + slot, Math.min(24 * 60, state.shownHours.start * 60 + Math.round((m.clientY - top) / perMinute / slot) * slot));
     end = atMinutes(event.start, minutes);
-    block.style.height = `${(minutes - startMinutes) * perMinute - 2}px`;
+    const height = (minutes - startMinutes) * perMinute - 2;
+    block.style.height = `${height}px`;
+    block.style.setProperty('--fd-cal-lines', String(linesIn(height)));
   };
   const stop = () => {
     doc.removeEventListener('pointermove', move);

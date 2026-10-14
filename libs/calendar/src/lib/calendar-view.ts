@@ -1,7 +1,7 @@
 import { saveProblemOf, type CalendarView, type ListCalendar, type ListedRecord, type RecordVersion, type ResolvedFilter, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads } from '@fieldia/widgets';
-import { maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
+import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
 import { addDays, addMinutes, atMinutes, dayKey, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, writeWhen, type Range } from './dates';
 import { colourOf, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
 import { pressEvent, pressSlot, stretch } from './gestures';
@@ -256,10 +256,13 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       target.setAttribute('aria-describedby', keysEvent.id);
     }
     target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
-    if (!event.allDay) target.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
-    target.append(make('span', { class: 'fd-cal-event-title' }, make('bdi', {}, event.title)));
-    if (event.resourceLabel && !compact && !inOwnColumn) target.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
-    if (row) block.append(target);
+    // Its words; in a block, in a box of their own, which the hours keep to whole lines (--fd-cal-lines).
+    const words = row ? target : make('span', { class: 'fd-cal-event-text' });
+    if (!event.allDay) words.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
+    // Its own direction: a Latin name on a right-to-left page reads, and is cut short, as Latin.
+    words.append(make('span', { class: 'fd-cal-event-title', dir: 'auto' }, event.title));
+    if (event.resourceLabel && !compact && !inOwnColumn) words.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
+    block.append(row ? target : words);
     if (movable) {
       // In a block, for a pointer alone: the keys reach Move to… by M, as the block tells a screen reader, and a
       // button inside a button is no button. Beside an agenda's row, a button of its own, for a phone too.
@@ -392,6 +395,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         const place = placed.get(event.id) ?? { column: 0, columns: 1 };
         block.style.top = `${top}px`;
         block.style.height = `${height}px`;
+        block.style.setProperty('--fd-cal-lines', String(linesIn(height)));
         block.style.insetInlineStart = `calc(${(place.column / place.columns) * 100}% + 1px)`;
         block.style.width = `calc(${100 / place.columns}% - 3px)`;
         if (height < 36) block.setAttribute('data-short', '');

@@ -250,6 +250,117 @@ test.describe("a list's calendar", () => {
     expect(await axeFindings(page, 'agenda')).toEqual([]);
   });
 
+  test('shows a record’s words in whole lines, never a line cut through, however narrow its block', async ({ page }) => {
+    /** Each line of words in a block of the hours that its clipping edge cuts through: its words, and by how much. */
+    const cutLines = () =>
+      page.locator('.fd-cal').evaluate((root) => {
+        const cut: string[] = [];
+        for (const block of root.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event')) {
+          const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+          for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+            if (!text.textContent?.trim() || text.parentElement?.closest('button')) continue;
+            // The lowest edge anything between the words and the block clips them at.
+            let clip = Infinity;
+            for (let el: HTMLElement | null = text.parentElement; el && block.contains(el); el = el.parentElement) {
+              if (getComputedStyle(el).overflowY !== 'visible') clip = Math.min(clip, el.getBoundingClientRect().bottom);
+            }
+            const range = document.createRange();
+            range.selectNodeContents(text);
+            for (const line of range.getClientRects()) if (line.top < clip - 0.5 && line.bottom > clip + 0.5) cut.push(`${text.textContent} (${Math.round(clip - line.top)} of ${Math.round(line.height)}px)`);
+          }
+        }
+        return cut;
+      });
+    for (const query of [DESK, `${DESK}&locale=ar&dir=rtl`, CLINIC]) {
+      await openCalendar(page, query);
+      expect(await page.locator('.fd-cal-col > .fd-cal-event').count()).toBeGreaterThan(10);
+      expect(await cutLines(), query).toEqual([]);
+    }
+    // A narrow booking of several lines, shortened by its edge to one slot: its words keep to the one line it now holds.
+    await openCalendar(page, DESK);
+    const lobna = visit(page, 'Lobna Said');
+    const box = (await lobna.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height - 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(box.x + box.width / 2, box.y + box.height - 2 - (i * box.height) / 6);
+    expect((await lobna.boundingBox())!.height).toBeLessThan(25);
+    expect(await cutLines()).toEqual([]);
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+  });
+
+  test('a crowded week keeps each word whole, cut with “…” rather than broken, and leaves the time to the hours where it cannot fit', async ({ page }) => {
+    await openCalendar(page, CLINIC);
+    await page.locator('.fd-cal-ranges button[data-range="week"]').click();
+    await settled(page);
+    const faults = await page.locator('.fd-cal').evaluate((root) => {
+      const found: string[] = [];
+      for (const block of root.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event')) {
+        const words = block.querySelector<HTMLElement>('.fd-cal-event-text') ?? block;
+        const box = words.getBoundingClientRect();
+        // Too narrow for its time: the name alone.
+        if (block.getBoundingClientRect().width <= 56) {
+          for (const part of block.querySelectorAll<HTMLElement>('.fd-cal-event-time, .fd-cal-event-who')) if (getComputedStyle(part).display !== 'none') found.push(`${part.textContent} in a narrow block`);
+        }
+        // A time shown whole, or not at all.
+        const time = block.querySelector<HTMLElement>('.fd-cal-event-time');
+        if (time && getComputedStyle(time).display !== 'none') {
+          const r = time.getBoundingClientRect();
+          if (r.left < box.left - 0.5 || r.right > box.right + 0.5) found.push(`${time.textContent} cut`);
+        }
+        // Each word of the name on one line (a hyphen may end one: "Walk-" "in"): a word broken across two has two boxes.
+        const title = block.querySelector('.fd-cal-event-title')?.firstChild;
+        if (!title?.textContent) continue;
+        for (const [word, at = 0] of [...title.textContent.matchAll(/[^\s-]+-?/g)].map((m) => [m[0], m.index] as const)) {
+          const range = document.createRange();
+          range.setStart(title, at);
+          range.setEnd(title, at + word.length);
+          const lines = new Set([...range.getClientRects()].filter((r) => r.width > 0 && r.top < box.bottom).map((r) => Math.round(r.top)));
+          if (lines.size > 1) found.push(`${word} broken`);
+        }
+      }
+      return found;
+    });
+    expect(await page.locator('.fd-cal-col > .fd-cal-event').count()).toBeGreaterThan(40);
+    expect(faults).toEqual([]);
+    await screen(page, 'calendar-crowded-week');
+  });
+
+  test('cuts a name too long for its line at its own end, so it keeps its start, a Latin name on an Arabic page too', async ({ page }) => {
+    /** Each one-line record whose name's first letter is out of sight. */
+    const lostStarts = () =>
+      page.locator('.fd-cal').evaluate((root) => {
+        const lost: string[] = [];
+        for (const title of root.querySelectorAll<HTMLElement>('.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title, .fd-cal-day > .fd-cal-event .fd-cal-event-title, .fd-cal-allday > .fd-cal-event .fd-cal-event-title')) {
+          const block = title.closest('.fd-cal-event') as HTMLElement;
+          const text = document.createTreeWalker(title, NodeFilter.SHOW_TEXT).nextNode();
+          if (!text?.textContent) continue;
+          const range = document.createRange();
+          range.setStart(text, 0);
+          range.setEnd(text, 1);
+          const first = range.getBoundingClientRect();
+          // What is in sight: inside every box between the name and its block that clips what overflows it.
+          let [left, right] = [-Infinity, Infinity];
+          for (let el: HTMLElement | null = title; el && block.contains(el); el = el.parentElement) {
+            if (getComputedStyle(el).overflowX === 'visible') continue;
+            const box = el.getBoundingClientRect();
+            [left, right] = [Math.max(left, box.left), Math.min(right, box.right)];
+          }
+          if (first.left < left - 0.5 || first.right > right + 0.5) lost.push(text.textContent);
+        }
+        return lost;
+      });
+    for (const query of [`${DESK}&locale=ar&dir=rtl`, DESK]) {
+      await openCalendar(page, query);
+      // Some names are cut short here: the narrow ones beside another.
+      expect(await page.locator('.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title').evaluateAll((titles) => titles.some((t) => [t, t.parentElement!].some((el) => el.scrollWidth > el.clientWidth)))).toBe(true);
+      expect(await lostStarts(), query).toEqual([]);
+      await page.locator('.fd-cal-ranges button[data-range="month"]').click();
+      await settled(page);
+      expect(await lostStarts(), `${query}, the month`).toEqual([]);
+    }
+  });
+
   test('keeps to the list’s search, and works in every framework', async ({ page }) => {
     for (const variant of ['react', 'vue', 'angular']) {
       await openCalendar(page, CLINIC, variant);
