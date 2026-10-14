@@ -39,6 +39,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   const title = el('strong', { class: 'fd-conflict-title' });
   const changed = el('span', { class: 'fd-conflict-fields' });
   const choice = el('span', { class: 'fd-conflict-hint' }, labels.conflictChoice);
+  // Keep mine could not read their version: nothing was saved over it, said before the choice.
+  const unreadWords = el('strong', { class: 'fd-conflict-unread' });
   // Its words are said as it shows, the choice of buttons with them.
   const words = el('div', { class: 'fd-conflict-words', role: 'alert' });
   const reload = el('button', { type: 'button', class: 'fd-button' }, labels.reload);
@@ -65,7 +67,15 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
       return true;
     })
   );
-  keep.addEventListener('click', () => void answer(() => form.keepMine()));
+  keep.addEventListener('click', () =>
+    void answer(async () => {
+      const unread = form.getState().conflict?.unread === true;
+      const done = await form.keepMine();
+      // Their version still unread: the banner's words are the same, so they are said again.
+      if (!done && unread && form.getState().conflict?.unread) context.announce(form.getState().saveProblem?.message ?? '');
+      return done;
+    })
+  );
 
   // ---- the person's changes, set aside by Reload ---------------------------------------------------------
   const asideTitle = el('p', { class: 'fd-set-aside-title', tabindex: '-1' }, labels.setAside);
@@ -96,10 +106,12 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
       const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(fieldLabel)) }) : '';
       const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(fieldLabel)) }) : '';
       setText(changed, [theirs, both].filter(Boolean).join(' '));
-      // Written once each time it shows, so a screen reader says it whole.
-      if (!words.firstChild || words.getAttribute('data-for') !== found.version.token) {
-        words.replaceChildren(title, ' ', changed, ' ', choice);
-        words.setAttribute('data-for', found.version.token);
+      setText(unreadWords, found.unread ? (state.saveProblem?.message ?? '') : '');
+      // Written once each time it shows, so a screen reader says it whole: again when Keep mine could not read theirs.
+      const key = `${found.version.token}${found.unread ? ' unread' : ''}`;
+      if (!words.firstChild || words.getAttribute('data-for') !== key) {
+        words.replaceChildren(title, ' ', changed, ' ', ...(found.unread ? [unreadWords, ' '] : []), choice);
+        words.setAttribute('data-for', key);
       }
     } else if (words.firstChild) {
       words.replaceChildren();

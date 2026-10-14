@@ -43,6 +43,7 @@ import {
   type Values,
   MESSAGES,
   hotkeyWords,
+  unsavedWork,
   uploadGoing,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
@@ -1518,7 +1519,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       async leave() {
-        if (!form.getState().dirty.length) return true;
+        // Changes Reload set aside are no save's to make: the person says whether to let them go, and stays if not.
+        if (form.getState().setAside) {
+          if (!(await dialogConfirm(labels.discardChanges, true, { yes: labels.discard, safe: true }))) return false;
+          form.discardSetAside();
+        }
+        // A file still on its way is a change too: the save waits for it.
+        if (!unsavedWork(form.getState())) return true;
         const saved = await form.save();
         if (!saved) {
           if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -2126,12 +2133,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   // ---- confirmation dialog -----------------------------------------------------
 
-  /** A question with Cancel and OK, or with `withCancel` false a notice with OK alone. */
-  function dialogConfirm(message: string, withCancel = true): Promise<boolean> {
+  /**
+   * A question with Cancel and OK, or with `withCancel` false a notice with OK
+   * alone. `how.yes` words OK as what it does (Discard); `how.safe` puts the
+   * focus on Cancel, so Enter loses nothing.
+   */
+  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; safe?: boolean } = {}): Promise<boolean> {
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.ok);
+      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes ?? labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
       const doc = root.ownerDocument;
@@ -2155,7 +2166,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         } else keepTabIn(dialog, event);
       });
       root.append(backdrop);
-      ok.focus();
+      (how.safe && withCancel ? cancel : ok).focus();
     });
   }
 
