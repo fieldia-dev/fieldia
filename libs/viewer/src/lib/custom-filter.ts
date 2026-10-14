@@ -1,5 +1,5 @@
-import { readNumber, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
-import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
+import { numberMisfit, readNumber, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
+import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
@@ -128,8 +128,17 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
         wanted = text === 'true';
         shown = wanted ? labels.yes : labels.no;
       } else if (isNumber(current.type)) {
+        // Keys held after a refused one are part of what was typed ("1.5" where the box shows "1"): they stay, with why.
+        const held = checks?.held();
+        if (held) {
+          value.value = held.text;
+          return wait(held.words);
+        }
         const read = readNumber(text, locale);
         if (!read.ok || read.value === null) return wait(words.enterNumber);
+        // A whole number's column: "1.5" typed as it may still group ("1.500,00") is said now, never read as 15.
+        const misfit = numberMisfit(read.value, { integer: current.type === 'integer' });
+        if (misfit) return wait(refusalWords(misfit, { label: current.label, locale, labels: words }));
         wanted = read.value;
         // As the page writes the number: its grouping, its decimal mark, never fewer places than it has.
         shown = displayValue({ ...current, type: 'float', digits: [16, 0] } as LineField, read.value, {}, locale);

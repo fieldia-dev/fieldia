@@ -17,7 +17,11 @@ import type { DesignerLocale, DesignerWords } from './designer-words';
  * the setting keeps what it had, the box shows it again, and the words under
  * it say what fits: "Height is a whole number, 120 or more. It stays 600."
  * Emptied, an optional limit goes; a setting that must have a number comes
- * back, said. ↑ and ↓ step it, as the browser's box did.
+ * back, said. A number the designer refuses because of another setting is
+ * said at the box too, in the designer's words ("From is not less than To"),
+ * never only in the issues far above it. Keys typed after a refused one are
+ * held with it (the form's rules), and left so, the setting stays as it was,
+ * said. ↑ and ↓ step it, as the browser's box did.
  */
 
 export interface SettingNumberOptions {
@@ -53,10 +57,12 @@ export interface SettingNumber {
   destroy(): void;
 }
 
-/** What a designer box needs of its designer: its words, and its language. */
+/** What a designer box needs of its designer: its words, its language, and why it last refused an edit. */
 export interface NumberBoxHost {
   readonly words: DesignerWords;
   readonly locale: DesignerLocale | null;
+  /** The designer's state: `issues`, why the last edit was refused ("From is not less than To"). */
+  getState?(): { readonly issues: readonly string[] };
 }
 
 /** A number as a setting's box writes it: plain, in Latin digits, all its places, never in exponent form. */
@@ -119,15 +125,16 @@ export function settingNumber(el: ElementFactory, host: NumberBoxHost, options: 
     if (options.live && entered !== undefined && saved !== entered && options.commit(entered ?? null) !== false) saved = entered;
     input.value = shown(saved);
     checks.accept();
-    const words = typeof saved === 'number' ? `${why}. ${w.settingStays(said(saved))}` : why;
+    const words = typeof saved === 'number' ? `${why.replace(/[.。]$/, '')}. ${w.settingStays(said(saved))}` : why;
     hint.show(words);
     left = { text: input.value, said: words };
   };
 
-  /** A number (or none) kept, and shown as the box writes it; refused by the designer, what is saved comes back (it says why). */
+  /** A number (or none) kept, and shown as the box writes it; refused by the designer, what is saved comes back, with why under the box. */
   const kept = (value: number | null) => {
     const done = value === (options.saved() ?? null) || options.commit(value) !== false;
-    input.value = shown(done ? value : options.saved());
+    if (!done) return keep(host.getState?.().issues[0] ?? fits());
+    input.value = shown(value);
     checks.accept();
     left = { text: input.value, said: null };
   };
@@ -138,6 +145,8 @@ export function settingNumber(el: ElementFactory, host: NumberBoxHost, options: 
       if (left.said) hint.show(left.said);
       return;
     }
+    // Keys held after a refused one ("2٫5" in a whole number, where the box shows "2"): what was typed does not fit.
+    if (checks.held()) return keep(fits());
     const read = readNumber(input.value, locale);
     if (read.ok && read.value === null) return options.optional ? kept(null) : keep(w.settingNeedsNumber(options.label));
     if (!read.ok || read.value === null) return keep(fits());

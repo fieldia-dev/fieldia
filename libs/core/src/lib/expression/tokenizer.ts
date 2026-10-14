@@ -97,6 +97,17 @@ function asciiNumber(text: string): string {
 }
 
 /**
+ * A list's item as a number, read as the formula reads its numbers: digits in
+ * any script, a point or ٫, a sign first ("٣" is 3, "-٢٫٥" is -2.5); null
+ * when it is none. Never hex ("0x10") or an exponent ("1e3"): they stay the
+ * words they are.
+ */
+export function listNumber(text: string): number | null {
+  const plain = asciiNumber(text);
+  return /^[-+]?(\d+\.?\d*|\.\d+)$/.test(plain) ? Number(plain) : null;
+}
+
+/**
  * Determines the type of a token based on its text value.
  */
 function getTokenType(text: string): TokenType {

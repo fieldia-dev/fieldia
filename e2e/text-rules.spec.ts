@@ -431,8 +431,13 @@ test.describe('a property’s number', () => {
       await floor.pressSequentially('twelve');
       await expect(floor).toHaveValue('');
       await expect(hintOf(details)).toHaveText(said);
-      await floor.pressSequentially('12.5');
-      expect(((await valueOf(page, 'extra')) as Values)['floor']).toBe(125);
+      // The keys after the refused one wait with it: "twelve12" is never 12. Backspace takes them back.
+      await floor.pressSequentially('12');
+      await expect(floor).toHaveValue('');
+      for (let i = 0; i < 8; i++) await floor.press('Backspace');
+      await expect(hintOf(details)).toBeHidden();
+      await floor.pressSequentially('12');
+      expect(((await valueOf(page, 'extra')) as Values)['floor']).toBe(12);
       await floor.press('Control+A');
       await floor.press('Delete');
       await floor.pressSequentially('12 34');

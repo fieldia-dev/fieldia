@@ -1,4 +1,4 @@
-import type { JsonValue } from '@fieldia/core';
+import { readNumber, stripMarks, type JsonValue } from '@fieldia/core';
 
 /**
  * Places and areas as a form keeps them: GeoJSON (RFC 7946), longitude
@@ -120,17 +120,15 @@ export function readArea(value: unknown): Area | null {
   return { shape: properties['shape'] === 'box' && open.length === 4 ? 'box' : 'polygon', points: open };
 }
 
-const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-
-/** A coordinate as a person types it: a point or a comma for the decimals, Western or Arabic digits. */
-export function parseCoordinate(text: string): number | null {
-  const plain = text
-    .trim()
-    .replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)))
-    .replace(/[٫,]/g, '.')
-    .replace(/^[−–]/, '-');
-  if (!/^-?\d+(\.\d+)?$/.test(plain)) return null;
-  return Number(plain);
+/**
+ * A coordinate as a person types or pastes it, read by Fieldia's one number reader (FIELDIA INPUT RULES): Latin,
+ * Arabic-Indic and Persian digits, no direction marks, a minus (or −, or an en dash as typeset text writes one).
+ * A coordinate is never grouped, so its one mark — . , ، or ٫ — is its decimal mark whatever the page's
+ * language: "31,235" is 31.235. Null for nothing, or what does not read.
+ */
+export function parseCoordinate(text: string, locale = 'en'): number | null {
+  const read = readNumber(stripMarks(text).trim().replace(/^\u2013/, '-'), locale, { ungrouped: true });
+  return read.ok ? read.value : null;
 }
 
 /** Metres between two places on the ground (the haversine formula). */

@@ -439,7 +439,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // are; a custom filter's value read and refused as every box's is, a day in the page's order, and words beside it when
 // Apply waits; a list's search reading the page's numbers and a phone by its digits, the memory source finding them;
 // and a formula's Arabic digits — 2.6 more, to 573.3 (measured 573.25). (A grid's block paste is the grid's own: never in this script.)
-const BUDGET_KB = 573.3;
+// Numbers never made of what was typed by dropping a key (0.20.1): the keys typed after a refused one held with it,
+// Backspace taking them back, and leaving with them saying why (1.0); a decimal mark judged only once it can no longer
+// group ("1.234,56" typed on an English page), trailing zeros no places, a 0 never leading a group, and a number read
+// whole as its box is left or pasted (0.9); the boxes on it — a field's, an hours' or per cent's, shares, tax amounts in
+// their currency's places, the custom filter's (0.7); the hint kept as a box is left with keys held, so nothing under
+// the pointer moves (0.1) — 2.7 more, to 576.0 (measured 575.96). A formula list's numbers read as the formula's own
+// (Arabic and Persian digits, ٫; never hex or an exponent) — 0.1 more, to 576.1 (measured 576.05).
+const BUDGET_KB = 576.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -499,8 +506,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // choices taken or said; listed with the raw budget above), 4.2 more, to 175.8 (measured 175.74); the input rules in
 // tables and lists (totals that wait for the line that does not read, a cell's message said as it is left, the custom
 // filter's number and day, the search's numbers and phones, a formula's Arabic digits; listed with the raw budget
-// above), 1.1 more, to 176.9 (measured 176.87).
-const GZIP_BUDGET_KB = 176.9;
+// above), 1.1 more, to 176.9 (measured 176.87); numbers never made of what was typed by dropping a key (keys held after
+// a refused one, a decimal mark judged once it can no longer group, trailing zeros, a number read whole as its box is
+// left, a tax amount's places; listed with the raw budget above), 1.0 more, to 177.9 (measured 177.86).
+const GZIP_BUDGET_KB = 177.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

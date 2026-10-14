@@ -5,6 +5,7 @@ import {
   foldDigits,
   foldForSearch,
   numberMarks,
+  numberMisfit,
   oneLine,
   placesOf,
   placesOfCurrency,
@@ -85,6 +86,28 @@ describe('readNumber — the marks', () => {
     ['fr', '1 234,5', 1234.5],
   ])('%s: "%s" is %s', (locale, text, expected) => {
     expect(value(text, locale)).toBe(expected);
+  });
+
+  it.each([
+    ['en', '0,500', 0.5],
+    ['en', '0,750', 0.75],
+    ['en', '-0,500', -0.5],
+    ['en', '00,500', 0.5],
+    ['ar', '0,500', 0.5],
+    ['ar', '٠,٥٠٠', 0.5],
+    ['de', '0.500', 0.5],
+    ['fr', '0,500', 0.5],
+  ])('%s: "%s", led by 0, is a half and never grouped (%s)', (locale, text, expected) => {
+    expect(value(text, locale)).toBe(expected);
+  });
+
+  it('never reads a grouped number led by 0', () => {
+    expect(value('0,500,000')).toBe('groupsOfThree');
+    expect(value('0.500.000', 'de')).toBe('groupsOfThree');
+    expect(value('0 500')).toBe('groupsOfThree');
+    // Grouped after a first group that is no 0: as before.
+    expect(value('1,500')).toBe(1500);
+    expect(value('10,500')).toBe(10500);
   });
 
   it('reads Arabic digits and marks: ٫ is decimal, ٬ groups, ، is a decimal comma', () => {
@@ -173,10 +196,19 @@ describe('couldBeNumber — what a keystroke may add', () => {
     expect(judge('-', { min: -10 })).toBeNull();
   });
 
-  it('refuses the page’s decimal mark or ٫ in a whole number, and a second decimal mark', () => {
-    expect(judge('1.', { integer: true })).toBe('integer');
-    expect(judge('1,', { integer: true }, 'de')).toBe('integer');
-    expect(judge('١٫', { integer: true }, 'ar')).toBe('integer');
+  it('refuses a decimal in a whole number once it can only be one, and a second decimal mark', () => {
+    // A decimal mark may still be followed by zeros alone ("12.0"), or turn out to group ("1.234,00").
+    expect(judge('1.', { integer: true })).toBeNull();
+    expect(judge('1,', { integer: true }, 'de')).toBeNull();
+    expect(judge('١٫', { integer: true }, 'ar')).toBeNull();
+    expect(judge('١٫٠', { integer: true }, 'ar')).toBeNull();
+    expect(judge('١٫٥', { integer: true }, 'ar')).toBe('integer');
+    expect(judge('.5', { integer: true })).toBe('integer');
+    expect(judge('0.5', { integer: true })).toBe('integer');
+    expect(judge('0,5', { integer: true }, 'fr')).toBe('integer');
+    expect(judge('1.2345', { integer: true })).toBe('integer');
+    expect(judge('1,234.5', { integer: true })).toBe('integer');
+    expect(judge('1.234,5', { integer: true }, 'de')).toBe('integer');
     // A grouping mark may still group: "1,500".
     expect(judge('1,5', { integer: true })).toBeNull();
     expect(judge('1,5555', { integer: true })).toBe('integer');
@@ -185,11 +217,43 @@ describe('couldBeNumber — what a keystroke may add', () => {
   });
 
   it('refuses a decimal place past the field’s, unless the mark may still group', () => {
-    expect(couldBeNumber('12.345', 'en', { places: 2 })).toEqual({ problem: 'decimals', places: 2 });
+    expect(couldBeNumber('12.3456', 'en', { places: 2 })).toEqual({ problem: 'decimals', places: 2 });
+    expect(couldBeNumber('0.345', 'en', { places: 2 })).toEqual({ problem: 'decimals', places: 2 });
+    expect(judge('١٢٫٣٤', { places: 1 }, 'ar')).toBe('decimals');
+    expect(judge('12,3456', { places: 1 }, 'de')).toBe('decimals');
     expect(judge('12.34', { places: 2 })).toBeNull();
-    expect(judge('12,34', { places: 1 }, 'de')).toBe('decimals');
-    // "1,50" may become "1,500" on an English page.
+    // "1,50" may become "1,500" on an English page, "12.345" "12.345,67", and "12,34" "12,345.6" on a German one.
     expect(judge('1,50', { places: 1 })).toBeNull();
+    expect(judge('12.345', { places: 2 })).toBeNull();
+    expect(judge('12,34', { places: 1 }, 'de')).toBeNull();
+  });
+
+  it.each([
+    ['en', '1.234,56', { places: 2 }],
+    ['ar', '1.234,56', { places: 2 }],
+    ['ar', '١.٢٣٤,٥٦', { places: 2 }],
+    ['en', '1.234.567', {}],
+    ['fr', '1,234.56', { places: 2 }],
+    ['fr', '1,234.5', { places: 1 }],
+    ['de', '1,234.56', { places: 2 }],
+    ['de', '1.234,56', { places: 2 }],
+  ])('%s: every key of "%s", a number the field takes, may be typed', (locale, text, limits) => {
+    const keys = [...text];
+    for (let i = 1; i <= keys.length; i++) expect([keys.slice(0, i).join(''), judge(keys.slice(0, i).join(''), limits, locale)]).toEqual([keys.slice(0, i).join(''), null]);
+  });
+
+  it('takes trailing zeros: they say no more than the number without them', () => {
+    for (const text of ['12.0', '1200.00', '1,200.00', '0.000']) expect(judge(text, { integer: true })).toBeNull();
+    expect(judge('12,0', { integer: true }, 'de')).toBeNull();
+    expect(judge('١٢٫٠٠', { integer: true }, 'ar')).toBeNull();
+    for (const text of ['12.50', '0.50', '1234.5000']) expect(judge(text, { places: 1 })).toBeNull();
+    expect(judge('٠٫٥٠', { places: 1 }, 'ar')).toBeNull();
+    expect(judge('0,500', { places: 2 }, 'fr')).toBeNull();
+    expect(judge('0,500', { places: 2 })).toBeNull();
+    expect(judge('12.500', { places: 1, digits: 3 })).toBeNull();
+    expect(judge('1.000000000000000000')).toBeNull();
+    // A digit other than 0 after them still counts.
+    expect(judge('1234.5001', { places: 1 })).toBe('decimals');
   });
 
   it('refuses a 16th significant digit, or a digit past the field’s digits', () => {
@@ -211,10 +275,41 @@ describe('couldBeNumber — what a keystroke may add', () => {
     expect(judge('12\t3')).toBe('severalValues');
   });
 
+  it('reads a number never grouped, as a coordinate is: its one mark is the decimal mark', () => {
+    const coordinate = (text: string, locale = 'en') => value(text, locale, { ungrouped: true });
+    expect(coordinate('31,235')).toBe(31.235);
+    expect(coordinate('31.235', 'de')).toBe(31.235);
+    expect(coordinate('٣٠٫٠٤٤٤', 'ar')).toBe(30.0444);
+    expect(coordinate('۳۰٫۰۴۴۴', 'ar')).toBe(30.0444);
+    expect(coordinate('\u200f٣٠٫٠٤\u200f', 'ar')).toBe(30.04);
+    expect(coordinate('-31,2357')).toBe(-31.2357);
+    expect(coordinate('31 235')).toBe('numbersOnly');
+    expect(coordinate('31.2.3')).toBe('oneDecimalMark');
+    expect(couldBeNumber('31,2357', 'en', { ungrouped: true })).toBeNull();
+    expect(couldBeNumber('31.2.', 'en', { ungrouped: true })?.problem).toBe('oneDecimalMark');
+    expect(cleanPastedNumber('31,235', 'en', { ungrouped: true })).toEqual({ ok: true, text: '31.235', value: 31.235 });
+  });
+
   it('lets an hours box take a colon and an h', () => {
     for (const text of ['6:', '6:30', '6h', '6h30', '6:30:00', '-1:30', '٦:٣٠']) expect(judge(text, { duration: true })).toBeNull();
     expect(judge('6x', { duration: true })).toBe('numbersOnly');
     expect(judge('-1', { duration: true, min: 0 })).toBe('min');
+  });
+});
+
+describe('numberMisfit — a number read, and what its field holds', () => {
+  it('says a decimal in a whole number, places past the field’s and digits past its own', () => {
+    expect(numberMisfit(1.5, { integer: true })).toEqual({ problem: 'integer' });
+    expect(numberMisfit(12, { integer: true })).toBeNull();
+    expect(numberMisfit(1.234, { places: 2 })).toEqual({ problem: 'decimals', places: 2 });
+    expect(numberMisfit(12.5, { places: 1 })).toBeNull();
+    expect(numberMisfit(12345, { digits: 4 })).toEqual({ problem: 'digits', n: 4 });
+    expect(numberMisfit(1e16, {})).toEqual({ problem: 'digits', n: 15 });
+  });
+
+  it('leaves its least and most to check, and hours to their own reader', () => {
+    expect(numberMisfit(-3, { min: 1 })).toBeNull();
+    expect(numberMisfit(6.25, { duration: true, places: 1 })).toBeNull();
   });
 });
 
@@ -245,6 +340,15 @@ describe('cleanPastedNumber — a pasted amount', () => {
   it('names another currency', () => {
     expect(paste('$1,500.00', 'en', { currency: 'EGP' })).toEqual({ ok: false, problem: 'otherCurrency', currency: '$' });
     expect(paste('1,200.00 USD', 'en', { currency: 'EGP' })).toEqual({ ok: false, problem: 'otherCurrency', currency: 'USD' });
+  });
+
+  it('takes trailing zeros, and a 0 led by a decimal comma as a half', () => {
+    expect(paste('1,200.00')).toEqual({ ok: true, text: '1200.00', value: 1200 });
+    expect(paste('12.50')).toEqual({ ok: true, text: '12.50', value: 12.5 });
+    expect(paste('٠٫٥٠', 'ar')).toEqual({ ok: true, text: '0.50', value: 0.5 });
+    expect(paste('0,500')).toEqual({ ok: true, text: '0.500', value: 0.5 });
+    expect(paste('0,750', 'ar')).toEqual({ ok: true, text: '0.750', value: 0.75 });
+    expect(paste('0,500', 'fr')).toEqual({ ok: true, text: '0,500', value: 0.5 });
   });
 
   it('refuses what is not a number, and several values', () => {

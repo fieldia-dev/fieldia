@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
-import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { formatNumber, guard, numberRules, refusalHint, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { addressLine } from './address-line';
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
@@ -81,36 +81,56 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     // ---- the coordinates, typeable -------------------------------------------
     const coords = doc.createElement('div');
     coords.className = 'fd-map-coords';
+    const locale = context.locale ?? 'en';
+    /**
+     * A coordinate's box, guarded as every number box is (FIELDIA INPUT RULES): letters and a misplaced minus are
+     * refused as they are typed, said under the box (after its label, so the words never join the box's name), and
+     * the keys typed after a refused one are held with it. A coordinate is never grouped: its one mark is decimal.
+     */
+    const checks: Guard[] = [];
+    const hints: RefusalHint[] = [];
     const coordinate = (words: string, inputId: string) => {
       const label = doc.createElement('label');
       const input = doc.createElement('input');
       input.className = 'fd-input';
       input.id = inputId;
-      input.inputMode = 'decimal';
+      input.inputMode = 'text';
       input.autocomplete = 'off';
       input.spellcheck = false;
       label.append(words, input);
       coords.append(label);
+      const box = { label: words, locale, labels: context.labels, limits: () => ({ ungrouped: true }) };
+      hints.push(refusalHint(input, label));
+      checks.push(guard(input, numberRules(box), hints[hints.length - 1]));
       return input;
     };
     const lat = coordinate(labels.latitude, search ? `${id}-lat` : id);
     const lng = coordinate(labels.longitude, `${id}-lng`);
     const typed = () => {
-      const a = parseCoordinate(lat.value);
-      const b = parseCoordinate(lng.value);
+      // Keys held after a refused one are part of what was typed: the box shows them, marked, with why in the note.
+      const held = checks.map((guarded) => guarded.held());
+      [lat, lng].forEach((input, i) => {
+        if (!held[i]) return;
+        hints[i].hide();
+        input.value = (held[i] as { text: string }).text;
+      });
+      const a = parseCoordinate(lat.value, locale);
+      const b = parseCoordinate(lng.value, locale);
       const empty = !lat.value.trim() && !lng.value.trim();
-      const good = empty || isLatLng(a, b);
-      lat.setAttribute('aria-invalid', String(!good || (a !== null && Math.abs(a) > 90)));
-      lng.setAttribute('aria-invalid', String(!good || (b !== null && Math.abs(b) > 180)));
-      if (!good) return say(labels.notACoordinate, 'error');
+      const good = !held[0] && !held[1] && (empty || isLatLng(a, b));
+      lat.setAttribute('aria-invalid', String(!!held[0] || !good || (a !== null && Math.abs(a) > 90)));
+      lng.setAttribute('aria-invalid', String(!!held[1] || !good || (b !== null && Math.abs(b) > 180)));
+      if (!good) return say(held[0]?.words ?? held[1]?.words ?? labels.notACoordinate, 'error');
       say(null);
       if (empty) return set(null);
       set({ lat: a!, lng: b! }, { fly: true, name: true });
     };
-    for (const input of [lat, lng]) {
+    [lat, lng].forEach((input, i) => {
       input.addEventListener('change', typed);
       input.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), typed()));
-    }
+      // Keys held change nothing the box shows, so no change is said for them: leaving reads them.
+      input.addEventListener('blur', () => checks[i].held() && typed());
+    });
 
     // ---- writing ---------------------------------------------------------------
     /** While the widget writes its own place: shown already, and in two fields half written at first (the new latitude, the old longitude), which is no place. */
@@ -330,6 +350,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       element,
       focus: () => (found?.input ?? lat).focus(),
       destroy: () => {
+        checks.forEach((guarded) => guarded.destroy());
         naming?.abort();
         found?.destroy();
         box.destroy();

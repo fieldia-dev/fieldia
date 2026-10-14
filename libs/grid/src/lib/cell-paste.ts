@@ -1,4 +1,4 @@
-import { cleanPastedNumber, couldBeNumber, foldForSearch, oneLine, placesOfCurrency, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { cleanPastedNumber, couldBeNumber, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
 import { readDateText } from '@fieldia/widgets';
 
 /**
@@ -74,7 +74,8 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
         ...(digits ? { digits: digits[0] } : {}),
         ...('min' in def && typeof def.min === 'number' ? { min: def.min } : {}),
       };
-      return couldBeNumber(cleaned.text, reading.locale, limits) ? null : { value: cleaned.value };
+      // Pasted whole, the number is what it reads as: its places and kind judged as they are (12.50 has one place).
+      return couldBeNumber(cleaned.text, reading.locale, limits) || numberMisfit(cleaned.value, limits) ? null : { value: cleaned.value };
     }
     case 'date':
     case 'datetime': {

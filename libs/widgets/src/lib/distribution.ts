@@ -1,6 +1,6 @@
 import { readNumber, type Field, type Form, type FormState, type JsonValue, type Locale, type RecordId, type RelatedRecord, type Value } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
-import { guard, numberRules, refusalHint, unreadWords, type Guard, type NumberBox, type RefusalHint } from './input-rules';
+import { guard, leftWords, numberFits, numberRules, refusalHint, type Guard, type NumberBox, type RefusalHint } from './input-rules';
 import { formatNumber } from './numbers';
 import { many2oneWidget } from './relations';
 import type { Widget, WidgetFactory } from './widgets';
@@ -121,8 +121,8 @@ export const distributionWidget: WidgetFactory = (context) => {
     row.checks = guard(row.input, numberRules(shareBox), row.hint);
     row.input.addEventListener('input', () => {
       const read = readNumber(row.input.value, locale, { percent: true });
-      // Half-typed, emptied or not reading yet: the share waits for the box to be left.
-      if (!read.ok || read.value === null) return;
+      // Half-typed, emptied, not reading yet or not as it stands ("12.345" in two places): the share waits for the box to be left.
+      if (!read.ok || read.value === null || !numberFits(row.input.value, shareBox)) return;
       // Saved first: the value and the lines agree before anything else is told.
       row.share = read.value;
       const had = !!row.unread;
@@ -133,8 +133,14 @@ export const distributionWidget: WidgetFactory = (context) => {
     let entered = row.share;
     row.input.addEventListener('focus', () => (entered = row.share));
     row.input.addEventListener('blur', () => {
-      const text = row.input.value;
-      const words = unreadWords(text, shareBox);
+      // Keys held after a refused one are part of what was typed; the row's own words take over from the hint.
+      const held = row.checks.held();
+      if (held) row.hint.hide();
+      const text = held?.text ?? row.input.value;
+      const reading = readNumber(text, locale, { percent: true });
+      // A share the box held as it was entered (one from outside with more places) is let be.
+      const words = held ? (leftWords(text, shareBox) ?? held.words) : reading.ok && reading.value === entered ? null : leftWords(text, shareBox);
+      if (held) row.input.value = text;
       if (words) {
         // Kept as typed, marked, with why; the share keeps what it held as the box was entered.
         if (row.share !== entered) {

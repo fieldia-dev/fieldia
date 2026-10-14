@@ -37,6 +37,17 @@ describe('a block pasted on a table', () => {
     expect(readPastedCell(float, '', en)).toEqual({ value: null });
   });
 
+  it('takes trailing zeros, and a number led by 0 and a decimal comma as a fraction, never a thousand times more', () => {
+    const disc = { type: 'float', label: 'Disc. %', digits: [5, 1] } as LineField;
+    expect(readPastedCell(disc, '12.50', { locale: 'en' })).toEqual({ value: 12.5 });
+    expect(readPastedCell(integer, '1,200.00', { locale: 'en' })).toEqual({ value: 1200 });
+    expect(readPastedCell(integer, '12.0', { locale: 'ar' })).toEqual({ value: 12 });
+    expect(readPastedCell(float, '0,500', { locale: 'fr' })).toEqual({ value: 0.5 });
+    expect(readPastedCell(float, '0,500', { locale: 'en' })).toEqual({ value: 0.5 });
+    expect(readPastedCell(float, '٠,٥٠٠', { locale: 'ar' })).toEqual({ value: 0.5 });
+    expect(readPastedCell(float, '0.500', { locale: 'de' })).toEqual({ value: 0.5 });
+  });
+
   it('reads hours and per cents as their boxes do, dates in the page’s order, a choice by its label, words on one line', () => {
     expect(readPastedCell(float, '6:30', { locale: 'en', widget: 'duration' })).toEqual({ value: 6.5 });
     expect(readPastedCell(float, '٢٥٪', { locale: 'ar', widget: 'percentage' })).toEqual({ value: 0.25 });

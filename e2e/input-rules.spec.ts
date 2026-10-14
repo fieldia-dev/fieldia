@@ -69,9 +69,15 @@ test.describe('a number box in the viewer', () => {
       await expect(hint).toHaveAttribute('role', 'status');
       await expect(seats).toHaveAttribute('aria-describedby', new RegExp(await hint.getAttribute('id') as string));
       await screen(page, `input-rules-hint-${locale}`, { viewport: true });
-      // The next key taken lets it go.
+      // The keys after a refused one wait with it, the hint staying: "12abc3" never becomes 123.
       await seats.press('3');
+      await expect(seats).toHaveValue(locale === 'ar' ? '١٢' : '12');
+      await expect(hint).toHaveText(said);
+      // Backspace takes them back one by one; then the next key taken lets the hint go.
+      for (let i = 0; i < 4; i++) await seats.press('Backspace');
       await expect(hint).toBeHidden();
+      await seats.press('3');
+      await expect(seats).toHaveValue(locale === 'ar' ? '١٢3' : '123');
       for (const text of ['abc', '1e5', '0x1F', '😀']) await page.keyboard.insertText(text);
       await paste(page, seats, '12abc');
       await expect(seats).not.toHaveValue(/[a-z😀]/i);
@@ -148,26 +154,28 @@ test.describe('a number box in the viewer', () => {
     });
   }
 
-  test('keeps to its field: a decimal mark in a whole number, a place past the field’s, a 16th digit', async ({ page }) => {
+  test('keeps to its field: a decimal in a whole number, a place past the field’s, a 16th digit', async ({ page }) => {
     ({ problems } = await open(page, 'plain', 'page=fields&skin=outlined'));
     const seats = boxOf(page, 'f-seats');
     await enter(seats);
+    // "1.5" may still be on its way to "1.500,00": it stays as typed, and leaving says why it cannot be kept.
     await seats.pressSequentially('1.5');
-    await expect(seats).toHaveValue('15');
-    await expect(hintOf(page, 'f-seats')).toBeHidden();
-    await seats.press('.');
-    await expect(hintOf(page, 'f-seats')).toHaveText('Workstations must be a whole number');
+    await expect(seats).toHaveValue('1.5');
+    await page.keyboard.press('Tab');
+    await expect(errorOf(page, 'f-seats')).toHaveText('Workstations must be a whole number');
     const area = boxOf(page, 'f-area');
     await enter(area);
-    await area.pressSequentially('12.345');
-    await expect(area).toHaveValue('12.3');
+    await area.pressSequentially('0.345');
+    await expect(area).toHaveValue('0.3');
     await expect(hintOf(page, 'f-area')).toHaveText('Floor area (m²) takes at most 1 decimal place');
     await enter(seats);
     await seats.pressSequentially('12345678901234567890');
     expect(await valueOf(page, 'seats')).toBe(123456789012345);
     await expect(hintOf(page, 'f-seats')).toHaveText('Workstations takes at most 15 digits');
+    // Left, every digit typed is shown, marked: never a number nobody typed.
     await page.keyboard.press('Tab');
-    await expect(seats).toHaveValue('123,456,789,012,345');
+    await expect(seats).toHaveValue('12345678901234567890');
+    await expect(errorOf(page, 'f-seats')).toHaveText('Workstations takes at most 15 digits');
   });
 
   for (const [locale, query, pasted] of [
@@ -253,7 +261,10 @@ test.describe('a number box in the viewer', () => {
     expect(await valueOf(page, 'margin')).toBe(0.25);
     const progress = boxOf(page, 'f-progress');
     await enter(progress);
-    await progress.pressSequentially('-150');
+    await progress.press('-');
+    await expect(hintOf(page, 'f-progress')).toHaveText('يجب ألا يقل Fit-out progress عن 0');
+    await progress.press('Backspace');
+    await progress.pressSequentially('150');
     await expect(progress).toHaveValue('150');
     await page.keyboard.press('Tab');
     await expect(errorOf(page, 'f-progress')).toHaveText('يجب ألا يزيد Fit-out progress عن 100');
@@ -265,7 +276,12 @@ test.describe('a number box in the viewer', () => {
     if (!(await table.locator('tbody tr').count())) await table.getByRole('button', { name: 'Add a milestone' }).click();
     const hours = table.locator('td input.fd-number-input').first();
     await enter(hours);
-    await hours.pressSequentially('abc2,5');
+    // Letters refused, and the keys after them waiting with them, till Backspace takes them back.
+    await hours.pressSequentially('abc2');
+    await expect(table.locator('.fd-refusal-hint')).toHaveText('Hours: numbers only');
+    for (let i = 0; i < 4; i++) await hours.press('Backspace');
+    await expect(table.locator('.fd-refusal-hint')).toBeHidden();
+    await hours.pressSequentially('2,5');
     await expect(hours).toHaveValue('2,5');
     await expect(table.locator('.fd-refusal-hint')).toBeHidden();
     await hours.pressSequentially('x');
@@ -292,6 +308,7 @@ test.describe('the business widgets’ boxes', () => {
     await expect(node(page, 'f-analytic').locator('.fd-refusal-hint').first()).toHaveText('Percentage: numbers only');
     await node(page, 'f-analytic').scrollIntoViewIfNeeded();
     await screen(page, 'input-rules-share-hint', { viewport: true });
+    for (let i = 0; i < 3; i++) await share.press('Backspace');
     await share.pressSequentially('-');
     await expect(node(page, 'f-analytic').locator('.fd-refusal-hint').first()).toHaveText('Percentage must be at least 0');
     await share.press('Delete');
@@ -330,24 +347,33 @@ test.describe('the order grid and the rules page', () => {
     await grid.locator('.ag-row[row-index="5"] .ag-cell[col-id="qty"]').click();
     const editor = grid.locator('.ag-cell-inline-editing input, .ag-popup-editor input').first();
     await expect(editor).toBeFocused();
-    await page.keyboard.type('abc1,5');
+    // Letters refused, and the keys after them waiting with them, till Backspace takes them back.
+    await page.keyboard.type('abc1');
+    await expect(grid.locator('.fd-refusal-hint')).toHaveText('Quantity: numbers only');
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Backspace');
+    await expect(grid.locator('.fd-refusal-hint')).toBeHidden();
+    await page.keyboard.type('1,5');
     await expect(editor).toHaveValue('1,5');
     await expect(grid.locator('.fd-refusal-hint')).toBeHidden();
     await page.keyboard.type('x');
     await expect(grid.locator('.fd-refusal-hint')).toHaveText('Quantity: numbers only');
     await expect(grid.locator('.fd-refusal-hint')).toHaveAttribute('data-above', '');
     await screen(page, 'input-rules-grid', { viewport: true });
+    await page.keyboard.press('Backspace');
     await page.keyboard.press('Enter');
     const lines = (await valueOf(page, 'line_ids')) as { values: Values }[];
     expect(lines[5].values['qty']).toBe(1.5);
   });
 
-  test('a line’s whole-number quantity refuses a decimal mark', async ({ page }) => {
+  test('a line’s whole-number quantity is never 25 for 2.5: left, it stays as typed, marked, with why', async ({ page }) => {
     ({ problems } = await open(page, 'plain', 'page=rules&skin=outlined'));
     const qty = page.locator('.fd-lines-table td input.fd-number-input').first();
     await enter(qty);
     await qty.pressSequentially('2.5');
-    await expect(qty).toHaveValue('25');
+    await expect(qty).toHaveValue('2.5');
+    await page.keyboard.press('Tab');
+    await expect(qty).toHaveValue('2.5');
+    await expect(qty).toHaveAttribute('aria-invalid', 'true');
   });
 });
 
@@ -416,11 +442,15 @@ test.describe('cells in Arabic, French and German', () => {
     ({ problems } = await open(page, 'plain', 'page=rules&skin=outlined&locale=ar&dir=rtl'));
     const qty = page.locator('.fd-lines-table td input.fd-number-input').first();
     await enter(qty);
-    await qty.pressSequentially('٢٫');
+    // ٫ may still be followed by zeros alone; a fraction after it is refused, and Backspace takes it back.
+    await qty.pressSequentially('٢٫٥');
+    await expect(qty).toHaveValue('٢٫');
     await expect(page.locator('.fd-lines-table .fd-refusal-hint').first()).toContainText('رقمًا صحيحًا');
+    await qty.press('Backspace');
+    await expect(page.locator('.fd-lines-table .fd-refusal-hint').first()).toBeHidden();
+    await qty.press('Backspace');
     await qty.pressSequentially('٥');
     await expect(qty).toHaveValue('٢٥');
-    await expect(page.locator('.fd-lines-table .fd-refusal-hint').first()).toBeHidden();
   });
 });
 

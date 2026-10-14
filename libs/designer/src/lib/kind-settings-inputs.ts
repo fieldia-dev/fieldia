@@ -25,7 +25,6 @@ export interface InputSettings {
 }
 type Part = Omit<InputSettings, 'elements'> & { element: HTMLElement };
 
-const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
 /** A setting's number as the page holds it, or null. */
 const held = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
@@ -93,7 +92,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     const from = limitBox(w.from, 'min', { placeholder: w.any });
     const to = limitBox(w.toLabel, 'max', { placeholder: w.any });
     const decimals = select(w.decimals, [['', w.usual], ...Array.from({ length: 7 }, (_, d): [string, string] => [String(d), String(d)])]);
-    decimals.addEventListener('change', () => designer.setLimits(id, { decimals: numberOrNull(decimals.value) }));
+    // A choice of the list's own values, '' or 0 to 6: never typed text, which only the number box reads.
+    decimals.addEventListener('change', () => designer.setLimits(id, { decimals: decimals.value === '' ? null : Number(decimals.value) }));
     return {
       element: row(word(w.from, from.input), word(w.to, to.input), word(w.decimals, decimals)),
       refresh(page, node) {

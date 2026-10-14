@@ -14,7 +14,7 @@
  *   8. Values, identifiers and function calls (highest precedence)
  */
 
-import { CONSTANTS, type Token } from './tokenizer';
+import { CONSTANTS, listNumber, type Token } from './tokenizer';
 import { FUNCTIONS, takesInWords } from './functions';
 
 /**
@@ -465,10 +465,9 @@ function parseElement(element: string): unknown {
     return element.slice(1, -1);
   }
 
-  // Number
-  if (!isNaN(Number(element))) {
-    return Number(element);
-  }
+  // A number, as the formula's own are read: any script, a point or ٫; never hex or an exponent.
+  const number = listNumber(element);
+  if (number !== null) return number;
 
   // Boolean
   if (element.toLowerCase() === 'true') return true;

@@ -26,6 +26,24 @@ describe('a coordinate typed by a person', () => {
     expect(parseCoordinate('north')).toBeNull();
     expect(parseCoordinate('30.1.2')).toBeNull();
   });
+
+  it('reads it as every number box does: Persian digits, direction marks, a minus in any form', () => {
+    expect(parseCoordinate('۳۰٫۰۴۴۴')).toBe(30.0444);
+    expect(parseCoordinate('\u200f٣٠٫٠٤\u200f')).toBe(30.04);
+    expect(parseCoordinate('\u200e-31.2357')).toBe(-31.2357);
+    expect(parseCoordinate('\u221231.2357')).toBe(-31.2357);
+    expect(parseCoordinate('\u201331.2357')).toBe(-31.2357);
+    expect(parseCoordinate('٣٠،٠٤')).toBe(30.04);
+  });
+
+  it('never groups a coordinate: its one mark is its decimal mark, whatever the page’s language', () => {
+    expect(parseCoordinate('31,235')).toBe(31.235);
+    expect(parseCoordinate('31,235', 'en')).toBe(31.235);
+    expect(parseCoordinate('31.235', 'de')).toBe(31.235);
+    expect(parseCoordinate('31 235')).toBeNull();
+    expect(parseCoordinate('1e2')).toBeNull();
+    expect(parseCoordinate('0x1E')).toBeNull();
+  });
 });
 
 describe('an area as a value', () => {
