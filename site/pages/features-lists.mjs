@@ -48,6 +48,15 @@ export default featurePage({
       tryIt: ['Try the homes', demo('page=map-homes&skin=underline')], docs: ['Lists on a map, in the docs', '/lists/#map'],
     },
     {
+      id: 'calendar',
+      no: 'On a calendar',
+      title: 'Appointments by doctor, bookings by the week',
+      body: 'Add a calendar to the list and its records are on it too: by day with a column for each person or room, by week, by month, or as an agenda on a phone. Drag one to move it, stretch it by its edge, press an empty slot for a new one; Undo puts a move back.',
+      ticks: ['A column for each doctor, agent or room', 'Drag, stretch, or Move to… from the keyboard, saved at once with Undo', 'An empty slot pressed for a new record, its times filled in', 'The list’s own search; right to left; the agenda on a phone'],
+      shot: 'calendar.png', alt: 'A clinic’s day on a calendar: a column for each of four doctors and one for no one, each visit coloured by its service, and a red line at the time now', width: 1280, height: 720,
+      tryIt: ['Try the clinic', demo('page=clinic-calendar&skin=underline')], docs: ['Lists on a calendar, in the docs', '/lists/#calendar'],
+    },
+    {
       id: 'arabic',
       no: 'In any language',
       title: 'Right to left, from the search bar to the last column',

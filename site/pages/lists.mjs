@@ -52,6 +52,7 @@ ${code(
     <tr><td>${c('groupBy')}</td><td>The fields the menu offers to group by.</td></tr>
     <tr><td>${c('actions')}</td><td>Buttons for the records chosen. A ${c('confirm')} asks first.</td></tr>
     <tr><td>${c('map')}</td><td>The records on a map too, beside the table or instead of it: see <a href="#map">on a map</a>.</td></tr>
+    <tr><td>${c('calendar')}</td><td>The records on a calendar too, by day, week or month or as an agenda, a column for each person or room: see <a href="#calendar">on a calendar</a>.</td></tr>
     <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters, or in pixels for the whole column (${c('"200px"')}) as a tracker sizes its grid's (words past it end in “…”, a header cut short shows its whole name when pointed at; every column sized, the table keeps them and scrolls sideways in its card when wider), an ${c('align')}, and its header's ${c('rule')} where the theme parts the columns (Fluent's): ${c('false')} for none, as a tracker draws a column people cannot size, or ${c('"42px"')} to set it in from the column's end, before the room a tracker keeps there for a row's tools. See <a href="#backlog">a backlog</a>.</td></tr>
     <tr><td>${c('choose')}</td><td>${c('false')}: no box to choose a row, and so no buttons for rows chosen.</td></tr>
     <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
@@ -158,6 +159,46 @@ mountViewer(host, {
 });`
 )}
 <p>An app's own pin is a function given by name, ${c("pins: { courier: (record, { document }) => element }")}, and drawn wherever a page says ${c('"widget": "courier"')}. ${c("homeCurrency: 'EGP'")} in the map's settings is the currency the app's pins leave unsaid, unless a page says its own. <em>Search this area</em> asks the data source for the records within the map's view: ${c('between')} on a latitude and a longitude, or the ${c('within')} condition on a point, ${c('{ south, west, north, east }')} in degrees. An area drawn asks for ${c('within')} with ${c('{ polygon: [[lng, lat], …] }')} or ${c('{ center: [lng, lat], radius }')} in metres, and on a latitude field ${c('longitude')} names the field of its longitude. ${c('createMemoryDataSource()')} answers them all; a server's adapter turns them into its own query. Once the map is moved, the button says how many records the view holds, <em>Search this area (24)</em>, when the records on hand can tell; with ${c('countArea: true')} in the maps' settings the data source is asked for the rest (one record, its ${c('total')}), a moment after the map stops. Each time the map stops it sends ${c('fd-map-view')} from its element, ${c('{ center, zoom, bounds, byPerson }')}, for an app that keeps the view in its address. <a href="/demos/plain/?page=map-homes&skin=outlined">Try the homes</a> · <a href="/demos/plain/?page=map-couriers&skin=outlined">try the couriers</a>.</p>
+
+<h2 id="calendar">On a calendar</h2>
+<p>With ${c('calendar')}, a list offers <em>Calendar</em> beside its table, drawn by ${c('@fieldia/calendar')}: its records by day, week or month, or as an agenda of the week to come, which a phone opens on. The day has a column for each person or room the page names; records that meet sit side by side, a whole day's sit over the hours, and a line marks now. The calendar keeps to the list's search, filters and favourites.</p>
+${code(
+  'json',
+  `
+"calendar": {
+  "start": "start", "end": "stop", "title": "patient",
+  "colour": "service", "resource": "doctor",
+  "views": ["day", "week", "month", "agenda"], "view": "day", "opens": "calendar",
+  "firstDay": 6, "hours": { "start": 9, "end": 18 }, "slot": 15
+}`
+)}
+<table>
+  <thead><tr><th>Key</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>${c('start')} · ${c('end')}</td><td>When each record starts and ends: two ${c('datetime')} fields, or two ${c('date')} fields for records of whole days. With no ${c('end')}, a record lasts an hour (a day) and cannot be stretched. The page check refuses an end of another kind than its start.</td></tr>
+    <tr><td>${c('title')}</td><td>The words on each record: a patient, a customer.</td></tr>
+    <tr><td>${c('colour')}</td><td>A field whose value colours each record, the same value the same colour, as a tint that reads light and dark; a value that is a colour (${c('#0f766e')}) is used as it is.</td></tr>
+    <tr><td>${c('resource')}</td><td>Who or what each record is with (a link, a choice, text or a whole number): a column for each in the day view, and a record dragged into another's column is theirs. A link's columns are the records its model's ${c('search')} finds.</td></tr>
+    <tr><td>${c('views')} · ${c('view')}</td><td>The views offered, of ${c('day')}, ${c('week')}, ${c('month')} and ${c('agenda')}, all four when left out; and the one shown first, the first of them unless said.</td></tr>
+    <tr><td>${c('opens')}</td><td>${c('calendar')}: the list opens on its calendar; its table when left out.</td></tr>
+    <tr><td>${c('firstDay')}</td><td>The week's first day, ${c('0')} Sunday to ${c('6')} Saturday: Saturday in Arabic and Monday in English, French and German when left out.</td></tr>
+    <tr><td>${c('hours')} · ${c('slot')}</td><td>The hours the day and the week show, 8 to 20 when left out (a record outside them stretches them), and the minutes a slot holds and a drag moves by: 15, 30 or 60.</td></tr>
+  </tbody>
+</table>
+<p>People drag a record to another time, day or person, and stretch it by its lower edge; from the keyboard, <kbd>M</kbd> on a record opens <em>Move to…</em> for its day, its time and its person, and the arrow keys move between the slots. Each move is saved at once through the data source's ${c('save')}, with the changed fields alone and the row's ${c('version')}, and <em>Undo</em> puts it back; a refused save puts it back and says why. A record whose row says ${c('can: { edit: false }')} stays where it is, saying why. An empty slot pressed, or dragged across, makes a new record: the viewer's ${c('onNewRecord')} gets its start, end and person, or, without it, the record's page from ${c('pages')} opens in a dialog with them filled in.</p>
+${code(
+  'ts',
+  `
+import { calendarListViews } from '@fieldia/calendar';
+
+mountViewer(host, {
+  page: appointments,
+  dataSource,
+  listViews: calendarListViews(), // with a map too: { ...mapListViews(settings), ...calendarListViews() }
+  onNewRecord: (values) => openAppointment(null, values), // or pages: { 'clinic.appointment': appointmentPage }
+});`
+)}
+<p>The calendar asks ${c('list')} for the records of the span it shows: those starting before it ends and ending after it starts, as ${c('date')} keys or ISO instants, with the list's own search. Its code loads the first time a calendar is shown, in a chunk of its own. A list's switcher takes an app's own views the same way: a function by name in ${c('listViews')}, offered on a list with the page option of its name, or where its ${c('offers(node)')} says, in its own words (${c('label(locale)')}). <a href="/demos/plain/?page=clinic-calendar&skin=outlined">Try the clinic</a> · <a href="/demos/plain/?page=booking-week&skin=outlined">try the booking desk</a>.</p>
 
 <h2 id="details">What it takes care of</h2>
 <ul>

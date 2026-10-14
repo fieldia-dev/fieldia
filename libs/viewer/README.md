@@ -174,6 +174,15 @@ source answers `list` and `groups`; a row opens through `onOpenRecord`, and the
 page's buttons reach `onAction` with the chosen `recordIds`. See
 [lists and search](https://fieldia.dev/lists/).
 
+Other ways of showing a list's records come from `listViews`, by name: a
+list's `map` (`mapListViews` from `@fieldia/map`), its `calendar`
+(`calendarListViews` from `@fieldia/calendar`), or an app's own view. The list
+offers each on its switcher when it has the page option of its name, or where
+the view's own `offers(node)` says, in the view's words (`label(locale)`). A
+view that makes a record (a calendar's empty slot) asks `onNewRecord(values)`;
+without it the record's page from `pages` opens in a dialog with the values
+filled in.
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
