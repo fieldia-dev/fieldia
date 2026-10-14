@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { backlogSnippets, listMapSnippets, snippets } from './snippets.mjs';
+import { backlogSnippets, listMapSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -189,7 +189,15 @@ function drawCode() {
   const ownPage = demo?.code === 'list-map';
   // A tracker's backlog of its own: the list's page, the bug's page, and the app's script.
   const backlog = demo?.code === 'backlog';
-  const tabs = backlog
+  // Photos stored as they are picked: the page, the demo's script with its slow store, and the store an app gives.
+  const uploads = demo?.code === 'uploads';
+  const tabs = uploads
+    ? [
+        ['json', 'Page JSON', 'The listing this demo shows: plain JSON, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'The demo’s script: the memory source as a slow store, one photo failing once.'],
+        ['store', 'Your store', 'upload() for your own endpoint, or Azure Blob through an address your server signs.'],
+      ]
+    : backlog
     ? [
         ['json', 'Backlog JSON', 'The list the backlog shows: plain JSON, the same the browser tests drive.'],
         ['bug', 'Bug JSON', 'The bug the popup shows: its head, its three columns of groups, its tabs.'],
@@ -229,8 +237,8 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
-    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
+    const written = uploads ? uploadsSnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

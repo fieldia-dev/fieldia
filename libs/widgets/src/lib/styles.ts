@@ -9,6 +9,7 @@ import { PICKER_CSS } from './styles-picker';
 import { HEAD_CSS } from './styles-head';
 import { TEXT_CSS } from './styles-text';
 import { BROKEN_CSS } from './broken-styles';
+import { UPLOADS_CSS } from './styles-uploads';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -1030,7 +1031,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // look; a record's head after them, which draws its boxes (and a dot in its lead slot) its own way; a work item's
 // text, groups and links (styles-text) after those.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
-const BASE_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS;
+const BASE_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + UPLOADS_CSS + BROKEN_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 /**
  * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each

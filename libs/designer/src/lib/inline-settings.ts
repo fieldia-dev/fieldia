@@ -38,6 +38,9 @@ const FILE_TYPES: [keyof DesignerWords['questions']['fileTypes'], string[]][] = 
 ];
 /** The largest file, in bytes, and in words. */
 const FILE_SIZES = [1024 * 1024, 10 * 1024 * 1024, 100 * 1024 * 1024, 1024 * 1024 * 1024];
+/** The longest sides photos are made smaller to, in pixels, and how sharp: a phone's screen, a laptop's, a print. */
+const PHOTO_SIDES = [1280, 1600, 2048, 2560, 3200, 4096];
+const PHOTO_QUALITIES = [0.7, 0.8, 0.9, 0.95];
 
 export function inlineSettings(el: ElementFactory, designer: Designer, id: string): InlineSettings {
   const w = designer.words.questions;
@@ -176,6 +179,22 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       const asChips = [asChip('list', w.list), asChip('thumbnails', w.thumbnails), asChip('cards', w.cards)];
       const switchable = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': w.peopleCanSwitch }) as HTMLButtonElement;
       switchable.addEventListener('click', () => designer.setWidgetOptions(id, { filesSwitch: switchable.getAttribute('aria-checked') === 'true' ? null : true }));
+      // Photos made smaller before they are kept: as usual (an image's, where files are stored), kept as taken, or to a side;
+      // and how sharp, once they are made smaller. A side the page set that is none of these is shown as it is.
+      const smaller = select(w.smallerPhotos, ['', 'off', ...PHOTO_SIDES.map(String)]);
+      const ownSide = el('option', { hidden: '' }) as HTMLOptionElement;
+      smaller.append(ownSide);
+      const quality = select(w.photoQuality, ['', ...PHOTO_QUALITIES.map(String)]);
+      [w.qualityUsual, ...PHOTO_QUALITIES.map((q) => w.qualityOf(Math.round(q * 100)))].forEach((words, i) => (quality.options[i].textContent = words));
+      const shrinkFrom = () => {
+        if (smaller.value === 'off') return false;
+        const side = smaller.value ? Number(smaller.value) : undefined;
+        const sharp = quality.value ? Number(quality.value) : undefined;
+        return side === undefined && sharp === undefined ? null : { ...(side !== undefined ? { maxSide: side } : {}), ...(sharp !== undefined ? { quality: sharp } : {}) };
+      };
+      smaller.addEventListener('change', () => designer.setFileRules(id, { shrink: shrinkFrom() }));
+      quality.addEventListener('change', () => designer.setFileRules(id, { shrink: shrinkFrom() }));
+      const qualityRow = word(w.photoQuality, quality);
       // A phone's camera, for an image: the rear one, or the front.
       const camera = select(w.cameraOnPhones, ['', 'environment', 'user']);
       [w.no, w.rearCamera, w.frontCamera].forEach((words, i) => (camera.options[i].textContent = words));
@@ -186,6 +205,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         counts,
         el('div', { class: 'fd-inline-row' }, el('span', {}, w.showFilesAs), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.showFilesAs }, ...asChips)),
         el('span', { class: 'fd-inline-setting fd-inline-toggle' }, switchable, el('span', { 'aria-hidden': 'true' }, w.peopleCanSwitch)),
+        word(w.smallerPhotos, smaller),
+        qualityRow,
         ...(kind === 'image' ? [word(w.cameraOnPhones, camera)] : [])
       );
       refresh = (page, node) => {
@@ -208,6 +229,21 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         switchable.setAttribute('aria-checked', String(node.options?.['filesSwitch'] === true));
         const facing = node.options?.['camera'];
         camera.value = facing ? (facing === 'user' ? 'user' : 'environment') : '';
+        // An image is made smaller as usual, and may be kept as taken; a file upload is not, unless a side is picked.
+        const picture = def.type === 'image';
+        smaller.options[0].textContent = picture ? w.smallerUsual : w.smallerNo;
+        smaller.options[1].textContent = w.smallerNo;
+        smaller.options[1].hidden = !picture;
+        PHOTO_SIDES.forEach((side, i) => (smaller.options[i + 2].textContent = w.smallerTo(side)));
+        const shrink = def.shrink;
+        const side = shrink ? shrink.maxSide : undefined;
+        ownSide.hidden = side === undefined || PHOTO_SIDES.includes(side);
+        ownSide.value = String(side ?? '');
+        ownSide.textContent = side !== undefined ? w.smallerTo(side) : '';
+        smaller.value = shrink === false ? (picture ? 'off' : '') : String(side ?? '');
+        quality.value = shrink && shrink.quality !== undefined && PHOTO_QUALITIES.includes(shrink.quality) ? String(shrink.quality) : '';
+        // How sharp, only where photos are made smaller: hidden, not disabled, where they are kept as taken.
+        qualityRow.hidden = shrink === false || (!picture && !shrink);
       };
     } else if (kind === 'lines') {
       const columns = columnsEditor(el, designer, id);

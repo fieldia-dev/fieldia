@@ -351,6 +351,11 @@ function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: 
   if (!option(was, 'filesSwitch') !== !option(now, 'filesSwitch')) out.push(w.filesSwitch(name, !!option(now, 'filesSwitch')));
   const camera = (q: { node: FieldNode }) => (option(q, 'camera') ? (option(q, 'camera') === 'user' ? 'front' : 'rear') : null);
   if (camera(was) !== camera(now)) out.push(camera(now) ? w.camera(name, camera(now) === 'front') : w.noCamera(name));
+  // Photos made smaller, kept as taken, or as usual.
+  const [shrinkWas, shrinkNow] = [a.shrink, b.shrink];
+  if (JSON.stringify(shrinkWas ?? null) !== JSON.stringify(shrinkNow ?? null)) {
+    out.push(shrinkNow === false ? w.photosAsTaken(name) : shrinkNow ? w.photosSmaller(name, shrinkNow.maxSide ?? 2048, Math.round((shrinkNow.quality ?? 0.85) * 100)) : w.photosUsual(name));
+  }
   return out;
 }
 

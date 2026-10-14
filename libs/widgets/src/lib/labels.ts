@@ -165,6 +165,25 @@ export interface WidgetLabels {
   /** Takes the last stroke away; a picture of a signature, uploaded instead. */
   undo: string;
   uploadSignature: string;
+  /**
+   * A file on its way to the app's store, where the data source stores files:
+   * the words under its name as it waits, is made smaller, goes (`{n}` per
+   * cent) or did not get there; its bar's name and Cancel's (`{name}`); Retry;
+   * and what is said once files are in (`{n}`), or one is not.
+   */
+  uploading: string;
+  uploadPercent: string;
+  uploadWaiting: string;
+  uploadPreparing: string;
+  uploadFailed: string;
+  uploadRefused: string;
+  uploadingNamed: string;
+  cancelUpload: string;
+  retryUpload: string;
+  retryUploadNamed: string;
+  fileUploaded: string;
+  filesUploaded: string;
+  notUploadedNamed: string;
   /** A slider not slid yet, as a screen reader reads it. */
   notAnswered: string;
   /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
@@ -363,6 +382,19 @@ const en: WidgetLabels = {
   clearDrawing: 'Clear',
   undo: 'Undo',
   uploadSignature: 'Upload a picture',
+  uploading: 'Uploading…',
+  uploadPercent: '{n}%',
+  uploadWaiting: 'Waiting…',
+  uploadPreparing: 'Making it smaller…',
+  uploadFailed: 'Not uploaded',
+  uploadRefused: 'Not taken',
+  uploadingNamed: 'Uploading {name}',
+  cancelUpload: 'Cancel uploading {name}',
+  retryUpload: 'Retry',
+  retryUploadNamed: 'Retry {name}',
+  fileUploaded: '1 file uploaded',
+  filesUploaded: '{n} files uploaded',
+  notUploadedNamed: '{name} was not uploaded',
   notAnswered: 'Not answered',
   moveUp: 'Move {label} up',
   moveDown: 'Move {label} down',

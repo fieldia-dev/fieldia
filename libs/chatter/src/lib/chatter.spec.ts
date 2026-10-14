@@ -360,7 +360,7 @@ describe('followers', () => {
 });
 
 describe('the chatter, holding its ground', () => {
-  it('sends nothing while a file is still on its way', async () => {
+  it('sends nothing while a file is still on its way: Send waits for it, saying so, then sends it once', async () => {
     let arrive: (() => void) | undefined;
     const base = source();
     const slow = { ...base, upload: (record: { model: string; id: number | string }, file: File) => new Promise<never>((resolve) => (arrive = () => void base.upload!(record, file).then(resolve as never))) };
@@ -371,10 +371,13 @@ describe('the chatter, holding its ground', () => {
     button(host, 'Send')!.click();
     await flush();
     expect(base.posted).toEqual([]);
-    arrive!();
-    await until(() => host.querySelector('.fd-composer .fd-attachment'));
+    expect(host.querySelector('.fd-chatter-uploading')?.textContent).toBe('1 file still uploading. Sending when it is done.');
+    // Pressed again while it waits: still one message.
     button(host, 'Send')!.click();
+    arrive!();
     await until(() => base.posted.length);
+    await flush();
+    expect(base.posted).toHaveLength(1);
     expect(base.posted[0].attachments?.map((a) => a.name)).toEqual(['big.pdf']);
   });
 

@@ -66,6 +66,9 @@ export function lineForm(form: Form, field: string, key: string): Form {
     canCreate: (name: string) => form.canCreateLine(field, name),
     quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),
     createValues: (name: string) => form.createValues(name, { lines: field, key }),
+    // A file picked in a cell goes to the store as this line's, and the cell shows this line's on their way.
+    upload: (name: string, files: Parameters<Form['upload']>[1], how: Parameters<Form['upload']>[2] = {}) => form.upload(name, files, { ...how, line: { field, key } }),
+    uploading: (name: string) => form.getState().uploads.filter((upload) => upload.field === name && upload.line?.field === field && upload.line.key === key),
   };
 }
 

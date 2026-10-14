@@ -1,7 +1,9 @@
-import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, type Field, type FileValue } from '@fieldia/core';
+import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, saveRefused, uploadGoing, type Field, type FileUpload, type FileValue, type Form } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
+import { goingItem, type GoingItem } from './files-going';
+import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
-import { askFirst, describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
+import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -16,6 +18,12 @@ import type { WidgetFactory } from './widgets';
  * the person flip them between a list and the pictures. One opens in a dialog
  * that goes through them all. `options.camera` has a phone offer its camera,
  * the rear one, or the front with "user".
+ *
+ * Where the data source stores files (`upload`), each file goes to the app's
+ * store as soon as it is picked — a photo made smaller first (the field's
+ * `shrink`) — and shows on its way with a bar, × to cancel it and Retry once
+ * it failed; the field then holds its link alone. Without it, a file larger
+ * than a megabyte warns once in the console: it travels inside the record.
  */
 
 type FileField = Extract<Field, { type: 'binary' | 'image' }>;
@@ -41,6 +49,20 @@ const asText = (file: FileValue) => /^text\/|json|xml|csv/.test(file.type);
 /** Where a file's picture is: its data, or where it is stored. */
 const source = (file: FileValue) => (file.data ? `data:${file.type};base64,${file.data}` : (file.url ?? ''));
 const bytes = (data: string) => Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+/** A file's bytes where it holds them: as its data, or in a `data:` link a store gave (the memory source's) — shown from a blob, as a browser shows a PDF. */
+const bytesOf = (file: FileValue) => (file.data ? bytes(file.data) : /^data:[^,]*;base64,/.test(file.url ?? '') ? bytes((file.url as string).slice((file.url as string).indexOf(',') + 1)) : null);
+/** A file held inside the record warns, once a form, from this size: it travels in every save. */
+export const INLINE_FILE_WARNING = 1024 * 1024;
+const warned = new WeakSet<object>();
+function warnInline(form: Form, files: { name: string; size: number }[]) {
+  const large = files.find((file) => file.size > INLINE_FILE_WARNING);
+  if (!large || warned.has(form)) return;
+  warned.add(form);
+  console.warn(
+    `Fieldia: ${large.name} (${formatBytes(large.size)}) goes inside the record as base64, because the data source has no upload(). ` +
+      'Give it upload() — uploadTo({ url }) for a plain endpoint — to store each file as it is picked and keep only its link.'
+  );
+}
 const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-icon', 'data-kind': kindOf(file), 'aria-hidden': 'true' }, extension(file.name) || '?');
 /** The pictures' ways in the switch: cards, a picture over a line of words; thumbnails, pictures alone. A list has the list's icon. */
 const VIEWS = {
@@ -128,31 +150,126 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       if (tiles) list.after(...top);
       else (bar ?? list).before(...top);
       switcher?.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset['view'] === as)));
+      // Files on their way are drawn again in the new way too.
+      for (const { item } of goingItems.values()) item.element.remove();
+      goingItems.clear();
       draw();
+      drawGoing();
     }
 
     let readonly = false;
     let files: FileValue[] = [];
     let shown: unknown;
     const say = (lines: string[]) => note.replaceChildren(...lines.map((line) => make('div', {}, line)));
+    // What came of the uploads, on a line of its own, so it never takes the place of why files were not added.
+    const news = make('div', { class: 'fd-help fd-file-news', role: 'status' });
+    note.after(news);
+    const tell = (text: string, failed = false) => {
+      setAttr(news, 'data-failed', failed ? '' : null);
+      setText(news, text);
+    };
+    /** This field's files on their way to the store, as the form has them: in a table's cell, its line's. */
+    const goingNow = (): readonly FileUpload[] => form.uploading(name);
 
     const take = async (chosen: File[]) => {
       if (readonly || !chosen.length) return;
+      const storing = form.canUpload();
+      // A photo made smaller is checked for its size once it is: a 12 MB photo may well fit.
+      const shrink = shrinkFor(field, storing);
+      const going = several ? goingNow() : [];
       const kept: File[] = [];
       const lines: string[] = [];
       let over = 0;
       for (const file of chosen) {
-        const problem = fileProblem(field, file, messages) ?? (several && [...files, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
+        const checked = shrink && shrinkable(file) ? { ...field, maxSize: undefined } : field;
+        const problem = fileProblem(checked, file, messages) ?? (several && [...files, ...going, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
         if (problem) lines.push(problem);
-        else if ((several ? files.length : 0) + kept.length < most) kept.push(file);
+        else if ((several ? files.length + going.length : 0) + kept.length < most) kept.push(file);
         else over++;
       }
       if (over && several) lines.push(fill(words.tooMany, { max: most, n: over }));
       say(lines);
       if (!kept.length) return;
-      const added = await Promise.all(kept.map(readFile));
+      // Too large even once smaller: refused, saying so.
+      const smaller = async (file: File) => {
+        const made = shrink ? await shrinkPhoto(file, shrink, doc) : file;
+        const problem = fileProblem(field, made, messages);
+        if (problem) throw saveRefused({ kind: 'rule', message: problem });
+        return made;
+      };
+      if (storing) {
+        // Each to the store as it is picked; its picture shown from the file meanwhile.
+        tell('');
+        const ids = form.upload(name, kept, shrink ? { prepare: (file) => smaller(file as File) } : {});
+        ids.forEach((upload, at) => previews.set(upload, /^image\//.test(kept[at].type) && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(kept[at]) : ''));
+        // Drawn as the form told of them, before their pictures were known: drawn again with them.
+        for (const upload of ids) goingItems.get(upload)?.item.element.remove();
+        for (const upload of ids) goingItems.delete(upload);
+        return drawGoing();
+      }
+      const ready: File[] = [];
+      for (const file of kept) {
+        try {
+          ready.push(await smaller(file));
+        } catch (error) {
+          say([...lines, (error as Error).message]);
+        }
+      }
+      if (!ready.length) return;
+      warnInline(form, ready);
+      const added = await Promise.all(ready.map(readFile));
       form.setValue(name, several ? [...files, ...added] : added[0]);
     };
+
+    // ---- files on their way to the store ------------------------------------------------
+    /** Each upload's item, by its id, and the picture it shows meanwhile. */
+    const goingItems = new Map<string, { item: GoingItem; name: string }>();
+    const previews = new Map<string, string>();
+    let seenUploads: readonly FileUpload[] | undefined;
+    let uploadedSince = 0;
+    const saidFailed = new Set<string>();
+    /** The files on their way, after the stored ones: patched in place, so a button keeps the focus while its bar moves. */
+    function drawGoing() {
+      const going = goingNow();
+      const ids = new Set(going.map((upload) => upload.id));
+      let focusAt = -1;
+      for (const [id, { item, name: was }] of goingItems) {
+        if (ids.has(id)) continue;
+        if (item.element.contains(doc.activeElement)) focusAt = [...list.children].indexOf(item.element);
+        item.element.remove();
+        goingItems.delete(id);
+        const preview = previews.get(id);
+        if (preview) URL.revokeObjectURL(preview);
+        previews.delete(id);
+        // Gone because it is stored, not cancelled: the field holds it now.
+        if (files.some((file) => file.name === was)) uploadedSince++;
+      }
+      for (const upload of going) {
+        let item = goingItems.get(upload.id)?.item;
+        if (!item) {
+          const preview = previews.get(upload.id);
+          const picture = preview ? make('img', { class: 'fd-file-thumb', src: preview, alt: '' }) : icon(make, { name: upload.name, type: upload.type, size: upload.size });
+          item = goingItem(make, words, display === 'cards' ? make('span', { class: 'fd-file-picture' }, picture) : picture, (text) => (display === 'cards' ? namedOnCard : named)(make, text), {
+            cancel: () => form.cancelUpload(upload.id),
+            retry: () => form.retryUpload(upload.id),
+          });
+        }
+        goingItems.set(upload.id, { item, name: upload.name });
+        item.update(upload, readonly);
+        if (item.element.parentNode !== list || item.element !== list.lastElementChild) list.append(item.element);
+        // Said once, as it fails: the bar alone would not tell a screen reader.
+        if (upload.status === 'failed' || upload.status === 'refused') {
+          if (!saidFailed.has(upload.id)) tell(fill(words.notUploadedNamed, { name: upload.name }), true);
+          saidFailed.add(upload.id);
+        } else saidFailed.delete(upload.id);
+      }
+      // Once nothing is on its way, how many got there.
+      if (!going.some(uploadGoing) && uploadedSince) {
+        tell(uploadedSince === 1 ? words.fileUploaded : fill(words.filesUploaded, { n: uploadedSince }));
+        uploadedSince = 0;
+      }
+      if (focusAt >= 0) (list.children[Math.min(focusAt, list.children.length - 1)]?.querySelector<HTMLElement>('button') ?? input).focus();
+    }
     input.addEventListener('change', () => {
       void take([...(input.files ?? [])]);
       input.value = '';
@@ -172,7 +289,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     list.addEventListener('click', (event) => {
       const button = (event.target as Element).closest('button');
       const at = Number(button?.dataset['at']);
-      if (!button) return;
+      // A file on its way has its own Cancel and Retry.
+      if (!button || button.closest('.fd-file-going')) return;
       if (button.classList.contains('fd-file-open')) return view(at, button);
       confirm.ask(fill(words.removeAsk, { name: files[at].name }), (remove) => {
         const gone = files[at];
@@ -201,7 +319,9 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
             ),
             ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')])
           )
-        )
+        ),
+        // Those on their way stay after them, as they were.
+        ...[...goingItems.values()].map(({ item }) => item.element)
       );
     }
     showAs(chosen === 'list' || chosen === pictures ? chosen : own === pictures ? own : 'list');
@@ -235,7 +355,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         at = (to + all.length) % all.length;
         const file = all[at];
         free();
-        const data = file.data ? bytes(file.data) : null;
+        const data = bytesOf(file);
         url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
         title.textContent = file.name;
         meta.replaceChildren(make('span', { class: 'fd-file-size' }, formatBytes(file.size)), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
@@ -279,19 +399,32 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         readonly = state.readonly;
         const value = state.value as FileValue | FileValue[] | null | undefined;
         files = Array.isArray(value) ? value : value ? [value] : [];
-        const full = files.length >= most;
+        const going = goingNow();
+        const full = files.length + (several ? going.length : 0) >= most;
         setHidden(pick, full || readonly);
         setHidden(limited, readonly);
         input.disabled = readonly;
         input.hidden = pick.hidden;
         setHidden(replace, several || !files.length || readonly);
-        if (bar) setHidden(bar, !files.length);
+        // The switch shows once there is a file, stored or on its way.
+        if (bar) setHidden(bar, !files.length && !going.length);
         if (count) setText(count, !files.length ? '' : several && field.maxFiles ? fill(words.fileCountOf, { n: files.length, max: field.maxFiles }) : files.length === 1 ? words.oneFile : fill(words.fileCount, { n: files.length }));
         describeState(input, state);
-        if (shown === value && list.dataset['readonly'] === String(readonly)) return;
-        shown = value;
-        list.dataset['readonly'] = String(readonly);
-        draw();
+        const uploads = form.getState().uploads;
+        if (shown !== value || list.dataset['readonly'] !== String(readonly)) {
+          shown = value;
+          list.dataset['readonly'] = String(readonly);
+          draw();
+        }
+        // The files on their way, as the form has them now.
+        if (uploads !== seenUploads || going.length !== goingItems.size) {
+          seenUploads = uploads;
+          drawGoing();
+        }
+      },
+      destroy() {
+        for (const preview of previews.values()) if (preview) URL.revokeObjectURL(preview);
+        previews.clear();
       },
     };
   };
@@ -309,7 +442,8 @@ export const imageWidget = fileWidget('image');
 export function fileShown(doc: Document, file: FileValue): { element: HTMLElement; url: string; free(): void } | null {
   const kind = kindOf(file);
   if (kind !== 'image' && kind !== 'pdf') return null;
-  const url = file.data ? URL.createObjectURL(new Blob([bytes(file.data)], { type: file.type })) : source(file);
+  const data = bytesOf(file);
+  const url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : source(file);
   const element = doc.createElement(kind === 'image' ? 'img' : 'iframe');
   // A PDF fills the width, without the viewer's page list beside it: there is room for the page alone.
   element.setAttribute('src', kind === 'pdf' ? `${url}#view=FitH&navpanes=0` : url);

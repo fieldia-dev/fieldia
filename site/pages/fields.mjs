@@ -15,8 +15,8 @@ const ROWS = [
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
-  ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles'],
-  ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles'],
+  ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles, shrink'],
+  ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles, shrink'],
   ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
@@ -99,6 +99,29 @@ ${code(
   </tbody>
 </table>
 </div>
+
+<h2 id="files">Files and photos</h2>
+<p>Where the data source stores files (its ${c('upload')}), each file goes to your store as soon as it is picked: a field of files or pictures shows it on its way — its picture, a bar that fills, where it is in words, × to cancel it, and Retry when it did not get there — and then holds its link alone. Save waits for files still going, saying so. See <a href="/data/#upload">files stored as they are picked</a>.</p>
+<p>A field's ${c('shrink')} makes its photos smaller before they are kept: JPEG, PNG and WebP pictures (and HEIC, where the browser reads it) whose longest side is over ${c('maxSide')} pixels are drawn again that size, standing as they were taken (their EXIF turn applied), and written at ${c('quality')}. A photo already that small is kept as it is, none is made larger, and a smaller one is taken only when it is smaller in bytes. A field's ${c('maxSize')} is checked once a photo is made smaller, so a 12 MB photo from a phone fits a field of 5 MB.</p>
+${code(
+  'json',
+  `
+"photos": {
+  "type": "image",
+  "label": "Photos",
+  "multiple": true,
+  "maxFiles": 20,
+  "maxSize": 5242880,
+  "shrink": { "maxSide": 1600, "quality": 0.82 }
+}`
+)}
+<ul>
+  <li>Without ${c('shrink')}, a picture field makes its photos smaller where the data source stores files — 2048 pixels at 0.85 — and keeps them as they are where it does not; a file field keeps every file as it is.</li>
+  <li>${c('"shrink": false')} keeps every photo as it was taken. ${c('maxSide')} runs from 160 to 16384, ${c('quality')} from 0.3 to 1; either may be left out.</li>
+  <li>A GIF (it may move) and an SVG are never touched. A signature's picture uploaded is made smaller as a picture field's photos are.</li>
+  <li>In the designer, a file or picture field's card and panel set it: <em>Make photos smaller</em>, then <em>Photo quality</em>.</li>
+</ul>
+<p>${c('shrinkPhoto(file, { maxSide, quality })')} from ${c('@fieldia/widgets')} does the same for your own code.</p>
 
 <h2 id="numbers">Numbers in the reader's language</h2>
 <p>Numbers are written grouped, with the field's ${c('digits')} (two for money and decimals by default), the way readers of the page's ${c('locale')} write them: ${c('1,850,000.00')} in English, ${c('1.850.000,00')} in German, ${c('1 850 000,00')} in French, in Latin digits in Arabic. What is typed is read the same way, Arabic-Indic digits included.</p>

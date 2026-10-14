@@ -426,7 +426,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // group's parts in a flex column, as Safari lays a narrowed group's title out again only there) — 0.2 more, to 530.6.
 // Then a group laid out as blocks instead, its gaps as margins (layout-styles.ts): Safari floats nothing in a flex
 // column, so every card's title was drawn on the card's border — 0.2 more, to 530.8.
-const BUDGET_KB = 530.8;
+// Files stored as they are picked (0.21, lane w1-files): the form's uploads — three at a time, each photo made smaller
+// first, put in its place in the order picked, a save that waits for them and stops under the field for one that
+// failed, a file's bytes stored by the save and never kept in a draft — uploadTo for a plain endpoint or a signed
+// address, the memory source as a slow store, a field's files on their way (a bar, × and Retry, said to a screen
+// reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
+// the viewer saying why Save waits — 20.8 more, to 551.6 (with the safety kit's above).
+// A photo picked in a table's cell stored as its line's, the cell showing its line's on their way (form.uploading), 0.2 more, to 551.8.
+const BUDGET_KB = 551.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -481,7 +488,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
 // 0.21's safety kit (errors kept to their part, with the box that names it; the page format's versions and upgradePage,
 // listed with the raw budget above), 1.9 more, to 161.3; what Firefox and WebKit showed (listed there too), 0.1, to 161.4.
-const GZIP_BUDGET_KB = 161.4;
+// files stored as they are picked (the form's uploads and a save that waits for them, uploadTo, files on their way
+// with a bar, × and Retry and their stylesheet, photos made smaller, the viewer saying why Save waits), 7.5 more, to 168.9.
+const GZIP_BUDGET_KB = 168.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -520,7 +529,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
 // 0.21's safety kit — the box where a part could not be shown: "This field could not be shown", "This part could not
 // be shown", with its name and without — three in each: Arabic's to 27.5 and 5.7, German's to 11.9, French's to 12.0.
-const ADD_ON_BUDGET_KB = { ar: [27.5, 5.7], de: [11.9, 4.9], fr: [12.0, 4.8] };
+// Files stored as they are picked (0.21) — where a file on its way is (waiting, made smaller, its share sent, not
+// uploaded, not taken), its bar's, Cancel's and Retry's names, files uploaded, a save or a send waiting for them, and
+// why a save stopped for one — 20 words in each: 2.3 and 0.3 more in Arabic, 1.0 and 0.2 in German, 1.1 and 0.2 in
+// French, over the safety kit's: Arabic's to 29.8 and 6.0, German's to 12.9 and 5.1, French's to 13.1 and 5.0.
+const ADD_ON_BUDGET_KB = { ar: [29.8, 6.0], de: [12.9, 5.1], fr: [13.1, 5.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

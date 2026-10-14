@@ -38,3 +38,6 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-price .fd-input { flex: 1; min-width: 0; }
 .demo-price output { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--fd-accent-soft); color: var(--fd-text); font-weight: 600; font-size: 12.5px; }
 #app:has(.fd-designer) { max-width: 1320px; }
+/* The listing's bar: the shell's own colours, so it follows the reader's scheme. */
+.demo-photos-bar { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
+.demo-photos-said { flex: 1 1 24em; color: var(--dh-muted, #5b6470); font-size: 13px; }

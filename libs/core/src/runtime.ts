@@ -6,6 +6,7 @@
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
 export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
+export type { Shrink } from './lib/format/field';
 export type {
   Modifier,
   Roles,
@@ -173,6 +174,9 @@ export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf
 export { matchesFilter } from './lib/record/filter';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+// Files stored as they are picked: the form's uploads, and an upload for a plain endpoint or a signed address.
+export { uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type UploadHow } from './lib/record/uploads';
+export { uploadTo, type UploadAnswer, type UploadTarget, type UploadToOptions } from './lib/record/upload-to';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {
   createForm,

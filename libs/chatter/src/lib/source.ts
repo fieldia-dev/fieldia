@@ -109,8 +109,13 @@ export interface ChatterSource {
   /** The record's messages, notes and events, newest first. */
   messages(record: RecordRef): Promise<ChatterMessage[]>;
   post(record: RecordRef, message: NewMessage): Promise<ChatterMessage>;
-  /** Store a file, to send with a message. */
-  upload?(record: RecordRef, file: File): Promise<Attachment>;
+  /**
+   * Store a file, to send with a message: as soon as it is chosen. `how`
+   * carries what a progress bar and Cancel need — call `onProgress` as the
+   * bytes go, and stop with an AbortError when `signal` aborts. Throw to
+   * fail: the composer offers Retry.
+   */
+  upload?(record: RecordRef, file: File, how?: { signal?: AbortSignal; onProgress?: (sent: number, total: number) => void }): Promise<Attachment>;
   /** Add the person's reaction, or take it away when it is there already. Returns the message's reactions. */
   react?(record: RecordRef, messageId: ChatterId, emoji: string): Promise<Reaction[]>;
   /** People to @mention, to give an activity to, or to add as followers. */

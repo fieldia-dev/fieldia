@@ -28,4 +28,11 @@ as a status), tells the context's `onError` (the console when there is none), an
 leaves the widget alone from then on. A widget that learns of its own failure
 later — a framework's component caught by its binding — calls `context.fail(error)`.
 
+Where the data source has `upload`, a file or picture field stores each file as
+it is picked and shows it on its way: its picture, a bar that fills, where it
+is in words, × to cancel it, Retry when it failed — in a list, on cards and on
+thumbnails, right to left and dark. Photos are made smaller first by the field's
+`shrink` (`{ maxSide, quality }`, or `false`), their EXIF turn kept;
+`shrinkPhoto(file, { maxSide, quality })` does the same for your own code.
+
 MIT licensed.

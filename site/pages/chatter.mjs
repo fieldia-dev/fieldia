@@ -44,7 +44,7 @@ function Chatter({ form }: SlotComponentProps) {
   <thead><tr><th>Method</th><th>Adds</th></tr></thead>
   <tbody>
     <tr><td>${c('messages(record)')} · ${c('post(record, message)')}</td><td>The conversation: messages, notes and tracked changes, newest first, and the composer.</td></tr>
-    <tr><td>${c('upload(record, file)')}</td><td>Files: chosen or dropped, sent with a message; an image shows as a preview.</td></tr>
+    <tr><td>${c('upload(record, file, { signal, onProgress })')}</td><td>Files: chosen or dropped, stored at once and sent with a message; an image shows as a preview. Each shows on its way with a bar — call ${c('onProgress(sent, total)')} for its number — × to cancel it (stop when ${c('signal')} aborts) and Retry when it failed. Send waits for files still going, saying so, and will not send while one did not get there. The chatter's ${c('shrink')} — ${c('{ maxSide, quality }')} — makes photos smaller first.</td></tr>
     <tr><td>${c('react(record, messageId, emoji)')}</td><td>Reactions, turned on and off with a click.</td></tr>
     <tr><td>${c('people(query)')}</td><td>@mentions, who an activity is for, and followers to add.</td></tr>
     <tr><td>${c('activityTypes()')} · ${c('activities(record)')} · ${c('schedule')} · ${c('markDone')} · ${c('cancel')}</td><td>Activities: overdue, today and planned; scheduled, done with what came of it, or cancelled.</td></tr>

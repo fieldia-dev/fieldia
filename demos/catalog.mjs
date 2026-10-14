@@ -122,6 +122,24 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'listing-photos',
+    name: 'Photos stored as they are picked',
+    category: 'fields',
+    // Its bar takes ten photos as a phone does: the plain page alone, its code the store's own (demos/snippets.mjs).
+    app: 'plain',
+    query: 'page=listing-photos&skin=outlined',
+    code: 'uploads',
+    blurb: 'A home’s listing whose photos go to the app’s store as each is picked: made smaller on the phone first, a bar for each as it goes over a slow connection, × to cancel one, Retry for one that fails. The record keeps only the links, and Save waits for photos still on their way, saying how many.',
+    howTo: [
+      'Press Add 10 phone photos over the listing: ten photos of 12 megapixels, as a phone takes them, each made smaller to 1600 pixels before it goes.',
+      'Watch three go at once over the slow connection, each with its bar and how far it has got; the rest wait their turn.',
+      'Balcony view fails on its first try: press Retry on it.',
+      'Press Save while photos are still going: it waits, and says how many are left. Press × on one still going to cancel it.',
+      'Pick photos of your own with Add photos, or take one with a phone’s camera.',
+      'Open the Code drawer: this store is the memory source slowed down; your app gives upload(), with uploadTo({ url }) for a plain endpoint or a signed address for Azure Blob.',
+    ],
+  },
+  {
     id: 'kinds',
     name: 'Office move',
     category: 'fields',

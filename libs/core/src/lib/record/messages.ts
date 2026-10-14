@@ -37,6 +37,10 @@ export interface Messages {
   /** Several files: fewer than the fewest (never under two: one is what required asks), more than the most. */
   minFiles: string;
   maxFiles: string;
+  /** A file that did not reach the data source's store, under its field — Retry or remove it: by its name, how many, or the store's reason. */
+  notUploaded: string;
+  notUploadedMany: string;
+  fileRefused: string;
   /**
    * Answer rules, besides the messages above they share (maxLength, pattern,
    * min, max): a shortest length, an ending, how many may be ticked, a day
@@ -109,6 +113,9 @@ const en: Messages = {
   fileType: '{label} must be {aTypes} file',
   minFiles: 'Add at least {min} files to {label}',
   maxFiles: 'Too many files for {label}: at most {max}',
+  notUploaded: '{name} was not uploaded: try again, or remove it',
+  notUploadedMany: '{n} files were not uploaded: try again, or remove them',
+  fileRefused: '{name} was not taken: {reason}',
   minLength: '{label} must be at least {min} characters',
   endsWith: '{label} must end with {ending}',
   atLeast: 'Choose at least {min} for {label}',

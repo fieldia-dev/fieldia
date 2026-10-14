@@ -63,6 +63,35 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+## Files stored as they are picked
+
+Give the data source `upload(file, request)` and a file or picture field sends
+each file to your store as soon as it is picked; the record keeps only the link
+it returns — `{ url, name, size, type, fileId }`. `form.upload(field, files)`
+does it for a widget of your own: `state.uploads` shows each on its way (its
+`status` and the bytes `sent` of `total`), three at a time, in the order picked,
+and `form.uploading(field)` gives one field's own;
+`form.cancelUpload(id)` and `form.retryUpload(id)` stop one and send a failed
+one again. A file picked in a table's cell goes as its line's (`request.line`). `form.save()` waits for those still going, stops under the field for
+one that failed, and stores bytes still in the record (a signature drawn) first.
+A draft never keeps a file's bytes.
+
+```ts
+import { uploadTo } from '@fieldia/core';
+
+// A POST of a form with the file under `file`; its link from the answer's JSON `url`.
+const dataSource = { ...yourDataSource, upload: uploadTo({ url: '/api/files', headers: { 'X-CSRF-Token': token } }) };
+// Or a PUT to an address your server signs (Azure Blob's SAS): the link kept without the signature.
+const toAzure = uploadTo({ method: 'PUT', url: (file) => signedAddress(file.name), headers: { 'x-ms-blob-type': 'BlockBlob' } });
+```
+
+To refuse a file, throw `saveRefused({ kind: 'rule', message })`: the field shows
+your words and offers no Retry; any other error offers Retry. Stop with an
+`AbortError` when `request.signal` aborts. `createMemoryDataSource({ storage:
+{ bytesPerSecond, fails } })` is a store as slow, or as unreliable, as a real
+one. Without `upload`, files travel inside the record as base64, as before.
+See [files stored as they are picked](https://fieldia.dev/data/#upload).
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its

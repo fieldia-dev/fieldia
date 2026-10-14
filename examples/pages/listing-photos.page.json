@@ -1,0 +1,167 @@
+{
+  "fieldia": "0.1",
+  "id": "listing-photos",
+  "title": "Listing",
+  "description": "A home's listing with its photos: each photo is made smaller on the phone, then stored as it is picked, and the record keeps only its link.",
+  "data": {
+    "kind": "record",
+    "model": "listing"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Title",
+      "required": true
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        {
+          "value": "sale",
+          "label": "For sale"
+        },
+        {
+          "value": "rent",
+          "label": "For rent"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        }
+      ]
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms",
+      "min": 0
+    },
+    "photos": {
+      "type": "image",
+      "label": "Photos",
+      "help": "The first photo is the listing's card. Photos are made smaller before they go.",
+      "multiple": true,
+      "maxFiles": 20,
+      "maxSize": 5242880,
+      "shrink": {
+        "maxSide": 1600,
+        "quality": 0.82
+      }
+    },
+    "floor_plan": {
+      "type": "binary",
+      "label": "Floor plan",
+      "accept": [
+        "application/pdf",
+        "image/*"
+      ],
+      "maxSize": 10485760
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "listing",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-home",
+        "title": "The home",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-offer",
+            "field": "offer",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-photos",
+        "title": "Photos",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-photos",
+            "field": "photos",
+            "options": {
+              "files": "cards",
+              "filesSwitch": true,
+              "camera": true
+            }
+          },
+          {
+            "type": "field",
+            "id": "f-plan",
+            "field": "floor_plan"
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Listing": "إعلان",
+      "Title": "العنوان",
+      "Offer": "العرض",
+      "For sale": "للبيع",
+      "For rent": "للإيجار",
+      "Price": "السعر",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Maadi": "المعادي",
+      "New Cairo": "القاهرة الجديدة",
+      "Bedrooms": "غرف النوم",
+      "Photos": "الصور",
+      "The first photo is the listing's card. Photos are made smaller before they go.": "الصورة الأولى هي بطاقة الإعلان. تُصغَّر الصور قبل رفعها.",
+      "Floor plan": "مخطط الطابق",
+      "The home": "المنزل",
+      "A home's listing with its photos: each photo is made smaller on the phone, then stored as it is picked, and the record keeps only its link.": "إعلان منزل بصوره: تُصغَّر كل صورة على الهاتف، ثم تُخزَّن فور اختيارها، ولا يحفظ السجل إلا رابطها."
+    }
+  }
+}

@@ -53,6 +53,9 @@ export const changes = {
   filesSwitch: (name: string, on: boolean) => `“${name}”: people can ${on ? '' : 'no longer '}switch how chosen files show`,
   camera: (name: string, front: boolean) => `“${name}”: phones offer the ${front ? 'front' : 'rear'} camera`,
   noCamera: (name: string) => `“${name}”: phones no longer offer the camera`,
+  photosSmaller: (name: string, side: number, percent: number) => `“${name}”: photos are made smaller, to ${side} px at ${percent}%`,
+  photosAsTaken: (name: string) => `“${name}”: photos are kept as they were taken`,
+  photosUsual: (name: string) => `“${name}”: photos are made smaller as usual`,
   // ---- a sheet's header, a list
   addedHeader: (kind: HeaderKind, label: string) => `Added the ${kind} “${label}”`,
   removedHeader: (kind: HeaderKind, label: string) => `Removed the ${kind} “${label}”`,

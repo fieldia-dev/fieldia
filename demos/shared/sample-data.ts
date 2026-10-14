@@ -44,6 +44,8 @@ import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
 import { CONTAINED_RECORDS, containedPage } from './contained';
+import listingPhotos from '../../examples/pages/listing-photos.page.json';
+import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -109,6 +111,8 @@ export const pages: Record<string, Page> = {
   ...real.pages,
   // The template library, ready pages to start from: shared/templates.ts.
   ...templatePages,
+  // A listing whose photos go to the store as each is picked: shared/listing-photos.ts.
+  'listing-photos': listingPhotos as Page,
 };
 
 /**
@@ -324,7 +328,10 @@ function quietHeader(page: Page): Page {
 
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
-  return createMemoryDataSource(withReal({
+  const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
+  const source = createMemoryDataSource(withReal({
+    // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
+    ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
     attachments: billAttachments(),
     // What links show of their records besides their names: an address, a picture, a colour.
@@ -343,6 +350,7 @@ export function sampleDataSource() {
       'wi.history': { 1: wiHistoryRecord() },
       ...CONTAINED_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
+      listing: { 1: LISTING },
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',
@@ -549,6 +557,10 @@ export function sampleDataSource() {
       },
     },
   }));
+  // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
+  const upload = listingUpload(params);
+  if (upload) source.upload = upload;
+  return source;
 }
 
 /** The samples' data source options with the real lanes' beside them: a model's records, rules and lists added to, never replaced. */
