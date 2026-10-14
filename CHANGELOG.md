@@ -2,8 +2,8 @@
 
 What changed in each release of Fieldia, newest first, in plain words. Every
 package (`@fieldia/core`, `widgets`, `viewer`, `grid`, `code`, `monaco`, `map`,
-`chatter`, `react`, `vue`, `angular`, `designer`) is released together at one
-version, so one entry covers them all.
+`calendar`, `chatter`, `react`, `vue`, `angular`, `designer`) is released
+together at one version, so one entry covers them all.
 
 **Before 1.0**, a minor version (0.19 → 0.20) may change what an app writes.
 Each such change is listed under **Upgrading** in its release. A page saved by
