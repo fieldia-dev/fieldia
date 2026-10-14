@@ -120,6 +120,41 @@ test.describe('a date, a date and time, a time', () => {
     });
   }
 
+  for (const [locale, query, typed, shown, why] of [
+    ['en', '', '1x5/10/2026', '1', 'Start date: “⁨1x5/10/2026⁩” is not a whole date yet; write it like 31/12/YYYY'],
+    ['ar', '&locale=ar&dir=rtl', arabic('1') + 'x' + arabic('5/10/2026'), arabic('1'), 'Start date: «⁨' + arabic('1') + 'x' + arabic('5/10/2026') + '⁩» ليس تاريخًا كاملًا بعد؛ اكتبه مثل 31/12/YYYY'],
+    ['fr', '&locale=fr', '1x5/10/2026', '1', 'Start date : « ⁨1x5/10/2026⁩ » n’est pas encore une date complète ; écrivez-la comme 31/12/YYYY'],
+  ] as const) {
+    test(`${locale}: a stray letter never makes a date of the keys around it — 1x5/10/2026 is never 15 October`, async ({ page }) => {
+      ({ problems } = await open(page, 'plain', `page=fields&skin=outlined${query}`));
+      const before = await valueOf(page, 'start_date');
+      const start = boxOf(page, 'f-start');
+      const message = why.replace('YYYY', String(new Date().getFullYear()));
+      await enter(start);
+      await start.pressSequentially(typed);
+      // The letter is refused, and the keys after it wait with it: the box never shows a date made without it.
+      await expect(start).toHaveValue(shown);
+      await expect(hintOf(page, 'f-start')).toBeVisible();
+      expect(await valueOf(page, 'start_date')).toBe(before);
+      // Left so, all that was typed stays in the box, marked, with why; the field keeps its day.
+      await page.keyboard.press('Tab');
+      await expect(start).toHaveValue(typed);
+      await expect(start).toHaveAttribute('aria-invalid', 'true');
+      await expect(errorOf(page, 'f-start')).toHaveText(message);
+      expect(await valueOf(page, 'start_date')).toBe(before);
+      // Typed again, Backspace takes the waiting keys back one by one, the refused one last; then the day typed is taken.
+      await enter(start);
+      await start.pressSequentially(typed);
+      for (let i = 0; i < [...typed].length - [...shown].length; i++) await start.press('Backspace');
+      await expect(hintOf(page, 'f-start')).toBeHidden();
+      await expect(start).toHaveValue(shown);
+      await start.pressSequentially(locale === 'ar' ? arabic('/10/2026') : '/10/2026');
+      await page.keyboard.press('Tab');
+      expect(await valueOf(page, 'start_date')).toBe('2026-10-01');
+      await expect(errorOf(page, 'f-start')).toBeHidden();
+    });
+  }
+
   test('a letter is refused at the keystroke, with words under the box; a paste that is no date too', async ({ page }) => {
     for (const [scheme, dir] of [['light', ''], ['dark', '&locale=ar&dir=rtl']] as const) {
       ({ problems } = await open(page, 'plain', `page=fields&skin=outlined&scheme=${scheme}${dir}`));
