@@ -83,3 +83,9 @@
   2026-10-15T14:30. The date box's input rules are the date part's
   `dateRules`, for any box a date is typed into, and `typingText` and
   `restingText` write a date as a box shows it while typed and at rest.
+- **A date is never made of the keys around a refused one.** In a date, a
+  date and time or a time box — a field's, a table's cell, a designer's
+  setting — the keys typed after a refused letter wait with it, as a
+  number's do: "1x5/10/2026" is never 15 October. Backspace takes them back;
+  left so, the box keeps all that was typed, marked, with why, and the field
+  keeps its day.

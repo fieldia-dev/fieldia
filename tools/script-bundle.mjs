@@ -648,8 +648,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Fieldia's own date box (0.20.1) — its guard and what it keeps once left — with a date's calendar and a range of dates
 // on its own calendar, cut out of the main script (date-box, calendar, date-range: 18.9, 7.1, as measured, 18.89 and 7.02).
 // The date box's input rules given to every other box a date is typed into — a designer's day, time and value set
-// when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.1, 7.1] };
+// when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03). The keys typed after a
+// refused one waiting with it, read whole as the box is left, so "1x5/10/2026" is never 15 October (date 7.2 gzipped,
+// as measured 19.09 and 7.1).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.1, 7.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
