@@ -413,7 +413,7 @@ test.describe('the refusal hints’ look', () => {
     ['light', '&locale=ar&dir=rtl'],
     ['dark', '&locale=ar&dir=rtl'],
   ] as const) {
-    test(`${scheme}${query ? ', right to left' : ''}: the grid's and the custom filter's`, async ({ page, context }) => {
+    test(`${scheme}${query ? ', right to left' : ''}: the grid's, the custom filter's and the designer's`, async ({ page, context }) => {
       await context.grantPermissions(['clipboard-read', 'clipboard-write']);
       await page.emulateMedia({ colorScheme: scheme });
       const { problems } = await open(page, 'plain', `page=order&skin=outlined${query}`);
@@ -430,6 +430,24 @@ test.describe('the refusal hints’ look', () => {
       await page.keyboard.press('Control+V');
       await expect(grid.locator('.fd-grid-paste-note')).toBeVisible();
       await grid.screenshot({ path: `test-results/screens/input-tables-hint-paste-${scheme}${query ? '-rtl' : ''}.png` });
+      // The custom filter's words, beside its value.
+      await page.goto(`/plain/?page=customers&skin=underline${query}`);
+      await page.locator('.fd-search-toggle').first().click();
+      await page.locator('.fd-search-add').first().click();
+      const form = page.locator('.fd-custom-filter:visible');
+      await form.locator('select').first().selectOption('credit_limit');
+      await form.locator('.fd-custom-filter-value input').pressSequentially('x');
+      await expect(form.locator('.fd-refusal-hint')).toBeVisible();
+      await form.screenshot({ path: `test-results/screens/input-tables-hint-filter-${scheme}${query ? '-rtl' : ''}.png` });
+      // The designer's, under a setting's box.
+      await page.goto(`/screen/?start=list${query}`);
+      const rows = page.locator('.fd-properties input.fd-input[placeholder="40"]').first();
+      await rows.click();
+      await rows.press('Control+A');
+      await rows.pressSequentially('600');
+      await rows.press('Tab');
+      await expect(page.locator('.fd-properties .fd-refusal-hint').first()).toBeVisible();
+      await page.locator('.fd-properties').screenshot({ path: `test-results/screens/input-tables-hint-designer-${scheme}${query ? '-rtl' : ''}.png` });
       expect(problems).toEqual([]);
     });
   }
