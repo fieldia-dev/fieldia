@@ -6,7 +6,7 @@ import type { JsonValue } from '../format/json';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
-import { checkValue } from './check';
+import { checkProperties, checkValue } from './check';
 import { checkInput } from './inputs';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
@@ -693,7 +693,24 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function checked(name: string): Field {
     const def = page.fields[name];
     const loaded = state.choices[name]?.options;
+    if (def.type === 'properties' && def.definitionsFrom) {
+      // The definitions the linked record keeps, once loaded: each property checked as one of its kind.
+      const definitions = state.definitions[name]?.definitions;
+      return definitions ? { ...def, definitions } : def;
+    }
     return def.type === 'selection' && def.optionsFrom && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+  }
+
+  /** A properties field's problems, each at its property's path (`field.property`), as its row shows them. */
+  function propertyProblems(name: string): Record<string, string> {
+    const def = checked(name);
+    if (def.type !== 'properties') return {};
+    return Object.fromEntries(Object.entries(checkProperties(def.definitions, state.values[name], messages, today())).map(([property, message]) => [`${name}.${property}`, message]));
+  }
+
+  /** A field's own problem, less what its properties' rows say of themselves. */
+  function besidesRows(name: string, message: string | undefined): string | undefined {
+    return message !== undefined && page.fields[name]?.type === 'properties' && Object.values(propertyProblems(name)).includes(message) ? undefined : message;
   }
 
   function track<T>(promise: Promise<T>): Promise<T> {
@@ -820,7 +837,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (errors[name]) continue;
       const def = page.fields[name];
       const message = nodeError(node);
-      if (message) errors[name] = message;
+      // A property says its own problem on its row; the field, only what is its own (that it is required).
+      if (def.type === 'properties') Object.assign(errors, propertyProblems(name));
+      if (besidesRows(name, message)) errors[name] = message as string;
       if (def.type === 'one2many') {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
           // A section or note answers only for its text, never for what an item needs.
@@ -850,6 +869,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** The value at a path: a field's, or a line's cell (`field.lineKey.subfield`); `gone` when the line is not there. */
   function valueAt(values: Readonly<Values>, path: string): Value | undefined | typeof gone {
     const parts = path.split('.');
+    // A property of a properties field (`field.property`).
+    if (parts.length === 2 && page.fields[parts[0]]?.type === 'properties') {
+      const held = values[parts[0]];
+      return held && typeof held === 'object' && !Array.isArray(held) ? (held as Record<string, Value>)[parts[1]] : undefined;
+    }
     if (parts.length < 3) return values[path];
     const [field, sub] = [parts[0], parts[parts.length - 1]];
     const key = parts.slice(1, -1).join('.');
@@ -881,10 +905,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (isEmpty(fieldDef(field), value)) return undefined;
       return (
         shown.map((node) => checkInput(page.fields[field], node.source as FieldNode, value, messages)).find(Boolean) ??
-        checkValue(checked(field), value, false, messages, today()) ??
+        besidesRows(field, checkValue(checked(field), value, false, messages, today())) ??
         shown.map((node) => ruleCheck(node).error).find(Boolean)
       );
     }
+    if (parts.length === 2 && page.fields[field]?.type === 'properties') return propertyProblems(field)[path];
     const def = lineField(field);
     const sub = def.fields[parts[parts.length - 1]] as LineField | undefined;
     const value = valueAt(state.values, path);
@@ -1449,6 +1474,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
       if (state.unread[name]) return state.unread[name].message;
+      // A property's text left unread answers for its field.
+      if (page.fields[name].type === 'properties') {
+        const row = Object.keys(state.unread).find((path) => path.startsWith(`${name}.`));
+        if (row) return state.unread[row].message;
+      }
       const own =
         shown.map(unticked).find(Boolean) ??
         shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
@@ -1458,8 +1488,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     setUnread(path, unread) {
       const field = path.split('.')[0];
-      fieldDef(field);
-      if (path.includes('.')) lineField(field);
+      // A line's cell (`field.lineKey.subfield`), or a property (`field.property`).
+      const def = fieldDef(field);
+      if (path.includes('.') && def.type !== 'properties') lineField(field);
       const had = state.unread[path];
       if (!unread && !had) return;
       if (unread && had && had.text === unread.text && had.message === unread.message) return;

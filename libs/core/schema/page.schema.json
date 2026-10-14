@@ -397,6 +397,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1866,6 +1870,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -2464,6 +2472,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -3638,6 +3650,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [

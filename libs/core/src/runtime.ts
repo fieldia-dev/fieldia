@@ -126,7 +126,7 @@ export {
   type Value,
   type Values,
 } from './lib/record/values';
-export { checkValue, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
+export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
 export type {
   DataSource,
@@ -208,4 +208,6 @@ export {
   type TimeRead,
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
-export { ADDRESS_PARTS } from './lib/record/structures';
+export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
+export { webAddress, settledText, hasPattern } from './lib/record/inputs';
+export { fieldPattern } from './lib/format/pattern';

@@ -1,7 +1,8 @@
-import type { Field, LineField } from '../format/field';
+import type { Field, LineField, PropertyDefinition } from '../format/field';
+import { fieldPattern } from '../format/pattern';
 import { checkDay } from './limits';
 import { fill, MESSAGES, type Messages } from './messages';
-import { charCount, MOST_DIGITS, placesOf } from './input-rules';
+import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
@@ -30,11 +31,17 @@ export function checkValue(
     case 'text':
     case 'html': {
       if (typeof value !== 'string') return say('text');
-      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && charCount(value) > field.size) {
-        return say('maxLength', { max: field.size });
+      // Characters as a person sees them and a server counts them: an emoji is one. A text pasted over its most is
+      // kept whole, and told how far over it is.
+      const count = (field.type === 'char' || field.type === 'text') && field.size !== undefined ? charCount(value) : 0;
+      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && count > field.size) {
+        return say('overBy', { max: field.size, over: count - field.size });
       }
-      if (field.type === 'char' && field.pattern !== undefined && !new RegExp(field.pattern).test(value)) {
-        return say('pattern');
+      // The whole answer, trimmed, its digits as 0-9 and no direction marks: "١١٥١١" is five digits. A pattern that
+      // does not read is the page's to fix (checkPage names it), never a reason to refuse a person.
+      const pattern = field.type === 'char' && field.pattern !== undefined ? fieldPattern(field.pattern) : null;
+      if (field.type === 'char' && pattern instanceof RegExp && !pattern.test(foldDigits(stripMarks(value)).trim())) {
+        return field.patternHint ? fill(field.patternHint, { label }) : say('pattern');
       }
       return undefined;
     }
@@ -92,9 +99,30 @@ export function checkValue(
     case 'binary':
     case 'image':
       return checkFiles(field, value, say, messages);
+    case 'properties':
+      return Object.values(checkProperties(field.definitions, value, messages, today))[0];
     default:
       return undefined;
   }
+}
+
+/**
+ * A properties value checked property by property, each as a field of its
+ * kind: text, a whole number, a number, yes or no, a choice, a date. Their
+ * problems by property name, in their definitions' order, each naming its
+ * property ("Floor must be a whole number"). Nothing is asked of properties
+ * with no definitions: each is then worked out from what it holds.
+ */
+export function checkProperties(definitions: readonly PropertyDefinition[] | undefined, value: Value | undefined, messages: Messages = MESSAGES.en, today?: string): Record<string, string> {
+  const problems: Record<string, string> = {};
+  if (!definitions || !value || typeof value !== 'object' || Array.isArray(value)) return problems;
+  const values = value as Record<string, Value>;
+  for (const definition of definitions) {
+    const field = { type: definition.type, label: definition.label, ...(definition.options ? { options: definition.options } : {}) } as Field;
+    const problem = checkValue(field, values[definition.name], false, messages, today);
+    if (problem) problems[definition.name] = problem;
+  }
+  return problems;
 }
 
 /** A matrix: an answer per row, each from the columns; every row answered when required. */

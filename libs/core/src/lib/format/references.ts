@@ -10,6 +10,8 @@ import { valuesIn } from './words';
 import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
+import { fieldPattern } from './pattern';
+import { fill, MESSAGES } from '../record/messages';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -375,6 +377,11 @@ export class ReferenceCheck {
       }
       if ((def.type === 'many2one' || def.type === 'many2many') && def.filter) {
         def.filter.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, scope));
+      }
+      // A pattern reads, or the page says why: a person's Save never ends on a pattern the page got wrong.
+      if (def.type === 'char' && def.pattern !== undefined) {
+        const pattern = fieldPattern(def.pattern);
+        if (pattern instanceof Error) this.report(`${path}.pattern`, fill(MESSAGES.en.patternBroken, { label: def.label, problem: pattern.message }));
       }
       if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));

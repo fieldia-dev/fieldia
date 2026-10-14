@@ -1,24 +1,79 @@
 import type { Field } from '../format/field';
 import type { FieldNode } from '../format/layout';
+import { foldDigits, stripMarks } from './input-rules';
 import { fill, type Messages } from './messages';
 import { checkStructure } from './structures';
 import type { Value } from './values';
 
 /**
  * What a text field's widget asks of its answer, besides the field's own
- * rules: an email, a web address (example.com, www.example.com or https://…),
- * a phone number (a plus, digits, spaces, dots, dashes and brackets, 7 to 15
- * digits), a time of day (HH:MM, between the node's `min` and `max`), and no
- * more keywords than the node's `max` — and the structures' own, from
- * `structures`. Undefined when it keeps them, or when there is nothing to
- * check: an empty answer is `required`'s to judge.
+ * rules: an email, a web address (example.com, localhost:3000, 192.168.1.10,
+ * https://…), a phone number (a plus, digits in any script, spaces, dots,
+ * dashes and brackets, 7 to 15 digits), a time of day (HH:MM, between the
+ * node's `min` and `max`), and no more keywords than the node's `max` — and
+ * the structures' own, from `structures`. Invisible direction marks, which
+ * text copied from Arabic carries, are no part of an address or a number.
+ * Undefined when it keeps them, or when there is nothing to check: an empty
+ * answer is `required`'s to judge.
  */
 const FORMATS: Record<string, RegExp> = {
-  email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
-  url: /^(https?:\/\/)?([\p{L}\p{N}-]+\.)+\p{L}{2,}(:\d+)?([/?#]\S*)?$/iu,
+  email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/u,
   phone: /^\+?[\p{Nd}\s.()-]+$/u,
   time: /^([01]\d|2[0-3]):[0-5]\d$/,
 };
+
+/** A web address's parts: its scheme, its host (a name, an IPv4 or an [IPv6] address), its port and the rest. */
+const WEB = /^(?:([a-z][a-z0-9+.-]*):\/\/)?(\[[0-9a-f:.]+\]|[^\s/?#:[\]@]+)(?::(\d{1,5}))?([/?#]\S*)?$/iu;
+/** A scheme a link must never have: it runs code or reads the computer's files. */
+const NEVER = /^(?:javascript|data|vbscript|file):/i;
+/** A name's label: letters and digits in any script, with dashes inside it. */
+const LABEL = /^[\p{L}\p{N}\p{M}](?:[\p{L}\p{N}\p{M}-]*[\p{L}\p{N}\p{M}])?$/u;
+
+/**
+ * Whether text is a web address, and if not, why: 'scheme' for one of
+ * another kind — javascript:, data:, mailto:, ftp: — which never goes where a
+ * web address does; 'bad' for text that is no address. With or without
+ * http:// or https://; a name with dots and a top level of two or more
+ * letters (example.com, مثال.مصر), a single name (localhost, intranet), an
+ * IPv4 or IPv6 address, and a port.
+ */
+export function webAddress(text: string): 'ok' | 'scheme' | 'bad' {
+  const t = stripMarks(text).trim();
+  if (NEVER.test(t)) return 'scheme';
+  // Another scheme ("mailto:", "ftp://"), not a name and its port ("localhost:3000").
+  const scheme = /^([a-z][a-z0-9+.-]*):(?!\d)/i.exec(t);
+  if (scheme && !/^https?$/i.test(scheme[1])) return 'scheme';
+  const parts = WEB.exec(t);
+  if (!parts) return 'bad';
+  const [, , host, port] = parts;
+  if (port !== undefined && Number(port) > 65535) return 'bad';
+  if (host.startsWith('[')) return host.split(':').length >= 3 ? 'ok' : 'bad';
+  const labels = host.split('.');
+  if (labels.every((label) => /^\d+$/.test(label))) return labels.length === 4 && labels.every((n) => Number(n) <= 255) ? 'ok' : 'bad';
+  if (!labels.every((label) => LABEL.test(label))) return 'bad';
+  const top = labels[labels.length - 1];
+  return labels.length === 1 || ([...top].length >= 2 && !/^\d+$/.test(top)) ? 'ok' : 'bad';
+}
+
+/**
+ * The text a one-line box keeps once it is left, in place of what was typed:
+ * a phone number and an answer a pattern checks with their digits as 0-9
+ * and no direction marks; an email and a web address with no direction
+ * marks; any other text with none at its ends — each trimmed, spaces alone
+ * being nothing. A password is kept as it is.
+ */
+export function settledText(text: string, kind: { widget?: string; pattern?: boolean }): string {
+  const { widget, pattern } = kind;
+  if (widget === 'password') return text;
+  if (widget === 'phone' || pattern) return foldDigits(stripMarks(text)).trim();
+  if (widget === 'email' || widget === 'url') return stripMarks(text).trim();
+  return stripMarks(text, 'ends').trim();
+}
+
+/** Whether a field's answer is checked against a pattern: the field's own, or an answer rule's on its node. */
+export function hasPattern(field: Field, node: FieldNode): boolean {
+  return (field.type === 'char' && field.pattern !== undefined) || !!node.validate?.some((rule) => rule.pattern !== undefined);
+}
 
 export function checkInput(field: Field, node: FieldNode, value: Value | undefined, messages: Messages): string | undefined {
   const widget = node.widget ?? '';
@@ -34,11 +89,18 @@ export function checkInput(field: Field, node: FieldNode, value: Value | undefin
   }
   if (field.type !== 'char') return checkStructure(field, node, value, messages);
   if (typeof value !== 'string' || !value.trim()) return undefined;
-  const text = value.trim();
+  // An address or a number copied from Arabic text brings direction marks along: no part of it, never a reason to refuse it.
+  const text = widget === 'phone' ? foldDigits(stripMarks(value)).trim() : widget === 'email' || widget === 'url' ? stripMarks(value).trim() : value.trim();
   const options = node.options ?? {};
   const label = node.label ?? field.label;
+  if (widget === 'url') {
+    const address = webAddress(text);
+    if (address !== 'ok') return address === 'scheme' ? messages.urlScheme : messages.url;
+  }
   const format = FORMATS[widget];
   const digits = text.match(/\p{Nd}/gu)?.length ?? 0;
+  // Any other invisible character left in an email (a zero-width space, a joiner) makes an address no mail reaches.
+  if (widget === 'email' && /\p{Cf}/u.test(text)) return messages.email;
   if (format && (!format.test(text) || (widget === 'phone' && (digits < 7 || digits > 15)))) return messages[widget as 'email'];
   if (widget === 'time') {
     if (typeof options['min'] === 'string' && text < options['min']) return fill(messages.before, { label, min: options['min'] });
