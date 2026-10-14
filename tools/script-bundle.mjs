@@ -461,7 +461,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // and a properties field draw from, found before a page is drawn, and a saved form placed in a page waiting for its own
 // as the page does (0.4); the date part's names in the parts' table and its wiring (0.3) — 15.0 less, to 564.8
 // (measured 564.71).
-const BUDGET_KB = 564.8;
+// The keys that save, with the input rules (0.20.1): Enter in a one-line box never judged as typing, and a paste that
+// says what it left out (0.2); every save, check and step forward reading what is still typed first — the form's
+// readers, the viewer's change to the box typed in, a number's, hours', per cent's, share's and colour's reading
+// split from their leaving (0.6); a phone number's, an email's, a line's and a colour code's keys held after a refused
+// one (0.3); a time's or hours' one-digit minute named with both times it could be, never quietly :03, and the time a
+// day leaves out named (0.8); a count of one said in the singular by the language's own rules (0.3); their English
+// words (0.4) — 2.6 more, to 567.4 (measured 567.32).
+const BUDGET_KB = 567.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -529,8 +536,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (measured 179.22). Fieldia's own date box, its calendar and a range of dates loaded on first use, in fieldia.date.js
 // (7.0 gzipped), the reader they share with tables, pastes and filters kept, and a plain box on it for a date drawn
 // before its part came (listed with the raw budget above): 4.9 less, to 174.4 (measured 174.35) — 16.5 over 0.20.0's
-// 157.9 for the input rules every page draws at mount.
-const GZIP_BUDGET_KB = 174.4;
+// 157.9 for the input rules every page draws at mount. The keys that save with the input rules (Enter never judged,
+// a save reading what is still typed first, keys held in every text box, a one-digit minute named, a count of one in
+// the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11).
+const GZIP_BUDGET_KB = 175.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -573,7 +582,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // bytes each), German's to 15.1 and 6.0, French's to 15.5 and 6.0.
 // Their last gaps (0.20.1) — a year of two digits and both centuries it could be, several choices of one name, a ":"
 // before an email's @, three in each — Arabic's to 35.9 and 7.1, German's to 15.4 and 6.1, French's to 15.7 and 6.1.
-const ADD_ON_BUDGET_KB = { ar: [35.9, 7.1], de: [15.4, 6.1], fr: [15.7, 6.1] };
+// The keys that save (0.20.1) — a time's one-digit minute and both times it could be, the time a day leaves out, and a
+// pasted count, a count of lines and the characters over said for one — five in each: Arabic's to 36.6, German's to
+// 15.7 and 6.2, French's to 16.1 and 6.2.
+const ADD_ON_BUDGET_KB = { ar: [36.6, 7.1], de: [15.7, 6.2], fr: [16.1, 6.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -650,8 +662,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The date box's input rules given to every other box a date is typed into — a designer's day, time and value set
 // when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03). The keys typed after a
 // refused one waiting with it, read whole as the box is left, so "1x5/10/2026" is never 15 October (date 7.2 gzipped,
-// as measured 19.09 and 7.1).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.1, 7.2] };
+// as measured 19.09 and 7.1). A date's box read as a save reads it first (a change), and a date and time pasted into
+// it saying the time it left out (date 19.3, as measured 19.29 and 7.17).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

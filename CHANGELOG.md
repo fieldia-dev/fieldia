@@ -89,3 +89,31 @@
   number's do: "1x5/10/2026" is never 15 October. Backspace takes them back;
   left so, the box keeps all that was typed, marked, with why, and the field
   keeps its day.
+- **Enter saves from every one-line box again, as in 0.20.** The input
+  rules took Enter in a number, an email or a box at its most characters for
+  a typed line break: it was refused with false words ("several were
+  pasted", "no spaces", "at most 120 characters") and the form was not sent.
+  Enter in one line is now never judged, held or stopped: it sends the form,
+  or moves to the next field where the page asks.
+- **A save reads what is still typed first.** Ctrl+Enter, a button's key,
+  the app's own `form.save()`, a check, a wizard's step forward and the
+  record pager read the box being typed in before anything is saved, as
+  leaving it would: a number, hours or a per cent passed on the way ("1" of
+  "1.5", 12.3 of "12.34") is never saved; what does not read is refused with
+  its words under its box. Every form has `settling(read)`, for a box that
+  reads its text as it is left to say how to read it now, and `settle()`.
+- **A phone number, an email and a colour's code hold the keys typed after a
+  refused one**, as numbers and dates do: "+20 1oo 123 4567" is never the
+  number "+20 1 123 4567", "ahmed ali@example.com" never
+  "ahmedali@example.com", "#1x23" never #112233. Left so, all that was typed
+  stays, and the field says why.
+- **A time's one-digit minute is never quietly :03.** "14:3" could be 14:03
+  or 14:30, and "14.5" half past two: a time, a date and time, hours and a
+  pasted cell keep it unread and name both ("“14:3” could be 14:03 or 14:30;
+  write the minutes with two digits"). "14:7" can only be 14:07, and is read.
+- **A date and time pasted into a date says its time was left out**, and a
+  pasted cell of a date never takes an instant's day in silence.
+- **A block pasted into a per cent or hours column keeps to its places and
+  least**, as its box does: "12.555" in a column of two places is not pasted,
+  never shown as 12.56 %. "Pasted into 1 cell", "1 character too many": a
+  count of one is said in the singular, by the language's own rules.
