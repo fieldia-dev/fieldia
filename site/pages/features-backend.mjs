@@ -38,18 +38,21 @@ export const api: DataSource = {
     const row = await (await fetch(\`/api/\${model}/\${id}\`)).json();
     return loadedRecord(row.values, {
       version: { token: row.etag, by: row.changedBy, at: row.changedAt },
-      can: { edit: row.canEdit, delete: row.canDelete, readonlyFields: row.locked, reason: row.why },
+      can: { edit: row.canEdit, delete: row.canDelete, reason: row.why },
     });
   },
   async save({ model, id, changes, version }) {
     const response = await fetch(\`/api/\${model}/\${id}\`, {
       method: 'PATCH',
-      headers: { 'content-type': 'application/json', ...(version ? { 'if-match': version.token } : {}) },
+      headers: { 'content-type': 'application/json', 'if-match': version?.token ?? '*' },
       body: JSON.stringify(changes.values),
     });
     const row = await response.json();
     // Someone saved in between: who, when, and the record as they left it.
-    if (response.status === 409) throw new ConflictError({ version: { token: row.etag, by: row.changedBy, at: row.changedAt }, theirs: row.values });
+    if (response.status === 409) {
+      const now = { token: row.etag, by: row.changedBy, at: row.changedAt };
+      throw new ConflictError({ version: now, theirs: row.values });
+    }
     return { id: row.id, values: row.values, version: { token: row.etag } };
   },
 };`;
