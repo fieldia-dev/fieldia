@@ -200,3 +200,24 @@ test('on a phone: the two tabs one over the other, the conflict whole, nothing s
   await screen(page, 'save-safety-conflict-phone', { viewport: true });
   expect(problems).toEqual([]);
 });
+
+test('on a phone, after Reload: each Put back on its change’s first line, at the row’s end, never wrapped under it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const problems = await openDemo(page);
+  const form = await conflictInYourTab(page, { budget: true });
+  await banner(form).getByRole('button', { name: 'Reload' }).click();
+  const rows = form.locator('.fd-set-aside li');
+  await expect(rows).toHaveCount(2);
+  for (const row of await rows.all()) {
+    const label = (await row.locator('.fd-set-aside-label').boundingBox())!;
+    const put = (await row.getByRole('button', { name: /^Put back / }).boundingBox())!;
+    const line = (await row.boundingBox())!;
+    // Beside the field's name, not on a line of its own under the change.
+    expect(put.y).toBeLessThan(label.y + label.height);
+    expect(Math.abs(put.x + put.width - (line.x + line.width))).toBeLessThanOrEqual(1);
+  }
+  await expectNoSidewaysScroll(page);
+  await form.locator('.fd-set-aside').scrollIntoViewIfNeeded();
+  await screen(page, 'save-safety-reloaded-phone', { viewport: true });
+  expect(problems).toEqual([]);
+});

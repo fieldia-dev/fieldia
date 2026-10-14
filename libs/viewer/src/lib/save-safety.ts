@@ -76,7 +76,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   dismiss.addEventListener('click', () => form.discardSetAside());
   const asideId = `fd-set-aside-${++drawn}`;
   asideTitle.id = `${asideId}-title`;
-  const aside = el('section', { class: 'fd-set-aside', 'aria-labelledby': asideTitle.id, hidden: '' }, el('div', { class: 'fd-set-aside-head' }, asideTitle, dismiss), rows, all);
+  // Named by its words only while shown: hidden, its "not saved" must not answer for a field's label ("No").
+  const aside = el('section', { class: 'fd-set-aside', hidden: '' }, el('div', { class: 'fd-set-aside-head' }, asideTitle, dismiss), rows, all);
   let shownAside: Readonly<Values> | null = null;
 
   // ---- a record the person may only read ------------------------------------------------------------------
@@ -123,18 +124,25 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
             if (next) next.focus();
             else context.root().querySelector<HTMLElement>(`.fd-field[data-field="${name}"] :is(input, select, textarea, [contenteditable="true"])`)?.focus();
           });
+          // The words wrap on a phone; Put back keeps to the row's end, beside the change it puts back.
           return el(
             'li',
             {},
-            el('span', { class: 'fd-set-aside-label' }, fieldLabel(name)),
-            el('bdi', { class: 'fd-set-aside-mine' }, mine || '—'),
-            ...(now !== mine ? [el('span', { class: 'fd-set-aside-now' }, fill(labels.nowIs, { value: now || '—' }))] : []),
+            el(
+              'span',
+              { class: 'fd-set-aside-what' },
+              el('span', { class: 'fd-set-aside-label' }, fieldLabel(name)),
+              el('bdi', { class: 'fd-set-aside-mine' }, mine || '—'),
+              // What it holds now, the value in its own direction: a phone number among Arabic words keeps its order.
+              ...(now !== mine ? [el('span', { class: 'fd-set-aside-now' }, ...labels.nowIs.split(/(\{value\})/).map((part) => (part === '{value}' ? el('bdi', {}, now || '—') : part)))] : [])
+            ),
             put
           );
         })
       );
       setHidden(all, names.length < 2);
       setHidden(aside, names.length === 0);
+      setAttr(aside, 'aria-labelledby', names.length ? asideTitle.id : null);
     }
 
     // Only to read: the source's reason, else the viewer's words.

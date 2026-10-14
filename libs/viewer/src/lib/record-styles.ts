@@ -91,7 +91,8 @@ export const RECORD_STYLES = /* css */ `
 .fd-set-aside-title { flex: 1 1 auto; margin: 0; font-weight: 650; }
 .fd-set-aside-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 2px; }
 .fd-set-aside-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.fd-set-aside-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; }
+.fd-set-aside-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 10px; }
+.fd-set-aside-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; }
 .fd-set-aside-label { font-weight: 600; }
 .fd-set-aside-mine { min-width: 0; overflow-wrap: anywhere; }
 .fd-set-aside-now { color: var(--fd-muted); }

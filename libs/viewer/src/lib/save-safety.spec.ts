@@ -157,8 +157,11 @@ describe('someone else saved first: the conflict, with Reload and Keep mine', ()
     button(conflict(host), 'Reload')?.click();
     await until(() => shown(aside(host)));
     expect(aside(host).contains(document.activeElement)).toBe(true);
+    expect(aside(host).getAttribute('aria-labelledby')).toBe(aside(host).querySelector('.fd-set-aside-title')?.id);
     (aside(host).querySelector('button[aria-label="Dismiss"]') as HTMLButtonElement).click();
     expect(shown(aside(host))).toBe(false);
+    // Hidden, it has no name: a label the page's own fields have ("No") finds them, not it.
+    expect(aside(host).hasAttribute('aria-labelledby')).toBe(false);
   });
 
   it('speaks the page’s language: Arabic words, the fields’ own names in it', async () => {
@@ -169,6 +172,17 @@ describe('someone else saved first: the conflict, with Reload and Keep mine', ()
     expect(words).toContain(clock(at, 'ar'));
     expect(words).toContain('المرحلة');
     expect(button(conflict(host), 'إعادة التحميل')).toBeTruthy();
+  });
+
+  it('after Reload in Arabic, each value set aside, and what it holds now, reads in its own direction', async () => {
+    const { host } = await refused({ locale: 'ar' });
+    button(conflict(host), 'إعادة التحميل')?.click();
+    await until(() => shown(aside(host)));
+    const phone = aside(host).querySelector('li') as HTMLElement;
+    // A phone number among Arabic words keeps its order: "+20 100 123 4567", not "4567 123 100 20+".
+    expect(phone.querySelector('.fd-set-aside-mine')?.tagName).toBe('BDI');
+    expect(phone.querySelector('.fd-set-aside-now bdi')?.textContent).toBe('+201001234567');
+    expect(phone.querySelector('.fd-set-aside-now')?.textContent).toBe('الآن +201001234567');
   });
 });
 
