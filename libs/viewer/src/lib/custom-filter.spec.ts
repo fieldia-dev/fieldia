@@ -12,15 +12,15 @@ import { mountViewer, type ViewerHandle } from './viewer';
 
 const page = {
   ...customers,
-  fields: { ...customers.fields, since: { type: 'date', label: 'Since' }, code: { type: 'char', label: 'Code' } },
+  fields: { ...customers.fields, since: { type: 'date', label: 'Since' }, code: { type: 'char', label: 'Code' }, orders: { type: 'integer', label: 'Sales' } },
 } as Page;
 const records = () =>
   createMemoryDataSource({
     records: {
       partner: {
-        1: { name: 'Nile Traders', state: 'active', credit_limit: 250000, since: '2025-03-01', code: 'N1' },
-        2: { name: 'Amira Clinics', state: 'draft', credit_limit: 50000, since: '2026-02-10', code: 'A2' },
-        3: { name: 'Petra Tours', state: 'active', credit_limit: 80000.5, since: '2024-11-20', code: 'P3' },
+        1: { name: 'Nile Traders', state: 'active', credit_limit: 250000, since: '2025-03-01', code: 'N1', orders: 12 },
+        2: { name: 'Amira Clinics', state: 'draft', credit_limit: 50000, since: '2026-02-10', code: 'A2', orders: 3 },
+        3: { name: 'Petra Tours', state: 'active', credit_limit: 80000.5, since: '2024-11-20', code: 'P3', orders: 7 },
       },
     },
   });
@@ -61,6 +61,50 @@ function type(box: HTMLInputElement, text: string) {
   box.value = text;
   box.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
 }
+
+/** Typed a key at a time, as a keyboard does: each key judged before it lands. */
+function keys(box: HTMLInputElement, text: string) {
+  box.focus();
+  for (const key of text) {
+    const typing = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: key });
+    box.dispatchEvent(typing);
+    if (typing.defaultPrevented) continue;
+    const at = box.selectionStart ?? box.value.length;
+    box.setRangeText(key, at, box.selectionEnd ?? at, 'end');
+    box.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: key }));
+  }
+}
+
+describe('a custom filter’s number, never made of what was typed by dropping a key', () => {
+  for (const [locale, typed, shows, said] of [
+    ['en', '1.5', '1.5', 'Sales must be a whole number'],
+    ['ar', '١٫٥', '١٫', 'يجب أن يكون Sales رقمًا صحيحًا'],
+    ['en', '1e5', '1', 'Sales: numbers only'],
+    ['fr', '1,5', '1,5', 'Sales doit être un nombre entier'],
+  ] as const) {
+    it(`${locale}: "${typed}" for a whole number is never 15: Apply keeps it as typed, and says why`, async () => {
+      const { choose, apply, chips, hint } = await open(locale);
+      const box = choose('orders', '>');
+      keys(box, typed);
+      expect(box.value).toBe(shows);
+      // Left for Apply with keys held, the hint stays: nothing under the pointer moves as the box is left.
+      box.blur();
+      if (shows !== typed) expect(hint()?.hidden).toBe(false);
+      apply();
+      expect(chips()).toEqual([]);
+      expect(box.value).toBe(typed);
+      expect(hint()?.hidden).toBe(false);
+      expect(hint()?.textContent).toBe(said);
+    });
+  }
+
+  it('reads 0,500, led by 0, as a half: never 500', async () => {
+    const { choose, apply, chips } = await open();
+    keys(choose('credit_limit', '>'), '0,500');
+    apply();
+    expect(chips()).toEqual(['Credit limit greater than 0.5']);
+  });
+});
 
 describe('a custom filter’s number', () => {
   it('is no browser number box: a text box with a number keyboard, read in the page’s language', async () => {

@@ -69,6 +69,39 @@ describe('a place kept in two number fields', () => {
     expect(document.querySelector('.fd-map-note')?.textContent).toBe('Not a coordinate');
   });
 
+  it('reads Persian digits and direction marks, as every number box does', () => {
+    const { form } = mount();
+    input('Latitude').value = '۳۰٫۰۴۴۴';
+    input('Longitude').value = '\u200f٣١٫٢٣\u200f';
+    input('Longitude').dispatchEvent(new Event('change'));
+    expect(form.getState().values).toMatchObject({ lat: 30.0444, lng: 31.23 });
+    expect((document.querySelector('.fd-map-note') as HTMLElement).hidden).toBe(true);
+  });
+
+  it('refuses a letter as it is typed, said under the box, and holds the keys after it: never a place nobody typed', () => {
+    const { form } = mount();
+    const lat = input('Latitude');
+    lat.focus();
+    for (const key of '30.0a4') {
+      const typing = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: key });
+      lat.dispatchEvent(typing);
+      if (typing.defaultPrevented) continue;
+      lat.setRangeText(key, lat.selectionStart ?? lat.value.length, lat.selectionEnd ?? lat.value.length, 'end');
+      lat.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: key }));
+    }
+    expect(lat.value).toBe('30.0');
+    const hint = lat.closest('label')?.nextElementSibling as HTMLElement;
+    expect(hint.classList.contains('fd-refusal-hint')).toBe(true);
+    expect(hint.textContent).toBe('Latitude: numbers only');
+    expect(lat.getAttribute('aria-describedby')).toContain(hint.id);
+    input('Longitude').value = '31';
+    lat.dispatchEvent(new Event('change'));
+    expect(lat.value).toBe('30.0a4');
+    expect(lat.getAttribute('aria-invalid')).toBe('true');
+    expect(form.getState().values['lat']).toBeNull();
+    expect(document.querySelector('.fd-map-note')?.textContent).toBe('Latitude: numbers only');
+  });
+
   it('read-only: its tools go and its coordinates cannot be typed in', () => {
     const { setReadonly } = mount();
     setReadonly(true);
