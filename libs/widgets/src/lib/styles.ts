@@ -590,7 +590,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-sections { display: grid; gap: var(--fd-gap-block, 24px); }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
 .fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; float: inline-start; width: 100%; }
-.fd-section-title + * { clear: both; }
+.fd-section-title ~ * { clear: both; }
 .fd-form[data-fd-skin="underline"] .fd-section-title {
   text-transform: uppercase; letter-spacing: 0.05em; font-size: 12.5px; color: var(--fd-muted);
   border-block-end: 1px solid var(--fd-border); padding-block-end: 6px; width: 100%;

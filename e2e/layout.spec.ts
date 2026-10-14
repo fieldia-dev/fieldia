@@ -263,6 +263,37 @@ test('layout: a tick box writes its words after it, on its line, and a note sits
   }
 });
 
+/**
+ * Each card's title as drawn: inside the card under its top edge, within its sides, and its parts 14px below it. A
+ * fieldset's legend that does not float is drawn on the fieldset's border, and Safari floats nothing in a grid or a
+ * flex column: there, every card's title broke the card's top edge.
+ */
+function cardTitles(page: Page) {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('.fd-form fieldset.fd-section[data-style="card"]')].flatMap((card) => {
+      const legend = card.querySelector(':scope > legend');
+      const after = [...card.children].find((child) => child !== legend && (child as HTMLElement).offsetHeight > 0);
+      if (!legend || !after || !card.offsetWidth) return [];
+      const [c, t, a] = [card, legend, after].map((el) => el.getBoundingClientRect());
+      const style = getComputedStyle(card);
+      const top = c.top + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+      return [{ card: card.dataset['node'], inside: t.top >= top - 0.5, within: t.left >= c.left - 0.5 && t.right <= c.right + 0.5, below: Math.round(a.top - t.bottom) }];
+    })
+  );
+}
+
+test('layout: a card’s title sits inside the card, under its top edge, and narrows with it', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const { problems } = await open(page, 'plain', LAYOUT);
+  const wide = await cardTitles(page);
+  expect(wide.length, 'cards looked at').toBeGreaterThanOrEqual(3);
+  for (const title of wide) expect(title, title.card).toEqual({ card: title.card, inside: true, within: true, below: 14 });
+  // Narrowed as a window is, or a tablet turned: each title is laid out again, within its card.
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect.poll(async () => (await cardTitles(page)).every((title) => title.inside && title.within && title.below === 14)).toBe(true);
+  expect(problems).toEqual([]);
+});
+
 test('layout: right to left in Arabic, mirrored part for part', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const { problems } = await open(page, 'plain', ARABIC);

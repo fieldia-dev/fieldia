@@ -8,7 +8,7 @@ import { installPartStyles, PART_RANK } from '@fieldia/widgets';
  */
 export const GROUP_CSS = /* css */ `
 /* ---- a group's heading with tools at its end: 16px words, a rule 50px down ---- */
-.fd-form .fd-section[data-head] { gap: 0; --fd-group-inset: 8px; }
+.fd-form .fd-section[data-head] { --fd-section-gap: 0; --fd-group-inset: 8px; }
 .fd-form .fd-section[data-head] > .fd-section-title {
   display: flex; align-items: center; float: none; width: 100%; box-sizing: border-box; min-height: 51px; margin: 0; padding: 0;
   border-block-end: 1px solid var(--fd-border); font-size: 16px; font-weight: 600; line-height: 22px; color: var(--fd-heading, var(--fd-text));

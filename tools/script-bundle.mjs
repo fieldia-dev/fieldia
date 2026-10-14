@@ -424,7 +424,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // than this Fieldia) — 5.2 more, to 530.4.
 // What Firefox and WebKit showed (a centred line written as a style in Firefox, an old align attribute kept as one, a
 // group's parts in a flex column, as Safari lays a narrowed group's title out again only there) — 0.2 more, to 530.6.
-const BUDGET_KB = 530.6;
+// Then a group laid out as blocks instead, its gaps as margins (layout-styles.ts): Safari floats nothing in a flex
+// column, so every card's title was drawn on the card's border — 0.2 more, to 530.8.
+const BUDGET_KB = 530.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
