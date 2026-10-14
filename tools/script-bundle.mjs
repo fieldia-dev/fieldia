@@ -444,8 +444,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // group ("1.234,56" typed on an English page), trailing zeros no places, a 0 never leading a group, and a number read
 // whole as its box is left or pasted (0.9); the boxes on it — a field's, an hours' or per cent's, shares, tax amounts in
 // their currency's places, the custom filter's (0.7); the hint kept as a box is left with keys held, so nothing under
-// the pointer moves (0.1) — 2.7 more, to 576.0 (measured 575.96).
-const BUDGET_KB = 576.0;
+// the pointer moves (0.1) — 2.7 more, to 576.0 (measured 575.96). A formula list's numbers read as the formula's own
+// (Arabic and Persian digits, ٫; never hex or an exponent) — 0.1 more, to 576.1 (measured 576.05).
+const BUDGET_KB = 576.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
