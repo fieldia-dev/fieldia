@@ -3,6 +3,7 @@ import { unsavedWork } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
+import { askDiscard, keptWork, lastSent, workLeft } from './discard';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
@@ -196,8 +197,9 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     // A dialog has no pager or breadcrumbs: they belong to the record under it.
     records: undefined,
     breadcrumbs: undefined,
-    // A `close` step after the same run saved closes it saved: Save and Close.
-    host: { ...options.host, close: () => close(saves > savesBefore) },
+    // A `close` step after the same run saved closes it saved: Save and Close — once nothing of the person's is left
+    // unsaved, or they let it go.
+    host: { ...options.host, close: () => void finish(saves > savesBefore) },
   });
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
   if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
@@ -229,6 +231,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     if (!run.startsWith('on.')) savesBefore = saves;
   });
   let close = (saved: boolean) => void saved;
+  let finish = (saved: boolean): Promise<void> => Promise.resolve(void saved);
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
   // Into the dialog: its field that takes the focus (focus) or its first, once the record is in, or the dialog itself meanwhile.
@@ -252,45 +255,40 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       opener?.focus();
       resolve(result);
     };
-    /** "Discard your changes?" over the panel, the focus on Cancel; true for Discard. Its keys are its own. */
-    const ask = () =>
-      new Promise<boolean>((answer) => {
-        const was = doc.activeElement as HTMLElement | null;
-        const text = make('p', { id: `${id}-ask` }, labels.discardChanges);
-        const no = make('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-        const yes = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.discard);
-        const buttons = make('div', { class: 'fd-actions fd-actions-end' });
-        const question = make('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id });
-        const shade = make('div', { class: 'fd-dialog-backdrop' });
-        buttons.append(no, yes);
-        question.append(text, buttons);
-        shade.append(question);
-        const end = (discarding: boolean) => {
-          shade.remove();
-          was?.focus();
-          answer(discarding);
-        };
-        no.addEventListener('click', () => end(false));
-        yes.addEventListener('click', () => end(true));
-        shade.addEventListener('keydown', (event) => {
-          event.stopPropagation();
-          if (event.key === 'Escape') end(false);
-          else keepTabIn(question, event);
-        });
-        box.append(shade);
-        no.focus();
-      });
-    /** Escape and ×: a panel, or a dialog round a page with a head, asks first when there are changes in it; any other dialog closes at once, as it always has. */
-    const leave = async () => {
-      // A file still on its way to the store is a change too, and so are changes Reload set aside.
-      const changed = unsavedWork(handle.form.getState());
-      if (!(panel || headed) || !changed || (await ask())) close(false);
+    /**
+     * Close, unless the person's work would go unasked: asked "Discard your changes?" first — over the dialog, the
+     * focus on Cancel, its keys its own — and kept, the dialog open, on Cancel. One question at a time: another way
+     * out while it is asked is the same question.
+     */
+    let asking = false;
+    const closeAsking = async (saved: boolean, left: boolean): Promise<void> => {
+      if (asking) return;
+      if (!left) return close(saved);
+      asking = true;
+      if (await askDiscard(box, labels, () => (asking = false))) close(saved);
+    };
+    /**
+     * After a save, or a run that saved: closed saved once nothing is left unsaved — a change made while it saved, a
+     * file picked meanwhile, changes Reload set aside. Values handed back (`values` mode) are the person's changes
+     * themselves; only what was set aside and files on their way are asked about there. Closed unsaved by a page's own
+     * `close`, what has always gone with it goes, and save safety's work is asked about.
+     */
+    const sent = lastSent(handle.form);
+    finish = (saved: boolean) => closeAsking(saved, saved && options.mode !== 'values' ? workLeft(handle.form, sent.values()) : keptWork(handle.form.getState()));
+    /**
+     * Escape and ×: a panel, or a dialog round a page with a head, asks first when there are changes in it; any other
+     * dialog closes at once with a change not saved, as it always has — but asks about changes Reload set aside and
+     * files still on their way.
+     */
+    const leave = () => {
+      const state = handle.form.getState();
+      return closeAsking(false, panel || headed ? unsavedWork(state) : keptWork(state));
     };
     saveClose.addEventListener('click', async () => {
       saveClose.disabled = true;
       const accepted = options.mode === 'values' ? handle.check() : await handle.save();
       saveClose.disabled = false;
-      if (accepted) close(true);
+      if (accepted) await finish(true);
     });
     discard.addEventListener('click', () => close(false));
     // A footer button runs its steps; once they saved or sent, the dialog closes with the answers.
@@ -312,7 +310,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
         const result = await handle.form.runAction(node.id);
         button.removeAttribute('aria-busy');
         if (done) return;
-        if (saved) close(true);
+        if (saved) await finish(true);
         // A check or a save that stopped them shows its problems, as Save & Close does.
         else if (result.reason === 'check' || result.reason === 'save') handle.check();
       });

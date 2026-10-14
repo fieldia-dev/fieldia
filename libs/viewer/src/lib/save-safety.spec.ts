@@ -153,16 +153,34 @@ describe('someone else saved first: the conflict, with Reload and Keep mine', ()
     expect(shown(aside(host))).toBe(false);
   });
 
-  it('lets go of what was set aside with Dismiss, and takes the focus to the list as it shows', async () => {
-    const { host } = await refused();
+  it('lets go of what was set aside with Dismiss, asked first, and takes the focus to the list as it shows', async () => {
+    const { host, handle } = await refused();
     button(conflict(host), 'Reload')?.click();
     await until(() => shown(aside(host)));
     expect(aside(host).contains(document.activeElement)).toBe(true);
     expect(aside(host).getAttribute('aria-labelledby')).toBe(aside(host).querySelector('.fd-set-aside-title')?.id);
-    (aside(host).querySelector('button[aria-label="Dismiss"]') as HTMLButtonElement).click();
-    expect(shown(aside(host))).toBe(false);
+    const dismiss = aside(host).querySelector('button[aria-label="Dismiss"]') as HTMLButtonElement;
+    dismiss.focus();
+    dismiss.click();
+    // A discard, asked as every other is: the focus on Cancel, and Cancel keeps them, the focus back on ×.
+    await until(() => host.querySelector('[role="alertdialog"]'));
+    const ask = host.querySelector('[role="alertdialog"]') as HTMLElement;
+    expect(ask.textContent).toContain('Discard your changes?');
+    expect(document.activeElement).toBe(button(ask, 'Cancel'));
+    button(ask, 'Cancel')?.click();
+    await until(() => !host.querySelector('[role="alertdialog"]'));
+    expect(handle.form.getState().setAside).toEqual({ phone: '+201009998887', budget: 4200000 });
+    expect(shown(aside(host))).toBe(true);
+    expect(document.activeElement).toBe(dismiss);
+    dismiss.click();
+    await until(() => host.querySelector('[role="alertdialog"]'));
+    button(host.querySelector('[role="alertdialog"]') as HTMLElement, 'Discard')?.click();
+    await until(() => !shown(aside(host)));
+    expect(handle.form.getState().setAside).toBeNull();
     // Hidden, it has no name: a label the page's own fields have ("No") finds them, not it.
     expect(aside(host).hasAttribute('aria-labelledby')).toBe(false);
+    // The focus goes to the first field the changes were in, never to the page's body.
+    expect(document.activeElement).toBe(host.querySelector('[data-field="phone"] input'));
   });
 
   it('speaks the page’s language: Arabic words, the fields’ own names in it', async () => {
@@ -362,5 +380,56 @@ describe('Keep mine, when their version cannot be read', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(host.querySelector('.fd-announce')?.textContent).toContain('Their version could not be read');
     expect(ds.calls.filter((call) => call.method === 'save')).toHaveLength(1);
+  });
+});
+
+describe('after each button in the banner and the list, the focus lands where the person can go on', () => {
+  async function refusedOn(change: (host: Element) => void) {
+    const ds = source();
+    const mounted = await mount({ dataSource: ds });
+    change(mounted.host);
+    ds.changeElsewhere('lead', 1, { stage: 'visit', budget: 4500000 }, { by: 'Mona' });
+    expect(await mounted.handle.save()).toBe(false);
+    return { ...mounted, ds };
+  }
+  const phoneBox = (host: Element) => host.querySelector('[data-field="phone"] input');
+
+  it('Keep mine, once saved and the banner gone: on the first field the person changed', async () => {
+    const { host, handle } = await refusedOn((at) => type(at, 'phone', '+201009998887'));
+    const keep = button(conflict(host), 'Keep mine') as HTMLButtonElement;
+    keep.focus();
+    keep.click();
+    await until(() => handle.form.getState().status === 'saved');
+    await until(() => !conflict(host).hasAttribute('aria-busy'));
+    expect(shown(conflict(host))).toBe(false);
+    expect(document.activeElement).toBe(phoneBox(host));
+  });
+
+  it('Reload with nothing to set aside: on the first field that changed, and told it reloaded', async () => {
+    // The same change Mona made: nothing of mine differs from hers.
+    const { host, handle } = await refusedOn((at) => type(at, 'budget', '4500000'));
+    const reload = button(conflict(host), 'Reload') as HTMLButtonElement;
+    reload.focus();
+    reload.click();
+    await until(() => !shown(conflict(host)) && !conflict(host).hasAttribute('aria-busy'));
+    expect(handle.form.getState().setAside).toBeNull();
+    expect(document.activeElement).toBe(host.querySelector('[data-field="stage"] select'));
+    await until(() => host.querySelector('.fd-announce')?.textContent);
+    expect(host.querySelector('.fd-announce')?.textContent).toBe('Reloaded: this is the record as it is now.');
+  });
+
+  it('Put all back: on the first field put back', async () => {
+    const { host, handle } = await refusedOn((at) => {
+      type(at, 'phone', '+201009998887');
+      type(at, 'budget', '4200000');
+    });
+    button(conflict(host), 'Reload')?.click();
+    await until(() => shown(aside(host)));
+    const all = button(aside(host), 'Put all back') as HTMLButtonElement;
+    all.focus();
+    all.click();
+    expect(handle.form.getState()).toMatchObject({ setAside: null, dirty: ['phone', 'budget'] });
+    expect(shown(aside(host))).toBe(false);
+    expect(document.activeElement).toBe(phoneBox(host));
   });
 });

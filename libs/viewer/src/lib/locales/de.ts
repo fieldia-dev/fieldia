@@ -8,6 +8,8 @@ export const de: ViewerLabels = {
   discard: 'Verwerfen',
   saving: 'Wird gespeichert…',
   saved: 'Gespeichert',
+  savedNotLatest: 'Gespeichert, außer Ihren letzten Änderungen.',
+  sentNotLatest: 'Gesendet, außer Ihren letzten Änderungen.',
   savingAfterFile: '1 Datei wird noch hochgeladen. Gespeichert wird, sobald sie fertig ist.',
   savingAfterFiles: '{n} Dateien werden noch hochgeladen. Gespeichert wird, sobald sie fertig sind.',
   sendingAfterFile: '1 Datei wird noch hochgeladen. Gesendet wird, sobald sie fertig ist.',

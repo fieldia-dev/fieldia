@@ -19,7 +19,12 @@ export interface SaveSafetyContext {
   announce(text: string): void;
   /** The form's own element: a field put back takes the focus there, never in another form on the page. */
   root(): HTMLElement;
+  /** "Discard your changes?", the focus on Cancel: true to let the changes set aside go. */
+  discard(): Promise<boolean>;
 }
+
+/** A field's box that takes the focus: one a person types or chooses in, shown. */
+const FIELD_BOX = 'input:not([type="hidden"]):not([hidden]), select:not([hidden]), textarea:not([hidden]), [contenteditable="true"]';
 
 /**
  * The parts of a record that keep a person's work safe, each drawn over the
@@ -34,6 +39,28 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   const { el, form, labels, fill } = context;
   const fieldLabel = (name: string) => context.page.fields[name]?.label ?? name;
   const list = listWords(context.tag ?? context.locale);
+
+  /**
+   * After a button here that hid itself, or the part it was in: the focus to the first of these fields shown, so a
+   * screen reader says where the person is; else the form's first field; never left on the page's body.
+   */
+  function focusOn(names: readonly string[]) {
+    const root = context.root();
+    const shown = (wrapper: Element) => !wrapper.closest('[hidden]');
+    for (const name of names) {
+      const box = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${name}"]`)].filter(shown).map((wrapper) => wrapper.querySelector<HTMLElement>(FIELD_BOX)).find(Boolean);
+      if (box) return box.focus();
+    }
+    const first = [...root.querySelectorAll<HTMLElement>(FIELD_BOX)].find(shown);
+    if (first) return first.focus();
+    if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
+    root.focus();
+  }
+  /** Whether the focus went nowhere: to the page's body, or with an element now hidden or gone. */
+  const focusLost = () => {
+    const active = context.doc.activeElement;
+    return !active || active === context.doc.body || !active.isConnected || !!active.closest('[hidden]');
+  };
 
   // ---- someone else saved first --------------------------------------------------------------------
   const title = el('strong', { class: 'fd-conflict-title' });
@@ -59,20 +86,29 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   };
   reload.addEventListener('click', () =>
     void answer(async () => {
+      const before = form.getState();
+      const changedNow = [...(before.conflict?.changed ?? []), ...before.dirty];
       const done = await form.reloadTheirs();
       if (!done) return false;
-      // The changes set aside take the focus, so the person hears what was kept for them; with none, they are told it reloaded.
+      // The changes set aside take the focus, so the person hears what was kept for them; with none, the first field
+      // that changed does, and they are told it reloaded.
       if (form.getState().setAside) asideTitle.focus();
-      else context.announce(labels.reloaded);
+      else {
+        focusOn(changedNow);
+        context.announce(labels.reloaded);
+      }
       return true;
     })
   );
   keep.addEventListener('click', () =>
     void answer(async () => {
       const unread = form.getState().conflict?.unread === true;
+      const mine = [...form.getState().dirty];
       const done = await form.keepMine();
       // Their version still unread: the banner's words are the same, so they are said again.
       if (!done && unread && form.getState().conflict?.unread) context.announce(form.getState().saveProblem?.message ?? '');
+      // The banner gone with the button that had the focus: to the first of the person's changes, kept.
+      if (focusLost()) focusOn(mine);
       return done;
     })
   );
@@ -81,9 +117,27 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   const asideTitle = el('p', { class: 'fd-set-aside-title', tabindex: '-1' }, labels.setAside);
   const rows = el('ul', { class: 'fd-set-aside-list' });
   const all = el('button', { type: 'button', class: 'fd-button' }, labels.putAllBack);
-  all.addEventListener('click', () => form.putBack());
+  // Every change put back, the list goes: the focus to the first of them.
+  all.addEventListener('click', () => {
+    const names = Object.keys(form.getState().setAside ?? {});
+    form.putBack();
+    focusOn(names);
+  });
   const dismiss = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss, title: labels.dismiss }, '×');
-  dismiss.addEventListener('click', () => form.discardSetAside());
+  // Letting them go is a discard, asked as every other is: Cancel keeps them, and the focus here.
+  let asking = false;
+  dismiss.addEventListener('click', async () => {
+    if (asking) return;
+    asking = true;
+    const names = Object.keys(form.getState().setAside ?? {});
+    try {
+      if (!(await context.discard())) return;
+    } finally {
+      asking = false;
+    }
+    form.discardSetAside();
+    focusOn(names);
+  });
   const asideId = `fd-set-aside-${++drawn}`;
   asideTitle.id = `${asideId}-title`;
   // Named by its words only while shown: hidden, its "not saved" must not answer for a field's label ("No").
@@ -134,7 +188,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
             // The focus stays in the list while it has more, else goes to the field put back.
             const next = rows.querySelector<HTMLButtonElement>('button');
             if (next) next.focus();
-            else context.root().querySelector<HTMLElement>(`.fd-field[data-field="${name}"] :is(input, select, textarea, [contenteditable="true"])`)?.focus();
+            else focusOn([name]);
           });
           // The words wrap on a phone; Put back keeps to the row's end, beside the change it puts back.
           return el(
