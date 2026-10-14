@@ -67,11 +67,13 @@ that end before they start.
   person or room when the page names a `resource`, and one for records with
   no one), the month in whole weeks (with "+2 more" where a day is crowded)
   and the agenda (each day that has something, in order). Records that meet
-  sit side by side. A whole day's records sit in the row over the hours. A
-  red line marks now.
+  sit side by side, as many as the column's width can show the start of a
+  name for; past that, "+N more" opens a list of them all. A whole day's
+  records sit in the row over the hours. A red line marks now.
 - **Move** a record by dragging it to another time, day or person, and
-  **stretch** it by dragging its lower edge. Escape while dragging puts it
-  back. The move is saved at once; **Undo** puts it back.
+  **stretch** it by dragging its lower edge. Escape while dragging or
+  stretching puts it back, and Escape while dragging across empty slots makes
+  nothing. The move is saved at once; **Undo** puts it back.
 - **Make** a record by pressing an empty slot, or dragging down across the
   slots it should take, or with **New**. The app's `onNewRecord` gets the
   values (start, end, person). Without it, the viewer opens the record's page
@@ -81,12 +83,17 @@ that end before they start.
 - **Keys**: the arrow keys move between days and slots (flipped right to
   left), Page Up and Page Down change the week; Enter on an empty slot makes a
   record there; on a record, Enter opens it and M (or Shift+F10) opens
-  **Move to…**, a small form for its day, its time and its person. Each slot
-  and each record says what it is to a screen reader.
+  **Move to…**, a small form for its day, its time and its person. It refuses
+  a day more than ten years from the record's own (a year typed as 26 or
+  2062), and the words after a move name the year when it changes. When the
+  record leaves the days shown, the keys stand on the step toward its day.
+  Each slot and each record says what it is to a screen reader.
 
-What cannot be done is hidden, never greyed: with no `save` on the data source
-nothing moves; a record whose list row says `can: { edit: false }` stays where
-it is and says why (`can.reason`).
+What cannot be done is hidden, never greyed: with no `save` on the data source,
+or a page whose start, end or person field is `readonly`, nothing moves; a
+record whose list row says `can: { edit: false }`, or puts its start, end or
+person in `can.readonlyFields` or `can.hiddenFields`, stays where it is and
+says why (`can.reason`).
 
 ## The data source
 
@@ -100,8 +107,10 @@ filter: [...search, { field: 'start', op: '<', value: spanEnd }, { any: [{ field
 A `date` is compared as `"2026-10-14"`, a `datetime` as an ISO instant
 (`toISOString()`), as the date widgets write them. Times are the reader's own;
 time zones of their own come later. A move calls `save` with the changed
-fields alone in `changes.values` (and the row's `version`, when the list gave
-one), and Undo saves what they held before. A refused save puts the record
+fields alone, in `changes.values` and in `values`, `fields` naming those alone
+and `partial: true` (and the row's `version`, when the list gave one), so a
+source that saves whole records keeps every other field; Undo saves what those
+fields held before, the same way. A refused save puts the record
 back and says why. In the day view, the columns of a link are the related
 records `search` finds (up to 40), with any the records hold besides.
 

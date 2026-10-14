@@ -28,6 +28,13 @@ export function onEventKey(cal: CalendarCore, e: KeyboardEvent, event: CalendarE
     cal.openMove(event, block);
   } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     e.preventDefault();
+    // In a crowded slot's list: the one before or after, in it alone.
+    const list = block.closest('.fd-cal-crowd');
+    if (list) {
+      const rows = [...list.querySelectorAll<HTMLElement>('[data-focus^="e:"]')];
+      rows[rows.indexOf(block) + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : sideways(cal, e.key))]?.focus();
+      return;
+    }
     const all = [...body.querySelectorAll<HTMLElement>('[data-focus^="e:"][tabindex="0"]')];
     if (state.view === 'agenda' || state.view === 'month' || (!e.key.includes('Left') && !e.key.includes('Right'))) {
       // Up and down: the record before or after, in the order they are read.

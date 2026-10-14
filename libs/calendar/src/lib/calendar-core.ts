@@ -1,4 +1,4 @@
-import type { CalendarView, ListCalendar, Locale, Page, Values } from '@fieldia/core';
+import type { CalendarView, ListCalendar, Locale, Page, RecordId, Values } from '@fieldia/core';
 import type { CalendarEvent, Resource } from './events';
 import type { CalendarLabels } from './labels';
 
@@ -83,7 +83,9 @@ export interface CalendarCore {
   reload(): Promise<void>;
   open(event: CalendarEvent): void;
   createAt(start: Date, end: Date | null, column: Column | null, wholeDay?: boolean): Promise<void>;
-  /** Write a move through the data source's save, with Undo, and say so in these words. */
-  commit(event: CalendarEvent, values: Values, words: string): Promise<void>;
+  /** Write a move through the data source's save, with Undo, and say so in these words: whether it was saved. */
+  commit(event: CalendarEvent, values: Values, words: string): Promise<boolean>;
+  /** Where a record is now, for the keys to stand on: its block on that day, any of its blocks, the "+N more" that holds it, or the bar's step toward that day. */
+  place(id: RecordId, day: Date): HTMLElement;
   openMove(event: CalendarEvent, target: HTMLElement): void;
 }

@@ -1,4 +1,4 @@
-import { addDays, dayKey, firstDayOf, readWhen, rangeOf, stepFrom, writeWhen } from './dates';
+import { addDays, dayKey, firstDayOf, readDay, readWhen, rangeOf, stepFrom, writeWhen } from './dates';
 
 /**
  * A calendar's days, in the reader's own time: the span a view shows from a
@@ -21,6 +21,17 @@ describe("a calendar's days", () => {
     expect(readWhen('soon', 'datetime')).toBeNull();
     expect(writeWhen(new Date(2026, 9, 14, 9, 30), 'date')).toBe('2026-10-14');
     expect(writeWhen(new Date(Date.UTC(2026, 9, 14, 7, 30)), 'datetime')).toBe('2026-10-14T07:30:00.000Z');
+  });
+
+  it('reads a day as a date input writes it, its year as written, and no day as none', () => {
+    expect(dayKey(readDay('2026-10-14') as Date)).toBe('2026-10-14');
+    // The year 26, never 1926: a year typed short stays short, for a check to catch.
+    expect(readDay('0026-10-14')?.getFullYear()).toBe(26);
+    expect(readDay('2026-02-30')).toBeNull();
+    expect(readDay('2026-13-01')).toBeNull();
+    expect(readDay('')).toBeNull();
+    expect(readDay('14/10/2026')).toBeNull();
+    expect(readDay('20260-10-14')).toBeNull();
   });
 
   it('starts the week on the language’s own day unless the page says: Saturday in Arabic, Monday in English, French and German', () => {

@@ -26,7 +26,13 @@
  * in the whole lines its height holds, each word whole or cut with "…" at
  * the name's own end (a Latin name right to left keeps its start), and the
  * name alone in a block too narrow for its time — 0.4 more, to 16.4 (16.1
- * measured).
+ * measured). Then the moves kept safe: a save of the moved fields alone, said
+ * to be partial, with Undo the same; records whose times or person are locked
+ * kept still and told so; Move to… refusing a day far from the record's, in
+ * words, and the keys kept in place wherever the record goes; Escape letting
+ * go of a stretch and of slots dragged across; and a crowded slot's lanes
+ * kept to its width, with "+N more" and the list it opens — 1.8 more, to 18.2
+ * (17.9 measured).
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -35,7 +41,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 16.4 };
+const BUDGET = { page: 0.8, calendar: 18.2 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
