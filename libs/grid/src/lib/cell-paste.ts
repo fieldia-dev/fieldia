@@ -1,5 +1,22 @@
-import { cleanPastedNumber, couldBeNumber, foldForSearch, oneLine, placesOfCurrency, readDate, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
-import { parseDuration, parsePercentage } from './duration';
+import { cleanPastedNumber, couldBeNumber, foldForSearch, oneLine, placesOfCurrency, readDate, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+
+/**
+ * Pasting a block on the grid's cells: the grid's own, so a page with no grid
+ * (the one-tag script, the plain table) never carries it.
+ */
+
+/** Hours as their box reads them ("6:30", "6,5", "6h30"), or undefined when they do not read. */
+function hours(text: string, locale: Locale): number | null | undefined {
+  const read = readDuration(text, locale);
+  return read.ok ? read.value : undefined;
+}
+
+/** A per cent as its box reads it ("25", "25%", "٢٥٪"): the fraction it is, or undefined when it does not read. */
+function perCent(text: string, locale: Locale): number | null | undefined {
+  const read = readNumber(text, locale, { percent: true });
+  if (!read.ok) return undefined;
+  return read.value === null ? null : Math.round((read.value / 100) * 1e10) / 1e10;
+}
 
 /**
  * A block copied from a spreadsheet, as a table's cells take it: its rows (by
@@ -43,7 +60,7 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     case 'float':
     case 'monetary': {
       if (reading.widget === 'duration' || reading.widget === 'percentage') {
-        const value = reading.widget === 'duration' ? parseDuration(text, reading.locale) : parsePercentage(text, reading.locale);
+        const value = reading.widget === 'duration' ? hours(text, reading.locale) : perCent(text, reading.locale);
         return value === undefined ? null : { value };
       }
       const currency = def.type === 'monetary' ? (reading.currency ?? null) : null;

@@ -16,8 +16,8 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type DateOrder, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
+import { blockOf, readPastedCell } from './cell-paste';
 import {
-  blockOf,
   cellText,
   columnTotal,
   currencyOf,
@@ -30,7 +30,6 @@ import {
   openLineDialog,
   kindTextField,
   lineForm,
-  readPastedCell,
   waitingTotal,
   WIDGET_LABELS,
   type WidgetDialogs,

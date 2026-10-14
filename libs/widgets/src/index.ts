@@ -13,8 +13,6 @@ export * from './lib/numbers';
 // package draws: a cell's editor, a filter, a designer's setting.
 export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
-// A block pasted on a table's cells, each read as its column reads what is typed (@fieldia/grid's paste).
-export { blockOf, readPastedCell, type CellReading } from './lib/cell-paste';
 export * from './lib/progress';
 export * from './lib/label';
 export * from './lib/statusbar';

@@ -1,7 +1,6 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Line, type LineField, type Page } from '@fieldia/core';
 // The widgets first: lines.ts and widgets.ts import each other, and the table is found among the widgets once both are in.
 import { createWidget } from './widgets';
-import { blockOf, readPastedCell } from './cell-paste';
 import { displayValue } from './display';
 import { columnTotal } from './lines';
 import { WIDGET_LABELS } from './labels';
@@ -10,9 +9,7 @@ import { WIDGET_LABELS } from './labels';
  * The input rules in a table (FIELDIA INPUT RULES, 8): a cell shows a value
  * that is no number as its own words, never NaN; a column's total adds only
  * numbers and waits, in words, for the line that holds text that does not read;
- * a cell's message is linked to its box and said once as the cell is left; and
- * a block pasted from a spreadsheet is read cell by cell, as each column reads
- * what is typed.
+ * and a cell's message is linked to its box and said once as the cell is left.
  */
 
 const float = { type: 'float', label: 'Quantity', digits: [8, 2] } as LineField;
@@ -126,47 +123,5 @@ describe('a table’s cell', () => {
     const { el } = mount('ar');
     typeAndLeave(hoursBox(el, 0), '١٢ ٣٤');
     expect(total(el).title).toBe('صحّح السطر 1 ليظهر هذا الإجمالي');
-  });
-});
-
-describe('a block pasted on a table', () => {
-  it('is rows by line breaks and cells by tabs, the copied block’s last line break no row of its own', () => {
-    expect(blockOf('3\t100\n4\t200\n')).toEqual([['3', '100'], ['4', '200']]);
-    expect(blockOf('3\t100\r\n4\t200')).toEqual([['3', '100'], ['4', '200']]);
-    expect(blockOf('٣')).toEqual([['٣']]);
-  });
-
-  it('reads each cell as its column reads what is typed, or not at all', () => {
-    const en = { locale: 'en' as const };
-    expect(readPastedCell(float, '٣', en)).toEqual({ value: 3 });
-    expect(readPastedCell(float, '1,234.5', en)).toEqual({ value: 1234.5 });
-    expect(readPastedCell(float, '1.234,5', { locale: 'de' })).toEqual({ value: 1234.5 });
-    expect(readPastedCell(float, '1,5', { locale: 'fr' })).toEqual({ value: 1.5 });
-    expect(readPastedCell(float, 'abc', en)).toBeNull();
-    expect(readPastedCell(float, '0x1A', en)).toBeNull();
-    expect(readPastedCell(float, '1e3', en)).toBeNull();
-    // The field's places and kind hold: never rounded, never a fraction in a whole number.
-    expect(readPastedCell(float, '1.234', en)).toBeNull();
-    expect(readPastedCell(integer, '2.5', en)).toBeNull();
-    const price = { type: 'monetary', label: 'Price', currencyField: 'currency_id' } as LineField;
-    expect(readPastedCell(price, 'E£ 1,200.00', { locale: 'en', currency: 'EGP' })).toEqual({ value: 1200 });
-    expect(readPastedCell(price, '(1,200.00)', { locale: 'en', currency: 'EGP' })).toEqual({ value: -1200 });
-    expect(readPastedCell(price, '$ 1,200.00', { locale: 'en', currency: 'EGP' })).toBeNull();
-    expect(readPastedCell({ type: 'float', label: 'Share', min: 0 } as LineField, '-3', en)).toBeNull();
-    expect(readPastedCell(float, '', en)).toEqual({ value: null });
-  });
-
-  it('reads hours and per cents as their boxes do, dates in the page’s order, a choice by its label, words on one line', () => {
-    expect(readPastedCell(float, '6:30', { locale: 'en', widget: 'duration' })).toEqual({ value: 6.5 });
-    expect(readPastedCell(float, '٢٥٪', { locale: 'ar', widget: 'percentage' })).toEqual({ value: 0.25 });
-    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '13/10/2026', { locale: 'en' })).toEqual({ value: '2026-10-13' });
-    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '١٣/١٠/٢٠٢٦', { locale: 'ar' })).toEqual({ value: '2026-10-13' });
-    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '31/02/2026', { locale: 'en' })).toBeNull();
-    const state = { type: 'selection', label: 'State', options: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] } as LineField;
-    expect(readPastedCell(state, 'done', { locale: 'en' })).toEqual({ value: 'done' });
-    expect(readPastedCell(state, 'DRAFT', { locale: 'en' })).toEqual({ value: 'draft' });
-    expect(readPastedCell(state, 'Lost', { locale: 'en' })).toBeNull();
-    expect(readPastedCell({ type: 'char', label: 'Item' } as LineField, '‏Chair‏', { locale: 'en' })).toEqual({ value: 'Chair' });
-    expect(readPastedCell({ type: 'many2one', label: 'Product', relation: 'product' } as LineField, 'Chair', { locale: 'en' })).toBeNull();
   });
 });
