@@ -196,6 +196,30 @@ test('Save & Close in a dialog, Sara typing while it saves: asked; Enter keeps t
   expect(problems).toEqual([]);
 });
 
+test('a dialog that saved, Cancel on the question, then Escape and Discard: it closes saved, by the keys', async ({ page }) => {
+  const problems = await openDemo(page);
+  await page.evaluate(() => void (window as any).fieldiaDemo.openLead('dialog'));
+  await expect(field(box(page), 'phone').locator('input')).toHaveValue('+20 100 123 4567');
+  await field(box(page), 'phone').locator('input').fill('+20 100 999 8887');
+  const saves = await holdSaves(page);
+  await pressWithKeys(page, box(page).getByRole('button', { name: 'Save & Close' }));
+  await saves.asked();
+  await field(box(page), 'budget').locator('input').fill('4300000');
+  await saves.release();
+  await asked(page);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('alertdialog')).toBeHidden();
+  await field(box(page), 'budget').locator('input').focus();
+  await page.keyboard.press('Escape');
+  await asked(page);
+  await discard(page);
+  await expect(box(page)).toHaveCount(0);
+  // The save went through: the dialog says so however it closed after it.
+  expect(await closed(page)).toMatchObject([{ saved: true, recordId: 1 }]);
+  expect(await stored(page)).toMatchObject({ phone: '+20 100 999 8887', budget: 4000000 });
+  expect(problems).toEqual([]);
+});
+
 test('a dialog’s own button that saves, then closes, Sara typing while it saves: asked once; Enter keeps the dialog', async ({ page }) => {
   const problems = await openDemo(page);
   await page.evaluate(() => void (window as any).fieldiaDemo.openLead('dialog', { footer: true }));

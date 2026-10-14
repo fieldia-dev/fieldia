@@ -183,6 +183,8 @@ export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {
   createForm,
   unsavedWork,
+  workAtRisk,
+  type LeaveHow,
   type Form,
   type FormOptions,
   type FormUser,

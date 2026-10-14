@@ -253,7 +253,7 @@ describe('the record’s own ways to another record', () => {
     await asked(host);
     answer('Discard', host);
     await until(() => handle.form.getState().recordId === 3);
-    expect(handle.form.getState().setAside).toBeNull();
+    expect(handle.form.getState()).toMatchObject({ recordId: 3, setAside: null });
   });
 
   it('a page opened in this one’s place gives way back on its save only once nothing in it is left unsaved', async () => {
@@ -298,12 +298,14 @@ describe('the record’s own ways to another record', () => {
     // Saved again, nothing typed meanwhile: it gives way back, asking nothing.
     button(page, 'Save and close').click();
     await until(() => !handle.element.hidden);
+    expect(handle.element.hidden).toBe(false);
     expect(question()).toBeNull();
     expect(ds.records['lead'][2]).toMatchObject({ budget: 2600000 });
     // As before 0.21, a close with nothing left unsaved gives way at once.
     page = await openIt();
     button(page, 'Save and close').click();
     await until(() => !handle.element.hidden);
+    expect(handle.element.hidden).toBe(false);
     expect(question()).toBeNull();
   });
 });

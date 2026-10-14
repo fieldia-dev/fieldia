@@ -96,6 +96,14 @@ export interface FormState {
   readonly conflict: FormConflict | null;
   /** The person's changes Reload set aside after a conflict, by field, to put back (`putBack`); null when none are. */
   readonly setAside: Readonly<Values> | null;
+  /**
+   * Fields holding a change of the person's that a save went through without:
+   * made while it was on its way, or while the run that made it went on (its
+   * afterSave run among them). Each stays until a save takes it, it is changed
+   * back, or the person lets it go. Never a value a step, a rule, a compute or
+   * the app set: each change is told by its origin.
+   */
+  readonly unsent: readonly string[];
 }
 
 /** A save refused because someone else saved the record first: who and when, and what each of them changed. */
@@ -125,12 +133,20 @@ export function unsavedWork(state: FormState): boolean {
 }
 
 /**
- * The person's work that only save safety keeps, which no way out of a record
- * asked about before it: changes Reload set aside, files on their way. A way
- * out that has always let a change not saved go asks about these.
+ * Whether a way out would lose the person's work without their knowing: a
+ * change of theirs a save went through without (`unsent`), files still on
+ * their way, changes Reload set aside — and, `how.changes`, any change not
+ * saved. What `form.leave()` — the one check every way out goes through —
+ * asks about. A change not saved that no save was asked for is not at risk:
+ * as in 0.20, each way out decides.
  */
-function keptWork(state: FormState): boolean {
-  return state.setAside != null || (state.uploads ?? []).some(uploadGoing);
+export function workAtRisk(state: FormState, how: LeaveHow = {}): boolean {
+  return (state.unsent ?? []).length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing) || (how.changes === true && state.dirty.length > 0);
+}
+
+/** How a way out asks: `changes`, every change not saved counts too, as a panel's Escape has always asked. */
+export interface LeaveHow {
+  changes?: boolean;
 }
 
 /** A properties field's definitions from the app, as they load. */
@@ -299,9 +315,22 @@ export interface Form {
   /**
    * Show another record of the page's model in this form, loaded from the
    * data source as a pager moves to it, or a new one for null. Changes not
-   * saved are dropped: save first. The page's `open` steps run for it.
+   * saved are dropped: save first. The page's `open` steps run for it. It
+   * goes through `leave()` first: false when the person kept their work.
    */
-  openRecord(id: RecordId | null): Promise<void>;
+  openRecord(id: RecordId | null): Promise<boolean>;
+  /**
+   * The one check every way out of the form goes through — another record,
+   * the record loaded again, the form closed, reset by a step — and the app's
+   * own ways out should too, before it navigates or unmounts the form. With
+   * the person's work at risk (`workAtRisk`), it asks "Discard your
+   * changes?" through the host (`ask(message, { discard: true })`), else
+   * `confirm`: true on Discard — files on their way stopped, changes set
+   * aside let go — false on Cancel, the form as it was. Without either to
+   * ask with, the work is kept: false. Nothing at risk: true at once, as in
+   * 0.20.
+   */
+  leave(how?: LeaveHow): Promise<boolean>;
   /**
    * Post words in the record's conversation, as a `post` step does: through
    * the form's host when it has a way to, else told to the form's own
@@ -528,12 +557,19 @@ const isRecord = (value: unknown): value is Values => value !== null && typeof v
 /** A saved form's answers, as the one value they are in the form round it. */
 const asValue = (values: Readonly<Values>) => values as unknown as Value;
 
+/** The form a saved form is placed in, as that one's ways out reach it: they are the record's. */
+interface Outer {
+  letGo(how?: LeaveHow): true | Promise<boolean>;
+  close(): Stopped | null | Promise<Stopped | null>;
+}
+
 /**
  * `within` are the pages round this one, outermost first: a page among them
  * placed again would hold itself. `place`, for a saved form placed in a
- * record: the record its files are stored for.
+ * record: the record its files are stored for. `outer`, the form round it:
+ * its ways out go through that one's check.
  */
-function innerForm(options: FormOptions, within: string[], place?: Place): InnerForm {
+function innerForm(options: FormOptions, within: string[], place?: Place, outer?: Outer): InnerForm {
   const { page } = options;
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
@@ -701,6 +737,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     can: null,
     conflict: null,
     setAside: null,
+    unsent: [],
   };
   started = true;
   /** Fields showing a file that did not reach the store: shown until it is sent again or taken away, whatever else changes. */
@@ -833,6 +870,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     const was = state.values;
     const shown = state.errors;
     state = { ...state, ...patch };
+    // A change of the person's still unsent only while it differs from what was stored or sent.
+    if (state.unsent.length && patch.unsent === undefined && (patch.values !== undefined || patch.dirty !== undefined)) {
+      const still = stillUnsent(state.unsent);
+      if (still.length !== state.unsent.length) state = { ...state, unsent: still };
+    }
     // The problems found inside a saved form are shown on it, beside its own fields.
     if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
@@ -851,9 +893,47 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
 
   /** A field written: told to the app, and — a person's change — the page's `change` steps for it run. */
   function changed(field: string, by: ChangeBy) {
+    noteOrigin(field, by);
     emit('change', { field, value: state.values[field], values: state.values, by });
     const list = page.on?.change?.[field];
     if (by === 'person' && list) void track(moment(`on.change.${field}`, list, [], true));
+  }
+
+  /** While a save is on its way: the fields the person changed since it took the values it sends. Null between saves. */
+  let taking: Set<string> | null = null;
+  /** The runs of steps going now: a change of the person's while one that saved goes on is no save's to take. */
+  const runs = new Set<RunScope>();
+  /** What a page of answers last sent: an answer changed since was not in it. */
+  let lastSent: Readonly<Values> | null = null;
+
+  /**
+   * A field written, and by whom. A person's change while a save is on its
+   * way, or while a run that saved goes on, is one no save took: at risk
+   * (`unsent`). A step's, a rule's or the app's in its place takes it over.
+   */
+  function noteOrigin(field: string, by: ChangeBy) {
+    if (by !== 'person') {
+      if (state.unsent.includes(field)) set({ unsent: state.unsent.filter((name) => name !== field) });
+      return;
+    }
+    if (taking) taking.add(field);
+    else if (!state.unsent.includes(field) && [...runs].some((scope) => scope.saved)) {
+      const unsent = stillUnsent([...state.unsent, field]);
+      if (unsent.length !== state.unsent.length) set({ unsent });
+    }
+  }
+
+  /** Those of `names` still unsent: a record's while they differ from it as stored, a page of answers' while they differ from what it sent. */
+  function stillUnsent(names: readonly string[]): string[] {
+    if (page.data.kind === 'responses') return names.filter((name) => lastSent !== null && !sameValue(fields[name], state.values[name], lastSent[name]));
+    return names.filter((name) => state.dirty.includes(name));
+  }
+
+  /** The person's changes a save just went through without: those changed while it was on its way, and those still unsent from before that it did not take. */
+  function unsentAfter(since: readonly string[], dirty?: readonly string[]): string[] {
+    const mine = new Set([...state.unsent, ...(taking ?? [])]);
+    taking = null;
+    return [...mine].filter((name) => since.includes(name) && (!dirty || dirty.includes(name)));
   }
 
   /** A wizard step entered: told to the app, and its `show` steps run. */
@@ -1372,9 +1452,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
         const sent = shownValues();
+        const before = state.values as Values;
+        taking = new Set();
         await source.submit({ pageId: page.id, values: sent });
         forgetDraft();
-        set({ status: 'saved' });
+        // An answer the person changed while they were on their way was not sent: still to send.
+        const since = Object.keys(fields).filter((name) => state.values[name] !== before[name] && !sameValue(fields[name], state.values[name], before[name]));
+        lastSent = before;
+        set({ status: 'saved', unsent: unsentAfter(since) });
         emit('send', { values: sent });
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
         return null;
@@ -1382,6 +1467,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
       if (!source?.save) throw new Error('This page has no data source to save to');
       // What is sent: a change made while it is on its way is not in it, and stays a change to save.
       const sent = state.values as Values;
+      taking = new Set();
       const result = await source.save({
         model: page.data.model,
         id: state.recordId,
@@ -1392,9 +1478,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
         ...(state.recordId != null && state.version ? { version: state.version } : {}),
       });
       forgetDraft();
-      const { values, dirty } = afterSave(sent, result.values);
+      const { values, dirty, since } = afterSave(sent, result.values);
       // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
-      set({ status: 'saved', recordId: result.id, values, dirty, warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
+      // The person's changes it went through without stay unsent: every way out asks before it leaves them.
+      set({ status: 'saved', recordId: result.id, values, dirty, unsent: unsentAfter(since, dirty), warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       // Changed while it saved: kept in a draft, and saved as any change is.
       if (dirty.length) {
         scheduleDraft();
@@ -1404,6 +1491,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
+      // Refused: what the person changed meanwhile is a change not saved, as the rest.
+      taking = null;
       const problem = saveProblemOf(error);
       const fields = problem.kind === 'fields' ? problem.fields ?? {} : {};
       serverErrors = Object.fromEntries(Object.entries(fields).map(([name, message]) => [name, { message, value: JSON.stringify(state.values[name] ?? null) }]));
@@ -1419,13 +1508,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
    * on its way (a file stored meanwhile) was not sent: it is laid over that,
    * still a change to save, never taken as saved.
    */
-  function afterSave(sent: Values, back: Values | undefined): { values: Values; dirty: string[] } {
+  function afterSave(sent: Values, back: Values | undefined): { values: Values; dirty: string[]; since: string[] } {
     const stored = (from: Values) => (back ? ordered({ ...from, ...back }, Object.keys(back)) : from);
     const since = Object.keys(fields).filter((name) => state.values[name] !== sent[name] && !sameValue(fields[name], state.values[name], sent[name]));
     if (!since.length) {
       const values = syncParts(startFrom(stored(state.values as Values)), 'start');
       baseline = structuredCopy(values);
-      return { values, dirty: [] };
+      return { values, dirty: [], since };
     }
     const record = stored(sent);
     const mine: Values = { ...record };
@@ -1435,7 +1524,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     const base: Values = { ...values };
     for (const name of since) base[name] = record[name];
     baseline = structuredCopy(computed.apply(base));
-    return { values, dirty: dirtyFields(values) };
+    return { values, dirty: dirtyFields(values), since };
   }
 
   /** A save stopped by files that did not reach the store: shown under their fields, as a refused save's fields are. */
@@ -1525,9 +1614,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
   }
 
-  /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended. */
+  /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended. While it goes, the form knows it (`runs`). */
   async function runTop(list: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
-    const result = await runner.runSteps(list, scope);
+    runs.add(scope);
+    let result: RunResult;
+    try {
+      result = await runner.runSteps(list, scope);
+    } finally {
+      runs.delete(scope);
+    }
     emit('run', { id: scope.id, steps: list, result });
     return result;
   }
@@ -1612,8 +1707,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
 
   let loads = 0;
 
+  /** Another record in this form's place, or a new one, once the one check let what was there go: false when the person kept it. */
+  function openRecord(id: RecordId | null): Promise<boolean> {
+    const go = letGo();
+    return go === true ? showNow(id) : go.then((yes) => (yes ? showNow(id) : false));
+  }
+
   /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
-  async function openRecord(id: RecordId | null): Promise<void> {
+  async function showNow(id: RecordId | null): Promise<true> {
     if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     draftTimer = autosaveTimer = null;
@@ -1621,10 +1722,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     told = null;
     showing = false;
     clearFiles();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null };
+    lastSent = null;
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [] };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
-      return load();
+      await load();
+      return true;
     }
     loads++;
     baseline = startFrom(startingValues(true, false));
@@ -1632,24 +1735,78 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
     offerDraft();
     await opening();
+    return true;
   }
 
   /**
-   * Before a step leaves the record for another in this form's place: the
-   * person's work in it, asked about — "Discard your changes?" through the
-   * host, Cancel first — and let go only on Discard. With no host and no
-   * `confirm` to ask, it is kept: the run stops, and nothing is lost unasked.
+   * THE check: every way the form's values go — another record, the record
+   * loaded again, the host's close, a reset step, the app's own ways out
+   * through `leave()` — passes here, so none can lose the person's work
+   * unasked. True at once when nothing of theirs is at risk (`workAtRisk`;
+   * with `changes`, every change not saved too): as in 0.20, not even a
+   * moment later. Else "Discard your changes?" through the host — Discard
+   * worded Yes, the focus on Cancel — or `confirm`; with neither, the work is
+   * kept. A saved form placed in a record asks the record's. The host asks one
+   * question at a time (the viewer's does): ways out taken while it is asked
+   * get its answer.
    */
-  async function letGo(saved: boolean): Promise<Stopped | null> {
-    if (!(saved ? unsavedWork(state) : keptWork(state))) return null;
+  function letGo(how: LeaveHow = {}): true | Promise<boolean> {
+    if (outer) return outer.letGo(how);
+    if (!workAtRisk(state, how)) return true;
+    return askToLetGo();
+  }
+
+  async function askToLetGo(): Promise<boolean> {
     const message = messages.discardChanges;
     const host = options.host;
-    const yes = host ? await host.ask(message, { discard: true }) : options.confirm ? await options.confirm(message) : false;
-    if (!yes) return { reason: 'no', message };
-    // Let go: the files on their way stop, and what was set aside goes.
+    let yes = false;
+    try {
+      yes = host ? await host.ask(message, { discard: true }) : options.confirm ? await options.confirm(message) : false;
+    } catch {
+      // A question that could not be asked keeps the work.
+    }
+    if (yes) forget();
+    return yes;
+  }
+
+  /** Let go of the person's work at risk: files on their way stop, changes set aside go, changes no save took are asked about no more. */
+  function forget() {
     clearFiles();
-    if (state.setAside) set({ setAside: null });
-    return null;
+    if (state.setAside !== null || state.unsent.length) set({ setAside: null, unsent: [] });
+  }
+
+  /** The check as a step meets it: null to go on — at once when nothing is at risk — else why the run stops. */
+  function letGoStep(): Stopped | null | Promise<Stopped | null> {
+    const go = letGo();
+    return go === true ? null : go.then((yes) => (yes ? null : kept()));
+  }
+
+  const kept = (): Stopped => ({ reason: 'no', message: messages.discardChanges });
+
+  /** Load the record again, once the check let what is shown go. */
+  function loadAgain(again: boolean): Promise<boolean> {
+    const go = letGo();
+    if (go === true) return load(again).then(() => true);
+    return go.then((yes) => (yes ? load(again).then(() => true) : false));
+  }
+
+  /**
+   * The host's close, as every `close` step reaches it: the form takes it
+   * once, here where it is made, and puts the check before it — so the app's
+   * own close (its panel's, its modal's: `host.close`) never drops the
+   * person's work unasked, nor does the viewer's dialog, panel or page in
+   * place. A saved form placed in a record closes as the record does.
+   */
+  function close(): Stopped | null | Promise<Stopped | null> {
+    if (outer) return outer.close();
+    const host = options.host;
+    if (!host?.close) return { reason: 'cannot', message: 'Nothing can close this form: it has no host, or was not opened in a dialog or panel' };
+    const shut = (): null => {
+      host.close?.();
+      return null;
+    };
+    const go = letGo();
+    return go === true ? shut() : go.then((yes) => (yes ? shut() : kept()));
   }
 
   /** The record a record step asks the data source about. */
@@ -1681,10 +1838,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     save: saving,
     async reload() {
       if (state.recordId == null) return { reason: 'cannot', message: 'The record is not saved yet: there is nothing to load again' };
-      await load(true);
+      if (!(await loadAgain(true))) return kept();
       return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded again' } : null;
     },
-    reset: () => form.reset(),
+    reset() {
+      const reset = (): null => {
+        form.reset();
+        return null;
+      };
+      const go = letGo();
+      return go === true ? reset() : go.then((yes) => (yes ? reset() : kept()));
+    },
+    close,
     goTo: goToStep,
     showing: inRun,
     host: options.host,
@@ -1692,12 +1857,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     onAction: options.onAction,
     answered: (request, result) => emit('action', { request, result }),
     changed: () => state.dirty.length > 0 || state.uploads.some(uploadGoing),
-    letGo,
+    letGo: letGoStep,
+    forget,
     ...(options.dataSource?.archive && page.data.kind === 'record' ? { archive: (archive: boolean) => track((options.dataSource?.archive as NonNullable<DataSource['archive']>)({ ...record(), archive })) } : {}),
     ...(options.dataSource?.copy && page.data.kind === 'record' ? { copy: async () => (await track((options.dataSource?.copy as NonNullable<DataSource['copy']>)(record()))).id } : {}),
     ...(options.dataSource?.delete && page.data.kind === 'record' ? { remove: () => track((options.dataSource?.delete as NonNullable<DataSource['delete']>)(record())) } : {}),
     async showRecord(id) {
-      await openRecord(id);
+      if (!(await openRecord(id))) return kept();
       return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded' } : null;
     },
     told(event, id) {
@@ -1713,7 +1879,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
     barred: (right) => (state.can?.[right] === false ? state.can.reason ?? messages[MAY_NOT[right]] : null),
   });
-  const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
+  // An afterSave run follows a save that went through: a change the person makes while it goes on is no save's to take.
+  const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain, ...(key === 'on.afterSave' ? { saved: true } : {}) }));
 
   /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
   function press(source: ButtonNode | StatButton | MenuItem, scope: RunScope): Promise<RunResult> {
@@ -1745,7 +1912,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
       return () => listeners.delete(listener);
     },
 
-    load: () => track(load()),
+    load() {
+      const go = letGo();
+      return track(go === true ? load() : go.then((yes) => (yes ? load() : undefined)));
+    },
 
     setValue(name, value, how) {
       fieldDef(name);
@@ -1759,6 +1929,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     node: nodeState,
 
     openRecord: (id) => track(openRecord(id)),
+
+    leave: (how) => Promise.resolve(letGo(how)),
 
     post,
 
@@ -1815,8 +1987,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
       clearFiles();
       serverErrors = {};
       holding = setWhen.holding(baseline);
+      lastSent = null;
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [] });
     },
 
     changes,
@@ -2167,7 +2340,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
         },
         chain,
         // Its files are the record's: stored for it, under the part's name.
-        { model: where.model, recordId: where.recordId, under: `${where.under}${part.name}.` }
+        { model: where.model, recordId: where.recordId, under: `${where.under}${part.name}.` },
+        // Its ways out are the record's: through this form's check.
+        { letGo, close }
       );
       attached.set(id, { name: part.name, inner: made });
       // A change inside it is told as a change of its answers here, whoever made it.

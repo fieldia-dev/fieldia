@@ -1,9 +1,8 @@
-import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
-import { unsavedWork } from '@fieldia/core';
+import { workAtRisk, type LeaveHow, type PageLook, type PanelSide, type RecordId, type RelatedRecord, type Theme, type Values } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
-import { askDiscard, keptWork, lastSent, workLeft } from './discard';
+import { stayed } from './discard';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
@@ -49,7 +48,10 @@ export interface FormDialogOptions extends ViewerOptions {
 }
 
 export interface FormDialogResult {
-  /** True when Save & Close (Done, in a panel in "values" mode) was pressed and the form accepted. */
+  /**
+   * True when Save & Close (Done, in a panel in "values" mode) was pressed and the form accepted — and, once any save
+   * or send in it went through, whichever way it closed after: Discard, Escape, ×, a `close` step.
+   */
   saved: boolean;
   recordId: RecordId | null;
   values: Values;
@@ -189,7 +191,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   under?.setAttribute('data-behind', '');
   container.append(backdrop);
 
-  // A host of its own, so its steps run here too: a `close` step closes it unsaved.
+  // A host of its own, so its steps run here too. Its form takes this close once, and puts its one check before it:
+  // a `close` step closes it once nothing of the person's is at risk, or they let it go — saved, when a save went through.
   const handle = mountViewer(body, {
     ...options,
     page: look && !options.page.look ? { ...options.page, look } : options.page,
@@ -197,9 +200,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     // A dialog has no pager or breadcrumbs: they belong to the record under it.
     records: undefined,
     breadcrumbs: undefined,
-    // A `close` step after the same run saved closes it saved: Save and Close — once nothing of the person's is left
-    // unsaved, or they let it go.
-    host: { ...options.host, close: () => void finish(saves > savesBefore) },
+    host: { ...options.host, close: () => close(false) },
   });
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
   if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
@@ -223,15 +224,11 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   if (maximise) kit?.wireMaximise(box, maximise, labels, doc);
   if (grip) kit?.wireGrip(box, grip, doc);
   let done = false;
-  /** The saves made in it, and how many there were as the last run of steps ended: a run that saved, then closed, closes it saved. */
-  let saves = 0;
-  let savesBefore = 0;
-  handle.on('save', () => saves++);
-  handle.on('run', ({ id: run }) => {
-    if (!run.startsWith('on.')) savesBefore = saves;
-  });
+  /** Once a save or a send in it went through, every way it closes says saved: the record it made is the caller's. */
+  let savedAny = false;
+  handle.on('save', () => (savedAny = true));
+  handle.on('send', () => (savedAny = true));
   let close = (saved: boolean) => void saved;
-  let finish = (saved: boolean): Promise<void> => Promise.resolve(void saved);
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
   // Into the dialog: its field that takes the focus (focus) or its first, once the record is in, or the dialog itself meanwhile.
@@ -248,7 +245,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       done = true;
       const state = handle.form.getState();
       // The form never changes its values in place, so these are safe to hand back.
-      const result: FormDialogResult = { saved, recordId: state.recordId ?? null, values: state.values as Values };
+      const result: FormDialogResult = { saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values };
       handle.destroy();
       backdrop.remove();
       under?.removeAttribute('data-behind');
@@ -256,34 +253,18 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       resolve(result);
     };
     /**
-     * Close, unless the person's work would go unasked: asked "Discard your changes?" first — over the dialog, the
-     * focus on Cancel, its keys its own — and kept, the dialog open, on Cancel. One question at a time: another way
-     * out while it is asked is the same question.
+     * Close once the form's one check lets its values go (`form.leave()`): asked "Discard your changes?" when the
+     * person's work is at risk, and kept, the dialog open, on Cancel. Escape and × in a panel, or a dialog round a page
+     * with a head, count every change not saved, as they always have; any other dialog closes at once on a change not
+     * saved, as it always has.
      */
-    let asking = false;
-    const closeAsking = async (saved: boolean, left: boolean): Promise<void> => {
-      if (asking) return;
-      if (!left) return close(saved);
-      asking = true;
-      if (await askDiscard(box, labels, () => (asking = false))) close(saved);
+    const closeChecked = async (saved: boolean, how?: LeaveHow): Promise<void> => {
+      if (done) return;
+      // Nothing at risk: closed at once, as it always has been.
+      if (!workAtRisk(handle.form.getState(), how)) return close(saved);
+      if (await handle.form.leave(how)) close(saved);
     };
-    /**
-     * After a save, or a run that saved: closed saved once nothing is left unsaved — a change made while it saved, a
-     * file picked meanwhile, changes Reload set aside. Values handed back (`values` mode) are the person's changes
-     * themselves; only what was set aside and files on their way are asked about there. Closed unsaved by a page's own
-     * `close`, what has always gone with it goes, and save safety's work is asked about.
-     */
-    const sent = lastSent(handle.form);
-    finish = (saved: boolean) => closeAsking(saved, saved && options.mode !== 'values' ? workLeft(handle.form, sent.values()) : keptWork(handle.form.getState()));
-    /**
-     * Escape and ×: a panel, or a dialog round a page with a head, asks first when there are changes in it; any other
-     * dialog closes at once with a change not saved, as it always has — but asks about changes Reload set aside and
-     * files still on their way.
-     */
-    const leave = () => {
-      const state = handle.form.getState();
-      return closeAsking(false, panel || headed ? unsavedWork(state) : keptWork(state));
-    };
+    const leave = () => closeChecked(false, panel || headed ? { changes: true } : undefined);
     saveClose.addEventListener('click', async () => {
       const had = doc.activeElement === saveClose;
       saveClose.disabled = true;
@@ -291,8 +272,9 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       saveClose.disabled = false;
       // Disabled while it saved, it let go of the focus: it takes it back, unless the person went on elsewhere in the box.
       if (had && !box.contains(doc.activeElement)) saveClose.focus();
-      if (accepted) await finish(true);
+      if (accepted) await closeChecked(true);
     });
+    // Discard is the person's own answer: no question.
     discard.addEventListener('click', () => close(false));
     // A footer button runs its steps; once they saved or sent, the dialog closes with the answers.
     let saved = false;
@@ -313,7 +295,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
         const result = await handle.form.runAction(node.id);
         button.removeAttribute('aria-busy');
         if (done) return;
-        if (saved) await finish(true);
+        // Saved, it closes — unless a step of the same run took a way out and the person chose to stay: asked once.
+        if (saved && !stayed(result)) await closeChecked(true);
         // A check or a save that stopped them shows its problems, as Save & Close does.
         else if (result.reason === 'check' || result.reason === 'save') handle.check();
       });
