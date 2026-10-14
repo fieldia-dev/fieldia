@@ -17,6 +17,7 @@ import type {
 import type { PreferenceStore } from './preferences';
 import { formatNumber, formatPlain, ungroup } from './numbers';
 import { guard, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -213,34 +214,52 @@ function describe(element: HTMLElement, state: WidgetState) {
 
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 
+/** The text box each input type is: a line of words, a password, a phone number, an email, a web address. A time is a box of its own. */
+const TEXT_KINDS: Record<string, TextKind | undefined> = { text: 'line', password: 'password', tel: 'phone', email: 'email', url: 'url' };
+
 function textWidget(inputType: string): WidgetFactory {
   return (context) => {
     const { form, name, field, node, id, document } = context;
+    // An email or a web address in a text box: the browser's own would keep an international domain as punycode
+    // (ali@xn--mgbh0fb.xn--wgbh1c) and trim as it is typed. A phone still shows its keyboard for them.
+    const written = inputType === 'email' || inputType === 'url';
     // A person's own email, phone or web address, the browser may offer.
-    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
-    if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
+    const input = make(document, 'input', {
+      id,
+      type: written ? 'text' : inputType,
+      class: 'fd-input',
+      autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off',
+      ...(written ? { inputmode: inputType } : {}),
+    });
     if (inputType === 'time') bounds(input, field, node);
     if (node.placeholder) input.placeholder = node.placeholder;
+    // No maxlength: the browser would cut a paste without a word. The box refuses a key at the most, and says so.
+    const kind = TEXT_KINDS[inputType];
+    const box = kind ? textBox(input, context, kind) : null;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
     return counted({
       element: input,
       focus: () => input.focus(),
+      destroy: () => box?.destroy(),
       update(state) {
         const text = textOf(state.value);
-        if (input.value !== text) input.value = text;
+        if (input.value !== text) {
+          input.value = text;
+          box?.accept();
+        }
         if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-        describe(input, state);
+        describe(input, { ...state, describedBy: box ? box.describedBy(state.describedBy) : state.describedBy });
       },
     }, context, input);
   };
 }
 
 const textareaWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document } = context;
+  const { form, name, node, id, document } = context;
   const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3' });
-  if (field.type === 'text' && field.size !== undefined) area.maxLength = field.size;
   if (node.placeholder) area.placeholder = node.placeholder;
   const grow = grower(area, node);
+  const box = textBox(area, context, 'paragraph');
   area.addEventListener('input', () => {
     grow();
     form.setValue(name, area.value === '' ? null : area.value);
@@ -248,14 +267,16 @@ const textareaWidget: WidgetFactory = (context) => {
   return counted({
     element: area,
     focus: () => area.focus(),
+    destroy: () => box.destroy(),
     update(state) {
       const text = textOf(state.value);
       if (area.value !== text) {
         area.value = text;
+        box.accept();
         grow();
       }
       if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
-      describe(area, state);
+      describe(area, { ...state, describedBy: box.describedBy(state.describedBy) });
     },
   }, context, area);
 };

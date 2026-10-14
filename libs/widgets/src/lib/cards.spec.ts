@@ -15,7 +15,7 @@ const shown = (el: Element) => [...el.querySelectorAll<HTMLElement>('.fd-repeat-
 const titles = (el: Element) => shown(el).map((c) => c.querySelector('.fd-repeat-title')?.textContent);
 const add = (el: Element) => el.querySelector('.fd-repeat-add') as HTMLButtonElement;
 const lines = (value: unknown) => value as Line[];
-const said = (el: Element) => el.querySelector('[aria-live=polite]')?.textContent;
+const said = (el: Element) => el.querySelector('.fd-announce[aria-live=polite]')?.textContent;
 
 describe('repeating group', () => {
   it('starts with as many cards as it needs at least, each a group named by its title, with the lines’ fields', () => {

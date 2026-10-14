@@ -76,7 +76,7 @@ describe('moving a table’s lines', () => {
     press(design, 'ArrowUp', { altKey: true });
     expect(names()).toEqual(['Design', 'Survey', 'Build']);
     expect(document.activeElement).toBe(design);
-    expect(el.querySelector('[role=status]')?.textContent).toBe('Design moved to place 1 of 3');
+    expect(el.querySelector('.fd-sr-only[role=status]')?.textContent).toBe('Design moved to place 1 of 3');
     // Not past the top; nor without Alt.
     press(design, 'ArrowUp', { altKey: true });
     press(design, 'ArrowDown');

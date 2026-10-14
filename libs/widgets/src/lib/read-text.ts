@@ -1,4 +1,4 @@
-import type { Field, FieldNode, LineField, Locale, RelatedRecord, Value, Values } from '@fieldia/core';
+import { foldDigits, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type RelatedRecord, type Value, type Values } from '@fieldia/core';
 import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetDialogs } from './widgets';
@@ -41,11 +41,22 @@ export interface ReadText {
   update(value: Value | undefined, values: Readonly<Values>): void;
 }
 
-const ADDRESSES: Record<string, [RegExp, string]> = {
-  email: [/^[^\s@]+@[^\s@]+$/, 'mailto:'],
-  phone: [/^\+?[\d\s().-]{3,}$/, 'tel:'],
-  url: [/^https?:\/\/\S+$/i, ''],
-};
+/**
+ * The link a mail, phone or web address read-only goes to, or null when it is
+ * none: a number dialled in 0-9 whatever script it was typed in, an address
+ * without its direction marks, a web address typed without https:// given
+ * it — and never a link of another kind (javascript:, data:).
+ */
+function hrefOf(widget: string | undefined, value: string): string | null {
+  const text = stripMarks(value).trim();
+  if (widget === 'email') return /^[^\s@]+@[^\s@]+$/.test(text) ? `mailto:${text}` : null;
+  if (widget === 'phone') {
+    const number = foldDigits(text);
+    return /^\+?[\d\s().-]{3,}$/.test(number) ? `tel:${number.replace(/\s/g, '')}` : null;
+  }
+  if (widget === 'url' && webAddress(text) === 'ok') return /^https?:\/\//i.test(text) ? text : `https://${text}`;
+  return null;
+}
 
 /** A number's unit around it, as its box shows it inside — "3.00 Days" — and nothing round an empty one. */
 function withUnit(words: string, field: Field, node: FieldNode, value: Value | undefined): string {
@@ -69,12 +80,12 @@ export function readText(context: { document: Document; field: Field; node: Fiel
       const key = JSON.stringify([words, value ?? null]);
       if (key === drawn) return;
       drawn = key;
-      const address = node.widget ? ADDRESSES[node.widget] : undefined;
+      const href = field.type === 'char' && typeof value === 'string' ? hrefOf(node.widget, value) : null;
       const record = relation !== null && value && typeof value === 'object' && 'id' in value ? (value as RelatedRecord) : null;
       let main: Node;
-      if (address && typeof value === 'string' && address[0].test(value.trim())) {
+      if (href) {
         const link = doc.createElement('a');
-        link.href = `${address[1]}${value.trim()}`;
+        link.href = href;
         if (node.widget === 'url') Object.assign(link, { target: '_blank', rel: 'noopener noreferrer' });
         link.textContent = words;
         main = link;

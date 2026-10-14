@@ -1,14 +1,33 @@
 /**
  * Where JSON goes wrong: the first character that cannot be there, as an
- * offset and as a line and column a person can find (both from 1). Read here,
- * not from JSON.parse's message, which every browser words its own way and
- * some say no place at all. Null when the text is valid JSON (RFC 8259, as
+ * offset and as a line and column a person can find (both from 1), and why,
+ * in a person's terms: a comma with nothing after it, curly quotes (as a word
+ * processor types them), digits that are not 0-9 (Arabic ones), another
+ * character that cannot be there, or the end come too soon. Read here, not
+ * from JSON.parse's message, which every browser words its own way and some
+ * say no place at all. Null when the text is valid JSON (RFC 8259, as
  * JSON.parse reads it).
  */
 export interface JsonProblem {
   offset: number;
   line: number;
   column: number;
+  reason: 'comma' | 'quotes' | 'digits' | 'char' | 'end';
+  /** The character that cannot be there, for `char`. */
+  char?: string;
+}
+
+/** Quotes a word processor or a phone's keyboard types in place of a straight one. */
+const CURLY = /^[\u2018-\u201f\u00ab\u00bb\u2039\u203a]/u;
+
+/** Why JSON breaks at `offset`. */
+function reasonAt(text: string, offset: number): Pick<JsonProblem, 'reason' | 'char'> {
+  if (offset >= text.length) return { reason: 'end' };
+  const char = String.fromCodePoint(text.codePointAt(offset) as number);
+  if (CURLY.test(char)) return { reason: 'quotes' };
+  if ((/\p{Nd}/u.test(char) && !/[0-9]/.test(char)) || char === '\u066b' || char === '\u066c') return { reason: 'digits' };
+  if ((char === '}' || char === ']') && /,\s*$/.test(text.slice(0, offset))) return { reason: 'comma' };
+  return { reason: 'char', char };
 }
 
 export function jsonProblem(text: string): JsonProblem | null {
@@ -109,6 +128,6 @@ export function jsonProblem(text: string): JsonProblem | null {
   } catch (offset) {
     if (typeof offset !== 'number') throw offset;
     const before = text.slice(0, offset).split('\n');
-    return { offset, line: before.length, column: before[before.length - 1].length + 1 };
+    return { offset, line: before.length, column: before[before.length - 1].length + 1, ...reasonAt(text, offset) };
   }
 }

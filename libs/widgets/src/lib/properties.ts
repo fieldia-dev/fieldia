@@ -4,7 +4,9 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /**
  * A properties field, one row per property, each edited with the widget for
- * its type: text, numbers, yes/no, a choice, a date. The field's `definitions`
+ * its type: text, numbers, yes/no, a choice, a date. A number's row is a
+ * number box, refusing what is no number as any is; a row's problem shows
+ * under it, said as the row is left, and Save waits for it. The field's `definitions`
  * say which properties there are; with `definitionsFrom` the app gives them,
  * those the linked record keeps (Flectra's definition_record), loaded again as
  * the link changes; without either, each property is worked out from its
@@ -53,12 +55,26 @@ export const propertiesWidget: WidgetFactory = (context) => {
     const value = form.getState().values[name];
     return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, Value>) : {};
   };
-  // Each property's widget sees the properties as its record, and writes into them.
+  /** A property's path in the form: `field.property`, where its text left unread and its problem are kept. */
+  const pathOf = (property: string) => `${name}.${property}`;
+  /** What the form keeps under this field's properties, by property name. */
+  const own = <T>(kept: Readonly<Record<string, T>> | undefined): Record<string, T> => {
+    const found: Record<string, T> = {};
+    for (const [path, item] of Object.entries(kept ?? {})) if (path.startsWith(`${name}.`)) found[path.slice(name.length + 1)] = item;
+    return found;
+  };
+  // Each property's widget sees the properties as its record, and writes into them: its value, the text it could not
+  // read, and that it was left — each at its path, so the form checks it and Save waits for it.
   const properties: Form = {
     ...form,
-    getState: (): FormState => ({ ...form.getState(), values: current() }),
+    getState: (): FormState => {
+      const state = form.getState();
+      return { ...state, values: current(), unread: own(state.unread), errors: own(state.errors) };
+    },
     // Property values are plain JSON: text, numbers, yes/no, a choice, a date.
     setValue: (property: string, value: Value) => form.setValue(name, { ...current(), [property]: value } as JsonValue),
+    setUnread: (property, unread) => form.setUnread(pathOf(property), unread),
+    leave: (property) => form.leave(pathOf(property)),
   };
 
   const list = make('div', { class: 'fd-properties-list' });
@@ -117,8 +133,10 @@ export const propertiesWidget: WidgetFactory = (context) => {
     }
   });
 
-  let rows: { definition: PropertyDefinition; widget: Widget }[] = [];
+  let rows: { definition: PropertyDefinition; widget: Widget; error: HTMLElement }[] = [];
   let drawn = '';
+  /** The property whose row is being left: a problem it raises is said once, politely. */
+  let leaving: string | null = null;
 
   function draw(definitions: PropertyDefinition[]) {
     for (const row of rows) row.widget.destroy?.();
@@ -127,17 +145,29 @@ export const propertiesWidget: WidgetFactory = (context) => {
       const propertyField = { type: definition.type, label: definition.label, ...(definition.options ? { options: definition.options } : {}) } as Field;
       const propertyNode: FieldNode = { type: 'field', id: `${node.id}.${definition.name}`, field: definition.name };
       const widget = createWidget({ ...context, form: properties, name: definition.name, field: propertyField, node: propertyNode, id: rowId });
-      return { definition, widget };
+      const error = make('div', { class: 'fd-error fd-property-error', id: `${rowId}-error`, hidden: '' });
+      return { definition, widget, error };
     });
     list.replaceChildren(
-      ...rows.map(({ definition, widget }) => {
+      ...rows.map(({ definition, widget, error }) => {
         const row = document.createElement('div');
         row.className = 'fd-property';
         row.dataset['type'] = definition.type;
         const label = document.createElement('label');
         label.htmlFor = `${id}-${definition.name}`;
         label.textContent = definition.label;
-        row.append(label, widget.element);
+        row.append(label, widget.element, error);
+        // Its own problem — text in a number, a fraction in a whole number — said as its row is left, as a field's is.
+        row.addEventListener('focusin', () => error.removeAttribute('aria-live'));
+        row.addEventListener('focusout', (event) => {
+          if (row.contains(event.relatedTarget as Node | null)) return;
+          leaving = definition.name;
+          try {
+            form.leave(pathOf(definition.name));
+          } finally {
+            leaving = null;
+          }
+        });
         return row;
       })
     );
@@ -159,8 +189,13 @@ export const propertiesWidget: WidgetFactory = (context) => {
         drawn = key;
         draw(definitions);
       }
-      for (const { definition, widget } of rows) {
-        widget.update({ value: values[definition.name] ?? null, values, readonly: state.readonly, required: false, invalid: false });
+      const errors = form.getState().errors;
+      for (const { definition, widget, error } of rows) {
+        const message = errors[pathOf(definition.name)] ?? '';
+        if (leaving === definition.name && message && message !== error.textContent) error.setAttribute('aria-live', 'polite');
+        if (error.textContent !== message) error.textContent = message;
+        error.hidden = !message;
+        widget.update({ value: values[definition.name] ?? null, values, readonly: state.readonly, required: false, invalid: !!message, ...(message ? { describedBy: error.id } : {}) });
       }
       status.textContent = loaded?.loading && !loaded.definitions ? words.loading : (loaded?.error ?? '');
       status.hidden = !status.textContent;
