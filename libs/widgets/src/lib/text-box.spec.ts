@@ -119,16 +119,21 @@ describe('a phone number’s box', () => {
     ['ar', 'رقم الهاتف أرقام ومسافات و+ ( ) . - فقط'],
     ['de', 'Eine Telefonnummer enthält nur Ziffern, Leerzeichen und + ( ) . -'],
   ] as const)('%s: refuses letters as they are typed, and takes digits in any script', (locale, said) => {
-    const { input, value } = textBox({ label: 'Site phone' }, { widget: 'phone' }, locale);
+    const { input, value, form } = textBox({ label: 'Site phone' }, { widget: 'phone' }, locale);
     keys(input, 'call me');
-    expect(input.value).toBe(' ');
+    // The first letter is refused, and the keys after it wait with it: no number is made of what is left between them.
+    expect(input.value).toBe('');
     expect(hintSays()).toBe(said);
-    input.value = '';
-    keys(input, '+20 (10) ١٢٣٤-۵٦٧٨.9');
-    expect(value()).toBe('+20 (10) ١٢٣٤-۵٦٧٨.9');
+    // Left so, all that was typed is the box's, and the field's own check says it is no phone number.
+    leave(input);
+    expect(value()).toBe('call me');
+    expect(form.problem('x')).not.toBeNull();
+    const digits = textBox({ label: 'Site phone' }, { widget: 'phone' }, locale);
+    keys(digits.input, '+20 (10) ١٢٣٤-۵٦٧٨.9');
+    expect(digits.value()).toBe('+20 (10) ١٢٣٤-۵٦٧٨.9');
     // A second plus, or one not first, is no part of a number.
-    keys(input, '+');
-    expect(input.value).toBe('+20 (10) ١٢٣٤-۵٦٧٨.9');
+    keys(digits.input, '+');
+    expect(digits.input.value).toBe('+20 (10) ١٢٣٤-۵٦٧٨.9');
   });
 
   it('refuses a paste with letters whole, and takes one with direction marks without them', () => {
@@ -172,9 +177,10 @@ describe('an email’s box', () => {
     const { input, value } = textBox({ label: 'Email' }, { widget: 'email' }, 'fr');
     keys(input, 'name ');
     expect(hintSays()).toBe('Une adresse e-mail ne contient pas d’espaces');
+    // The keys after the refused space wait with it, the words said again: never the address "nameexample".
     keys(input, 'example');
-    expect(input.value).toBe('nameexample');
-    expect(hintSays()).toBeNull();
+    expect(input.value).toBe('name');
+    expect(hintSays()).toBe('Une adresse e-mail ne contient pas d’espaces');
     input.value = '';
     paste(input, '\u200fname@example.com\u200f');
     expect(value()).toBe('name@example.com');
@@ -495,16 +501,16 @@ describe('a colour’s code', () => {
     const { code, value } = colour();
     enter(code);
     keys(code, 'red');
-    // The r is refused; e and d are hex digits.
-    expect(code.value).toBe('ed');
+    // The r is refused, and e and d, hex digits, wait with it: never the code "ed" made of what was typed round it.
+    expect(code.value).toBe('');
     keys(code, 'x');
     expect(hintSays()).toBe('Enter a colour code, like #1f2937');
     paste(code, 'rebeccapurple');
-    expect(code.value).toBe('ed');
+    expect(code.value).toBe('');
     expect(value()).toBeNull();
-    // Left half typed, it stays, marked, and the colour stays what it was.
+    // Left so, all that was typed stays, marked, and the colour stays what it was.
     leave(code);
-    expect(code.value).toBe('ed');
+    expect(code.value).toBe('redx');
     expect(code.getAttribute('aria-invalid')).toBe('true');
   });
 

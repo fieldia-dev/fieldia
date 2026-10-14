@@ -32,12 +32,16 @@ import { formatNumber } from './numbers';
  * whose edits cannot be stopped (an IME, a phone's) are put back to the last
  * text taken, caret and all, with the same hint.
  *
- * A number box holds what is typed after a refused key at the same place
- * (`hold`): refused too, with the same words, so "1.5" typed into a box of
- * whole numbers never becomes 15, nor "-3" 3. Backspace takes the keys held
- * back one by one; moving the caret lets them go. Left while it holds them,
- * the hint stays (nothing under the pointer moves as the box is left), and the
- * box is left with all that was typed, which its widget marks with why.
+ * A box holds what is typed after a refused key at the same place (`hold`):
+ * refused too, with the same words, so "1.5" typed into a box of whole numbers
+ * never becomes 15, nor "-3" 3, nor "+20 1oo 123" a phone number of other
+ * digits. Backspace takes the keys held back one by one; moving the caret lets
+ * them go. Left while it holds them, the hint stays (nothing under the pointer
+ * moves as the box is left), and the box is left with all that was typed,
+ * which its widget reads and marks with why.
+ *
+ * Enter in a one-line box types nothing: it is never judged, held or stopped,
+ * so it sends the form, or moves to the next field, as the page has it.
  */
 
 /** The hint under a box that says why a keystroke or a paste was refused. */
@@ -127,8 +131,11 @@ function cutOff(hint: HTMLElement): boolean {
 export interface InputRules {
   /** Why `next`, the text the box would hold after an edit (`before`, what it holds now), may not stand; null when it may. */
   judge(next: string, before: string): string | null;
-  /** Pasted or dropped text: what goes into the box in its place, or why nothing does. Left out, it is judged as typed. */
-  paste?(text: string): { text: string } | { refuse: string };
+  /**
+   * Pasted or dropped text: what goes into the box in its place — with `say`, what is said of it, when what is taken
+   * leaves out part of what was pasted — or why nothing does. Left out, it is judged as typed.
+   */
+  paste?(text: string): { text: string; say?: string } | { refuse: string };
   /** Keys typed after a refused one, at the same place, are held with it: a number's "1.5" never becomes 15. */
   hold?: boolean;
 }
@@ -210,11 +217,15 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   };
 
   const onFocus = () => accept();
+  /** A one-line box: Enter there types nothing, it sends the form or moves on, as the page has it. */
+  const oneLine = box.tagName === 'INPUT';
   const onBeforeInput = (event: Event) => {
     const edit = event as InputEvent;
+    const type = edit.inputType ?? '';
+    // Enter in one line: never judged, never held, never stopped — the form hears it as it did before the rules came.
+    if (oneLine && (type === 'insertLineBreak' || type === 'insertParagraph')) return;
     before = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
     if (inserting || box.readOnly) return;
-    const type = edit.inputType ?? '';
     const typing = type.startsWith('insert') && type !== 'insertCompositionText' && type !== 'insertFromPaste' && type !== 'insertFromDrop';
     const text = type === 'insertLineBreak' || type === 'insertParagraph' ? '\n' : (edit.data ?? edit.dataTransfer?.getData('text/plain') ?? '');
     if (held && holding() && edit.cancelable) {
@@ -250,7 +261,7 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   };
   const take = (event: Event, text: string) => {
     if (box.readOnly) return;
-    const cleaned = rules.paste ? rules.paste(text) : { text };
+    const cleaned: ReturnType<NonNullable<InputRules['paste']>> = rules.paste ? rules.paste(text) : { text };
     if ('refuse' in cleaned) {
       event.preventDefault();
       hint.show(cleaned.refuse);
@@ -262,12 +273,14 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
       hint.show(words);
       return;
     }
-    hint.hide();
     held = null;
-    if (cleaned.text === text && event.type === 'paste') return;
+    if (cleaned.text === text && event.type === 'paste' && !cleaned.say) return hint.hide();
     event.preventDefault();
     if (event.type === 'drop') box.focus();
     insert(cleaned.text);
+    // What was taken and what was not, said as it lands: the next key taken lets it go.
+    if (cleaned.say) hint.show(cleaned.say);
+    else hint.hide();
   };
   const onPaste = (event: Event) => take(event, (event as ClipboardEvent).clipboardData?.getData('text/plain') ?? '');
   const onDrop = (event: Event) => {
@@ -398,6 +411,7 @@ export function unreadWords(text: string, box: Pick<NumberBox, 'label' | 'locale
   if (box.duration) {
     const read = readDuration(text, box.locale);
     if (read.ok) return null;
+    if (read.problem === 'minuteDigits') return fillIn(words.minuteDigits, { label, text: quoted(text), early: read.early, late: read.late });
     if (read.problem === 'minutes') return fillIn(words.minutes, { label });
     if (read.problem === 'severalValues') return fillIn(words.severalValues, { label });
     return fillIn(words.duration, { label, decimal: formatNumber(6.5, 1, box.locale) });

@@ -89,12 +89,16 @@ function shownBox(
     form.setValue(name, value);
     if (unreadNow()) form.setUnread(name, null);
   });
-  input.addEventListener('blur', () => {
-    if (input.readOnly) return;
-    // Keys held after a refused one are part of what was typed; the field's own words take over from the hint.
+  /** What is typed, read as the box is left or as a save reads it first (a change), never a value passed on the way. True when taken. */
+  const read = (): boolean => {
+    // Keys held after a refused one are part of what was typed: the box's now, and the field's own words take over from the hint.
     const held = checks.held();
-    if (held) hint.hide();
-    const text = held?.text ?? input.value;
+    if (held) {
+      hint.hide();
+      input.value = held.text;
+      checks.accept();
+    }
+    const text = input.value;
     const parsed = way.parse(text);
     const unreadable = parsed === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : null;
     // A value the box held as it was entered (one from outside with more places) is let be: check names it.
@@ -103,12 +107,16 @@ function shownBox(
       if (unreadNow()) form.setUnread(name, null);
       // What reads and fits is the field's, as typed ("-3" held after its refused minus): check says its least and most.
       if (parsed !== undefined && parsed !== (form.getState().values[name] ?? null)) form.setValue(name, parsed);
-      input.value = shown(form.getState().values[name]);
-      return;
+      return true;
     }
-    if (held) input.value = text;
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
     form.setUnread(name, { text, message: words });
+    return false;
+  };
+  input.addEventListener('change', () => !input.readOnly && read());
+  input.addEventListener('blur', () => {
+    if (input.readOnly) return;
+    if (read()) input.value = shown(form.getState().values[name]);
   });
   return {
     element,

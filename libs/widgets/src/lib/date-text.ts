@@ -100,8 +100,11 @@ export function dateShape(kind: DateKind, order: DateOrder, words: WidgetLabels)
   return kind === 'datetime' ? `${day} ${words.timeShape}` : day;
 }
 
-/** Text typed in a box, read: its value (null for nothing), or why it does not read, in words, and the reader's name for why. */
-export type DateReading = { ok: true; value: string | null } | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' };
+/**
+ * Text typed in a box, read: its value (null for nothing) — with `timeLeftOut`, the time a date and time had where a
+ * day alone is kept (HH:MM, here) — or why it does not read, in words, and the reader's name for why.
+ */
+export type DateReading = { ok: true; value: string | null; timeLeftOut?: string } | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' | 'minuteDigits' };
 
 /** What a box reads text with: its kind, its page's order and language, its label and words. */
 export interface DateReader {
@@ -129,11 +132,16 @@ export function readDateText(text: string, reader: DateReader): DateReading {
   if (!stripMarks(t)) return { ok: true, value: null };
   if (kind === 'time') {
     const time = readTime(t);
-    return time.ok ? { ok: true, value: time.value } : { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
+    if (time.ok) return { ok: true, value: time.value };
+    // "14:3" could be 14:03 or 14:30: both are named, neither taken.
+    if (time.problem === 'minuteDigits') return { ok: false, words: fillIn(words.minuteDigits, { label, text: quoted(t), early: time.early, late: time.late }), problem: 'minuteDigits' };
+    return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
   }
   const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale });
   if (!read.ok) {
     switch (read.problem) {
+      case 'minuteDigits':
+        return { ok: false, words: fillIn(words.minuteDigits, { label, text: quoted(t), early: read.early, late: read.late }), problem: 'minuteDigits' };
       case 'noSuchDay': {
         const month = new Intl.DateTimeFormat(langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
         return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }), problem: 'noSuchDay' };
@@ -151,7 +159,8 @@ export function readDateText(text: string, reader: DateReader): DateReading {
     }
   }
   if (read.value === null) return { ok: true, value: null };
-  return { ok: true, value: kind === 'date' ? read.value : instantOf(read.value) };
+  if (kind !== 'date') return { ok: true, value: instantOf(read.value) };
+  return read.timeLeftOut ? { ok: true, value: read.value, timeLeftOut: read.timeLeftOut } : { ok: true, value: read.value };
 }
 
 /** A date in the page's order, as words point to one: the year's last day, whose 31 shows which part is the day. */

@@ -144,16 +144,20 @@ export function dateRules(input: HTMLInputElement, reader: DateReader): InputRul
       const plain = stripMarks(text).replace(/(\r\n|[\r\n])$/, '').trim();
       if (/[\t\n\r]/.test(plain)) return { refuse: fillIn(words.severalValues, { label: reader.label }) };
       let read = readDateText(plain, reader);
-      // A date and time pasted in a date's box: its day.
+      // A date and time pasted in a date's box: its day, and the time left out is said.
       if (kind === 'date' && !read.ok) {
         const timed = readDateText(plain, { ...reader, kind: 'datetime' });
-        if (timed.ok && timed.value) read = { ok: true, value: typingDate(new Date(timed.value)) };
+        if (timed.ok && timed.value) {
+          const at = new Date(timed.value);
+          read = { ok: true, value: typingDate(at), timeLeftOut: `${pad(at.getHours())}:${pad(at.getMinutes())}` };
+        }
       }
       const replacing = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) >= input.value.length;
       if (read.ok && read.value) {
         // A whole date takes the box's place, written the page's way.
         input.setSelectionRange(0, input.value.length);
-        return { text: typingText(read.value, kind, reader.order, locale) };
+        const taken = typingText(read.value, kind, reader.order, locale);
+        return read.timeLeftOut ? { text: taken, say: fillIn(words.timeLeftOut, { label: reader.label, time: read.timeLeftOut }) } : { text: taken };
       }
       // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
       if (plain && !replacing && !strangers(plain, kind, locale)) return { text: plain };
@@ -229,22 +233,22 @@ export function dateBox(options: DateBoxOptions): DateBox {
     if (readonly || !entered) return;
     // Keys held after a refused one are part of what was typed: "1x5/10/2026" where the box shows "1". All of it is the
     // box's now, and the field's own words take over from the hint.
-    const held = checks.held();
-    if (held) {
+    const waiting = checks.held();
+    if (waiting) {
       hint.hide();
-      input.value = held.text;
+      input.value = waiting.text;
       checks.accept();
     }
     const text = input.value;
     // Not changed since the box was entered: the value stays as it came, seconds and all.
-    if (entered && text === entered.text && !unreadNow()) return;
+    if (text === entered.text && !unreadNow()) return;
     const read = readDateText(text, reader);
     if (read.ok) {
       write(read.value);
       if (unreadNow()) form.setUnread(name, null);
       return;
     }
-    const back = (entered ? entered.value : held) ?? null;
+    const back = entered.value ?? null;
     if ((form.getState().values[name] ?? null) !== back) write(back as string | null);
     form.setUnread(name, { text, message: read.words });
   }
@@ -252,6 +256,8 @@ export function dateBox(options: DateBoxOptions): DateBox {
     // Enter sends a form: what is typed is read first, so a date that does not read is never sent as the one held.
     if (event.key === 'Enter' && !event.isComposing) settle();
   });
+  // A save made with the box still entered (Ctrl+Enter, a button's key) reads it first, as leaving it would.
+  input.addEventListener('change', () => typing() && settle());
   input.addEventListener('blur', (event) => {
     settle();
     entered = null;

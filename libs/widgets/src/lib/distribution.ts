@@ -132,7 +132,9 @@ export const distributionWidget: WidgetFactory = (context) => {
     });
     let entered = row.share;
     row.input.addEventListener('focus', () => (entered = row.share));
-    row.input.addEventListener('blur', () => {
+    /** The share as typed, read as its box is left or as a save reads it first (a change): never one passed on the way. */
+    const read = () => {
+      if (row.input.readOnly) return;
       // Keys held after a refused one are part of what was typed; the row's own words take over from the hint.
       const held = row.checks.held();
       if (held) row.hint.hide();
@@ -140,7 +142,10 @@ export const distributionWidget: WidgetFactory = (context) => {
       const reading = readNumber(text, locale, { percent: true });
       // A share the box held as it was entered (one from outside with more places) is let be.
       const words = held ? (leftWords(text, shareBox) ?? held.words) : reading.ok && reading.value === entered ? null : leftWords(text, shareBox);
-      if (held) row.input.value = text;
+      if (held) {
+        row.input.value = text;
+        row.checks.accept();
+      }
       if (words) {
         // Kept as typed, marked, with why; the share keeps what it held as the box was entered.
         if (row.share !== entered) {
@@ -160,7 +165,9 @@ export const distributionWidget: WidgetFactory = (context) => {
       save();
       if (had) sayUnread();
       draw();
-    });
+    };
+    row.input.addEventListener('change', read);
+    row.input.addEventListener('blur', read);
     row.remove = make('button', { type: 'button', class: 'fd-line-delete', 'aria-label': words.deleteLine }, '×');
     row.remove.addEventListener('click', () => {
       rows = rows.filter((other) => other !== row);
