@@ -172,7 +172,7 @@ class DemoComponent {
   readonly theme = (params.get('theme') as Theme | null) ?? undefined;
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
-  readonly fieldTypes = { 'char.shout': ShoutComponent, 'float.tag': PriceTagComponent };
+  readonly fieldTypes = { 'char.shout': ShoutComponent, 'monetary.tag': PriceTagComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets, ...demoMapWidgets };
   readonly listViews = demoListViews;
   readonly maps = demoMaps;

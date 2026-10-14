@@ -16,7 +16,7 @@ export const containedPage: Page = {
   data: { kind: 'record', model: 'quote' },
   fields: {
     customer: { type: 'char', label: 'Customer', required: true },
-    price: { type: 'float', label: 'Price', help: 'Type 1200: the app’s price tag cannot draw four-digit prices.' },
+    price: { type: 'monetary', label: 'Price', currency: 'EGP', money: { currency: 'code', at: 'before' }, help: 'Type 1200: the app’s price tag cannot draw four-digit prices.' },
     delivery: { type: 'date', label: 'Delivery date' },
     notes: { type: 'text', label: 'Notes' },
   },

@@ -1,5 +1,5 @@
 import { fill, type LineField, type Value } from '@fieldia/core';
-import { displayValue } from './display';
+import { cellText } from './display';
 import { handedForm } from './handed';
 import { wordsFor } from './kind-parts';
 import type { Widget, WidgetContext, WidgetState } from './widgets';
@@ -98,11 +98,16 @@ export function brokenBox(doc: Document, words: string, more?: string): HTMLElem
 
 /**
  * The box for a field: "This field could not be shown: Price", in the page's language. With `back`, the value it went
- * back to as it failed on the person's change: "Your change was not kept: it is back to 450.00."
+ * back to as it failed on the person's change, as the field shows it — an amount in its currency, a share as a per
+ * cent: "Your change was not kept: it is back to EGP 450.00."
  */
-export function brokenFieldBox(context: Pick<WidgetContext, 'document' | 'labels' | 'locale' | 'field' | 'node'>, back?: { value: Value | undefined; values: Readonly<Record<string, Value>> }): HTMLElement {
+export function brokenFieldBox(
+  context: Pick<WidgetContext, 'document' | 'labels' | 'locale' | 'field' | 'node'>,
+  back?: { value: Value | undefined; values: Readonly<Record<string, Value>>; parent?: Readonly<Record<string, Value>> }
+): HTMLElement {
   const words = wordsFor(context.labels, context.locale);
-  const shown = back ? displayValue(context.field as LineField, back.value, back.values as Record<string, Value>, context.locale) : '';
+  const { widget, options } = context.node;
+  const shown = back ? cellText(context.field as LineField, back.value, back.values as Record<string, Value>, context.locale, back.parent, { widget, options }) : '';
   const more = back ? (shown ? fill(words.brokenKept, { value: shown }) : words.brokenKeptEmpty) : undefined;
   return brokenBox(context.document, fill(words.brokenField, { label: context.node.label ?? context.field.label }), more);
 }
@@ -158,6 +163,8 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
   const own = handedForm(context.form, context.name);
   /** The value it last showed: drawn without throwing. */
   let good: { value: Value | undefined } | null = null;
+  /** In a table's cell, the record its line is on, as its last update told: an amount there is in that record's currency. */
+  let parent: Readonly<Record<string, Value>> | undefined;
   /** It says what it drew (`drew`): an update that returns has not drawn anything yet. */
   let drawsLater = false;
   const shown = (value: Value | undefined) => {
@@ -190,7 +197,7 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
   }
   const made: Widget = inner;
   /** The value to go back to: the person changed it in this widget, which failed on it, never having shown it. */
-  const backTo = (): { value: Value | undefined; values: Readonly<Record<string, Value>> } | null => {
+  const backTo = (): { value: Value | undefined; values: Readonly<Record<string, Value>>; parent?: Readonly<Record<string, Value>> } | null => {
     const written = own.written;
     if (!written || !good) return null;
     let values: Readonly<Record<string, Value>>;
@@ -201,7 +208,7 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
     }
     if (!same(values[context.name], written.value) || same(values[context.name], good.value)) return null;
     own.written = null;
-    return { value: good.value, values };
+    return { value: good.value, values, ...(parent ? { parent } : {}) };
   };
   const fail = (error: unknown, stage: FailureStage) => {
     reportFailure(error, where(stage), context.onError);
@@ -238,6 +245,7 @@ export function containWidget(make: (own: Pick<WidgetContext, 'form' | 'fail' | 
     },
     update(state: WidgetState) {
       if (box) return;
+      parent = state.parent;
       try {
         made.update(state);
         if (!drawsLater) shown(state.value);
