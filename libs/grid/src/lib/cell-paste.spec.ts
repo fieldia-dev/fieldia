@@ -48,6 +48,26 @@ describe('a block pasted on a table', () => {
     expect(readPastedCell(float, '0.500', { locale: 'de' })).toEqual({ value: 0.5 });
   });
 
+  it('keeps a per cent and hours to their column’s places and least, as their boxes do: never a rounded picture', () => {
+    const margin = { type: 'float', label: 'Margin', min: 0 } as LineField;
+    const percentage = { locale: 'en' as const, widget: 'percentage' };
+    expect(readPastedCell(margin, '12.555', percentage)).toBeNull();
+    expect(readPastedCell(margin, '12.55%', percentage)).toEqual({ value: 0.1255 });
+    expect(readPastedCell({ ...margin, digits: [5, 1] } as LineField, '12.55', percentage)).toBeNull();
+    expect(readPastedCell(margin, '-5', percentage)).toBeNull();
+    expect(readPastedCell({ type: 'float', label: 'Margin' } as LineField, '-5', percentage)).toEqual({ value: -0.05 });
+    const hours = { type: 'float', label: 'Hours', min: 0 } as LineField;
+    const duration = { locale: 'en' as const, widget: 'duration' };
+    expect(readPastedCell(hours, '-2:00', duration)).toBeNull();
+    expect(readPastedCell(hours, '2:15', duration)).toEqual({ value: 2.25 });
+    // "6:3" could be 6:03 or 6:30: not pasted, and named, as any cell that does not read.
+    expect(readPastedCell(hours, '6:3', duration)).toBeNull();
+  });
+
+  it('never takes a day of an instant in a date’s cell, leaving its time out in silence', () => {
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '2026-10-15T23:30:00Z', { locale: 'en' })).toBeNull();
+  });
+
   it('reads hours and per cents as their boxes do, dates in the page’s order, a choice by its label, words on one line', () => {
     expect(readPastedCell(float, '6:30', { locale: 'en', widget: 'duration' })).toEqual({ value: 6.5 });
     expect(readPastedCell(float, '٢٥٪', { locale: 'ar', widget: 'percentage' })).toEqual({ value: 0.25 });

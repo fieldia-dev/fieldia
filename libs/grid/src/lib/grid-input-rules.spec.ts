@@ -217,4 +217,13 @@ describe('a block pasted on a chosen cell', () => {
     paste('abc');
     expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لم يُلصق في: Quantity، السطر 1');
   });
+
+  it('counts one cell as one, in the page’s language: never “1 cells”', async () => {
+    const { box } = await chosen();
+    paste('3');
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 1 cell.');
+    const arabic = await chosen('ar');
+    paste('3');
+    expect(arabic.box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لُصق في خلية واحدة.');
+  });
 });
