@@ -196,6 +196,11 @@ test.describe("a list's calendar", () => {
     const wednesday = (await page.locator('.fd-cal-col[data-day="2026-10-14"]').boundingBox())!;
     await dragTo(page, { x: box.x + box.width / 2, y: box.y + 6 }, { x: wednesday.x + wednesday.width / 2, y: box.y + 6 });
     await expect(said(page)).toContainText('نُقل');
+    // The day and the time joined with the Arabic comma, in the words said and in every block's name; never a Latin one.
+    await expect(said(page)).toContainText('، ');
+    expect(await said(page).textContent()).not.toContain(',');
+    const names = await page.locator('.fd-cal-event[aria-label], .fd-cal-slot[aria-label]').evaluateAll((all) => all.map((part) => part.getAttribute('aria-label') ?? ''));
+    expect(names.filter((name) => name.includes(','))).toEqual([]);
     const now = await record(page, 'desk.booking', id);
     expect(new Date(now.start).getDate()).toBe(14);
     expect(new Date(now.start).getHours()).toBe(new Date(was.start).getHours());
