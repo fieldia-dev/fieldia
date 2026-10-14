@@ -1136,7 +1136,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         note.textContent = words;
         note.classList.add('fd-form-part-problem');
       };
-      const draw = (found: Page | null) => {
+      const draw = (found: Page | null, waited = false) => {
         if (gone) return;
         if (!found) return refuse(fill(labels.formMissing, { page: node.page }));
         const saved = shownAs(found);
@@ -1144,6 +1144,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const at = scope.chain.findIndex((p) => p.id === found.id);
         if (at !== -1) return refuse(fill(labels.formInItself, { page: name, chain: [...scope.chain.slice(at).map((p) => p.title), name].join(' → ') }));
         if (found.layout.type !== 'sections' && found.layout.type !== 'tabs') return refuse(fill(labels.formNotPlaceable, { page: name }));
+        // The parts it draws from (a date's box, a path picker) in first, as for the page round it: its placeholder
+        // meanwhile, then drawn whole — never plainly, then again.
+        const awaited = waited ? [] : partsFor(saved, options.widgets, options.slots).filter((part) => !part.loaded);
+        if (awaited.length) return void settleParts(awaited).then(() => draw(found, true));
         const checked = checkPage(saved);
         let inner: Form;
         try {

@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { pathPart, textPart, type WidgetFactory } from '@fieldia/widgets';
+import { datePart, pathPart, textPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { mountViewer, type ViewerHandle } from './viewer';
@@ -47,7 +47,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, filtersPart, textPart, pathPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, filtersPart, textPart, pathPart, datePart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -60,12 +60,77 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields))).toEqual([pathPart]);
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'links', widget: 'links' }), fields))).toEqual([textPart]);
     expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([filtersPart]);
+    // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box).
     expect(partsFor(BUG)).toEqual([headPart]);
     // The classic formatted text, the plain many2one: no part.
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([]);
     // The app's own widget for the field: no part.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields), { 'many2one.path': own })).toEqual([]);
+  });
+
+  it('the date part for a date, a date and time, a time of day or a range, wherever its box is drawn: a field, a table’s lines, a property', () => {
+    const fields = {
+      due: { type: 'date', label: 'Due' },
+      at: { type: 'datetime', label: 'At' },
+      slot: { type: 'char', label: 'Slot' },
+      lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, due: { type: 'date', label: 'Due' }, slot: { type: 'char', label: 'Slot' } } },
+      plain: { type: 'one2many', label: 'Plain lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, slot: { type: 'char', label: 'Slot' } } },
+      props: { type: 'properties', label: 'Properties', definitions: [{ name: 'note', label: 'Note', type: 'char' }] },
+    };
+    const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
+    expect(partsFor(page(sections(field('due')), fields))).toEqual([datePart]);
+    expect(partsFor(page(sections(field('at')), fields))).toEqual([datePart]);
+    expect(partsFor(page(sections(field('slot', { widget: 'time' })), fields))).toEqual([datePart]);
+    expect(partsFor(page(sections(field('due', { widget: 'daterange', options: { endField: 'at' } })), fields))).toEqual([datePart]);
+    // A table's lines draw each cell with its column's box: a date column, a time column.
+    expect(partsFor(page(sections(field('lines')), fields))).toEqual([datePart]);
+    expect(partsFor(page(sections(field('plain')), fields))).toEqual([]);
+    expect(partsFor(page(sections(field('plain', { cells: { slot: { widget: 'time' } } })), fields))).toEqual([datePart]);
+    // A property may be a date: one added in place, or worked out from its value, may be one whatever the page names.
+    expect(partsFor(page(sections(field('props')), fields))).toEqual([datePart]);
+    // A plain char: none. The app's own date box: none.
+    expect(partsFor(page(sections(field('slot')), fields))).toEqual([]);
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(page(sections(field('due'), field('lines')), fields), { date: own })).toEqual([]);
+  });
+
+  it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {
+    const fields = { due: { type: 'date', label: 'Due' } };
+    const dataSource = createMemoryDataSource({ records: { x: { 1: { due: '2026-10-15' } } } });
+    expect(datePart.loaded).toBeUndefined();
+    const { host, handle } = mount(page(sections({ type: 'field', id: 'f-due', field: 'due' }), fields), { dataSource, recordId: 1 });
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('[data-node]')).toBeNull();
+    await handle.drawn;
+    await handle.form.settled();
+    expect(datePart.loaded).toBeDefined();
+    expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+    expect(host.querySelector('[data-node="f-due"] .fd-date-pick .fd-calendar-button')).not.toBeNull();
+    expect((host.querySelector('[data-node="f-due"] input') as HTMLInputElement).value).toBe('15 Oct 2026');
+  });
+
+  it('a saved form placed in a page, holding a date: its quiet placeholder until the date part has come, then drawn whole — never plainly first', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountViewer: fresh } = await import('./viewer');
+      const { datePart: freshDate } = await import('@fieldia/widgets');
+      const visit = { ...page(sections({ type: 'field', id: 'f-due', field: 'due' }), { due: { type: 'date', label: 'Due' } }), id: 'visit', data: { kind: 'responses' } } as Page;
+      const outer = page(sections({ type: 'field', id: 'f-name', field: 'name' }, { type: 'form', id: 'visit', page: 'visit', name: 'visit', title: 'Visit' }));
+      expect(freshDate.loaded).toBeUndefined();
+      const host = document.createElement('div');
+      document.body.append(host);
+      const handle = fresh(host, { page: outer, pages: { visit } });
+      handles.push(handle);
+      // The page round it asks for no part: drawn at once, the saved form's placeholder in it.
+      expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+      const part = host.querySelector('.fd-form-part[data-node="visit"]') as HTMLElement;
+      expect(part.getAttribute('aria-busy')).toBe('true');
+      expect(part.querySelector('input')).toBeNull();
+      await until(() => !part.hasAttribute('aria-busy'));
+      expect(freshDate.loaded).toBeDefined();
+      expect(part.querySelector('[data-node="visit-f-due"] .fd-date-pick .fd-calendar-button, .fd-date-pick .fd-calendar-button')).not.toBeNull();
+      expect(part.querySelectorAll('input')).toHaveLength(1);
+    });
   });
 
   it('a record with a head: nothing of it drawn, its element busy, until its part has come; then drawn whole, its record in', async () => {
