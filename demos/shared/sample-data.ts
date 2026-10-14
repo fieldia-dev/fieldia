@@ -43,6 +43,7 @@ import { wiTextRecords } from './wi-text';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
+import { calendarDemo } from './calendar';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -106,6 +107,8 @@ export const pages: Record<string, Page> = {
   ...real.pages,
   // The template library, ready pages to start from: shared/templates.ts.
   ...templatePages,
+  // A list's records on a calendar, and the record each opens: a clinic's day by doctor, the booking desk's week (shared/calendar.ts).
+  ...calendarDemo.pages,
 };
 
 /**
@@ -145,7 +148,7 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
 }
 
 /** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
-const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order' };
+const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages };
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
@@ -222,7 +225,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page };
@@ -339,6 +342,8 @@ export function sampleDataSource() {
       'shop.order': sampleWeekOrders(),
       'wi.history': { 1: wiHistoryRecord() },
       'shop.kitchen': { 1: sampleKitchen() },
+      // The calendars' appointments and bookings, made round now (shared/calendar.ts).
+      ...calendarDemo.records(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

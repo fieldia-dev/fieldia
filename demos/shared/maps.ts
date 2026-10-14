@@ -2,6 +2,7 @@ import { azureMaps, mapListViews, mapParts, mapWidgets, openStreetMap, type MapS
 import type { MapPartFactory } from '@fieldia/viewer';
 import { rideCourier } from './courier-ride';
 import { cairoDistricts, madeUpReach } from './districts';
+import { demoCalendarViews } from './calendar';
 
 /**
  * The demos' maps: OpenStreetMap's own map images and search, which are for
@@ -22,8 +23,8 @@ const settings: MapSettings = {
 export const demoMapWidgets = mapWidgets(settings);
 /** The borders the demos' maps know, for the designer to offer a map's areas by colour. */
 export const DEMO_REGION_SETS = [{ name: 'cairo-districts', key: 'code', nameKey: 'name', numbers: ['fee'] }];
-/** A list's records on the same maps: the viewer's `listViews`. */
-export const demoListViews = mapListViews(settings);
+/** A list's records on the same maps, and on a calendar (shared/calendar.ts): the viewer's `listViews`. */
+export const demoListViews = { ...mapListViews(settings), ...demoCalendarViews };
 
 const parts = mapParts(settings);
 /** The maps whose courier sets off as they are shown: the order's, and the kitchen's. */

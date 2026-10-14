@@ -1,0 +1,85 @@
+{
+  "fieldia": "0.1",
+  "id": "clinic-appointment",
+  "title": "Appointment",
+  "data": { "kind": "record", "model": "clinic.visit" },
+  "fields": {
+    "patient": { "type": "char", "label": "Patient", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "doctor": { "type": "many2one", "label": "Doctor", "relation": "clinic.doctor" },
+    "service": {
+      "type": "selection",
+      "label": "Service",
+      "options": [
+        { "value": "checkup", "label": "Check-up" },
+        { "value": "followup", "label": "Follow-up" },
+        { "value": "scan", "label": "Scan" },
+        { "value": "procedure", "label": "Procedure" }
+      ]
+    },
+    "start": { "type": "datetime", "label": "Starts", "required": true },
+    "stop": { "type": "datetime", "label": "Ends" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "default": "booked",
+      "options": [
+        { "value": "booked", "label": "Booked" },
+        { "value": "arrived", "label": "Arrived" },
+        { "value": "done", "label": "Done" },
+        { "value": "no_show", "label": "Did not come" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "appointment",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-patient", "field": "patient", "focus": true },
+          { "type": "field", "id": "f-phone", "field": "phone" },
+          { "type": "field", "id": "f-doctor", "field": "doctor" },
+          { "type": "field", "id": "f-service", "field": "service" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "when",
+        "title": "When",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-start", "field": "start" },
+          { "type": "field", "id": "f-stop", "field": "stop" },
+          { "type": "field", "id": "f-state", "field": "state" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Appointment": "موعد",
+      "Who": "مَن",
+      "When": "متى",
+      "Patient": "المريض",
+      "Phone": "الهاتف",
+      "Doctor": "الطبيب",
+      "Service": "الخدمة",
+      "Check-up": "كشف",
+      "Follow-up": "متابعة",
+      "Scan": "أشعة",
+      "Procedure": "إجراء",
+      "Starts": "يبدأ",
+      "Ends": "ينتهي",
+      "State": "الحالة",
+      "Booked": "محجوز",
+      "Arrived": "وصل",
+      "Done": "تم",
+      "Did not come": "لم يحضر"
+    }
+  }
+}

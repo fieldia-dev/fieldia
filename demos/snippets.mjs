@@ -4,13 +4,13 @@
  * what the page needs beyond the viewer itself, read from the page: the
  * grid, CodeMirror or VS Code's editor for its code fields, its maps (a
  * place or an area, a list's map, a form's map, the borders its areas are
- * shaded by), the chatter beside a record. What is copied draws the page as
- * the demo does.
+ * shaded by), a list's calendar and the page its new records open in, the
+ * chatter beside a record. What is copied draws the page as the demo does.
  */
 
 /** What a page uses beyond the viewer's own widgets, found by walking it. */
 export function pageNeeds(page) {
-  const needs = { grid: false, code: false, monaco: false, mapFields: false, listMap: false, formMap: false, chatter: false, own: false, slots: new Set(), regions: new Set(), reach: false };
+  const needs = { grid: false, code: false, monaco: false, mapFields: false, listMap: false, listCalendar: null, formMap: false, chatter: false, own: false, slots: new Set(), regions: new Set(), reach: false };
   const walk = (node) => {
     if (Array.isArray(node)) return node.forEach(walk);
     if (!node || typeof node !== 'object') return;
@@ -30,6 +30,8 @@ export function pageNeeds(page) {
   };
   walk(page?.layout);
   if (page?.layout?.type === 'list' && page.layout.map) needs.listMap = true;
+  // A list's calendar, and the model its new records are made in.
+  if (page?.layout?.type === 'list' && page.layout.calendar) needs.listCalendar = page.data?.model ?? 'record';
   // A field's own widget, by its field's definition: a json field drawn as code.
   for (const field of Object.values(page?.fields ?? {})) walk(field);
   return needs;
@@ -82,8 +84,14 @@ function parts(needs) {
       ].join('\n')
     );
     if (needs.mapFields) widgets.push('...mapWidgets(mapSettings)');
-    if (needs.listMap) options.push(['listViews', 'mapListViews(mapSettings)']);
+    if (needs.listMap && !needs.listCalendar) options.push(['listViews', 'mapListViews(mapSettings)']);
     if (needs.formMap) options.push(['maps', 'mapParts(mapSettings)']);
+  }
+  if (needs.listCalendar) {
+    // The calendar, and the page a slot pressed opens a new record in, in a dialog with its start and end filled in.
+    imports.push("import { calendarListViews } from '@fieldia/calendar';", "import recordPage from './record.page.json'; // the page one of these records opens in");
+    options.push(['listViews', needs.listMap ? '{ ...mapListViews(mapSettings), ...calendarListViews() }' : 'calendarListViews()']);
+    options.push(['pages', `{ '${needs.listCalendar}': recordPage }`]);
   }
   // Your own widget, by its field's type and its name.
   if (needs.own) widgets.push("'char.shout': yourShoutWidget");

@@ -1,0 +1,83 @@
+{
+  "fieldia": "0.1",
+  "id": "clinic-calendar",
+  "title": "Appointments",
+  "description": "A clinic's appointments on a calendar: a column for each doctor in the day, each visit coloured by its service, moved by dragging or from the keyboard, and a new one from an empty slot.",
+  "data": { "kind": "record", "model": "clinic.visit" },
+  "fields": {
+    "patient": { "type": "char", "label": "Patient", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "doctor": { "type": "many2one", "label": "Doctor", "relation": "clinic.doctor" },
+    "service": {
+      "type": "selection",
+      "label": "Service",
+      "options": [
+        { "value": "checkup", "label": "Check-up" },
+        { "value": "followup", "label": "Follow-up" },
+        { "value": "scan", "label": "Scan" },
+        { "value": "procedure", "label": "Procedure" }
+      ]
+    },
+    "start": { "type": "datetime", "label": "Starts" },
+    "stop": { "type": "datetime", "label": "Ends" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "booked", "label": "Booked" },
+        { "value": "arrived", "label": "Arrived" },
+        { "value": "done", "label": "Done" },
+        { "value": "no_show", "label": "Did not come" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "appointments",
+    "columns": ["patient", "doctor", "service", "start", "state"],
+    "sort": [{ "field": "start" }],
+    "pageSize": 20,
+    "searchFields": ["patient", "phone", "doctor"],
+    "filters": [
+      { "id": "scans", "label": "Scans", "filter": [{ "field": "service", "op": "=", "value": "scan" }] },
+      { "id": "waiting", "label": "Not arrived yet", "filter": [{ "field": "state", "op": "=", "value": "booked" }] }
+    ],
+    "groupBy": ["doctor", "service", "state"],
+    "calendar": {
+      "start": "start",
+      "end": "stop",
+      "title": "patient",
+      "colour": "service",
+      "resource": "doctor",
+      "views": ["day", "week", "month", "agenda"],
+      "view": "day",
+      "opens": "calendar",
+      "firstDay": 6,
+      "hours": { "start": 9, "end": 18 },
+      "slot": 15
+    }
+  },
+  "translations": {
+    "ar": {
+      "Appointments": "المواعيد",
+      "A clinic's appointments on a calendar: a column for each doctor in the day, each visit coloured by its service, moved by dragging or from the keyboard, and a new one from an empty slot.": "مواعيد العيادة على تقويم: عمود لكل طبيب في اليوم، وكل زيارة بلون خدمتها، تُنقل بالسحب أو من لوحة المفاتيح، وموعد جديد من خانة فارغة.",
+      "Patient": "المريض",
+      "Phone": "الهاتف",
+      "Doctor": "الطبيب",
+      "Service": "الخدمة",
+      "Check-up": "كشف",
+      "Follow-up": "متابعة",
+      "Scan": "أشعة",
+      "Procedure": "إجراء",
+      "Starts": "يبدأ",
+      "Ends": "ينتهي",
+      "State": "الحالة",
+      "Booked": "محجوز",
+      "Arrived": "وصل",
+      "Done": "تم",
+      "Did not come": "لم يحضر",
+      "Scans": "الأشعة",
+      "Not arrived yet": "لم يصل بعد"
+    }
+  }
+}

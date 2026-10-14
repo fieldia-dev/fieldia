@@ -1,0 +1,85 @@
+{
+  "fieldia": "0.1",
+  "id": "booking",
+  "title": "Booking",
+  "data": { "kind": "record", "model": "desk.booking" },
+  "fields": {
+    "customer": { "type": "char", "label": "Customer", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "service": {
+      "type": "selection",
+      "label": "Service",
+      "options": [
+        { "value": "viewing", "label": "Viewing" },
+        { "value": "consult", "label": "Consultation" },
+        { "value": "signing", "label": "Contract signing" },
+        { "value": "call", "label": "Video call" }
+      ]
+    },
+    "host": { "type": "many2one", "label": "With", "relation": "desk.staff" },
+    "start": { "type": "datetime", "label": "Starts", "required": true },
+    "stop": { "type": "datetime", "label": "Ends" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "default": "confirmed",
+      "options": [
+        { "value": "confirmed", "label": "Confirmed" },
+        { "value": "hold", "label": "On hold" },
+        { "value": "done", "label": "Done" },
+        { "value": "no_show", "label": "Did not come" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "booking",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-customer", "field": "customer", "focus": true },
+          { "type": "field", "id": "f-phone", "field": "phone" },
+          { "type": "field", "id": "f-service", "field": "service" },
+          { "type": "field", "id": "f-host", "field": "host" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "when",
+        "title": "When",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-start", "field": "start" },
+          { "type": "field", "id": "f-stop", "field": "stop" },
+          { "type": "field", "id": "f-state", "field": "state" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Booking": "حجز",
+      "Who": "مَن",
+      "When": "متى",
+      "Customer": "العميل",
+      "Phone": "الهاتف",
+      "Service": "الخدمة",
+      "Viewing": "معاينة",
+      "Consultation": "استشارة",
+      "Contract signing": "توقيع عقد",
+      "Video call": "مكالمة فيديو",
+      "With": "مع",
+      "Starts": "يبدأ",
+      "Ends": "ينتهي",
+      "State": "الحالة",
+      "Confirmed": "مؤكد",
+      "On hold": "معلّق",
+      "Done": "تم",
+      "Did not come": "لم يحضر"
+    }
+  }
+}
