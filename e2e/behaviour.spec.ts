@@ -470,6 +470,8 @@ test.describe('every field', () => {
   test('a client not on the list yet is created from the name typed, and chosen', async ({ page }) => {
     await open(page, variant, 'page=fields&skin=outlined');
     const client = node(page, 'f-client').getByRole('combobox');
+    // In sight first, as a person has it: WebKit types into a box out of sight, and its list opens out of sight too.
+    await client.scrollIntoViewIfNeeded();
     await client.fill('Hilton Cairo');
     const create = node(page, 'f-client').getByRole('option', { name: 'Create “Hilton Cairo”' });
     await expect(create).toBeVisible();

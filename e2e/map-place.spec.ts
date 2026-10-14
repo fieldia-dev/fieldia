@@ -244,8 +244,16 @@ test.describe('My location, rough (a desktop placed by its network)', () => {
   });
 });
 
-test('My location, refused: the button goes, and the reason is said in its place', async ({ page, context }) => {
+test('My location, refused: the button goes, and the reason is said in its place', async ({ page, context, browserName }) => {
   await context.clearPermissions();
+  // Chromium refuses a page with no permission at once. Firefox and WebKit ask the person, and wait for the answer;
+  // here, they answer as a browser does once the person blocks the site.
+  if (browserName !== 'chromium') {
+    await page.addInitScript(() => {
+      navigator.geolocation.getCurrentPosition = (_found, failed) =>
+        void setTimeout(() => failed?.({ code: 1, message: 'User denied Geolocation', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as GeolocationPositionError));
+    });
+  }
   const { field } = await openPlace(page);
   const button = field.getByRole('button', { name: 'My location' });
   if (await button.isVisible()) await button.click();

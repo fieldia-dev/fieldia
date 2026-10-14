@@ -133,7 +133,12 @@ function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabel
   };
   const run = (command: string, value?: string) => {
     restore();
+    // An alignment as a style, in every browser: Firefox would write an align attribute, which the stored text keeps
+    // only as a style, and the box would be drawn again under the selection.
+    const aligns = command.startsWith('justify');
+    if (aligns) doc.execCommand?.('styleWithCSS', false, 'true');
     doc.execCommand?.(command, false, value);
+    if (aligns) doc.execCommand?.('styleWithCSS', false, 'false');
   };
 
   const style = doc.createElement('select');

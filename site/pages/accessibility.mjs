@@ -26,7 +26,7 @@ export default {
 <p>Your app decides much of what people meet: the words on a page, its own colours and widgets, and the page round the form. Those are yours to check. A page’s own colours are the one exception we handle for you: Fieldia darkens its accent on a light page, or lightens it on a dark one, just enough for words in it and on it to read; and the colours a page gives each kind of part — a text box’s or a card’s ground, a button’s colour — are moved just as far as they have to be for the page’s words to read on them.</p>
 
 <h2 id="how">How it was tested</h2>
-<p>Every check below is a browser test in Fieldia’s repository. CI runs them on every change, in Chromium, through Playwright; a change that breaks one fails the build.</p>
+<p>Every check below is a browser test in Fieldia’s repository. CI runs them on every change, in Chromium, through Playwright; a change that breaks one fails the build. A smoke set — forms drawn and filled, their behaviour and layout, lists, dialogs, the quiet look, a place on a map, right to left, and a part that fails — runs in Firefox and in WebKit, Safari’s engine, on every change too.</p>
 <ul>
   <li><strong>Automated rules.</strong> <a href="https://github.com/dequelabs/axe-core">axe-core</a> 4.13, with the rules tagged ${c('wcag2a')}, ${c('wcag2aa')}, ${c('wcag21a')}, ${c('wcag21aa')} and ${c('wcag22aa')}, must find nothing on: every demo in the <a href="/demos/">gallery</a>, in each skin, in the dark scheme and in Arabic right to left; a form showing its errors after a failed send; a record that will not save; a dialog open; a list with its search open; the designers — the survey designer, and the screen editor in Simple and in Advanced, each view (Try it, JSON, Translations, Rules), each dialog and sheet, a part picked with each tab of its panel, and a blank page with its templates — at a desktop’s width and a phone’s; and the pages of this site.</li>
   <li><strong>The keyboard.</strong> On a form, a record, a list and the designers, Tab reaches every control, in the order of the page, and always comes back round: no traps. The JSON view’s box keeps Tab for indenting; Escape, then Tab, leaves it, as its hint says. On the designer’s canvas, a field or a question is reached by Tab and picked with Enter.</li>
@@ -42,7 +42,7 @@ export default {
 <p>Automated checks find many problems, not all of them. We have not yet:</p>
 <ul>
   <li>run sessions with people who use screen readers (NVDA, JAWS, VoiceOver, TalkBack), switch access or voice control — the checks above read what a screen reader would be given, not what one says;</li>
-  <li>tested in Firefox or Safari, or on phones’ own browsers — the checks run in Chromium only, at a phone’s width, not on a phone;</li>
+  <li>run the whole of it in Firefox or WebKit — they run the smoke set above, and the checks in this list run in Chromium — or on phones’ own browsers: Safari on an iPhone, Chrome on Android; a phone’s width is checked, not a phone;</li>
   <li>run the sweep on the React, Vue and Angular demos: they draw the same forms through the same viewer, but the sweep reads the plain JavaScript ones;</li>
   <li>checked text spacing changed by a reader (1.4.12), zoom past a phone’s width, or Windows’ contrast themes;</li>
   <li>checked the app round a form: its own pages, words and widgets.</li>

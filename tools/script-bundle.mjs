@@ -418,7 +418,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // save's conflict, and the memory source keeping them — versions, a change from elsewhere, permissions kept to as a
 // backend keeps them, every id a search matches, totals by field and group, a file stored with its progress — 3.4
 // more, to 525.2.
-const BUDGET_KB = 525.2;
+// 0.21's safety kit: errors kept to their part (a widget, a slot, a map or any part that throws draws a box that names
+// it, tells the console and onError, and the rest of the form goes on — libs/widgets/src/lib/contain.ts and the viewer's
+// guards, the box's words and look), and the page format's versions (upgradePage, and checks that say a page is newer
+// than this Fieldia) — 5.2 more, to 530.4.
+// What Firefox and WebKit showed (a centred line written as a style in Firefox, an old align attribute kept as one, a
+// group's parts in a flex column, as Safari lays a narrowed group's title out again only there) — 0.2 more, to 530.6.
+// Then a group laid out as blocks instead, its gaps as margins (layout-styles.ts): Safari floats nothing in a flex
+// column, so every card's title was drawn on the card's border — 0.2 more, to 530.8.
+const BUDGET_KB = 530.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -471,7 +479,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
-const GZIP_BUDGET_KB = 159.4;
+// 0.21's safety kit (errors kept to their part, with the box that names it; the page format's versions and upgradePage,
+// listed with the raw budget above), 1.9 more, to 161.3; what Firefox and WebKit showed (listed there too), 0.1, to 161.4.
+const GZIP_BUDGET_KB = 161.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -508,7 +518,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
 // Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
 // Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
-const ADD_ON_BUDGET_KB = { ar: [27.2, 5.6], de: [11.7, 4.9], fr: [11.8, 4.8] };
+// 0.21's safety kit — the box where a part could not be shown: "This field could not be shown", "This part could not
+// be shown", with its name and without — three in each: Arabic's to 27.5 and 5.7, German's to 11.9, French's to 12.0.
+const ADD_ON_BUDGET_KB = { ar: [27.5, 5.7], de: [11.9, 4.9], fr: [12.0, 4.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

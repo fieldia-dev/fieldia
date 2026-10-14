@@ -111,13 +111,14 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-save-bar`, { viewport: true });
     });
 
-    test('a locked record reads as plain values, and Edit then Done unlocks it, saves and locks it again', async ({ page }) => {
+    test('a locked record reads as plain values, and Edit then Done unlocks it, saves and locks it again', async ({ page, browserName }) => {
       const { demo } = await open(page, variant, 'page=customer&skin=outlined&readonly=1&editSwitch=1');
       const phone = node(page, 'f-phone').locator('input');
       await expect(phone).not.toBeEditable();
       // No box around a value, and no "Search…" inviting typing where none is allowed.
       expect(await phone.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).borderTopColor])).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
-      expect(await node(page, 'f-region').getByRole('combobox').evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe('rgba(0, 0, 0, 0)');
+      // WebKit reads no ::placeholder's style back (it gives the box's own): there, the screenshot shows it.
+      if (browserName !== 'webkit') expect(await node(page, 'f-region').getByRole('combobox').evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe('rgba(0, 0, 0, 0)');
       await screen(page, `${variant}-locked-record`, { viewport: true });
       await page.getByRole('button', { name: 'Edit', exact: true }).click();
       await expect(phone).toBeEditable();

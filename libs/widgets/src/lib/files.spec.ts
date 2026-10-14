@@ -196,7 +196,10 @@ describe('formatted text toolbar', () => {
     expect(commands).toEqual([
       ['bold', undefined],
       ['insertUnorderedList', undefined],
+      // An alignment written as a style in every browser: Firefox would write an align attribute.
+      ['styleWithCSS', 'true'],
       ['justifyCenter', undefined],
+      ['styleWithCSS', 'false'],
       ['formatBlock', '<h2>'],
     ]);
   });

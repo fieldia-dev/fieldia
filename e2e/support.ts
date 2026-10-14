@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { test } from './fixtures';
 
 /** Open a demo and fail the test on any console error or uncaught exception. */
 export async function open(page: Page, variant: string, query: string) {
@@ -21,8 +22,11 @@ export const node = (page: Page, id: string) => page.locator(`[data-node="${id}"
 
 /** Save a screenshot for a person to look at — transitions finished, so it shows where things settle. */
 export async function screen(page: Page, name: string, options: { viewport?: boolean } = {}) {
+  // Firefox's and WebKit's beside Chromium's, never over them: screens/firefox/…, screens/webkit/….
+  const engine = test.info().project.name;
+  const folder = engine === 'chromium' || !engine ? 'test-results/screens' : `test-results/screens/${engine}`;
   // Only what is in view, for a dialog: a full-page shot would leave its backdrop over part of the page.
-  await page.screenshot({ path: `test-results/screens/${name}.png`, fullPage: !options.viewport, animations: 'disabled' });
+  await page.screenshot({ path: `${folder}/${name}.png`, fullPage: !options.viewport, animations: 'disabled' });
 }
 
 /** Nothing on the page may scroll sideways. */

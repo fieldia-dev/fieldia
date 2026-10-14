@@ -16,6 +16,7 @@ import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
 import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
 import { wiTextDiscussion } from '../shared/wi-text';
+import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -63,6 +64,10 @@ const monaco =
       })
     : monacoWidgets;
 
+/** "A part that fails": what onError is told, listed under the form (shared/contained.ts). */
+const failures = name === 'contained' ? errorLog(document) : null;
+if (failures) document.getElementById('app')?.after(failures.element);
+
 const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   page,
@@ -79,7 +84,9 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     // The shop's answers to the pages' steps: the stock checked for "Order by phone".
     return answerAction(request, params.get('locale') ?? undefined);
   },
-  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
+  widgets: { 'char.shout': shoutWidget, 'float.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
+  // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
+  onError: failures?.onError,
   // A list with `map` shows its records on one too.
   listViews: demoListViews,
   // A page's own maps, with their layers: the order coming to its door.
@@ -87,6 +94,8 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   pages: appPages,
   ...optionsFromQuery(params),
   slots: {
+    // The app's delivery planner, which fails as it loads ("A part that fails").
+    planner: plannerSlot,
     // The record's conversation, to-dos and followers, beside it.
     chatter: chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined, dir: params.get('dir') === 'rtl' ? 'rtl' : undefined }),
     // A work item's Discussion: a comment box, then a card for each comment (shared/wi-text.ts).

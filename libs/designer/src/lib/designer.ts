@@ -25,6 +25,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
+import { upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
@@ -612,7 +613,8 @@ export function createDesigner(options: {
   const model = clone(options.model ?? {});
   /** A field the backend already has: its definition is the model's, not the designer's. */
   const fromModel = (name: string) => Object.prototype.hasOwnProperty.call(model, name);
-  let page = clone(options.page);
+  // A page saved by an older Fieldia is edited, and saved, in the current format.
+  let page = clone(upgradePage(options.page));
   let selected: string | null = null;
   let picked: string[] = [];
   let issues: string[] = [];
@@ -1522,7 +1524,7 @@ export function createDesigner(options: {
         return false;
       }
       return apply((draft) => {
-        Object.assign(draft, clone(found.page));
+        Object.assign(draft, clone(upgradePage(found.page)));
       });
     },
 

@@ -265,9 +265,13 @@ for (const framework of FRAMEWORKS) {
     test.setTimeout(demos.length * 3000);
     const problems = watch(page);
     for (const demo of demos) {
+      const told = problems.length;
       await page.goto(`/${demoHref(demo, framework.id)}`);
       await expect(page.locator('.fd-form').first(), demo.id).toBeVisible();
       await expect(page.locator('.dh-title'), demo.id).toHaveText(demo.name);
+      // A demo whose parts fail on purpose ("A part that fails") tells the console so: what it shows, not a fault.
+      // Its own browser test (contain.spec.ts) reads what it says.
+      if (demo.failsOnPurpose) problems.splice(told);
     }
     expect(problems).toEqual([]);
   });

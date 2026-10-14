@@ -243,5 +243,20 @@ const checked = validatePage(json);
 if (!checked.ok) console.log(checked.issues);   // [{ path: 'layout.children[0]...', message: '...' }]`
 )}
 <p>${c('validatePage')} checks the shape, key by key, that every id is unique, that every field a node or a condition names exists, and that every condition parses. Run it where pages are made and tested: in a designer, in your tests, in CI. The viewer runs the lighter ${c('checkPage')} as it shows a page — the page's outline, then the same names and conditions — and refuses a page that fails with the same list of issues; it leaves the validation library out of your app. For editors and other languages the format is also a JSON Schema: ${c('@fieldia/core/page.schema.json')}.</p>
+
+<h2 id="versions">Versions: a page from an older Fieldia, or a newer one</h2>
+<p>${c('"fieldia"')} says which format a page is written in. This Fieldia writes and reads format ${c('"0.1"')} (${c('FORMAT_VERSION')}); ${c('FORMAT_VERSIONS')} lists every format Fieldia has had. When a release changes what a page may say, the format gets a new version, and every reader of a page brings one in an older format up to date before anything else: ${c('checkPage')}, ${c('validatePage')}, ${c('createForm')}, the viewer and the saved forms placed in a page, and the designer, which then edits and saves it in the new format. That is ${c('upgradePage')}, which you can call yourself — say, to bring the pages your app keeps up to date as it loads them:</p>
+${code(
+  'ts',
+  `
+import { upgradePage } from '@fieldia/core';
+
+const stored = await db.pages.get(id);
+const page = upgradePage(stored); // the same object when it is already in the current format
+if (page !== stored) await db.pages.put(id, page); // kept in the new format from now on`
+)}
+<p>A page in an older format is copied and brought up step by step — each step after its own format, in order — and the page you gave is never changed. A page newer than the Fieldia reading it is not guessed at: it is refused, with words that say so, where an older Fieldia would have named the first setting it did not know.</p>
+${code('text', `fieldia: this page is in format 0.2, newer than this Fieldia reads (0.1): update Fieldia to show it`)}
+<p><strong>How the format changes.</strong> A release that adds to what a page may say — a new setting, a new kind of part — makes a new format version; a page needs nothing rewritten, and ${c('upgradePage')} writes the new version in it. A release that renames or reshapes a setting also adds a step to ${c('PAGE_UPGRADES')}: what changed, in plain words, the rewrite, and a page before and after it, which Fieldia's tests run, so no step goes untested. Format 0.1 is the first: it grew from Fieldia 0.1 to 0.20 under one version, and no step has been needed yet. From 0.21, the release tool refuses to publish a format whose shape changed under its old version. What each release changed is in the <a href="https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md">changelog</a>.</p>
 `,
 };

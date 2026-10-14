@@ -2,6 +2,7 @@ import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fiel
 import { mountViewer, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
+  Component as ReactComponent,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -139,6 +140,24 @@ function SlotContent(props: { name: string; form: Form; component: () => Compone
   return Component ? <Component form={props.form} name={props.name} /> : null;
 }
 
+/**
+ * An app's component kept to its place: one that throws as it renders says so through `fail` — the viewer then shows
+ * the small box that names its field or slot, and tells onError — and renders nothing more. Without it React would
+ * take down the whole tree under the nearest boundary: the form with it.
+ */
+class Contained extends ReactComponent<{ fail?: (error: unknown) => void; children?: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+  override componentDidCatch(error: unknown): void {
+    this.props.fail?.(error);
+  }
+  override render(): ReactNode {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 const EMPTY_STATE: WidgetState = { value: undefined, values: {}, readonly: false, required: false, invalid: false };
 
 export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(function FieldiaForm(props, ref) {
@@ -174,7 +193,11 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
         found.push({
           key: `field:${context.node.id}`,
           element: box,
-          node: <CustomField state={state} context={context} component={() => latest.current.fieldTypes?.[key]} />,
+          node: (
+            <Contained fail={context.fail}>
+              <CustomField state={state} context={context} component={() => latest.current.fieldTypes?.[key]} />
+            </Contained>
+          ),
         });
         return {
           element: box,
@@ -190,7 +213,11 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
         found.push({
           key: `slot:${name}:${found.length}`,
           element: box,
-          node: <SlotContent name={name} form={context.form} component={() => latest.current.slots?.[name]} />,
+          node: (
+            <Contained fail={context.fail}>
+              <SlotContent name={name} form={context.form} component={() => latest.current.slots?.[name]} />
+            </Contained>
+          ),
         });
       };
     }
@@ -202,6 +229,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       slots,
       // The newest handler; what it answers — values, words, a page, a stop — the form takes.
       onAction: (request) => latest.current.onAction?.(request),
+      // The newest handler, as for actions: told of a part that failed.
+      onError: (error, where) => latest.current.onError?.(error, where),
       // The newest handler, as for actions; rows look openable only when there is one.
       onOpenRecord: options.onOpenRecord && ((id) => latest.current.onOpenRecord?.(id)),
       // A page a step opens: the newest way of the app's, else the viewer's.

@@ -61,7 +61,8 @@ export function sanitizeHtml(html: string, document: Document = globalThis.docum
       }
       const styles: string[] = [];
       const style = element.style;
-      const align = ALIGNABLE.has(tag) ? style?.textAlign?.trim().toLowerCase() : '';
+      // Its alignment as a style, or as the old `align` attribute: Firefox's toolbar centres a line with one.
+      const align = ALIGNABLE.has(tag) ? (style?.textAlign || element.getAttribute('align') || '').trim().toLowerCase() : '';
       if (align && ALIGNMENTS.has(align)) styles.push(`text-align: ${align};`);
       if (tag === 'SPAN' && style) {
         const colour = style.color?.trim();

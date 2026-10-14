@@ -52,7 +52,7 @@ test.describe('at rest, pointed at, worked in', () => {
     expect(problems).toEqual([]);
   });
 
-  test('pointed at, a light box and the control’s sign show, and nothing moves', async ({ page }) => {
+  test('pointed at, a light box and the control’s sign show, and nothing moves', async ({ page, browserName }) => {
     await visit(page, QUIET);
     const area = node(page, 'f-area').locator('select');
     const before = { area: await at(area), next: await at(node(page, 'f-iteration').locator('select')), label: await at(node(page, 'f-area').locator('.fd-label')) };
@@ -62,10 +62,11 @@ test.describe('at rest, pointed at, worked in', () => {
     expect({ area: await at(area), next: await at(node(page, 'f-iteration').locator('select')), label: await at(node(page, 'f-area').locator('.fd-label')) }).toEqual(before);
     // Nothing opens on hover.
     await expect(area).not.toBeFocused();
-    // A date shows its calendar, a link its ×.
+    // A date shows its calendar, a link its ×. Firefox draws a date's calendar button inside the box, with no part a
+    // page can style or read: it shows at rest there too.
     const due = node(page, 'f-due').locator('input');
     await due.hover();
-    await expect.poll(() => due.evaluate((el) => getComputedStyle(el, '::-webkit-calendar-picker-indicator').opacity)).toBe('1');
+    if (browserName !== 'firefox') await expect.poll(() => due.evaluate((el) => getComputedStyle(el, '::-webkit-calendar-picker-indicator').opacity)).toBe('1');
     const assigned = node(page, 'f-assigned');
     await expect(assigned.locator('.fd-combo-clear')).toBeHidden();
     await assigned.locator('input').hover();
@@ -219,7 +220,9 @@ test.describe('where it is worn', () => {
     for (const id of ['f-state', 'f-area', 'f-iteration', 'f-priority']) await expect(node(page, id)).toHaveAttribute('data-quiet', '');
   });
 
-  test('with no pointer, a tap goes straight to the editor', async ({ browser }) => {
+  test('with no pointer, a tap goes straight to the editor', async ({ browser, browserName }) => {
+    // A phone's page needs isMobile, which Playwright's Firefox does not have; WebKit, the iPhone's engine, runs it.
+    test.skip(browserName === 'firefox', 'Firefox in Playwright has no isMobile');
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const page = await context.newPage();
     await page.goto(QUIET);

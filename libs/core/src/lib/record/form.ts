@@ -3,6 +3,7 @@ import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, Pr
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { JsonValue } from '../format/json';
+import { upgradePage } from '../format/upgrade';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
@@ -364,7 +365,9 @@ interface IndexedNode {
  * binding renders from `getState()` and calls these methods.
  */
 export function createForm(options: FormOptions): Form {
-  return innerForm(options, []).form;
+  // A page in an older format is read in the current one (upgradePage): the same object when it already is.
+  const page = upgradePage(options.page);
+  return innerForm(page === options.page ? options : { ...options, page }, []).form;
 }
 
 /** A form, and what the form round it — when it is a saved form placed in another — reaches it by. */

@@ -1,5 +1,6 @@
 import type * as z from 'zod';
 import { PageSchema, type Page } from './page';
+import { upgradePage } from './upgrade';
 import { ReferenceCheck, type PageValidation } from './references';
 
 export type { PageIssue, PageValidation } from './references';
@@ -11,10 +12,11 @@ export type { PageIssue, PageValidation } from './references';
  * readable and reading only fields of this page.
  *
  * Returns the page as validated. Nothing is coerced or filled in: a page that
- * passes is returned equal to the input.
+ * passes is returned equal to the input — one in an older format, brought up to
+ * date first (`upgradePage`), as every reader of it does.
  */
 export function validatePage(input: unknown): PageValidation {
-  const parsed = PageSchema.safeParse(input);
+  const parsed = PageSchema.safeParse(upgradePage(input));
   if (!parsed.success) {
     return { ok: false, issues: parsed.error.issues.map((issue) => ({ path: formatPath(issue.path), message: describe(issue) })) };
   }

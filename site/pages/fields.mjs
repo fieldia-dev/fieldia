@@ -477,5 +477,25 @@ mountViewer(host, { page, dataSource, widgets: { 'char.colour': colour } });
 // a node with "widget": "colour" on a char field now uses it`
 )}
 <p>In React, Vue and Angular a custom field can be a component of that framework instead — pass it as ${c('fieldTypes')}.</p>
+
+<h2 id="fails">A part that fails</h2>
+<p>Your own parts can have bugs. A widget — yours, or one of Fieldia's given what it cannot draw — a slot's content, a map, or any other part of the page that throws as it is drawn or brought up to date shows a small box in its place, "This field could not be shown: Price" or "This part could not be shown", in the page's language and as a status a screen reader says. The rest of the form goes on working, and saving: the field keeps the value it had. The error goes to the console and to ${c('onError')}, with where it happened:</p>
+${code(
+  'ts',
+  `
+mountViewer(host, {
+  page,
+  dataSource,
+  widgets: { 'float.tag': yourPriceTag },
+  slots: { planner: yourPlanner },
+  onError(error, where) {
+    // where: { stage: 'update', part: 'field', field: 'price', node: 'f-price', widget: 'float.tag' }
+    //     or { stage: 'draw', part: 'slot', name: 'planner', node: 'n-planner' }
+    yourErrorReporting.capture(error, { tags: where });
+  },
+});`
+)}
+<p>${c('stage')} is what was being done: ${c("'draw'")}, ${c("'update'")}, ${c("'focus'")} or ${c("'remove'")}. ${c('part')} is ${c("'field'")} for a field's widget (a table's cell too), else the part's type: ${c("'slot'")}, ${c("'map'")}, ${c("'section'")} and so on. A part that failed is left alone after: it is told once. A handler that throws is told to the console, and goes no further.</p>
+<p>In React and Vue, a field's or a slot's component that throws as it renders is caught the same way — without it, React takes down everything under the nearest error boundary, the form with it. Pass ${c('onError')} as a prop (${c('@error')} in a Vue template). In Angular, listen to ${c('(partError)')}: ${c('{ error, where }')}. A widget of your own that learns of its own failure later, where nothing would catch it, calls ${c('context.fail(error)')}: its field shows the box, as if it had thrown. <a href="/demos/plain/?page=contained&amp;skin=outlined">Demo: a part that fails</a>.</p>
 `,
 };

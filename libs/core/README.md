@@ -28,6 +28,24 @@ list of records — that your app implements;
 The page format is also a JSON Schema, for editors and other languages:
 `@fieldia/core/page.schema.json`.
 
+A page says which format it is written in (`"fieldia": "0.1"`, `FORMAT_VERSION`).
+One in an older format is brought up to date as it is read — by `checkPage`,
+`validatePage` and `createForm`, so by the viewer and the designer too — and
+`upgradePage` does it for the pages your app keeps. One newer than this Fieldia
+is refused with words that say so ("this page is in format 0.2, newer than this
+Fieldia reads (0.1): update Fieldia to show it"):
+
+```ts
+import { upgradePage } from '@fieldia/core';
+
+const page = upgradePage(stored);   // the same object when it is already current; a copy brought up step by step if not
+if (page !== stored) await save(page);
+```
+
+A release that renames or reshapes a setting adds a step to `PAGE_UPGRADES`,
+with a page before and after it that the tests run. What each release changed is
+in the [changelog](https://github.com/fieldia-dev/fieldia/blob/main/CHANGELOG.md).
+
 A page's `look` sets its accent, font, spacing, corners, labels and light or
 dark scheme, and, under `parts`, a look for each kind of part over it — the
 settings each kind has are `PART_LOOKS`:

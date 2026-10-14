@@ -2,7 +2,8 @@ import { FIELD_TYPES } from './names';
 import type { Page } from './page';
 import type { Field, LineField } from './field';
 import { ReferenceCheck, type PageIssue, type PageValidation } from './references';
-import { FORMAT_VERSION } from './version';
+import { formatProblem } from './version';
+import { upgradePage } from './upgrade';
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
@@ -12,15 +13,19 @@ const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
  * condition in it, the same as `validatePage` finds them. It leaves out the
  * key-by-key check of the format, and so the validation library, which an app
  * showing forms need not carry; run `validatePage` where pages are made or
- * tested. A page that passes is handed back as it is. A line's own form —
+ * tested. A page that passes is handed back as it is — one in an older
+ * format, brought up to date (`upgradePage`). A line's own form —
  * a page of a table's line fields — is checked with `parent`, the fields of
  * the record the line is on, which its conditions read as `parent`.
  */
-export function checkPage(input: unknown, options: { parent?: Record<string, Field | LineField> } = {}): PageValidation {
+export function checkPage(given: unknown, options: { parent?: Record<string, Field | LineField> } = {}): PageValidation {
+  // A page in an older format is read as the current one (upgradePage); one newer than this Fieldia is said to be.
+  const input = upgradePage(given);
   if (!isObject(input)) return { ok: false, issues: [{ path: '(page)', message: 'a page is a JSON object' }] };
   const issues: PageIssue[] = [];
   const say = (path: string, message: string) => issues.push({ path, message });
-  if (input['fieldia'] !== FORMAT_VERSION) say('fieldia', `this build reads format ${FORMAT_VERSION}`);
+  const format = formatProblem(input['fieldia']);
+  if (format) say('fieldia', format);
   if (typeof input['id'] !== 'string' || !input['id']) say('id', 'a page needs an id');
   const data = input['data'];
   if (!isObject(data) || !(data['kind'] === 'responses' || (data['kind'] === 'record' && typeof data['model'] === 'string' && data['model']))) {

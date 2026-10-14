@@ -31,6 +31,15 @@ export const LAYOUT_CSS = /* css */ `
 .fd-form { --fd-ground: transparent; }
 .fd-card, .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-section[data-style="card"][data-on-page] { --fd-ground: var(--fd-surface); }
 fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
+/* A group's title, its words and its parts, one under another, 14px apart (--fd-section-gap): blocks, the title floated
+   across the top. Neither a grid's rows nor a flex column: Safari floats nothing in either, and a legend that does not
+   float is drawn on its fieldset's border, so every card's title broke the card's top edge; and Safari never lays a
+   title out again in a grid that narrows, so a title kept its old width, past the group's edge. The gaps are margins:
+   the title's below it, as what clears it (styles.ts) starts below its margin; each part's above it, after one shown. */
+fieldset.fd-section { display: flow-root; }
+fieldset.fd-section > .fd-section-title { margin-block-end: var(--fd-section-gap, 14px); }
+fieldset.fd-section.fd-section-folded > .fd-section-title { margin-block-end: 0; }
+fieldset.fd-section > :where(:not(legend, [hidden]) ~ :not([hidden])) { margin-block-start: var(--fd-section-gap, 14px); }
 .fd-form .fd-section[data-style="line"] > .fd-section-title { border-block-end: 1px solid var(--fd-border); padding-block-end: 8px; }
 .fd-form .fd-section[data-style="plain"] > .fd-section-title { border-block-end: 0; padding-block-end: 0; }
 .fd-form .fd-section[data-style="framed"] {
@@ -38,7 +47,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 }
 /* The title sits on the frame, as a fieldset's legend does: the frame breaks round it. */
 .fd-form .fd-section[data-style="framed"] > .fd-section-title {
-  float: none; width: auto; max-width: 100%; padding: 0 6px; margin-inline-start: -6px; border: 0;
+  float: none; width: auto; max-width: 100%; padding: 0 6px; margin-inline-start: -6px; margin-block-end: 0; border: 0;
 }
 
 /* ---- where labels sit: as the page, a group or the field itself says (data-labels), in either skin ---- */

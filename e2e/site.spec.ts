@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
-import { DEMOS, FEATURED } from '../demos/catalog.mjs';
+import { DEMOS, FEATURED, demoHref } from '../demos/catalog.mjs';
 import { expectNoSidewaysScroll } from './support';
 
 /** fieldia.dev, as built into dist/site and served on its own port. */
@@ -103,10 +103,13 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
   }
   for (const href of hrefs) {
+    const told = problems.length;
     await page.goto(SITE + href);
     // A form, or the map of a page of its own.
     await expect(page.locator('.fd-form, .fd-map-embed').first(), href).toBeVisible();
     await expect(page.locator('.dh-title'), href).not.toBeEmpty();
+    // A demo whose parts fail on purpose ("A part that fails") tells the console so: what it shows, not a fault.
+    if (DEMOS.some((demo) => demo.failsOnPurpose && href.endsWith(`/demos/${demoHref(demo)}`))) problems.splice(told);
   }
   expect(problems).toEqual([]);
 });

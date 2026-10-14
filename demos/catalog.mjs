@@ -424,6 +424,22 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'contained',
+    name: 'A part that fails',
+    category: 'fields',
+    // Its parts fail on purpose, and the console is told so: what it shows, not a fault (e2e/demos-shell.spec.ts).
+    failsOnPurpose: true,
+    query: 'page=contained&skin=outlined',
+    blurb: 'Your own parts can have bugs. Here the app’s price tag fails for four-digit prices, and its delivery planner fails as it loads. Each shows a small box that names it, the error goes to the console and to onError, and the rest of the form works and saves.',
+    howTo: [
+      'Look under Quote: the delivery planner failed as it loaded, and a box says so in its place.',
+      'Type 1200 in Price: the price tag fails, and a box naming Price takes its place.',
+      'Change the customer and the notes, then press Save: the rest of the form works, and the quote is saved.',
+      'Read the list under the form: what the viewer’s onError was told, and where.',
+      'Switch framework at the top: the same two parts are React, Vue and Angular components, each kept to its place.',
+    ],
+  },
+  {
     id: 'quick-order',
     name: 'Order by phone, in steps',
     category: 'behaviour',

@@ -46,6 +46,18 @@ html, body { background: var(--dh-page); color: var(--dh-ink); }
   --fd-text: var(--dh-ink); --fd-muted: var(--dh-muted); --fd-surface: var(--dh-surface); --fd-border: var(--dh-edge);
   --fd-accent: var(--dh-brand); --fd-accent-text: var(--dh-on-brand); --fd-focus: var(--dh-brand);
 }
+/* "A part that fails": what onError was told, under the form (demos/shared/contained.ts), in the frame's colours. */
+.demo-error-log {
+  max-width: 1240px; margin: 0 auto 48px; padding: 0 16px; color: var(--dh-ink); font-size: 13.5px;
+}
+.demo-error-log h2 { margin: 0 0 6px; font-size: 14px; }
+.demo-error-log p { margin: 0; color: var(--dh-muted); }
+.demo-error-log ol { margin: 0; padding-inline-start: 22px; display: grid; gap: 6px; }
+.demo-error-log code {
+  display: inline-block; max-width: 100%; overflow-wrap: anywhere; padding: 1px 6px; border-radius: 4px;
+  background: var(--dh-code-bg); color: var(--dh-code-ink); border: 1px solid var(--dh-line); font-size: 12px;
+}
+#app:has(+ .demo-error-log) { padding-bottom: 16px; }
 
 /* ---- header ---- */
 #demo-head { background: var(--dh-surface); border-bottom: 1px solid var(--dh-line); padding: 10px 20px 12px; }

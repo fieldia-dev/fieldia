@@ -45,6 +45,8 @@ import {
   hotkeyWords,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { brokenBox, describeFailure, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
+import { upgradePage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView, type ListViewFactory, type OpenRowOptions } from './list';
 import type { MapPartFactory } from './map-part';
@@ -76,8 +78,17 @@ export type { PageFinder, PageRequest } from './related';
 /**
  * Fill a slot with the app's own content. Return a function to clean up. A slot drawn from parts loaded on first use
  * (a work item's Discussion: parts.ts in @fieldia/widgets) names them in `parts`: the page is drawn once they are in.
+ * A renderer that throws leaves a small box in the slot; `fail` does the same later, for content that fails after it
+ * was drawn (a React or Vue component that threw as it rendered, caught by the binding).
  */
-export type SlotRenderer = ((element: HTMLElement, context: { form: Form; name: string }) => void | (() => void)) & { readonly parts?: readonly Part[] };
+export type SlotRenderer = ((element: HTMLElement, context: SlotContext) => void | (() => void)) & { readonly parts?: readonly Part[] };
+
+/** What a slot's renderer is given: the form, the slot's name, and `fail`, to say its content could not be shown. */
+export interface SlotContext {
+  form: Form;
+  name: string;
+  fail(error: unknown): void;
+}
 
 export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   page: Page;
@@ -105,6 +116,13 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /** Draws a page's maps (`type: "map"`): @fieldia/map's `mapParts`. Without it a map shows nothing. */
   maps?: MapPartFactory;
   slots?: Record<string, SlotRenderer>;
+  /**
+   * Told when a part of the page throws as it is drawn, brought up to date, focused or taken away: a field's widget
+   * (the app's own or Fieldia's), a slot, a map, any other part. The part is then a small box that names it ("This
+   * field could not be shown: Price"), and the rest of the form goes on working, saving included. The console is told
+   * either way. `where` says which part, its field, and what was being done.
+   */
+  onError?: (error: unknown, where: PartFailure) => void;
   /**
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
    * own words in it when the page keeps them, and the viewer's labels,
@@ -240,6 +258,20 @@ export interface ViewerHandle {
 
 type Updater = (state: FormState) => void;
 
+/** A part of the page as it is drawn, for its errors to be kept to it: its node, its element, its box once it failed. */
+interface KeptPart {
+  node: LayoutNode;
+  element: HTMLElement | null;
+  box: HTMLElement | null;
+}
+
+/** A part's own name, for its box: a section's or a form's title, a tab's or a button's label, a map's. */
+function partName(node: LayoutNode): string | undefined {
+  const named = node as { title?: unknown; label?: unknown };
+  const name = typeof named.title === 'string' ? named.title : typeof named.label === 'string' ? named.label : undefined;
+  return name || undefined;
+}
+
 /** What one page's parts are drawn with: the page shown, or — inside a saved form placed in it — the saved page, with its own form. */
 interface Scope {
   /** The page shown, whose form is the one the viewer was given or made. */
@@ -320,6 +352,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   };
   const form = options.form ?? createForm({ ...options, page, host: actionHost, messages: options.messages ?? MESSAGES[locale] });
   const widgetLabels = WIDGET_LABELS[locale];
+  /** A part that failed: said to the console, and to the app's onError, which may not throw the page down either. */
+  const report: ErrorHandler = (error, where) => {
+    console.error(`[Fieldia] ${describeFailure(where)}`, error);
+    if (options.onError) reportFailure(error, where, options.onError);
+  };
   const dir = options.dir ?? (tag && isRightToLeft(tag) ? 'rtl' : undefined);
   const prefix = `fd${++mounts}`;
   const updaters: Updater[] = [];
@@ -328,6 +365,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * of the tab it is drawn in, which runs only while that tab is shown.
    */
   let sink: Updater[] = updaters;
+  /** The part being drawn: what it adds to `sink` is kept to it (keptTo). */
+  let drawing: KeptPart | null = null;
   const cleanups: (() => void)[] = [];
   /** A map without the app's maps to draw it: said once to the developer. */
   let warnedMaps = false;
@@ -449,8 +488,57 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function drawer(scope: Scope) {
     const { form, page } = scope;
     const uid = (id: string) => ownUid(scope.prefix + id);
-    /** A part's updater, handed the state of the part's own form. */
-    const watch = (update: Updater) => sink.push(scope.root ? update : () => update(form.getState()));
+    /** A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place. */
+    const watch = (update: Updater) => sink.push(keptTo(drawing, scope.root ? update : () => update(form.getState())));
+
+    // ---- errors kept to their part (@fieldia/widgets' contain.ts) ----
+
+    /** A part's updater kept to it: thrown, its part is a box from then on, which follows the part's condition. */
+    function keptTo(part: KeptPart | null, update: Updater): Updater {
+      if (!part) return update;
+      return (state) => {
+        if (part.box) return setHidden(part.box, form.node(part.node.id).invisible);
+        try {
+          update(state);
+        } catch (error) {
+          breakPart(part, error, 'update');
+        }
+      };
+    }
+
+    /** A part drawn with what it adds kept to it: one that throws as it is drawn is its box. */
+    function kept(node: LayoutNode, draw: () => HTMLElement): HTMLElement {
+      const part: KeptPart = { node, element: null, box: null };
+      const outer = drawing;
+      drawing = part;
+      try {
+        part.element = draw();
+        return part.element;
+      } catch (error) {
+        return breakPart(part, error, 'draw');
+      } finally {
+        drawing = outer;
+      }
+    }
+
+    /** A part's box in its place: said, sized and placed as the part was, hidden while the part would be. */
+    function breakPart(part: KeptPart, error: unknown, stage: FailureStage): HTMLElement {
+      const { node } = part;
+      report(error, { stage, part: node.type, node: node.id, ...(node.type === 'field' ? { field: node.field } : {}), ...(node.type === 'slot' ? { name: node.name } : {}) });
+      const name = node.type === 'field' ? (node.label ?? page.fields[node.field]?.label ?? node.field) : partName(node);
+      const words = node.type === 'field' ? fill(widgetLabels.brokenField, { label: name ?? '' }) : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
+      const box = brokenBox(doc, words);
+      box.dataset['node'] = node.id;
+      const drawn = part.element;
+      if (drawn) {
+        const span = drawn.style.getPropertyValue('--fd-span');
+        if (span) box.style.setProperty('--fd-span', span);
+        if (drawn.dataset['hideOn']) box.dataset['hideOn'] = drawn.dataset['hideOn'];
+        drawn.replaceWith(box);
+      } else spans(box, node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
+      part.box = box;
+      return box;
+    }
 
 
     /**
@@ -471,7 +559,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         mark.classList.add('fd-valid-mark');
         label.append(mark);
       }
-      const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
+      const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report }, options.widgets);
       // Its own tools (a Markdown text's Edit and Done), for a group that holds it alone to put in its heading.
       keepTools(wrapper, widget);
       // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
@@ -758,8 +846,25 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     function slotItem(node: SlotNode): HTMLElement {
       const element = el('div', { class: 'fd-slot', 'data-slot': node.name, 'data-node': node.id });
-      const cleanup = options.slots?.[node.name]?.(element, { form, name: node.name });
-      if (cleanup) cleanups.push(cleanup);
+      // The app's own content: one that throws leaves a box in the slot, and its clean-up is kept from throwing too.
+      const where = (stage: FailureStage): PartFailure => ({ stage, part: 'slot', name: node.name, node: node.id });
+      /** Its box, beside what the app drew (a framework still owns that): once, however often it fails. */
+      const broken = (error: unknown, stage: FailureStage) => {
+        report(error, where(stage));
+        if (!element.querySelector(':scope > .fd-broken')) element.append(brokenBox(doc, widgetLabels.brokenPart));
+      };
+      try {
+        const cleanup = options.slots?.[node.name]?.(element, { form, name: node.name, fail: (error) => broken(error, 'update') });
+        if (cleanup) cleanups.push(() => {
+          try {
+            cleanup();
+          } catch (error) {
+            report(error, where('remove'));
+          }
+        });
+      } catch (error) {
+        broken(error, 'draw');
+      }
       hideWhen(element, node.id);
       return element;
     }
@@ -1020,7 +1125,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     function item(node: LayoutNode, place: Place): HTMLElement {
-      return hiddenOn(node, partItem(node, place));
+      return hiddenOn(node, kept(node, () => partItem(node, place)));
     }
 
     /** A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. */
@@ -1124,7 +1229,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const draw = (found: Page | null) => {
         if (gone) return;
         if (!found) return refuse(fill(labels.formMissing, { page: node.page }));
-        const saved = shownAs(found);
+        // Saved by an older Fieldia: read in the current format, as the page round it is.
+        const saved = shownAs(upgradePage(found));
         const name = saved.title || found.id;
         const at = scope.chain.findIndex((p) => p.id === found.id);
         if (at !== -1) return refuse(fill(labels.formInItself, { page: name, chain: [...scope.chain.slice(at).map((p) => p.title), name].join(' → ') }));
@@ -1757,7 +1863,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (const key of ['durationsField', 'fold', 'saves'] as const) if (config[key] !== undefined) barOptions[key] = config[key];
     const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
     const widget = createWidget(
-      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs },
+      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report },
       options.widgets
     );
     if (widget.destroy) cleanups.push(() => widget.destroy?.());
@@ -2002,8 +2108,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   // ---- go -------------------------------------------------------------------
 
+  /** The page's own updaters that threw, each said once: a part's are kept to it (keptTo), these to themselves. */
+  const failedUpdaters = new WeakSet<Updater>();
   function render(state: FormState) {
-    for (const update of updaters) update(state);
+    for (const update of updaters) {
+      try {
+        update(state);
+      } catch (error) {
+        if (failedUpdaters.has(update)) continue;
+        failedUpdaters.add(update);
+        report(error, { stage: 'update', part: 'page' });
+      }
+    }
   }
 
   host.append(root);
@@ -2097,7 +2213,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     destroy() {
       gone = true;
       unsubscribe();
-      for (const cleanup of cleanups) cleanup();
+      for (const cleanup of cleanups) {
+        try {
+          cleanup();
+        } catch (error) {
+          report(error, { stage: 'remove', part: 'page' });
+        }
+      }
       root.remove();
       if (ownsForm) form.dispose();
     },
