@@ -252,10 +252,13 @@ export interface WidgetLabels {
   stillHolds: string;
   /** Hours with minutes past 59. */
   minutes: string;
+  /** A time or hours whose minutes have one digit, `{text}` as typed, which could be `{early}` or `{late}`: never one of them in silence. */
+  minuteDigits: string;
   /** Hours that do not read: `{decimal}` is 6.5 or 6,5, as the page writes it. */
   duration: string;
-  /** A text over its most, under its counter. */
+  /** A text over its most, under its counter: `{n}` characters; `…One`, the words for one, in the languages that say it apart. */
   charactersOver: string;
+  charactersOverOne: string;
   /** A phone number's box, refusing a letter. */
   phoneChars: string;
   /** An email address's box, refusing a space. */
@@ -295,6 +298,8 @@ export interface WidgetLabels {
   timeUnfinished: string;
   /** A paste that is no date, quoted. */
   notPastedDate: string;
+  /** A date and time pasted where a day alone is kept: the day is taken, and its `{time}` (HH:MM, here) was left out. */
+  timeLeftOut: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
   noMatch: string;
   noMatchCreate: string;
@@ -307,11 +312,16 @@ export interface WidgetLabels {
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
-  /** A block pasted on a table: how many cells took it, those that did not (`{cells}`, each a `cellName`), and lines past the last. */
+  /**
+   * A block pasted on a table: how many cells took it, those that did not (`{cells}`, each a `cellName`), and lines
+   * past the last; `…One`, the words for one cell or line, in the languages that say it apart (inPlural).
+   */
   pastedCells: string;
+  pastedCellsOne: string;
   notPastedCells: string;
   cellName: string;
   pasteBeyondLines: string;
+  pasteBeyondLinesOne: string;
   /** A list's filter box waiting for its value. */
   enterNumber: string;
   enterDate: string;
@@ -502,8 +512,10 @@ const en: WidgetLabels = {
   notPastedNumber: '“{text}” is not a number, so it was not pasted',
   stillHolds: '{label} still holds {value}',
   minutes: '{label}: minutes go from 0 to 59, like 6:30',
+  minuteDigits: '{label}: “{text}” could be {early} or {late}; write the minutes with two digits',
   duration: '{label}: write hours and minutes, like 6:30, or hours, like {decimal}',
   charactersOver: '{n} characters too many',
+  charactersOverOne: '{n} character too many',
   phoneChars: 'A phone number takes digits, spaces and + ( ) . - only',
   emailNoSpaces: 'An email address has no spaces',
   emailChar: 'An email address has no “{char}” before its @',
@@ -530,6 +542,7 @@ const en: WidgetLabels = {
   dateUnfinished: '{label}: “{text}” is not a whole date yet; write it like {example}',
   timeUnfinished: '{label}: “{text}” is not a time; write it like 14:30',
   notPastedDate: '“{text}” is not a date, so it was not pasted',
+  timeLeftOut: '{label} takes a day only: the time {time} was left out',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',
   severalCalled: '{label}: more than one is called “{text}”; pick one from the list',
@@ -538,9 +551,11 @@ const en: WidgetLabels = {
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
   pastedCells: 'Pasted into {n} cells.',
+  pastedCellsOne: 'Pasted into {n} cell.',
   notPastedCells: 'Not pasted: {cells}',
   cellName: '{column}, line {n}',
   pasteBeyondLines: 'Only {n} lines are here, so the rest was not pasted',
+  pasteBeyondLinesOne: 'Only {n} line is here, so the rest was not pasted',
   enterNumber: 'Enter a number',
   enterDate: 'Enter a date, like {example}',
   enterValue: 'Enter a value to filter by',
@@ -553,3 +568,22 @@ const en: WidgetLabels = {
  * viewer's `addLanguage`.
  */
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = { en, ...LANGUAGES };
+
+const plurals = new Map<string, Intl.PluralRules>();
+/**
+ * Words for a count, `{n}` filled in: `one` where the page's language says that count apart — 1 in English, German
+ * and Arabic, 0 and 1 in French — else `other`. "Pasted into 1 cell.", never "1 cells".
+ */
+export function inPlural(other: string, one: string, n: number, locale: string | undefined): string {
+  const language = locale ?? 'en';
+  let rules = plurals.get(language);
+  if (!rules) {
+    try {
+      rules = new Intl.PluralRules(language);
+    } catch {
+      rules = new Intl.PluralRules('en');
+    }
+    plurals.set(language, rules);
+  }
+  return (rules.select(n) === 'one' ? one : other).replace(/\{n\}/g, String(n));
+}

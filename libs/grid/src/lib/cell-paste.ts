@@ -1,4 +1,4 @@
-import { cleanPastedNumber, couldBeNumber, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, readNumber, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { cleanPastedNumber, couldBeNumber, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
 import { readDateText } from '@fieldia/widgets';
 
 /**
@@ -6,17 +6,32 @@ import { readDateText } from '@fieldia/widgets';
  * (the one-tag script, the plain table) never carries it.
  */
 
-/** Hours as their box reads them ("6:30", "6,5", "6h30"), or undefined when they do not read. */
-function hours(text: string, locale: Locale): number | null | undefined {
+/** A column's least, when its field has one. */
+const leastOf = (def: LineField) => ('min' in def && typeof def.min === 'number' ? def.min : undefined);
+
+/**
+ * Hours as their box reads them ("6:30", "6,5", "6h30"), within the column's least; undefined when they do not read
+ * or the column cannot hold them ("6:3" could be 6:03 or 6:30: neither is taken).
+ */
+function hours(def: LineField, text: string, locale: Locale): number | null | undefined {
   const read = readDuration(text, locale);
-  return read.ok ? read.value : undefined;
+  if (!read.ok) return undefined;
+  const least = leastOf(def);
+  return read.value !== null && least !== undefined && read.value < least ? undefined : read.value;
 }
 
-/** A per cent as its box reads it ("25", "25%", "٢٥٪"): the fraction it is, or undefined when it does not read. */
-function perCent(text: string, locale: Locale): number | null | undefined {
-  const read = readNumber(text, locale, { percent: true });
-  if (!read.ok) return undefined;
-  return read.value === null ? null : Math.round((read.value / 100) * 1e10) / 1e10;
+/**
+ * A per cent as its box reads it ("25", "25%", "٢٥٪"), within the column's places (two unless its field says) and
+ * least, as its box keeps them: the fraction it is, or undefined when it does not read or does not fit. "12.555" in
+ * a column of two places is never 12.56 %.
+ */
+function perCent(def: LineField, text: string, locale: Locale): number | null | undefined {
+  const least = leastOf(def);
+  const limits: NumberLimits = { percent: true, places: def.type === 'float' ? (def.digits?.[1] ?? 2) : 2, ...(least !== undefined ? { min: least * 100 } : {}) };
+  const cleaned = cleanPastedNumber(text, locale, { percent: true });
+  if (!cleaned.ok) return undefined;
+  if (couldBeNumber(cleaned.text, locale, limits) || numberMisfit(cleaned.value, limits) || (limits.min !== undefined && cleaned.value < limits.min)) return undefined;
+  return Math.round((cleaned.value / 100) * 1e10) / 1e10;
 }
 
 /**
@@ -61,7 +76,7 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     case 'float':
     case 'monetary': {
       if (reading.widget === 'duration' || reading.widget === 'percentage') {
-        const value = reading.widget === 'duration' ? hours(text, reading.locale) : perCent(text, reading.locale);
+        const value = reading.widget === 'duration' ? hours(def, text, reading.locale) : perCent(def, text, reading.locale);
         return value === undefined ? null : { value };
       }
       const currency = def.type === 'monetary' ? (reading.currency ?? null) : null;
@@ -79,9 +94,10 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     }
     case 'date':
     case 'datetime': {
-      // As the cell's own date box reads it: a day, or a date and time as the instant its field keeps.
+      // As the cell's own date box reads it: a day, or a date and time as the instant its field keeps. An instant in a
+      // day's cell would leave its time out: not pasted, and named, as a date and time is.
       const read = readDateText(text, { kind: def.type, order: reading.dateOrder ?? 'dmy', locale: reading.locale, label: def.label });
-      return read.ok ? { value: read.value } : null;
+      return read.ok && !read.timeLeftOut ? { value: read.value } : null;
     }
     case 'selection': {
       const wanted = foldForSearch(text);

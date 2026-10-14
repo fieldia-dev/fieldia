@@ -28,6 +28,7 @@ import {
   distributionWords,
   DRAWN_IN_CELLS,
   drawIcon,
+  inPlural,
   openLineDialog,
   kindTextField,
   lineForm,
@@ -1769,9 +1770,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     });
     const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
     const said = [
-      ...(pasted ? [fill(labels.pastedCells, { n: pasted })] : []),
+      ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
       ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
-      ...(beyond ? [fill(labels.pasteBeyondLines, { n: all.length })] : []),
+      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, all.length, locale)] : []),
     ].join(' ');
     pasteNote.textContent = said;
     pasteNote.hidden = !said;

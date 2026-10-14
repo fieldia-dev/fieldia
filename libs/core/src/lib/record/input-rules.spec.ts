@@ -377,7 +377,9 @@ describe('readDuration — typed hours', () => {
     expect(hours('6h')).toBe(6);
     expect(hours('6:30:00')).toBe(6.5);
     expect(hours('-1:30')).toBe(-1.5);
-    expect(hours('1:5')).toBeCloseTo(1 + 5 / 60);
+    // One digit of minutes is read as written only when it can be one time alone: "1:5" could be 1:05 or 1:50.
+    expect(hours('1:7')).toBeCloseTo(1 + 7 / 60);
+    expect(hours('1:5')).toBe('minuteDigits');
     expect(hours('٦:٣٠')).toBe(6.5);
     expect(hours('٦٫٥')).toBe(6.5);
     expect(hours('')).toBeNull();
@@ -466,9 +468,9 @@ describe('readDate and readTime', () => {
     // Its seconds are never dropped in silence: a time is kept to the minute.
     expect(readDate('2026-10-15T14:30:45Z', { time: true })).toEqual({ ok: false, problem: 'time' });
     expect(readDate('2026-10-15T14:30:00.250Z', { time: true })).toEqual({ ok: false, problem: 'time' });
-    // A date's box takes an instant's day where the person is: its time, seconds and all, is no part of a day.
-    expect(readDate('2026-10-15T14:30:00Z')).toEqual({ ok: true, value: local.slice(0, 10) });
-    expect(readDate('2026-10-15T14:30:45.250Z')).toEqual({ ok: true, value: local.slice(0, 10) });
+    // A date's box takes an instant's day where the person is: its time, seconds and all, is no part of a day, and is named.
+    expect(readDate('2026-10-15T14:30:00Z')).toEqual({ ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) });
+    expect(readDate('2026-10-15T14:30:45.250Z')).toEqual({ ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) });
   });
 
   it('reads a date with its time', () => {

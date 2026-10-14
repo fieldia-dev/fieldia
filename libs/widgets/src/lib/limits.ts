@@ -1,5 +1,6 @@
 import { charCount, dayOf, fill, MESSAGES, type Field, type FieldNode } from '@fieldia/core';
 import { fillIn, maker, setHidden, setText, wordsFor } from './kind-parts';
+import { inPlural } from './labels';
 import type { Widget, WidgetContext } from './widgets';
 
 /**
@@ -41,7 +42,7 @@ export function counted(widget: Widget, { form, name, field, node, document, lab
       setText(shown, `${n} / ${size}`);
       shown.classList.toggle('fd-count-near', n >= size * 0.9 && past <= 0);
       shown.classList.toggle('fd-count-past', past > 0);
-      setText(over, past > 0 ? fillIn(words.charactersOver, { n: past }) : '');
+      setText(over, past > 0 ? inPlural(words.charactersOver, words.charactersOverOne, past, locale) : '');
       setHidden(over, past <= 0 || state.readonly);
       setHidden(shown, state.readonly);
       if (document.activeElement !== box) return;

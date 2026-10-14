@@ -21,6 +21,11 @@ import type { WidgetContext } from './widgets';
  * - A line break pasted into one line is a space; into a password, nothing.
  *   Direction marks pasted into an email, a phone number or a web address
  *   are dropped.
+ * - The keys typed after a refused one wait with it (`hold`), so "+20 1oo"
+ *   is never the number "+20 1", nor "name example@x.com" the address
+ *   "nameexample@x.com": left, all that was typed is the box's, and the field's
+ *   own check says why it is not a phone number, an address, or how far over
+ *   its most it goes.
  * - Left, one line is trimmed and spaces alone are nothing; a phone number
  *   and an answer a pattern checks keep their digits as 0-9; a password is
  *   kept as typed. Nothing is changed while the box has the focus.
@@ -75,6 +80,7 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
   /** A paste is being taken: kept whole, though it goes over the most. Until the browser has put it in, after this task. */
   let pasting = false;
   return {
+    hold: true,
     judge(next, before) {
       // What is already there stays editable: only what the edit brings is judged.
       if (kind === 'phone' && phoneStrays(next) > phoneStrays(before)) return words.phoneChars;
@@ -106,7 +112,10 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
  * Guard `input`, a text box of `kind` for its field: refusals said by a hint
  * placed after `anchor`, and the text settled as the box is left — written
  * to the field before the page hears it was left, so what is checked then is
- * what is kept.
+ * what is kept. Keys held after a refused one are part of what was typed: all
+ * of it is the box's then, and the field's — and a save made with the box
+ * still entered (a change) takes them too, changing nothing else while the
+ * box has the focus.
  */
 export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: WidgetContext, kind: TextKind, anchor: HTMLElement = input): TextBox {
   const { form, name, field, node } = context;
@@ -114,14 +123,29 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
   const checks = guard(input, textRules(kind, context), hint);
   const widget = kind === 'line' || kind === 'paragraph' ? undefined : kind;
   const pattern = hasPattern(field, node);
-  const settle = () => {
-    if (input.readOnly || kind === 'paragraph' || kind === 'password') return;
-    const settled = settledText(input.value, { widget, pattern });
-    if (settled === input.value) return;
-    input.value = settled;
+  /** What was typed after a refused key, held: the box's now, as typed, and the field's own words take over from the hint. */
+  const takeHeld = (): boolean => {
+    const held = checks.held();
+    if (!held) return false;
+    hint.hide();
+    input.value = held.text;
     checks.accept();
-    form.setValue(name, settled === '' ? null : settled);
+    return true;
   };
+  const write = (text: string) => form.setValue(name, text === '' ? null : text);
+  const settle = () => {
+    if (input.readOnly) return;
+    const held = takeHeld();
+    const settled = kind === 'paragraph' || kind === 'password' ? input.value : settledText(input.value, { widget, pattern });
+    if (!held && settled === input.value) return;
+    if (settled !== input.value) {
+      input.value = settled;
+      checks.accept();
+    }
+    write(settled);
+  };
+  const taken = () => !input.readOnly && takeHeld() && write(input.value);
+  input.addEventListener('change', taken);
   input.addEventListener('blur', settle);
   return {
     hint,
@@ -129,6 +153,7 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
     accept: () => checks.accept(),
     destroy() {
       checks.destroy();
+      input.removeEventListener('change', taken);
       input.removeEventListener('blur', settle);
     },
   };

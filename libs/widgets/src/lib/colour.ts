@@ -95,7 +95,8 @@ export function readColour(text: string): string | null {
 /**
  * A colour as #rrggbb text: picked with the browser's own picker, or typed or
  * pasted as its code in the box beside it — #rgb or #rrggbb, with or without
- * its #, in any case — which refuses anything else, and says why. A code
+ * its #, in any case — which refuses anything else, and says why, holding the
+ * keys typed after a refused one ("#1x23" is never #112233). A code
  * is taken as soon as it reads; text that does not read never changes the
  * colour: the one held as the box was entered stays (and comes back if a
  * code read on the way, "#123" on the way to "#12345"), and the box keeps the
@@ -115,7 +116,9 @@ const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, label
   const element = make('span', { class: 'fd-colour-box' }, well, code, clear);
   const hint = refusalHint(code, element);
   const checks = guard(code, {
-    // Only what a colour code is made of: a # first, then six hex digits at most.
+    // Only what a colour code is made of: a # first, then six hex digits at most. The keys typed after a refused one
+    // wait with it: "#1x23" is never #112233.
+    hold: true,
     judge: (next) => (/^#?[0-9a-f]{0,6}$/i.test(foldDigits(stripMarks(next)).trim()) ? null : words.colourCode),
     paste: (text) => (readColour(text) ? { text: stripMarks(text).trim() } : { refuse: words.colourCode }),
   }, hint);
@@ -144,14 +147,27 @@ const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, label
       if (form.getState().values[name] !== null) take(null);
     } else keepEntered();
   });
-  code.addEventListener('blur', (event) => {
+  /** The code as typed, read as the box is left or a save reads it first (a change): taken, or kept marked with why. */
+  const read = () => {
     if (code.readOnly) return;
-    const text = code.value.trim();
-    // A code left half typed stays, marked, and says what a code is; the colour stays what it was.
-    if (text && !readColour(text)) {
-      keepEntered();
-      form.setUnread(name, { text: code.value, message: words.colourCode });
+    // Keys held after a refused one are part of what was typed: the box's now, and the field's words take over from the hint.
+    const waiting = checks.held();
+    if (waiting) {
+      hint.hide();
+      code.value = waiting.text;
+      checks.accept();
     }
+    const typed = code.value;
+    // A code left half typed stays, marked, and says what a code is; the colour stays what it was (a code read on the
+    // way, "#2c8" of "#2c8j397", goes back), and the box shows what was typed, not the colour put back.
+    if (typed.trim() && !readColour(typed)) {
+      keepEntered();
+      form.setUnread(name, { text: typed, message: words.colourCode });
+    }
+  };
+  code.addEventListener('change', read);
+  code.addEventListener('blur', (event) => {
+    read();
     // Left for its picker or its ×: still the box left, and the page round it hears so (a focusout of its own), to say why now.
     const to = (event as FocusEvent).relatedTarget;
     if (to instanceof Node && element.contains(to)) code.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));

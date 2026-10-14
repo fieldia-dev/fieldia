@@ -291,7 +291,8 @@ const textareaWidget: WidgetFactory = (context) => {
  * field's, and hold the keys typed after a refused one; text left that does
  * not read, or that the field cannot hold ("1.5" in whole numbers, keys held
  * after a refused one), stays in the box as typed, marked, and the field
- * keeps the value it held (`FormState.unread`).
+ * keeps the value it held (`FormState.unread`). A save made with the box
+ * still entered (Ctrl+Enter) reads it first, as leaving it would.
  */
 const numberWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, labels, locale = 'en' } = context;
@@ -372,13 +373,21 @@ const numberWidget: WidgetFactory = (context) => {
     form.setValue(name, reading.value);
     if (unreadNow()) form.setUnread(name, null);
   });
-  input.addEventListener('blur', () => {
-    if (input.readOnly) return;
-    // Keys held after a refused one are part of what was typed: "1.5" where the box shows "1". The field's own words
-    // take over from the hint, in its place.
+  /**
+   * What is typed, read: as the box is left, and as a save reads it first (a change) — never the value that fitted on
+   * the way ("1" of "1.5"). Taken when it reads and fits; else kept as typed, marked with why, the field holding what
+   * it held as the box was entered. True when it was taken.
+   */
+  const read = (): boolean => {
+    // Keys held after a refused one are part of what was typed: "1.5" where the box shows "1". All of it is the box's
+    // now, and the field's own words take over from the hint, in its place.
     const held = checks.held();
-    if (held) hint.hide();
-    const text = held?.text ?? input.value;
+    if (held) {
+      hint.hide();
+      input.value = held.text;
+      checks.accept();
+    }
+    const text = input.value;
     const reading = readNumber(text, locale);
     // A value the box held as it was entered (one from outside with more places) is let be: check names it.
     const words = !held && reading.ok && reading.value === (entered ?? null) ? unreadWords(text, box) : leftWords(text, box);
@@ -387,13 +396,17 @@ const numberWidget: WidgetFactory = (context) => {
       // What reads and fits is the field's, as typed: "-3" held after its refused minus, or text left marked before
       // and left again. Its least and most are check's to say, as the box is left.
       if (reading.ok && reading.value !== (form.getState().values[name] ?? null)) form.setValue(name, reading.value);
-      input.value = shown(form.getState().values[name]);
-      return;
+      return true;
     }
     // What does not read stays in the box, marked; the field keeps what it held as the box was entered.
-    if (held) input.value = text;
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
     form.setUnread(name, { text, message: words });
+    return false;
+  };
+  input.addEventListener('change', () => !input.readOnly && read());
+  input.addEventListener('blur', () => {
+    if (input.readOnly) return;
+    if (read()) input.value = shown(form.getState().values[name]);
   });
 
   return {

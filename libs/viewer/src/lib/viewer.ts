@@ -258,6 +258,9 @@ interface Scope {
 
 let mounts = 0;
 
+/** The inputs nothing is typed in: their change says a choice, never text to take. */
+const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
+
 /**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
  * React, Angular and Vue bindings are thin shells around this function.
@@ -1388,7 +1391,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       async leave() {
-        if (!form.getState().dirty.length) return true;
+        // What is still typed is read first: text that does not read keeps the record on screen, said, as a change does.
+        form.settle();
+        if (!form.getState().dirty.length && !Object.keys(form.getState().unread).length) return true;
         const saved = await form.save();
         if (!saved) {
           if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -1886,13 +1891,19 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   // ---- keys -------------------------------------------------------------------
 
-  /** Text typed and not yet taken, such as a tag without its Enter, is taken now. */
+  /**
+   * Text typed and not yet taken — a tag without its Enter, a number, a date or hours a box reads as it is left — is
+   * taken now, as a change says to the box it is typed in. Every save, check and step forward of the form asks for it
+   * first (`form.settling`), whatever made it: Ctrl+Enter, a button's key, the app's own save.
+   */
   function commitTyping() {
     const active = doc.activeElement;
-    if (active && root.contains(active) && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-      active.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    if (!active || !root.contains(active)) return;
+    // A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take.
+    const typedIn = active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && !NOT_TYPED.has((active as HTMLInputElement).type));
+    if (typedIn) active.dispatchEvent(new Event('change', { bubbles: true }));
   }
+  cleanups.push(form.settling(commitTyping));
 
   /** The fields Enter can move between: on this page, shown, with a box to type or choose in, outside tables of lines. */
   function nextField(from: HTMLElement): HTMLElement | null {
@@ -1918,8 +1929,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Saves even after a field used the Enter (a tag box adding its tag); the grid keeps its own keys.
       if (keys.saveWithCtrlEnter === false || options.showActions === false) return;
       if ((event.target as Element).closest('.ag-root-wrapper')) return;
+      // What is still typed is read first by the save itself (commitTyping, through form.settling).
       event.preventDefault();
-      commitTyping();
       if (wizardForward) void wizardForward();
       else void submitOrSave();
       return;
