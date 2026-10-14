@@ -36,7 +36,7 @@ mountViewer(host, {
   page,
   dataSource,
   onError(error, where) {
-    // { stage: 'update', part: 'field', field: 'price', node: 'f-price', widget: 'float.tag' }
+    // { stage: 'update', part: 'field', field: 'price', node: 'f-price', widget: 'monetary.tag' }
     // { stage: 'draw', part: 'slot', name: 'planner', node: 'n-planner' }
     report(error, where);
   },

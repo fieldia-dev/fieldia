@@ -3,7 +3,7 @@ import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
 import { addDays, addMinutes, atMinutes, dayKey, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, writeWhen, type Range } from './dates';
-import { colourOf, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
+import { colourOf, comma, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
 import { pressEvent, pressSlot, stretch } from './gestures';
 import { onDayKey, onEventKey, onSlotKey } from './keys';
 import { calendarLabels, fill, type CalendarLabels } from './labels';
@@ -195,6 +195,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   // ---- drawing ----------------------------------------------------------------------------------------------
 
   const longDay = (d: Date) => format(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(d);
+  /** The parts of what a block, a slot or a day says joined as the language joins them: in Arabic, "، ". */
+  const joined = comma(locale);
   const time = (d: Date) => format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
   const isToday = (d: Date) => sameDay(d, now());
 
@@ -272,7 +274,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       target.setAttribute('role', 'button');
       target.setAttribute('aria-describedby', movable ? keysEvent.id : keysStill.id);
     }
-    target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
+    target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}${joined}${span}`, who, why].filter(Boolean).join(joined));
     // Its words; in a block, in a box of their own, which the hours keep to whole lines (--fd-cal-lines).
     const words = row ? target : make('span', { class: 'fd-cal-event-text' });
     if (!event.allDay) words.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
@@ -378,7 +380,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const col = make('div', {
         class: 'fd-cal-col',
         role: 'group',
-        'aria-label': [longDay(column.day), column.resource?.label].filter(Boolean).join(', '),
+        'aria-label': [longDay(column.day), column.resource?.label].filter(Boolean).join(joined),
         'data-column': String(i),
         'data-day': dayKey(column.day),
         'data-today': isToday(column.day) ? '' : undefined,
@@ -387,7 +389,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         for (let m = from * 60; m < to * 60; m += slot) {
           const at = atMinutes(column.day, m);
           const busy = timed.filter((event) => event.start <= at && event.end > at && inColumn(event, column)).length;
-          const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(', ');
+          const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(joined);
           const cell = make('div', { class: 'fd-cal-slot', role: 'button', tabindex: '-1', 'data-minutes': String(m), 'data-focus': `s:${i}:${m}`, 'aria-label': words, 'aria-describedby': keysSlot.id });
           cell.addEventListener('keydown', (e) => onSlotKey(cal, e, i, m));
           // A screen reader's press, with no pointer behind it: a new record there, as Enter makes one.
@@ -442,7 +444,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         const [first, last] = [Math.min(...out.map((m) => m.start.getTime())), Math.max(...out.map((m) => m.end.getTime()))].map((t) => new Date(t));
         const [top, height] = span(first, last);
         const n = out.length;
-        const words = fill(labels.moreOn, { n, when: [longDay(column.day), time(first), column.resource?.label].filter(Boolean).join(', ') });
+        const words = fill(labels.moreOn, { n, when: [longDay(column.day), time(first), column.resource?.label].filter(Boolean).join(joined) });
         const more = make('button', { type: 'button', class: 'fd-cal-more', 'data-holds': out.map((m) => String(m.event.id)).join(' '), 'data-focus': `m:${i}:${minutesOf(first)}`, 'aria-haspopup': 'dialog', 'aria-label': words, title: words }, fill(labels.more, { n }));
         more.style.top = `${top}px`;
         more.style.height = `${height}px`;
@@ -502,7 +504,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     closeCrowd();
     crowdFrom = more.dataset['focus'] ?? '';
     const [first, last] = [Math.min(...crowd.map((m) => m.start.getTime())), Math.max(...crowd.map((m) => m.end.getTime()))].map((t) => new Date(t));
-    const heading = make('h3', { class: 'fd-cal-move-title', id: `${id}-crowd` }, [longDay(column.day), fill(labels.fromTo, { from: time(first), to: time(last) }), column.resource?.label].filter(Boolean).join(', '));
+    const heading = make('h3', { class: 'fd-cal-move-title', id: `${id}-crowd` }, [longDay(column.day), fill(labels.fromTo, { from: time(first), to: time(last) }), column.resource?.label].filter(Boolean).join(joined));
     const shut = make('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': labels.close, title: labels.close }, '×');
     shut.addEventListener('click', () => closeCrowd(true));
     const list = make('ul', { class: 'fd-cal-agenda-list' }, ...crowd.map(({ event }) => make('li', {}, eventBlock(event, column.day, false, !!column.resource, true))));
@@ -540,7 +542,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getMonth() !== state.anchor.getMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
       const number = make(
         'button',
-        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(', '), 'aria-describedby': keysDay.id },
+        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
         format(locale, { day: 'numeric' }).format(day)
       );
       number.addEventListener('click', () => (views.includes('day') ? showView('day', day) : undefined));

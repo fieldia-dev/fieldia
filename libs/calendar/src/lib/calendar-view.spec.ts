@@ -220,6 +220,14 @@ describe('moving and making from the keyboard', () => {
     expect(host.querySelectorAll('.fd-cal-slot[tabindex="0"]')).toHaveLength(1);
   });
 
+  it('in Arabic, a block, a slot and a day say their parts joined with the Arabic comma, never a Latin one', async () => {
+    const host = await mount({ locale: 'ar', dir: 'rtl' });
+    const said = [...host.querySelectorAll<HTMLElement>('.fd-cal-event[aria-label], .fd-cal-slot[aria-label], .fd-cal-col[aria-label]')].map((part) => part.getAttribute('aria-label') ?? '');
+    expect(said.length).toBeGreaterThan(3);
+    for (const words of said) expect(words).not.toContain(',');
+    expect(said.some((words) => words.includes('، '))).toBe(true);
+  });
+
   it('flips left and right on a right-to-left page', async () => {
     const host = await mount({ locale: 'ar', dir: 'rtl', onNewRecord: () => undefined });
     const first = host.querySelector('.fd-cal-slot[tabindex="0"]') as HTMLElement;

@@ -91,7 +91,7 @@ function Demo() {
         // The shop's answers to the pages' steps: the stock checked for "Order by phone".
         return answerAction(request, params.get('locale') ?? undefined);
       }}
-      fieldTypes={{ 'char.shout': Shout, 'float.tag': PriceTag }}
+      fieldTypes={{ 'char.shout': Shout, 'monetary.tag': PriceTag }}
       onError={failures?.onError}
       widgets={{ ...gridWidgets, ...codeWidgets, ...demoMapWidgets }}
       listViews={demoListViews}

@@ -41,7 +41,8 @@ test.describe('files picked are never lost', () => {
     await expect(status(page)).toHaveText('Saving…');
     // Picked while it saves.
     await photos(page).locator('input[type=file]').setInputFiles(FILES.photo('Kitchen.png'));
-    await expect(status(page)).toHaveText('Saved', { timeout: 30_000 });
+    // Saved, but not the photo: the status never says "Saved" while a change is still to save.
+    await expect(status(page)).toHaveText('Saved, but not all your changes.', { timeout: 30_000 });
     // The photo shows, and is still to save: the save never carried it.
     await expect(photos(page).locator('.fd-file-item:not(.fd-file-going)')).toHaveCount(1);
     expect((await state(page)).dirty).toEqual(['photos']);

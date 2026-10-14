@@ -1,5 +1,5 @@
 import { ConflictError, createMemoryDataSource, loadedRecordOf, type DataSource, type Page, type Field, type RecordPermissions, type Values } from '@fieldia/core';
-import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
+import { mountViewer, openFormDialog, openFormPanel, type FormDialogResult, type ViewerHandle } from '@fieldia/viewer';
 import leadPage from '../../examples/pages/lead.page.json';
 
 /**
@@ -40,6 +40,7 @@ const WORDS = {
     viewerReason: 'Omar is a viewer: he can read leads, but not change them.',
     other: 'العربية',
     notes: 'Wants three bedrooms near a school. Call after 6pm.',
+    saveClose: 'Save and close',
   },
   ar: {
     what: 'العميل المحتمل رقم 1، مفتوح في تبويبين معًا.',
@@ -59,6 +60,7 @@ const WORDS = {
     viewerReason: 'عمر مُطّلع فقط: يمكنه قراءة العملاء المحتملين، لا تغييرهم.',
     other: 'English',
     notes: 'يريد ثلاث غرف نوم قرب مدرسة. الاتصال بعد السادسة مساءً.',
+    saveClose: 'حفظ وإغلاق',
   },
 }[locale];
 
@@ -172,4 +174,17 @@ if (!viewer) {
   });
 }
 
-Object.assign(window, { fieldiaDemo: { handle, mona: monaHandle, dataSource, page } });
+/**
+ * Sara's lead in a side panel or a dialog over her tab, on the same source — as an app opens a related record —
+ * for the browser tests of its ways out; `footer` gives it a button of its own that saves, then closes. How each
+ * ended is kept in `closed`.
+ */
+const closed: FormDialogResult[] = [];
+function openLead(as: 'panel' | 'dialog' = 'panel', how: { footer?: boolean; recordId?: number } = {}) {
+  const footer = [{ type: 'button' as const, id: 'save-close', label: WORDS.saveClose, style: 'primary' as const, steps: [{ do: 'save' as const }, { do: 'close' as const }] }];
+  const shown: Page = how.footer && page.layout.type === 'sheet' ? { ...page, layout: { ...page.layout, footer } } : page;
+  const options = { ...shared, page: shown, dataSource, recordId: how.recordId ?? 1, title: String(dataSource.records['lead'][how.recordId ?? 1]?.['name'] ?? '') };
+  return (as === 'panel' ? openFormPanel(options) : openFormDialog(options)).then((result) => void closed.push(result));
+}
+
+Object.assign(window, { fieldiaDemo: { handle, mona: monaHandle, dataSource, page, openLead, closed } });

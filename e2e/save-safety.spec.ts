@@ -98,7 +98,8 @@ test('Reload shows Mona’s lead and lists Sara’s changes, each put back by it
   await expect(field(form, 'phone').locator('input')).toHaveValue('+20 100 999 8887');
   await expect(aside.locator('li')).toHaveCount(1);
   await form.locator('.fd-header button[type="submit"]').click();
-  await expect(form.locator('.fd-status')).toHaveText('Saved');
+  // The budget is still set aside: not all of Sara's changes are saved, and the status says so.
+  await expect(form.locator('.fd-status')).toHaveText('Saved, but not all your changes.');
   const stored = await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records.lead[1]);
   expect(stored).toMatchObject({ phone: '+20 100 999 8887', budget: 4500000 });
   expect(problems).toEqual([]);

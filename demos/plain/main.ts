@@ -85,7 +85,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     // The shop's answers to the pages' steps: the stock checked for "Order by phone".
     return answerAction(request, params.get('locale') ?? undefined);
   },
-  widgets: { 'char.shout': shoutWidget, 'float.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
+  widgets: { 'char.shout': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
   onError: failures?.onError,
   // A list with `map` shows its records on one too.

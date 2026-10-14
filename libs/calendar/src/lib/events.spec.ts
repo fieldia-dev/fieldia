@@ -102,7 +102,9 @@ describe("a calendar's events", () => {
   it('says where a move lands for the words after it: the day and the time, or the day alone', () => {
     const [mona] = eventsOf([{ id: 7, values: { patient: 'Mona Adel', start: iso(10), stop: iso(10, 30) } }], timed, page, 'en');
     expect(whereTo(mona, at(11, 15), 'en')).toBe('Wed 14 Oct, 11:15');
-    expect(whereTo(mona, at(11, 15), 'ar')).toMatch(/11:15/);
+    // In Arabic, the day and the time are joined with its own comma, as the day's own words are.
+    expect(whereTo(mona, at(11, 15), 'ar')).toMatch(/، 11:15$/);
+    expect(whereTo(mona, at(11, 15), 'ar')).not.toContain(',');
     // Another year than the record's own is named, so a year typed wrong is seen.
     expect(whereTo(mona, new Date(2062, 9, 15, 15), 'en')).toMatch(/^Sun,? 15 Oct 2062, 15:00$/);
   });

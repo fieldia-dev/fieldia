@@ -8,6 +8,8 @@ export const fr: ViewerLabels = {
   discard: 'Annuler les modifications',
   saving: 'Enregistrement…',
   saved: 'Enregistré',
+  savedNotAll: 'Enregistré, mais pas toutes vos modifications.',
+  sentNotLatest: 'Envoyé, sauf vos dernières modifications.',
   savingAfterFile: '1 fichier encore en cours d’envoi. Enregistrement dès qu’il est arrivé.',
   savingAfterFiles: '{n} fichiers encore en cours d’envoi. Enregistrement dès qu’ils sont arrivés.',
   sendingAfterFile: '1 fichier encore en cours d’envoi. Envoi des réponses dès qu’il est arrivé.',

@@ -10,6 +10,9 @@ export interface ViewerLabels {
   discard: string;
   saving: string;
   saved: string;
+  /** Saved, but a change is still to save: made while it was on its way or since, a file on its way, a change set aside. Sent, but an answer changed since. */
+  savedNotAll: string;
+  sentNotLatest: string;
   /** A save or a send waiting for files still on their way to the store: one, or `{n}`. */
   savingAfterFile: string;
   savingAfterFiles: string;
@@ -208,6 +211,8 @@ const en: ViewerLabels = {
   discard: 'Discard',
   saving: 'Saving…',
   saved: 'Saved',
+  savedNotAll: 'Saved, but not all your changes.',
+  sentNotLatest: 'Sent, but not your latest changes.',
   savingAfterFile: '1 file still uploading. Saving when it is done.',
   savingAfterFiles: '{n} files still uploading. Saving when they are done.',
   sendingAfterFile: '1 file still uploading. Sending when it is done.',

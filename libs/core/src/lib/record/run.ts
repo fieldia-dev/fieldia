@@ -122,7 +122,8 @@ export interface OpenResult {
 export interface ActionHost {
   open(request: OpenRequest): Promise<OpenResult>;
   say(message: string, tone: Tone): void;
-  ask(message: string): Promise<boolean>;
+  /** A question, answered Yes (true) or No; `how` says what kind, for a host that asks some differently. */
+  ask(message: string, how?: AskHow): Promise<boolean>;
   /** Close the dialog or panel this form was opened in. */
   close?(): void;
   /** Show a tab by its id. The viewer then calls `form.shown(id)`, as for a tab a person picks. */
@@ -135,6 +136,15 @@ export interface ActionHost {
    * is given one that posts in that record's. False: nothing heard them.
    */
   post?(message: PostedMessage): boolean | void | Promise<boolean | void>;
+}
+
+/**
+ * How a question is asked. `discard`: its Yes lets go of the person's work not
+ * saved ("Discard your changes?"), so a host words Yes as Discard and puts the
+ * focus on Cancel: Enter keeps the work.
+ */
+export interface AskHow {
+  discard?: boolean;
 }
 
 /**
@@ -215,8 +225,17 @@ export interface RunForm {
   onAction?: OnAction;
   /** The app answered a call. */
   answered(request: ActionRequest, result: ActionResult | undefined): void;
-  /** Whether something changed since the record was loaded or saved. */
+  /** Whether something changed since the record was loaded or saved: a file still on its way is a change coming. */
   changed(): boolean;
+  /**
+   * Before the record is left for another in this form's place — its copy, a
+   * record the app's answer names — whether the person's work it holds may go:
+   * null when there is none, or they said Discard; else why the run stops.
+   * `saved`, after a save made for this way out: whatever is still unsaved
+   * counts (a change made while it ran). Without, only what Reload set aside and
+   * files on their way: a change not saved is the step's to drop, as it was.
+   */
+  letGo(saved: boolean): Promise<Stopped | null>;
   /**
    * The record's own operations through the data source, each only when the
    * data source has it; without, the app's action of the step's name is called.
@@ -425,6 +444,8 @@ export function createRunner(form: RunForm) {
       if (stopped) return stopped;
     }
     if (answer.record !== undefined) {
+      const kept = await form.letGo(false);
+      if (kept) return kept;
       const moved = await form.showRecord(answer.record);
       if (moved) return moved;
     }
@@ -471,11 +492,15 @@ export function createRunner(form: RunForm) {
       return form.reload();
     }
     if (name === 'duplicate') {
-      // What was changed goes with the copy: it is saved first.
-      if (form.changed()) {
+      // What was changed goes with the copy: it is saved first. What that save could not take — changes Reload set
+      // aside, a change made while it ran — goes only when the person says so, before any copy is made.
+      const changed = form.changed();
+      if (changed) {
         const saved = await form.save(scope.chain);
         if (saved) return saved;
       }
+      const kept = await form.letGo(changed);
+      if (kept) return kept;
       if (!form.copy) {
         const stopped = await instead(name, 'copy', scope);
         const now = form.recordId();

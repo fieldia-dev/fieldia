@@ -1,5 +1,6 @@
 import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
 import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
+import { askDiscard, keptWork, lastSent, workLeft, type DiscardWords } from './discard';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
 
@@ -14,6 +15,8 @@ export interface Opener {
   title(page: Page): string;
   /** "Back", in the page's language. */
   back: string;
+  /** "Discard your changes?", Cancel and Discard, in the page's language: asked before a page in this form's place drops work of the person's. */
+  discardWords: DiscardWords;
   /** Why a page cannot be opened: the app has none by that id. */
   missing(page: string): string;
   /** Words said as this viewer says them: a page opened over it says its own here, so they show over it and outlive it. */
@@ -74,6 +77,11 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
  * where its page draws none (a list), Back. Saved or sent — once its own
  * after-save steps have run — it gives way back to this form, as it was, and
  * the run goes on; the way back, or a `close` step inside it, returns without.
+ * Either way, work of the person's that would go with it is asked about first
+ * ("Discard your changes?"), and kept, the page staying, on Cancel: after a
+ * save, whatever is still unsaved (a change made while it saved); on the way
+ * back, what Reload set aside and files on their way, a change not saved
+ * going with it as it always has.
  */
 function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResult> {
   const { place, root } = opener;
@@ -90,17 +98,26 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       if (from?.isConnected) from.focus();
       resolve({ saved, recordId: state.recordId ?? null, values: state.values as Values });
     };
+    /** One question at a time: another way out while it is asked is the same question. */
+    let asking = false;
+    const endAsking = (saved: boolean) => {
+      if (done || asking) return;
+      if (!(saved ? workLeft(opened.form, sent.values()) : keptWork(opened.form.getState()))) return end(saved);
+      asking = true;
+      void askDiscard(opened.element, opener.discardWords, () => (asking = false)).then((discarding) => discarding && end(saved));
+    };
     root.hidden = true;
     // Where the app keeps a trail, this record joins it as the way back.
-    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => end(false) }] : undefined;
-    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
+    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => endAsking(false) }] : undefined;
+    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => endAsking(false) } });
+    const sent = lastSent(opened.form);
     const back = doc.createElement('button');
     back.type = 'button';
     back.className = 'fd-button fd-button-link fd-back';
     back.textContent = opener.back;
-    back.addEventListener('click', () => end(false));
+    back.addEventListener('click', () => endAsking(false));
     if (!opened.element.querySelector('.fd-breadcrumbs')) opened.element.prepend(back);
-    const leave = () => void opened.form.settled().then(() => end(true));
+    const leave = () => void opened.form.settled().then(() => endAsking(true));
     opened.on('save', leave);
     opened.on('send', leave);
     (focusField(opened.element) ?? opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();

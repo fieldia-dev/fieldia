@@ -192,6 +192,15 @@ describe("a field's widget that throws on the person's change, as they type", ()
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
+  it('names the value it went back to as the field shows it: an amount, in its currency', async () => {
+    const priced = page();
+    const money: Page = { ...priced, fields: { ...priced.fields, price: { type: 'monetary', label: 'Price', currency: 'EGP', money: { currency: 'code', at: 'before' } } } };
+    const { host } = mount({ page: money, widgets: { 'monetary.fancy': tag['float.fancy'] }, dataSource: stored(), recordId: 1 });
+    await settled();
+    press(at(host, 'n-price').querySelector('input') as HTMLInputElement, '1');
+    expect(box(host, 'n-price')?.querySelector('.fd-broken-kept')?.textContent).toBe('Your change was not kept: it is back to EGP\u00a0450.00.');
+  });
+
   it('a price it was handed, by the record or a step, is kept and not said to be put back', async () => {
     const dataSource = createMemoryDataSource({ records: { order: { 1: { name: 'Nile Traders', price: 4501 } } } });
     const { host, form } = mount({ widgets: tag, dataSource, recordId: 1 });

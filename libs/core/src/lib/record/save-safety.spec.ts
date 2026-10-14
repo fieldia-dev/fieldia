@@ -515,3 +515,92 @@ describe('after Reload, the changes set aside are work not saved', () => {
     expect(unsavedWork(form.getState())).toBe(false);
   });
 });
+
+describe('a step that leaves the record asks first about work a save could not take', () => {
+  /** A host that answers each question as told, and keeps what it was asked and how. */
+  function asking(answer: boolean) {
+    const asked: { message: string; how?: { discard?: boolean } }[] = [];
+    const host = { open: async () => ({ saved: false }), say: () => undefined, ask: async (message: string, how?: { discard?: boolean }) => (asked.push({ message, how }), answer) };
+    return { host, asked };
+  }
+  /** A conflict, then Reload: the phone set aside, nothing left to save. */
+  async function reloaded(more: Partial<Parameters<typeof createForm>[0]> = {}) {
+    const ds = source();
+    const form = await opened(ds, 1, more);
+    form.setValue('phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
+    await form.save();
+    await form.reloadTheirs();
+    expect(form.getState()).toMatchObject({ dirty: [], setAside: { phone: '+201009998887' } });
+    return { ds, form };
+  }
+  const copies = (ds: ReturnType<typeof source>) => ds.calls.filter((call) => call.method === 'copy').length;
+
+  it('Duplicate after Reload asks “Discard your changes?” as a discard; Cancel keeps them, on this record, and no copy is made', async () => {
+    const { host, asked } = asking(false);
+    const { ds, form } = await reloaded({ host });
+    const result = await form.runAction('m-duplicate');
+    expect(asked).toEqual([{ message: 'Discard your changes?', how: { discard: true } }]);
+    expect(result).toMatchObject({ done: false, reason: 'no' });
+    expect(copies(ds)).toBe(0);
+    expect(form.getState()).toMatchObject({ recordId: 1, setAside: { phone: '+201009998887' } });
+  });
+
+  it('Duplicate after Reload, answered Discard: the copy shows, the changes set aside let go', async () => {
+    const { host } = asking(true);
+    const { ds, form } = await reloaded({ host });
+    expect((await form.runAction('m-duplicate')).done).toBe(true);
+    expect(copies(ds)).toBe(1);
+    expect(form.getState()).toMatchObject({ recordId: 3, setAside: null });
+  });
+
+  it('with nothing to ask with — no host, no confirm — the changes set aside are kept: the step stops', async () => {
+    const { ds, form } = await reloaded();
+    expect(await form.runAction('m-duplicate')).toMatchObject({ done: false, reason: 'no' });
+    expect(copies(ds)).toBe(0);
+    expect(form.getState().setAside).toEqual({ phone: '+201009998887' });
+  });
+
+  it('Duplicate saves first; a change made while that save runs is asked about before the copy is made', async () => {
+    const { host, asked } = asking(false);
+    const ds = source({ delayMs: 20 });
+    const form = await opened(ds, 1, { host });
+    form.setValue('phone', '+201009998887');
+    const run = form.runAction('m-duplicate');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(form.getState().status).toBe('saving');
+    form.setValue('budget', 4300000);
+    expect(await run).toMatchObject({ done: false, reason: 'no' });
+    expect(asked).toHaveLength(1);
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', budget: 4000000 });
+    expect(copies(ds)).toBe(0);
+    expect(form.getState()).toMatchObject({ recordId: 1, dirty: ['budget'] });
+    expect(form.getState().values['budget']).toBe(4300000);
+  });
+
+  it('an app’s answer that names another record asks about the changes set aside before showing it', async () => {
+    const { host, asked } = asking(false);
+    const { form } = await reloaded({ host, onAction: () => ({ record: 2 }) });
+    expect(await form.runAction('call')).toMatchObject({ done: false, reason: 'no' });
+    expect(asked).toHaveLength(1);
+    expect(form.getState()).toMatchObject({ recordId: 1, setAside: { phone: '+201009998887' } });
+  });
+
+  it('as before 0.21, an app with none of the new members: Duplicate saves the change, copies and shows the copy, asking nothing', async () => {
+    const { host, asked } = asking(false);
+    const ds = createMemoryDataSource({ records: { lead: leads() } });
+    const form = await opened(ds, 1, { host });
+    form.setValue('phone', '+201009998887');
+    expect((await form.runAction('m-duplicate')).done).toBe(true);
+    expect(asked).toEqual([]);
+    expect(form.getState()).toMatchObject({ recordId: 3, dirty: [] });
+    expect(form.getState().values['phone']).toBe('+201009998887');
+    // And an answer naming another record drops a change not saved, as it always has.
+    const moved = createForm({ page: lead, dataSource: ds, recordId: 1, host, onAction: () => ({ record: 2 }) });
+    await moved.load();
+    moved.setValue('phone', '+201000000000');
+    expect((await moved.runAction('call')).done).toBe(true);
+    expect(moved.getState()).toMatchObject({ recordId: 2, dirty: [] });
+    expect(asked).toEqual([]);
+  });
+});

@@ -37,8 +37,9 @@ for (const variant of VARIANTS) {
       await expect(price.locator('output')).toHaveText('EGP 450.00');
       await price.locator('input').fill('1200');
       await expect(price.locator('.fd-broken-words')).toHaveText('This field could not be shown: Price');
-      // The change it could not show is not kept: the price is the one shown before, and the box says so.
-      await expect(price.locator('.fd-broken-kept')).toHaveText('Your change was not kept: it is back to 450.00.');
+      // The change it could not show is not kept: the price is the one shown before, and the box says so, as the field
+      // shows it, in its currency.
+      await expect(price.locator('.fd-broken-kept')).toHaveText('Your change was not kept: it is back to EGP 450.00.');
       await expect(price.locator('input')).toHaveCount(0);
       // Its label and help stay: the person knows which field it was.
       await expect(price.locator('.fd-label')).toHaveText('Price');
@@ -75,11 +76,11 @@ for (const variant of VARIANTS) {
       await page.keyboard.type('1200', { delay: 120 });
       const box = price.locator('.fd-broken');
       await expect(box.locator('.fd-broken-words')).toHaveText('This field could not be shown: Price');
-      await expect(box.locator('.fd-broken-kept')).toHaveText('Your change was not kept: it is back to 450.00.');
+      await expect(box.locator('.fd-broken-kept')).toHaveText('Your change was not kept: it is back to EGP 450.00.');
       // The keyboard kept its place: on the box, named by what failed; the keys after the first went nowhere else.
       await expect(box).toBeFocused();
       await expect(box).toHaveAccessibleName('This field could not be shown: Price');
-      await expect(box).toHaveAccessibleDescription('Your change was not kept: it is back to 450.00.');
+      await expect(box).toHaveAccessibleDescription('Your change was not kept: it is back to EGP 450.00.');
       await expect(node(page, 'f-customer').locator('input')).toHaveValue('Nile Traders');
       // Tab goes on to the next field, Shift+Tab comes back to the box.
       await page.keyboard.press('Tab');
@@ -115,7 +116,7 @@ test.describe('a part that fails, as a person sees it', () => {
     await expect(node(page, 'n-planner').locator('.fd-broken')).toHaveText('تعذّر عرض هذا الجزء');
     await node(page, 'f-price').locator('input').fill('2000');
     await expect(node(page, 'f-price').locator('.fd-broken-words')).toHaveText('تعذّر عرض هذا الحقل: السعر');
-    await expect(node(page, 'f-price').locator('.fd-broken-kept')).toHaveText('لم يُحتفَظ بتغييرك: عادت القيمة إلى 450.00.');
+    await expect(node(page, 'f-price').locator('.fd-broken-kept')).toHaveText('لم يُحتفَظ بتغييرك: عادت القيمة إلى EGP 450.00.');
     // Its mark at the start of the line, which right to left is the right.
     const sides = await node(page, 'f-price').locator('.fd-broken').evaluate((box) => {
       const mark = box.querySelector('.fd-broken-mark') as HTMLElement;

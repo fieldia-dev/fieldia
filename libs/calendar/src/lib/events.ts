@@ -142,5 +142,10 @@ export function moved(event: CalendarEvent, start: Date, spec: ListCalendar, pag
 /** Where a move lands, in words: "Wed 14 Oct, 11:15", or the day alone for a whole day's; its year too, when it leaves the record's own. */
 export function whereTo(event: Pick<CalendarEvent, 'allDay' | 'start'>, start: Date, locale: Locale): string {
   const day = format(locale, { weekday: 'short', day: 'numeric', month: 'short', ...(start.getFullYear() !== event.start.getFullYear() ? { year: 'numeric' } : {}) }).format(start);
-  return event.allDay ? day : `${day}, ${format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start)}`;
+  return event.allDay ? day : `${day}${comma(locale)}${format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start)}`;
+}
+
+/** What joins the parts of a sentence as the language writes it: ", ", or in Arabic its own comma, "، ". */
+export function comma(locale: Locale): string {
+  return locale.split('-')[0] === 'ar' ? '، ' : ', ';
 }

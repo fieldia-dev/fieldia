@@ -97,7 +97,7 @@ function parts(needs) {
   }
   // Your own widget, by its field's type and its name.
   if (needs.own) widgets.push("'char.shout': yourShoutWidget");
-  if (needs.priceTag) widgets.push("'float.tag': yourPriceTag");
+  if (needs.priceTag) widgets.push("'monetary.tag': yourPriceTag");
   if (widgets.length) options.unshift(['widgets', widgets.length === 1 && !widgets[0].startsWith("'") ? widgets[0].slice(3) : `{ ${widgets.join(', ')} }`]);
   if (needs.chatter) imports.push("import { chatterSlot } from '@fieldia/chatter';");
   return { imports, setup, options };

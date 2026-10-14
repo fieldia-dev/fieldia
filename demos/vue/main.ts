@@ -125,7 +125,7 @@ createApp({
         theme: (params.get('theme') as Theme | null) ?? undefined,
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
-        fieldTypes: { 'char.shout': Shout, 'float.tag': PriceTag },
+        fieldTypes: { 'char.shout': Shout, 'monetary.tag': PriceTag },
         onError: failures?.onError,
         widgets: { ...gridWidgets, ...codeWidgets, ...demoMapWidgets },
         listViews: demoListViews,
