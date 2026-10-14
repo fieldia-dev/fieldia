@@ -130,8 +130,8 @@ test.describe("a list's calendar", () => {
     await expect(said(page)).toContainText(new RegExp(`Moved ${name} to Thu,? 15 Oct, 18:30\\.`));
     expect(await record(page, 'desk.booking', id)).toMatchObject({ start: await instant(page, 2026, 10, 15, 18, 30), host: { id: 2, label: 'Omar Fathy' } });
     await settled(page);
-    // The focus stays on the booking, now on Thursday.
-    await expect(page.locator(':focus')).toHaveAttribute('data-focus', `e:${id}:2026-10-15`);
+    // The focus stays on the booking, now on Thursday: its block, or the "+N more" that holds it where Thursday is crowded.
+    await expect(page.locator(`.fd-cal-col[data-day="2026-10-15"] :is([data-focus="e:${id}:2026-10-15"], [data-holds~="${id}"])`)).toBeFocused();
     // The arrows move between slots: one stop, a slot down, a day on.
     const stop = page.locator('.fd-cal-slot[tabindex="0"]');
     await stop.focus();

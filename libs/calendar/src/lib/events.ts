@@ -139,8 +139,8 @@ export function moved(event: CalendarEvent, start: Date, spec: ListCalendar, pag
   return values;
 }
 
-/** Where a move lands, in words: "Wed 14 Oct, 11:15", or the day alone for a whole day's. */
-export function whereTo(event: Pick<CalendarEvent, 'allDay'>, start: Date, locale: Locale): string {
-  const day = format(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(start);
+/** Where a move lands, in words: "Wed 14 Oct, 11:15", or the day alone for a whole day's; its year too, when it leaves the record's own. */
+export function whereTo(event: Pick<CalendarEvent, 'allDay' | 'start'>, start: Date, locale: Locale): string {
+  const day = format(locale, { weekday: 'short', day: 'numeric', month: 'short', ...(start.getFullYear() !== event.start.getFullYear() ? { year: 'numeric' } : {}) }).format(start);
   return event.allDay ? day : `${day}, ${format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start)}`;
 }

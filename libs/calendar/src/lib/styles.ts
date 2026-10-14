@@ -106,6 +106,12 @@ export const CALENDAR_CSS = `
 .fd-cal-day[data-out] .fd-cal-daynum { color: var(--fd-muted); }
 .fd-cal-day[aria-current="date"] .fd-cal-daynum { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
 .fd-cal-more { justify-self: start; min-height: 24px; padding: 0 6px; border: 0; background: none; color: var(--fd-accent); font: inherit; font-size: 12px; cursor: pointer; }
+/* A crowded slot's "+N more", in the last lane over the records it holds. */
+.fd-cal-col > .fd-cal-more {
+  position: absolute; z-index: 1; box-sizing: border-box; display: block; padding: 3px 2px; line-height: 14px; text-align: center; overflow: hidden;
+  border-radius: 4px; border: 1px dashed color-mix(in srgb, var(--fd-accent) 55%, transparent); background: var(--fd-accent-soft); font-weight: 600;
+}
+.fd-cal-col > .fd-cal-more:hover { background: color-mix(in srgb, var(--fd-accent) 22%, var(--fd-surface)); }
 .fd-cal-day > .fd-cal-event .fd-cal-event-who { display: none; }
 
 /* The agenda: each day that has something, its records in order. */
@@ -128,14 +134,20 @@ export const CALENDAR_CSS = `
   .fd-cal-title { flex-basis: 100%; order: -1; }
 }
 
-/* "Move to…": its day, its time, its person. */
-.fd-cal-move {
+/* "Move to…": its day, its time, its person; and a crowded slot's list, in the same kind of box. */
+.fd-cal-move, .fd-cal-crowd {
   position: absolute; z-index: 30; box-sizing: border-box; width: min(320px, calc(100% - 16px)); padding: 14px; display: grid; gap: 10px;
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: max(var(--fd-radius), 6px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
 }
 .fd-cal-move-title { margin: 0; font-size: 14px; font-weight: 600; }
 .fd-cal-move label { display: grid; gap: 4px; font-size: 13px; }
 .fd-cal-move-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.fd-cal-move-problem { margin: 0; color: var(--fd-error); font-size: 13px; }
+.fd-cal-move-problem:empty { display: none; }
+.fd-cal-move .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
+.fd-cal-crowd { padding: 10px; gap: 6px; }
+.fd-cal-crowd-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline-start: 4px; }
+.fd-cal-crowd .fd-cal-agenda-list { padding: 0; max-height: min(60vh, 360px); overflow-y: auto; }
 `;
 
 /** The calendar's stylesheet, once per document, before the page's own so an app's rule wins. */

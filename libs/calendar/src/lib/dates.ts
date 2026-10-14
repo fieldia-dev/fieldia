@@ -34,6 +34,19 @@ export function readWhen(value: Value | undefined, kind: WhenKind): Date | null 
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * A day as a date input writes it, "2026-10-14", at its midnight: null for one that is no day ("2026-02-30", "", a
+ * year of more than four digits). A year is read as written: "0026" is the year 26, never 1926.
+ */
+export function readDay(text: string): Date | null {
+  const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(text);
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]) - 1, Number(m[3])];
+  const day = new Date(2000, 0, 1);
+  day.setFullYear(y, mo, d);
+  return day.getFullYear() === y && day.getMonth() === mo && day.getDate() === d ? day : null;
+}
+
 /** A moment as its field keeps it: a date's day, or a date and time as the date widgets write one (ISO, in UTC). */
 export const writeWhen = (d: Date, kind: WhenKind) => (kind === 'date' ? dayKey(d) : d.toISOString());
 

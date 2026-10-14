@@ -13,7 +13,19 @@ import { fill } from './labels';
 /** How far a press moves before it is a drag rather than a click. */
 const DRAG_FROM = 4;
 
-/** A press on an empty slot: a new record there, or, dragged down or up, over the slots it crossed. */
+/** Escape while a drag is held: `cancel` lets go of it, the key kept from anything else (a dialog round the calendar). */
+function onEscape(doc: Document, cancel: () => void) {
+  const escape = (k: KeyboardEvent) => {
+    if (k.key !== 'Escape') return;
+    k.preventDefault();
+    k.stopPropagation();
+    cancel();
+  };
+  doc.addEventListener('keydown', escape, true);
+  return () => doc.removeEventListener('keydown', escape, true);
+}
+
+/** A press on an empty slot: a new record there, or, dragged down or up, over the slots it crossed; none after Escape. */
 export function pressSlot(cal: CalendarCore, e: PointerEvent, col: HTMLElement, i: number) {
   const { doc, state, slot } = cal;
   const target = e.target as HTMLElement;
@@ -40,8 +52,10 @@ export function pressSlot(cal: CalendarCore, e: PointerEvent, col: HTMLElement, 
     doc.removeEventListener('pointermove', move);
     doc.removeEventListener('pointerup', up);
     doc.removeEventListener('pointercancel', stop);
+    unescape();
     picking.remove();
   };
+  const unescape = onEscape(doc, stop);
   const up = () => {
     stop();
     const column = state.columns[i];
@@ -56,7 +70,7 @@ export function pressSlot(cal: CalendarCore, e: PointerEvent, col: HTMLElement, 
 
 /**
  * A press on a record: a click opens it; a drag moves it — to another time, day or person — where it is let go,
- * by the slot; Escape while dragging puts it back.
+ * by the slot; Escape while dragging puts it back. A drag of one that cannot move goes nowhere, and opens nothing.
  */
 export function pressEvent(cal: CalendarCore, e: PointerEvent, event: CalendarEvent, block: HTMLElement, movable: boolean) {
   if (e.button !== 0) return;
@@ -75,10 +89,12 @@ export function pressEvent(cal: CalendarCore, e: PointerEvent, event: CalendarEv
   /** How far into the record this day's part begins: a record from the night before is taken by its morning's part. */
   const into = Math.round((segStart.getTime() - event.start.getTime()) / 60000);
   let moving = false;
+  let dragged = false;
   let landing: { start: Date; column: Column | null } | null = null;
   const move = (m: PointerEvent) => {
-    if (!movable) return;
     if (!moving && Math.hypot(m.clientX - startX, m.clientY - startY) < DRAG_FROM) return;
+    dragged = true;
+    if (!movable) return;
     if (!moving) {
       moving = true;
       block.setAttribute('data-moving', '');
@@ -90,7 +106,7 @@ export function pressEvent(cal: CalendarCore, e: PointerEvent, event: CalendarEv
     doc.removeEventListener('pointermove', move);
     doc.removeEventListener('pointerup', up);
     doc.removeEventListener('pointercancel', cancel);
-    doc.removeEventListener('keydown', escape, true);
+    unescape();
     if (!moving) return;
     block.removeAttribute('data-moving');
     if (!commitIt || !landing) return cal.draw();
@@ -98,21 +114,14 @@ export function pressEvent(cal: CalendarCore, e: PointerEvent, event: CalendarEv
     void cal.commit(event, values, fill(cal.labels.moved, { name: event.title, when: whereTo(event, landing.start, cal.locale) }));
   };
   const up = () => {
-    const wasMoving = moving;
     finish(true);
-    if (!wasMoving) cal.open(event);
+    if (!dragged) cal.open(event);
   };
   const cancel = () => finish(false);
-  const escape = (k: KeyboardEvent) => {
-    if (k.key !== 'Escape') return;
-    k.preventDefault();
-    k.stopPropagation();
-    finish(false);
-  };
+  const unescape = onEscape(doc, cancel);
   doc.addEventListener('pointermove', move);
   doc.addEventListener('pointerup', up);
   doc.addEventListener('pointercancel', cancel);
-  doc.addEventListener('keydown', escape, true);
 }
 
 /** Where a record dragged to (x, y) lands: a day's column and the slot under it, or a day (a whole day's record, the month). */
@@ -146,7 +155,7 @@ function landingAt(cal: CalendarCore, x: number, y: number, event: CalendarEvent
   return { start, column };
 }
 
-/** Its end dragged: a longer or shorter record, by the slot, never shorter than one. */
+/** Its end dragged: a longer or shorter record, by the slot, never shorter than one; as it was after Escape. */
 export function stretch(cal: CalendarCore, e: PointerEvent, event: CalendarEvent, block: HTMLElement, col: HTMLElement) {
   if (e.button !== 0) return;
   e.preventDefault();
@@ -170,6 +179,7 @@ export function stretch(cal: CalendarCore, e: PointerEvent, event: CalendarEvent
     doc.removeEventListener('pointermove', move);
     doc.removeEventListener('pointerup', up);
     doc.removeEventListener('pointercancel', cancel);
+    unescape();
     block.removeAttribute('data-moving');
   };
   const up = () => {
@@ -177,11 +187,12 @@ export function stretch(cal: CalendarCore, e: PointerEvent, event: CalendarEvent
     if (!moving || end.getTime() === event.end.getTime()) return cal.draw();
     void cal.commit(event, moved(event, event.start, cal.spec, cal.page, undefined, end), fill(cal.labels.stretched, { name: event.title, when: cal.time(end) }));
   };
-  // Taken away by the browser (a touch become a scroll): drawn back as it was, and nothing follows the pointer after.
+  // Taken away by the browser (a touch become a scroll), or Escape: drawn back as it was, and nothing follows the pointer after.
   const cancel = () => {
     stop();
     cal.draw();
   };
+  const unescape = onEscape(doc, cancel);
   doc.addEventListener('pointermove', move);
   doc.addEventListener('pointerup', up);
   doc.addEventListener('pointercancel', cancel);

@@ -198,6 +198,7 @@ mountViewer(host, {
   onNewRecord: (values) => openAppointment(null, values), // or pages: { 'clinic.appointment': appointmentPage }
 });`
 )}
+<p>A move saves the fields it changes and no others, with ${c('partial: true')} (see <a href="/data/#requests">what save receives</a>), and Undo saves what they held before. A record whose start, end or person its list row puts in ${c('can.readonlyFields')} or ${c('can.hiddenFields')}, or the page marks ${c('readonly')}, offers no way to move it. Too many records in one slot to read side by side leave room for <em>+N more</em>, which lists them all. Move to… refuses a day more than ten years from the record's, so a year typed short (26) or long (2062) is caught, and names the year whenever the move leaves the record's own.</p>
 <p>The calendar asks ${c('list')} for the records of the span it shows: those starting before it ends and ending after it starts, as ${c('date')} keys or ISO instants, with the list's own search. Its code loads the first time a calendar is shown, in a chunk of its own. A list's switcher takes an app's own views the same way: a function by name in ${c('listViews')}, offered on a list with the page option of its name, or where its ${c('offers(node)')} says, in its own words (${c('label(locale)')}). <a href="/demos/plain/?page=clinic-calendar&skin=outlined">Try the clinic</a> · <a href="/demos/plain/?page=booking-week&skin=outlined">try the booking desk</a>.</p>
 
 <h2 id="details">What it takes care of</h2>

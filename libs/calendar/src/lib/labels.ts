@@ -46,6 +46,9 @@ export interface CalendarLabels {
   moveTime: string;
   move: string;
   cancel: string;
+  /** Move to…'s day refused: no day, or one far from the record's ("0026", "2062"). */
+  badDay: string;
+  badTime: string;
   moved: string;
   stretched: string;
   undo: string;
@@ -91,6 +94,8 @@ const en: CalendarLabels = {
   moveTime: 'Starts at',
   move: 'Move',
   cancel: 'Cancel',
+  badDay: 'Pick a day from {from} to {to}.',
+  badTime: 'Pick a time.',
   moved: 'Moved {name} to {when}.',
   stretched: '{name} now ends at {when}.',
   undo: 'Undo',
@@ -135,6 +140,8 @@ const ar: CalendarLabels = {
   moveTime: 'يبدأ في',
   move: 'نقل',
   cancel: 'إلغاء',
+  badDay: 'اختر يومًا من {from} إلى {to}.',
+  badTime: 'اختر وقتًا.',
   moved: 'نُقل {name} إلى {when}.',
   stretched: 'صار {name} ينتهي في {when}.',
   undo: 'تراجع',
@@ -179,6 +186,8 @@ const fr: CalendarLabels = {
   moveTime: 'Commence à',
   move: 'Déplacer',
   cancel: 'Annuler',
+  badDay: 'Choisissez un jour du {from} au {to}.',
+  badTime: 'Choisissez une heure.',
   moved: '{name} déplacé au {when}.',
   stretched: '{name} se termine maintenant à {when}.',
   undo: 'Annuler',
@@ -223,6 +232,8 @@ const de: CalendarLabels = {
   moveTime: 'Beginnt um',
   move: 'Verschieben',
   cancel: 'Abbrechen',
+  badDay: 'Wählen Sie einen Tag vom {from} bis zum {to}.',
+  badTime: 'Wählen Sie eine Uhrzeit.',
   moved: '{name} verschoben auf {when}.',
   stretched: '{name} endet jetzt um {when}.',
   undo: 'Rückgängig',

@@ -128,6 +128,12 @@ In plain words:
 No `force` flag exists. Saving with the current version is the way to save
 anyway, so an adapter needs no second code path for it.
 
+**A save of some fields** (`SaveRequest.partial`, added with the calendar's
+fixes): a save made outside a form, which never had the whole record, sets
+`partial: true`. `values` and `fields` then hold only the fields in `changes`.
+A source that saves whole records writes those over the record as stored and
+keeps every other field. A calendar's move and its Undo save this way.
+
 ## 3. Permissions (w1-save)
 
 ```ts

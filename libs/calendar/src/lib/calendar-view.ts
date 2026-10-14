@@ -1,4 +1,4 @@
-import { saveProblemOf, type CalendarView, type ListCalendar, type ListedRecord, type RecordVersion, type ResolvedFilter, type Value, type Values } from '@fieldia/core';
+import { saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
@@ -7,7 +7,7 @@ import { colourOf, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type
 import { pressEvent, pressSlot, stretch } from './gestures';
 import { onDayKey, onEventKey, onSlotKey } from './keys';
 import { calendarLabels, fill, type CalendarLabels } from './labels';
-import { moveTo } from './move-to';
+import { moveTo, placeUnder } from './move-to';
 import type { CalendarSettings } from './settings';
 import { installCalendarStyles } from './styles';
 
@@ -18,6 +18,10 @@ const TARGET = 24;
 const NEW_LENGTH = 60;
 /** How many records a month's day shows before "+2 more". */
 const IN_A_DAY = 3;
+/** The narrowest a record beside others may be, in pixels, and still show its name's start: past it, "+N more". */
+const LANE = 64;
+/** How many sit side by side where no width is measured (a calendar not yet laid out): two, and "+N more" in the third. */
+const LANES = 3;
 /** Back and on, as the line reads left to right: flipped right to left by the stylesheet. */
 const CHEVRON = (back: boolean) => `<path d="${back ? 'M10 3 5 8l5 5' : 'M6 3l5 5-5 5'}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
 
@@ -66,9 +70,11 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   let asking = 0;
   let destroyed = false;
   let failed = false;
-  /** What Undo writes back, and the version the record holds after the move. */
-  let undo: { record: ListedRecord; values: Values; version?: RecordVersion; name: string } | null = null;
-  const canSave = !!source?.save;
+  /** What Undo writes back, the version the record holds after the move, and the moment it started at before. */
+  let undo: { record: ListedRecord; values: Values; version?: RecordVersion; at: Date } | null = null;
+  /** The fields a move writes. When the page locks one, nothing moves; when a record's source locks or hides one, that record stays. */
+  const moveFields = [spec.start, spec.end, spec.resource].filter((name): name is string => !!name);
+  const canSave = !!source?.save && !moveFields.some((name) => page.fields[name]?.readonly);
   const canCreate = !!context.create;
   const canOpen = !!context.open;
   const fields = [...new Set([spec.start, spec.end, spec.title, spec.colour, spec.resource, ...moneyReads(page.fields[spec.title])].filter((name): name is string => !!name && !!page.fields[name]))];
@@ -109,10 +115,12 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const alert = make('div', { class: 'fd-cal-alert', role: 'alert' });
   const note = make('p', { class: 'fd-cal-note', hidden: '' });
   const body = make('div', { class: 'fd-cal-body', role: 'region', 'aria-labelledby': `${id}-title` });
-  const keysEvent = make('span', { id: `${id}-keys-event`, class: 'fd-sr-only' }, canOpen && canSave ? labels.keysOpenMove : canOpen ? labels.keysOpen : labels.keysMove);
+  // What a record's keys do: Enter and M, or Enter alone for one that stays where it is.
+  const keysEvent = make('span', { id: `${id}-keys-event`, class: 'fd-sr-only' }, canOpen ? labels.keysOpenMove : labels.keysMove);
+  const keysStill = make('span', { id: `${id}-keys-still`, class: 'fd-sr-only' }, labels.keysOpen);
   const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, labels.keysSlots);
   const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, labels.keysDays);
-  const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysSlot, keysDay);
+  const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysStill, keysSlot, keysDay);
   element.setAttribute('role', 'group');
   element.style.setProperty('--fd-cal-hour', `${HOUR}px`);
 
@@ -208,7 +216,10 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
 
   function draw() {
     const active = doc.activeElement as HTMLElement | null;
-    const focusKey = active && body.contains(active) ? active.dataset['focus'] : undefined;
+    // Where the keys stand, to stand there again: a record or a slot; in a crowded slot's list, its record or its "+N more".
+    const inList = !!active && !!crowdBox?.contains(active);
+    const focusKeys = active && (body.contains(active) || inList) ? [active.dataset['focus'], inList ? crowdFrom : undefined] : [];
+    closeCrowd();
     const shown = range();
     element.dataset['range'] = state.view;
     drawTitle(shown);
@@ -223,18 +234,25 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     if (state.view === 'month') body.replaceChildren(monthView(shown));
     else if (state.view === 'agenda') body.replaceChildren(agendaView(shown));
     else body.replaceChildren(timeView(shown));
-    if (focusKey) body.querySelector<HTMLElement>(`[data-focus="${focusKey}"]`)?.focus();
+    for (const key of focusKeys) {
+      const again = key ? body.querySelector<HTMLElement>(`[data-focus="${key}"]`) : null;
+      if (again) {
+        again.focus();
+        break;
+      }
+    }
     placeNow();
   }
 
   /**
    * A record's block: its time, its words, its person; what it says to a screen reader; what a press does. In the day,
-   * the week and the month the block itself is the press; in the agenda, a row with its own Move to… button beside it,
-   * which a phone has no keys for.
+   * the week and the month the block itself is the press; in the agenda and a crowded slot's list (`row`), a row with
+   * its own Move to… button beside it, which a phone has no keys for.
    */
-  function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false): HTMLElement {
-    const movable = canSave && event.record.can?.edit !== false;
-    const why = canSave && !movable ? (event.record.can?.reason ?? labels.cannotMove) : '';
+  function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false, row = state.view === 'agenda'): HTMLElement {
+    const can = event.record.can;
+    const movable = canSave && can?.edit !== false && !moveFields.some((name) => can?.readonlyFields?.includes(name) || can?.hiddenFields?.includes(name));
+    const why = canSave && !movable ? (can?.reason ?? labels.cannotMove) : '';
     const span = event.allDay ? '' : fill(labels.fromTo, { from: time(event.start), to: time(event.end) });
     const who = event.resourceLabel ? fill(labels.withWho, { name: event.resourceLabel }) : '';
     const block = make('div', {
@@ -246,14 +264,13 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       title: why || [span, event.title, event.resourceLabel].filter(Boolean).join(' · '),
     });
     block.style.setProperty('--fd-cal-c', colourOf(event.colour) ?? 'var(--fd-accent)');
-    const row = state.view === 'agenda';
     /** What the keys and a press reach: the block, or the agenda row's own part. */
     const target = row ? make('div', { class: 'fd-cal-event-open' }) : block;
     target.dataset['focus'] = `e:${event.id}:${dayKey(day)}`;
     if (canOpen || movable) {
       target.tabIndex = 0;
       target.setAttribute('role', 'button');
-      target.setAttribute('aria-describedby', keysEvent.id);
+      target.setAttribute('aria-describedby', movable ? keysEvent.id : keysStill.id);
     }
     target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
     // Its words; in a block, in a box of their own, which the hours keep to whole lines (--fd-cal-lines).
@@ -309,6 +326,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       }
     }
     state.shownHours = { start: from, end: to };
+    const lanes = (drawnLanes = lanesFor(columns.length));
     const grid = make('div', { class: 'fd-cal-grid' });
     grid.style.setProperty('--fd-cal-cols', String(columns.length));
     grid.style.setProperty('--fd-cal-span', String(to - from));
@@ -386,18 +404,23 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         return seg && inColumn(event, column) ? [{ event, ...seg }] : [];
       });
       const placed = sideBySide(mine.map(({ event, start, end }) => ({ id: event.id, start, end })));
-      for (const { event, start, end } of mine) {
+      /** Where a part of a day sits in the column: its top and its height, never under a finger's target. */
+      const span = (start: Date, end: Date) => [(minutesOf(start) - from * 60) * (HOUR / 60), Math.max(TARGET, ((sameDay(end, column.day) ? minutesOf(end) : 24 * 60) - minutesOf(start)) * (HOUR / 60) - 2)];
+      const across = (el: HTMLElement, lane: number, of: number) => {
+        el.style.insetInlineStart = `calc(${(lane / of) * 100}% + 1px)`;
+        el.style.width = `calc(${100 / of}% - 3px)`;
+      };
+      // A crowd wider than its lanes read shows its first records, and "+N more" in the last lane for the rest.
+      const held: typeof mine = [];
+      /** A record's block in its lane of so many. */
+      const put = ({ event, start, end }: (typeof mine)[number], lane: number, of: number) => {
         // In a person's own column, the block need not name them again.
         const block = eventBlock(event, column.day, false, !!column.resource);
-        const top = (minutesOf(start) - from * 60) * (HOUR / 60);
-        const length = (sameDay(end, column.day) ? minutesOf(end) : 24 * 60) - minutesOf(start);
-        const height = Math.max(TARGET, length * (HOUR / 60) - 2);
-        const place = placed.get(event.id) ?? { column: 0, columns: 1 };
+        const [top, height] = span(start, end);
         block.style.top = `${top}px`;
         block.style.height = `${height}px`;
         block.style.setProperty('--fd-cal-lines', String(linesIn(height)));
-        block.style.insetInlineStart = `calc(${(place.column / place.columns) * 100}% + 1px)`;
-        block.style.width = `calc(${100 / place.columns}% - 3px)`;
+        across(block, lane, of);
         if (height < 36) block.setAttribute('data-short', '');
         // Its end stretches, when it has one to write and it ends on this day.
         if (block.hasAttribute('data-moves') && spec.end && sameDay(end, column.day) && sameDay(start, event.start)) {
@@ -406,13 +429,93 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
           block.append(grip);
         }
         col.append(block);
+      };
+      for (const m of mine) {
+        const place = placed.get(m.event.id) ?? { column: 0, columns: 1 };
+        if (place.columns > lanes && place.column >= lanes - 1) held.push(m);
+        else put(m, place.column, Math.min(place.columns, lanes));
       }
+      // Those held back, a "+N more" for each run of them that meet, over their own time, which lists all the column holds
+      // then; one alone is drawn itself in the last lane.
+      const holdBack = (out: typeof mine) => {
+        if (out.length < 2) return out.length && put(out[0], lanes - 1, lanes);
+        const [first, last] = [Math.min(...out.map((m) => m.start.getTime())), Math.max(...out.map((m) => m.end.getTime()))].map((t) => new Date(t));
+        const [top, height] = span(first, last);
+        const n = out.length;
+        const words = fill(labels.moreOn, { n, when: [longDay(column.day), time(first), column.resource?.label].filter(Boolean).join(', ') });
+        const more = make('button', { type: 'button', class: 'fd-cal-more', 'data-holds': out.map((m) => String(m.event.id)).join(' '), 'data-focus': `m:${i}:${minutesOf(first)}`, 'aria-haspopup': 'dialog', 'aria-label': words, title: words }, fill(labels.more, { n }));
+        more.style.top = `${top}px`;
+        more.style.height = `${height}px`;
+        across(more, lanes - 1, lanes);
+        more.addEventListener('click', () => openCrowd(mine.filter((m) => m.start < last && m.end > first), column, more));
+        col.append(more);
+      };
+      let run: typeof mine = [];
+      let until = 0;
+      for (const m of held.sort((a, b) => a.start.getTime() - b.start.getTime())) {
+        if (m.start.getTime() >= until) {
+          holdBack(run);
+          run = [];
+        }
+        run.push(m);
+        until = Math.max(until, m.end.getTime());
+      }
+      holdBack(run);
       grid.append(col);
     });
     // The slots' one stop: where the cursor is.
     const stop = grid.querySelector<HTMLElement>(`[data-focus="s:${state.cursor.column}:${clampMinutes(state.cursor.minutes)}"]`) ?? grid.querySelector<HTMLElement>('.fd-cal-slot');
     if (stop) stop.tabIndex = 0;
     return make('div', { class: 'fd-cal-scroll' }, grid);
+  }
+
+  /**
+   * How many records may sit side by side in a column of the day or the week, past which "+N more" holds the rest: as
+   * many as its width shows the start of a name in, two at least.
+   */
+  function lanesFor(count: number): number {
+    const width = body.clientWidth;
+    if (!width) return LANES;
+    return Math.max(2, Math.floor(Math.max((width - 52) / count, count > 7 || (state.view === 'day' && spec.resource) ? 120 : 0) / LANE));
+  }
+  let drawnLanes = 0;
+  // A calendar made wider or narrower, or shown after being hidden, draws its crowds again when their lanes change.
+  // Never under a drag, whose block it would take away.
+  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(() => (state.view === 'day' || state.view === 'week') && state.columns.length && lanesFor(state.columns.length) !== drawnLanes && !failed && !body.querySelector('[data-moving]') && draw()) : null;
+  resized?.observe(body);
+
+  // ---- a crowded slot's list ------------------------------------------------------------------------------------
+
+  let crowdBox: HTMLElement | null = null;
+  /** The "+N more" the list opened from, by its key, as a redraw makes it again: where Escape puts the keys back. */
+  let crowdFrom = '';
+  const crowdOutside = (e: PointerEvent) => crowdBox && !crowdBox.contains(e.target as Node) && closeCrowd();
+  function closeCrowd(back = false) {
+    crowdBox?.remove();
+    crowdBox = null;
+    doc.removeEventListener('pointerdown', crowdOutside, true);
+    if (back) body.querySelector<HTMLElement>(`[data-focus="${crowdFrom}"]`)?.focus();
+  }
+
+  /** The records of a crowd too wide to read side by side, as a list under its "+N more": each opened, or moved, as an agenda's row. */
+  function openCrowd(crowd: { event: CalendarEvent; start: Date; end: Date }[], column: Column, more: HTMLElement) {
+    closeCrowd();
+    crowdFrom = more.dataset['focus'] ?? '';
+    const [first, last] = [Math.min(...crowd.map((m) => m.start.getTime())), Math.max(...crowd.map((m) => m.end.getTime()))].map((t) => new Date(t));
+    const heading = make('h3', { class: 'fd-cal-move-title', id: `${id}-crowd` }, [longDay(column.day), fill(labels.fromTo, { from: time(first), to: time(last) }), column.resource?.label].filter(Boolean).join(', '));
+    const shut = make('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': labels.close, title: labels.close }, '×');
+    shut.addEventListener('click', () => closeCrowd(true));
+    const list = make('ul', { class: 'fd-cal-agenda-list' }, ...crowd.map(({ event }) => make('li', {}, eventBlock(event, column.day, false, !!column.resource, true))));
+    crowdBox = make('div', { class: 'fd-cal-crowd', role: 'dialog', 'aria-labelledby': heading.id }, make('div', { class: 'fd-cal-crowd-head' }, heading, shut), list);
+    crowdBox.addEventListener('keydown', (k) => {
+      if (k.key !== 'Escape') return;
+      k.preventDefault();
+      k.stopPropagation();
+      closeCrowd(true);
+    });
+    placeUnder(cal, crowdBox, more);
+    list.querySelector<HTMLElement>('[data-focus]')?.focus();
+    doc.addEventListener('pointerdown', crowdOutside, true);
   }
 
   const clampMinutes = (m: number) => Math.min(Math.max(state.shownHours.start * 60, m - (m % slot)), state.shownHours.end * 60 - slot);
@@ -447,7 +550,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       for (const event of mine.slice(0, IN_A_DAY)) cell.append(eventBlock(event, day, true));
       if (mine.length > IN_A_DAY) {
         const n = mine.length - IN_A_DAY;
-        const more = make('button', { type: 'button', class: 'fd-cal-more', 'aria-label': fill(labels.moreOn, { n, when: longDay(day) }) }, fill(labels.more, { n }));
+        const more = make('button', { type: 'button', class: 'fd-cal-more', 'data-holds': mine.slice(IN_A_DAY).map((event) => String(event.id)).join(' '), 'aria-label': fill(labels.moreOn, { n, when: longDay(day) }) }, fill(labels.more, { n }));
         more.addEventListener('click', () => (views.includes('day') ? showView('day', day) : showView(views.includes('agenda') ? 'agenda' : state.view, day)));
         cell.append(more);
       }
@@ -550,11 +653,43 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   }
 
   /**
-   * Write a move through the data source's save — at once on the page, put back if the save is refused — and offer
-   * Undo, which writes back what it held.
+   * Where a record is now, for the keys to stand on: its block on that day, else any of its blocks, else the "+N more"
+   * that holds it; else, when the record is in none of the days shown, the bar's step toward its day.
    */
-  async function commit(event: CalendarEvent, values: Values, words: string) {
-    if (!source?.save || !Object.keys(values).length) return draw();
+  function place(recordId: RecordId, day: Date): HTMLElement {
+    const key = String(recordId);
+    const found =
+      body.querySelector<HTMLElement>(`[data-focus="e:${key}:${dayKey(day)}"][tabindex="0"]`) ??
+      body.querySelector<HTMLElement>(`[data-focus^="e:${key}:"][tabindex="0"]`) ??
+      [...body.querySelectorAll<HTMLElement>('[data-holds]')].find((more) => more.dataset['holds']?.split(' ').includes(key));
+    if (found) return found;
+    const shown = range();
+    return day < shown.from ? back : day >= shown.to ? on : today;
+  }
+
+  /**
+   * A move's save: the fields it writes and no others, in `values` as in `changes`, and `partial` saying so, so a
+   * source that saves whole records keeps every field the calendar never had, and every change made elsewhere since.
+   */
+  const moveSave = (recordId: RecordId, values: Values, version?: RecordVersion): SaveRequest => ({
+    model,
+    id: recordId,
+    fields: Object.fromEntries(Object.keys(values).map((name) => [name, page.fields[name]])) as Fields,
+    changes: { values, lines: {}, links: {} },
+    values: { ...values },
+    partial: true,
+    ...(version ? { version } : {}),
+  });
+
+  /**
+   * Write a move through the data source's save — at once on the page, put back if the save is refused — and offer
+   * Undo, which writes back what those fields held. Whether it was saved.
+   */
+  async function commit(event: CalendarEvent, values: Values, words: string): Promise<boolean> {
+    if (!source?.save || !Object.keys(values).length) {
+      draw();
+      return false;
+    }
     const record = event.record;
     const before: Values = Object.fromEntries(Object.keys(values).map((key) => [key, record.values[key] ?? null]));
     const after: ListedRecord = { ...record, values: { ...record.values, ...values } };
@@ -564,10 +699,12 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     for (const block of body.querySelectorAll<HTMLElement>('.fd-cal-event')) if (block.dataset['id'] === String(event.id)) block.setAttribute('aria-busy', 'true');
     say('');
     alert.replaceChildren();
+    let saved = false;
     try {
-      const result = await source.save({ model, id: event.id, fields: page.fields, changes: { values, lines: {}, links: {} }, values: after.values, ...(record.version ? { version: record.version } : {}) });
-      undo = { record: { ...after, ...(result.version ? { version: result.version } : {}) }, values: before, ...(result.version ? { version: result.version } : {}), name: event.title };
-      say(words, true);
+      const result = await source.save(moveSave(event.id, values, record.version));
+      undo = { record: { ...after, ...(result.version ? { version: result.version } : {}) }, values: before, ...(result.version ? { version: result.version } : {}), at: event.start };
+      say(words, { id: event.id, at: eventsOf([after], spec, page, locale)[0]?.start ?? event.start }, true);
+      saved = true;
     } catch (error) {
       records = records.map((r) => (r === after ? record : r));
       events = eventsOf(records, spec, page, locale);
@@ -577,24 +714,29 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       draw();
     }
     if (!destroyed) await reload();
+    return saved;
   }
 
+  /** Undo: the moved fields as they were, and no others; the keys, when they were on Undo, on the record where it is put back. */
   async function undoLast() {
     const last = undo;
     if (!last || !source?.save) return;
+    const keys = said.contains(doc.activeElement);
     undo = null;
     say('');
     try {
-      await source.save({ model, id: last.record.id, fields: page.fields, changes: { values: last.values, lines: {}, links: {} }, values: { ...last.record.values, ...last.values }, ...(last.version ? { version: last.version } : {}) });
-      say(labels.undone);
+      await source.save(moveSave(last.record.id, last.values, last.version));
+      say(labels.undone, { id: last.record.id, at: last.at });
     } catch (error) {
       alert.textContent = fill(labels.notMoved, { why: saveProblemOf(error).message });
     }
-    if (!destroyed) await reload();
+    if (destroyed) return;
+    await reload();
+    if (keys && (!doc.activeElement || doc.activeElement === doc.body)) place(last.record.id, last.at).focus();
   }
 
-  /** Words in the status line, with Undo after a move and a way to close them. */
-  function say(words: string, withUndo = false) {
+  /** Words in the status line about a record, with Undo after a move and a way to close them, which leaves the keys on that record. */
+  function say(words: string, about?: { id: RecordId; at: Date }, withUndo = false) {
     said.replaceChildren();
     if (!words) return;
     said.append(make('span', {}, words));
@@ -604,7 +746,11 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       said.append(undoButton);
     }
     const close = make('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': labels.close, title: labels.close }, '×');
-    close.addEventListener('click', () => said.replaceChildren());
+    close.addEventListener('click', () => {
+      const keys = said.contains(doc.activeElement);
+      said.replaceChildren();
+      if (keys && about) place(about.id, about.at).focus();
+    });
     said.append(close);
   }
 
@@ -634,6 +780,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     open,
     createAt,
     commit,
+    place,
     openMove: (event, target) => mover.open(event, target),
   };
   const mover = moveTo(cal);
@@ -654,7 +801,9 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     destroy() {
       destroyed = true;
       clearInterval(ticking);
+      resized?.disconnect();
       mover.close();
+      closeCrowd();
       element.remove();
     },
   };
