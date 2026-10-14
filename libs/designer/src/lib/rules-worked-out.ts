@@ -1,6 +1,7 @@
 import type { Field, FieldNode, Page, SetWhen } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import { settingDate, type SettingDate } from './date-setting';
 import { plainNumber, settingNumber, type SettingNumber } from './number-box';
 import { findNode } from './page-tree';
 import { cannotHold } from './rules-commands';
@@ -99,13 +100,16 @@ export function workedOutSetting(el: ElementFactory, designer: Designer, id: str
 
 /** The kinds whose value is typed into the designer's number box. */
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
+/** The kinds whose value is typed into the designer's date box. */
+const DATES = new Set(['date', 'datetime']);
 
 /**
- * A value as the formula language writes it, from what a control holds; null while it holds nothing. A number is
- * never read here: its own box reads it (FIELDIA INPUT RULES), and its value is written plainly (`plainNumber`).
+ * A value as the formula language writes it, from what a control holds; null while it holds nothing. A number or a
+ * date is never read here: its own box reads it (FIELDIA INPUT RULES), a number written plainly (`plainNumber`), a date
+ * as its field keeps it.
  */
 function literalFrom(def: Field, raw: string): string | null {
-  if (raw === '' || NUMBERS.has(def.type)) return null;
+  if (raw === '' || NUMBERS.has(def.type) || DATES.has(def.type)) return null;
   switch (def.type) {
     case 'boolean':
       return raw === 'True' || raw === 'False' ? raw : null;
@@ -170,6 +174,12 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
      */
     let number: SettingNumber | null = null;
     let typedNumber: number | null = null;
+    /**
+     * A date's value, or a date and time's: the designer's date box, never the browser's, which follows the browser's
+     * language and reads no Arabic digits. What it keeps, as it is left, is the row's day (or day and time).
+     */
+    let date: SettingDate | null = null;
+    let typedDate: string | null = null;
     if (raw) value = el('input', { class: 'fd-input fd-answer-rule-code', 'aria-label': w.setTo, spellcheck: 'false', autocomplete: 'off' });
     else if (def.type === 'selection' || def.type === 'boolean') {
       const options = def.type === 'boolean' ? [{ value: 'True', label: w.yes }, { value: 'False', label: w.no }] : def.options.map((o) => ({ value: String(o.value), label: o.label }));
@@ -187,10 +197,18 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
         },
       });
       value = number.input;
-    } else {
-      const type = def.type === 'date' ? 'date' : def.type === 'datetime' ? 'datetime-local' : 'text';
-      value = el('input', { class: 'fd-input', type, 'aria-label': w.setTo, autocomplete: 'off' });
-    }
+    } else if (DATES.has(def.type)) {
+      date = settingDate(el, designer, {
+        kind: def.type === 'datetime' ? 'datetime' : 'date',
+        label: w.setTo,
+        saved: () => typedDate,
+        commit(day) {
+          typedDate = day;
+          save();
+        },
+      });
+      value = date.input;
+    } else value = el('input', { class: 'fd-input', type: 'text', 'aria-label': w.setTo, autocomplete: 'off' });
     let when = '';
     // As the condition starts to hold, or when a field changes (Flectra's onchange): the condition is then optional.
     const as = el('select', { class: 'fd-input fd-select fd-set-when-as', 'aria-label': w.setAs }, el('option', { value: '' }, w.asItStartsToHold)) as HTMLSelectElement;
@@ -222,7 +240,7 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
     /** Kept once both parts read: the value one the field can hold, when a condition that reads. */
     function save() {
       if (!own) return;
-      const expression = raw ? value.value.trim() : number ? (typedNumber === null ? null : plainNumber(typedNumber)) : literalFrom(own.def, value.value);
+      const expression = raw ? value.value.trim() : number ? (typedNumber === null ? null : plainNumber(typedNumber)) : date ? (typedDate === null ? null : `'${typedDate}'`) : literalFrom(own.def, value.value);
       const wrong = !expression ? null : raw ? formulaProblem(page, expression, words)?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression, words);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
@@ -236,8 +254,8 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       if (begun) drafting = false;
       if (!designer.setSetWhen(id, items) && begun) drafting = true;
     }
-    // A number is kept as its box is left (its commit); anything else as it is picked or typed.
-    if (!number) value.addEventListener(value.tagName === 'SELECT' ? 'change' : 'input', save);
+    // A number or a date is kept as its box is left (its commit); anything else as it is picked or typed.
+    if (!number && !date) value.addEventListener(value.tagName === 'SELECT' ? 'change' : 'input', save);
     say.addEventListener('click', () => open(say.getAttribute('aria-expanded') !== 'true'));
     remove.addEventListener('click', () => {
       if (index >= stored().length) {
@@ -278,6 +296,10 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
           const literal = literalOf(item.value)?.value;
           typedNumber = typeof literal === 'number' ? literal : null;
           number.refresh();
+        } else if (item && date) {
+          const literal = literalOf(item.value)?.value;
+          typedDate = typeof literal === 'string' ? literal : null;
+          date.refresh();
         } else if (item && doc.activeElement !== value) value.value = rawFrom(item.value);
         if (item) when = item.when ?? '';
         whenBox.update(page, item ? (item.when ?? '') : when);

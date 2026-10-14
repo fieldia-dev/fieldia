@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import type { InputLimits } from './input-commands';
+import { settingDate, type SettingDateOptions } from './date-setting';
 import { settingNumber, type SettingNumberOptions } from './number-box';
 
 /**
@@ -36,6 +37,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   /** The designer's number box: Arabic digits and a decimal comma read, kept as it is left, what does not fit said. */
   const numberBox = (options: SettingNumberOptions & { placeholder?: string }) =>
     settingNumber(el, designer, { ...options, attrs: { class: 'fd-inline-input fd-inline-number', ...(options.placeholder ? { placeholder: options.placeholder } : {}), ...options.attrs } });
+  /** The designer's date box: typed in the page's order, Arabic digits read, kept as it is left, what does not read said. */
+  const dateBox = (options: SettingDateOptions) => settingDate(el, designer, { ...options, attrs: { class: 'fd-inline-input', ...options.attrs } });
   const select = (label: string, choices: [string, string][]) =>
     el('select', { class: 'fd-inline-select', 'aria-label': label }, ...choices.map(([value, words]) => el('option', { value }, words))) as HTMLSelectElement;
   const toggle = (label: string, onClick: (on: boolean) => void) => {
@@ -205,11 +208,24 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
       },
     };
     const days = numberBox(counting);
-    const date = el('input', { type: 'date', class: 'fd-inline-input', 'aria-label': w.dayOf(which) }) as HTMLInputElement;
+    /** The day a limit is fixed to: the limit's, else the last one typed. */
+    let fixed: string | null = null;
+    const date = dateBox({
+      kind: 'date',
+      label: w.dayOf(which),
+      saved: () => fixed,
+      commit(day) {
+        const before = fixed;
+        fixed = day;
+        const done = save();
+        if (!done) fixed = before;
+        return done;
+      },
+    });
     // A day picked to be fixed waits for its date: until then the limit stays as it was.
     let waiting = false;
     function save(): boolean {
-      const limit = { '': null, today: 'today', after: `today+${count}`, before: `today-${count}`, day: date.value || null }[how.value];
+      const limit = { '': null, today: 'today', after: `today+${count}`, before: `today-${count}`, day: fixed }[how.value];
       waiting = how.value === 'day' && !limit;
       if (waiting) {
         refreshed();
@@ -219,9 +235,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     }
     let refreshed = () => undefined as void;
     how.addEventListener('change', save);
-    date.addEventListener('change', save);
     return {
-      element: row(word(name, how), days.input, date),
+      element: row(word(name, how), days.input, date.input),
       refresh(page, node) {
         refreshed = () => this.refresh(page, node);
         const limit = own(page.fields[node.field], which);
@@ -229,12 +244,13 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
         const mode = waiting || (typeof limit === 'string' && !counted && limit !== 'today') ? 'day' : typeof limit !== 'string' ? '' : limit === 'today' ? 'today' : (counted as RegExpExecArray)[1] === '+' ? 'after' : 'before';
         if (!focused(how)) how.value = mode;
         if (counted && Number(counted[2]) >= 1) count = Number(counted[2]);
-        if (mode === 'day' && !waiting) show(date, limit);
+        if (mode === 'day' && !waiting) fixed = typeof limit === 'string' ? limit : null;
+        date.refresh();
         days.input.hidden = mode !== 'after' && mode !== 'before';
         counting.label = w.daysFrom(mode === 'before', which);
         days.input.setAttribute('aria-label', counting.label);
         days.refresh();
-        date.hidden = mode !== 'day';
+        date.input.hidden = mode !== 'day';
       },
     };
   }
@@ -267,19 +283,23 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     return { element: word(w.minutes, step), refresh: (_page, node) => (step.value = String(node.options?.['step'] ?? 1)) };
   }
 
-  /** A time's earliest and latest: "09:00", "17:30". */
+  /** A time's earliest and latest: "09:00", "17:30", typed in 24 hours or with am and pm, Arabic digits too. */
   function hours(): Part {
-    const box = (label: string, key: string) => {
-      const input = el('input', { type: 'time', class: 'fd-inline-input', 'aria-label': label }) as HTMLInputElement;
-      input.addEventListener('change', () => designer.setWidgetOptions(id, { [key]: input.value || null }));
-      return input;
-    };
+    let options: Record<string, unknown> = {};
+    const box = (label: string, key: string) =>
+      dateBox({
+        kind: 'time',
+        label,
+        saved: () => (typeof options[key] === 'string' ? (options[key] as string) : null),
+        commit: (time) => designer.setWidgetOptions(id, { [key]: time }),
+      });
     const [from, to] = [box(w.earliestTime, 'min'), box(w.latestTime, 'max')];
     return {
-      element: row(word(w.earliestTime, from), word(w.latestTime, to)),
+      element: row(word(w.earliestTime, from.input), word(w.latestTime, to.input)),
       refresh(_page, node) {
-        show(from, node.options?.['min']);
-        show(to, node.options?.['max']);
+        options = node.options ?? {};
+        from.refresh();
+        to.refresh();
       },
     };
   }
