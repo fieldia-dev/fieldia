@@ -34,9 +34,10 @@ Give the data source `upload(file, request)` and a file or picture field sends
 each file to your store as soon as it is picked; the record keeps only the link
 it returns — `{ url, name, size, type, fileId }`. `form.upload(field, files)`
 does it for a widget of your own: `state.uploads` shows each on its way (its
-`status` and the bytes `sent` of `total`), three at a time, in the order picked;
+`status` and the bytes `sent` of `total`), three at a time, in the order picked,
+and `form.uploading(field)` gives one field's own;
 `form.cancelUpload(id)` and `form.retryUpload(id)` stop one and send a failed
-one again. `form.save()` waits for those still going, stops under the field for
+one again. A file picked in a table's cell goes as its line's (`request.line`). `form.save()` waits for those still going, stops under the field for
 one that failed, and stores bytes still in the record (a signature drawn) first.
 A draft never keeps a file's bytes.
 

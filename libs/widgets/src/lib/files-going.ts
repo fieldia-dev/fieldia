@@ -93,7 +93,7 @@ export function goingList(make: Make, words: WidgetLabels, form: Form, field: st
       if (uploads === seen && readonly === wasReadonly) return;
       seen = uploads;
       wasReadonly = readonly;
-      const mine = uploads.filter((upload) => upload.field === field && !upload.line);
+      const mine = form.uploading(field);
       for (const [id, item] of items) {
         if (mine.some((upload) => upload.id === id)) continue;
         item.element.remove();

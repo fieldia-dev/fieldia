@@ -168,8 +168,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       setAttr(news, 'data-failed', failed ? '' : null);
       setText(news, text);
     };
-    /** This field's files on their way to the store, as the form has them. */
-    const goingNow = (): readonly FileUpload[] => (form.getState().uploads ?? []).filter((upload) => upload.field === name && !upload.line);
+    /** This field's files on their way to the store, as the form has them: in a table's cell, its line's. */
+    const goingNow = (): readonly FileUpload[] => form.uploading(name);
 
     const take = async (chosen: File[]) => {
       if (readonly || !chosen.length) return;

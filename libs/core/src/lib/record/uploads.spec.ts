@@ -244,6 +244,17 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(line.values['photo']).toEqual(expect.objectContaining({ url: 'https://files.example/kitchen.jpg' }));
   });
 
+  it('gives a field its own files on their way, never a line’s of the same name', async () => {
+    const store = handStore();
+    const { form } = setup({ upload: store.upload, page: listing({ fields: { ...listing().fields, photo: { type: 'image', label: 'Cover' } } }) });
+    const key = form.addLine('rooms', { name: 'Kitchen' });
+    form.upload('photo', [photo('kitchen.jpg')], { line: { field: 'rooms', key } });
+    form.upload('photo', [photo('cover.jpg')]);
+    await tick();
+    expect(form.uploading('photo').map((upload) => upload.name)).toEqual(['cover.jpg']);
+    expect(form.uploading('photos')).toEqual([]);
+  });
+
   it('stops every upload when the changes are discarded, or another record is opened', async () => {
     const store = handStore();
     const { form, state } = setup({ upload: store.upload, recordId: 1 });

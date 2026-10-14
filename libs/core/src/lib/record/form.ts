@@ -346,6 +346,11 @@ export interface Form {
    * for those still going, and stops, under the field, for one that failed.
    */
   upload(field: string, files: readonly UploadFile[], how?: UploadHow): string[];
+  /**
+   * A field's files on their way, in the order picked: the uploads in the
+   * state that are its own. A table's cell (`lineForm`) gives its line's.
+   */
+  uploading(field: string): readonly FileUpload[];
   /** Stop an upload and drop its file, whether it is on its way, waiting, or failed. */
   cancelUpload(id: string): void;
   /** Send a file that failed again. */
@@ -1471,6 +1476,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     upload: (field, files, how = {}) => uploads.start(field, files, how),
+    uploading: (field) => state.uploads.filter((upload) => upload.field === field && !upload.line),
     cancelUpload: (id) => uploads.cancel(id),
     retryUpload: (id) => uploads.retry(id),
 
