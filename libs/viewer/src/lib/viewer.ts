@@ -556,6 +556,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let lockedNow = false;
       /** The words its lock says; a field locked for this person by the record's source says theirs, which come with its load. */
       let lockWords: string | undefined;
+      /** Whether pointing at the value says why: once, however often its lock is drawn again. */
+      let pointing = !!reason;
       const lockFor = (words: string | undefined = reason): HTMLElement => {
         if (lockMark && !!lock === !!words) {
           if (lock && words !== lockWords) setText(lock.bubble, (lockWords = words) as string);
@@ -565,7 +567,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         lockWords = words;
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
         lock = words ? bubbleTip(`${id}-lock`, words, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
-        if (words && !reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
+        if (words && !pointing) {
+          pointing = true;
+          for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
+        }
         lockMark = lock?.element ?? el('span', { class: 'fd-lock-wrap' }, el('span', { class: 'fd-lock', 'aria-hidden': 'true' }, icon));
         // At the value's start, as a work item's Reason: in a record head's band, in the room before the value.
         if (page.look?.lockAt === 'value') {
