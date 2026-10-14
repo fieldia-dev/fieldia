@@ -137,6 +137,17 @@ describe('the designer’s date box', () => {
     expect(hint.textContent).toMatch(/1926.*2026|2026.*1926/);
   });
 
+  it('never keeps a day made of the keys around a refused one: left so, the setting stays, and why is said', () => {
+    const { input, commits } = box();
+    keys(input, '1x5/10/2026');
+    expect(input.value).toBe('1');
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.blur();
+    expect(commits).toEqual([]);
+    expect(input.value).toBe('2 Mar 2026');
+    expect(hintOf(input)?.textContent).toMatch(/^Earliest day: “⁨1x5\/10\/2026⁩” is not a whole date yet; write it like 31\/12\/\d{4}\. It stays 2 Mar 2026\.$/);
+  });
+
   it('takes the setting away when emptied', () => {
     const { input, commits } = box();
     retype(input, '');

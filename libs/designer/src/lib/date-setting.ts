@@ -14,7 +14,8 @@ import type { NumberBoxHost } from './number-box';
  * which its placeholder shows (dd/mm/yyyy); ISO 2026-03-02 always; Arabic and
  * Persian digits; a date as Fieldia writes it at rest (2 Mar 2026). A key no
  * date is written with, and a paste that is no date, are refused with words
- * under the box. What is typed is kept as the box is left, or on Enter; at
+ * under the box, the keys typed after a refused one waiting with it — never a
+ * day made of the rest. What is typed is kept as the box is left, or on Enter; at
  * rest the box shows it in words, so how it was read can be seen. Half typed
  * or impossible (31/02, a year of two digits), the setting keeps what it had,
  * the box shows it again, and the words under it say why: "Earliest day:
@@ -134,8 +135,10 @@ export function settingDate(el: ElementFactory, host: DateSettingHost, options: 
       if (left.said) hint.show(left.said);
       return;
     }
-    const read = readDateText(input.value, reader);
-    if (!read.ok) return keep(read.words);
+    // Keys held after a refused one ("1x5/10/2026" where the box shows "1"): what was typed, read whole, is no date.
+    const held = checks?.held();
+    const read = readDateText(held?.text ?? input.value, reader);
+    if (held || !read.ok) return keep(read.ok ? held?.words : read.words);
     kept(read.value !== null && kind === 'datetime' ? localMoment(read.value) : read.value);
   }
   input.addEventListener('input', () => (left = null));
