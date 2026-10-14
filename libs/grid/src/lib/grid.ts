@@ -558,8 +558,17 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.before = this.line()?.values ?? {};
     // A key the widget used itself (Enter picking from its list, Escape closing it) is not the grid's.
     this.box.addEventListener('keydown', (event) => {
-      if (event.defaultPrevented) _stopPropagationForAgGrid(event);
-      else if (event.key === 'Escape') params.cell.cancel(key, this.before);
+      if (event.defaultPrevented) return _stopPropagationForAgGrid(event);
+      if (event.key !== 'Escape') return;
+      params.cell.cancel(key, this.before);
+      // Closed now, its cell focused, not on AG Grid's next task: a key pressed straight after Escape lands on the
+      // cell and opens its editor again with that key, never in this one as it goes.
+      event.preventDefault();
+      _stopPropagationForAgGrid(event);
+      const { rowIndex, rowPinned } = params.node;
+      const column = params.column.getColId();
+      params.api.stopEditing(true);
+      if (rowIndex !== null && !params.api.isDestroyed()) params.api.setFocusedCell(rowIndex, column, rowPinned);
     });
     // A day picked from a date's calendar is the whole answer: the cell keeps it and closes, as a
     // spreadsheet's does. A date typed stays open until Enter or Tab commits it. A date with a time

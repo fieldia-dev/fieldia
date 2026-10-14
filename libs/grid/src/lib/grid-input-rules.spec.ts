@@ -91,6 +91,24 @@ describe('a grid cell’s first key', () => {
     expect(formLines(form)[0].values['qty']).toBe(4);
   });
 
+  it('after Escape, is the next key at once: Escape closes the editor before it returns, the focus on its cell', async () => {
+    const { box, api, form } = await mount();
+    api.setFocusedCell(0, 'qty');
+    api.startEditingCell({ rowIndex: 0, colKey: 'qty' });
+    await microtasks();
+    const input = box.querySelector('.fd-grid-editor input') as HTMLInputElement;
+    input.value = '9';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '9' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    // No wait at all: a key pressed straight after lands on the cell, never in the editor going away.
+    expect(api.getEditingCells()).toHaveLength(0);
+    expect(document.activeElement).toBe(cellOf(box, 0, 'qty'));
+    expect(formLines(form)[0].values['qty']).toBe(4);
+    await frames();
+    expect(api.getEditingCells()).toHaveLength(0);
+    expect(formLines(form)[0].values['qty']).toBe(4);
+  });
+
   it('opens on an IME’s key with its text chosen, for the IME’s words to replace', async () => {
     const { box, api } = await mount();
     api.setFocusedCell(0, 'qty');
