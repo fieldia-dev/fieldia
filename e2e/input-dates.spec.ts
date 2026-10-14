@@ -213,6 +213,108 @@ test.describe('a date, a date and time, a time', () => {
   });
 });
 
+test.describe('a date as Fieldia writes it at rest', () => {
+  let problems: string[] = [];
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  });
+  test.afterEach(() => expect(problems).toEqual([]));
+
+  for (const [locale, query, day, dayAndTime] of [
+    ['en', '', '15 Oct 2026', '15 Oct 2026, 14:30'],
+    ['ar', '&locale=ar&dir=rtl', '15 أكتوبر 2026', '15 أكتوبر 2026، 14:30'],
+    ['fr', '&locale=fr', '15 oct. 2026', '15 oct. 2026, 14:30'],
+    ['de', '&locale=de', '15. Okt. 2026', '15. Okt. 2026, 14:30'],
+  ] as const) {
+    test(`${locale}: what a box shows once left — “${day}” — pastes back, and can be typed so`, async ({ page }) => {
+      ({ problems } = await open(page, 'plain', `page=fields&skin=outlined${query}`));
+      // Copied as it is shown at rest (a list, a read-only view, another box left), then pasted with Ctrl+V.
+      const start = boxOf(page, 'f-start');
+      await setValue(page, 'start_date', '2026-10-15');
+      await expect(start).toHaveValue(day);
+      const shown = await start.inputValue();
+      await setValue(page, 'start_date', null);
+      await enter(start);
+      await paste(page, start, shown);
+      await expect(hintOf(page, 'f-start')).toBeHidden();
+      expect(await valueOf(page, 'start_date')).toBe('2026-10-15');
+      const kickoff = boxOf(page, 'f-kickoff');
+      const at = await page.evaluate(() => new Date(2026, 9, 15, 14, 30).toISOString());
+      await setValue(page, 'kickoff', at);
+      await expect(kickoff).toHaveValue(dayAndTime);
+      const shownTime = await kickoff.inputValue();
+      await setValue(page, 'kickoff', null);
+      await enter(kickoff);
+      await paste(page, kickoff, shownTime);
+      await expect(hintOf(page, 'f-kickoff')).toBeHidden();
+      expect(await valueOf(page, 'kickoff')).toBe(at);
+      // Typed key by key, its month in words: nothing refused on the way, and read as the box is left.
+      await setValue(page, 'start_date', null);
+      await enter(start);
+      await start.pressSequentially(day);
+      await expect(hintOf(page, 'f-start')).toBeHidden();
+      await page.keyboard.press('Tab');
+      expect(await valueOf(page, 'start_date')).toBe('2026-10-15');
+      await expect(start).toHaveValue(day);
+      await expect(start).toHaveAttribute('aria-invalid', 'false');
+    });
+  }
+
+  test('en: a date written month first, and an instant as a server writes one, paste too', async ({ page }) => {
+    ({ problems } = await open(page, 'plain', 'page=fields&skin=outlined'));
+    const start = boxOf(page, 'f-start');
+    await enter(start);
+    await paste(page, start, 'Oct 15, 2026');
+    expect(await valueOf(page, 'start_date')).toBe('2026-10-15');
+    const kickoff = boxOf(page, 'f-kickoff');
+    await enter(kickoff);
+    await paste(page, kickoff, '2026-10-15T14:30:00Z');
+    await expect(hintOf(page, 'f-kickoff')).toBeHidden();
+    expect(await valueOf(page, 'kickoff')).toBe('2026-10-15T14:30:00.000Z');
+    // A date's box takes an instant's day where the person is, its seconds no part of a day; a date and time's keeps to the minute.
+    const day = await page.evaluate(() => {
+      const at = new Date('2026-10-15T14:30:45Z');
+      return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
+    });
+    await setValue(page, 'start_date', null);
+    await enter(start);
+    await paste(page, start, '2026-10-15T14:30:45Z');
+    await expect(hintOf(page, 'f-start')).toBeHidden();
+    expect(await valueOf(page, 'start_date')).toBe(day);
+    await enter(kickoff);
+    await paste(page, kickoff, '2026-10-15T09:15:45Z');
+    await expect(hintOf(page, 'f-kickoff')).toHaveText('Kick-off meeting: “⁨2026-10-15T09:15:45Z⁩” is not a time; write it like 14:30');
+    expect(await valueOf(page, 'kickoff')).toBe('2026-10-15T14:30:00.000Z');
+  });
+});
+
+test.describe('a year of two digits', () => {
+  let problems: string[] = [];
+  test.afterEach(() => expect(problems).toEqual([]));
+
+  for (const [locale, query, typed, why] of [
+    ['en', '', '15/3/85', 'Start date: “⁨85⁩” could be 1985 or 2085; write the year in full'],
+    ['ar', '&locale=ar&dir=rtl', arabic('15/3/85'), 'Start date: «⁨85⁩» قد تعني 1985 أو 2085؛ اكتب السنة كاملة'],
+    ['fr', '&locale=fr', '15/3/85', 'Start date : « ⁨85⁩ » peut être 1985 ou 2085 ; écrivez l’année en entier'],
+  ] as const) {
+    test(`${locale}: is never given a century in silence: kept in its box, marked, naming both it could be`, async ({ page }) => {
+      ({ problems } = await open(page, 'plain', `page=fields&skin=outlined${query}`));
+      const before = await valueOf(page, 'start_date');
+      const start = boxOf(page, 'f-start');
+      await enter(start);
+      await start.pressSequentially(typed);
+      await page.keyboard.press('Tab');
+      await expect(start).toHaveValue(typed);
+      await expect(start).toHaveAttribute('aria-invalid', 'true');
+      await expect(errorOf(page, 'f-start')).toHaveText(why);
+      expect(await valueOf(page, 'start_date')).toBe(before);
+      expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.validate())).toBe(false);
+      await node(page, 'f-start').scrollIntoViewIfNeeded();
+      await screen(page, `input-dates-short-year-${locale}`, { viewport: true });
+    });
+  }
+});
+
 test.describe('a range of dates', () => {
   let problems: string[] = [];
   test.afterEach(() => expect(problems).toEqual([]));
@@ -313,6 +415,33 @@ test.describe('links and choices typed into', () => {
     await iteration.press('Delete');
     await iteration.pressSequentially('Portal / Sprint 12');
     await expect(node(page, 'f-iteration').locator('[role=treeitem]')).toHaveCount(1);
+  });
+
+  test('a path: words naming one exactly, left by a click once their list came, take it, and nothing false is said', async ({ page }) => {
+    ({ problems } = await open(page, 'plain', 'page=wi-picker&skin=underline'));
+    const iteration = boxOf(page, 'f-iteration');
+    for (const [typed, label] of [
+      ['Portal\\Sprint 13', 'Sprint 13'],
+      ['Sprint 12', 'Sprint 12'],
+      ['portal / sprint 13', 'Sprint 13'],
+    ] as const) {
+      await enter(iteration);
+      await iteration.press('Delete');
+      await iteration.pressSequentially(typed);
+      await expect(node(page, 'f-iteration').locator('[role=treeitem]')).toHaveCount(1);
+      // A click elsewhere on the page: on the field's own label's line, outside the box.
+      await page.locator('body').click({ position: { x: 2, y: 2 } });
+      await expect.poll(async () => ((await valueOf(page, 'iteration')) as { label: string }).label).toBe(label);
+      await expect(iteration).toHaveValue(`Portal\\${label}`);
+      await expect(hintOf(page, 'f-iteration')).toBeHidden();
+    }
+    // Words naming nothing: what it held comes back, and it says so.
+    await enter(iteration);
+    await iteration.press('Delete');
+    await iteration.pressSequentially('Sprint 99');
+    await page.locator('body').click({ position: { x: 2, y: 2 } });
+    await expect(iteration).toHaveValue('Portal\\Sprint 13');
+    await expect(hintOf(page, 'f-iteration')).toContainText('nothing is called “⁨Sprint 99⁩”');
   });
 
   test('ar: stars and a scale move with the screen right to left; a full Top 3 says why it ranks no more', async ({ page }) => {
