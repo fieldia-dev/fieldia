@@ -43,6 +43,7 @@ import { wiTextRecords } from './wi-text';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
+import { CONTAINED_RECORDS, containedPage } from './contained';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -61,6 +62,8 @@ export const pages: Record<string, Page> = {
   layout: layout as Page,
   lists: lists as Page,
   custom: customPage,
+  // A part that fails — the app's price tag, its delivery planner — kept to its place: shared/contained.ts.
+  contained: containedPage,
   // Places the saved Address form twice: see `savedForms`.
   delivery: delivery as Page,
   // Its buttons and moments run steps: a page opened by its id (see `openedPages`), the app's answers (shared/order-desk.ts).
@@ -338,6 +341,7 @@ export function sampleDataSource() {
       'delivery.round': { 1: sampleRound() },
       'shop.order': sampleWeekOrders(),
       'wi.history': { 1: wiHistoryRecord() },
+      ...CONTAINED_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
       'work.item': {
         1: {

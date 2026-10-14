@@ -21,4 +21,11 @@ lays a page out with these widgets. Import it to write your own widget — a
 `WidgetFactory` returns `{ element, update(state), focus() }` — and register it
 with the viewer's `widgets` option under `type` or `type.widget`.
 
+A widget that throws — as it is drawn, brought up to date, focused or taken away —
+never takes the page with it: `createWidget` puts a small box in its place ("This
+field could not be shown: Price", in the page's language, said to a screen reader
+as a status), tells the context's `onError` (the console when there is none), and
+leaves the widget alone from then on. A widget that learns of its own failure
+later — a framework's component caught by its binding — calls `context.fail(error)`.
+
 MIT licensed.

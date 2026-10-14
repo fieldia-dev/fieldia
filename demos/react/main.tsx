@@ -11,6 +11,7 @@ import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
@@ -44,6 +45,26 @@ function Note({ form }: SlotComponentProps) {
   );
 }
 
+/** The app's price tag, as a React component: it throws for a four-digit price, as it renders. */
+function PriceTag({ id, value, readonly, onChange }: FieldComponentProps) {
+  checkPrice(value);
+  return (
+    <span className="demo-price">
+      <input id={id} className="fd-input" inputMode="decimal" value={String(value ?? '')} readOnly={readonly} onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))} />
+      <output>{priceWords(value)}</output>
+    </span>
+  );
+}
+
+/** The app's delivery planner, as a React component: it throws as it renders. */
+function Planner(_: SlotComponentProps): null {
+  return loadPlanner();
+}
+
+/** "A part that fails": what onError is told, listed under the form (shared/contained.ts). */
+const failures = params.get('page') === 'contained' ? errorLog(document) : null;
+if (failures) document.getElementById('app')?.after(failures.element);
+
 const chatter = sampleChatter();
 
 /** The chatter in a React slot: a box it mounts into, for as long as the slot lives. */
@@ -70,13 +91,14 @@ function Demo() {
         // The shop's answers to the pages' steps: the stock checked for "Order by phone".
         return answerAction(request, params.get('locale') ?? undefined);
       }}
-      fieldTypes={{ 'char.shout': Shout }}
+      fieldTypes={{ 'char.shout': Shout, 'float.tag': PriceTag }}
+      onError={failures?.onError}
       widgets={{ ...gridWidgets, ...codeWidgets, ...demoMapWidgets }}
       listViews={demoListViews}
       maps={demoMaps}
       pages={appPages}
       {...optionsFromQuery(params)}
-      slots={{ chatter: Chatter, note: Note }}
+      slots={{ chatter: Chatter, note: Note, planner: Planner }}
       onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } })}
     />
   );

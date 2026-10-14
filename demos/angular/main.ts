@@ -15,6 +15,8 @@ import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
+import type { PartFailure } from '@fieldia/widgets';
 
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
@@ -46,6 +48,47 @@ class ShoutComponent {
     this.onChange((event.target as HTMLInputElement).value || null);
   }
 }
+
+/** The app's price tag, as an Angular component: it throws for a four-digit price, as it is given one. */
+@Component({
+  selector: 'demo-price-tag',
+  template: `<span class="demo-price">
+    <input [id]="id" class="fd-input" inputmode="decimal" [value]="text()" [readOnly]="readonly" (input)="write($event)" />
+    <output>{{ words() }}</output>
+  </span>`,
+})
+class PriceTagComponent {
+  @Input() id = '';
+  @Input() readonly = false;
+  @Input() onChange: (value: Value) => void = () => undefined;
+  private price: Value | undefined;
+  @Input() set value(value: Value | undefined) {
+    checkPrice(value);
+    this.price = value;
+  }
+  text() {
+    return String(this.price ?? '');
+  }
+  words() {
+    return priceWords(this.price);
+  }
+  write(event: Event) {
+    const text = (event.target as HTMLInputElement).value;
+    this.onChange(text === '' ? null : Number(text));
+  }
+}
+
+/** The app's delivery planner, as an Angular component: it throws as it is made. */
+@Component({ selector: 'demo-planner', template: '' })
+class PlannerComponent {
+  constructor() {
+    loadPlanner();
+  }
+}
+
+/** "A part that fails": what onError is told, listed under the form (shared/contained.ts). */
+const failures = params.get('page') === 'contained' ? errorLog(document) : null;
+if (failures) document.getElementById('app')?.after(failures.element);
 
 const chatter = sampleChatter();
 
@@ -85,7 +128,7 @@ class NoteComponent implements OnInit {
 
 @Component({
   selector: 'demo-root',
-  imports: [FieldiaFormComponent, FieldiaSlotDirective, NoteComponent, ChatterComponent],
+  imports: [FieldiaFormComponent, FieldiaSlotDirective, NoteComponent, ChatterComponent, PlannerComponent],
   template: `<fieldia-form
     [page]="page"
     [dataSource]="dataSource"
@@ -114,9 +157,11 @@ class NoteComponent implements OnInit {
     (action)="pressed($event)"
     [answer]="answer"
     (openRecord)="open($event)"
+    (partError)="failed($event)"
   >
     <ng-template fieldiaSlot="chatter" let-form><demo-chatter [form]="form" /></ng-template>
     <ng-template fieldiaSlot="note" let-form><demo-note [form]="form" /></ng-template>
+    <ng-template fieldiaSlot="planner"><demo-planner /></ng-template>
   </fieldia-form>`,
 })
 class DemoComponent {
@@ -127,7 +172,7 @@ class DemoComponent {
   readonly theme = (params.get('theme') as Theme | null) ?? undefined;
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
-  readonly fieldTypes = { 'char.shout': ShoutComponent };
+  readonly fieldTypes = { 'char.shout': ShoutComponent, 'float.tag': PriceTagComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets, ...demoMapWidgets };
   readonly listViews = demoListViews;
   readonly maps = demoMaps;
@@ -144,6 +189,10 @@ class DemoComponent {
   readonly answer = (request: ActionRequest) => answerAction(request, this.locale);
   open(id: RecordId) {
     openRecord(params, id);
+  }
+  /** A part that failed ("A part that fails" lists them). */
+  failed({ error, where }: { error: unknown; where: PartFailure }) {
+    failures?.onError(error, where);
   }
 }
 

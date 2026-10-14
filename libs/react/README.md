@@ -41,4 +41,9 @@ again; `onAction` may answer a button or a `call` step:
 ```
 
 `host` and `onOpen` are the viewer's own options (see `@fieldia/viewer`); the
-handle from `ref` or `onReady` has `on`, `setValues` and `run`. MIT licensed.
+handle from `ref` or `onReady` has `on`, `setValues` and `run`.
+
+A field's or a slot's component that throws as it renders is kept to its place:
+it shows a small box that names it, `onError={(error, where) => …}` is told, and
+the rest of the form stays mounted — React would otherwise take down everything
+under the nearest error boundary, the form with it. MIT licensed.

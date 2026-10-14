@@ -10,7 +10,7 @@
 
 /** What a page uses beyond the viewer's own widgets, found by walking it. */
 export function pageNeeds(page) {
-  const needs = { grid: false, code: false, monaco: false, mapFields: false, listMap: false, formMap: false, chatter: false, own: false, slots: new Set(), regions: new Set(), reach: false };
+  const needs = { grid: false, code: false, monaco: false, mapFields: false, listMap: false, formMap: false, chatter: false, own: false, priceTag: false, slots: new Set(), regions: new Set(), reach: false };
   const walk = (node) => {
     if (Array.isArray(node)) return node.forEach(walk);
     if (!node || typeof node !== 'object') return;
@@ -20,6 +20,8 @@ export function pageNeeds(page) {
     if (widget === 'monaco') needs.monaco = true;
     if (widget === 'place' || widget === 'area' || widget === 'address-search') needs.mapFields = true;
     if (widget === 'shout') needs.own = true;
+    // "A part that fails": the app's price tag (demos/shared/contained.ts).
+    if (widget === 'tag') needs.priceTag = true;
     if (node.type === 'map') needs.formMap = true;
     if (node.type === 'slot' && node.name === 'chatter') needs.chatter = true;
     // A slot the app fills with its own content.
@@ -87,6 +89,7 @@ function parts(needs) {
   }
   // Your own widget, by its field's type and its name.
   if (needs.own) widgets.push("'char.shout': yourShoutWidget");
+  if (needs.priceTag) widgets.push("'float.tag': yourPriceTag");
   if (widgets.length) options.unshift(['widgets', widgets.length === 1 && !widgets[0].startsWith("'") ? widgets[0].slice(3) : `{ ${widgets.join(', ')} }`]);
   if (needs.chatter) imports.push("import { chatterSlot } from '@fieldia/chatter';");
   return { imports, setup, options };
@@ -108,9 +111,12 @@ export function snippets(page, params) {
   const own = [...needs.slots];
   const slotsJs = [...(needs.chatter ? ['chatter: chatterSlot({ source: yourChatter })'] : []), ...own.map((slot) => `${slot}: your${capital(slot)}`)];
   const chatterJs = slotsJs.length ? [['slots', `{ ${slotsJs.join(', ')} }`]] : [];
+  // A page whose parts may fail ("A part that fails"): told of each, which then shows a box in its place.
+  const failing = needs.priceTag;
   const jsOptions = [
     ...options,
     ...chatterJs,
+    ...(failing ? [['onError', '(error, where) => yourErrorLog(error, where)']] : []),
     ...look,
     ...(enterToNext ? [['keys', '{ enterMovesToNext: true }']] : []),
     ...(translate ? [['translate', '(text) => catalog[text] ?? text']] : []),
@@ -127,7 +133,7 @@ mountViewer(document.getElementById('app'), {
 
   // The frameworks: the same options as props, defined once beside the component.
   const source = 'const dataSource = createMemoryDataSource(); // or your own, talking to your server';
-  const consts = [source, ...options.map(([key, value]) => `const ${key} = ${value};`)];
+  const consts = [source, ...options.map(([key, value]) => `const ${key} = ${value};`), ...(failing ? ['/** Told of each part that fails, which shows a box in its place; the rest of the form goes on. */', 'const onError = (error, where) => yourErrorLog(error, where);'] : [])];
   const attrs = (pattern) => [...options.map(([key]) => pattern(key, key, true)), ...look.map(([key, value]) => pattern(key, value.replace(/^'|'$/g, ''), value === 'true'))].join(' ');
 
   const reactChatter = needs.chatter
@@ -147,7 +153,7 @@ ${afterImports}
 ${consts.join('\n')}
 ${reactChatter}
 export function Screen() {
-  return <FieldiaForm page={page} dataSource={dataSource} ${attrs((key, value, bound) => (bound ? `${key}={${value}}` : `${key}="${value}"`))}${slotsJs.length ? ` slots={{ ${[...(needs.chatter ? ['chatter: Chatter'] : []), ...own.map((slot) => `${slot}: Your${capital(slot)}`)].join(', ')} }}` : ''} />;
+  return <FieldiaForm page={page} dataSource={dataSource} ${attrs((key, value, bound) => (bound ? `${key}={${value}}` : `${key}="${value}"`))}${failing ? ' onError={onError}' : ''}${slotsJs.length ? ` slots={{ ${[...(needs.chatter ? ['chatter: Chatter'] : []), ...own.map((slot) => `${slot}: Your${capital(slot)}`)].join(', ')} }}` : ''} />;
 }`.replace(/ {2,}\/>/g, ' />');
 
   const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
@@ -174,7 +180,7 @@ ${consts.join('\n')}${vueChatter}
 </script>
 
 <template>
-  <FieldiaForm :page="page" :data-source="dataSource" ${attrs((key, value, bound) => (bound ? `:${kebab(key)}="${value}"` : `${kebab(key)}="${value}"`))}${
+  <FieldiaForm :page="page" :data-source="dataSource" ${attrs((key, value, bound) => (bound ? `:${kebab(key)}="${value}"` : `${kebab(key)}="${value}"`))}${failing ? ' @error="onError"' : ''}${
     slotsJs.length
       ? `>${needs.chatter ? `
     <template #chatter="{ form }"><Chatter :form="form" /></template>` : ''}${own.map((slot) => `
@@ -206,7 +212,7 @@ ${before(imports)}import page from './${name}.page.json';
 ${afterImports}${angularChatter}
 @Component({
   imports: [FieldiaFormComponent${slotsJs.length ? ', FieldiaSlotDirective' : ''}${needs.chatter ? ', ChatterComponent' : ''}${own.map((slot) => `, Your${capital(slot)}Component`).join('')}],
-  template: \`<fieldia-form [page]="page" [dataSource]="dataSource" ${attrs((key, value, bound) => (bound ? `[${key}]="${value}"` : `${key}="${value}"`))}${
+  template: \`<fieldia-form [page]="page" [dataSource]="dataSource" ${attrs((key, value, bound) => (bound ? `[${key}]="${value}"` : `${key}="${value}"`))}${failing ? ' (partError)="failed($event)"' : ''}${
     slotsJs.length
       ? `>${needs.chatter ? `
     <ng-template fieldiaSlot="chatter" let-form><app-chatter [form]="form" /></ng-template>` : ''}${own.map((slot) => `
@@ -217,7 +223,15 @@ ${afterImports}${angularChatter}
 })
 export class ScreenComponent {
   readonly page = page;
-  readonly dataSource = createMemoryDataSource(); // or your own, talking to your server${fields.length ? `\n${fields.join('\n')}` : ''}
+  readonly dataSource = createMemoryDataSource(); // or your own, talking to your server${fields.length ? `\n${fields.join('\n')}` : ''}${
+    failing
+      ? `
+  /** Told of each part that fails, which shows a box in its place; the rest of the form goes on. */
+  failed({ error, where }) {
+    yourErrorLog(error, where);
+  }`
+      : ''
+  }
 }`.replace(/ {2,}(\/?>)/g, ' $1');
 
   return { json: JSON.stringify(page ?? {}, null, 2), js, react, vue, angular };

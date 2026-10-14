@@ -10,6 +10,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
@@ -55,6 +56,46 @@ const Note = defineComponent({
   },
 });
 
+/** The app's price tag, as a Vue component: it throws for a four-digit price, as it renders. */
+const PriceTag = defineComponent({
+  props: {
+    value: { type: null as unknown as PropType<Value | undefined>, default: undefined },
+    id: { type: String, required: true },
+    readonly: Boolean,
+    onChange: { type: Function as PropType<(value: Value) => void>, required: true },
+  },
+  setup(props) {
+    return () => {
+      checkPrice(props.value);
+      return h('span', { class: 'demo-price' }, [
+        h('input', {
+          id: props.id,
+          class: 'fd-input',
+          inputmode: 'decimal',
+          value: String(props.value ?? ''),
+          readOnly: props.readonly,
+          onInput: (event: Event) => {
+            const text = (event.target as HTMLInputElement).value;
+            props.onChange(text === '' ? null : Number(text));
+          },
+        }),
+        h('output', priceWords(props.value)),
+      ]);
+    };
+  },
+});
+
+/** The app's delivery planner, as a Vue component: it throws as it renders. */
+const Planner = defineComponent({
+  setup() {
+    return () => loadPlanner();
+  },
+});
+
+/** "A part that fails": what onError is told, listed under the form (shared/contained.ts). */
+const failures = params.get('page') === 'contained' ? errorLog(document) : null;
+if (failures) document.getElementById('app')?.after(failures.element);
+
 const chatter = sampleChatter();
 
 /** The chatter in a Vue slot: a box it mounts into, for as long as the slot lives. */
@@ -84,7 +125,8 @@ createApp({
         theme: (params.get('theme') as Theme | null) ?? undefined,
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
-        fieldTypes: { 'char.shout': Shout },
+        fieldTypes: { 'char.shout': Shout, 'float.tag': PriceTag },
+        onError: failures?.onError,
         widgets: { ...gridWidgets, ...codeWidgets, ...demoMapWidgets },
         listViews: demoListViews,
         maps: demoMaps,
@@ -101,6 +143,7 @@ createApp({
       {
         chatter: ({ form }: { form: Form }) => h(Chatter, { form }),
         note: ({ form }: { form: Form }) => h(Note, { form }),
+        planner: () => h(Planner),
       }
     ),
 }).mount('#app');

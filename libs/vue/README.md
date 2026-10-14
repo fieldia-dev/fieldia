@@ -44,4 +44,8 @@ prop, so what it returns comes back):
 ```
 
 `host` and `on-open` are the viewer's own options (see `@fieldia/viewer`); the
-handle from `@ready` has `on`, `setValues` and `run`. MIT licensed.
+handle from `@ready` has `on`, `setValues` and `run`.
+
+A field's component or a slot's content that throws as it renders is kept to its
+place: it shows a small box that names it, `@error="(error, where) => …"` is
+told, and the error goes no further up Vue's tree. MIT licensed.

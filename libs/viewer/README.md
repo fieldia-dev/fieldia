@@ -23,6 +23,29 @@ const viewer = mountViewer(document.getElementById('app')!, {
 // later: viewer.destroy()
 ```
 
+## A part that fails
+
+A widget (yours, or one of Fieldia's given what it cannot draw), a slot's content,
+a map or any other part that throws as it is drawn or brought up to date shows a
+small box in its place — "This field could not be shown: Price", "This part could
+not be shown" — and the rest of the form goes on working, saving included. The
+console is told, and so is `onError`, with where:
+
+```ts
+mountViewer(host, {
+  page,
+  dataSource,
+  onError(error, where) {
+    // { stage: 'update', part: 'field', field: 'price', node: 'f-price', widget: 'float.tag' }
+    // { stage: 'draw', part: 'slot', name: 'planner', node: 'n-planner' }
+    report(error, where);
+  },
+});
+```
+
+A slot's renderer is given `fail(error)` too, for content that fails after it was
+drawn: the slot then shows its box.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,

@@ -51,4 +51,9 @@ export class OrderComponent {
 ```
 
 The viewer's `host` and `onOpen` are `[actionHost]` and `[openPage]`; the
-handle from `(ready)` has `on`, `setValues` and `run`. MIT licensed.
+handle from `(ready)` has `on`, `setValues` and `run`.
+
+A part that throws as it is drawn or brought up to date — a field's component, a
+slot's content, the app's widget, a map — shows a small box that names it, and
+the rest of the form goes on; `(partError)` hears `{ error, where }` (not
+`(error)`, the DOM's own event). MIT licensed.
