@@ -74,7 +74,8 @@ The form keeps it in its state — `version`, `can`, and after a refused save
 offers the two ways on: `form.reloadTheirs()` loads the record as they left it
 and sets this person's changes aside in `setAside`, each put back with
 `form.putBack(field)`; `form.keepMine()` saves them over the record as it is
-now, their values kept wherever this person changed nothing. What `can` does
+now, their values kept wherever this person changed nothing (read again first
+when the conflict did not carry the record, so `values` never wipes theirs). What `can` does
 not allow is kept to before any source is asked: fields locked or hidden (and
 left out of what a save sends), a save refused with the source's `reason`, the
 gear menu's Archive, Duplicate and Delete and the buttons whose steps would do

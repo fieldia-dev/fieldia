@@ -1,6 +1,6 @@
 import type { Page } from '../format/page';
 import { validatePage } from '../format/validate';
-import type { DataSource, SaveRequest } from './data-source';
+import { ConflictError, type DataSource, type SaveRequest } from './data-source';
 import { createForm, type Form } from './form';
 import { createMemoryDataSource, type MemoryDataSourceOptions } from './memory-data-source';
 import { MESSAGES } from './messages';
@@ -225,6 +225,31 @@ describe('a save over someone else’s: a conflict, with Reload and Keep mine', 
     expect(sent.values).toMatchObject({ phone: '+201009998887', stage: 'visit' });
     expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', stage: 'visit' });
     expect(form.getState()).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });
+    expect(form.getState().values['stage']).toBe('visit');
+  });
+
+  it('Keep mine, told no record as they left it, reads it first: a source that saves whole records keeps their changes', async () => {
+    const ds = source();
+    // A source whose conflict names who and when, but not the record.
+    const whole: DataSource = {
+      ...ds,
+      async save(request) {
+        try {
+          return await ds.save(request);
+        } catch (error) {
+          throw error instanceof ConflictError ? new ConflictError({ version: error.conflict.version }) : error;
+        }
+      },
+    };
+    const form = await opened(whole);
+    form.setValue('phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });
+    await form.save();
+    expect(form.getState().conflict?.theirs).toBeUndefined();
+    expect(await form.keepMine()).toBe(true);
+    const sent = saves(ds)[1];
+    expect(sent.changes.values).toEqual({ phone: '+201009998887' });
+    expect(sent.values).toMatchObject({ phone: '+201009998887', stage: 'visit' });
     expect(form.getState().values['stage']).toBe('visit');
   });
 

@@ -1754,10 +1754,23 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     async keepMine() {
       const conflict = state.conflict;
-      if (conflict?.theirs) {
+      let told = conflict?.theirs;
+      let version = conflict?.version;
+      // Not told the record as they left it: read as it is now, so a source that saves whole records keeps their work.
+      const source = options.dataSource;
+      if (conflict && !told && source?.load && state.recordId != null && page.data.kind === 'record') {
+        try {
+          const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
+          told = now.values;
+          version = now.version ?? version;
+        } catch {
+          // Unread: mine go over it as they are, `changes` saying which are mine.
+        }
+      }
+      if (told) {
         // The record as they left it is where this person's changes start from: theirs stay wherever they changed nothing.
         const theirs: Values = {};
-        for (const [name, value] of Object.entries(conflict.theirs)) if (fields[name]) theirs[name] = structuredCopy(value) as Value;
+        for (const [name, value] of Object.entries(told)) if (fields[name]) theirs[name] = structuredCopy(value) as Value;
         const mine = state.dirty;
         baseline = { ...baseline, ...theirs };
         const values = { ...(state.values as Values) };
@@ -1765,7 +1778,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         writeValues(values);
       }
       // Saved with the version it has now: these changes over the record as it is.
-      if (conflict) set({ version: conflict.version });
+      if (version) set({ version });
       return track(save());
     },
 

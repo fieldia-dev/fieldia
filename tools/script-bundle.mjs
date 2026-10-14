@@ -423,7 +423,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // that would do them hidden — a conflict's who, when and fields, Reload with the person's changes set aside to put
 // back, Keep mine; the viewer's banner, the list of changes set aside, the line over a record only to read, a locked
 // field’s reason, the gear menu’s note, their words and their stylesheet (2.3 of it) — 10.9 more, to 536.1.
-const BUDGET_KB = 536.1;
+// Keep mine reading the record first when a conflict did not carry it (so a source that saves whole records never
+// wipes the other person's work), and Put back kept at the end of its change's row on a phone — 0.4 more, to 536.5.
+const BUDGET_KB = 536.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -478,7 +480,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
 // Save safety on that contract (a conflict's banner with Reload and Keep mine, the changes set aside, a record only to
 // read and what the person may do kept to, with their words and stylesheet), 3.5 more, to 162.9.
-const GZIP_BUDGET_KB = 162.9;
+// Keep mine reading the record first when a conflict did not carry it, and Put back at the end of its row, 0.1 more,
+// to 163.0.
+const GZIP_BUDGET_KB = 163.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
