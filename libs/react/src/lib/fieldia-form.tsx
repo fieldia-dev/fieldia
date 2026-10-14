@@ -164,6 +164,12 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     const element = host.current;
     if (!element) return;
     const found: Portal[] = [];
+    let live = false;
+    /** A field or slot of React's: rendered at once, or — drawn after mounting, as a page that waited for its parts is — as it comes. */
+    const add = (portal: Portal) => {
+      found.push(portal);
+      if (live) setPortals([...found]);
+    };
 
     const widgets: Record<string, WidgetFactory> = { ...latest.current.widgets };
     for (const key of Object.keys(latest.current.fieldTypes ?? {})) {
@@ -171,7 +177,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
         const box = context.document.createElement('div');
         box.className = 'fd-custom';
         const state = store<WidgetState>(EMPTY_STATE);
-        found.push({
+        add({
           key: `field:${context.node.id}`,
           element: box,
           node: <CustomField state={state} context={context} component={() => latest.current.fieldTypes?.[key]} />,
@@ -187,7 +193,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     const slots: Record<string, SlotRenderer> = {};
     for (const name of Object.keys(latest.current.slots ?? {})) {
       slots[name] = (box, context) => {
-        found.push({
+        add({
           key: `slot:${name}:${found.length}`,
           element: box,
           node: <SlotContent name={name} form={context.form} component={() => latest.current.slots?.[name]} />,
@@ -212,9 +218,11 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       mounted.on(event, (payload) => (latest.current[prop] as ((event: unknown) => void) | undefined)?.(payload));
     }
     setHandle(mounted);
-    setPortals(found);
+    setPortals([...found]);
+    live = true;
     latest.current.onReady?.(mounted);
     return () => {
+      live = false;
       mounted.destroy();
       setHandle(null);
       setPortals([]);

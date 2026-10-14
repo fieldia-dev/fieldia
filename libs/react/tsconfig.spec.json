@@ -21,6 +21,7 @@
     "src/**/*.d.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.tsx",
-    "src/**/*.d.tsx"
+    "src/**/*.d.tsx",
+    "src/test-parts.ts"
   ]
 }
