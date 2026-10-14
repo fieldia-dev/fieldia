@@ -260,6 +260,8 @@ export interface WidgetLabels {
   phoneChars: string;
   /** An email address's box, refusing a space. */
   emailNoSpaces: string;
+  /** An email address's box, refusing a `{char}` no address has before its @ (a pasted link's "mailto:"). */
+  emailChar: string;
   /** The box that adds a tag. */
   addTag: string;
   /** A tag added twice: `{tag}`. */
@@ -286,6 +288,8 @@ export interface WidgetLabels {
   noSuchDay: string;
   noSuchMonth: string;
   yearDigits: string;
+  /** A year of two digits, `{short}`, which could be `{early}` or `{late}`: never given a century in silence. */
+  yearInFull: string;
   /** A date or time not whole when left: `{text}` as typed, `{example}` a date in the page's order. */
   dateUnfinished: string;
   timeUnfinished: string;
@@ -294,6 +298,8 @@ export interface WidgetLabels {
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
   noMatch: string;
   noMatchCreate: string;
+  /** Typed words several choices are called (`{text}`): which one is meant is for the person to pick. */
+  severalCalled: string;
   /** An own answer that is one of the choices: it is ticked. */
   isAnOption: string;
   /** A press past the most choices (`{max}`), and past the most ranked. */
@@ -500,6 +506,7 @@ const en: WidgetLabels = {
   charactersOver: '{n} characters too many',
   phoneChars: 'A phone number takes digits, spaces and + ( ) . - only',
   emailNoSpaces: 'An email address has no spaces',
+  emailChar: 'An email address has no “{char}” before its @',
   addTag: 'Add a tag',
   tagThere: '“{tag}” is already there',
   tagsAtMost: '{label} takes at most {max}. Not added: {tags}',
@@ -519,11 +526,13 @@ const en: WidgetLabels = {
   noSuchDay: '{label}: {month} {year} has {days} days',
   noSuchMonth: '{label}: months go from 1 to 12',
   yearDigits: '{label}: the year has 4 digits, like 2026',
+  yearInFull: '{label}: “{short}” could be {early} or {late}; write the year in full',
   dateUnfinished: '{label}: “{text}” is not a whole date yet; write it like {example}',
   timeUnfinished: '{label}: “{text}” is not a time; write it like 14:30',
   notPastedDate: '“{text}” is not a date, so it was not pasted',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',
+  severalCalled: '{label}: more than one is called “{text}”; pick one from the list',
   isAnOption: '“{text}” is one of the choices, so it is ticked',
   chooseUpTo: 'You can choose {max}; untick one to choose another',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',

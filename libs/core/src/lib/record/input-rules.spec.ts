@@ -397,7 +397,6 @@ describe('readDate and readTime', () => {
   it('reads a date in the page’s order, ISO always, Arabic digits too', () => {
     expect(readDate('13/10/2026')).toEqual({ ok: true, value: '2026-10-13' });
     expect(readDate('13.10.2026')).toEqual({ ok: true, value: '2026-10-13' });
-    expect(readDate('13-10-26')).toEqual({ ok: true, value: '2026-10-13' });
     expect(readDate('13 10 2026')).toEqual({ ok: true, value: '2026-10-13' });
     expect(readDate('2026-10-13')).toEqual({ ok: true, value: '2026-10-13' });
     expect(readDate('١٣/١٠/٢٠٢٦')).toEqual({ ok: true, value: '2026-10-13' });
@@ -415,6 +414,61 @@ describe('readDate and readTime', () => {
     expect(readDate('0002-10-13')).toEqual({ ok: false, problem: 'yearDigits' });
     expect(readDate('13/10')).toEqual({ ok: false, problem: 'unfinished' });
     expect(readDate('13/10/')).toEqual({ ok: false, problem: 'unfinished' });
+  });
+
+  it('never takes a century for a year of two digits: it names both it could be', () => {
+    expect(readDate('15/3/85')).toEqual({ ok: false, problem: 'shortYear', short: '85', early: 1985, late: 2085 });
+    expect(readDate('13-10-26')).toEqual({ ok: false, problem: 'shortYear', short: '26', early: 1926, late: 2026 });
+    expect(readDate('١٥/٣/٨٥')).toEqual({ ok: false, problem: 'shortYear', short: '85', early: 1985, late: 2085 });
+    expect(readDate('26-10-13', { order: 'ymd' })).toEqual({ ok: false, problem: 'shortYear', short: '26', early: 1926, late: 2026 });
+    expect(readDate('15 Oct 85', { locale: 'en' })).toEqual({ ok: false, problem: 'shortYear', short: '85', early: 1985, late: 2085 });
+    expect(readDate('13/10/26 14:30', { time: true })).toEqual({ ok: false, problem: 'shortYear', short: '26', early: 1926, late: 2026 });
+  });
+
+  it('reads a date as Fieldia writes it at rest, its month in words, in every language it speaks', () => {
+    // As the boxes show a date once left (Intl, en-GB, ar, fr, de): copied from a list or a read-only view, it pastes back.
+    expect(readDate('15 Oct 2026', { locale: 'en' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('15 أكتوبر 2026', { locale: 'ar' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('‏15 أكتوبر 2026‏', { locale: 'ar' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('١٥ اكتوبر ٢٠٢٦', { locale: 'ar' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('15 oct. 2026', { locale: 'fr' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('1 févr. 2026', { locale: 'fr' })).toEqual({ ok: true, value: '2026-02-01' });
+    expect(readDate('15. Okt. 2026', { locale: 'de' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('3. März 2026', { locale: 'de' })).toEqual({ ok: true, value: '2026-03-03' });
+    // Month first, as an American page writes it; the long name; any of the four languages on any page.
+    expect(readDate('Oct 15, 2026', { locale: 'en' })).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('October 15 2026')).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('15 Sept 2026')).toEqual({ ok: true, value: '2026-09-15' });
+    expect(readDate('15-OCT-2026')).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('2026 Oct 15')).toEqual({ ok: true, value: '2026-10-15' });
+    expect(readDate('15 octobre 2026', { locale: 'en' })).toEqual({ ok: true, value: '2026-10-15' });
+    // Said as the numbers are: a day the month does not have, a word that is no month.
+    expect(readDate('31 Feb 2026')).toEqual({ ok: false, problem: 'noSuchDay', year: 2026, month: 2, days: 28 });
+    expect(readDate('15 Octo 2026')).toEqual({ ok: false, problem: 'unfinished' });
+    expect(readDate('15 Oct')).toEqual({ ok: false, problem: 'unfinished' });
+    expect(readDate('Oct 2026')).toEqual({ ok: false, problem: 'unfinished' });
+  });
+
+  it('reads a date and time as Fieldia writes it at rest, and an instant as a server writes one', () => {
+    expect(readDate('15 Oct 2026, 14:30', { time: true, locale: 'en' })).toEqual({ ok: true, value: '2026-10-15T14:30' });
+    expect(readDate('15 أكتوبر 2026، 14:30', { time: true, locale: 'ar' })).toEqual({ ok: true, value: '2026-10-15T14:30' });
+    expect(readDate('15 oct. 2026, 14:30', { time: true, locale: 'fr' })).toEqual({ ok: true, value: '2026-10-15T14:30' });
+    expect(readDate('15. Okt. 2026, 14:30', { time: true, locale: 'de' })).toEqual({ ok: true, value: '2026-10-15T14:30' });
+    expect(readDate('Oct 15, 2026, 2:30 pm', { time: true })).toEqual({ ok: true, value: '2026-10-15T14:30' });
+    expect(readDate('13/10/2026, 14:30', { time: true })).toEqual({ ok: true, value: '2026-10-13T14:30' });
+    // An instant: the local day and time it is, here.
+    const at = new Date('2026-10-15T14:30:00Z');
+    const local = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}T${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+    expect(readDate('2026-10-15T14:30:00Z', { time: true })).toEqual({ ok: true, value: local });
+    expect(readDate('2026-10-15T14:30:00.000Z', { time: true })).toEqual({ ok: true, value: local });
+    expect(readDate('2026-10-15T16:30:00+02:00', { time: true })).toEqual({ ok: true, value: local });
+    expect(readDate('2026-10-15T14:30Z', { time: true })).toEqual({ ok: true, value: local });
+    // Its seconds are never dropped in silence: a time is kept to the minute.
+    expect(readDate('2026-10-15T14:30:45Z', { time: true })).toEqual({ ok: false, problem: 'time' });
+    expect(readDate('2026-10-15T14:30:00.250Z', { time: true })).toEqual({ ok: false, problem: 'time' });
+    // A date's box takes an instant's day where the person is: its time, seconds and all, is no part of a day.
+    expect(readDate('2026-10-15T14:30:00Z')).toEqual({ ok: true, value: local.slice(0, 10) });
+    expect(readDate('2026-10-15T14:30:45.250Z')).toEqual({ ok: true, value: local.slice(0, 10) });
   });
 
   it('reads a date with its time', () => {

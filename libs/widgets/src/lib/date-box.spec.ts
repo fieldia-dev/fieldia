@@ -213,6 +213,112 @@ describe('a date that does not read', () => {
   });
 });
 
+describe('a date as Fieldia writes it at rest', () => {
+  it.each([
+    ['en', '15 Oct 2026', '15 Oct 2026, 14:30'],
+    ['ar', '15 أكتوبر 2026', '15 أكتوبر 2026، 14:30'],
+    ['fr', '15 oct. 2026', '15 oct. 2026, 14:30'],
+    ['de', '15. Okt. 2026', '15. Okt. 2026, 14:30'],
+  ] as const)('%s: copied from a box left, a list or a read-only view, it pastes back as the same day and time', (locale, day, dayAndTime) => {
+    // What the box shows at rest is what is copied.
+    const shown = mount({ type: 'date' }, {}, locale);
+    shown.form.setValue('x', '2026-10-15');
+    expect(boxOf(shown.el).value).toBe(day);
+    const { el, value } = mount({ type: 'date' }, {}, locale);
+    const input = boxOf(el);
+    enter(input);
+    paste(input, day);
+    expect(hintSays()).toBeNull();
+    expect(value()).toBe('2026-10-15');
+    const timed = mount({ type: 'datetime', label: 'Kick-off meeting' }, {}, locale);
+    timed.form.setValue('x', new Date(2026, 9, 15, 14, 30).toISOString());
+    expect(boxOf(timed.el).value).toBe(dayAndTime);
+    const again = mount({ type: 'datetime', label: 'Kick-off meeting' }, {}, locale);
+    const box = boxOf(again.el);
+    enter(box);
+    paste(box, dayAndTime);
+    expect(hintSays()).toBeNull();
+    expect(again.value()).toBe(new Date(2026, 9, 15, 14, 30).toISOString());
+  });
+
+  it.each([
+    ['en', '15 Oct 2026'],
+    ['en', 'Oct 15, 2026'],
+    ['ar', '15 أكتوبر 2026'],
+    ['fr', '15 oct. 2026'],
+    ['de', '15. Okt. 2026'],
+  ] as const)('%s: typed key by key, its month in words, “%s” is taken, nothing refused on the way', (locale, typed) => {
+    const { el, value } = mount({ type: 'date' }, {}, locale);
+    const input = boxOf(el);
+    enter(input);
+    keys(input, typed);
+    expect(input.value).toBe(typed);
+    expect(hintSays()).toBeNull();
+    expect(value()).toBe('2026-10-15');
+  });
+
+  it('refuses a word on its way to no month at the keystroke', () => {
+    const { el } = mount({ type: 'date' });
+    const input = boxOf(el);
+    enter(input);
+    keys(input, '15 Ocx');
+    expect(input.value).toBe('15 Oc');
+    expect(hintSays()).toContain('is not a whole date yet');
+  });
+
+  it('takes an instant pasted as a server writes one: its day in a date, its local time in a date and time', () => {
+    const at = new Date('2026-10-15T14:30:00Z');
+    const day = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
+    const { el, value } = mount({ type: 'date' });
+    const input = boxOf(el);
+    enter(input);
+    paste(input, '2026-10-15T14:30:00Z');
+    expect(value()).toBe(day);
+    const timed = mount({ type: 'datetime' });
+    const box = boxOf(timed.el);
+    enter(box);
+    paste(box, '2026-10-15T14:30:00Z');
+    expect(timed.value()).toBe(at.toISOString());
+    // A date's box takes the day of one with its seconds; a date and time's, kept to the minute, refuses it and says why.
+    const seconds = mount({ type: 'date' });
+    const dayBox = boxOf(seconds.el);
+    enter(dayBox);
+    paste(dayBox, '2026-10-15T14:30:45Z');
+    expect(seconds.value()).toBe(day);
+    const minute = mount({ type: 'datetime' });
+    const minuteBox = boxOf(minute.el);
+    minute.form.setValue('x', at.toISOString());
+    enter(minuteBox);
+    paste(minuteBox, '2026-10-15T09:15:45Z');
+    expect(minute.value()).toBe(at.toISOString());
+    expect(hintSays()).toBe('Start date: “⁨2026-10-15T09:15:45Z⁩” is not a time; write it like 14:30');
+  });
+});
+
+describe('a year of two digits', () => {
+  it.each([
+    ['en', '15/3/85', 'Start date: “⁨85⁩” could be 1985 or 2085; write the year in full'],
+    ['ar', '١٥/٣/٨٥', 'Start date: «⁨85⁩» قد تعني 1985 أو 2085؛ اكتب السنة كاملة'],
+    ['fr', '15/3/85', 'Start date : « ⁨85⁩ » peut être 1985 ou 2085 ; écrivez l’année en entier'],
+    ['de', '15.3.85', 'Start date: „⁨85⁩“ kann 1985 oder 2085 sein; schreiben Sie das Jahr vollständig'],
+  ] as const)('%s: is never given a century in silence: kept, marked, naming both it could be', (locale, typed, why) => {
+    const { el, form, value } = mount({ type: 'date' }, {}, locale);
+    form.setValue('x', '2026-10-11');
+    const input = boxOf(el);
+    enter(input);
+    keys(input, typed);
+    input.blur();
+    expect(value()).toBe('2026-10-11');
+    expect(input.value).toBe(typed);
+    expect(form.getState().unread['x']).toEqual({ text: typed, message: why });
+    expect(form.validate()).toBe(false);
+    // Pasted, it is refused with the same words.
+    enter(input);
+    paste(input, typed);
+    expect(hintSays()).toBe(why);
+  });
+});
+
 describe('a date pasted', () => {
   it('in ISO, the page’s order or Arabic digits takes the box’s place, written the page’s way', () => {
     for (const [locale, pasted, shown] of [

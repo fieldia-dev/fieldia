@@ -37,6 +37,29 @@ async function arabicKeys(page: Page, text: string) {
   await cdp.detach();
 }
 
+/**
+ * Escape, then a digit straight after it, as fast as a person's fingers can: the page is busy a moment (a loaded
+ * laptop, a phone), so both keys wait in its queue together and come one right after the other, with nothing of the
+ * page's own run between them.
+ */
+async function escapeThenDigit(page: Page, digit: string) {
+  const cdp = await page.context().newCDPSession(page);
+  const code = `Digit${digit}`;
+  const keyCode = 48 + Number(digit);
+  const busy = page.evaluate(() => {
+    const end = performance.now() + 150;
+    while (performance.now() < end);
+  });
+  await Promise.all([
+    busy,
+    cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }),
+    cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }),
+    cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: digit, code, text: digit, unmodifiedText: digit, windowsVirtualKeyCode: keyCode }),
+    cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: digit, code, windowsVirtualKeyCode: keyCode }),
+  ]);
+  await cdp.detach();
+}
+
 /** An IME's key (Process), then its words, as a phone's or a Japanese keyboard sends them. */
 async function imeText(page: Page, text: string) {
   const cdp = await page.context().newCDPSession(page);
@@ -96,6 +119,28 @@ test.describe('the order grid', () => {
       await screen(page, `input-tables-first-key-${locale}`, { viewport: true });
       await page.keyboard.press('Escape');
       expect((await pairs(page))[1][0]).toBe(345);
+    });
+  }
+
+  for (const [locale, query] of [
+    ['en', ''],
+    ['ar', '&locale=ar&dir=rtl'],
+    ['fr', '&locale=fr'],
+  ] as const) {
+    test(`${locale}: the key typed straight after Escape opens the cell with that key, however fast it comes`, async ({ page }) => {
+      ({ problems } = await open(page, 'plain', `page=order&skin=outlined${query}`));
+      for (const digit of ['5', '6', '7', '8']) {
+        await cell(page, 1, 'qty').click();
+        await expect(editor(page)).toBeFocused();
+        // At any speed: typed at once, and with the two keys queued together on a busy page.
+        if (digit === '5' || digit === '7') {
+          await page.keyboard.press('Escape');
+          await page.keyboard.type(digit);
+        } else await escapeThenDigit(page, digit);
+        await expect(editor(page)).toHaveValue(digit);
+        await page.keyboard.press('Enter');
+        expect({ digit, qty: (await pairs(page))[1][0] }).toEqual({ digit, qty: Number(digit) });
+      }
     });
   }
 

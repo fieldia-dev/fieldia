@@ -1,4 +1,4 @@
-import { charCount, fill, hasPattern, MESSAGES, oneLine, settledText, stripMarks } from '@fieldia/core';
+import { charCount, EMAIL_LOCAL_STRAYS, fill, hasPattern, MESSAGES, oneLine, settledText, stripMarks } from '@fieldia/core';
 import { guard, refusalHint, type InputRules, type RefusalHint } from './input-rules';
 import { wordsFor } from './kind-parts';
 import type { WidgetContext } from './widgets';
@@ -13,7 +13,11 @@ import type { WidgetContext } from './widgets';
  *   paste that goes over is kept whole, for the person to shorten — the
  *   counter and the field say how far over it is, and Save waits.
  * - A phone number takes digits in any script, spaces, a + first, and
- *   ( ) . - only; an email takes no spaces.
+ *   ( ) . - only; an email takes no spaces, and before its @ none of the
+ *   marks an address has only inside quotes (a ":", a ";", a ",").
+ * - A link to an address pasted ("mailto:name@example.com?subject=…") is the
+ *   address it links to; the zero-width characters a paste brings into an
+ *   address go, as its direction marks do.
  * - A line break pasted into one line is a space; into a password, nothing.
  *   Direction marks pasted into an email, a phone number or a web address
  *   are dropped.
@@ -42,6 +46,24 @@ export function phoneStrays(text: string): number {
 }
 
 const spaces = (text: string) => text.match(/\s/g)?.length ?? 0;
+/** Before an address's @ (all of it while there is none): its own part, where a ":" can never be. */
+const localPart = (text: string) => text.split('@')[0];
+/** A mark no address has before its @ that `next` has more of than `before`: the one an edit brought. */
+function emailStray(next: string, before: string): string | null {
+  const count = (text: string, mark: string) => localPart(text).split(mark).length - 1;
+  for (const mark of new Set(localPart(next).match(EMAIL_LOCAL_STRAYS) ?? [])) if (count(next, mark) > count(before, mark)) return mark;
+  return null;
+}
+/** A link to an address ("mailto:name@example.com?subject=…"): the address it links to; any other text as it is. */
+function linkedAddress(text: string): string {
+  const link = /^mailto:([^?#]*)/i.exec(text);
+  if (!link) return text;
+  try {
+    return decodeURIComponent(link[1]);
+  } catch {
+    return link[1];
+  }
+}
 
 /** The rules of a text box of `kind`, for its field. */
 export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' | 'node' | 'labels' | 'locale'>): InputRules {
@@ -57,6 +79,8 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
       // What is already there stays editable: only what the edit brings is judged.
       if (kind === 'phone' && phoneStrays(next) > phoneStrays(before)) return words.phoneChars;
       if (kind === 'email' && spaces(next) > spaces(before)) return words.emailNoSpaces;
+      const stray = kind === 'email' ? emailStray(next, before) : null;
+      if (stray) return fill(words.emailChar, { char: stray });
       if (size !== undefined && !pasting) {
         const n = charCount(next);
         if (n > size && n > charCount(before)) return fill(messages.maxLength, { label, max: size });
@@ -68,7 +92,9 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
       setTimeout(() => (pasting = false));
       let taken = kind === 'paragraph' ? text : oneLine(text, { password: kind === 'password' });
       // Copied from a page or a chat that reads right to left: its marks are no part of an address or a number.
-      if (kind === 'phone' || kind === 'email' || kind === 'url') taken = stripMarks(taken).trim();
+      if (kind === 'phone' || kind === 'url') taken = stripMarks(taken).trim();
+      // An address copied as its link, or with a zero-width character inside: the address.
+      if (kind === 'email') taken = settledText(linkedAddress(settledText(taken, { widget: 'email' })), { widget: 'email' });
       if (kind === 'phone' && phoneStrays(taken)) return { refuse: words.phoneChars };
       if (kind === 'email' && /\s/.test(taken)) return { refuse: words.emailNoSpaces };
       return { text: taken };

@@ -187,6 +187,35 @@ test.describe('a phone number, an email and a web address', () => {
     await expect(errorOf(page, 'f-email')).toBeHidden();
   });
 
+  for (const [locale, query, colon] of [
+    ['en', '', 'An email address has no “:” before its @'],
+    ['ar', '&locale=ar&dir=rtl', 'لا يأتي «:» قبل @ في البريد الإلكتروني'],
+  ] as const) {
+    test(`${locale}: a link’s “mailto:” pasted is the address it links to, a zero-width character goes, and a “:” typed before the @ is refused`, async ({ page }) => {
+      const { problems } = await open(page, 'plain', `page=fields&skin=outlined${query}`);
+      const email = node(page, 'f-email');
+      const box = email.locator('input');
+      await box.fill('');
+      await paste(page, box, 'mailto:ahmed@example.com');
+      await expect(box).toHaveValue('ahmed@example.com');
+      await box.press('Tab');
+      expect(await valueOf(page, 'email')).toBe('ahmed@example.com');
+      await expect(errorOf(page, 'f-email')).toBeHidden();
+      await box.fill('');
+      await paste(page, box, 'sara\u200b@example.com');
+      await expect(box).toHaveValue('sara@example.com');
+      await box.press('Tab');
+      expect(await valueOf(page, 'email')).toBe('sara@example.com');
+      await expect(errorOf(page, 'f-email')).toBeHidden();
+      await box.fill('');
+      await box.pressSequentially('mailto:');
+      await expect(box).toHaveValue('mailto');
+      await expect(hintOf(email)).toHaveText(colon);
+      await expect(box).toHaveAttribute('aria-describedby', new RegExp(await hintOf(email).getAttribute('id') as string));
+      expect(problems).toEqual([]);
+    });
+  }
+
   test('ar: the employee’s mobile in Arabic digits is dialled in 0-9, and an international email reads as typed', async ({ page }) => {
     await open(page, 'plain', 'page=real-employee&record=4122&skin=underline&locale=ar&dir=rtl');
     const mobile = node(page, 'f-mobile').locator('input');
@@ -336,6 +365,17 @@ test.describe('tags', () => {
     await box.pressSequentially('خشب، زجاج،');
     await paste(page, box, 'steel\nbrass\nwalnut');
     await expect(tags.locator('.fd-chip-label')).toHaveText(['oak', 'glass', 'خشب', 'زجاج', 'steel', 'brass', 'walnut']);
+  });
+
+  test('cells copied side by side from a spreadsheet, pasted, are a tag a cell: never a tag with a tab inside', async ({ page }) => {
+    await open(page, 'plain', 'page=fields&skin=outlined');
+    const tags = node(page, 'f-materials');
+    const box = tags.getByRole('combobox');
+    await box.click();
+    await paste(page, box, 'walnut\tbrass');
+    await expect(tags.locator('.fd-chip-label')).toHaveText(['oak', 'glass', 'walnut', 'brass']);
+    expect(await valueOf(page, 'materials')).toBe('oak, glass, walnut, brass');
+    await expect(box).toHaveValue('');
   });
 
   test('a tag there already, in any case, is not added twice: said, and its chip marked', async ({ page }) => {
@@ -497,6 +537,42 @@ test.describe('a colour as text', () => {
     await page.evaluate(() => (window as any).fieldiaDemo.handle.form.setValue('epic_color', null));
     await expect(colour.locator('.fd-colour-swatch')).toHaveClass(/fd-colour-none/);
   });
+});
+
+test.describe('a colour code that does not read', () => {
+  for (const [locale, query, why] of [
+    ['en', '', 'Enter a colour code, like #1f2937'],
+    ['ar', '&locale=ar&dir=rtl', 'أدخل رمز لون، مثل #1f2937'],
+  ] as const) {
+    test(`${locale}: never changes the colour held: #12345 typed over #2c8397 leaves it, the box marked, why said as Tab reaches its ×`, async ({ page }) => {
+      const { problems } = await open(page, 'plain', `page=business&skin=underline${query}`);
+      const colour = node(page, 'f-epic-color');
+      const code = colour.locator('.fd-colour-code');
+      const swatch = colour.locator('.fd-colour-swatch');
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.form.setValue('epic_color', '#2c8397'));
+      for (const typed of ['#12345', '#1234', '12345']) {
+        await code.click();
+        await code.press('Control+A');
+        await code.pressSequentially(typed);
+        // "#123" read on the way, then one digit more: the colour held comes back at once.
+        expect(await valueOf(page, 'epic_color')).toBe('#2c8397');
+        await page.keyboard.press('Tab');
+        await expect(colour.locator('.fd-colour-clear')).toBeFocused();
+        expect(await valueOf(page, 'epic_color')).toBe('#2c8397');
+        expect(await swatch.evaluate((el) => el.style.getPropertyValue('--fd-swatch'))).toBe('#2c8397');
+        await expect(code).toHaveValue(typed);
+        await expect(code).toHaveAttribute('aria-invalid', 'true');
+        // Still in the field, on its ×: why is shown, and the box is described by it.
+        await expect(errorOf(page, 'f-epic-color')).toHaveText(why);
+        const described = (await code.getAttribute('aria-describedby')) ?? '';
+        expect(described).not.toBe('');
+        expect(await page.evaluate((ids) => ids.split(/\s+/).map((id) => document.getElementById(id)?.textContent ?? '').join(' '), described)).toContain(why);
+      }
+      await colour.scrollIntoViewIfNeeded();
+      await screen(page, `text-rules-colour-unread-${locale}`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
 });
 
 test.describe('the hints in the dark and right to left', () => {

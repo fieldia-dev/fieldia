@@ -1,4 +1,4 @@
-import { checkValue, foldDigits, MESSAGES, readDate, readTime, stripMarks, type DateOrder, type Field, type Form, type Locale, type Value } from '@fieldia/core';
+import { checkValue, couldBeMonth, foldDigits, MESSAGES, readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Field, type Form, type Locale, type Value } from '@fieldia/core';
 import { withCalendar } from './calendar';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
 import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
@@ -17,9 +17,15 @@ import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widget
  *   German pages, as Fieldia writes dates at rest; `look.dateOrder` may say
  *   month first or year first. The order is the placeholder, in the page's
  *   words. A date written year first, 2026-10-13, is always read.
- * - Separators / . - and a space; Arabic-Indic and Persian digits; a
- *   two-digit year is 20xx, else a year has four digits. A time is 24-hour,
- *   or with am/pm (ص/م).
+ * - Separators / . - and a space; Arabic-Indic and Persian digits; a year
+ *   of four digits — one of two could be either century, so it is never
+ *   given one: it is said, naming both. A time is 24-hour, or with am/pm
+ *   (ص/م).
+ * - A date as Fieldia writes it at rest reads back, its month in words — 15
+ *   Oct 2026, 15 أكتوبر 2026, 15 oct. 2026, 15. Okt. 2026, Oct 15, 2026, with
+ *   its time after a comma — as does an instant a server writes
+ *   (2026-10-15T14:30:00Z): copied from a list, a read-only view or another
+ *   box, it pastes, and it can be typed so.
  * - Nothing is rewritten while the box has focus. The field takes the date
  *   once it reads whole — a four-digit year typed, the minutes of a time —
  *   and once the box is left, where the box shows it in words (13 Oct
@@ -111,8 +117,8 @@ export function dateShape(kind: DateKind, order: DateOrder, words: WidgetLabels)
   return kind === 'datetime' ? `${day} ${words.timeShape}` : day;
 }
 
-/** Text typed in a box, read: its value (null for nothing), or why it does not read, in words. */
-export type DateReading = { ok: true; value: string | null } | { ok: false; words: string };
+/** Text typed in a box, read: its value (null for nothing), or why it does not read, in words, and the reader's name for why. */
+export type DateReading = { ok: true; value: string | null } | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' };
 
 /** What a box reads text with: its kind, its page's order and language, its label and words. */
 export interface DateReader {
@@ -140,23 +146,25 @@ export function readDateText(text: string, reader: DateReader): DateReading {
   if (!stripMarks(t)) return { ok: true, value: null };
   if (kind === 'time') {
     const time = readTime(t);
-    return time.ok ? { ok: true, value: time.value } : { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }) };
+    return time.ok ? { ok: true, value: time.value } : { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
   }
-  const read = readDate(t, { order: reader.order, time: kind === 'datetime' });
+  const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale });
   if (!read.ok) {
     switch (read.problem) {
       case 'noSuchDay': {
         const month = new Intl.DateTimeFormat(langOf(reader.locale), { month: 'long', numberingSystem: 'latn' }).format(new Date(2000, read.month - 1, 1));
-        return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }) };
+        return { ok: false, words: fillIn(words.noSuchDay, { label, month, year: read.year, days: read.days }), problem: 'noSuchDay' };
       }
       case 'noSuchMonth':
-        return { ok: false, words: fillIn(words.noSuchMonth, { label }) };
+        return { ok: false, words: fillIn(words.noSuchMonth, { label }), problem: 'noSuchMonth' };
       case 'yearDigits':
-        return { ok: false, words: fillIn(words.yearDigits, { label }) };
+        return { ok: false, words: fillIn(words.yearDigits, { label }), problem: 'yearDigits' };
+      case 'shortYear':
+        return { ok: false, words: fillIn(words.yearInFull, { label, short: quoted(read.short), early: read.early, late: read.late }), problem: 'shortYear' };
       case 'time':
-        return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }) };
+        return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: 'time' };
       default:
-        return { ok: false, words: fillIn(words.dateUnfinished, { label, text: quoted(t), example: dateExample(reader) }) };
+        return { ok: false, words: fillIn(words.dateUnfinished, { label, text: quoted(t), example: dateExample(reader) }), problem: 'unfinished' };
     }
   }
   if (read.value === null) return { ok: true, value: null };
@@ -176,14 +184,21 @@ export function dateExample(reader: Pick<DateReader, 'kind' | 'order' | 'locale'
 const letters = (...codes: number[]) => String.fromCharCode(...codes);
 const AM_PM = letters(0x635, 0x645);
 
-/** What may be typed in a box at all: digits in any script and separators; a time's colon, its h, am and pm; a T between a date and its time. */
+/**
+ * What may be typed in a box at all: digits in any script and separators, and the comma a date written in words has
+ * (Oct 15, 2026); a time's colon, its h, am and pm; a T between a date and its time.
+ */
 const MAY_TYPE: Record<DateKind, RegExp> = {
-  date: /[^\d\s/.-]/g,
-  datetime: new RegExp(`[^\\d\\s/.\\-:hHtTaApPmM${AM_PM}]`, 'g'),
+  date: /[^\d\s/.,\u060c-]/g,
+  datetime: new RegExp(`[^\\d\\s/.,\\u060c\\-:hHtTaApPmM${AM_PM}]`, 'g'),
   time: new RegExp(`[^\\d\\s:.hHaApPmM${AM_PM}]`, 'g'),
 };
-/** How many characters a text has that no date or time is written with. */
-const strangers = (text: string, kind: DateKind) => (foldDigits(stripMarks(text)).match(MAY_TYPE[kind]) ?? []).length;
+/** How many characters a text has that no date or time is written with: a word on its way to a month's name is none. */
+function strangers(text: string, kind: DateKind, locale?: Locale): number {
+  let t = foldDigits(stripMarks(text));
+  if (kind !== 'time') t = t.replace(/\p{L}+/gu, (word) => (couldBeMonth(word, locale) ? ' ' : word));
+  return (t.match(MAY_TYPE[kind]) ?? []).length;
+}
 
 /** am or pm after a time, in English or Arabic. */
 const HALF = `(?:[aApP]\\.?\\s*[mM]\\.?|[${AM_PM}])`;
@@ -250,7 +265,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
   const hint = refusalHint(input, options.anchor ?? input);
   const rules: InputRules = {
     judge(next, before) {
-      if (strangers(next, kind) <= strangers(before, kind)) return null;
+      if (strangers(next, kind, locale) <= strangers(before, kind, locale)) return null;
       return kind === 'time' ? fillIn(words.timeUnfinished, { label, text: quoted(next) }) : fillIn(words.dateUnfinished, { label, text: quoted(next), example: dateExample(reader) });
     },
     paste(text) {
@@ -269,7 +284,10 @@ export function dateBox(options: DateBoxOptions): DateBox {
         return { text: typingText(read.value, kind, order, locale) };
       }
       // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
-      if (plain && !replacing && !strangers(plain, kind)) return { text: plain };
+      if (plain && !replacing && !strangers(plain, kind, locale)) return { text: plain };
+      // A date it cannot tell the century of, or a date whose time does not read (seconds a box kept to the minute would
+      // drop), is a date all the same: why it was not taken is said.
+      if (!read.ok && (read.problem === 'shortYear' || (read.problem === 'time' && kind === 'datetime'))) return { refuse: read.words };
       return { refuse: fillIn(words.notPastedDate, { text: quoted(text) }) };
     },
   };

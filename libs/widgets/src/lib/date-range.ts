@@ -212,17 +212,26 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   function open() {
     starting = null;
     hovered = null;
-    setHidden(note, true);
+    // Over the words under the range, the month says them too: why the text typed in a box was not read.
+    const unread = form.getState().unread ?? {};
+    const why = unread[name]?.message ?? (endName ? unread[endName]?.message : undefined) ?? '';
+    setText(note, why);
+    setHidden(note, !why);
     focused = dayOf(form.getState().values[name]) ?? new Date();
     calendar.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     draw(true);
   }
-  function close() {
+  /** Closed where the focus already is: the person moved on. */
+  function hide() {
     if (calendar.hidden) return;
     calendar.hidden = true;
     starting = null;
     button.setAttribute('aria-expanded', 'false');
+  }
+  function close() {
+    if (calendar.hidden) return;
+    hide();
     button.focus();
   }
   button.addEventListener('click', () => (calendar.hidden ? open() : close()));
@@ -241,6 +250,18 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     button.setAttribute('aria-expanded', 'false');
   };
   document.addEventListener('mousedown', outside);
+  // A box typed in and left for anything but the month — Tab to the other box, to the button or past them — closes
+  // it, so it never covers why the text was not read; so does the focus leaving the range from inside the month.
+  for (const input of [from, to]) {
+    input?.addEventListener('blur', (event) => {
+      const next = (event as FocusEvent).relatedTarget;
+      if (next instanceof Node && !calendar.contains(next)) hide();
+    });
+  }
+  element.addEventListener('focusout', (event) => {
+    const next = event.relatedTarget;
+    if (next instanceof Node && !element.contains(next)) hide();
+  });
 
   /** The end's problem shown now (the start's is the field's own, which the page shows): said politely when it is new as a box is left. */
   let endSaid = '';

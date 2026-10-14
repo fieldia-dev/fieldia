@@ -55,6 +55,10 @@ describe('a block pasted on a table', () => {
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '١٣/١٠/٢٠٢٦', { locale: 'ar' })).toEqual({ value: '2026-10-13' });
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '31/02/2026', { locale: 'en' })).toBeNull();
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '13/10/0002', { locale: 'en' })).toBeNull();
+    // A date as Fieldia writes it at rest, copied from another table, reads; a year of two digits is never given a century.
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '15 Oct 2026', { locale: 'en' })).toEqual({ value: '2026-10-15' });
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '15 أكتوبر 2026', { locale: 'ar' })).toEqual({ value: '2026-10-15' });
+    expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '15/3/85', { locale: 'en' })).toBeNull();
     expect(readPastedCell({ type: 'date', label: 'Due' } as LineField, '10/13/2026', { locale: 'en', dateOrder: 'mdy' })).toEqual({ value: '2026-10-13' });
     // A date and time, as its cell's box keeps one: the instant, never a local time with no zone.
     expect(readPastedCell({ type: 'datetime', label: 'Starts' } as LineField, '13/10/2026 14:30', { locale: 'en' })).toEqual({ value: new Date(2026, 9, 13, 14, 30).toISOString() });

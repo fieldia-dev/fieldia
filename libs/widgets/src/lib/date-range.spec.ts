@@ -194,3 +194,24 @@ describe('a range’s end, a field of its own', () => {
     expect(endError.textContent).toBe('To is required');
   });
 });
+
+describe('a range’s calendar open while a box is typed in', () => {
+  it('closes as Tab leaves the box for the button, and opened again says why the text typed was not read', () => {
+    const { el, to, form } = mount('date', { request_date_from: '2026-10-12', request_date_to: '2026-10-15' });
+    const button = el.querySelector('.fd-range-button') as HTMLButtonElement;
+    const calendar = el.querySelector('.fd-range-calendar') as HTMLElement;
+    button.click();
+    to.focus();
+    expect(calendar.hidden).toBe(false);
+    to.value = '31/02/2027';
+    to.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: '7', bubbles: true }));
+    to.dispatchEvent(new FocusEvent('blur', { relatedTarget: button }));
+    button.focus();
+    expect(calendar.hidden).toBe(true);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(form.getState().unread['request_date_to']?.message).toBe('To: February 2027 has 28 days');
+    button.click();
+    const note = calendar.querySelector('.fd-calendar-note') as HTMLElement;
+    expect([note.hidden, note.textContent]).toEqual([false, 'To: February 2027 has 28 days']);
+  });
+});

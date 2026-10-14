@@ -31,7 +31,11 @@ import type { Widget, WidgetFactory } from './widgets';
  * to left), Home and End go to the first and the last, Enter picks, Escape
  * puts back what the box showed and closes, Tab leaves keeping the value — or
  * taking the match that typing reached. The focus stays in the box all along;
- * the row reached is its active one.
+ * the row reached is its active one. Words typed and left — by Tab, Enter or
+ * a click elsewhere, before or after their list came — take the record they
+ * name exactly: its whole path, or its own name where only it has that name.
+ * Else what the box held comes back, and it says so: that nothing is called
+ * so, or that several are.
  *
  * Typed words find a path as a search finds words: in any case, Arabic
  * letters in any of their forms, digits in any script, and its separator
@@ -116,6 +120,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   let matches: RelatedRecord[] | null = null;
   let seq = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** Words left typed in the box: one of every leaving, the latest, is acted on. */
+  let typedSeq = 0;
 
   // ---- the person's latest picks --------------------------------------------
   const store: PreferenceStore | undefined = preferences;
@@ -357,11 +363,62 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     }, records ? 0 : DEBOUNCE_MS);
   }
 
+  /** The record words name exactly: the one whose whole path they are, else the one whose own name they are; 'several' when more than one has that name. */
+  function named(text: string, found: readonly RelatedRecord[]): RelatedRecord | 'several' | null {
+    const wanted = findable(text.trim(), separator);
+    if (!wanted) return null;
+    const one = (list: RelatedRecord[]) => [...new Map(list.map((r) => [String(r.id), r])).values()];
+    const byPath = one(found.filter((record) => findable(textOf(record), separator) === wanted));
+    if (byPath.length) return byPath.length === 1 ? byPath[0] : 'several';
+    const byName = one(found.filter((record) => findable(record.label, separator) === wanted));
+    return byName.length === 1 ? byName[0] : byName.length ? 'several' : null;
+  }
+  /**
+   * The records words typed may name: the tree's own, when it holds them all; else the data source's for their last
+   * name — "Portal\\Sprint 13" asks for "Sprint 13" — as a search finds them. Without a wait when the tree is here.
+   */
+  function candidates(text: string, then: (found: readonly RelatedRecord[]) => void): void {
+    const whole = () => (records && records.length < TREE_LIMIT ? records : null);
+    const here = whole();
+    if (here) return then(here);
+    const last = text.trim().split(separator).join('\\').split(/\s*[\\/]\s*/).pop() ?? '';
+    void (withTree ? load() : Promise.resolve())
+      .then(() => whole() ?? form.search(name, foldDigits(stripMarks(last)), 50))
+      .catch(() => [] as RelatedRecord[])
+      .then(then);
+  }
+  /** Words typed that are no pick yet, taken now: the record they name exactly; else what the box held comes back, and it says why. */
+  function settleTyped(text: string, leaving: boolean) {
+    const mine = ++typedSeq;
+    candidates(text, (found) => {
+      // Typed in again, or another leaving since: that one acts.
+      // Back in the box before they were found: the words are still the person's, and the next leaving acts on them.
+      if (mine !== typedSeq || (leaving && doc.activeElement === input)) return;
+      const record = named(text, found);
+      if (record && record !== 'several') {
+        close();
+        remember(record);
+        editing = false;
+        hint.hide();
+        form.setValue(name, record);
+        input.value = textOf(record);
+        return;
+      }
+      const label = node.label ?? field.label;
+      const said = fillIn(record === 'several' ? words.severalCalled : words.noMatch, { label, text: quoted(text) });
+      if (leaving) {
+        restore();
+        hint.show(current ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
+      } else hint.show(said);
+    });
+  }
+
   const forward = () => (getComputedStyle(element).direction === 'rtl' || rightToLeft(element) ? 'ArrowLeft' : 'ArrowRight');
   input.addEventListener('input', () => {
     hint.hide();
     if (readonly) return;
     editing = true;
+    typedSeq++;
     lookUp(input.value);
   });
   input.addEventListener('click', () => {
@@ -430,6 +487,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       }
       case 'Enter':
         event.preventDefault();
+        // Words typed whose list has not come yet, or found nothing: the record they name, or why there is none.
+        if (editing && input.value.trim() && !matches?.length) return settleTyped(input.value.trim(), false);
         if (here) choose(here);
         return;
       case 'Escape':
@@ -449,16 +508,15 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   input.addEventListener('blur', () => {
     close();
     const text = input.value.trim();
-    // Emptied and left: no value. Words that name no record: what it held comes back, and it says so.
+    // Emptied and left: no value. Words left: the record they name exactly is taken (the box keeps them until it is
+    // found); else what it held comes back, and it says why.
     const emptied = editing && text === '' && current !== null;
     const unmatched = editing && text !== '' && text !== textOf(current);
-    editing = false;
+    if (!unmatched) editing = false;
     if (emptied) return form.setValue(name, null);
-    restore();
-    if (!unmatched) return;
-    const label = node.label ?? field.label;
-    const said = fillIn(words.noMatch, { label, text: quoted(text) });
-    hint.show(current ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
+    if (!unmatched) return restore();
+    // Still the person's words while they are looked up: nothing redrawn puts the old value over them.
+    settleTyped(text, true);
   });
 
   return {

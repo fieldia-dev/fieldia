@@ -181,6 +181,42 @@ describe('an email’s box', () => {
   });
 });
 
+describe('an email pasted or typed with what no address has', () => {
+  it.each([
+    ['en', 'An email address has no “:” before its @'],
+    ['ar', 'لا يأتي «:» قبل @ في البريد الإلكتروني'],
+  ] as const)('%s: a link’s "mailto:" pasted is the address it links to; a ":" typed before the @ is refused', async (locale, said) => {
+    const { input, value } = textBox({ label: 'Email' }, { widget: 'email' }, locale);
+    paste(input, 'mailto:ahmed@example.com');
+    expect(input.value).toBe('ahmed@example.com');
+    await pasteTaken();
+    input.value = '';
+    paste(input, 'MAILTO:sara@example.com?subject=Hello');
+    expect(input.value).toBe('sara@example.com');
+    leave(input);
+    expect(value()).toBe('sara@example.com');
+    input.focus();
+    input.value = '';
+    keys(input, 'mailto:');
+    expect(input.value).toBe('mailto');
+    expect(hintSays()).toBe(said);
+    // After its @ a colon is no business of this rule: the address is judged whole as it is left.
+    input.value = 'ahmed@';
+    keys(input, 'x');
+    expect(hintSays()).toBeNull();
+  });
+
+  it('drops a zero-width character a paste brings, so an address that looks right is one', () => {
+    const { input, value, form } = textBox({ label: 'Email' }, { widget: 'email' });
+    paste(input, 'ahmed\u200b@example.com');
+    expect(input.value).toBe('ahmed@example.com');
+    leave(input);
+    expect(value()).toBe('ahmed@example.com');
+    form.leave('x');
+    expect(form.getState().errors['x']).toBeUndefined();
+  });
+});
+
 describe('a web address’s box', () => {
   it('is a text box with the web keyboard, trimmed once left', () => {
     const { input, value } = textBox({ label: 'Portal' }, { widget: 'url' });
@@ -251,6 +287,16 @@ describe('free-text tags', () => {
     expect(value()).toBe('خشب, زجاج');
     paste(input, 'steel\nbrass\nwalnut');
     expect(value()).toBe('خشب, زجاج, steel, brass, walnut');
+    expect(input.value).toBe('');
+  });
+
+  it('ends a tag at a tab, as cells copied from a spreadsheet are pasted: never a tag with a tab inside', () => {
+    const { input, value, el } = tags();
+    paste(input, 'walnut\tbrass');
+    expect(value()).toBe('walnut, brass');
+    expect(chipText(el)).toEqual(['walnut', 'brass']);
+    paste(input, 'oak\tglass\r\nsteel\t');
+    expect(value()).toBe('walnut, brass, oak, glass, steel');
     expect(input.value).toBe('');
   });
 
@@ -462,6 +508,37 @@ describe('a colour’s code', () => {
     expect(code.getAttribute('aria-invalid')).toBe('true');
   });
 
+  it.each(['#12345', '#1234', '12345'])('never holds a colour nobody chose: “%s” typed over #2c8397 leaves it #2c8397, the box marked', (typed) => {
+    const { code, swatch, value, form } = colour();
+    form.setValue('x', '#2c8397');
+    enter(code);
+    code.value = '';
+    keys(code, typed);
+    // On the way, "#123" read as a code; one more digit and it reads as none: the colour held comes back.
+    expect(value()).toBe('#2c8397');
+    leave(code);
+    expect(value()).toBe('#2c8397');
+    expect(swatch.style.getPropertyValue('--fd-swatch')).toBe('#2c8397');
+    expect(code.value).toBe(typed);
+    expect(code.getAttribute('aria-invalid')).toBe('true');
+    expect(form.getState().unread['x']).toEqual({ text: typed, message: 'Enter a colour code, like #1f2937' });
+    expect(form.validate()).toBe(false);
+  });
+
+  it('left for its × or its picker, is left all the same: why it was not read is said now, by the field', () => {
+    const { el, code, clear, form } = colour();
+    form.setValue('x', '#2c8397');
+    const heard: (EventTarget | null)[] = [];
+    el.parentElement?.addEventListener('focusout', (event) => heard.push(event.relatedTarget));
+    enter(code);
+    keys(code, '#12345');
+    code.dispatchEvent(new FocusEvent('blur', { relatedTarget: clear }));
+    code.dispatchEvent(new FocusEvent('focusout', { relatedTarget: clear, bubbles: true }));
+    clear.focus();
+    // The page round it hears the box left (no relatedTarget inside it), so it says the field's problem now.
+    expect(heard).toContain(null);
+  });
+
   it('shows an empty colour as none, never black, and clears one that need not be given', () => {
     const { swatch, clear, value, form, refresh } = colour();
     expect(swatch.classList.contains('fd-colour-none')).toBe(true);
@@ -495,5 +572,6 @@ describe('a mail, phone or web address read-only', () => {
     expect(read('url', 'http://localhost:3000')).toBe('http://localhost:3000');
     expect(read('url', 'javascript:alert(1)')).toBeNull();
     expect(read('email', '\u200fname@example.com')).toBe('mailto:name@example.com');
+    expect(read('email', 'mailto:name@example.com')).toBeNull();
   });
 });
