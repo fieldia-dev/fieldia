@@ -13,7 +13,11 @@
  * column for each person or room; records side by side; the line of now;
  * dragging to move and to stretch, a slot pressed or dragged for a new
  * record; "Move to…" and the keys; Undo; its words in four languages and
- * its stylesheet — 15 (14.6 measured).
+ * its stylesheet — 15 (14.6 measured). Then an agenda's row with a Move to…
+ * button of its own for a phone, a screen reader's press on a slot or a
+ * record, records and slots never under 24 pixels (an hour of 96 where slots
+ * are a quarter of an hour), a short record kept to one line, and a record
+ * from the night before taken by its morning's part — 0.5 more, to 15.5.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -22,7 +26,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 15 };
+const BUDGET = { page: 0.8, calendar: 15.5 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
