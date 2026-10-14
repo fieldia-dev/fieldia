@@ -1,5 +1,5 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
-import { createWidget } from '@fieldia/widgets';
+import { createWidget, type ErrorHandler } from '@fieldia/widgets';
 import { tiles, type SearchRequest } from './providers';
 import { mapWidgets } from './widgets';
 
@@ -23,9 +23,9 @@ const page = {
 
 const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }) });
 
-function mount(node: FieldNode = (page.layout as { children: FieldNode[] }).children[0], field = 'lat') {
+function mount(node: FieldNode = (page.layout as { children: FieldNode[] }).children[0], field = 'lat', onError?: ErrorHandler) {
   const form = createForm({ page });
-  const widget = createWidget({ form, name: field, field: page.fields[field] as Field, node, id: 'fd-site', document, labels: undefined }, widgets);
+  const widget = createWidget({ form, name: field, field: page.fields[field] as Field, node, id: 'fd-site', document, labels: undefined, onError }, widgets);
   document.body.replaceChildren(widget.element);
   const refresh = () => {
     const state = form.getState();
@@ -77,8 +77,14 @@ describe('a place kept in two number fields', () => {
   });
 
   it('refuses a number field with no field named for its longitude, saying which', () => {
+    // The refusal is kept to its field, as any part that cannot be drawn is: a box in its place, the reason told.
     const node = { type: 'field', id: 'f', field: 'lat', widget: 'place' } as FieldNode;
-    expect(() => mount(node)).toThrow('The place on "lat" keeps its latitude there and needs options.longitudeField for its longitude');
+    const told: unknown[] = [];
+    mount(node, 'lat', (error, where) => told.push(error, where));
+    expect((told[0] as Error).message).toBe('The place on "lat" keeps its latitude there and needs options.longitudeField for its longitude');
+    expect(told[1]).toMatchObject({ stage: 'draw', part: 'field', field: 'lat', widget: 'float.place' });
+    expect(document.querySelector('.fd-broken[role="status"]')?.textContent).toBe('This field could not be shown: Latitude of the site');
+    expect(document.querySelector('.fd-map-tools')).toBeNull();
   });
 });
 
