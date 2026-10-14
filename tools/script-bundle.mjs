@@ -448,7 +448,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // words, made the first time it is shown, asking the app for a new record (or the model's page in a dialog) — the
 // calendar itself being @fieldia/calendar's, never in this script — 2.8 more, to 565.9 (over
 // the three lanes above).
-const BUDGET_KB = 565.9;
+// The four lanes joined (the safety kit, files, save safety, the calendar), 0.05 more than the sum of their own: Save
+// shown for a file on its way only where the person may edit, a reset letting go of both the uploads and the conflict,
+// and the minifier's names a little longer with all four in one scope — 0.1 more, to 566.0.
+const BUDGET_KB = 566.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -511,7 +514,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // it holds now in its own direction, 0.1 more, to 172.5.
 // 0.21's calendar (a list's `calendar` and its checks, the switcher open to other views and a new record asked of the
 // app; the calendar itself is @fieldia/calendar's), 1.0 more, to 173.5.
-const GZIP_BUDGET_KB = 173.5;
+// The four lanes joined (listed with the raw budget above), 0.04 more than their sum, 0.1 more, to 173.6.
+const GZIP_BUDGET_KB = 173.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -559,7 +563,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // gear leaves out, and the four refusals core says when the source gives no reason — 21 words in each: 3.0 and 0.4
 // more in Arabic, 1.2 and 0.3 in German, 1.2 and 0.4 in French, over the two above: Arabic's to 32.8 and 6.4, German's
 // to 14.1 and 5.4, French's to 14.3 and 5.4.
-const ADD_ON_BUDGET_KB = { ar: [32.8, 6.4], de: [14.1, 5.4], fr: [14.3, 5.4] };
+// The three lanes' words joined: each lane rounded its own figures, and gzip does not add up a word at a time —
+// measured 32.82 and 6.32 in Arabic, 14.05 and 5.47 in German, 14.31 and 5.40 in French: Arabic's to 32.9, German's
+// gzipped to 5.5, French's to 14.4 and 5.5.
+const ADD_ON_BUDGET_KB = { ar: [32.9, 6.4], de: [14.1, 5.5], fr: [14.4, 5.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
