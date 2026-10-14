@@ -196,6 +196,8 @@ export interface RunScope {
   line?: { field: string; key: string; values: Values };
   lines?: ChosenLines;
   chain: readonly string[];
+  /** Set once a save in this run went through: whatever is unsaved after it, a step leaving the record asks about. */
+  saved?: boolean;
 }
 
 /** What a run reaches its form by: the form gives these. */
@@ -231,8 +233,9 @@ export interface RunForm {
    * Before the record is left for another in this form's place — its copy, a
    * record the app's answer names — whether the person's work it holds may go:
    * null when there is none, or they said Discard; else why the run stops.
-   * `saved`, after a save made for this way out: whatever is still unsaved
-   * counts (a change made while it ran). Without, only what Reload set aside and
+   * `saved`, after a save in the same run — one made for this way out, or a
+   * `save` step before it: whatever is still unsaved counts (a change made
+   * while it ran). Without, only what Reload set aside and
    * files on their way: a change not saved is the step's to drop, as it was.
    */
   letGo(saved: boolean): Promise<Stopped | null>;
@@ -444,7 +447,8 @@ export function createRunner(form: RunForm) {
       if (stopped) return stopped;
     }
     if (answer.record !== undefined) {
-      const kept = await form.letGo(false);
+      // After a save in this run, a change made while it ran is asked about too.
+      const kept = await form.letGo(scope.saved === true);
       if (kept) return kept;
       const moved = await form.showRecord(answer.record);
       if (moved) return moved;
@@ -494,12 +498,12 @@ export function createRunner(form: RunForm) {
     if (name === 'duplicate') {
       // What was changed goes with the copy: it is saved first. What that save could not take — changes Reload set
       // aside, a change made while it ran — goes only when the person says so, before any copy is made.
-      const changed = form.changed();
-      if (changed) {
+      if (form.changed()) {
         const saved = await form.save(scope.chain);
         if (saved) return saved;
+        scope.saved = true;
       }
-      const kept = await form.letGo(changed);
+      const kept = await form.letGo(scope.saved === true);
       if (kept) return kept;
       if (!form.copy) {
         const stopped = await instead(name, 'copy', scope);
@@ -547,8 +551,11 @@ export function createRunner(form: RunForm) {
       }
       case 'check':
         return form.check(step.fields);
-      case 'save':
-        return form.save(scope.chain);
+      case 'save': {
+        const stopped = await form.save(scope.chain);
+        if (!stopped) scope.saved = true;
+        return stopped;
+      }
       case 'reset':
         form.reset();
         return null;

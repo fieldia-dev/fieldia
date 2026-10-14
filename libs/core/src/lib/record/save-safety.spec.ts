@@ -586,6 +586,28 @@ describe('a step that leaves the record asks first about work a save could not t
     expect(form.getState()).toMatchObject({ recordId: 1, setAside: { phone: '+201009998887' } });
   });
 
+  it('a run that saved, then moves to the record the app names: a change made while the save ran is asked about first', async () => {
+    const { host, asked } = asking(false);
+    const ds = source({ delayMs: 20 });
+    const form = await opened(ds, 1, { host, onAction: () => ({ record: 2 }) });
+    form.setValue('phone', '+201009998887');
+    const run = form.run([{ do: 'save' }, { do: 'call', action: 'next_lead' }]);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(form.getState().status).toBe('saving');
+    form.setValue('budget', 4300000);
+    expect(await run).toMatchObject({ done: false, reason: 'no' });
+    expect(asked).toEqual([{ message: 'Discard your changes?', how: { discard: true } }]);
+    expect(ds.records['lead'][1]).toMatchObject({ phone: '+201009998887', budget: 4000000 });
+    expect(form.getState()).toMatchObject({ recordId: 1, dirty: ['budget'] });
+    expect(form.getState().values['budget']).toBe(4300000);
+    // Nothing typed meanwhile: it moves on, asking nothing.
+    const quiet = await opened(source(), 1, { host, onAction: () => ({ record: 2 }) });
+    quiet.setValue('phone', '+201009998887');
+    expect((await quiet.run([{ do: 'save' }, { do: 'call', action: 'next_lead' }])).done).toBe(true);
+    expect(quiet.getState()).toMatchObject({ recordId: 2, dirty: [] });
+    expect(asked).toHaveLength(1);
+  });
+
   it('as before 0.21, an app with none of the new members: Duplicate saves the change, copies and shows the copy, asking nothing', async () => {
     const { host, asked } = asking(false);
     const ds = createMemoryDataSource({ records: { lead: leads() } });
