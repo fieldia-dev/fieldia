@@ -307,15 +307,17 @@ test.describe('a date as Fieldia writes it at rest', () => {
     await paste(page, kickoff, '2026-10-15T14:30:00Z');
     await expect(hintOf(page, 'f-kickoff')).toBeHidden();
     expect(await valueOf(page, 'kickoff')).toBe('2026-10-15T14:30:00.000Z');
-    // A date's box takes an instant's day where the person is, its seconds no part of a day; a date and time's keeps to the minute.
-    const day = await page.evaluate(() => {
+    // A date's box takes an instant's day where the person is, and says the time it leaves out; a date and time's keeps
+    // to the minute.
+    const [day, time] = await page.evaluate(() => {
       const at = new Date('2026-10-15T14:30:45Z');
-      return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return [`${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`, `${pad(at.getHours())}:${pad(at.getMinutes())}`];
     });
     await setValue(page, 'start_date', null);
     await enter(start);
     await paste(page, start, '2026-10-15T14:30:45Z');
-    await expect(hintOf(page, 'f-start')).toBeHidden();
+    await expect(hintOf(page, 'f-start')).toHaveText(`Start date takes a day only: the time ${time} was left out`);
     expect(await valueOf(page, 'start_date')).toBe(day);
     await enter(kickoff);
     await paste(page, kickoff, '2026-10-15T09:15:45Z');

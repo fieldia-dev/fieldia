@@ -127,6 +127,9 @@ test.describe('a phone number, an email and a web address', () => {
       await expect(box).toHaveAttribute('aria-describedby', new RegExp(`${await hintOf(phone).getAttribute('id')}`));
       await phone.scrollIntoViewIfNeeded();
       await screen(page, `text-rules-phone-${locale}`, { viewport: true });
+      // The keys after the refused one wait with it: Backspace takes them back one by one, and the words go with the last.
+      for (let i = 0; i < 'call'.length; i++) await box.press('Backspace');
+      await expect(hintOf(phone)).toBeHidden();
       await box.pressSequentially(locale === 'ar' ? '٠١٠١٢٣٤٥٦٧٨' : '+20 (10) 1234-5678');
       await expect(hintOf(phone)).toBeHidden();
       await box.press('Tab');
@@ -177,6 +180,9 @@ test.describe('a phone number, an email and a web address', () => {
     await box.fill('');
     await box.pressSequentially('ali ');
     await expect(hintOf(email)).toHaveText('لا مسافات في البريد الإلكتروني');
+    // The refused space waits, held: Backspace takes it back, and what is typed then is the address's.
+    await box.press('Backspace');
+    await expect(hintOf(email)).toBeHidden();
     await box.pressSequentially('@مثال.مصر');
     await box.press('Tab');
     expect(await valueOf(page, 'email')).toBe('ali@مثال.مصر');
