@@ -96,6 +96,18 @@ function asciiNumber(text: string): string {
   return foldDigits(text).replace('\u066b', '.');
 }
 
+/** A number as a list in a formula writes one: digits in any script, a point or ٫, a sign first ("-٢٫٥", ".5"). */
+const LIST_NUMBER = /^[-+]?(?:[\d\u0660-\u0669\u06f0-\u06f9]+[.\u066b]?[\d\u0660-\u0669\u06f0-\u06f9]*|[.\u066b][\d\u0660-\u0669\u06f0-\u06f9]+)$/;
+
+/**
+ * A list's item as a number, read as the formula reads its numbers ("٣" is 3,
+ * "-٢٫٥" is -2.5), or null when it is none: never hex ("0x10") or an exponent
+ * ("1e3"), which stay the words they are.
+ */
+export function listNumber(text: string): number | null {
+  return LIST_NUMBER.test(text) ? Number(asciiNumber(text)) : null;
+}
+
 /**
  * Determines the type of a token based on its text value.
  */

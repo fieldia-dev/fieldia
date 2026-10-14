@@ -30,4 +30,13 @@ describe('numbers in a formula', () => {
   it('never read a comma as a decimal mark', () => {
     expect(() => value('qty * 1,5', { qty: 4 })).toThrow();
   });
+
+  it('in a list read as the formula’s own numbers: any script, ٫ or a point, a minus; never hex or an exponent', () => {
+    expect(value('qty in [٣, ۴, -٢٫٥]', { qty: 4 })).toBe(true);
+    expect(value('qty in [٣, ۴, -٢٫٥]', { qty: -2.5 })).toBe(true);
+    expect(value('qty in [1, .5]', { qty: 0.5 })).toBe(true);
+    // Words, not numbers nobody wrote: "0x10" is never 16, "1e3" never 1000.
+    expect(value('qty in [0x10, 1e3]', { qty: 16 })).toBe(false);
+    expect(value('qty in [0x10, 1e3]', { qty: 1000 })).toBe(false);
+  });
 });
