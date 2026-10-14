@@ -1,4 +1,4 @@
-import { MESSAGES, placesOf, readNumber, type Locale, type NumberLimits } from '@fieldia/core';
+import { fill, MESSAGES, placesOf, readNumber, type Locale, type NumberLimits } from '@fieldia/core';
 import { formatPlain, guard, numberKeyboard, numberRules, refusalHint, WIDGET_LABELS } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { DesignerLocale, DesignerWords } from './designer-words';
@@ -91,6 +91,7 @@ export function settingNumber(el: ElementFactory, host: NumberBoxHost, options: 
     if (above !== undefined) return w.settingMoreThan(label, said(above));
     if (min !== undefined && max !== undefined) return integer ? w.settingRange(label, said(min), said(max)) : w.settingNumberRange(label, said(min), said(max));
     if (min !== undefined && integer) return w.settingAtLeast(label, said(min));
+    if (integer) return fill((MESSAGES[locale] ?? MESSAGES.en).integer, { label });
     return w.settingNeedsNumber(label);
   };
   /** Why a number read does not fit, or null. */

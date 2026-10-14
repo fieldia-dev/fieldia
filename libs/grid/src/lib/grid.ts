@@ -1109,6 +1109,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       cellClassRules: {
         'fd-grid-kind-text': (p) => !!kindOf(p.data),
         'fd-grid-invalid': (p) => !p.node.rowPinned && (!!problemAt(p.data, column, p.api) || !!unreadAt(p.data, column)),
+        // Shown as it was typed, in the order it was typed, as its box shows it: "12 34" never "34 12" on a right-to-left page.
+        'fd-grid-unread': (p) => !p.node.rowPinned && !!unreadAt(p.data, column),
         'fd-cell-bold': (p) => !!ruleOf(p.data, column)?.bold,
         ...Object.fromEntries(TONES.map((tone) => [`fd-tone-${tone}`, (p: { data: Line | undefined }) => ruleOf(p.data, column)?.tone === tone])),
       },
