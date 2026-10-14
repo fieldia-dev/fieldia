@@ -474,7 +474,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A run that saved asks before it leaves what changed meanwhile: an action's answer naming another record after a
 // `save` step, and a page in a record's place whose own button saves, then closes it, asked once — 0.2 more (574.49
 // measured before, 574.68 after), to 574.7.
-const BUDGET_KB = 574.7;
+// One check in the form before its values go (lane w1-choke): `form.leave()` and `workAtRisk`, each change told by its
+// origin and those of the person's a save went through without kept as `unsent`, the host's close taken once with the
+// check before it, a reset step, a reload and an address in this tab through it too; the dialog's, the panel's and a
+// page in place's own questions gone for it, each reporting a save that went through as saved however it closes; the
+// pager looking up its next id before it saves; the breadcrumbs asking; the safety kit's focus passed on to a box that
+// takes it — 0.7 more (574.68 measured before, 575.39 after), to 575.4.
+const BUDGET_KB = 575.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -547,7 +553,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 176.54 after, to 176.6.
 // A run that saved asks before it leaves what changed meanwhile (listed with the raw budget above): 176.54 measured
 // before, 176.62 after, to 176.7.
-const GZIP_BUDGET_KB = 176.7;
+// One check in the form before its values go (listed with the raw budget above): 176.62 measured before, 176.84 after,
+// to 176.9.
+const GZIP_BUDGET_KB = 176.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
