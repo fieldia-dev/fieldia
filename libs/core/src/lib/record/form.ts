@@ -124,6 +124,15 @@ export function unsavedWork(state: FormState): boolean {
   return state.dirty.length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing);
 }
 
+/**
+ * The person's work that only save safety keeps, which no way out of a record
+ * asked about before it: changes Reload set aside, files on their way. A way
+ * out that has always let a change not saved go asks about these.
+ */
+function keptWork(state: FormState): boolean {
+  return state.setAside != null || (state.uploads ?? []).some(uploadGoing);
+}
+
 /** A properties field's definitions from the app, as they load. */
 export interface Definitions {
   /** The definitions last loaded: null until the first load ends well. */
@@ -1625,6 +1634,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     await opening();
   }
 
+  /**
+   * Before a step leaves the record for another in this form's place: the
+   * person's work in it, asked about — "Discard your changes?" through the
+   * host, Cancel first — and let go only on Discard. With no host and no
+   * `confirm` to ask, it is kept: the run stops, and nothing is lost unasked.
+   */
+  async function letGo(saved: boolean): Promise<Stopped | null> {
+    if (!(saved ? unsavedWork(state) : keptWork(state))) return null;
+    const message = messages.discardChanges;
+    const host = options.host;
+    const yes = host ? await host.ask(message, { discard: true }) : options.confirm ? await options.confirm(message) : false;
+    if (!yes) return { reason: 'no', message };
+    // Let go: the files on their way stop, and what was set aside goes.
+    clearFiles();
+    if (state.setAside) set({ setAside: null });
+    return null;
+  }
+
   /** The record a record step asks the data source about. */
   const record = () => ({ model: (page.data as { model: string }).model, id: state.recordId as RecordId, fields });
 
@@ -1664,7 +1691,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place): Inner
     confirm: options.confirm,
     onAction: options.onAction,
     answered: (request, result) => emit('action', { request, result }),
-    changed: () => state.dirty.length > 0,
+    changed: () => state.dirty.length > 0 || state.uploads.some(uploadGoing),
+    letGo,
     ...(options.dataSource?.archive && page.data.kind === 'record' ? { archive: (archive: boolean) => track((options.dataSource?.archive as NonNullable<DataSource['archive']>)({ ...record(), archive })) } : {}),
     ...(options.dataSource?.copy && page.data.kind === 'record' ? { copy: async () => (await track((options.dataSource?.copy as NonNullable<DataSource['copy']>)(record()))).id } : {}),
     ...(options.dataSource?.delete && page.data.kind === 'record' ? { remove: () => track((options.dataSource?.delete as NonNullable<DataSource['delete']>)(record())) } : {}),

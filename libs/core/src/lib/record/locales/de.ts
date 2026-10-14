@@ -60,5 +60,6 @@ export const de: Messages = {
   mayNotDuplicate: 'Sie können diesen Datensatz nicht duplizieren.',
   mayNotDelete: 'Sie können diesen Datensatz nicht löschen.',
   theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
+  discardChanges: 'Ihre Änderungen verwerfen?',
   locale: 'de',
 };

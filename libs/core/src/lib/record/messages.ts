@@ -90,6 +90,8 @@ export interface Messages {
    * could not be read again: nothing is saved over work the person never saw.
    */
   theirsUnread: string;
+  /** Asked before a step leaves the record while work of the person's is not saved: a copy shown, another record. */
+  discardChanges: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -156,6 +158,7 @@ const en: Messages = {
   mayNotDuplicate: 'You cannot duplicate this record.',
   mayNotDelete: 'You cannot delete this record.',
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
+  discardChanges: 'Discard your changes?',
   locale: 'en',
 };
 

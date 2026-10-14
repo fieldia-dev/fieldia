@@ -60,5 +60,6 @@ export const ar: Messages = {
   mayNotDuplicate: 'لا يمكنك استنساخ هذا السجل.',
   mayNotDelete: 'لا يمكنك حذف هذا السجل.',
   theirsUnread: 'تعذّرت قراءة نسختهم، فلم تُحفظ تغييراتك فوقها. جرّب «إبقاء تغييراتي» مرة أخرى، أو «إعادة التحميل».',
+  discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   locale: 'ar',
 };

@@ -130,7 +130,11 @@ when the conflict did not carry the record, so `values` never wipes theirs; when
 it cannot be read, nothing is saved and `conflict.unread` says so). A second save
 while one is on its way waits for it and carries the version it got back.
 `unsavedWork(state)` says whether leaving would lose anything — changes, files
-on their way, or changes Reload set aside — for an app's own leave guards. What `can` does
+on their way, or changes Reload set aside — for an app's own leave guards. A step
+that leaves the record (Duplicate, an action's answer naming another record) asks
+first when it would leave such work behind: through the host's
+`ask(message, { discard: true })`, or `confirm`; with neither, it keeps the work
+and stops. What `can` does
 not allow is kept to before any source is asked: fields locked or hidden (and
 left out of what a save sends), a save refused with the source's `reason`, the
 gear menu's Archive, Duplicate and Delete and the buttons whose steps would do
