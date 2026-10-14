@@ -9,7 +9,8 @@ import { node, open, screen } from './support';
  * box saves as it did before the rules came, with no false words; a save made
  * while a box still holds what was typed reads it first, never saving a value
  * passed on the way; the keys typed after a refused one wait in a phone number,
- * an email and a colour too; a time's one-digit minute is never quietly :03; a
+ * an email and a colour too; a time's one-digit minute is never quietly :03 (nor
+ * "14.5" 14:05: half past two and 14:50 are named with it); a
  * date and time pasted into a date says its time was left out; a block pasted
  * into an hours column keeps to it, and one cell is "1 cell".
  */
@@ -57,6 +58,11 @@ const WORDS = {
     en: 'Kick-off meeting: “⁨15/10/2026 14:3⁩” could be 14:03 or 14:30; write the minutes with two digits',
     ar: 'Kick-off meeting: «⁨15/10/2026 14:3⁩» قد تعني 14:03 أو 14:30؛ اكتب الدقائق برقمين',
     fr: 'Kick-off meeting : « ⁨15/10/2026 14:3⁩ » peut être 14:03 ou 14:30 ; écrivez les minutes avec deux chiffres',
+  },
+  kickoffPoint: {
+    en: 'Kick-off meeting: “⁨15/10/2026 14.5⁩” could be 14:05, 14:30, or 14:50; write the minutes with two digits',
+    ar: 'Kick-off meeting: «⁨15/10/2026 14.5⁩» قد تعني 14:05 أو 14:30 أو 14:50؛ اكتب الدقائق برقمين',
+    fr: 'Kick-off meeting : « ⁨15/10/2026 14.5⁩ » peut être 14:05, 14:30 ou 14:50 ; écrivez les minutes avec deux chiffres',
   },
   timeLeftOut: {
     en: 'Start date takes a day only: the time 14:30 was left out',
@@ -178,6 +184,12 @@ for (const [locale, query] of LOCALES) {
       await kickoff.pressSequentially('15/10/2026 14:3');
       await kickoff.press('Tab');
       await expect(errorOf(page, 'f-kickoff')).toHaveText(WORDS.kickoff[locale]);
+      expect(await valueOf(page, 'kickoff')).toBe(held);
+      // "14.5" may be half past two as well: each time it could be is named, none taken.
+      await enter(kickoff);
+      await kickoff.pressSequentially('15/10/2026 14.5');
+      await kickoff.press('Tab');
+      await expect(errorOf(page, 'f-kickoff')).toHaveText(WORDS.kickoffPoint[locale]);
       expect(await valueOf(page, 'kickoff')).toBe(held);
       const start = node(page, 'f-start').locator('input').first();
       await enter(start);
