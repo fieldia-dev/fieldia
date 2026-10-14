@@ -64,7 +64,8 @@ describe('Try it’s drawer of data and problems', () => {
     expect(tab('Problems').getAttribute('aria-expanded')).toBe('true');
     expect(drawer().querySelector('.fd-try-data')?.closest('[hidden]')).not.toBeNull();
     expect(problems()).toEqual(['NameName is required', 'CommentsComments is required']);
-    fill('Email', 'not an address');
+    // No spaces: an email's box refuses them as they are typed (the input rules).
+    fill('Email', 'not-an-address');
     fill('Name', 'Mona');
     expect(problems()).toEqual(['EmailEnter an email address, like name@example.com', 'CommentsComments is required']);
     (drawer().querySelector('.fd-try-problem') as HTMLButtonElement).click();

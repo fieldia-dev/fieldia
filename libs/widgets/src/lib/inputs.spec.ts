@@ -60,10 +60,10 @@ describe('a count of characters', () => {
   const box = (el: Element) => el.querySelector('input, textarea') as HTMLInputElement;
   const count = (el: Element) => el.querySelector('.fd-count') as HTMLElement;
 
-  it('shows how many of the most are typed, under the box, and the box stops at the most', () => {
+  it('shows how many of the most are typed, under the box, the browser cutting nothing', () => {
     const { el } = mountKind({ type: 'char', size: 20 });
     expect(count(el).textContent).toBe('0 / 20');
-    expect(box(el).maxLength).toBe(20);
+    expect(box(el).hasAttribute('maxlength')).toBe(false);
     typeInto(box(el), 'Nile Traders');
     expect(count(el).textContent).toBe('12 / 20');
     expect(count(el).getAttribute('aria-hidden')).toBe('true');
@@ -82,7 +82,7 @@ describe('a count of characters', () => {
     jest.useFakeTimers();
     try {
       const { el } = mountKind({ type: 'char', size: 20 }, {}, { locale: 'de' });
-      const said = el.querySelector('[aria-live="polite"]') as HTMLElement;
+      const said = el.querySelector('.fd-sr-only[aria-live="polite"]') as HTMLElement;
       jest.advanceTimersByTime(2000);
       // Nothing is said of a box nobody types in.
       expect(said.textContent).toBe('');
@@ -274,16 +274,19 @@ describe('a date’s, a date and time’s and a time’s limits on the input', (
 });
 
 describe('keywords at most', () => {
-  it('stop taking more once there are as many as the page allows', () => {
-    const { el, value, form } = mountKind({ type: 'char' }, { widget: 'tags', options: { max: 2 } });
+  it('stop taking more once there are as many as the page allows, the box staying and saying so', () => {
+    const { el, value, form } = mountKind({ type: 'char', label: 'Keywords' }, { widget: 'tags', options: { max: 2 } });
     const box = el.querySelector('input') as HTMLInputElement;
     typeInto(box, 'oak,');
     typeInto(box, 'glass,');
     expect(value()).toBe('oak, glass');
-    expect(box.closest('[hidden]')).not.toBeNull();
-    expect(document.activeElement?.getAttribute('aria-label')).toBe('Remove glass');
+    // The box stays, and the focus with it: never on a chip's ×, where the next key would remove it.
+    expect(box.closest('[hidden]')).toBeNull();
+    expect(document.activeElement).toBe(box);
     typeInto(box, 'steel,');
     expect(value()).toBe('oak, glass');
+    expect(box.value).toBe('steel');
+    expect(document.querySelector('.fd-refusal-hint')?.textContent).toBe('Keywords takes at most 2. Not added: steel');
     form.setValue('x', 'oak');
     expect(box.closest('[hidden]')).toBeNull();
   });

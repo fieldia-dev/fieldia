@@ -1,0 +1,109 @@
+import { charCount, fill, hasPattern, MESSAGES, oneLine, settledText, stripMarks } from '@fieldia/core';
+import { guard, refusalHint, type InputRules, type RefusalHint } from './input-rules';
+import { wordsFor } from './kind-parts';
+import type { WidgetContext } from './widgets';
+
+/**
+ * A text box's side of the input rules (input-rules.ts): what a line of
+ * words, a password, a phone number, an email, a web address or a paragraph
+ * refuses as it is typed or pasted, and what it keeps once it is left.
+ *
+ * - Its most characters (the field's `size`) are counted by code point, as a
+ *   server counts them: a key typed at the most is refused, with words; a
+ *   paste that goes over is kept whole, for the person to shorten — the
+ *   counter and the field say how far over it is, and Save waits.
+ * - A phone number takes digits in any script, spaces, a + first, and
+ *   ( ) . - only; an email takes no spaces.
+ * - A line break pasted into one line is a space; into a password, nothing.
+ *   Direction marks pasted into an email, a phone number or a web address
+ *   are dropped.
+ * - Left, one line is trimmed and spaces alone are nothing; a phone number
+ *   and an answer a pattern checks keep their digits as 0-9; a password is
+ *   kept as typed. Nothing is changed while the box has the focus.
+ */
+
+/** What a box holds: one line of words, a password, a phone number, an email, a web address, or a paragraph. */
+export type TextKind = 'line' | 'password' | 'phone' | 'email' | 'url' | 'paragraph';
+
+/** A guarded text box. */
+export interface TextBox {
+  readonly hint: RefusalHint;
+  /** The box's aria-describedby: the field's own ids (`base`), and the hint's while it shows. */
+  describedBy(base: string | undefined): string | undefined;
+  /** The box's text as it stands now is taken: its widget wrote it. */
+  accept(): void;
+  destroy(): void;
+}
+
+/** Characters no phone number has, counted: anything but digits in any script, spaces, + ( ) . - and direction marks; and a plus that is not first. */
+export function phoneStrays(text: string): number {
+  const plain = stripMarks(text);
+  return (plain.match(/[^\p{Nd}\s+().-]/gu)?.length ?? 0) + (plain.replace(/^\s*\+/, '').match(/\+/g)?.length ?? 0);
+}
+
+const spaces = (text: string) => text.match(/\s/g)?.length ?? 0;
+
+/** The rules of a text box of `kind`, for its field. */
+export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' | 'node' | 'labels' | 'locale'>): InputRules {
+  const { field, node, labels, locale = 'en' } = context;
+  const words = wordsFor(labels, locale);
+  const messages = MESSAGES[locale] ?? MESSAGES.en;
+  const label = node.label ?? field.label;
+  const size = field.type === 'char' || field.type === 'text' ? field.size : undefined;
+  /** A paste is being taken: kept whole, though it goes over the most. Until the browser has put it in, after this task. */
+  let pasting = false;
+  return {
+    judge(next, before) {
+      // What is already there stays editable: only what the edit brings is judged.
+      if (kind === 'phone' && phoneStrays(next) > phoneStrays(before)) return words.phoneChars;
+      if (kind === 'email' && spaces(next) > spaces(before)) return words.emailNoSpaces;
+      if (size !== undefined && !pasting) {
+        const n = charCount(next);
+        if (n > size && n > charCount(before)) return fill(messages.maxLength, { label, max: size });
+      }
+      return null;
+    },
+    paste(text) {
+      pasting = true;
+      setTimeout(() => (pasting = false));
+      let taken = kind === 'paragraph' ? text : oneLine(text, { password: kind === 'password' });
+      // Copied from a page or a chat that reads right to left: its marks are no part of an address or a number.
+      if (kind === 'phone' || kind === 'email' || kind === 'url') taken = stripMarks(taken).trim();
+      if (kind === 'phone' && phoneStrays(taken)) return { refuse: words.phoneChars };
+      if (kind === 'email' && /\s/.test(taken)) return { refuse: words.emailNoSpaces };
+      return { text: taken };
+    },
+  };
+}
+
+/**
+ * Guard `input`, a text box of `kind` for its field: refusals said by a hint
+ * placed after `anchor`, and the text settled as the box is left — written
+ * to the field before the page hears it was left, so what is checked then is
+ * what is kept.
+ */
+export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: WidgetContext, kind: TextKind, anchor: HTMLElement = input): TextBox {
+  const { form, name, field, node } = context;
+  const hint = refusalHint(input, anchor);
+  const checks = guard(input, textRules(kind, context), hint);
+  const widget = kind === 'line' || kind === 'paragraph' ? undefined : kind;
+  const pattern = hasPattern(field, node);
+  const settle = () => {
+    if (input.readOnly || kind === 'paragraph' || kind === 'password') return;
+    const settled = settledText(input.value, { widget, pattern });
+    if (settled === input.value) return;
+    input.value = settled;
+    checks.accept();
+    form.setValue(name, settled === '' ? null : settled);
+  };
+  input.addEventListener('blur', settle);
+  return {
+    hint,
+    describedBy: (base) => hint.describedBy(base),
+    accept: () => checks.accept(),
+    destroy() {
+      checks.destroy();
+      input.removeEventListener('blur', settle);
+    },
+  };
+}

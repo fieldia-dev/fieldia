@@ -86,7 +86,7 @@ describe('an address with suggestions', () => {
     expect(asked[0].addresses).toBe(true);
     expect(options()).toEqual(['Tahrir Street 12Downtown, Cairo, Egypt', '26 July StreetZamalek, Cairo, Egypt']);
     expect([box.getAttribute('aria-expanded'), box.getAttribute('aria-controls')]).toEqual(['true', list().id]);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe('Suggestions: 2');
+    expect(document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent).toBe('Suggestions: 2');
   });
 
   it('picks with the arrows and Enter: the whole address in the box, its place and its parts where the page says, the second line kept', async () => {
@@ -203,7 +203,7 @@ describe('an address with suggestions', () => {
     type(box, 'tahr');
     await pause();
     expect(options()).toEqual(['Tahrir Street 12Downtown, Cairo, Egypt', '26 July StreetZamalek, Cairo, Egypt']);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe('Suggestions: 2');
+    expect(document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent).toBe('Suggestions: 2');
   });
 
   it('reads the box in the direction most of its words are written in: an Arabic address that starts with a Latin street still starts at the right', async () => {
@@ -291,7 +291,7 @@ describe('an address with suggestions', () => {
 
   it('says no suggestions are shown once the list is closed, by Escape or by leaving the box', async () => {
     const { box } = await mount();
-    const status = () => document.querySelector('[role="status"]')?.textContent;
+    const status = () => document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent;
     type(box, 'tahr');
     await pause();
     expect(status()).toBe('Suggestions: 2');
@@ -347,7 +347,7 @@ describe('an address with suggestions', () => {
     const later: SearchRequest[] = [];
     const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
     const { box } = await mount({}, { search, searchAsYouType: true });
-    const status = () => document.querySelector('[role="status"]')?.textContent;
+    const status = () => document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent;
     type(box, 'tahrir');
     await pause();
     answers[0]([TAHRIR, ZAMALEK]);
@@ -380,7 +380,7 @@ describe('an address with suggestions', () => {
     const later: SearchRequest[] = [];
     const search: AddressSearch = (request) => (later.push(request), new Promise((done) => answers.push(done)));
     const { box } = await mount({}, { search, searchAsYouType: true });
-    const status = () => document.querySelector('[role="status"]')?.textContent;
+    const status = () => document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent;
     // Escape while it is on its way, and Enter before it comes: waited for, not asked again.
     type(box, 'zamal');
     await pause();
@@ -479,10 +479,10 @@ describe('an address with suggestions', () => {
     const { box } = await mount({}, { search, searchAsYouType: true });
     type(box, 'tahr');
     await pause();
-    expect(document.querySelector('[role="status"]')?.textContent).toBe('Searching…');
+    expect(document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent).toBe('Searching…');
     box.blur();
     // Not called back, its answer kept for the words; no longer said to be going.
-    expect([later[0].signal?.aborted, document.querySelector('[role="status"]')?.textContent]).toEqual([false, '']);
+    expect([later[0].signal?.aborted, document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent]).toEqual([false, '']);
 
     const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }), search, searchAsYouType: true });
     const form = createForm({ page });
@@ -585,7 +585,7 @@ describe('an address with suggestions', () => {
     const note = document.querySelector('.fd-address-note') as HTMLElement;
     expect([note.hidden, note.textContent]).toEqual([false, 'Not found on the map: no place was saved for this address.']);
     expect(box.getAttribute('aria-describedby')?.split(' ')).toContain(note.id);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe('Not found on the map: no place was saved for this address.');
+    expect(document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent).toBe('Not found on the map: no place was saved for this address.');
     // Typing on, it goes.
     type(box, ',');
     expect([note.hidden, box.hasAttribute('aria-describedby')]).toEqual([true, false]);
@@ -647,7 +647,7 @@ describe('an address with suggestions', () => {
     const note = document.querySelector('.fd-address-note') as HTMLElement;
     expect([note.hidden, note.textContent]).toEqual([false, 'Placed only near this address: its exact place was not found on the map.']);
     expect(box.getAttribute('aria-describedby')?.split(' ')).toContain(note.id);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe(note.textContent);
+    expect(document.querySelector('[role="status"]:not(.fd-refusal-hint)')?.textContent).toBe(note.textContent);
     type(box, ',');
     expect(note.hidden).toBe(true);
   });

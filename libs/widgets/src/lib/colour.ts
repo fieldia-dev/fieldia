@@ -1,4 +1,6 @@
-import { describeState, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
+import { foldDigits, stripMarks } from '@fieldia/core';
+import { guard, refusalHint } from './input-rules';
+import { describeState, fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
 import { popup } from './popup';
 import type { WidgetFactory } from './widgets';
 
@@ -7,7 +9,7 @@ import type { WidgetFactory } from './widgets';
  * 0 for none, 1 to 11 for red to violet, picked from a palette that opens
  * under a swatch of the colour now — a group of radios, named in the page's
  * language, used with the arrow keys. On text, a colour kept as #rrggbb, picked
- * with the browser's own picker (Flectra's widget="color").
+ * with the browser's own picker (Flectra's widget="color") or typed as its code.
  */
 
 /** Flectra's tag colours, by their number: none, red, orange, yellow, cyan, purple, almond, teal, blue, raspberry, green, violet. */
@@ -82,21 +84,84 @@ const paletteWidget: WidgetFactory = ({ form, name, field, id, document, labels,
   };
 };
 
-/** A colour as #rrggbb text, picked with the browser's own picker, its code beside it. */
-const hexWidget: WidgetFactory = ({ form, name, id, document }) => {
+/** A colour code typed or pasted, as it is kept: #rrggbb in lower case, from #rgb or #rrggbb, with or without its #, in any case; null when it is none. */
+export function readColour(text: string): string | null {
+  const found = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(foldDigits(stripMarks(text)).trim());
+  if (!found) return null;
+  const hex = found[1].toLowerCase();
+  return `#${hex.length === 3 ? [...hex].map((digit) => digit + digit).join('') : hex}`;
+}
+
+/**
+ * A colour as #rrggbb text: picked with the browser's own picker, or typed or
+ * pasted as its code in the box beside it — #rgb or #rrggbb, with or without
+ * its #, in any case — which refuses anything else, and says why. An empty
+ * colour shows as no colour, never black; one that need not be given can be
+ * cleared. Read-only, its swatch and its code alone.
+ */
+const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
+  const words = wordsFor(labels, locale);
+  const label = node.label ?? field.label;
   const input = make('input', { id, type: 'color', class: 'fd-colour-input' });
-  const code = make('span', { class: 'fd-colour-code', dir: 'ltr' });
-  input.addEventListener('input', () => form.setValue(name, input.value));
+  const swatch = make('span', { class: 'fd-colour-swatch', 'aria-hidden': 'true' });
+  const well = make('span', { class: 'fd-colour-well' }, input, swatch);
+  const code = make('input', { id: `${id}-code`, type: 'text', class: 'fd-input fd-colour-code', dir: 'ltr', autocomplete: 'off', spellcheck: 'false', placeholder: '#rrggbb', 'aria-label': `${label}: ${words.colourCodeBox}` });
+  const clear = make('button', { type: 'button', class: 'fd-colour-clear', hidden: '', 'aria-label': fillIn(words.clear, { label }), title: fillIn(words.clear, { label }) }, '×');
+  const element = make('span', { class: 'fd-colour-box' }, well, code, clear);
+  const hint = refusalHint(code, element);
+  const checks = guard(code, {
+    // Only what a colour code is made of: a # first, then six hex digits at most.
+    judge: (next) => (/^#?[0-9a-f]{0,6}$/i.test(foldDigits(stripMarks(next)).trim()) ? null : words.colourCode),
+    paste: (text) => (readColour(text) ? { text: stripMarks(text).trim() } : { refuse: words.colourCode }),
+  }, hint);
+  const unread = () => form.getState().unread?.[name];
+  const take = (colour: string | null) => {
+    if (unread()) form.setUnread(name, null);
+    form.setValue(name, colour);
+  };
+  input.addEventListener('input', () => take(input.value));
+  code.addEventListener('input', () => {
+    // A whole code is taken as it is typed; one on its way waits.
+    const colour = readColour(code.value);
+    if (colour) take(colour);
+    else if (code.value.trim() === '' && form.getState().values[name] !== null) take(null);
+  });
+  code.addEventListener('blur', () => {
+    if (code.readOnly) return;
+    const text = code.value.trim();
+    // A code left half typed stays, marked, and says what a code is; the colour stays what it was.
+    if (text && !readColour(text)) form.setUnread(name, { text: code.value, message: words.colourCode });
+  });
+  clear.addEventListener('click', () => {
+    take(null);
+    code.focus();
+  });
   return {
-    element: make('span', { class: 'fd-colour-box' }, input, code),
+    element,
     focus: () => input.focus(),
+    destroy: () => checks.destroy(),
     update(state) {
       const text = typeof state.value === 'string' ? state.value : '';
-      const hex = /^#[0-9a-f]{6}$/i.test(text) ? text.toLowerCase() : '#000000';
-      if (input.value !== hex) input.value = hex;
-      setText(code, text);
-      if (input.disabled !== state.readonly) input.disabled = state.readonly;
+      const colour = readColour(text);
+      const kept = unread();
+      if (input.value !== (colour ?? '#000000')) input.value = colour ?? '#000000';
+      swatch.style.setProperty('--fd-swatch', colour ?? 'transparent');
+      swatch.classList.toggle('fd-colour-none', !colour);
+      setAttr(swatch, 'title', colour ? null : words.noColour);
+      if (document.activeElement !== code) {
+        const shown = kept ? kept.text : text;
+        if (code.value !== shown) {
+          code.value = shown;
+          checks.accept();
+        }
+      }
+      // Read-only, its swatch and code are shown, not offered: the picker goes, the code is read.
+      setHidden(input, state.readonly);
+      if (code.readOnly !== state.readonly) code.readOnly = state.readonly;
+      setHidden(clear, state.readonly || state.required || !text);
+      setAttr(code, 'aria-invalid', String(state.invalid || !!kept));
+      setAttr(code, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
       describeState(input, state);
     },
   };

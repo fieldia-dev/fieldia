@@ -11,7 +11,7 @@ describe('where JSON goes wrong', () => {
   it('says the line and column of the first character that cannot be there', () => {
     // A comma after the last closing brace: line 7, column 2.
     const text = '{\n  "weekdays": "07:00-20:00",\n  "weekends": "closed",\n  "holidays": [\n    "2026-10-06"\n  ]\n},';
-    expect(jsonProblem(text)).toEqual({ offset: text.length - 1, line: 7, column: 2 });
+    expect(jsonProblem(text)).toEqual({ offset: text.length - 1, line: 7, column: 2, reason: 'char', char: ',' });
     // A key without quotes, on the second line.
     expect(jsonProblem('{\n  name: 1\n}')).toMatchObject({ line: 2, column: 3 });
     // A trailing comma inside an object: the closing brace is where it breaks.
@@ -24,7 +24,7 @@ describe('where JSON goes wrong', () => {
 
   it('says the end, when the text stops too soon', () => {
     const text = '{\n  "a": [1, 2';
-    expect(jsonProblem(text)).toEqual({ offset: text.length, line: 2, column: 13 });
+    expect(jsonProblem(text)).toEqual({ offset: text.length, line: 2, column: 13, reason: 'end' });
     expect(jsonProblem('"open')).toMatchObject({ line: 1, column: 6 });
   });
 

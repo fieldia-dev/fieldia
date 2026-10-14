@@ -2,6 +2,7 @@ import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/co
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { floatUnder } from './float';
 import { setAttr, setHidden } from './kind-parts';
+import { guard, refusalHint } from './input-rules';
 import { drawIcon } from './icons';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -573,23 +574,55 @@ function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boole
 }
 
 /**
- * Free-text tags on a text field, kept as "oak, glass": Enter or a comma adds
- * what was typed, Backspace in an empty box takes the last one away, and the
- * node's `options.suggestions` are offered as you type. `options.separator`
- * is "," unless set; with `options.max`, the box goes once there are as many.
+ * Free-text tags on a text field, kept as "oak, glass": Enter adds what was
+ * typed, and so does a separator — the page's (`options.separator`, "," unless
+ * set), and always "," and the Arabic "،" an Arabic keyboard's comma key types
+ * — or a line break, so a list pasted on lines is one tag a line. Backspace in
+ * an empty box takes the last one away, and the node's `options.suggestions`
+ * are offered as you type. A tag already there, in any case, is not added
+ * twice: the hint under the box says so and its chip is marked. With
+ * `options.max`, the box stays at the most and says so, naming the tags not
+ * added; they stay in the box, and the form keeps them as text it could not
+ * take, so Save says so too. Typing never moves the focus to a chip.
  */
-export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
+  const words = labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
   const options = node.options ?? {};
   const separator = typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',';
+  const max = typeof options['max'] === 'number' ? options['max'] : Infinity;
+  const label = node.label ?? field.label;
   const suggestions = Array.isArray(options['suggestions']) ? options['suggestions'].filter((s): s is string => typeof s === 'string') : [];
   const split = (text: unknown) =>
     typeof text === 'string' ? text.split(separator).map((t) => t.trim()).filter((t) => t !== '') : [];
+  /** Typed or pasted text in its tags: at the page's separator, a comma in either script, and a line break. */
+  const pieces = (text: string) => text.split(separator).flatMap((part) => part.split(/[,\u060c\r\n]/));
   const current = () => split(form.getState().values[name]);
   const write = (tags: string[]) => form.setValue(name, tags.length ? tags.join(`${separator} `) : null);
-  const add = (raw: string) => {
+  /** A tag added, or why not: nothing typed, there already (in any case), or the most there already. */
+  const add = (raw: string): 'added' | 'empty' | 'there' | 'full' => {
     const tag = raw.trim();
     const tags = current();
-    if (tag && !tags.some((t) => t.toLowerCase() === tag.toLowerCase()) && !(tags.length >= (options['max'] as number))) write([...tags, tag]);
+    if (!tag) return 'empty';
+    if (tags.some((t) => t.toLowerCase() === tag.toLowerCase())) return 'there';
+    if (tags.length >= max) return 'full';
+    write([...tags, tag]);
+    return 'added';
+  };
+  /** Tags typed or pasted added in turn; the hint says which are there already, or not added at the most. Those not added. */
+  const addAll = (raws: string[]): string[] => {
+    const left: string[] = [];
+    let there = '';
+    for (const raw of raws) {
+      const result = add(raw);
+      if (result === 'full') left.push(raw.trim());
+      else if (result === 'there') there = raw.trim();
+    }
+    if (left.length) hint.show(fill(words.tagsAtMost, { label, max: String(max), tags: left.join(`${separator} `) }));
+    else if (there) {
+      hint.show(fill(words.tagThere, { tag: there }));
+      markThere(there);
+    }
+    return left;
   };
 
   const element = document.createElement('div');
@@ -597,11 +630,13 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
   element.setAttribute('role', 'group');
   const chips = document.createElement('ul');
   chips.className = 'fd-chips';
+  /** Tags not added at the most, waiting in the box for room. */
+  let waiting = '';
   const box = combobox({
     document,
     id,
-    labels,
-    placeholder: node.placeholder,
+    labels: words,
+    placeholder: node.placeholder || words.addTag,
     search: async (query) => {
       const taken = new Set(current().map((t) => t.toLowerCase()));
       const wanted = query.trim().toLowerCase();
@@ -610,7 +645,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
         .map((s) => ({ id: s, label: s }));
     },
     pick: (record) => {
-      add(record.label);
+      addAll([record.label]);
       box.input.value = '';
       adder?.added();
     },
@@ -619,49 +654,86 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
       if (tags.length) write(tags.slice(0, -1));
     },
   });
-  // Enter with nothing chosen from the list adds what was typed.
+  // Said under the tags, as any box's refusals are: a tag there already, tags past the most.
+  const hint = refusalHint(box.input, element);
+  const checks = guard(box.input, {
+    judge: () => null,
+    // A list pasted — on lines, or with separators — is its tags, added at once; one word is typed as any.
+    paste(text) {
+      const parts = pieces(text);
+      if (parts.length < 2) return { text: text.trim() };
+      const left = addAll([box.input.value, ...parts]);
+      box.input.value = '';
+      return left.length || hint.words ? { refuse: hint.words } : { text: '' };
+    },
+  }, hint);
+  /** The chip of a tag there already, marked a moment for the eye. */
+  let marked: ReturnType<typeof setTimeout> | undefined;
+  function markThere(tag: string) {
+    const chip = [...chips.querySelectorAll<HTMLElement>('.fd-chip')].find((c) => c.querySelector('.fd-chip-label')?.textContent?.toLowerCase() === tag.toLowerCase());
+    if (!chip) return;
+    chip.classList.add('fd-chip-there');
+    clearTimeout(marked);
+    marked = setTimeout(() => chip.classList.remove('fd-chip-there'), 1600);
+  }
+  /** What is left in the box: the tags not added, kept for the person to see. */
+  const keep = (left: string[], rest = '') => (box.input.value = [...left, rest].filter(Boolean).join(`${separator} `));
+  // Enter with nothing chosen from the list adds what was typed; never sends the form.
   box.input.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' || event.defaultPrevented || box.input.value.trim() === '') return;
     event.preventDefault();
-    add(box.input.value);
-    box.input.value = '';
+    const left = addAll(pieces(box.input.value));
+    keep(left);
     box.close();
-    adder?.added();
+    if (!left.length) adder?.added();
   });
   // A separator typed ends a tag.
   box.input.addEventListener('input', () => {
-    const parts = box.input.value.split(separator);
+    const parts = pieces(box.input.value);
     if (parts.length < 2) return;
-    for (const part of parts.slice(0, -1)) add(part);
-    box.input.value = parts[parts.length - 1].trimStart();
+    keep(addAll(parts.slice(0, -1)), parts[parts.length - 1].trimStart());
+    checks.accept();
   });
-  // Typed and left without Enter: kept. (change comes before blur clears the box.)
-  box.input.addEventListener('change', () => {
-    if (box.input.value.trim()) add(box.input.value);
-  });
+  /** What is typed and not yet added, taken: added, or kept waiting in the box, the form keeping it with the reason. */
+  const commit = () => {
+    if (box.input.readOnly) return;
+    const typed = box.input.value.trim();
+    const left = typed ? addAll(pieces(typed)) : [];
+    waiting = left.join(`${separator} `);
+    if (box.input.value !== waiting) keep(left);
+    box.setText(waiting);
+    form.setUnread(name, waiting ? { text: waiting, message: fill(words.tagsAtMost, { label, max: String(max), tags: waiting }) } : null);
+  };
+  // Typed and left without Enter, or taken by Ctrl+Enter's save (a change): kept. (Before the box itself hears it left.)
+  box.input.addEventListener('change', commit);
+  element.addEventListener('blur', (event) => event.target === box.input && commit(), true);
   // Added from a button, "Add Tag", that turns into the box and comes back once a tag is added.
-  const adder = options['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels), box, element) : null;
+  const adder = options['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, words), box, element) : null;
   element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let drawn = '';
   return {
     element,
     focus: () => box.input.focus(),
+    destroy: () => {
+      clearTimeout(marked);
+      checks.destroy();
+    },
     update(state) {
       const tags = split(state.value);
       box.setReadonly(state.readonly);
-      const full = tags.length >= (options['max'] as number);
+      const full = tags.length >= max;
+      // At the most, the box stays: what is typed there is told it waits for room.
       if (adder) adder.setReadonly(state.readonly || full);
-      else box.element.hidden = state.readonly || full;
-      box.input.setAttribute('aria-invalid', String(state.invalid));
-      if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
+      else box.element.hidden = state.readonly;
+      box.input.setAttribute('aria-invalid', String(state.invalid || !!form.getState().unread?.[name]));
+      const described = hint.describedBy(state.describedBy);
+      if (described) box.input.setAttribute('aria-describedby', described);
+      else box.input.removeAttribute('aria-describedby');
       const key = JSON.stringify([state.readonly, tags]);
       if (key === drawn) return;
       drawn = key;
-      const typing = document.activeElement === box.input;
-      drawChips(chips, tags.map((t) => ({ id: t, label: t })), state.readonly, labels, (record) => write(current().filter((t) => t !== record.label)));
-      box.setText('');
-      // The box gone at the most, the cursor stays in the keywords: on the last one's ×.
-      if (typing && box.element.hidden) chips.querySelector<HTMLButtonElement>('li:last-child button')?.focus();
+      drawChips(chips, tags.map((t) => ({ id: t, label: t })), state.readonly, words, (record) => write(current().filter((t) => t !== record.label)));
+      box.setText(waiting);
     },
   };
 };

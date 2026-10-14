@@ -127,7 +127,8 @@ test.describe('the inputs’ details in the viewer', () => {
     const count = wishes.locator('.fd-count');
     await expect(count).toHaveText('0 / 300');
     await expect(area).toHaveAttribute('rows', '2');
-    await expect(area).toHaveAttribute('maxlength', '300');
+    // No maxlength: the browser never cuts a paste; the box refuses a key at the most, with words.
+    await expect(area).not.toHaveAttribute('maxlength', /.*/);
     const before = (await box(area)).height;
     await area.fill('Fragile: the plants.\nThe big monitor.\nThe chair with the cushion.\nMy books, in four boxes.');
     await expect(count).toHaveText('90 / 300');
@@ -136,12 +137,13 @@ test.describe('the inputs’ details in the viewer', () => {
     await area.fill('x'.repeat(280));
     await expect(count).toHaveText('280 / 300');
     expect(await count.evaluate((c) => getComputedStyle(c).color)).not.toBe(plain);
-    // The box stops at the most.
+    // The box stops at the most, and says why under it.
     await area.press('End');
     await page.keyboard.type('y'.repeat(40));
     expect(((await valueOf(page, 'wishes')) as string).length).toBe(300);
+    await expect(wishes.locator('.fd-refusal-hint')).toHaveText(/takes at most 300 characters$/);
     // Said to a screen reader once typing pauses.
-    await expect(wishes.locator('[aria-live=polite]')).toHaveText('Characters left: 0');
+    await expect(wishes.locator('.fd-sr-only[aria-live=polite]')).toHaveText('Characters left: 0');
     await wishes.scrollIntoViewIfNeeded();
     await screen(page, 'inputs-paragraph-count', { viewport: true });
   });
@@ -198,7 +200,8 @@ test.describe('web addresses, phones, emails and money', () => {
   test('a record’s web address, phone and email say what to type', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     await node(page, 'f-portal').locator('input').fill('the client portal');
-    await node(page, 'f-phone').locator('input').fill('call me');
+    // Letters never land in a phone number's box (the input rules, 0.21): too few digits are said instead.
+    await node(page, 'f-phone').locator('input').fill('0100 12');
     await node(page, 'f-email').locator('input').fill('site@');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(errorOf(page, 'f-portal')).toHaveText('Enter a web address, like example.com');
@@ -342,7 +345,9 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await expect(tried.getByRole('option')).toHaveText(['oak', 'glass', 'steel']);
     await tried.getByRole('option', { name: 'oak' }).click();
     await materials.fill('walnut,');
-    await expect(materials).toBeHidden();
+    // At its most the box stays, and says so if more is typed (the input rules, 0.21).
+    await expect(tried.locator('.fd-chip-label')).toHaveText(['oak', 'walnut']);
+    await expect(materials).toBeVisible();
     await page.getByRole('button', { name: 'Problems' }).click().catch(() => undefined);
     await expect(tried.getByText('Visit day can’t be on a Friday or Saturday').first()).toBeVisible();
     await expect(tried.getByText('Arrival can’t be before 09:00').first()).toBeVisible();

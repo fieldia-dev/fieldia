@@ -11,7 +11,8 @@ import { VARIANTS } from './variants';
  */
 
 const valueOf = (page: Page, field: string) => page.evaluate((name) => (window as any).fieldiaDemo.handle.form.getState().values[name], field);
-const said = (scope: Locator) => scope.locator('[aria-live=polite]');
+// What a group's own voice says: its announcer, not a box's hint (a polite status too, under each box once entered).
+const said = (scope: Locator) => scope.locator('.fd-announce[aria-live=polite]');
 
 /** Press, move in steps at hand speed, release. */
 async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, steps = 8) {

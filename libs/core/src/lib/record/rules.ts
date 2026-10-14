@@ -4,6 +4,7 @@ import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
+import { foldDigits, stripMarks } from './input-rules';
 import { fill, type Messages } from './messages';
 import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
@@ -67,7 +68,8 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
   const text = typeof value === 'string' ? value : null;
   if (text !== null && rule.minLength !== undefined && text.length < rule.minLength) return { say: 'minLength', values: { min: rule.minLength } };
   if (text !== null && rule.maxLength !== undefined && text.length > rule.maxLength) return { say: 'maxLength', values: { max: rule.maxLength } };
-  if (pattern && (text !== null || isNumber(value)) && !pattern.test(String(value))) return { say: 'pattern' };
+  // Its digits as 0-9, no direction marks, trimmed: "١١٥١١" is five digits.
+  if (pattern && (text !== null || isNumber(value)) && !pattern.test(text !== null ? foldDigits(stripMarks(text)).trim() : String(value))) return { say: 'pattern' };
   if (text !== null && rule.endsWith !== undefined && !text.trim().toLowerCase().endsWith(rule.endsWith.toLowerCase())) {
     return { say: 'endsWith', values: { ending: rule.endsWith } };
   }

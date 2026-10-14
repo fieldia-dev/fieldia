@@ -108,7 +108,8 @@
     "iban": {
       "type": "char",
       "label": "IBAN",
-      "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9 ]{10,30}$",
+      "pattern": "^[A-Za-z]{2}[0-9]{2}( ?[A-Za-z0-9]){10,30}$",
+      "patternHint": "{label}: two letters, two digits, then the account, like EG38 0019 0005 0000 0000 2631 8000 2",
       "help": "Two letters, two digits, then the account: EG38 0019 0005 0000 0000 2631 8000 2."
     },
     "tax_id": {

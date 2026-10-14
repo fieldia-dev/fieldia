@@ -379,6 +379,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-chip-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 0 4px; border-radius: 999px; }
 .fd-chip-remove:hover { color: var(--fd-error); }
 .fd-tags .fd-combo { flex: 1 1 140px; }
+/* A tag typed again: its chip, marked a moment, as the hint under the tags says it is there already. */
+.fd-chip.fd-chip-there { box-shadow: 0 0 0 2px var(--fd-warning); }
 .fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
 
 /* ---- one2many lines ------------------------------------------------------- */
@@ -853,11 +855,13 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-properties { display: grid; gap: 8px; min-width: 0; }
 .fd-property { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
 .fd-property > label { color: var(--fd-muted); font-size: 13px; }
-.fd-property[data-type="boolean"] > :last-child { justify-self: start; }
+.fd-property[data-type="boolean"] > :nth-child(2) { justify-self: start; }
+/* A row's problem and a refused key's hint, under its value, not its label. */
+.fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 2; margin-block-start: -8px; }
 /* Beside their values, as the sheet's labels are: the same label column, the same words, the same gap between halves — the properties read as fields of the sheet. */
 .fd-form[data-fd-skin="underline"] .fd-property { grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-property > label { color: var(--fd-text); font-size: inherit; font-weight: var(--fd-label-weight); }
-@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } .fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 1; margin-block-start: 0; } }
 .fd-progressbar {
   position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
   background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;

@@ -1,4 +1,4 @@
-import { ADDRESS_PARTS } from '@fieldia/core';
+import { ADDRESS_PARTS, postcodeFits, settledPostcode, settledText } from '@fieldia/core';
 import type { WidgetLabels } from './labels';
 import { describeState, maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
@@ -10,9 +10,12 @@ import type { WidgetFactory } from './widgets';
  * what order: street, city, postcode and country unless it says. The country
  * is chosen from a list in the page's language and kept as its ISO code;
  * `options.country` is the one it starts on, kept once anything else is
- * typed. `options.requiredParts` are marked, and the form asks for them. The
- * value is an object of the parts filled in, keeping any part it was given
- * that it does not ask for; nothing at all when every part is empty.
+ * typed. `options.requiredParts` are marked, and the form asks for them; a
+ * postcode is checked against its country's shape where it is known (Egypt's
+ * five digits). Each part is kept trimmed once left, a postcode with its
+ * digits as 0-9. The value is an object of the parts filled in, keeping any
+ * part it was given that it does not ask for; nothing at all when every part
+ * is empty.
  */
 
 const PARTS: Record<(typeof ADDRESS_PARTS)[number], [keyof WidgetLabels, string]> = {
@@ -74,6 +77,17 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
         ? make('select', attrs, make('option', { value: '' }), ...countriesIn(locale).map(([code, country]) => make('option', { value: code }, country)))
         : make('input', { type: 'text', ...attrs });
     input.addEventListener(part === 'country' ? 'change' : 'input', () => write(part, input.value));
+    // Left, a part is kept trimmed, spaces alone being nothing; a postcode with its digits as 0-9 ("١١٥١١" is 11511).
+    if (part !== 'country') {
+      const box = input as HTMLInputElement;
+      box.addEventListener('blur', () => {
+        if (box.readOnly) return;
+        const settled = part === 'postcode' ? settledPostcode(box.value) : settledText(box.value, {});
+        if (settled === box.value) return;
+        box.value = settled;
+        write(part, settled);
+      });
+    }
     if (part === 'country') input.classList.add('fd-select');
     element.append(make('div', { class: `fd-address-part fd-address-${part}${needed.includes(part) ? ' fd-required' : ''}` }, make('label', { class: 'fd-address-label', for: input.id }, words[label]), input));
     return { part, input };
@@ -84,6 +98,7 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
     focus: () => boxes[0]?.input.focus(),
     update(state) {
       const value = state.value && typeof state.value === 'object' && !Array.isArray(state.value) ? (state.value as Record<string, unknown>) : {};
+      const badPostcode = postcodeFits(value['country'], value['postcode']) === false;
       for (const { part, input } of boxes) {
         const text = typeof value[part] === 'string' ? (value[part] as string) : part === 'country' && value['country'] === undefined ? start : '';
         if (input instanceof HTMLSelectElement) {
@@ -93,8 +108,9 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
         } else input.readOnly = state.readonly;
         // What is being typed stays as typed.
         if (document.activeElement !== input && input.value !== text) input.value = text;
-        // Wrong, a part that must be filled and is not is marked.
-        input.setAttribute('aria-invalid', String(state.invalid && (!needed.length || (needed.includes(part) && !text.trim()))));
+        // Wrong, a part that must be filled and is not is marked; a postcode not of its country's shape, alone.
+        const missing = needed.includes(part) && !text.trim();
+        input.setAttribute('aria-invalid', String(state.invalid && (badPostcode ? part === 'postcode' || missing : !needed.length || missing)));
       }
       describeState(element, state);
     },

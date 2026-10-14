@@ -66,18 +66,21 @@ describe('text widgets', () => {
     expect(q<HTMLInputElement>(el, 'input').value).toBe('From the server');
   });
 
+  // An email and a web address are text boxes with their phone keyboards: the browser's own would keep an
+  // international domain as punycode and trim as it is typed.
   it.each([
-    ['email', 'email'],
-    ['phone', 'tel'],
-    ['url', 'url'],
-    ['password', 'password'],
-  ])('uses the %s input type', (widget, inputType) => {
+    ['email', 'text', 'email'],
+    ['phone', 'tel', null],
+    ['url', 'text', 'url'],
+    ['password', 'password', null],
+  ])('uses the %s input type', (widget, inputType, keyboard) => {
     const { el } = setup({ type: 'char' }, { widget });
     expect(q<HTMLInputElement>(el, 'input').type).toBe(inputType);
+    expect(q<HTMLInputElement>(el, 'input').getAttribute('inputmode')).toBe(keyboard);
   });
 
-  it('limits length to the field size, and uses a textarea for text', () => {
-    expect(q<HTMLInputElement>(setup({ type: 'char', size: 12 }).el, 'input').maxLength).toBe(12);
+  it('never lets the browser cut a text at the field size, and uses a textarea for text', () => {
+    expect(q<HTMLInputElement>(setup({ type: 'char', size: 12 }).el, 'input').hasAttribute('maxlength')).toBe(false);
     const { form, el } = setup({ type: 'text' });
     type(q<HTMLTextAreaElement>(el, 'textarea'), 'Line one\nLine two');
     expect(valueOf(form)).toBe('Line one\nLine two');
