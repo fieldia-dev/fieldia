@@ -42,8 +42,9 @@ export function goingItem(make: Make, words: WidgetLabels, picture: HTMLElement,
   retry.addEventListener('click', on.retry);
   cancel.addEventListener('click', on.cancel);
   let name: HTMLElement = make('span');
-  const box = make('div', { class: 'fd-file-open fd-file-going-box' }, picture, name, size);
-  const element = make('li', { class: 'fd-file-item fd-file-going' }, box, make('div', { class: 'fd-file-progress-box' }, bar, state, retry), cancel);
+  // The bar and its words inside the item's own frame: a line of their own in a list, at a card's foot, over a tile's.
+  const box = make('div', { class: 'fd-file-open fd-file-going-box' }, picture, name, size, make('div', { class: 'fd-file-progress-box' }, bar, state, retry));
+  const element = make('li', { class: 'fd-file-item fd-file-going' }, box, cancel);
   let shownName = '';
   return {
     element,
@@ -61,8 +62,9 @@ export function goingItem(make: Make, words: WidgetLabels, picture: HTMLElement,
       setText(state, goingWords(words, going));
       const moving = going.status !== 'failed' && going.status !== 'refused';
       setHidden(bar, !moving);
-      // A number once the store has told one; until then the bar moves with none.
+      // A number once the store has told one; until then the bar moves with none — and waits, empty and still, for its turn.
       if (going.status === 'uploading' && going.total) bar.value = Math.min(100, Math.floor((going.sent * 100) / going.total));
+      else if (going.status === 'waiting') bar.value = 0;
       else bar.removeAttribute('value');
       setAttr(bar, 'aria-label', fill(words.uploadingNamed, { name: going.name }));
       setHidden(retry, readonly || going.status !== 'failed');

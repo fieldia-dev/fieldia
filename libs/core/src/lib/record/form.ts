@@ -574,6 +574,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     uploads: [],
   };
   started = true;
+  /** Fields showing a file that did not reach the store: shown until it is sent again or taken away, whatever else changes. */
+  const unstoredShown = new Set<string>();
   /** Files on their way to the store: uploads.ts. */
   const uploads = createUploads({
     source: () => options.dataSource,
@@ -591,7 +593,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const values = line ? { [line.field]: ((state.values[line.field] as Line[] | null) ?? []).map((l) => (l.key === line.key ? { ...l, values: { ...l.values, [field]: value } } : l)) } : { [field]: value };
       writeValues({ ...(state.values as Values), ...values });
     },
-    changed: (list) => set({ uploads: list }),
+    changed(list) {
+      // A file sent again, or taken away, takes its problem with it.
+      const problems = uploads.problems(messages);
+      const gone = [...unstoredShown].filter((key) => !(key in problems));
+      for (const key of gone) unstoredShown.delete(key);
+      const errors = gone.length ? Object.fromEntries(Object.entries(state.errors).filter(([key]) => !gone.includes(key))) : null;
+      set({ uploads: list, ...(errors ? { errors } : {}) });
+    },
     track,
   });
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
@@ -933,6 +942,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (JSON.stringify(values[name] ?? null) === refused.value) kept[name] ??= refused.message;
       else delete serverErrors[name];
     }
+    // A file that did not reach the store stays said under its field.
+    const unstoredNow = uploads.problems(messages);
+    for (const key of unstoredShown) if (unstoredNow[key]) kept[key] ??= unstoredNow[key];
     return kept;
   }
 
@@ -1125,6 +1137,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function unstored(errors: Record<string, string>): Partial<FormState> {
     const files = uploads.problems(messages);
     const only = Object.fromEntries(Object.entries(errors).filter(([key]) => key in files));
+    for (const key of Object.keys(only)) unstoredShown.add(key);
     if (!Object.keys(only).length) return {};
     return { status: 'error', error: Object.values(only)[0], saveProblem: { kind: 'fields', message: Object.values(only)[0], fields: only } };
   }

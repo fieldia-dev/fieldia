@@ -92,14 +92,8 @@ interface Entry {
   end?: () => void;
 }
 
-/** An `AbortController`, the host's; a small one where there is none. */
-function stopper(): { signal: UploadSignal; abort(): void } {
-  const Host = (globalThis as unknown as { AbortController?: new () => { signal: UploadSignal; abort(): void } }).AbortController;
-  if (Host) return new Host();
-  const listeners = new Set<() => void>();
-  const signal = { aborted: false, addEventListener: (_: 'abort', l: () => void) => void listeners.add(l), removeEventListener: (_: 'abort', l: () => void) => void listeners.delete(l) };
-  return { signal, abort: () => ((signal.aborted = true), listeners.forEach((l) => l())) };
-}
+/** The host's `AbortController`: every browser's, and Node's. Core names no DOM types. */
+const stopper = () => new (globalThis as unknown as { AbortController: new () => { signal: UploadSignal; abort(): void } }).AbortController();
 
 const sameFile = (a: FileValue, b: FileValue) => a.name === b.name && a.data === b.data && a.url === b.url;
 const isFile = (value: unknown): value is FileValue => !!value && typeof value === 'object' && typeof (value as FileValue).name === 'string' && typeof (value as FileValue).size === 'number';

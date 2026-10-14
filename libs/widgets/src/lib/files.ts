@@ -160,7 +160,12 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     let readonly = false;
     let files: FileValue[] = [];
     let shown: unknown;
-    const say = (lines: string[]) => note.replaceChildren(...lines.map((line) => make('div', {}, line)));
+    const say = (lines: string[], said?: 'uploads') => {
+      // What came of the uploads is news, not a warning: it wears the help's colour.
+      if (said) note.dataset['said'] = said;
+      else delete note.dataset['said'];
+      note.replaceChildren(...lines.map((line) => make('div', {}, line)));
+    };
     /** This field's files on their way to the store, as the form has them. */
     const goingNow = (): readonly FileUpload[] => (form.getState().uploads ?? []).filter((upload) => upload.field === name && !upload.line);
 
@@ -257,7 +262,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       }
       // Once nothing is on its way, how many got there.
       if (!going.some(uploadGoing) && uploadedSince) {
-        say([uploadedSince === 1 ? words.fileUploaded : fill(words.filesUploaded, { n: uploadedSince })]);
+        say([uploadedSince === 1 ? words.fileUploaded : fill(words.filesUploaded, { n: uploadedSince })], 'uploads');
         uploadedSince = 0;
       }
       if (focusAt >= 0) (list.children[Math.min(focusAt, list.children.length - 1)]?.querySelector<HTMLElement>('button') ?? input).focus();
@@ -398,7 +403,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         input.disabled = readonly;
         input.hidden = pick.hidden;
         setHidden(replace, several || !files.length || readonly);
-        if (bar) setHidden(bar, !files.length);
+        // The switch shows once there is a file, stored or on its way.
+        if (bar) setHidden(bar, !files.length && !going.length);
         if (count) setText(count, !files.length ? '' : several && field.maxFiles ? fill(words.fileCountOf, { n: files.length, max: field.maxFiles }) : files.length === 1 ? words.oneFile : fill(words.fileCount, { n: files.length }));
         describeState(input, state);
         const uploads = form.getState().uploads;

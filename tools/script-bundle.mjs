@@ -418,7 +418,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // save's conflict, and the memory source keeping them — versions, a change from elsewhere, permissions kept to as a
 // backend keeps them, every id a search matches, totals by field and group, a file stored with its progress — 3.4
 // more, to 525.2.
-const BUDGET_KB = 525.2;
+// Files stored as they are picked (0.21, lane w1-files): the form's uploads — three at a time, each photo made smaller
+// first, put in its place in the order picked, a save that waits for them and stops under the field for one that
+// failed, a file's bytes stored by the save and never kept in a draft — uploadTo for a plain endpoint or a signed
+// address, the memory source as a slow store, a field's files on their way (a bar, × and Retry, said to a screen
+// reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
+// the viewer saying why Save waits — 20.2 more, to 545.4.
+const BUDGET_KB = 545.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -471,7 +477,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // 0.21's data source contract (a loaded record's version and permissions, a save's conflict, and the memory source
 // keeping them, with every matching id, totals and a stored file's progress), 1.4 more, to 159.4.
-const GZIP_BUDGET_KB = 159.4;
+// files stored as they are picked (the form's uploads and a save that waits for them, uploadTo, files on their way
+// with a bar, × and Retry and their stylesheet, photos made smaller, the viewer saying why Save waits), 7.3 more, to 166.7.
+const GZIP_BUDGET_KB = 166.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -508,7 +516,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A list's filter bar and its nested rows — Filter by keyword, Clear filters, Filter by {label}, Filter settings,
 // Expand all, Collapse all — six words in each: Arabic's to 23.7, German's to 10.2 and 4.3, French's to 10.3 and 4.2.
 // Joined for 0.20, the five work item lanes' words together: Arabic's 27.2 and 5.6, German's 11.7 and 4.9, French's 11.8 and 4.8.
-const ADD_ON_BUDGET_KB = { ar: [27.2, 5.6], de: [11.7, 4.9], fr: [11.8, 4.8] };
+// Files stored as they are picked (0.21) — where a file on its way is (waiting, made smaller, its share sent, not
+// uploaded, not taken), its bar's, Cancel's and Retry's names, files uploaded, a save or a send waiting for them, and
+// why a save stopped for one — 20 words in each: Arabic's to 29.5 and 5.9, German's to 12.7 and 5.1, French's to 12.9 and 5.0.
+const ADD_ON_BUDGET_KB = { ar: [29.5, 5.9], de: [12.7, 5.1], fr: [12.9, 5.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

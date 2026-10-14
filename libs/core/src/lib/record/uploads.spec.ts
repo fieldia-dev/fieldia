@@ -321,6 +321,23 @@ describe('a save waits for the files on their way, and stops for one that did no
     expect(state().errors).toEqual({ photos: '3 files were not uploaded: try again, or remove them', plan: 'plan.exe was not taken: not a kind of file the store keeps' });
   });
 
+  it('keeps a failed file said under its field while other things change, until it is sent again', async () => {
+    const store = handStore();
+    const { form, state } = setup({ upload: store.upload });
+    form.setValue('name', 'Garden flat');
+    form.upload('photos', [photo('balcony.jpg')]);
+    await tick();
+    store.sent[0].fail(new Error('503'));
+    await form.settled();
+    expect(await form.save()).toBe(false);
+    // Another change — a person's, or an onchange's answer — leaves it said.
+    form.setValue('name', 'Garden flat, Zamalek');
+    expect(state().errors).toEqual({ photos: 'balcony.jpg was not uploaded: try again, or remove it' });
+    // Sent again: no longer a problem, so no longer said.
+    form.retryUpload(state().uploads[0].id);
+    expect(state().errors).toEqual({});
+  });
+
   it('says a failed file with the form’s own problems, all at once', async () => {
     const store = handStore();
     const page = listing();
