@@ -391,13 +391,27 @@ test('a quantity typed past its places or with a second decimal mark is refused 
   await quantity.click();
   await page.keyboard.press('End');
   await page.keyboard.type('1234567.5');
-  // Two places at most: the keys that would pass them never land, and the box says why under it.
-  await expect(quantity).toHaveValue('4.00');
+  // Two places at most. "4.001" may still be on its way to a number grouped the other way round ("4.001,5"), so it
+  // stands; the 2 after it never can, and is refused, the box saying why under it, and the keys after it wait with it:
+  // never a number made of the rest.
+  await expect(quantity).toHaveValue('4.001');
   await expect(hint).toHaveText('To Produce takes at most 2 decimal places');
-  await page.keyboard.type('.');
-  await expect(hint).toHaveText('A number has only one decimal mark');
+  // Left so, all that was typed stays in the box, marked, with why; the quantity keeps what it held.
   await page.keyboard.press('Tab');
+  await expect(quantity).toHaveValue('4.001234567.5');
+  await expect(quantity).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('[data-node="f-product-qty"] .fd-error').first()).toHaveText('Digits are grouped in threes, like 1,234,567');
+  expect(await value(page, 'product_qty')).toBe(4);
+  await expect(page.locator('body')).not.toContainText('NaN');
+  // A second decimal mark is refused as it is typed, saying why; Backspace takes it back.
+  await quantity.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('4.00.');
+  await expect(quantity).toHaveValue('4.00');
+  await expect(hint).toHaveText('A number has only one decimal mark');
+  await page.keyboard.press('Backspace');
   await expect(hint).toBeHidden();
+  await page.keyboard.press('Tab');
   await expect(quantity).toHaveAttribute('aria-invalid', 'false');
   expect(await value(page, 'product_qty')).toBe(4);
   // The components' quantities and the work orders' durations keep what they held: no NaN anywhere.
