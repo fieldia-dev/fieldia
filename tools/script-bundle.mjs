@@ -471,7 +471,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // all your changes" (and "Sent, …" once answers went); Save & Close taking back the focus it let go of while it
 // saved; and a field's box naming its value as the field shows it — 2.8 more (571.69 measured before, 574.49 after),
 // to 574.5.
-const BUDGET_KB = 574.5;
+// A run that saved asks before it leaves what changed meanwhile: an action's answer naming another record after a
+// `save` step, and a page in a record's place whose own button saves, then closes it, asked once — 0.2 more (574.49
+// measured before, 574.68 after), to 574.7.
+const BUDGET_KB = 574.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -542,7 +545,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 175.7.
 // Every way out asking before it leaves work behind (listed with the raw budget above): 175.63 measured before,
 // 176.54 after, to 176.6.
-const GZIP_BUDGET_KB = 176.6;
+// A run that saved asks before it leaves what changed meanwhile (listed with the raw budget above): 176.54 measured
+// before, 176.62 after, to 176.7.
+const GZIP_BUDGET_KB = 176.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
