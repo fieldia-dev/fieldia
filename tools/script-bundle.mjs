@@ -439,7 +439,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // are; a custom filter's value read and refused as every box's is, a day in the page's order, and words beside it when
 // Apply waits; a list's search reading the page's numbers and a phone by its digits, the memory source finding them;
 // and a formula's Arabic digits — 2.6 more, to 573.3 (measured 573.25). (A grid's block paste is the grid's own: never in this script.)
-const BUDGET_KB = 573.3;
+// The input rules' last gaps (0.20.1): a date read as Fieldia writes it at rest, its month in words in any of its four
+// languages from Intl's own names (none carried in the code), and an instant with its zone, and a year of two digits
+// said with both centuries it could be (core 1.4; the date box's guard letting a month's name be typed, 0.4); the
+// calendar closed as its box is left and saying why its text was not read, for a date and a range (0.6); a colour's
+// code never changing the colour held (0.3); an email's link and zero-width characters cleaned, and its ":" refused
+// (0.4); their English words (0.3) — 3.4 more, to 576.7 (measured 576.66).
+const BUDGET_KB = 576.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -499,8 +505,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // choices taken or said; listed with the raw budget above), 4.2 more, to 175.8 (measured 175.74); the input rules in
 // tables and lists (totals that wait for the line that does not read, a cell's message said as it is left, the custom
 // filter's number and day, the search's numbers and phones, a formula's Arabic digits; listed with the raw budget
-// above), 1.1 more, to 176.9 (measured 176.87).
-const GZIP_BUDGET_KB = 176.9;
+// above), 1.1 more, to 176.9 (measured 176.87); the input rules' last gaps (dates as written at rest, a year of two
+// digits said, the calendar never over why, a colour's code, an email's link; listed with the raw budget above), 1.3
+// more, to 178.2 (measured 178.14).
+const GZIP_BUDGET_KB = 178.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -541,7 +549,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // the decimals' plural forms, a postcode's, a web address's, a range's and a time step's checks, a date box's shapes,
 // a table's totals and pastes, a list's filters, 61 in each — Arabic's to 35.3 and 7.0 (Arabic letters are six ASCII
 // bytes each), German's to 15.1 and 6.0, French's to 15.5 and 6.0.
-const ADD_ON_BUDGET_KB = { ar: [35.3, 7.0], de: [15.1, 6.0], fr: [15.5, 6.0] };
+// Their last gaps (0.20.1) — a year of two digits and both centuries it could be, several choices of one name, a ":"
+// before an email's @, three in each — Arabic's to 35.9 and 7.1, German's to 15.4 and 6.1, French's to 15.7 and 6.1.
+const ADD_ON_BUDGET_KB = { ar: [35.9, 7.1], de: [15.4, 6.1], fr: [15.7, 6.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -611,7 +621,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // the path picker's chevron and divider as measured (path 13.1, 5.2). A path found as typed whatever its separator and
 // script, Tab taking the match typing reached, and words naming nothing said under the box (path 13.6, 5.4). The filter
 // bar's keyword read in the page's language — its marks, Arabic digits — as every box reads a number (filters 11.2).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [13.6, 5.4], choice: [5.4, 2.4], filters: [11.2, 4.2] };
+// Words typed in a path picker and left — by a click, Tab or Enter, before or after their list came — taking the
+// record they name exactly, by its path or its own name, or saying that nothing or several are called so (path 14.4, 5.7).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
