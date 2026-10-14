@@ -75,11 +75,15 @@ export const CALENDAR_CSS = `
 .fd-cal-event-time { font-variant-numeric: tabular-nums; }
 .fd-cal-event-title { font-weight: 600; overflow-wrap: anywhere; }
 .fd-cal-event-who { display: block; opacity: 0.85; }
-.fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event { position: relative; white-space: nowrap; text-overflow: ellipsis; padding-inline-end: 24px; }
+/* 24 pixels at least, so a finger or a pointer can hit each (WCAG 2.5.8). */
+.fd-cal-allday > .fd-cal-event, .fd-cal-day > .fd-cal-event { position: relative; min-height: 24px; box-sizing: border-box; line-height: 20px; white-space: nowrap; text-overflow: ellipsis; padding-inline-end: 24px; }
 .fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-who { display: none; }
+/* A short record keeps to one line, cut with "…": its words whole when pointed at, and to a screen reader. */
+.fd-cal-col > .fd-cal-event[data-short] { white-space: nowrap; text-overflow: ellipsis; }
+.fd-cal-col > .fd-cal-event[data-short] .fd-cal-event-title { overflow-wrap: normal; }
 .fd-cal-resize { position: absolute; inset-inline: 0; bottom: 0; height: 8px; cursor: ns-resize; touch-action: none; }
 .fd-cal-event-menu {
-  position: absolute; top: 1px; inset-inline-end: 1px; z-index: 2; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px;
+  position: absolute; top: 0; inset-inline-end: 0; z-index: 2; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px;
   display: none; place-items: center; background: var(--fd-surface); color: var(--fd-text); font: 700 14px/1 system-ui, sans-serif; cursor: pointer;
 }
 .fd-cal-event:hover > .fd-cal-event-menu, .fd-cal-event:focus-within > .fd-cal-event-menu, .fd-cal-event:focus > .fd-cal-event-menu { display: grid; }
@@ -94,7 +98,7 @@ export const CALENDAR_CSS = `
 .fd-cal-daynum { justify-self: start; min-width: 26px; height: 26px; padding: 0 6px; border: 0; border-radius: 999px; background: none; color: var(--fd-text); font: inherit; font-size: 12.5px; cursor: pointer; }
 .fd-cal-day[data-out] .fd-cal-daynum { color: var(--fd-muted); }
 .fd-cal-day[aria-current="date"] .fd-cal-daynum { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
-.fd-cal-more { justify-self: start; padding: 0 6px; border: 0; background: none; color: var(--fd-accent); font: inherit; font-size: 12px; cursor: pointer; }
+.fd-cal-more { justify-self: start; min-height: 24px; padding: 0 6px; border: 0; background: none; color: var(--fd-accent); font: inherit; font-size: 12px; cursor: pointer; }
 .fd-cal-day > .fd-cal-event .fd-cal-event-who { display: none; }
 
 /* The agenda: each day that has something, its records in order. */

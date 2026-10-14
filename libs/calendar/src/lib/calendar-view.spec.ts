@@ -47,11 +47,19 @@ describe("a list's calendar", () => {
     const mona = block(host, 'Mona Adel');
     expect(columnOf(mona)?.dataset['day']).toBe('2026-10-14');
     expect(mona.style.top).toBe('96px');
-    expect(mona.style.height).toBe('22px');
+    // Half an hour is 24 pixels: a slot or a record never smaller than a finger's target.
+    expect(mona.style.height).toBe('24px');
     expect(mona.getAttribute('aria-label')).toBe('Mona Adel, Wednesday 14 October, 10:00 to 10:30, with Dr Karim');
     expect(block(host, 'Laila Hany') && columnOf(block(host, 'Laila Hany'))?.dataset['day']).toBe('2026-10-15');
     // Next week's is not in this one.
     expect(block(host, 'Next week')).toBeUndefined();
+  });
+
+  it('takes 96 pixels an hour for slots of a quarter of an hour, so each slot is 24 pixels tall', async () => {
+    const host = await mount({}, clinicPage({ slot: 15 }));
+    expect(cal(host).style.getPropertyValue('--fd-cal-hour')).toBe('96px');
+    expect(block(host, 'Mona Adel').style.top).toBe(`${2 * 96}px`);
+    expect(block(host, 'Mona Adel').style.height).toBe('46px');
   });
 
   it('puts records that meet side by side, and colours each by its kind', async () => {

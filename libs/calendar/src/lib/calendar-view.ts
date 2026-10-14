@@ -8,8 +8,8 @@ import type { CalendarSettings } from './settings';
 import { installCalendarStyles } from './styles';
 
 const ALL_VIEWS: CalendarView[] = ['day', 'week', 'month', 'agenda'];
-/** Pixels an hour takes in the day and the week: --fd-cal-hour. */
-const HOUR = 48;
+/** The least a slot or a record is tall, so a finger or a pointer can hit it (WCAG's 24 pixels). */
+const TARGET = 24;
 /** How far a press moves before it is a drag rather than a click. */
 const DRAG_FROM = 4;
 /** How long a record pressed into an empty slot lasts, in minutes. */
@@ -45,6 +45,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const views = (spec.views?.length ? spec.views : ALL_VIEWS).filter((v, i, all) => all.indexOf(v) === i);
   const firstDay = firstDayOf(locale, spec.firstDay);
   const slot = spec.slot ?? 30;
+  /** Pixels an hour takes in the day and the week (--fd-cal-hour): 48, or more where a slot would be under 24 pixels. */
+  const HOUR = Math.max(48, Math.ceil((TARGET * 60) / slot));
   const hours = spec.hours ?? { start: 8, end: 20 };
   const limit = settings.limit ?? 500;
   const id = `fd-cal-${++made}`;
@@ -115,6 +117,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, labels.keysDays);
   const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysSlot, keysDay);
   element.setAttribute('role', 'group');
+  element.style.setProperty('--fd-cal-hour', `${HOUR}px`);
 
   // ---- asking for the records of the span shown ---------------------------------------------------------------
 
@@ -389,7 +392,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         const block = eventBlock(event, column.day, false, !!column.resource);
         const top = (minutesOf(start) - from * 60) * (HOUR / 60);
         const length = (sameDay(end, column.day) ? minutesOf(end) : 24 * 60) - minutesOf(start);
-        const height = Math.max(18, length * (HOUR / 60) - 2);
+        const height = Math.max(TARGET, length * (HOUR / 60) - 2);
         const place = placed.get(event.id) ?? { column: 0, columns: 1 };
         block.style.top = `${top}px`;
         block.style.height = `${height}px`;
