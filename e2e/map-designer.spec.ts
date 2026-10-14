@@ -170,9 +170,10 @@ test('a kitchen’s map in the screen designer: its areas from the app’s borde
   await expect(areas.getByLabel('Areas', { exact: true })).toHaveValue('cairo-districts');
   await expect(areas.getByLabel('Shaded by')).toHaveValue('fee');
   await expect(areas.getByLabel('A press chooses it into')).toHaveValue('offer_district');
-  // The area within fifteen minutes, made ten by typing.
+  // The area within fifteen minutes, made ten by typing, kept as the box is left.
   const near = layers.nth(1);
-  await near.getByRole('spinbutton', { name: 'Minutes' }).fill('10');
+  await near.getByRole('textbox', { name: 'Minutes' }).fill('10');
+  await near.getByRole('textbox', { name: 'Minutes' }).press('Tab');
   await expect.poll(async () => mapsOn((await page_(page)).layout)[0].layers[1]).toMatchObject({ reachable: { from: 'kitchen', minutes: 10 } });
   // Its tools, ticked as the page has them.
   const tools = page.getByRole('group', { name: 'Tools' });

@@ -1,6 +1,6 @@
 import type { Field, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, choose, field, mount, openTab, press, type } from './test-editor';
+import { button, choose, field, leave, mount, openTab, press, type, typeAndLeave } from './test-editor';
 
 /**
  * "Worked out from": a formula typed with the page's fields suggested by
@@ -55,6 +55,9 @@ describe('worked out from', () => {
     expect(suggested()).toEqual(['Quantity']);
     press('Enter', {}, box());
     expect(box().value).toBe('price * qty');
+    // Kept as the box is left, all of it read.
+    expect(def('total').compute).toBeUndefined();
+    leave(box());
     expect(def('total').compute).toBe('price * qty');
     expect(panel().querySelector('.fd-formula-outcome')?.textContent).toBe('With Price 120 and Quantity 3: 360');
     expect(panel().querySelector('.fd-formula-reads')?.textContent).toBe('Reads: Price × Quantity');
@@ -71,18 +74,30 @@ describe('worked out from', () => {
     expect(box().getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('says what is wrong under the box, its place marked, and keeps the last formula that read', () => {
+  it('says what is wrong under the box, its place marked, and keeps the last formula that read, saying which', () => {
     const { designer, box, panel, def } = screen('total');
-    type(box(), 'price * qty');
+    typeAndLeave(box(), 'price * qty');
     type(box(), 'prise * qty');
     const problem = panel().querySelector('.fd-formula-problem') as HTMLElement;
     expect(problem.hidden).toBe(false);
-    expect(problem.querySelector('.fd-formula-problem-words')?.textContent).toBe('Unknown field “prise” at 1–5');
+    expect(problem.querySelector('.fd-formula-problem-words')?.textContent).toBe('Not in force yet: Unknown field “prise” at 1–5. The page keeps price * qty.');
     expect(problem.querySelector('mark')?.textContent).toBe('prise');
+    leave(box());
     expect(def('total').compute).toBe('price * qty');
     expect(designer.getState().issues).toEqual([]);
     type(box(), 'total * 2');
-    expect(problem.querySelector('.fd-formula-problem-words')?.textContent).toBe('“Total” cannot be worked out from itself');
+    expect(problem.querySelector('.fd-formula-problem-words')?.textContent).toBe('Not in force yet: “Total” cannot be worked out from itself. The page keeps price * qty.');
+  });
+
+  it('never keeps the part typed so far that happens to read: only all of it, as the box is left', () => {
+    const { box, def, panel } = screen('total');
+    for (const typed of ['qty * ٢', 'qty * ۲', 'qty * 1٫5', 'qty * 2 + abc', 'qty * 1,5']) {
+      type(box(), typed);
+      leave(box());
+    }
+    // Arabic and Persian digits and ٫ read; a comma never does, and the page keeps the last that read.
+    expect(def('total').compute).toBe('qty * 1٫5');
+    expect(panel().querySelector('.fd-formula-problem-words')?.textContent).toMatch(/The page keeps qty \* 1٫5\. In a formula the decimal mark is a point or ٫, like 1\.5$/);
   });
 
   it('puts in a function where the cursor is', () => {
@@ -96,8 +111,9 @@ describe('worked out from', () => {
 
   it('takes the formula away when the box is emptied, and the field can be typed in again', () => {
     const { box, def } = screen('total');
-    type(box(), 'price * qty');
-    type(box(), '');
+    typeAndLeave(box(), 'price * qty');
+    expect(def('total').compute).toBe('price * qty');
+    typeAndLeave(box(), '');
     expect(def('total').compute).toBeUndefined();
   });
 
@@ -116,7 +132,7 @@ describe('set when a field changes', () => {
     choose(field(panel(), 'Set'), 'vip');
     expect(def('state').setWhen).toEqual([{ value: "'active'", on: ['vip'] }]);
     expect([...panel().querySelectorAll('.fd-set-when-say')].map((s) => s.textContent)).toEqual(['Set to Active when “VIP” changes']);
-    type(field(panel(), 'When'), 'vip');
+    typeAndLeave(field(panel(), 'When'), 'vip');
     expect(def('state').setWhen).toEqual([{ when: 'vip', value: "'active'", on: ['vip'] }]);
     expect([...panel().querySelectorAll('.fd-set-when-say')].map((s) => s.textContent)).toEqual(['Set to Active when “VIP” changes, if VIP']);
     // Back to as the condition starts to hold: the condition is kept, the field it was on goes.
@@ -139,6 +155,7 @@ describe('set when', () => {
     type(field(panel(), 'Set to'), 'bulk');
     expect(def('kind').setWhen).toBeUndefined();
     typeOn(field(panel(), 'When') as HTMLInputElement, 'qty > 10');
+    leave(field(panel(), 'When'));
     expect(def('kind').setWhen).toEqual([{ when: 'qty > 10', value: "'bulk'" }]);
     expect([...panel().querySelectorAll('.fd-set-when-say')].map((s) => s.textContent)).toEqual(['Set to “bulk” when Quantity > 10']);
     (button(panel(), 'Remove: Set to “bulk” when Quantity > 10') as HTMLButtonElement).click();
@@ -149,12 +166,12 @@ describe('set when', () => {
     const state = screen('state');
     (button(state.panel(), 'Set when…') as HTMLButtonElement).click();
     choose(field(state.panel(), 'Set to'), 'active');
-    type(field(state.panel(), 'When'), 'qty > 1');
+    typeAndLeave(field(state.panel(), 'When'), 'qty > 1');
     expect(state.def('state').setWhen).toEqual([{ when: 'qty > 1', value: "'active'" }]);
     const vip = screen('vip');
     (button(vip.panel(), 'Set when…') as HTMLButtonElement).click();
     choose(field(vip.panel(), 'Set to'), 'True');
-    type(field(vip.panel(), 'When'), 'qty > 100');
+    typeAndLeave(field(vip.panel(), 'When'), 'qty > 100');
     expect(vip.def('vip').setWhen).toEqual([{ when: 'qty > 100', value: 'True' }]);
   });
 });

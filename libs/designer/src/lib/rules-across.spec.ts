@@ -2,7 +2,7 @@ import type { Field, FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, pageChanges, pageChecks } from './designer';
 import { sampleHolds } from './rules-formula';
 import { answerRuleKinds, answerRuleMust, answerRuleSentence, kindsFitting, pageRules } from './rules-words';
-import { button, field, mount, openTab, press, type } from './test-editor';
+import { button, field, leave, mount, openTab, press, type, typeAndLeave } from './test-editor';
 
 /**
  * A rule across fields, SurveyJS's expression validator: an expression the
@@ -144,14 +144,15 @@ describe('a rule across fields, in the panel', () => {
     expect(node('end').validate).toBeUndefined();
     expect(sentences()).toEqual(['Must hold: …']);
     type(box, 'end >= sta');
+    leave(box);
     expect(node('end').validate).toBeUndefined();
-    expect(panel().querySelector('.fd-answer-rule-across .fd-formula-problem')?.textContent).toMatch(/^Unknown field “sta”/);
-    type(box, 'end >= start');
+    expect(panel().querySelector('.fd-answer-rule-across .fd-formula-problem')?.textContent).toMatch(/^Not in force yet: Unknown field “sta”.* The page has no formula until this one reads\./);
+    typeAndLeave(box, 'end >= start');
     expect(node('end').validate).toEqual([{ holds: 'end >= start' }]);
     expect(sentences()).toEqual(['Must hold: Contract ends ≥ Start date']);
     // Typing on keeps the same rule, and the same box.
     expect(field(panel(), 'Must hold')).toBe(box);
-    type(box, 'end > start');
+    typeAndLeave(box, 'end > start');
     expect(node('end').validate).toEqual([{ holds: 'end > start' }]);
   });
 

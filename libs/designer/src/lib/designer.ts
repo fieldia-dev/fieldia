@@ -64,6 +64,7 @@ import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
 import { DESIGNER_WORDS, designerLocale, isDefaultOption, type DesignerLocale, type DesignerWords } from './designer-words';
 import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
+import { settingRefusal } from './setting-refusals';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -709,7 +710,8 @@ export function createDesigner(options: {
     forgetGoneTargets(draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
-      issues = checked.issues.map((issue) => words.refusals.invalid(issue.path, issue.message));
+      // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.
+      issues = checked.issues.map((issue) => settingRefusal(issue.path, words) ?? words.refusals.invalid(issue.path, issue.message));
       notify();
       return false;
     }
@@ -1534,7 +1536,7 @@ export function createDesigner(options: {
     // panel lane
     setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change, fromModel)),
     // json lane
-    ...pageJsonCommands({ getPage: () => page, apply }),
+    ...pageJsonCommands({ getPage: () => page, apply, words }),
     lists: () => clone(options.lists ?? []),
     setOptionsFrom(id, from) {
       const found = findNode(page, id);

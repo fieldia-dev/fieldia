@@ -1,3 +1,5 @@
+import { foldDigits } from '../record/input-rules';
+
 /**
  * Tokenizer for expressions: modifiers, and values worked out from others.
  *
@@ -6,6 +8,11 @@
  * The React version dropped it silently, so `amount > -5` read as
  * `amount > 5` and `a && b` read as `a b`. A minus sign is a token of its
  * own, so `a-5` is a subtraction; the parser reads `-5` as a negative number.
+ *
+ * A number may be written in Arabic-Indic (٠-٩) or Persian (۰-۹) digits, with
+ * a point or the Arabic decimal separator (٫): "٢٫٥" is the token "2.5", as
+ * every box of Fieldia reads one. A comma is never a decimal mark here: it
+ * parts the values a function takes.
  */
 
 export type TokenType =
@@ -62,7 +69,7 @@ export function tokenize(expr: string): Token[] {
   // with a digit. Sticky (`y`), so a position nothing matches is an error
   // instead of a gap.
   const token =
-    /(\(|\)|,|==|!=|<=|>=|<>|<|>|[-+*/%]|not\s+in\b|in\b|and\b|or\b|not\b|\[[^\]]*\]|'[^']*'|"[^"]*"|\d+\.?\d*|\w+(?:\.\w+)*)/iy;
+    /(\(|\)|,|==|!=|<=|>=|<>|<|>|[-+*/%]|not\s+in\b|in\b|and\b|or\b|not\b|\[[^\]]*\]|'[^']*'|"[^"]*"|[\d\u0660-\u0669\u06f0-\u06f9]+[.\u066b]?[\d\u0660-\u0669\u06f0-\u06f9]*|\w+(?:\.\w+)*)/iy;
   const space = /\s*/y;
   let at = 0;
 
@@ -77,9 +84,16 @@ export function tokenize(expr: string): Token[] {
     if (!match) {
       throw new Error(`Unexpected "${expr[at]}" at character ${at + 1} of: ${expr}`);
     }
-    tokens.push({ type: getTokenType(match[0]), value: match[0], position: tokens.length });
+    const type = getTokenType(match[0]);
+    // A number in any of its scripts is read as 0-9 and a point.
+    tokens.push({ type, value: type === 'NUMBER' ? asciiNumber(match[0]) : match[0], position: tokens.length });
     at = token.lastIndex;
   }
+}
+
+/** A number's digits as 0-9 and its decimal mark as a point: "٢٫٥" is "2.5". */
+function asciiNumber(text: string): string {
+  return foldDigits(text).replace('\u066b', '.');
 }
 
 /**
@@ -131,7 +145,7 @@ function getTokenType(text: string): TokenType {
   }
 
   // Numbers (integer or float; a minus sign before one is its own token)
-  if (/^\d+\.?\d*$/.test(text)) {
+  if (/^\d+\.?\d*$/.test(asciiNumber(text))) {
     return 'NUMBER';
   }
 

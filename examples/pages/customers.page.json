@@ -28,6 +28,7 @@
     "sort": [{ "field": "name" }],
     "pageSize": 8,
     "searchFields": ["name", "email", "phone", "country_id", "state"],
+    "cells": { "phone": { "widget": "phone" } },
     "filters": [
       { "id": "active", "label": "Active", "filter": [{ "field": "state", "op": "=", "value": "active" }] },
       { "id": "blocked", "label": "Blocked", "filter": [{ "field": "state", "op": "=", "value": "blocked" }] },

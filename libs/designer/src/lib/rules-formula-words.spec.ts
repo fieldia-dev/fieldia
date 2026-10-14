@@ -1,7 +1,7 @@
 import type { Field, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
 import { formulaInWords } from './rules-formula';
-import { button, field, mount, openTab, press, type } from './test-editor';
+import { button, field, leave, mount, openTab, press, type } from './test-editor';
 
 /**
  * A formula read in words. The box keeps the formula as the page stores it —
@@ -94,8 +94,8 @@ describe('a formula in words, above its box', () => {
     press('Enter', {}, box);
     expect(box.value).toBe('qty');
     expect(words()).toBe('Reads: Quantity');
+    leave(box);
     expect(designer.getPage().fields['total'].compute).toBe('qty');
-    box.blur();
     designer.updateQuestion('f-qty', { label: 'Number of units' });
     expect(words()).toBe('Reads: Number of units');
     expect(designer.getPage().fields['total'].compute).toBe('qty');

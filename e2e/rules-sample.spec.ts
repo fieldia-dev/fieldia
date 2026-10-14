@@ -84,7 +84,7 @@ async function customerWithLength(page: Page) {
   await expect(sampleIn(panel(page))).toBeHidden();
   await panel(page).getByRole('button', { name: 'Add a rule' }).click();
   await page.getByRole('menuitem', { name: 'A length' }).click();
-  await expect(panel(page).getByRole('spinbutton', { name: 'Shortest' })).toBeFocused();
+  await expect(panel(page).getByRole('textbox', { name: 'Shortest' })).toBeFocused();
   return sampleIn(panel(page));
 }
 
@@ -116,13 +116,13 @@ test.describe('try a value beside the answer rules', () => {
     await expect(box).toHaveAttribute('aria-invalid', 'false');
     await check(page, 'passes');
 
-    // The rule edited: the verdict follows at once, the value stays.
-    const shortest = panel(page).getByRole('spinbutton', { name: 'Shortest' });
+    // The rule edited: the verdict follows as its box is left, the value stays.
+    const shortest = panel(page).getByRole('textbox', { name: 'Shortest' });
     await shortest.click();
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.type('6');
-    await expect(said(sample)).toHaveText(['×Customer must be at least 6 charactersStops sending']);
     await panel(page).getByRole('textbox', { name: 'Message when it does not fit' }).click();
+    await expect(said(sample)).toHaveText(['×Customer must be at least 6 charactersStops sending']);
     await page.keyboard.type('Write the full name');
     await expect(said(sample)).toHaveText(['×Write the full nameStops sending']);
     await expect(box).toHaveValue('Acme');
@@ -184,6 +184,8 @@ test.describe('try a value beside the answer rules', () => {
     await page.keyboard.type(' > @visit');
     await expect(panel(page).getByRole('listbox', { name: 'Fields' }).getByRole('option')).toHaveText([/^Visit date/]);
     await page.keyboard.press('Enter');
+    // Kept as the box is left, all of it read.
+    await holds.press('Tab');
     await expect(panel(page).locator('.fd-answer-rule-say')).toHaveText(['Must hold: Due by > Visit date']);
     await panel(page).getByRole('textbox', { name: 'Message when it does not fit' }).click();
     await page.keyboard.type('Due after the visit');

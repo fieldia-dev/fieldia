@@ -69,8 +69,10 @@ describe('the most characters, and a paragraph’s rows', () => {
     expect(host.querySelector('.fd-canvas-field.fd-editing .fd-count')?.textContent).toBe('0 / 80');
     enter(inline(host, 'Most characters'), '');
     expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    // Refused by its box, in words under it, the setting kept: never taken away in silence.
     enter(inline(host, 'Most characters'), '0');
-    expect(designer.getState().issues).toEqual(['The most characters is a whole number, 1 or more']);
+    expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    expect(inline(host, 'Most characters')?.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Most characters is a whole number, 1 or more');
   });
 
   it('sets a paragraph’s most characters, rows, and whether it grows as people type', () => {

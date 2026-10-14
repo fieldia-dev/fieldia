@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import type { InputLimits } from './input-commands';
+import { settingNumber, type SettingNumberOptions } from './number-box';
 
 /**
  * The text, number and date kinds' settings, in the picked field itself
@@ -25,14 +26,17 @@ export interface InputSettings {
 type Part = Omit<InputSettings, 'elements'> & { element: HTMLElement };
 
 const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
+/** A setting's number as the page holds it, or null. */
+const held = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
 export function inputSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): InputSettings | null {
   const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
   const row = (...parts: HTMLElement[]) => el('div', { class: 'fd-inline-row' }, ...parts);
-  const numberBox = (label: string, extra: Record<string, string> = {}) =>
-    el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, inputmode: 'decimal', ...extra }) as HTMLInputElement;
+  /** The designer's number box: Arabic digits and a decimal comma read, kept as it is left, what does not fit said. */
+  const numberBox = (options: SettingNumberOptions & { placeholder?: string }) =>
+    settingNumber(el, designer, { ...options, attrs: { class: 'fd-inline-input fd-inline-number', ...(options.placeholder ? { placeholder: options.placeholder } : {}), ...options.attrs } });
   const select = (label: string, choices: [string, string][]) =>
     el('select', { class: 'fd-inline-select', 'aria-label': label }, ...choices.map(([value, words]) => el('option', { value }, words))) as HTMLSelectElement;
   const toggle = (label: string, onClick: (on: boolean) => void) => {
@@ -44,18 +48,29 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   const show = (input: HTMLInputElement | HTMLSelectElement, value: unknown) => {
     if (!focused(input)) input.value = value === undefined || value === null ? '' : String(value);
   };
-  /** A number box whose number, once typed and left, is a limit of the field. */
-  const limitBox = (label: string, key: keyof InputLimits, extra: Record<string, string> = {}) => {
-    const input = numberBox(label, extra);
-    input.addEventListener('change', () => designer.setLimits(id, { [key]: numberOrNull(input.value) }));
-    return input;
+  /**
+   * A number box whose number, once typed and left, is a limit of the field (`key`), or takes it away when emptied; what
+   * the page holds is `saved` as it last drew. A whole-number field's limits are whole numbers.
+   */
+  const limitBox = (label: string, key: keyof InputLimits, more: Partial<SettingNumberOptions> & { placeholder?: string } = {}) => {
+    let saved: number | null = null;
+    const options: SettingNumberOptions & { placeholder?: string } = { label, optional: true, ...more, saved: () => saved, commit: (n) => designer.setLimits(id, { [key]: n }) };
+    const box = numberBox(options);
+    return {
+      input: box.input,
+      show(field: Field, value: unknown) {
+        if (more.integer === undefined) options.integer = field.type === 'integer';
+        saved = held(value);
+        box.refresh();
+      },
+    };
   };
   const own = (field: Field, key: string) => (field as Record<string, unknown>)[key];
 
   /** The most characters a short answer or a paragraph takes: a count shows under its box. */
   function most(): Part {
-    const input = limitBox(w.mostCharacters, 'size', { min: '1', step: '1', placeholder: w.any });
-    return { element: word(w.mostCharacters, input), refresh: (page, node) => show(input, own(page.fields[node.field], 'size')) };
+    const box = limitBox(w.mostCharacters, 'size', { integer: true, min: 1, placeholder: w.any });
+    return { element: word(w.mostCharacters, box.input), refresh: (page, node) => box.show(page.fields[node.field], own(page.fields[node.field], 'size')) };
   }
 
   /** A paragraph's rows, and whether it grows as people type. */
@@ -75,16 +90,16 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** Where a number or an amount runs from and to, and its decimals. */
   function range(): Part {
-    const from = limitBox(w.from, 'min', { step: 'any', placeholder: w.any });
-    const to = limitBox(w.toLabel, 'max', { step: 'any', placeholder: w.any });
+    const from = limitBox(w.from, 'min', { placeholder: w.any });
+    const to = limitBox(w.toLabel, 'max', { placeholder: w.any });
     const decimals = select(w.decimals, [['', w.usual], ...Array.from({ length: 7 }, (_, d): [string, string] => [String(d), String(d)])]);
     decimals.addEventListener('change', () => designer.setLimits(id, { decimals: numberOrNull(decimals.value) }));
     return {
-      element: row(word(w.from, from), word(w.to, to), word(w.decimals, decimals)),
+      element: row(word(w.from, from.input), word(w.to, to.input), word(w.decimals, decimals)),
       refresh(page, node) {
         const def = page.fields[node.field];
-        show(from, own(def, 'min'));
-        show(to, own(def, 'max'));
+        from.show(def, own(def, 'min'));
+        to.show(def, own(def, 'max'));
         show(decimals, def.type === 'float' || def.type === 'monetary' ? def.digits?.[1] : undefined);
       },
     };
@@ -174,33 +189,51 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   function day(which: 'min' | 'max'): Part {
     const name = which === 'min' ? w.earliest : w.latest;
     const how = select(name, [['', w.anyDay], ['today', w.today], ['after', w.daysAfter], ['before', w.daysBefore], ['day', w.aDay]]);
-    const days = numberBox('', { min: '1', step: '1' });
+    /** How many days from today: the limit's, else the last good count, else 1 — never one left in a hidden box. */
+    let count = 1;
+    const counting: SettingNumberOptions = {
+      label: w.daysFrom(false, which),
+      integer: true,
+      min: 1,
+      saved: () => count,
+      commit(n) {
+        const before = count;
+        count = n ?? count;
+        const done = save();
+        if (!done) count = before;
+        return done;
+      },
+    };
+    const days = numberBox(counting);
     const date = el('input', { type: 'date', class: 'fd-inline-input', 'aria-label': w.dayOf(which) }) as HTMLInputElement;
     // A day picked to be fixed waits for its date: until then the limit stays as it was.
     let waiting = false;
-    const save = () => {
-      const n = numberOrNull(days.value) ?? 1;
-      const limit = { '': null, today: 'today', after: `today+${n}`, before: `today-${n}`, day: date.value || null }[how.value];
+    function save(): boolean {
+      const limit = { '': null, today: 'today', after: `today+${count}`, before: `today-${count}`, day: date.value || null }[how.value];
       waiting = how.value === 'day' && !limit;
-      if (waiting) return refreshed();
-      designer.setLimits(id, { [which]: limit === 'today+0' || limit === 'today-0' ? 'today' : limit });
-    };
+      if (waiting) {
+        refreshed();
+        return true;
+      }
+      return designer.setLimits(id, { [which]: limit });
+    }
     let refreshed = () => undefined as void;
     how.addEventListener('change', save);
-    days.addEventListener('change', save);
     date.addEventListener('change', save);
     return {
-      element: row(word(name, how), days, date),
+      element: row(word(name, how), days.input, date),
       refresh(page, node) {
         refreshed = () => this.refresh(page, node);
         const limit = own(page.fields[node.field], which);
         const counted = typeof limit === 'string' ? /^today([+-])(\d+)$/.exec(limit) : null;
         const mode = waiting || (typeof limit === 'string' && !counted && limit !== 'today') ? 'day' : typeof limit !== 'string' ? '' : limit === 'today' ? 'today' : (counted as RegExpExecArray)[1] === '+' ? 'after' : 'before';
         if (!focused(how)) how.value = mode;
-        if (counted) show(days, counted[2]);
+        if (counted && Number(counted[2]) >= 1) count = Number(counted[2]);
         if (mode === 'day' && !waiting) show(date, limit);
-        days.hidden = mode !== 'after' && mode !== 'before';
-        days.setAttribute('aria-label', w.daysFrom(mode === 'before', which));
+        days.input.hidden = mode !== 'after' && mode !== 'before';
+        counting.label = w.daysFrom(mode === 'before', which);
+        days.input.setAttribute('aria-label', counting.label);
+        days.refresh();
         date.hidden = mode !== 'day';
       },
     };
@@ -257,32 +290,32 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     list.addEventListener('input', () => designer.setWidgetList(id, 'suggestions', list.value.split('\n')));
     const separator = select(w.separator, [[',', w.comma], [';', w.semicolon]]);
     separator.addEventListener('change', () => designer.setWidgetOptions(id, { separator: separator.value === ',' ? null : separator.value }));
-    const most = numberBox(w.atMost, { min: '1', step: '1', placeholder: w.any });
-    most.addEventListener('change', () => {
-      const n = numberOrNull(most.value);
-      designer.setWidgetOptions(id, { max: n !== null && Number.isInteger(n) && n > 0 ? n : null });
-    });
+    // At most how many: a whole number, 1 or more; emptied, any.
+    let atMost: number | null = null;
+    const most = numberBox({ label: w.atMost, integer: true, min: 1, optional: true, placeholder: w.any, saved: () => atMost, commit: (n) => designer.setWidgetOptions(id, { max: n }) });
     return {
-      element: el('div', { class: 'fd-kind-block' }, word(w.suggestions, list), row(word(w.separator, separator), word(w.atMost, most))),
+      element: el('div', { class: 'fd-kind-block' }, word(w.suggestions, list), row(word(w.separator, separator), word(w.atMost, most.input))),
       refresh(_page, node) {
         const suggestions = node.options?.['suggestions'];
         if (!focused(list)) list.value = Array.isArray(suggestions) ? suggestions.join('\n') : '';
         separator.value = String(node.options?.['separator'] ?? ',');
-        show(most, node.options?.['max']);
+        atMost = held(node.options?.['max']);
+        most.refresh();
       },
     };
   }
 
   /** A progress bar's most, its colour — by how far it has come, or always one — and whether the percent shows on it. */
   function progress(): Part {
-    const most = limitBox(w.most, 'max', { min: '1', step: '1' });
+    // More than 0, said so: a bar's most, 100 unless said.
+    const most = limitBox(w.most, 'max', { above: 0 });
     const colour = select(w.colour, [['', w.byProgress], ['success', w.green], ['warning', w.amber], ['danger', w.red], ['info', w.blue]]);
     colour.addEventListener('change', () => designer.setWidgetOptions(id, { color: colour.value || null }));
     const percent = toggle(w.showsPercent, (on) => designer.setWidgetOptions(id, { showPercent: on ? null : false }));
     return {
-      element: row(word(w.most, most), word(w.colour, colour), percent.element),
+      element: row(word(w.most, most.input), word(w.colour, colour), percent.element),
       refresh(page, node) {
-        show(most, own(page.fields[node.field], 'max') ?? 100);
+        most.show(page.fields[node.field], own(page.fields[node.field], 'max') ?? 100);
         show(colour, node.options?.['color']);
         percent.button.setAttribute('aria-checked', String(node.options?.['showPercent'] !== false));
       },
@@ -325,12 +358,16 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** A frame's height in pixels. */
   function height(): Part {
-    const box = numberBox(w.heightPx, { min: '120', step: '20', placeholder: '480' });
-    box.addEventListener('change', () => {
-      const n = numberOrNull(box.value);
-      designer.setWidgetOptions(id, { height: n !== null && n > 0 ? Math.round(n) : null });
-    });
-    return { element: word(w.heightPx, box), refresh: (_page, node) => show(box, node.options?.['height']) };
+    // A whole number of pixels, 120 to 4000; emptied, the usual 480.
+    let height: number | null = null;
+    const box = numberBox({ label: w.heightPx, integer: true, min: 120, max: 4000, step: 20, optional: true, placeholder: '480', saved: () => height, commit: (n) => designer.setWidgetOptions(id, { height: n }) });
+    return {
+      element: word(w.heightPx, box.input),
+      refresh(_page, node) {
+        height = held(node.options?.['height']);
+        box.refresh();
+      },
+    };
   }
 
   /** A duration's words after it, inside its box: "hours". */

@@ -1,4 +1,4 @@
-import type { LineField, Locale, Value } from '@fieldia/core';
+import { placesOf, placesOfCurrency, type LineField, type Locale, type Value } from '@fieldia/core';
 import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
 import { shownNumber } from './duration';
@@ -30,10 +30,19 @@ export function currencyOf(def: LineField, values: Readonly<Record<string, Value
  * A value as a person reads it where it is not being edited: a cell of the
  * lines grid, a totals row. Shared by the plain lines table and @fieldia/grid.
  * `parent` is the record a line is on, for money in its currency.
+ *
+ * A number is written with its field's places — a money field without them,
+ * its currency's — and never fewer than it has, so a cell never shows a
+ * rounded picture of a different value. Words where a number goes (from a
+ * server, an old draft) are shown as they are, never read by JavaScript's own
+ * rules: never "NaN", never 26 for "0x1A".
  */
 export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>): string {
-  const number = (n: number, digits: number) => formatNumber(n, digits, locale);
   if (value === null || value === undefined || value === '') return '';
+  if ((def.type === 'integer' || def.type === 'float' || def.type === 'monetary') && typeof value !== 'number') return typeof value === 'object' ? JSON.stringify(value) : String(value);
+  if (typeof value === 'number' && !Number.isFinite(value)) return '';
+  /** The places a number is written with: its field's, and never fewer than it has. */
+  const places = (n: number, field: number) => Math.max(field, Math.min(placesOf(n), 20));
   switch (def.type) {
     case 'many2one':
     case 'reference':
@@ -45,15 +54,17 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return Array.isArray(value) ? value.map(label).join(', ') : label(value);
     }
     case 'integer':
-      return number(Number(value), 0);
+      return formatNumber(value as number, places(value as number, 0), locale);
     case 'float':
-      return number(Number(value), def.digits?.[1] ?? 2);
+      return formatNumber(value as number, places(value as number, def.digits?.[1] ?? 2), locale);
     case 'monetary': {
+      const amount = value as number;
       const currency = currencyOf(def, values, parent);
+      const digits = places(amount, def.digits?.[1] ?? placesOfCurrency(currency));
       // As the page's money look writes it, when it has one: by code, after, short, per month.
-      if (def.money) return writeMoney(Number(value), currency, def.digits?.[1] ?? 2, locale, def.money, values);
+      if (def.money) return writeMoney(amount, currency, digits, locale, def.money, values);
       // Its currency's symbol, as the amount's own box shows it.
-      return currency ? formatMoney(Number(value), currency, def.digits?.[1] ?? 2, locale) : number(Number(value), def.digits?.[1] ?? 2);
+      return currency ? formatMoney(amount, currency, digits, locale) : formatNumber(amount, digits, locale);
     }
     case 'date': {
       const date = localDate(String(value));

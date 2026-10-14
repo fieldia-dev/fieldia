@@ -14,10 +14,13 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, lineKind, type ButtonNode, type DateOrder, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
+import { blockOf, readPastedCell } from './cell-paste';
 import {
   cellText,
+  columnTotal,
+  currencyOf,
   createWidget,
   distributionIds,
   distributionModel,
@@ -27,6 +30,7 @@ import {
   openLineDialog,
   kindTextField,
   lineForm,
+  waitingTotal,
   WIDGET_LABELS,
   type WidgetDialogs,
   type Widget,
@@ -66,8 +70,8 @@ interface CellContext {
   registry?: Record<string, WidgetFactory>;
   /** Escape was pressed while editing this line: put it back as it was when the edit began. */
   cancel(key: string, before: Values): void;
-  /** An editor of this line closed. With a whole line open, several close at once. */
-  finish(key: string): void;
+  /** An editor of this line closed: true when Escape put the line back as it was. With a whole line open, several close at once. */
+  finish(key: string): boolean;
   /** How the lines tell sections and notes from items, when they do. */
   kinds?: LineKinds;
   /** What a line is: a section, a note, or (null) an item. */
@@ -298,6 +302,30 @@ class DrawnRenderer implements ICellRendererComp<Line> {
   }
 }
 
+/** A column's total under the lines: its sum, or, while it waits for a line, a dash with its words for a screen reader and on pointing at it. */
+class TotalRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLElement;
+  init(params: ICellRendererParams<Line> & { waits(): string | null }) {
+    this.box = document.createElement('span');
+    this.box.className = 'fd-grid-total';
+    this.refresh(params);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & { waits(): string | null }) {
+    const words = params.waits();
+    if (words) {
+      if (this.box.title !== words) waitingTotal(this.box, words);
+      return true;
+    }
+    this.box.removeAttribute('title');
+    delete this.box.dataset['waits'];
+    this.box.textContent = params.valueFormatted ?? String(params.value ?? '');
+    return true;
+  }
+}
+
 /** The delete button at the end of each line: hidden on a line the table keeps (`lineDelete`). */
 class DeleteRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
@@ -458,7 +486,7 @@ class EmptyOverlay {
 class FieldiaCellEditor implements ICellEditorComp<Line> {
   private box!: HTMLElement;
   private widget!: Widget;
-  private leave = () => undefined as void;
+  private unsubscribe = () => undefined as void;
   private params!: ICellEditorParams<Line> & { cell: CellContext; subfield: string };
   /** The line as it was when the edit began, for Escape to put back. */
   private before: Values = {};
@@ -470,9 +498,12 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   private note: HTMLTextAreaElement | null = null;
   /** A tags box in a whole line open at once, which makes its line as tall as it needs. */
   private grows = false;
+  /** The key that opened the editor, as a spreadsheet's does: typed into the box once it has the focus. */
+  private startKey: string | null = null;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
+    this.startKey = params.eventKey ?? null;
     // Not `column`: AG Grid's own params carry the column object under that name.
     const { cell } = params;
     const key = params.data.key;
@@ -552,7 +583,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       this.widget.update({ value: line?.values[column], values: line?.values ?? {}, parent: cell.form.getState().values, readonly: false, required: def.required === true, invalid });
     };
     show();
-    this.leave = cell.form.subscribe(show);
+    this.unsubscribe = cell.form.subscribe(show);
   }
   /**
    * A note is typed in a box that starts one line tall and grows with its text,
@@ -656,7 +687,38 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       return;
     }
     const input = this.box.querySelector('input');
-    if (input && input.type !== 'checkbox' && document.activeElement === input) selectFromStart(input);
+    if (input && input.type !== 'checkbox' && document.activeElement === input) {
+      selectFromStart(input);
+      this.typeStartKey(input);
+    }
+  }
+  /**
+   * The key that opened the editor goes into its box, in place of the text, as
+   * a spreadsheet's does: "57" is 57, "-3" is -3, "٣٤٥" is 345. It goes in as
+   * typing does, through the box's own rules, so a letter in a number is
+   * refused there with the hint and the value is kept. An IME's key (Process)
+   * opens the box with its text chosen: the IME's words replace it.
+   */
+  private typeStartKey(input: HTMLInputElement) {
+    const key = this.startKey;
+    this.startKey = null;
+    if (!key || [...key].length !== 1 || input.readOnly) return;
+    // After the widget's own work on taking the focus (a number box writes its value plain), which waits a microtask too.
+    queueMicrotask(() => {
+      if (document.activeElement !== input) return;
+      input.setSelectionRange(0, input.value.length);
+      let typed: boolean;
+      try {
+        typed = document.execCommand('insertText', false, key);
+      } catch {
+        typed = false;
+      }
+      if (!typed) {
+        input.setRangeText(key, 0, input.value.length, 'end');
+        input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: key }));
+      }
+      this.fit();
+    });
   }
   getValue() {
     return this.line()?.values[this.column];
@@ -674,10 +736,14 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     return 'over';
   }
   destroy() {
-    this.leave();
+    // The box is left before it goes: its widget keeps what it read, or the text that does not read.
+    const focused = this.box.ownerDocument.activeElement;
+    if (focused instanceof HTMLElement && this.box.contains(focused)) focused.blur();
+    this.unsubscribe();
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
-    cell.finish(data.key);
+    // Its own problem — text that does not read, min, max — is said as the cell is left, unless Escape put the line back.
+    if (!cell.finish(data.key) && !this.kind) cell.form.leave(`${cell.field}.${data.key}.${this.column}`);
     // The line closed: it gives back the height its tags box took.
     if (this.grows && !api.isDestroyed()) {
       node.setRowHeight(null);
@@ -760,9 +826,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const columnsKey = `${form.page.id}.${node.id}.columns`;
   // Number columns the page asks to add up, in a row pinned under the lines.
   const totals = (node.totals ?? []).filter((column) => columns.includes(column));
+  /** Text left in a cell that does not read, kept by the form by the cell's path. */
+  const unreadAt = (line: Line | undefined, column: string) => (line && !kindOf(line) ? form.getState().unread?.[`${name}.${line.key}.${column}`] : undefined);
+  /** A column's total: numbers only, or the line it waits for (text that does not read, or no number). */
+  const totalOf = (current: Line[], column: string) => columnTotal(current, column, (line) => !kindOf(line), (line) => !!unreadAt(line, column));
+  /** The totals that wait for a line, by column: their words. */
+  const totalWaits = new Map<string, string>();
   const totalsRow = (current: Line[]): Line => {
     const items = current.filter((line) => !kindOf(line));
-    const values = Object.fromEntries(totals.map((c) => [c, items.reduce((sum, line) => sum + Number(line.values[c] ?? 0), 0)]));
+    totalWaits.clear();
+    const values = Object.fromEntries(
+      totals.map((column) => {
+        const total = totalOf(current, column);
+        if ('waits' in total) totalWaits.set(column, fill(labels.totalWaits, { n: total.waits }));
+        return [column, 'sum' in total ? total.sum : null];
+      })
+    );
     return { key: '__totals', values: { ...(items[0]?.values ?? {}), ...values } };
   };
   const element = document.createElement('div');
@@ -773,7 +852,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     defs: def.fields,
     labels,
     cancel: () => undefined,
-    finish: () => undefined,
+    finish: () => false,
     kinds,
     kindOf,
     rowMode: node.editMode === 'row',
@@ -811,6 +890,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   problems.className = 'fd-error fd-grid-problems';
   problems.setAttribute('role', 'alert');
   problems.hidden = true;
+  // What a block pasted on the cells did, said politely: how many cells took it, and which did not.
+  const pasteNote = document.createElement('div');
+  pasteNote.className = 'fd-help fd-grid-paste-note';
+  pasteNote.setAttribute('role', 'status');
+  pasteNote.setAttribute('aria-live', 'polite');
+  pasteNote.hidden = true;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
   // Lines chosen for the table's buttons for them: a bar of those buttons over the grid while any is.
@@ -854,7 +939,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const cardList = document.createElement('div');
   cardList.className = 'fd-line-cards';
   if (node.cards) element.dataset['cards'] = node.cards;
-  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, adds);
+  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, pasteNote, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -888,12 +973,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   cell.cancel = (key, before) => void cancelling.set(key, before);
   cell.finish = (key) => {
     const before = cancelling.get(key);
-    if (!before) return void fresh.delete(key);
+    if (!before) {
+      fresh.delete(key);
+      return false;
+    }
     cancelling.delete(key);
+    // Put back as it was, text that did not read goes with what was typed.
+    for (const column of Object.keys(def.fields)) form.setUnread(`${name}.${key}.${column}`, null);
     // A line added a moment ago is taken back, unless the table keeps it: then it stays, as it was begun.
-    if (fresh.delete(key)) return deletable(key) ? form.removeLine(name, key) : undefined;
+    if (fresh.delete(key)) {
+      if (deletable(key)) form.removeLine(name, key);
+      return true;
+    }
     const current = lines();
     if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
+    return true;
   };
   /** Add a line (or a section or note) at the end and start editing its first cell. */
   const addAndEdit = (values: Values = {}) => {
@@ -985,13 +1079,17 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         if (!kindOf(p.data)) return p.data?.values[column];
         return kinds && spans(p.api) ? p.data?.values[kinds.text] : null;
       },
-      valueFormatter: (p) =>
-        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column))
-          ? String(p.value ?? '')
-          : // Hidden by its line, the cell stays, blank, so the column lines up.
-            ruleOf(p.data, column)?.invisible
-            ? ''
-            : cellText(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]),
+      valueFormatter: (p) => {
+        if (kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column))) return String(p.value ?? '');
+        // A total that waits for a line: a dash, its words said by its renderer.
+        if (p.node?.rowPinned && totalWaits.has(column)) return '—';
+        // Hidden by its line, the cell stays, blank, so the column lines up.
+        if (ruleOf(p.data, column)?.invisible) return '';
+        // Text left that does not read shows as it was typed, marked, never as a number it is not.
+        const unread = p.node?.rowPinned ? undefined : unreadAt(p.data, column);
+        if (unread) return unread.text;
+        return cellText(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]);
+      },
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -999,11 +1097,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       autoHeight: !!kinds,
       cellClassRules: {
         'fd-grid-kind-text': (p) => !!kindOf(p.data),
-        'fd-grid-invalid': (p) => !p.node.rowPinned && !!problemAt(p.data, column, p.api),
+        'fd-grid-invalid': (p) => !p.node.rowPinned && (!!problemAt(p.data, column, p.api) || !!unreadAt(p.data, column)),
+        // Shown as it was typed, in the order it was typed, as its box shows it: "12 34" never "34 12" on a right-to-left page.
+        'fd-grid-unread': (p) => !p.node.rowPinned && !!unreadAt(p.data, column),
         'fd-cell-bold': (p) => !!ruleOf(p.data, column)?.bold,
         ...Object.fromEntries(TONES.map((tone) => [`fd-tone-${tone}`, (p: { data: Line | undefined }) => ruleOf(p.data, column)?.tone === tone])),
       },
-      tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
+      tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : (problemAt(p.data, column, p.api) ?? unreadAt(p.data, column)?.message)),
       suppressKeyboardEvent: keys,
       // Numbers, money and dates as wide as their values, never cut; words share the rest by the room they need, giving way when it is tight.
       minWidth: fixedWidth(column) ? 48 : Math.max(96, Math.round(labelWord(column) * 7.6 + 40)),
@@ -1099,6 +1199,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     }
     return base;
   });
+  // A total that waits for a line says so to a screen reader too, and on pointing at it: never NaN, never a confident 0.00.
+  for (const colDef of columnDefs) {
+    const column = colDef.colId as string;
+    if (!totals.includes(column)) continue;
+    const own = colDef.cellRendererSelector;
+    colDef.cellRendererSelector = (p) => (p.node.rowPinned ? { component: TotalRenderer, params: { waits: () => totalWaits.get(column) ?? null } } : own?.(p));
+  }
   if (sequence) {
     // Lines that keep an order are moved by a handle at their start.
     columnDefs.unshift({
@@ -1475,7 +1582,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const current = lines();
     const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
     const shownColumns = columns.filter((column) => !hidden.has(column));
-    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values]);
+    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values, form.getState().unread ?? {}]);
     if (signature === cardsDrawn) return;
     cardsDrawn = signature;
     const parent = form.getState().values;
@@ -1498,7 +1605,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const text = (column: string) => {
         // A distribution says its accounts by their names, as its cell does, once they are found.
         const shares = distributions.get(column);
-        if (!shares) return cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
+        if (!shares) return unreadAt(line, column)?.text ?? cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
         const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
         if (unknown.length) shares.find(line, unknown);
         return distributionWords(line.values[column] as Value, locale, shares.nameOf);
@@ -1544,8 +1651,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     });
     const items = current.filter((line) => !kindOf(line));
     const sums = totals.filter((column) => !hidden.has(column)).map((column) => {
-      const sum = items.reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-      return `${def.fields[column].label}: ${cellText(def.fields[column], sum, items[0]?.values ?? {}, locale, parent, node.cells?.[column])}`;
+      const total = totalOf(current, column);
+      const said = 'waits' in total ? fill(labels.totalWaits, { n: total.waits }) : cellText(def.fields[column], total.sum, items[0]?.values ?? {}, locale, parent, node.cells?.[column]);
+      return `${def.fields[column].label}: ${said}`;
     });
     const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
     cardList.replaceChildren(...cards, ...(total ? [total] : []));
@@ -1600,6 +1708,86 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     }
   });
 
+  // An IME's key on a chosen cell (Process, or a key the keyboard cannot name) opens its editor, focused, for the
+  // IME's words: as a letter typed on it does, which the editor then takes as its first.
+  host.addEventListener('keydown', (event) => {
+    if (readonly || (event.key !== 'Process' && event.key !== 'Unidentified') || !(event.target as HTMLElement).classList.contains('ag-cell')) return;
+    const focused = api.getFocusedCell();
+    if (!focused || focused.rowPinned || api.getEditingCells().length) return;
+    api.startEditingCell({ rowIndex: focused.rowIndex, colKey: focused.column, key: event.key });
+  });
+
+  /** Whether a line's cell takes typing now, as its editor would: an item's, not read-only, not worked out, not hidden. */
+  const typable = (line: Line, column: string) => {
+    const rules = ruleOf(line, column);
+    return !readonly && !kindOf(line) && !locked(def.fields[column]) && !rules?.readonly && !rules?.invisible;
+  };
+  /**
+   * A block pasted on a chosen cell, as a spreadsheet copies one (tabs between
+   * cells, a line break between rows), fills across and down the lines there
+   * are, each cell read as its column reads what is typed. Cells that are
+   * read-only, or cannot read what is pasted, keep what they hold, and so do
+   * rows past the last line: all of them named in one note.
+   */
+  function pasteBlock(rowIndex: number, startColumn: string, text: string) {
+    const shownColumns = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
+    const from = shownColumns.indexOf(startColumn);
+    if (from < 0) return;
+    const all = lines();
+    const dateOrder = (form.page.look as { dateOrder?: DateOrder } | undefined)?.dateOrder;
+    let pasted = 0;
+    const missed: string[] = [];
+    let beyond = false;
+    blockOf(text).forEach((cells, r) => {
+      const line = all[rowIndex + r];
+      if (!line) {
+        beyond ||= cells.some((value) => value.trim() !== '');
+        return;
+      }
+      cells.forEach((value, c) => {
+        const column = shownColumns[from + c];
+        if (!column) return;
+        const sub = def.fields[column];
+        const read = typable(line, column)
+          ? readPastedCell(sub, value, { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) })
+          : null;
+        if (!read) return void missed.push(fill(labels.cellName, { column: sub.label, n: rowIndex + r + 1 }));
+        form.setUnread(`${name}.${line.key}.${column}`, null);
+        form.updateLine(name, line.key, column, read.value);
+        pasted++;
+      });
+    });
+    const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
+    const said = [
+      ...(pasted ? [fill(labels.pastedCells, { n: pasted })] : []),
+      ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
+      ...(beyond ? [fill(labels.pasteBeyondLines, { n: all.length })] : []),
+    ].join(' ');
+    pasteNote.textContent = said;
+    pasteNote.hidden = !said;
+  }
+  /**
+   * A paste while one of this grid's cells is chosen (not edited). A browser sends a paste on what is not editable to
+   * where its selection is, not to the focused cell: it is heard on the page, and taken when the focus is on a cell.
+   */
+  const onPaste = (event: ClipboardEvent) => {
+    const focusedCell = document.activeElement;
+    if (readonly || !(focusedCell instanceof HTMLElement) || !host.contains(focusedCell) || !focusedCell.classList.contains('ag-cell') || api.getEditingCells().length) return;
+    const focused = api.getFocusedCell();
+    const text = event.clipboardData?.getData('text/plain');
+    if (!focused || focused.rowPinned || !text) return;
+    event.preventDefault();
+    pasteBlock(focused.rowIndex, focused.column.getColId(), text);
+  };
+  document.addEventListener('paste', onPaste);
+  // The note goes once the person moves on: a key on a cell, or the grid left.
+  host.addEventListener('keydown', (event) => {
+    if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
+  });
+  element.addEventListener('focusout', (event) => {
+    if (!element.contains(event.relatedTarget as Node | null)) pasteNote.hidden = true;
+  });
+
   // A table grows with its lines until it is long; then it keeps a height of
   // LONG_TABLE rows and scrolls inside, so hundreds of lines draw no more than fit.
   let long = false;
@@ -1612,6 +1800,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   let shown: Line[] | null = null;
   let problemsShown = '';
+  /** The text left unread in this table's cells when last drawn: drawn again, and the totals added again, once it changes. */
+  let unreadShown = '';
   return {
     element,
     focus: () => {
@@ -1627,6 +1817,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       adds.hidden = readonly;
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
+      const unreadNow = JSON.stringify(Object.entries(form.getState().unread ?? {}).filter(([path]) => path.startsWith(`${name}.`)));
+      const unreadChanged = unreadNow !== unreadShown;
+      unreadShown = unreadNow;
       if (current !== shown) {
         shown = current;
         api.setGridOption('rowData', current);
@@ -1637,7 +1830,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         sizeByLines(linesOf(current));
         // The ticks and copies name a line by where it is: it may have moved.
         if (choosing || node.options?.['copy'] === true) api.refreshCells({ columns: ['__pick', '__copy'], force: true, suppressFlash: true });
-      }
+      } else if (unreadChanged && totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+      // Text left unread in a cell shows as typed, marked, and its line's totals wait: drawn again once it changes.
+      if (unreadChanged) api.refreshCells({ force: true, suppressFlash: true });
       // Money in the record's currency: its cells written again once that currency changes.
       if (parentCurrencies.length) {
         const now = JSON.stringify(parentCurrencies.map((field) => state.values[field] ?? null));
@@ -1676,6 +1871,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     },
     destroy() {
       document.removeEventListener('mousedown', outside);
+      document.removeEventListener('paste', onPaste);
       sizes?.disconnect();
       api.destroy();
       apis.delete(element);

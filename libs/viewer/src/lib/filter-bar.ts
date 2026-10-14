@@ -1,4 +1,4 @@
-import { suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Page, type ResolvedFilter } from '@fieldia/core';
+import { suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installFilterStyles } from './filter-styles';
@@ -18,6 +18,8 @@ export interface FilterBarContext {
   icons?: IconSet;
   /** Where the fields the bar offers are kept, as the person chose them with its gear. */
   preferences: PreferenceStore;
+  /** The page's language: a keyword is read in it as a number (its marks, Arabic digits), as every box reads one. */
+  locale?: Locale;
   dataSource: DataSource | undefined;
   model: string;
   /** Conditions every search keeps: a field's values are listed from the records they let through. */
@@ -64,9 +66,9 @@ export function filterBar(context: FilterBarContext) {
   }
 
   const opFor = (field: string) => (page.fields[field]?.type === 'many2many' ? 'contains' : '=');
-  /** The keyword in any of the search fields: their words, a choice by its label, a number as it is. */
+  /** The keyword in any of the search fields: their words, a choice by its label, a number as the page writes one. */
   const keywordFilter = (text: string): ResolvedFilter[] => {
-    const found = suggestions(text, page, node).map((s) => ({ field: s.field, op: s.op, value: s.value }));
+    const found = suggestions(text, page, node, undefined, context.locale).map((s) => ({ field: s.field, op: s.op, value: s.value }));
     return [{ any: found }];
   };
   const facets = (): Facet[] => [

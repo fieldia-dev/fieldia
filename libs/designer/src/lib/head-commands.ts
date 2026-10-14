@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FieldNode, HeadLink, LayoutNode, MenuItem, Page, SheetHead, SheetNode, TabNode, TabsNode } from '@fieldia/core';
+import { foldDigits, type ButtonNode, type Field, type FieldNode, type HeadLink, type LayoutNode, type MenuItem, type Page, type SheetHead, type SheetNode, type TabNode, type TabsNode } from '@fieldia/core';
 import { allIds, findNode, findTab, keptFields, nextName, tabsNodes } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
@@ -87,7 +87,32 @@ export interface HeadCommandsDeps {
 }
 
 const COLOUR = /^#[0-9a-fA-F]{6}$/;
+/** A column's width as the page keeps it: pixels, a share of the row, or of what is left. */
 const TRACK = /^\d+(\.\d+)?(px|%|fr)$/;
+
+/**
+ * Columns' widths as typed — in Arabic or Persian digits too, with a point or
+ * ٫, apart by spaces or commas — as the page keeps them: "١fr، ٢٧٤px" is
+ * ["1fr", "274px"]. None for even columns. The band's and a group's alike.
+ */
+export function tracksFrom(typed: string): string[] | null {
+  const tracks = foldDigits(typed).replace(/\u066b/g, '.').trim().split(/[\s,\u060c]+/).filter(Boolean);
+  return tracks.length ? tracks : null;
+}
+
+/** Why a width cannot be a column's: no width at all (`shape`), or no width a column can be (`range`: under 1px or 1%, over 4000px or 100%, 0fr). */
+export function trackProblem(track: string): 'shape' | 'range' | null {
+  if (!TRACK.test(track)) return 'shape';
+  const n = parseFloat(track);
+  if (track.endsWith('px')) return n >= 1 && n <= 4000 ? null : 'range';
+  if (track.endsWith('%')) return n >= 1 && n <= 100 ? null : 'range';
+  return n > 0 ? null : 'range';
+}
+
+/** The words a width that cannot be a column's is refused with: its range in pixels, or the widths a column takes (`shape`). */
+export function trackRefusal(track: string, shape: (w: DesignerWords) => string): (w: DesignerWords) => string {
+  return (w) => (trackProblem(track) === 'range' && track.endsWith('px') ? w.inputs.trackRange(track, 1, 4000) : shape(w));
+}
 const NUMBER = new Set(['integer', 'float', 'monetary']);
 const COUNTED = new Set(['integer', 'float', 'monetary', 'one2many', 'many2many', 'binary', 'image']);
 
@@ -232,7 +257,9 @@ export function headCommands(deps: HeadCommandsDeps): HeadCommands {
           if (patch.tracks === null || patch.tracks?.length === 0) delete band.tracks;
           else if (patch.tracks !== undefined) {
             const tracks = patch.tracks.map((track) => track.trim()).filter(Boolean);
-            if (tracks.length > 4 || tracks.some((track) => !TRACK.test(track))) throw new Refusal((w) => w.head.tracksShape);
+            if (tracks.length > 4) throw new Refusal((w) => w.head.tracksShape);
+            const bad = tracks.find((track) => trackProblem(track));
+            if (bad !== undefined) throw new Refusal(trackRefusal(bad, (w) => w.head.tracksShape));
             band.tracks = tracks;
           }
           if (patch.labelWidth === null) delete band.labelWidth;

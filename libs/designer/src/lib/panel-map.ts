@@ -7,6 +7,7 @@ import type { BlockContent } from './panel-block';
 import { segmented, setting } from './panel-controls';
 import { stepsEditor, type StepsEditor } from './steps-editor';
 import { placeName } from './steps-words';
+import { settingNumber } from './number-box';
 
 /**
  * A map's own settings, on the Content tab: its name and height, the tools
@@ -93,7 +94,7 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
     if (!layer) return;
     edit(layer);
     tidy(layer);
-    designer.updateMap(id, { layers });
+    return designer.updateMap(id, { layers });
   }
   const tidy = (layer: MapLayer) => {
     const drop = (holder: Record<string, unknown> | undefined) => {
@@ -285,8 +286,24 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
       if (kind === 'place') {
         const moves = tick(w.moves);
         const follow = tick(w.follow);
-        const stale = control<HTMLInputElement>('input', w.staleAfter, { type: 'number', min: '5', max: '86400', step: '1', placeholder: '—' });
-        const staleRow = row(w.staleAfter, stale);
+        // A whole number of seconds, 5 to 86400, checked here — said in the designer's words, never the page's raw path.
+        let staleHeld: number | null = null;
+        const stale = settingNumber(el, designer, {
+          label: w.staleAfter,
+          attrs: { class: 'fd-input', placeholder: '—' },
+          integer: true,
+          min: 5,
+          max: 86400,
+          optional: true,
+          saved: () => staleHeld,
+          commit: (n) =>
+            change(layerId, (l) => {
+              l.live ??= {};
+              if (n === null) delete l.live.staleAfter;
+              else l.live.staleAfter = n;
+            }),
+        });
+        const staleRow = row(w.staleAfter, stale.input);
         moves.box.addEventListener('change', () =>
           change(layerId, (l) => {
             if (moves.box.checked) l.live = {};
@@ -294,19 +311,13 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
           })
         );
         follow.box.addEventListener('change', () => change(layerId, (l) => ((l.live ??= {}).follow = follow.box.checked || undefined)));
-        stale.addEventListener('change', () =>
-          change(layerId, (l) => {
-            l.live ??= {};
-            if (stale.value.trim()) l.live.staleAfter = Number(stale.value);
-            else delete l.live.staleAfter;
-          })
-        );
         body.append(moves.row, follow.row, staleRow);
         updates.push((_page, layer) => {
           moves.box.checked = !!layer.live;
           follow.box.checked = !!layer.live?.follow;
           follow.row.hidden = staleRow.hidden = !layer.live;
-          if (!focused(stale)) stale.value = layer.live?.staleAfter === undefined ? '' : String(layer.live.staleAfter);
+          staleHeld = layer.live?.staleAfter ?? null;
+          stale.refresh();
         });
       }
     }
@@ -418,19 +429,30 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
 
     if (kind === 'reach') {
       const from = control<HTMLSelectElement>('select', w.from);
-      const minutes = control<HTMLInputElement>('input', w.minutes, { type: 'number', min: '1', max: '120', step: '1' });
+      const reach = (l: MapLayer) => (l.reachable ??= { from: '', minutes: 15 });
+      // A whole number of minutes, 1 to 120, kept as it is left: never the 4 of "45" typed.
+      let minutesHeld = 15;
+      const minutes = settingNumber(el, designer, {
+        label: w.minutes,
+        attrs: { class: 'fd-input' },
+        integer: true,
+        min: 1,
+        max: 120,
+        step: 5,
+        saved: () => minutesHeld,
+        commit: (n) => n !== null && change(layerId, (l) => (reach(l).minutes = n)),
+      });
       const mode = control<HTMLSelectElement>('select', w.mode);
       fill(mode, (['car', 'bike', 'foot'] as const).map((value) => ({ value, label: w.modes[value] })));
-      const reach = (l: MapLayer) => (l.reachable ??= { from: '', minutes: 15 });
       from.addEventListener('change', () => change(layerId, (l) => (reach(l).from = from.value)));
-      minutes.addEventListener('input', () => Number(minutes.value) > 0 && change(layerId, (l) => (reach(l).minutes = Math.min(120, Number(minutes.value)))));
       mode.addEventListener('change', () => change(layerId, (l) => (reach(l).mode = mode.value === 'car' ? undefined : (mode.value as 'bike' | 'foot'))));
-      body.append(row(w.from, from), row(w.minutes, minutes), row(w.mode, mode));
+      body.append(row(w.from, from), row(w.minutes, minutes.input), row(w.mode, mode));
       updates.push((_page, layer, node) => {
         const r = layer.reachable ?? { from: '', minutes: 15 };
         fill(from, node.layers.filter((l) => (kindOf(l) === 'place' || kindOf(l) === 'me') && !l.lines).map((l) => ({ value: l.id, label: l.label || l.id })));
         from.value = r.from;
-        if (!focused(minutes)) minutes.value = String(r.minutes);
+        minutesHeld = r.minutes;
+        minutes.refresh();
         mode.value = r.mode ?? 'car';
       });
     }
@@ -553,14 +575,24 @@ export function mapContent(el: ElementFactory, designer: Designer, id: string): 
         view.update(page, layer, node);
         return view.element;
       });
-      layersBox.replaceChildren(...drawn);
+      // In place: a layer's box being typed in is never taken off the page, so it keeps the focus and the caret.
+      keepChildren(layersBox, drawn);
       for (const t of toolTicks) t.box.checked = !!node.tools?.includes(t.tool as Exclude<MapTool, 'nearest'>);
       // A fence's editor by its place among the fences: one taken away, and those after it are drawn again.
       const fences = node.fences ?? [];
       while (fenceViews.length > fences.length) fenceViews.pop();
       for (let at = fenceViews.length; at < fences.length; at++) fenceViews.push(fenceView(at));
       fences.forEach((fence, at) => fenceViews[at].update(page, node, fence));
-      fencesBox.replaceChildren(...fenceViews.map((v) => v.element));
+      keepChildren(fencesBox, fenceViews.map((v) => v.element));
     },
   };
+}
+
+/** A box's children made these, in this order, moving only those out of place: one being typed in stays where it is. */
+function keepChildren(box: HTMLElement, children: HTMLElement[]): void {
+  const kept = new Set<Element>(children);
+  for (const child of [...box.children]) if (!kept.has(child)) child.remove();
+  children.forEach((child, at) => {
+    if (box.children[at] !== child) box.insertBefore(child, box.children[at] ?? null);
+  });
 }

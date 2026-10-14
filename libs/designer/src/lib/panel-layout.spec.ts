@@ -56,7 +56,7 @@ describe('the Layout tab — a group', () => {
   it('sets where its labels sit, and how wide, only when they sit beside', () => {
     const { designer, host, press, choices, shown, node } = picked('bank');
     expect(choices('Labels').pressed).toBe('Beside');
-    const width = shown().querySelector('input[type="number"][aria-label="Label width"]') as HTMLInputElement;
+    const width = shown().querySelector('input.fd-insp-number[aria-label="Label width"]') as HTMLInputElement;
     const slider = shown().querySelector('input[type="range"][aria-label="Label width"]') as HTMLInputElement;
     expect([width.value, slider.value, slider.min, slider.max]).toEqual(['120', '120', '60', '320']);
     type(width, '200');

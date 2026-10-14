@@ -1,4 +1,4 @@
-import type { AnswerRule, FieldNode, Page } from '@fieldia/core';
+import { readNumber, type AnswerRule, type FieldNode, type Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import { conditionToHold } from './conditions';
@@ -11,6 +11,7 @@ import { formulaBox } from './rules-formula-box';
 import { formulaProblem, sampleHolds } from './rules-formula';
 import { answerSample, type SampleOptions } from './rules-sample';
 import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './rules-words';
+import { settingNumber, type SettingNumberOptions } from './number-box';
 
 /**
  * The rules an answer must keep, as a list of sentences — "At least 2
@@ -53,8 +54,6 @@ function groupsOf(rule: AnswerRule): Group[] {
 
 let made = 0;
 
-/** A number typed, or null for an empty box. */
-const numberOf = (box: HTMLInputElement) => (box.value.trim() === '' ? null : Number(box.value));
 
 export function answerRulesEditor(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): AnswerRulesEditor {
   const words = designer.words;
@@ -161,29 +160,57 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       return made;
     };
     /**
-     * Two ends of one ask, such as the shortest and the longest. Typing in one
+     * A bound of the rule (`key`) in the designer's number box: kept as it is
+     * left, Arabic digits and a decimal comma read, emptied it goes. What does
+     * not read is refused with words and the rule keeps its last good bound;
+     * a bound that reads but does not fit the rule stays in its box, the
+     * problem line under the rule saying why.
+     */
+    const bound = (label: string, key: keyof AnswerRule, more: Partial<SettingNumberOptions> = {}) => {
+      const made = {
+        read: (n: number | null): AnswerRulePatch => ({ [key]: n }),
+        number: settingNumber(el, designer, {
+          label,
+          attrs: { class: 'fd-input', placeholder: w.any },
+          optional: true,
+          ...more,
+          saved: () => (typeof current[key] === 'number' ? (current[key] as number) : null),
+          commit: (n) => void change(made.read(n)),
+        }),
+        row: null as unknown as HTMLElement,
+      };
+      made.row = el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, label), made.number.input);
+      return made;
+    };
+    /** What a bound's box shows now, read as it reads it; null for nothing. */
+    const shownIn = (input: HTMLInputElement) => {
+      const read = readNumber(input.value, designer.locale ?? 'en');
+      return read.ok ? read.value : null;
+    };
+    /**
+     * Two ends of one ask, such as the shortest and the longest. Leaving one
      * also takes what the other box shows, when it was not kept: 18 at least
      * while at most still says 10 is wrong until at most is cleared, and then
      * both are kept.
      */
-    const pair = (a: ReturnType<typeof box>, b: ReturnType<typeof box>, keys: [keyof AnswerRule, keyof AnswerRule]) => {
-      const both = (own: HTMLInputElement, key: keyof AnswerRule, other: HTMLInputElement, otherKey: keyof AnswerRule) => (): AnswerRulePatch => {
-        const shown = numberOf(other);
-        return shown === (current[otherKey] ?? null) ? { [key]: numberOf(own) } : { [key]: numberOf(own), [otherKey]: shown };
+    const pair = (a: ReturnType<typeof bound>, b: ReturnType<typeof bound>, keys: [keyof AnswerRule, keyof AnswerRule]) => {
+      const both = (key: keyof AnswerRule, other: HTMLInputElement, otherKey: keyof AnswerRule) => (n: number | null): AnswerRulePatch => {
+        const shown = shownIn(other);
+        return shown === (current[otherKey] ?? null) ? { [key]: n } : { [key]: n, [otherKey]: shown };
       };
-      a.read = both(a.input, keys[0], b.input, keys[1]);
-      b.read = both(b.input, keys[1], a.input, keys[0]);
+      a.read = both(keys[0], b.number.input, keys[1]);
+      b.read = both(keys[1], a.number.input, keys[0]);
       return el('div', { class: 'fd-answer-rule-pair' }, a.row, b.row);
     };
 
-    // What it asks, by kind.
-    const shortest = box(w.shortest, { type: 'number', min: '0', placeholder: w.any, inputmode: 'numeric' }, (i) => ({ minLength: numberOf(i) }));
-    const longest = box(w.longest, { type: 'number', min: '1', placeholder: w.any, inputmode: 'numeric' }, (i) => ({ maxLength: numberOf(i) }));
+    // What it asks, by kind: lengths and counts are whole numbers.
+    const shortest = bound(w.shortest, 'minLength', { integer: true, min: 0 });
+    const longest = bound(w.longest, 'maxLength', { integer: true, min: 1 });
     const ending = box(w.endsWith, { placeholder: '@company.com', autocomplete: 'off' }, (i) => ({ endsWith: i.value || null }));
-    const atLeast = box(w.atLeast, { type: 'number', placeholder: w.any }, (i) => ({ min: numberOf(i) }));
-    const atMost = box(w.atMost, { type: 'number', placeholder: w.any }, (i) => ({ max: numberOf(i) }));
-    const tickLeast = box(w.tickAtLeast, { type: 'number', min: '0', placeholder: w.any }, (i) => ({ atLeast: numberOf(i) }));
-    const tickMost = box(w.tickAtMost, { type: 'number', min: '1', placeholder: w.any }, (i) => ({ atMost: numberOf(i) }));
+    const atLeast = bound(w.atLeast, 'min');
+    const atMost = bound(w.atMost, 'max');
+    const tickLeast = bound(w.tickAtLeast, 'atLeast', { integer: true, min: 0 });
+    const tickMost = bound(w.tickAtMost, 'atMost', { integer: true, min: 1 });
     const looks = el('select', { class: 'fd-input fd-select', 'aria-label': w.looksLike }, ...NAMED_PATTERNS.map((p) => el('option', { value: p.pattern }, words.rules.patterns[p.id])), el('option', { value: '' }, w.myPattern)) as HTMLSelectElement;
     const pattern = box(w.pattern, { class: 'fd-input fd-answer-rule-code', spellcheck: 'false', autocomplete: 'off', placeholder: '[A-Z]{2}\\d+' }, (i) => ({ pattern: i.value || null }));
     looks.addEventListener('change', () => {
@@ -297,13 +324,8 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       const set = (input: HTMLInputElement, value: unknown) => {
         if (!focused(input)) input.value = value === undefined || value === null ? '' : String(value);
       };
-      set(shortest.input, next.minLength);
-      set(longest.input, next.maxLength);
+      for (const number of [shortest, longest, atLeast, atMost, tickLeast, tickMost]) number.number.refresh();
       set(ending.input, next.endsWith);
-      set(atLeast.input, next.min);
-      set(atMost.input, next.max);
-      set(tickLeast.input, next.atLeast);
-      set(tickMost.input, next.atMost);
       const named = NAMED_PATTERNS.some((p) => p.pattern === next.pattern);
       if (!focused(looks) && !(looks.value === '' && focused(pattern.input))) looks.value = named ? (next.pattern as string) : '';
       pattern.row.hidden = looks.value !== '';

@@ -1,6 +1,6 @@
 import type { Field, ListNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, choose, field, mount, press, tile, type } from './test-editor';
+import { button, choose, field, mount, press, tile, type, typeAndLeave } from './test-editor';
 
 const model: Record<string, Field> = {
   name: { type: 'char', label: 'Name' },
@@ -87,12 +87,25 @@ describe('screen editor — a list page', () => {
     expect(designer.getState().issues).toEqual(['A list needs a column']);
   });
 
+  it('keeps the rows on a page as the box is left: Arabic digits read, and 600 refused with its range, never 60', () => {
+    const designer = customers();
+    designer.select(null);
+    const { host } = mount(designer);
+    const rows = field(host, 'Rows on a page') as HTMLInputElement;
+    typeAndLeave(rows, '٢٥');
+    expect(list(designer).pageSize).toBe(25);
+    typeAndLeave(rows, '600');
+    expect(list(designer).pageSize).toBe(25);
+    expect(rows.value).toBe('25');
+    expect(rows.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Rows on a page is a whole number from 1 to 500. It stays 25.');
+  });
+
   it('sets the rows a page holds, where the search looks, and the groupings, in the list’s panel', () => {
     const designer = customers();
     designer.addColumn('state');
     designer.select(null);
     const { host } = mount(designer);
-    type(field(host, 'Rows on a page'), '25');
+    typeAndLeave(field(host, 'Rows on a page'), '25');
     expect(list(designer).pageSize).toBe(25);
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('1–25 / 128');
     choose(field(host, 'Sorted by'), 'state');

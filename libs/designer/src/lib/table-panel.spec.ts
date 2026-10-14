@@ -1,6 +1,6 @@
 import type { FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, choose, field, mount, openTab, type } from './test-editor';
+import { button, choose, field, mount, openTab, typeAndLeave } from './test-editor';
 
 /** A table's own rules, a field's tone and the widths it is hidden at, in the panel: each found by its name, edited as a person does. */
 function screen(pick: string, locale?: 'ar') {
@@ -36,9 +36,9 @@ describe('a field’s tone, in the panel', () => {
     expect(row('Line rules').hidden).toBe(true);
     (button(row('Tone'), 'Add a tone') as HTMLButtonElement).click();
     choose(field(row('Tone'), 'Tone'), 'success');
-    type(field(row('Tone'), 'When'), "state == 'done'");
+    typeAndLeave(field(row('Tone'), 'When'), "state == 'done'");
     expect(node('f-state').tones).toEqual([{ tone: 'success', when: "state == 'done'" }]);
-    type(field(row('Tone'), 'Bold when'), "state == 'done'");
+    typeAndLeave(field(row('Tone'), 'Bold when'), "state == 'done'");
     expect(node('f-state').bold).toBe("state == 'done'");
     (button(row('Tone'), 'Remove tone 1') as HTMLButtonElement).click();
     expect(node('f-state').tones).toBeUndefined();
@@ -92,11 +92,11 @@ describe('a table’s own rules, in the panel', () => {
     openTab(host, 'Rules');
     expect(row('Tone').hidden).toBe(true);
     choose(field(row('Line rules'), 'Column'), 'quantity');
-    type(field(row('Line rules'), 'Read-only when'), "parent.state == 'done'");
-    type(field(row('Line rules'), 'Column hidden when'), "state == 'draft'");
+    typeAndLeave(field(row('Line rules'), 'Read-only when'), "parent.state == 'done'");
+    typeAndLeave(field(row('Line rules'), 'Column hidden when'), "state == 'draft'");
     const toned = row('Line rules').querySelector('.fd-table-column-rules') as HTMLElement;
     (button(toned, 'Add a tone') as HTMLButtonElement).click();
-    type(field(toned, 'When'), 'quantity > demand');
+    typeAndLeave(field(toned, 'When'), 'quantity > demand');
     (field(toned, 'As a pill') as HTMLInputElement).click();
     const width = field(toned, 'Width, in characters') as HTMLInputElement;
     width.value = '14';
@@ -113,7 +113,7 @@ describe('a table’s own rules, in the panel', () => {
     choose(field(row('Line rules'), 'Column'), 'demand');
     const roles = (text: string) => {
       const box = field(row('Line rules'), 'Column shown only to') as HTMLInputElement;
-      type(box, text);
+      typeAndLeave(box, text);
       box.dispatchEvent(new Event('change', { bubbles: true }));
     };
     roles('stock.group_stock_manager, !base.group_portal');
@@ -129,10 +129,10 @@ describe('a table’s own rules, in the panel', () => {
   it('lets lines be deleted only while a condition on them holds', () => {
     const { host, row, node, designer } = screen('f-moves');
     openTab(host, 'Rules');
-    type(field(row('Line rules'), 'Lines deleted only when'), "parent.state == 'draft' or not id");
+    typeAndLeave(field(row('Line rules'), 'Lines deleted only when'), "parent.state == 'draft' or not id");
     expect(node('f-moves').lineDelete).toBe("parent.state == 'draft' or not id");
     expect(designer.setLineDelete('f-moves', 'stat == 1')).toBe(false);
-    type(field(row('Line rules'), 'Lines deleted only when'), '');
+    typeAndLeave(field(row('Line rules'), 'Lines deleted only when'), '');
     expect(node('f-moves').lineDelete).toBeUndefined();
     const ar = screen('f-moves', 'ar');
     openTab(ar.host, 'القواعد');
@@ -142,7 +142,7 @@ describe('a table’s own rules, in the panel', () => {
   it('says what is wrong with a line’s condition under its box, and keeps the page as it was', () => {
     const { host, row, node } = screen('f-moves');
     openTab(host, 'Rules');
-    type(field(row('Line rules'), 'Read-only when'), 'stat == 1');
+    typeAndLeave(field(row('Line rules'), 'Read-only when'), 'stat == 1');
     expect(row('Line rules').querySelector('.fd-formula-problem:not([hidden])')?.textContent).toContain('Unknown field “stat”');
     expect(node('f-moves').cells).toBeUndefined();
   });
@@ -152,7 +152,7 @@ describe('a table’s own rules, in the panel', () => {
     openTab(host, 'Content');
     const onEach = row('Table buttons').querySelector('[data-place="rowButtons"]')!.parentElement as HTMLElement;
     (button(onEach, 'Add a button') as HTMLButtonElement).click();
-    type(field(onEach, 'Words'), 'Serials');
+    typeAndLeave(field(onEach, 'Words'), 'Serials');
     expect(node('f-moves').rowButtons).toMatchObject([{ type: 'button', label: 'Serials' }]);
     openTab(host, 'Layout');
     choose(field(row('Table'), 'A line opens'), 'record');
@@ -166,11 +166,11 @@ describe('a table’s own rules, in the panel', () => {
     const { host, row, node, designer } = screen('f-moves');
     openTab(host, 'Layout');
     const box = field(row('Table'), 'Lines in order of') as HTMLInputElement;
-    type(box, 'quantity desc, product');
+    typeAndLeave(box, 'quantity desc, product');
     box.dispatchEvent(new Event('change', { bubbles: true }));
     expect(node('f-moves').order).toEqual([{ field: 'quantity', desc: true }, { field: 'product' }]);
     expect(designer.setTableShape('f-moves', { order: [{ field: 'colour' }] })).toBe(false);
-    type(box, '');
+    typeAndLeave(box, '');
     box.dispatchEvent(new Event('change', { bubbles: true }));
     expect(node('f-moves').order).toBeUndefined();
     const ar = screen('f-moves', 'ar');
