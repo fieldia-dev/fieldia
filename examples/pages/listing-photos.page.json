@@ -160,7 +160,8 @@
       "Photos": "الصور",
       "The first photo is the listing's card. Photos are made smaller before they go.": "الصورة الأولى هي بطاقة الإعلان. تُصغَّر الصور قبل رفعها.",
       "Floor plan": "مخطط الطابق",
-      "The home": "المنزل"
+      "The home": "المنزل",
+      "A home's listing with its photos: each photo is made smaller on the phone, then stored as it is picked, and the record keeps only its link.": "إعلان منزل بصوره: تُصغَّر كل صورة على الهاتف، ثم تُخزَّن فور اختيارها، ولا يحفظ السجل إلا رابطها."
     }
   }
 }
