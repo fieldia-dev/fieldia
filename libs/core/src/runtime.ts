@@ -185,6 +185,7 @@ export {
   numberMarks,
   readNumber,
   couldBeNumber,
+  numberMisfit,
   cleanPastedNumber,
   readDuration,
   readDate,

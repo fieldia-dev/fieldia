@@ -139,9 +139,14 @@ export interface NumberReading {
 
 export type NumberRead = NumberReading | { ok: false; problem: NumberProblem };
 
-/** What a box reads besides plain numbers: a trailing per cent sign (% or ٪). */
+/** What a box reads besides plain numbers: a trailing per cent sign (% or ٪); and whether its numbers are never grouped. */
 export interface NumberReadOptions {
   percent?: boolean;
+  /**
+   * Never grouped, as a coordinate (30.0444) is: its one mark — . , ، or ٫ — is the decimal mark whatever the
+   * page's language, so "31,235" is 31.235 and never 31235; a space or a second mark does not read.
+   */
+  ungrouped?: boolean;
 }
 
 const MINUS = '-\u2212\ufe63\uff0d';
@@ -188,8 +193,8 @@ function kindOf(char: string): MarkKind | null {
   return GROUP_SPACE.test(char) ? 'space' : null;
 }
 
-/** The body's marks, and which is the decimal mark, by the reading rules (see readNumber). */
-function takeApart(body: string, page: NumberMarks): Body {
+/** The body's marks, and which is the decimal mark, by the reading rules (see readNumber); `ungrouped`, its one mark. */
+function takeApart(body: string, page: NumberMarks, ungrouped = false): Body {
   const marks: Mark[] = [];
   let run = '';
   for (const char of body) {
@@ -206,6 +211,11 @@ function takeApart(body: string, page: NumberMarks): Body {
   const after = (i: number) => (i + 1 < marks.length ? marks[i + 1].before : tail);
   const of = (...kinds: MarkKind[]) => marks.map((m, i) => (kinds.includes(m.kind) ? i : -1)).filter((i) => i >= 0);
   const done = (decimal: number, ambiguous = false, problem?: NumberProblem): Body => ({ marks, tail, decimal, ambiguous, ...(problem ? { problem } : {}) });
+  if (ungrouped) {
+    // Never grouped: a space or ٬ is no part of it, and a second mark is a second decimal mark.
+    if (marks.some((m) => m.kind === 'space' || m.kind === 'argroup')) return done(-1, false, 'numbersOnly');
+    return marks.length > 1 ? done(1, false, 'oneDecimalMark') : done(marks.length - 1);
+  }
   const arabic = of('ardecimal');
   if (arabic.length > 1) return done(arabic[1], false, 'oneDecimalMark');
   if (arabic.length === 1) return done(arabic[0]);
@@ -225,11 +235,12 @@ function takeApart(body: string, page: NumberMarks): Body {
   if (mark.kind === 'arcomma' || mark.char === page.decimal) return done(at);
   if (mark.char === page.group) {
     const following = after(at);
-    const leading = mark.before.length;
-    // The page's grouping mark groups only with exactly three digits after it and one to three before.
-    if (following.length === 3 && leading >= 1 && leading <= 3) return done(-1);
+    // The page's grouping mark groups only with exactly three digits after it and one to three before, never led by
+    // a 0: no one groups "0,500", which is a decimal comma, a half.
+    const leads = mark.before.length >= 1 && mark.before.length <= 3 && !mark.before.startsWith('0');
+    if (following.length === 3 && leads) return done(-1);
     // Fewer than three after it yet, where it could still group: typing may be on its way to "1,500".
-    const couldGroup = following.length < 3 && leading >= 1 && leading <= 3 && at === marks.length - 1;
+    const couldGroup = following.length < 3 && leads && at === marks.length - 1;
     return done(at, couldGroup);
   }
   // A mark the page does not use is a decimal mark.
@@ -244,7 +255,8 @@ function groupsProblem(body: Body, prefix: boolean): NumberProblem | null {
   if (decimal !== -1 && decimal < marks.length - 1) return 'groupsOfThree';
   if (!groupMarks.length) return null;
   const runs = [...groupMarks.map((m) => m.before), decimal === -1 ? tail : marks[decimal].before];
-  if (runs[0].length < 1 || runs[0].length > 3) return 'groupsOfThree';
+  // The first group has one to three digits, and no one writes a grouped number that starts with 0 ("0,500,000").
+  if (runs[0].length < 1 || runs[0].length > 3 || runs[0].startsWith('0')) return 'groupsOfThree';
   for (let i = 1; i < runs.length; i++) {
     const last = i === runs.length - 1;
     const len = runs[i].length;
@@ -287,8 +299,9 @@ function takeSign(text: string, options: NumberReadOptions): Parsed {
  *     three before; a mark the page does not use is decimal;
  *   - spaces and ٬ only group.
  * Groups run one to three digits, then threes, and never come after the
- * decimal mark. So on en and ar pages 1,500 is 1500 and 1,5 is 1.5; on a de
- * page 1.500 is 1500 and 1.5 is 1.5; anywhere 1 234,56 is 1234.56, and 12 34
+ * decimal mark, and the first group is never led by a 0. So on en and ar
+ * pages 1,500 is 1500 and 1,5 is 1.5; on a de page 1.500 is 1500 and 1.5 is
+ * 1.5; anywhere 0,500 and 0.500 are a half, 1 234,56 is 1234.56, and 12 34
  * does not read. Nothing reads letters, a tab or a line break.
  */
 export function readNumber(text: string, locale: string, options: NumberReadOptions = {}): NumberRead {
@@ -299,7 +312,7 @@ export function readNumber(text: string, locale: string, options: NumberReadOpti
   if (sign.problem) return { ok: false, problem: sign.problem };
   if (!sign.body) return { ok: false, problem: 'unfinished' };
   const page = numberMarks(locale);
-  const body = takeApart(sign.body, page);
+  const body = takeApart(sign.body, page, options.ungrouped);
   if (body.problem) return { ok: false, problem: body.problem };
   const { marks, tail, decimal } = body;
   // A grouping mark last ("1,", "1.234."): the number is still being written.
@@ -330,6 +343,8 @@ export interface NumberLimits {
   percent?: boolean;
   /** An hours box: `:` and `h` may be typed too ("6:30", "6h30"). */
   duration?: boolean;
+  /** Never grouped, as a coordinate: its one mark is the decimal mark (see NumberReadOptions). */
+  ungrouped?: boolean;
 }
 
 /** Why a keystroke or a paste is refused, with what the words name. */
@@ -343,13 +358,32 @@ export type NumberRefusal =
 export const MOST_DIGITS = 15;
 
 /**
+ * Whether the decimal mark a text reads with may still turn out to group as
+ * more is typed: a lone . or , (or ،), last, with one to three digits before
+ * it (never led by a 0) and at most three after. "1.234" on an English page
+ * is on its way to "1.234,56" as much as to 1.234, and "1,5" on a German one
+ * to "1,500.00"; only the next mark says which.
+ */
+function mayStillGroup(body: Body): boolean {
+  const { marks, decimal } = body;
+  if (decimal === -1 || decimal !== marks.length - 1) return false;
+  const pointOrComma = (m: Mark) => m.kind === 'dot' || m.kind === 'comma' || m.kind === 'arcomma';
+  if (!pointOrComma(marks[decimal]) || marks.some((m, i) => i !== decimal && pointOrComma(m))) return false;
+  return groupsProblem({ ...body, decimal: -1 }, true) === null;
+}
+
+/**
  * Whether the text a box would hold after a keystroke may stand: null when it
- * may, or why not. Refused: letters, emoji and other symbols; a minus that is
- * not first, or any minus where the least is 0 or more; the page's decimal
- * mark or ٫ in a whole number; a second decimal mark; a decimal place past the
- * field's; a digit past `digits` or past 15 significant ones; and grouping
- * that can never be right ("1.2." on a German page). Text on its way to a
- * number ("-", "1,", "12 3") may stand; min and max are not judged here.
+ * may, or why not. Only what no more typing can make right is refused, so
+ * every way of writing a number the field takes can be typed key by key:
+ * letters, emoji and other symbols; a minus that is not first, or any minus
+ * where the least is 0 or more; a decimal mark that can only be one followed
+ * by a digit other than 0 in a whole number, or by more places than the
+ * field's (trailing zeros are no places: 12.50 has one, 12.0 none); a second
+ * decimal mark; a digit past `digits` or past 15 significant ones; and
+ * grouping that can never be right ("1.2." on a German page). Text on its way
+ * to a number ("-", "1,", "12 3", "1.234" on its way to "1.234,56") may stand;
+ * what it turns out to be, and min and max, are said as the box is left.
  */
 export function couldBeNumber(text: string, locale: string, limits: NumberLimits = {}): NumberRefusal | null {
   const t = folded(text);
@@ -362,26 +396,47 @@ export function couldBeNumber(text: string, locale: string, limits: NumberLimits
   if (limits.percent && /[%\u066a]/.test(sign.body)) return { problem: 'numbersOnly' };
   if (limits.duration) return couldBeDuration(sign.body);
   const page = numberMarks(locale);
-  const decimals = [...sign.body].filter((c) => c === page.decimal || c === '\u066b').length;
-  if (decimals > 1) return { problem: 'oneDecimalMark' };
-  if (limits.integer && decimals) return { problem: 'integer' };
-  const body = takeApart(sign.body, page);
+  const body = takeApart(sign.body, page, limits.ungrouped);
   if (body.problem === 'numbersOnly') return { problem: 'numbersOnly' };
   if (body.problem === 'oneDecimalMark') return { problem: 'oneDecimalMark' };
   // Two marks side by side never make a number ("1,,5", "1 ,5").
   if (body.marks.some((m, i) => i > 0 && m.before === '')) return { problem: 'groupsOfThree' };
-  const groups = groupsProblem(body, true);
-  if (groups) return { problem: 'groupsOfThree' };
-  const certain = body.decimal !== -1 && !body.ambiguous;
+  if (groupsProblem(body, true)) {
+    // The page's decimal mark (or ٫) twice where they cannot group: a second decimal mark ("1.2." on an English page).
+    const decimals = [...sign.body].filter((c) => c === page.decimal || c === '\u066b').length;
+    return { problem: decimals > 1 ? 'oneDecimalMark' : 'groupsOfThree' };
+  }
+  const certain = body.decimal !== -1 && !body.ambiguous && !mayStillGroup(body);
   const fraction = body.decimal === -1 ? '' : body.tail;
-  if (certain && limits.integer) return { problem: 'integer' };
-  if (certain && limits.places !== undefined && fraction.length > limits.places) return { problem: 'decimals', places: limits.places };
+  // Trailing zeros say no more than the number without them: 12.50 has one place, 1,200.00 is whole.
+  const places = fraction.replace(/0+$/, '');
+  if (certain && limits.integer && places) return { problem: 'integer' };
+  if (certain && limits.places !== undefined && places.length > limits.places) return { problem: 'decimals', places: limits.places };
   const all = [...sign.body].filter((c) => c >= '0' && c <= '9').join('');
   const whole = body.decimal === -1 ? all : all.slice(0, all.length - fraction.length);
-  const significant = all.replace(/^0+/, '').length;
-  const digits = whole.replace(/^0+/, '').length + fraction.length;
+  const significant = (whole + places).replace(/^0+/, '').length;
+  const digits = whole.replace(/^0+/, '').length + places.length;
   const most = Math.min(MOST_DIGITS, limits.digits ?? MOST_DIGITS);
   if (significant > MOST_DIGITS || digits > most) return { problem: 'digits', n: most };
+  return null;
+}
+
+/**
+ * Why a number read cannot be held by a field of these limits, or null: a
+ * decimal in a whole number, places past the field's, digits past its own or
+ * past 15. Not its least and most, which check says. For text a box is left
+ * with: as it was typed, "12.345" in a box of two places could not be told
+ * from "12.345,67" on its way.
+ */
+export function numberMisfit(value: number, limits: NumberLimits): NumberRefusal | null {
+  if (limits.duration || !Number.isFinite(value)) return null;
+  const places = placesOf(value);
+  if (limits.integer && !Number.isInteger(value)) return { problem: 'integer' };
+  if (limits.places !== undefined && places > limits.places) return { problem: 'decimals', places: limits.places };
+  const integerPart = Math.trunc(Math.abs(value));
+  const whole = integerPart === 0 ? 0 : integerPart < 1e21 ? String(integerPart).length : 22;
+  const most = Math.min(MOST_DIGITS, limits.digits ?? MOST_DIGITS);
+  if (whole > MOST_DIGITS || whole + places > most) return { problem: 'digits', n: most };
   return null;
 }
 
@@ -430,7 +485,7 @@ function formsOf(currency: string, locale: string): string[] {
  * currency is named; a tab or a line break inside is several values; a
  * single line break at the end, as a copied cell brings, is let go.
  */
-export function cleanPastedNumber(text: string, locale: string, options: { currency?: string | null; percent?: boolean } = {}): PastedNumber {
+export function cleanPastedNumber(text: string, locale: string, options: { currency?: string | null; percent?: boolean; ungrouped?: boolean } = {}): PastedNumber {
   let t = folded(text).replace(/(\r\n|[\r\n])$/, '');
   if (LINE_BREAKS.test(t.trim())) return { ok: false, problem: 'severalValues' };
   t = t.trim();
@@ -449,7 +504,7 @@ export function cleanPastedNumber(text: string, locale: string, options: { curre
   if (trailing) t = `-${trailing[1]}`;
   // A sign set apart from the amount by the currency taken out of it ("- 1,500").
   t = t.replace(new RegExp(`^([${MINUS}+])\\s+`), '$1');
-  const read = readNumber(t, locale);
+  const read = readNumber(t, locale, { ungrouped: options.ungrouped });
   if (!read.ok || read.value === null) return { ok: false, problem: read.ok ? 'notANumber' : read.problem === 'severalValues' ? 'severalValues' : 'notANumber' };
   return { ok: true, text: read.plain, value: read.value };
 }
