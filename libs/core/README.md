@@ -129,12 +129,22 @@ now, their values kept wherever this person changed nothing (read again first
 when the conflict did not carry the record, so `values` never wipes theirs; when
 it cannot be read, nothing is saved and `conflict.unread` says so). A second save
 while one is on its way waits for it and carries the version it got back.
-`unsavedWork(state)` says whether leaving would lose anything — changes, files
-on their way, or changes Reload set aside — for an app's own leave guards. A step
-that leaves the record (Duplicate, an action's answer naming another record) asks
-first when it would leave such work behind: through the host's
-`ask(message, { discard: true })`, or `confirm`; with neither, it keeps the work
-and stops. What `can` does
+Every way a form's values go — `openRecord` (the pager, an action's answer
+naming a record, Duplicate's copy), a reload (the step, an answer's
+`reload: true`, `form.load()` again), a `reset` step, the host's `close` (yours
+too: the form takes it once, where it is made) — goes through one check,
+`form.leave()`. It asks only about the person's work at risk
+(`workAtRisk(state)`): their changes a save went through without, typed while
+it was on its way or while the run that saved went on (`state.unsent`; a value
+set by a step, a rule, a compute or your app is never theirs), files still on
+their way, and changes Reload set aside. Then it asks "Discard your changes?"
+through the host's `ask(message, { discard: true })`, or `confirm`; Cancel keeps
+the person where they are, and with neither to ask with the work is kept. With
+nothing at risk, every way out behaves as it did in 0.20: a change not saved
+that no save was asked for goes where a step leaves the record. Call
+`form.leave()` before your app's own ways out — a route change, an unmount —
+and `unsavedWork(state)` (any change, file or change set aside) for a browser's
+`beforeunload`. What `can` does
 not allow is kept to before any source is asked: fields locked or hidden (and
 left out of what a save sends), a save refused with the source's `reason`, the
 gear menu's Archive, Duplicate and Delete and the buttons whose steps would do
@@ -258,7 +268,10 @@ const form = createForm({
 
 Without a host, `say` says nothing, `ask` asks the form's `confirm` option — or
 goes on as though answered Yes, so a form run from code is never held by a
-question — and `open`, `close` and a `goTo` of a tab stop with `cannot`.
+question — and `open`, `close` and a `goTo` of a tab stop with `cannot`. The one
+exception is "Discard your changes?" (`form.leave()`, with the person's work at
+risk): without a host or `confirm`, the work is kept and the way out does not
+happen.
 
 An `open` step reads `record` and `values` against this form; a field named
 alone goes whole, a link with its name. Once the page is saved, `into` reads

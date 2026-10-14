@@ -148,11 +148,16 @@ a moment does”). The viewer is their host: it draws what they ask for.
   data source, pages, language, skin, look and `onAction`. Saved, its record
   comes back (named by its page's title field, else `name`) for the step's
   `into` and `then`; closed unsaved — Discard, ×, Escape, Back — the steps after
-  it stop. A page opened in place gives way back to the form once saved; Back
+  it stop. Once a save in it went through, it comes back saved however it is
+  closed. A page opened in place gives way back to the form once saved; Back
   returns to the form as it was. A page your `pages` has none of stops the
   steps with “The page “…” cannot be found.”, said as a toast. Each page opened
-  has a host of its own, so its steps run there, and a `close` step closes it
-  unsaved.
+  has a host of its own, so its steps run there, and a `close` step closes it.
+  Every way out of it — and of the record: the pager, the breadcrumbs, a
+  reload — goes through its form's one check (`form.leave()`), which asks
+  “Discard your changes?”, the focus on Cancel, only when the person's work is
+  at risk: a change of theirs a save went through without, a file on its way,
+  changes set aside.
 - **Words said** are toasts at the foot of the screen, in their tone: one over
   another, read out by a polite live region, going after a few seconds (not
   while pointed at or focused), or with their ×. Your app's `stop` words come
