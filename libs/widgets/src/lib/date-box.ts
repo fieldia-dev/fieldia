@@ -126,13 +126,15 @@ export interface DateBox {
  * as they stand at each edit): a key no date or time is written with is refused, with words (a word on its way to a
  * month's name is not one);
  * a paste is read as typing is, a whole date taking the box's place written the page's way, a piece of one put where
- * the caret is, anything else refused whole with words. A field's box keeps to them, and so does every other box a
- * date is typed into — a designer's setting.
+ * the caret is, anything else refused whole with words. The keys typed after a refused one wait with it (`hold`), so
+ * "1x5/10/2026" is never 15 October: left so, all that was typed is the box's, read as it is. A field's box keeps to
+ * them, and so does every other box a date is typed into — a designer's setting.
  */
 export function dateRules(input: HTMLInputElement, reader: DateReader): InputRules {
   const { kind, locale } = reader;
   const words = wordsFor(reader.labels, locale);
   return {
+    hold: true,
     judge(next, before) {
       if (strangers(next, kind, locale) <= strangers(before, kind, locale)) return null;
       const label = reader.label;
@@ -225,6 +227,14 @@ export function dateBox(options: DateBoxOptions): DateBox {
   function settle() {
     // Read once for each time the box is entered: a second blur, as a redraw sends, reads nothing again.
     if (readonly || !entered) return;
+    // Keys held after a refused one are part of what was typed: "1x5/10/2026" where the box shows "1". All of it is the
+    // box's now, and the field's own words take over from the hint.
+    const held = checks.held();
+    if (held) {
+      hint.hide();
+      input.value = held.text;
+      checks.accept();
+    }
     const text = input.value;
     // Not changed since the box was entered: the value stays as it came, seconds and all.
     if (entered && text === entered.text && !unreadNow()) return;

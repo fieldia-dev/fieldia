@@ -22,6 +22,15 @@ function keys(input: HTMLInputElement, text: string) {
   }
 }
 
+/** Backspace, as a keyboard says it: a key held after a refused one is taken back; else the character before the caret. */
+function backspace(input: HTMLInputElement) {
+  const before = new InputEvent('beforeinput', { inputType: 'deleteContentBackward', cancelable: true, bubbles: true });
+  if (!input.dispatchEvent(before)) return;
+  const at = input.selectionStart ?? input.value.length;
+  input.setRangeText('', Math.max(0, at - 1), input.selectionEnd ?? at, 'end');
+  input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+}
+
 /** Ctrl+V: refused, cleaned by the box, or pasted as it is by the browser. */
 function paste(input: HTMLInputElement, text: string) {
   const event = new Event('paste', { cancelable: true, bubbles: true });
@@ -189,16 +198,49 @@ describe('a date that does not read', () => {
     }
   });
 
-  it('refuses a letter at the keystroke, with words under the box', () => {
+  it('refuses a letter at the keystroke, with words under the box; the keys after it wait with it, Backspace taking them back', () => {
     const { el, value } = mount({ type: 'date' });
     const input = boxOf(el);
     enter(input);
     keys(input, '13x');
     expect(input.value).toBe('13');
-    expect(hintSays()).toBe(`Start date: “⁨13x⁩” is not a whole date yet; write it like 31/12/${new Date().getFullYear()}`);
+    const words = `Start date: “⁨13x⁩” is not a whole date yet; write it like 31/12/${new Date().getFullYear()}`;
+    expect(hintSays()).toBe(words);
+    // Never a date made of the keys around a refused one: they wait with it, its words said again.
     keys(input, '/10/2026');
+    expect(input.value).toBe('13');
+    expect(hintSays()).toBe(words);
+    expect(value()).toBeNull();
+    // Backspace takes them back one by one, the refused key last; the date typed again is taken.
+    for (let i = 0; i < '/10/2026'.length; i++) backspace(input);
+    expect(hintSays()).toBe(words);
+    backspace(input);
     expect(hintSays()).toBeNull();
+    expect(input.value).toBe('13');
+    keys(input, '/10/2026');
     expect(value()).toBe('2026-10-13');
+  });
+
+  it.each([
+    ['en', '1x5/10/2026', 'Start date: “⁨1x5/10/2026⁩” is not a whole date yet; write it like 31/12/YYYY'],
+    ['ar', '١x٥/١٠/٢٠٢٦', 'Start date: «⁨١x٥/١٠/٢٠٢٦⁩» ليس تاريخًا كاملًا بعد؛ اكتبه مثل 31/12/YYYY'],
+    ['fr', '1x5/10/2026', 'Start date : « ⁨1x5/10/2026⁩ » n’est pas encore une date complète ; écrivez-la comme 31/12/YYYY'],
+  ] as const)('%s: a stray letter never makes 15 October of 1x5: left, all that was typed stays, marked, the field keeping its day', (locale, typed, why) => {
+    const { el, form, value } = mount({ type: 'date' }, {}, locale);
+    form.setValue('x', '2026-10-11');
+    const input = boxOf(el);
+    enter(input);
+    keys(input, typed);
+    expect(value()).toBe('2026-10-11');
+    input.blur();
+    const message = why.replace('YYYY', String(new Date().getFullYear()));
+    expect(input.value).toBe(typed);
+    expect(value()).toBe('2026-10-11');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(form.getState().unread['x']).toEqual({ text: typed, message });
+    // The field's own words take over from the hint.
+    expect(hintSays()).toBeNull();
+    expect(form.validate()).toBe(false);
   });
 
   it('is read on Enter before a form is sent with it', () => {
