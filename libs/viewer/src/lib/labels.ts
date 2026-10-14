@@ -171,6 +171,33 @@ export interface ViewerLabels {
   openAttachment: string;
   previousAttachment: string;
   nextAttachment: string;
+  /**
+   * Save safety. A save over someone else's: who changed the record and when
+   * (`{name}`, `{time}`) or since it was opened, `someoneElse` when the source
+   * did not say who, the fields they changed and those both changed
+   * (`{fields}`), what the two buttons do, and the buttons. After Reload: the
+   * changes set aside, each with Put back (`{label}`, the field's) and what it
+   * holds now (`{value}`), and Put all back. A record the person may only
+   * read, a field they may see but not change, and the gear menu's items not
+   * open to them (`{actions}`).
+   */
+  conflictAt: string;
+  conflictSince: string;
+  someoneElse: string;
+  conflictChanged: string;
+  conflictBoth: string;
+  conflictChoice: string;
+  reload: string;
+  keepMine: string;
+  reloaded: string;
+  setAside: string;
+  putBack: string;
+  putBackField: string;
+  putAllBack: string;
+  nowIs: string;
+  readOnlyRecord: string;
+  fieldNotYours: string;
+  notOffered: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -292,6 +319,23 @@ const en: ViewerLabels = {
   openAttachment: 'Open',
   previousAttachment: 'Previous attachment',
   nextAttachment: 'Next attachment',
+  conflictAt: '{name} changed this record at {time}.',
+  conflictSince: '{name} changed this record after you opened it.',
+  someoneElse: 'Someone else',
+  conflictChanged: 'They changed: {fields}.',
+  conflictBoth: 'You both changed: {fields}.',
+  conflictChoice: 'Reload shows their version and lists your changes to put back. Keep mine saves yours over theirs.',
+  reload: 'Reload',
+  keepMine: 'Keep mine',
+  reloaded: 'Reloaded: this is the record as it is now.',
+  setAside: 'Your changes were not saved. Put back the ones you still want:',
+  putBack: 'Put back',
+  putBackField: 'Put back {label}',
+  putAllBack: 'Put all back',
+  nowIs: 'now {value}',
+  readOnlyRecord: 'You can read this record, but not change it.',
+  fieldNotYours: 'You can see this field, but not change it.',
+  notOffered: 'Not open to you here: {actions}.',
 };
 
 /**

@@ -433,7 +433,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
 // the viewer saying why Save waits — 20.8 more, to 551.6 (with the safety kit's above).
 // A photo picked in a table's cell stored as its line's, the cell showing its line's on their way (form.uploading), 0.2 more, to 551.8.
-const BUDGET_KB = 551.8;
+// Save safety on that contract (lane w1-save): the form keeping a record's version and what the person may do —
+// fields locked or hidden, a save refused before the source is asked, Archive, Duplicate and Delete and the buttons
+// that would do them hidden — a conflict's who, when and fields, Reload with the person's changes set aside to put
+// back, Keep mine; the viewer's banner, the list of changes set aside, the line over a record only to read, a locked
+// field’s reason, the gear menu’s note, their words and their stylesheet (2.3 of it) — 10.9 more, to 562.7 (over the safety kit's and the files').
+// Keep mine reading the record first when a conflict did not carry it (so a source that saves whole records never
+// wipes the other person's work), Put back kept at the end of its change's row on a phone, and what a field set aside
+// holds now kept in its own direction (a phone number among Arabic words) — 0.4 more, to 563.1.
+const BUDGET_KB = 563.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -490,7 +498,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // listed with the raw budget above), 1.9 more, to 161.3; what Firefox and WebKit showed (listed there too), 0.1, to 161.4.
 // files stored as they are picked (the form's uploads and a save that waits for them, uploadTo, files on their way
 // with a bar, × and Retry and their stylesheet, photos made smaller, the viewer saying why Save waits), 7.5 more, to 168.9.
-const GZIP_BUDGET_KB = 168.9;
+// Save safety on that contract (a conflict's banner with Reload and Keep mine, the changes set aside, a record only to
+// read and what the person may do kept to, with their words and stylesheet), 3.5 more, to 172.4.
+// Keep mine reading the record first when a conflict did not carry it, Put back at the end of its row, and the value
+// it holds now in its own direction, 0.1 more, to 172.5.
+const GZIP_BUDGET_KB = 172.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -533,7 +545,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // uploaded, not taken), its bar's, Cancel's and Retry's names, files uploaded, a save or a send waiting for them, and
 // why a save stopped for one — 20 words in each: 2.3 and 0.3 more in Arabic, 1.0 and 0.2 in German, 1.1 and 0.2 in
 // French, over the safety kit's: Arabic's to 29.8 and 6.0, German's to 12.9 and 5.1, French's to 13.1 and 5.0.
-const ADD_ON_BUDGET_KB = { ar: [29.8, 6.0], de: [12.9, 5.1], fr: [13.1, 5.0] };
+// Save safety (lane w1-save) — who changed the record and when, what each changed, what Reload and Keep mine do and
+// their buttons, the changes set aside and Put back, a record only to read, a field locked for this person, what the
+// gear leaves out, and the four refusals core says when the source gives no reason — 21 words in each: 3.0 and 0.4
+// more in Arabic, 1.2 and 0.3 in German, 1.2 and 0.4 in French, over the two above: Arabic's to 32.8 and 6.4, German's
+// to 14.1 and 5.4, French's to 14.3 and 5.4.
+const ADD_ON_BUDGET_KB = { ar: [32.8, 6.4], de: [14.1, 5.4], fr: [14.3, 5.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

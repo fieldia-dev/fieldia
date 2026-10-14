@@ -472,6 +472,41 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'two-tabs',
+    name: 'One record in two tabs',
+    category: 'records',
+    // Two forms on one data source, in a page of its own: no framework, no look of Fieldia's to switch.
+    app: 'save-safety',
+    query: '',
+    // Its code is the page's own script, and a data source of your own that tells versions and rights.
+    code: 'save-safety',
+    schemes: true,
+    blurb: 'A lead open in two tabs at once. Mona saves first; when you save, the form says who changed it and when, what each of you changed, and lets you Reload — your changes listed to put back — or Keep mine. Nothing is lost without a word.',
+    howTo: [
+      'Change the phone in your tab, then press Someone else edits this: Mona moves the lead on a stage and raises its budget in her tab, and saves.',
+      'Press Save in your tab: Mona changed this record at the time she saved, what she changed, and Reload or Keep mine.',
+      'Press Keep mine: your phone is saved, and Mona’s stage and budget stay.',
+      'Or press Reload: Mona’s version shows, and your changes are listed, each with Put back.',
+      'Point at the lock by Commission: only a manager sets it. Open the gear: Delete is not there, and it says why.',
+    ],
+  },
+  {
+    id: 'viewer-role',
+    name: 'A record only to read',
+    category: 'records',
+    app: 'save-safety',
+    query: 'role=viewer',
+    code: 'save-safety',
+    schemes: true,
+    blurb: 'The same lead opened by Omar, a viewer: its source says he may only read it, so there is no Save and no Archive, Duplicate or Delete — hidden, not greyed out — the commission is not shown at all, and the record says why.',
+    howTo: [
+      'Read the line over the lead: why Omar may only read it, from the data source.',
+      'Click a field: nothing can be typed. Ctrl+Enter saves nothing.',
+      'Open the gear: Brochure alone, as nothing else is Omar’s to do.',
+      'Press Agent at the top: the same lead as Sara sees it, open to change.',
+    ],
+  },
+  {
     id: 'customer-locked',
     name: 'Read-only, then Edit',
     category: 'records',

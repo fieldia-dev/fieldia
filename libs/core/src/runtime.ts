@@ -192,6 +192,7 @@ export {
   type ActionRequest,
   type ChangeBy,
   type FormEvents,
+  type FormConflict,
 } from './lib/record/form';
 export type { ActionHost, ActionResult, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';

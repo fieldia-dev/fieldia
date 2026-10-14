@@ -189,6 +189,20 @@ await viewer.run([{ do: 'check' }, { do: 'save' }]); // steps, as a button would
 A form made elsewhere and handed in as `form` keeps the host it was made with
 (`createForm({ host })`): the viewer gives its own only to a form it makes.
 
+## Two people, one record
+
+When a save is refused because someone else saved the record first (the data
+source throws `ConflictError`, see `@fieldia/core`), the viewer says so over
+the record — “Mona changed this record at 10:42”, what she changed and what
+you both changed — with **Reload**, which shows her version and lists your
+changes to put back, and **Keep mine**, which saves yours over hers. Nothing is
+lost without a word. Where the source says the person may only read the record
+(`can.edit: false`) there is no Edit, Save or Save & Close and a line over the
+record says why; fields it locks show a lock with the reason, fields it hides
+are gone, and the gear menu's Archive, Duplicate or Delete it does not allow
+are hidden, its foot saying why — in English, Arabic, French or German. See
+[versions and conflicts](https://fieldia.dev/data/#versions).
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,

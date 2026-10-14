@@ -11,7 +11,7 @@ ${code(
   'ts',
   `
 interface DataSource {
-  load?(request: LoadRequest): Promise<Values>;              // read a record
+  load?(request: LoadRequest): Promise<Values | LoadedRecord>; // read a record: its values, or with its version and rights
   save?(request: SaveRequest): Promise<SaveResult>;          // create or update it
   onchange?(request: OnchangeRequest): Promise<OnchangeResult>;  // recalculate after a change
   search?(request: SearchRequest): Promise<RelatedRecord[]>; // find records to link to
@@ -145,6 +145,54 @@ changes.lines['child_ids'] = [
 changes.links['tag_ids'] = [{ op: 'link', id: 3 }, { op: 'unlink', id: 4 }];   // or { op: 'set', ids }, { op: 'clear' }`
 )}
 
+<h2 id="versions">Two people, one record: versions and conflicts</h2>
+<p>When two people open the same record and both save, the second save would wipe out the first without a word. A source that keeps versions stops that. Its ${c('load')} returns the record with the version it was read at, through ${c('loadedRecord')}; the form sends that version back with each save, as ${c('version')}, and keeps the one each save returns. When the record changed in between, the source throws a ${c('ConflictError')} naming who changed it, when, and — if it can — the record as they left it:</p>
+${code(
+  'ts',
+  `
+import { ConflictError, loadedRecord } from '@fieldia/core';
+
+const dataSource: DataSource = {
+  async load({ model, id }) {
+    const row = await api.read(model, id);
+    return loadedRecord(row.values, { version: { token: row.etag, by: row.changedBy, at: row.changedAt } });
+  },
+  async save({ model, id, changes, version }) {
+    const response = await api.write(model, id, changes.values, { ifMatch: version?.token });
+    if (response.status === 409) {
+      const now = response.body;   // who saved it, when, and what it holds now
+      throw new ConflictError({ version: { token: now.etag, by: now.changedBy, at: now.changedAt }, theirs: now.values });
+    }
+    return { id: response.body.id, version: { token: response.body.etag } };
+  },
+};`
+)}
+<p>The form then says it over the record — <em>Mona changed this record at 10:42</em>, the fields she changed and those you both changed, in the page's language and its way of writing a time — and offers two answers. Nothing of the person's is lost while they choose:</p>
+<ul>
+  <li><strong>Reload</strong> shows the record as the other person left it, and lists the person's own changes beside it, each with <em>Put back</em> (${c('form.reloadTheirs()')}, ${c('state.setAside')}, ${c('form.putBack(field)')}).</li>
+  <li><strong>Keep mine</strong> saves the person's changes over the record as it is now: the other person's values stay wherever this one changed nothing (${c('form.keepMine()')}). It saves with the version the conflict named, so a source needs no second way to save; a source that saves whole records gets ${c('values')} as theirs with these changes over them — read again first when the conflict did not carry the record. If a third person saved in between, that is another conflict.</li>
+</ul>
+<p>A new record, and a source that tells no version, are never checked. ${c('saveProblemOf(error)')} reads a ${c('ConflictError')} as ${c('{ kind: "conflict", conflict }')} without ${c('instanceof')}, so an app with two copies of core still shows it. Try it in the <a href="/demos/save-safety/">two tabs demo</a>.</p>
+
+<h2 id="permissions">What this person may do with a record</h2>
+<p>The same ${c('loadedRecord')} tells what the person may do with the record, as ${c('can')}. Everything is allowed unless it says ${c('false')}, so a source that says nothing keeps today's behaviour. The form keeps to it before any source is asked — and the source should still refuse on its side:</p>
+${code(
+  'ts',
+  `
+return loadedRecord(row.values, {
+  version: { token: row.etag },
+  can: {
+    edit: row.isMine,                 // false: every field read-only, no Save, no Edit
+    delete: false,                    // false: Delete and the buttons whose steps delete are hidden
+    archive: true, duplicate: true,   // the same for Archive and Unarchive, and for Duplicate
+    readonlyFields: ['commission'],   // locked, with a lock that says why
+    hiddenFields: ['margin'],         // not shown, never asked for, left out of what a save sends
+    reason: 'Only Mona, the lead’s agent, can change it.',
+  },
+});`
+)}
+<p>What is not allowed is hidden, never shown greyed out, and the reason is said: over the record when it is only to be read, by a locked field's lock, and at the foot of the gear menu for an action it leaves out — the source's ${c('reason')}, or Fieldia's own words in English, Arabic, French or German. A save can change it (a stage that locks the record): return ${c('can')} with the ${c('SaveResult')}. Each row of a list may carry ${c('can')} and ${c('version')} too. See it as a <a href="/demos/save-safety/?role=viewer">viewer who may only read</a>.</p>
+
 <h2 id="rest">An adapter for a REST API</h2>
 ${code(
   'ts',
@@ -187,8 +235,11 @@ const dataSource = createMemoryDataSource({
   onchange: { partner: { is_company: (values) => ({ title: values.is_company ? null : values.title }) } },
   warnings: { partner: { credit_limit: (values) => (values.credit_limit > 100000 ? 'Above the approval limit' : null) } },
   delayMs: 300,   // answer slowly, to see loading states
+  versions: { by: 'Sara' },   // a version for each record; a save over a newer one is a conflict
+  can: { lead: (values) => (values.stage === 'won' ? { edit: false, reason: 'A won lead is closed.' } : undefined) },
 });
-dataSource.responses;   // every submitted response, for tests`
+dataSource.responses;   // every submitted response, for tests
+dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
 <p>Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(

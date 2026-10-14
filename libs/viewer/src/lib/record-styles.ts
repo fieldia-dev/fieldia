@@ -66,6 +66,46 @@ export const RECORD_STYLES = /* css */ `
 /* A side panel kept beside the sheet: narrower under 1000px, under the sheet only once the form is too narrow for both. */
 @container (max-width: 1000px) { .fd-sheet-layout.fd-has-side[data-side-beside="always"]:not(:has(> .fd-attachment-preview:not([hidden]))) { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); } }
 @container (max-width: 600px) { .fd-sheet-layout.fd-has-side[data-side-beside="always"]:not(:has(> .fd-attachment-preview:not([hidden]))) { grid-template-columns: minmax(0, 1fr); } }
+
+/* Save safety (save-safety.ts): someone else's save first, the changes Reload set aside, a record only to read. On the
+   form's tokens, so dark and the themes follow; logical sides, so right to left follows. */
+.fd-conflict[hidden], .fd-set-aside[hidden], .fd-read-only-note[hidden], .fd-record-menu-note[hidden] { display: none; }
+.fd-conflict {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: start; padding: 12px 14px; margin-block-end: 16px;
+  border: 1px solid color-mix(in srgb, var(--fd-warning) 45%, transparent); border-inline-start-width: 4px; border-radius: var(--fd-control-radius);
+  background: var(--fd-warning-soft); color: var(--fd-text); font-size: 13.5px; line-height: 1.45;
+}
+.fd-conflict-icon { display: flex; color: var(--fd-warning); padding-block-start: 1px; }
+.fd-conflict-icon svg { width: 18px; height: 18px; }
+.fd-conflict-words { display: grid; gap: 2px; min-width: 0; }
+.fd-conflict-title { font-weight: 650; }
+.fd-conflict-fields:empty { display: none; }
+.fd-conflict-hint { color: var(--fd-muted); }
+.fd-conflict-actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-conflict[aria-busy] .fd-conflict-actions { opacity: 0.6; cursor: progress; }
+.fd-set-aside {
+  display: grid; gap: 8px; padding: 12px 14px; margin-block-end: 16px; font-size: 13.5px;
+  border: 1px solid var(--fd-border); border-inline-start: 4px solid var(--fd-info); border-radius: var(--fd-control-radius); background: var(--fd-info-soft); color: var(--fd-text);
+}
+.fd-set-aside-head { display: flex; align-items: flex-start; gap: 8px; }
+.fd-set-aside-title { flex: 1 1 auto; margin: 0; font-weight: 650; }
+.fd-set-aside-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 2px; }
+.fd-set-aside-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.fd-set-aside-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 10px; }
+.fd-set-aside-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; }
+.fd-set-aside-label { font-weight: 600; }
+.fd-set-aside-mine { min-width: 0; overflow-wrap: anywhere; }
+.fd-set-aside-now { color: var(--fd-muted); }
+.fd-set-aside > .fd-button { justify-self: start; }
+.fd-read-only-note {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin-block-end: 16px; font-size: 13.5px;
+  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-muted);
+}
+.fd-read-only-icon { display: flex; flex: none; }
+.fd-read-only-icon svg { width: 16px; height: 16px; }
+/* Over a sheet, in from its edges as the banner is. */
+.fd-content > :is(.fd-conflict, .fd-set-aside, .fd-read-only-note):has(~ .fd-sheet-page) { margin: 12px 16px; }
+.fd-record-menu-note { margin-block-start: 4px; padding: 8px 12px 6px; border-block-start: 1px solid var(--fd-border); color: var(--fd-muted); font-size: 12.5px; line-height: 1.4; }
 `;
 
 /** Puts the record's surroundings' look in the document once. */

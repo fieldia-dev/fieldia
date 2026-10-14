@@ -66,6 +66,7 @@ import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, partsFor, type HeadPart } from './viewer-parts';
+import { saveSafety } from './save-safety';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
@@ -642,10 +643,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let lock: ReturnType<typeof bubbleTip> | null = null;
       let lockMark: HTMLElement | null = null;
       let lockedNow = false;
-      const lockFor = (): HTMLElement => {
-        if (lockMark) return lockMark;
+      /** The words its lock says; a field locked for this person by the record's source says theirs, which come with its load. */
+      let lockWords: string | undefined;
+      /** Whether pointing at the value says why: once, however often its lock is drawn again. */
+      let pointing = !!reason;
+      const lockFor = (words: string | undefined = reason): HTMLElement => {
+        if (lockMark && !!lock === !!words) {
+          if (lock && words !== lockWords) setText(lock.bubble, (lockWords = words) as string);
+          return lockMark;
+        }
+        lockMark?.remove();
+        lockWords = words;
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
-        lock = reason ? bubbleTip(`${id}-lock`, reason, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
+        lock = words ? bubbleTip(`${id}-lock`, words, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
+        if (words && !pointing) {
+          pointing = true;
+          for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
+        }
         lockMark = lock?.element ?? el('span', { class: 'fd-lock-wrap' }, el('span', { class: 'fd-lock', 'aria-hidden': 'true' }, icon));
         // At the value's start, as a work item's Reason: in a record head's band, in the room before the value.
         if (page.look?.lockAt === 'value') {
@@ -729,9 +743,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const readonly = shown.readonly || locked || scope.locked();
         // Locked by a rule, not by the whole form being read: its lock shows, in the quiet look or with its reason, and its words are muted.
         const quiet = wrapper.hasAttribute('data-quiet');
-        lockedNow = readonly && !locked;
-        const showsLock = lockedNow && (!!reason || (wrapper.hasAttribute('data-in-quiet') && !fixed));
-        if (showsLock || lockMark) setHidden(lockFor(), !showsLock);
+        // A record its source lets the person only read is read whole, as a locked form is: it says why once, over the record.
+        const can = state.can;
+        lockedNow = readonly && !locked && can?.edit !== false;
+        const why = reason ?? (can?.readonlyFields?.includes(node.field) ? (can.reason ?? labels.fieldNotYours) : undefined);
+        const showsLock = lockedNow && (!!why || (wrapper.hasAttribute('data-in-quiet') && !fixed));
+        if (showsLock || lockMark) setHidden(lockFor(why), !showsLock);
         if (!lockedNow) point(false);
         setAttr(wrapper, 'data-locked', quiet && showsLock ? '' : null);
         setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
@@ -1313,8 +1330,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   });
   root.toggleAttribute('data-readonly', locked);
   form.setEditing(!locked);
-  updaters.push(() => {
+  updaters.push((state) => {
+    // A record its source lets the person only read is read whole, as a locked form is: its values as words.
+    setAttr(root, 'data-readonly', locked || state.can?.edit === false ? '' : null);
     if (!editSwitch) return;
+    // No Edit for a record its source lets the person only read.
+    setHidden(editSwitch, state.can?.edit === false);
     editSwitch.textContent = locked ? labels.edit : labels.done;
     editSwitch.classList.toggle('fd-button-primary', locked);
   });
@@ -1401,6 +1422,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     else if (seenProblem.kind === 'other') announce(seenProblem.message);
   });
 
+  // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
+  const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root });
+  updaters.push(safety.update);
+
   const draft = el('div', { class: 'fd-draft', hidden: '' });
   const draftText = el('span');
   const restore = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.restore);
@@ -1438,6 +1463,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const content = el('div', { class: 'fd-content' });
 
   async function submitOrSave() {
+    // A record only to read has nothing to save: Ctrl+Enter there does nothing.
+    if (form.getState().can?.edit === false) return;
     const saved = await form.save();
     if (!saved) {
       // Stopped by the page's own checks: say which fields; a refused save says so above.
@@ -1531,7 +1558,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       actions.insertBefore(discard, action);
       updaters.push((state) => {
         // A file on its way is a change coming: Save shows for it, and waits.
-        const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked;
+        const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked && state.can?.edit !== false;
         setHidden(action, !dirty);
         setHidden(discard, !dirty);
       });
@@ -1641,7 +1668,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (editSwitch && options.showActions !== false) actions.prepend(editSwitch);
     updaters.push((state) => {
       // A file on its way is a change coming: Save shows for it, and waits.
-      const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked;
+      const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && state.status !== 'saving' && !locked && state.can?.edit !== false;
       save.hidden = !dirty;
       discard.hidden = !dirty;
     });
@@ -1934,7 +1961,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const head = layout.type === 'sheet' ? null : pageHead();
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-    content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, draft, body);
+    content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body);
     pageDrawn = true;
   }
   let pageDrawn = false;

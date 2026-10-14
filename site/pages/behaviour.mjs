@@ -56,6 +56,7 @@ async save(request) {
     <tr><td>${c('fields')}</td><td>Under each field, kept until that field changes; beside Save, “Not saved. Check: Email, Phone”; the focus on the first.</td></tr>
     <tr><td>${c('rule')}</td><td>A business rule, in a dialog.</td></tr>
     <tr><td>${c('network')}</td><td>A banner over the page — “Could not reach the server. Your changes are still here.” — with Retry. A ${c('fetch')} that fails is told as this by itself.</td></tr>
+    <tr><td>${c('conflict')}</td><td>Someone else saved first — a ${c('ConflictError')}: who and when, what each changed, with Reload and Keep mine. See <a href="/data/#versions">versions and conflicts</a>.</td></tr>
     <tr><td>anything else</td><td>Its message beside Save, with Retry.</td></tr>
   </tbody>
 </table>
@@ -63,6 +64,7 @@ async save(request) {
 
 <h2 id="locked">A locked record</h2>
 <p>${c('readonly: true')} shows the whole record locked: values as plain text, no Save, no prompts to type. Buttons still run, as in Odoo. ${c('editSwitch: true')} adds Edit, and Done, which saves what changed and locks the record again — or stays open on a refused save. ${c('viewer.setReadonly(false)')} unlocks it from your code; in React, Vue and Angular, changing ${c('readonly')} does.</p>
+<p>A record its data source says this person may only read (${c('can: { edit: false }')}) is locked the same way, and stays so: no Edit, no Save — in a dialog no Save &amp; Close, its Discard a Close — no button whose steps save, and a line over the record saying why. See <a href="/data/#permissions">what this person may do</a>.</p>
 
 <h2 id="translate">In your app's own words</h2>
 <p>Fieldia's own words come in four languages. A page's words — labels, help, choices, titles, buttons, messages — can go through your app's translator, for apps that keep translations by text or by key. Record data never does.</p>

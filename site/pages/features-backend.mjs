@@ -3,7 +3,7 @@ import { demoHref as demo, featurePage } from '../feature-page.mjs';
 /** A feature page: Your backend. How Fieldia reaches your server, and how your server's answers come back. */
 const INTERFACE = `
 interface DataSource {
-  load?(request): Promise<Values>;              // read a record
+  load?(request): Promise<Values | LoadedRecord>; // read a record: with its version and rights, if you like
   save?(request): Promise<SaveResult>;          // create or update it
   onchange?(request): Promise<OnchangeResult>;  // fill in others after a change
   search?(request): Promise<RelatedRecord[]>;   // find records to link to
@@ -27,6 +27,33 @@ export const api: DataSource = {
   async search({ model, query, limit = 8 }) {
     const rows = await (await fetch(\`/api/\${model}?q=\${encodeURIComponent(query)}&limit=\${limit}\`)).json();
     return rows.map((row) => ({ id: row.id, label: row.name }));
+  },
+};`;
+
+const VERSIONS = `
+import { ConflictError, loadedRecord } from '@fieldia/core';
+
+export const api: DataSource = {
+  async load({ model, id }) {
+    const row = await (await fetch(\`/api/\${model}/\${id}\`)).json();
+    return loadedRecord(row.values, {
+      version: { token: row.etag, by: row.changedBy, at: row.changedAt },
+      can: { edit: row.canEdit, delete: row.canDelete, reason: row.why },
+    });
+  },
+  async save({ model, id, changes, version }) {
+    const response = await fetch(\`/api/\${model}/\${id}\`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', 'if-match': version?.token ?? '*' },
+      body: JSON.stringify(changes.values),
+    });
+    const row = await response.json();
+    // Someone saved in between: who, when, and the record as they left it.
+    if (response.status === 409) {
+      const now = { token: row.etag, by: row.changedBy, at: row.changedAt };
+      throw new ConflictError({ version: now, theirs: row.values });
+    }
+    return { id: row.id, values: row.values, version: { token: row.etag } };
   },
 };`;
 
@@ -57,6 +84,15 @@ export default featurePage({
       ticks: ['saveRefused({ kind: "fields", fields }) under each field', 'A business rule in a dialog, a network failure with Retry', 'The refusal said where the person looks, and to screen readers', 'Nothing lost: the person’s changes stay, ready to fix'],
       shot: 'refused.png', alt: 'A customer record not saved: Not saved. Check: Email beside Save, and This email is already a customer’s under the Email field', width: 1280, height: 600,
       tryIt: ['Try a save', demo('page=customer&skin=underline')], docs: ['A save the server refuses', '/behaviour/#refused'],
+    },
+    {
+      id: 'versions',
+      no: 'Two people, one record',
+      title: 'A save over someone else’s is caught, and each person gets only what they may do',
+      body: 'Your load tells the record’s version and what this person may do with it. When someone else saved in between, your save throws ConflictError, and the form says who changed the record and when, with Reload or Keep mine. Nothing is lost without a word.',
+      ticks: ['“Mona changed this record at 10:42”, and the fields each of them changed', 'Reload shows hers and lists yours to put back; Keep mine saves yours over hers', 'No Edit, Save, Archive, Duplicate or Delete where the person may not: hidden, and why, in words', 'Fields locked or hidden for one person, and left out of what a save sends'],
+      source: VERSIONS, lang: 'ts',
+      tryIt: ['Try one record in two tabs', '/demos/save-safety/'], docs: ['Versions and conflicts', '/data/#versions'],
     },
     {
       id: 'rest',

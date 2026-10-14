@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { backlogSnippets, listMapSnippets, snippets, uploadsSnippets } from './snippets.mjs';
+import { backlogSnippets, listMapSnippets, saveSafetySnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -191,11 +191,19 @@ function drawCode() {
   const backlog = demo?.code === 'backlog';
   // Photos stored as they are picked: the page, the demo's script with its slow store, and the store an app gives.
   const uploads = demo?.code === 'uploads';
+  // One record in two tabs: the page, the demo's own script, and a data source of your own that tells versions and rights.
+  const safety = demo?.code === 'save-safety';
   const tabs = uploads
     ? [
         ['json', 'Page JSON', 'The listing this demo shows: plain JSON, the same the browser tests drive.'],
         ['js', 'JavaScript', 'The demo’s script: the memory source as a slow store, one photo failing once.'],
         ['store', 'Your store', 'upload() for your own endpoint, or Azure Blob through an address your server signs.'],
+      ]
+    : safety
+    ? [
+        ['json', 'Page JSON', 'The lead both tabs show: plain JSON, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'The demo’s own script: one data source with versions and rights, the lead in two tabs.'],
+        ['server', 'Your server', 'A data source of your own: the version and the rights from your server, a conflict thrown back.'],
       ]
     : backlog
     ? [
@@ -237,8 +245,8 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = uploads ? uploadsSnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
-    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
+    const written = uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', server: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

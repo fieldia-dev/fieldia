@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — one record in two tabs</title>
+    <link rel="stylesheet" href="../demo.css" />
+    <link rel="stylesheet" href="../shell.css" />
+    <!-- The page's own bar and its two tabs side by side. Fieldia styles each form. -->
+    <style>
+      /* The sheets inside are the tabs', not the page's: the page keeps its own room round them. */
+      #app.ss, #app.ss:has(.fd-sheet-page) { max-width: 1280px; margin: 0 auto; padding: 20px 16px 48px; }
+      .ss {
+        --ss-ink: light-dark(#1b1f24, #e8eaed);
+        --ss-muted: light-dark(#5b6470, #a3a9b2);
+        --ss-line: light-dark(#dde1e6, #343a44);
+        --ss-surface: light-dark(#ffffff, #1b1f25);
+        --ss-accent: light-dark(#1365d9, #5aa2ff);
+        --ss-on-accent: light-dark(#ffffff, #0b1220);
+        --ss-wash: light-dark(#eef4fc, #1d2c42);
+        color: var(--ss-ink);
+      }
+      .ss-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-block-end: 16px; }
+      .ss-what { flex: 1 1 18em; margin: 0; color: var(--ss-muted); }
+      .ss-what strong { color: var(--ss-ink); }
+      .ss-button { font: inherit; font-weight: 600; min-height: 36px; padding: 6px 14px; border: 1px solid var(--ss-accent); border-radius: 6px; background: var(--ss-accent); color: var(--ss-on-accent); cursor: pointer; }
+      .ss-button[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+      .ss-switch { display: inline-flex; padding: 2px; border: 1px solid var(--ss-line); border-radius: 999px; }
+      .ss-switch a { padding: 4px 12px; border-radius: 999px; color: var(--ss-muted); text-decoration: none; font-weight: 600; }
+      .ss-switch a[aria-current="page"] { background: var(--ss-wash); color: var(--ss-ink); }
+      .ss-switch a:focus-visible, .ss-button:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: 2px; }
+      .ss-said { flex-basis: 100%; margin: 0; min-height: 1.4em; color: var(--ss-muted); }
+      /* The two tabs side by side, one over the other on a phone. */
+      .ss-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; align-items: start; }
+      .ss-tab { min-width: 0; border: 1px solid var(--ss-line); border-radius: 10px; background: var(--ss-surface); overflow: clip; }
+      .ss-tab-name { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-block-end: 1px solid var(--ss-line); font-size: 14px; font-weight: 700; }
+      .ss-tab-name span { color: var(--ss-muted); font-weight: 500; }
+      .ss-tab-name::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--ss-dot, var(--ss-accent)); }
+      .ss-tab[data-who="mona"] { --ss-dot: light-dark(#a14f00, #f2b55c); }
+    </style>
+  </head>
+  <body>
+    <header id="demo-head" data-app="save-safety"></header>
+    <main id="app" class="ss"></main>
+    <script type="module" src="../shell.mjs"></script>
+    <!-- The page's script: one data source, the lead opened in two tabs (or by a viewer), and Mona's edit. -->
+    <script src="main.js" defer></script>
+  </body>
+</html>

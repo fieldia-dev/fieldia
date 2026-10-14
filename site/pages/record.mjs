@@ -40,6 +40,7 @@ ${code(
   </tbody>
 </table>
 <p>Give a built-in steps of its own and they run instead, without its question: Flectra's employee form, whose Archive opens the departure wizard, is ${c('{ "id": "m-archive", "builtin": "archive", "steps": [{ "do": "open", "page": "hr-departure-wizard", "record": "id" }] }')}. The same steps — ${c('archive')}, ${c('unarchive')}, ${c('duplicate')}, ${c('delete')} — run from any button or moment, as <a href="/actions/#steps">Actions</a> says.</p>
+<p>Where the record's data source says the person may not archive, duplicate or delete it (${c('can')}, see <a href="/data/#permissions">what this person may do</a>), those items are not in the menu, nor the buttons whose steps would do it; the menu's foot says why, and the steps refuse if run from elsewhere.</p>
 
 <h2 id="head">A work item's head</h2>
 <p>A sheet's ${c('head')} draws the record as a work tracker draws a bug: its kind's strip of colour along the start edge and a badge — the kind's icon, its name in capitals, the record's number — over the title; the number before the title, with Copy title at its end while it is pointed at or focused; a row of people and counts under it, the record's buttons at its end; then a band of fields, their labels beside them, “Updated by” and the tabs at its end. The classic header bar, statusbar, badges and stat buttons give way to it; the gear menu is its ⋮.</p>

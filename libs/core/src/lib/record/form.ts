@@ -18,9 +18,21 @@ import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
-import { loadedRecordOf, saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
+import {
+  loadedRecordOf,
+  saveProblemOf,
+  type DataSource,
+  type LineOp,
+  type LinkOp,
+  type RecordChanges,
+  type RecordPermissions,
+  type RecordVersion,
+  type ResolvedFilter,
+  type SaveConflict,
+  type SaveProblem,
+  type UploadFile,
+} from './data-source';
 import { createUploads, fileBytesIn, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
-import type { UploadFile } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
@@ -71,6 +83,31 @@ export interface FormState {
   readonly definitions: Readonly<Record<string, Definitions>>;
   /** Files on their way to the data source's store, in the order picked: each field shows its own (`upload`). */
   readonly uploads: readonly FileUpload[];
+  /** The record's version, as loaded or last saved, from a source that keeps versions: each save carries it. Null for a new record, or from a source that tells none. */
+  readonly version: RecordVersion | null;
+  /**
+   * What the person may do with the record, as its source told with its load
+   * or its last save: the form keeps to it — fields locked or hidden, Save,
+   * Archive, Duplicate and Delete not offered. Null when it told nothing, and
+   * everything is allowed.
+   */
+  readonly can: Readonly<RecordPermissions> | null;
+  /** Someone else saved the record after this page opened it, and the last save was refused for it: until Reload, Keep mine or another save. */
+  readonly conflict: FormConflict | null;
+  /** The person's changes Reload set aside after a conflict, by field, to put back (`putBack`); null when none are. */
+  readonly setAside: Readonly<Values> | null;
+}
+
+/** A save refused because someone else saved the record first: who and when, and what each of them changed. */
+export interface FormConflict {
+  /** The version the record has now, with who saved it (`by`) and when (`at`): Keep mine saves over it. */
+  readonly version: RecordVersion;
+  /** The record as they left it, when the source told it. */
+  readonly theirs?: Readonly<Values>;
+  /** The fields they changed since this page opened the record, in the page's order: none known when the source did not tell the record. */
+  readonly changed: readonly string[];
+  /** Those of them this person changed too, each to something else. */
+  readonly both: readonly string[];
 }
 
 /** A properties field's definitions from the app, as they load. */
@@ -217,6 +254,7 @@ export interface Form {
   node(id: string): NodeState;
   /** Whether the record is being edited, as conditions read `editing`: a view that locks it to be read says false, and parts follow. */
   setEditing(editing: boolean): void;
+  /** Whether a field is read-only whatever the conditions say: by its definition, or for this person by what the record's source said (`can`). */
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
@@ -356,6 +394,22 @@ export interface Form {
   cancelUpload(id: string): void;
   /** Send a file that failed again. */
   retryUpload(id: string): void;
+  /**
+   * After a conflict: show the record as the other person left it, loaded
+   * again, and set this person's changes aside (`setAside`), to put back.
+   * False when it could not be loaded.
+   */
+  reloadTheirs(): Promise<boolean>;
+  /**
+   * After a conflict: save this person's changes over the record as it is
+   * now — the other person's values kept wherever this one changed nothing.
+   * Refused again as a conflict when a third person saved in between.
+   */
+  keepMine(): Promise<boolean>;
+  /** Write a change set aside by Reload back, as the person's own: one field's, or all when none is named. */
+  putBack(field?: string): void;
+  /** Let go of the changes set aside. */
+  discardSetAside(): void;
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -386,6 +440,8 @@ interface IndexedNode {
   roles?: readonly string[];
   /** A toggle button's condition for being pressed. */
   pressed?: CompiledModifier;
+  /** What of the record a button's press does that its source may not allow: it is hidden from a person who may not. */
+  does?: readonly RecordRight[];
   source: LayoutNode | StepNode | ButtonNode | StatButton | MenuItem | HeadLink | RootLayout | { id: string; invisible?: Modifier };
 }
 
@@ -477,7 +533,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let editing = options.editing !== false;
   /** The record a line's form is of, as its conditions read it: worked out once. */
   const parentContext = options.parent ? recordContext(options.parent.values as Values, options.parent.fields, { recordId: options.parent.id ?? null, user: options.user, context: options.context }) : undefined;
-  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing, context: options.context, parent: parentContext });
+  /** Whether the record is being edited now: not while a view locks it, nor when its source lets the person only read it. */
+  const editingNow = () => editing && !(started && state.can?.edit === false);
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing: editingNow(), context: options.context, parent: parentContext });
   const computed = compileComputed(page, today, about);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
@@ -580,6 +638,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     choices: {},
     definitions: {},
     uploads: [],
+    version: null,
+    can: null,
+    conflict: null,
+    setAside: null,
   };
   started = true;
   /** Fields showing a file that did not reach the store: shown until it is sent again or taken away, whatever else changes. */
@@ -741,10 +803,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
   /** The values as expressions read them, and what else they read: the record's id, the person, the lines' rows, today. */
   function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
-    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editing) {
+    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editingNow()) {
       const values = state.values as Values;
       const context = recordContext(values, page.fields, about());
-      contextCache = { values, recordId: state.recordId, editing, context, env: expressionEnv(values, page.fields, today) };
+      contextCache = { values, recordId: state.recordId, editing: editingNow(), context, env: expressionEnv(values, page.fields, today) };
     }
     return contextCache;
   }
@@ -776,6 +838,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       readonly = index.get(parent)?.readonly.evaluate(ctx, env) ?? false;
     }
     const def = node.field ? page.fields[node.field] : undefined;
+    // What the record's source lets this person do: a field hidden from them or locked, a button that would do what they may not.
+    const can = state.can;
+    if (can) {
+      if ((node.field !== undefined && can.hiddenFields?.includes(node.field)) || node.does?.some((right) => can[right] === false)) invisible = true;
+      if ((node.kind === 'field' || node.kind === 'form') && (can.edit === false || (node.field !== undefined && can.readonlyFields?.includes(node.field) === true))) readonly = true;
+    }
     return {
       invisible,
       readonly: readonly || (def !== undefined && lockedField(def)),
@@ -995,7 +1063,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
   function scheduleAutosave() {
     const autosave = options.autosave;
-    if (!autosave || page.data.kind !== 'record') return;
+    // A record the person may not change is never saved unasked: it would only be refused.
+    if (!autosave || page.data.kind !== 'record' || state.can?.edit === false) return;
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     autosaveTimer = scheduler.setTimeout(() => {
       autosaveTimer = null;
@@ -1066,12 +1135,33 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return (await saving(chain)) === null;
   }
 
+  /** Every value, for a source that saves whole records: those of fields hidden from the person, which they never had, left out. */
+  function sentValues(): Values {
+    const values = structuredCopy(state.values as Values);
+    for (const name of state.can?.hiddenFields ?? []) delete values[name];
+    return values;
+  }
+
+  /** A conflict as the form tells it: what they changed since the record was opened, and what both changed. */
+  function conflictOf(conflict: SaveConflict): FormConflict {
+    const theirs = conflict.theirs;
+    const changed = theirs ? Object.keys(fields).filter((name) => name in theirs && !sameValue(fields[name], theirs[name], baseline[name])) : [];
+    const both = changed.filter((name) => state.dirty.includes(name) && !sameValue(fields[name], (theirs as Values)[name], state.values[name]));
+    return { version: conflict.version, ...(theirs ? { theirs } : {}), changed, both };
+  }
+
   /**
    * Save, or send: null once done, or why not. The page's `beforeSave` steps
    * run first — before its own check, so they may fill in what it asks for —
    * and a stop keeps it unsaved; `afterSave` runs once it is saved.
    */
   async function saving(chain: readonly string[]): Promise<Stopped | null> {
+    // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
+    if (page.data.kind === 'record' && state.can?.edit === false) {
+      const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? messages.mayNotEdit };
+      set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
+      return { reason: 'save', message: problem.message };
+    }
     // Files still on their way are waited for first: the state says how many, so the page can say why it waits.
     if (uploads.going()) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -1084,7 +1174,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         // A check's problems, or an inner save's, are shown already; any other stop is this save's problem.
         if (before.reason !== 'check' && before.reason !== 'save') {
           const problem: SaveProblem = { kind: 'stopped', reason: before.reason, message: before.message ?? '' };
-          set({ status: 'error', error: problem.message || null, saveProblem: problem });
+          set({ status: 'error', error: problem.message || null, saveProblem: problem, conflict: null });
         }
         return { reason: 'save', ...(before.message !== undefined ? { message: before.message } : {}) };
       }
@@ -1097,7 +1187,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     }
     const source = options.dataSource;
     serverErrors = {};
-    set({ status: 'saving', errors: {}, error: null, saveProblem: null });
+    set({ status: 'saving', errors: {}, error: null, saveProblem: null, conflict: null });
     try {
       // Bytes still in the record — a signature drawn, a value the app set — go to the store first, where it keeps files.
       await uploads.storeBytes(fileBytesIn(fields, state.values, page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty));
@@ -1122,13 +1212,16 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         id: state.recordId,
         fields,
         changes: changes(),
-        values: structuredCopy(state.values as Values),
+        values: sentValues(),
+        // The version it was opened at, for a source that refuses a save over someone else's.
+        ...(state.recordId != null && state.version ? { version: state.version } : {}),
       });
       forgetDraft();
       // Lines the save brings back load again, in their tables' orders, as Flectra's reload after a save.
       const values = syncParts(startFrom(result.values ? ordered({ ...(state.values as Values), ...result.values }, Object.keys(result.values)) : (state.values as Values)), 'start');
       baseline = structuredCopy(values);
-      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
+      // Its version now, for the next save to carry; and what the person may do now, when the save changed that.
+      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings), version: result.version ?? null, ...(result.can ? { can: result.can } : {}) });
       emit('save', { recordId: state.recordId, values: state.values });
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
@@ -1136,7 +1229,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const problem = saveProblemOf(error);
       const fields = problem.kind === 'fields' ? problem.fields ?? {} : {};
       serverErrors = Object.fromEntries(Object.entries(fields).map(([name, message]) => [name, { message, value: JSON.stringify(state.values[name] ?? null) }]));
-      set({ status: 'error', error: problem.message, saveProblem: problem, errors: { ...fields } });
+      set({ status: 'error', error: problem.message, saveProblem: problem, errors: { ...fields }, ...(problem.conflict ? { conflict: conflictOf(problem.conflict) } : {}) });
       return { reason: 'save', message: problem.message };
     }
   }
@@ -1299,11 +1392,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     set({ status: 'loading', error: null });
     try {
       // A source may give the record's version and what the person may do with it beside its values.
-      const { values: loaded } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
+      const { values: loaded, version, can } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null });
       if (again) return;
       offerDraft();
       void track(opening());
@@ -1323,7 +1416,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     told = null;
     showing = false;
     uploads.clear();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       return load();
@@ -1394,6 +1487,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     },
     post,
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
+    barred: (right) => (state.can?.[right] === false ? state.can.reason ?? messages[MAY_NOT[right]] : null),
   });
   const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
@@ -1451,7 +1545,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({});
     },
 
-    fieldReadonly: (name) => lockedField(fieldDef(name)),
+    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true,
 
     loadChoices,
     loadDefinitions,
@@ -1490,7 +1584,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       serverErrors = {};
       holding = setWhen.holding(baseline);
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null });
     },
 
     changes,
@@ -1748,6 +1842,64 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ draft: null });
     },
 
+    async reloadTheirs() {
+      // The person's changes, kept before theirs are loaded over them.
+      const mine: Values = {};
+      for (const name of state.dirty) mine[name] = structuredCopy(state.values[name]) as Value;
+      await track(load(true));
+      if (state.status !== 'ready') return false;
+      // Set aside where theirs differ from mine: a change they made the same way is no loss.
+      const aside: Values = { ...(state.setAside ?? {}) };
+      for (const [name, value] of Object.entries(mine)) if (!sameValue(fields[name], value, state.values[name])) aside[name] = value;
+      set({ conflict: null, saveProblem: null, setAside: Object.keys(aside).length ? aside : null });
+      return true;
+    },
+
+    async keepMine() {
+      const conflict = state.conflict;
+      let told = conflict?.theirs;
+      let version = conflict?.version;
+      // Not told the record as they left it: read as it is now, so a source that saves whole records keeps their work.
+      const source = options.dataSource;
+      if (conflict && !told && source?.load && state.recordId != null && page.data.kind === 'record') {
+        try {
+          const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
+          told = now.values;
+          version = now.version ?? version;
+        } catch {
+          // Unread: mine go over it as they are, `changes` saying which are mine.
+        }
+      }
+      if (told) {
+        // The record as they left it is where this person's changes start from: theirs stay wherever they changed nothing.
+        const theirs: Values = {};
+        for (const [name, value] of Object.entries(told)) if (fields[name]) theirs[name] = structuredCopy(value) as Value;
+        const mine = state.dirty;
+        baseline = { ...baseline, ...theirs };
+        const values = { ...(state.values as Values) };
+        for (const [name, value] of Object.entries(theirs)) if (!mine.includes(name)) values[name] = value;
+        writeValues(values);
+      }
+      // Saved with the version it has now: these changes over the record as it is.
+      if (version) set({ version });
+      return track(save());
+    },
+
+    putBack(field) {
+      const aside = state.setAside;
+      if (!aside) return;
+      const names = field === undefined ? Object.keys(aside) : Object.prototype.hasOwnProperty.call(aside, field) ? [field] : [];
+      if (!names.length) return;
+      const left = { ...aside };
+      for (const name of names) delete left[name];
+      set({ setAside: Object.keys(left).length ? left : null });
+      for (const name of names) form.setValue(name, aside[name]);
+    },
+
+    discardSetAside() {
+      if (state.setAside) set({ setAside: null });
+    },
+
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);
     },
@@ -1859,6 +2011,39 @@ function lockedField(def: Field): boolean {
   return def.readonly === true || def.compute !== undefined;
 }
 
+/** What a record's source may not let a person do, by the name `RecordPermissions` gives it. */
+type RecordRight = 'edit' | 'archive' | 'duplicate' | 'delete';
+
+/** The words a person is told when a step would do what they may not, and the source gave no reason. */
+const MAY_NOT = { edit: 'mayNotEdit', archive: 'mayNotArchive', duplicate: 'mayNotDuplicate', delete: 'mayNotDelete' } as const;
+
+/**
+ * What a press does that a record's source may forbid, read from what it
+ * runs: its steps — saving is editing; archiving and bringing back are both
+ * archiving — or, for a gear menu's built-in item with nothing of its own, the
+ * built-in itself.
+ */
+function rightsUsed(source: ButtonNode | StatButton | MenuItem): RecordRight[] {
+  const steps = source.steps ?? [];
+  const names: string[] = steps.map((step) => step.do);
+  if ('builtin' in source && source.builtin && !steps.length && source.action === undefined) names.push(source.builtin);
+  const rights = new Set<RecordRight>();
+  for (const name of names) {
+    if (name === 'save') rights.add('edit');
+    else if (name === 'archive' || name === 'unarchive') rights.add('archive');
+    else if (name === 'duplicate' || name === 'delete') rights.add(name);
+  }
+  return [...rights];
+}
+
+/** Two values of a field the same: a link by the record it points to, whatever name it is shown by; the rest as written. */
+function sameValue(def: Field | undefined, a: unknown, b: unknown): boolean {
+  const id = (value: unknown) => (value !== null && typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as RelatedRecord).id : value);
+  if (def?.type === 'many2one') return JSON.stringify(id(a) ?? null) === JSON.stringify(id(b) ?? null);
+  if (def?.type === 'many2many') return JSON.stringify(((a as unknown[] | null) ?? []).map(id)) === JSON.stringify(((b as unknown[] | null) ?? []).map(id));
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
 function lineOps(before: Line[], now: Line[]): LineOp[] {
   const ops: LineOp[] = [];
   const old = new Map(before.filter((line) => line.id !== undefined).map((line) => [line.key, line]));
@@ -1898,6 +2083,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
   ) => {
     const roles = (source as { roles?: readonly string[] }).roles;
     const pressed = kind === 'button' ? (source as ButtonNode).pressed : undefined;
+    const does = kind === 'button' || kind === 'stat' ? rightsUsed(source as ButtonNode | StatButton | MenuItem) : [];
     index.set(source.id, {
       id: source.id,
       parent,
@@ -1908,6 +2094,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
       readonly: compileModifier(modifiers.readonly),
       required: compileModifier(modifiers.required),
       ...(pressed !== undefined ? { pressed: compileModifier(pressed) } : {}),
+      ...(does.length ? { does } : {}),
       source,
     });
     // A button's menu: each item a button of the record, hidden with it.

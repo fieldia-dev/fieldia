@@ -210,6 +210,14 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     if (names.length) box.setAttribute('aria-labelledby', names.join(' '));
     else box.setAttribute('aria-label', options.title);
   }
+  // A record its source lets the person only read has nothing to save: no Save & Close, and Close in place of Discard.
+  const mayEdit = () => {
+    const may = options.mode === 'values' || handle.form.getState().can?.edit !== false;
+    saveClose.hidden = !may;
+    discard.textContent = may ? labels.discard : labels.close;
+  };
+  mayEdit();
+  handle.form.subscribe(mayEdit);
   if (maximise) kit?.wireMaximise(box, maximise, labels, doc);
   if (grip) kit?.wireGrip(box, grip, doc);
   let done = false;
@@ -330,7 +338,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
         doc.activeElement?.dispatchEvent(new Event('change', { bubbles: true }));
         // With buttons of its own, the page's primary one; else Save & Close.
         if (own.length) own.find(({ node, button }) => node.style === 'primary' && !button.hidden)?.button.click();
-        else saveClose.click();
+        else if (!saveClose.hidden) saveClose.click();
         return;
       }
       // A key a field used itself (Escape closing a list) is not the dialog's.
