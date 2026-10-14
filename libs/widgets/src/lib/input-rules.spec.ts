@@ -18,6 +18,16 @@ function keys(input: HTMLInputElement, text: string) {
   }
 }
 
+/** Backspace: a beforeinput the box may take for itself (keys held), else the character before the caret goes. */
+function backspace(input: HTMLInputElement) {
+  const before = new InputEvent('beforeinput', { inputType: 'deleteContentBackward', cancelable: true, bubbles: true });
+  if (!input.dispatchEvent(before)) return;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  input.setRangeText('', start === end ? Math.max(0, start - 1) : start, end, 'end');
+  input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+}
+
 /** Ctrl+V: refused, cleaned by the box, or pasted as it is by the browser. */
 function paste(input: HTMLInputElement, text: string) {
   const event = new Event('paste', { cancelable: true, bubbles: true });
@@ -87,7 +97,11 @@ describe('a number box refuses what can never be part of a number', () => {
     // Right under the box, never a dialog, never a disabled box.
     expect(input.nextElementSibling).toBe(hint);
     expect(input.disabled).toBe(false);
+    // Backspace takes the refused key back, as it would have taken back a key that landed; the next key is taken.
+    backspace(input);
+    expect(hintSays()).toBeNull();
     keys(input, '4');
+    expect(input.value).toBe('4');
     expect(hintSays()).toBeNull();
     expect(input.getAttribute('aria-describedby') ?? '').not.toContain(hint.id);
     keys(input, 'b');
@@ -96,14 +110,18 @@ describe('a number box refuses what can never be part of a number', () => {
     expect(hintSays()).toBeNull();
   });
 
-  it('never lets words into the field’s value: it holds a number or nothing', () => {
-    const { input, value } = numberBox({ type: 'float' });
+  it('never lets words into the field’s value: it holds a number or nothing, and what was typed is kept, marked', () => {
+    const { input, form, value } = numberBox({ type: 'float' });
     for (const text of ['abc', '1e5', '0x1F', '😀']) {
       keys(input, text);
       expect(typeof value() === 'number' || value() === null).toBe(true);
     }
-    // The digits stay; every letter and symbol was left out.
-    expect(value()).toBe(1501);
+    // Every key after the first letter waited with it: no digit was taken from among the letters.
+    expect(input.value).toBe('');
+    expect(value()).toBeNull();
+    leave(input);
+    expect(input.value).toBe('abc1e50x1F😀');
+    expect(form.getState().unread['x']?.message).toBe('Seats: “\u2068abc1e50x1F😀\u2069” is not a number');
   });
 
   it('refuses a minus that is not first, and any minus where the least is 0 or more', () => {
@@ -192,36 +210,163 @@ describe('a number box takes every way a number is written', () => {
   });
 });
 
-describe('a number box keeps to its field', () => {
-  it('refuses a decimal mark in a whole number, with the whole-number words', () => {
-    const { input, value } = numberBox({ type: 'integer' });
-    keys(input, '1.5');
-    expect(input.value).toBe('15');
-    expect(value()).toBe(15);
-    expect(hintSays()).toBe(null);
-    keys(input, '.');
-    expect(hintSays()).toBe('Seats must be a whole number');
+describe('a number box never makes a number of what was typed by dropping a key', () => {
+  it.each([
+    ['en', '1.5', '1.5', 'Seats must be a whole number'],
+    ['en', '.5', '.', 'Seats must be a whole number'],
+    ['en', '1e5', '1', 'Seats: “\u20681e5\u2069” is not a number'],
+    ['en', '0.500', '0.', 'Seats must be a whole number'],
+    ['ar', '١٫٥', '١٫', 'يجب أن يكون Seats رقمًا صحيحًا'],
+    ['ar', '٫٥', '٫', 'يجب أن يكون Seats رقمًا صحيحًا'],
+    ['fr', '1,5', '1,5', 'Seats doit être un nombre entier'],
+    ['fr', '1,234.56', '1,234.', 'Seats doit être un nombre entier'],
+    ['fr', '1 234,56', '1 234,56', 'Seats doit être un nombre entier'],
+    ['de', '1.234,56', '1.234,', 'Seats muss eine ganze Zahl sein'],
+    ['de', '1,234.56', '1,234.', 'Seats muss eine ganze Zahl sein'],
+  ] as const)('%s: "%s" in a whole number from 1 is never 15, 3 or 5; left, it stays as typed, marked, with why', (locale, typed, shows, said) => {
+    const { input, form, value } = numberBox({ type: 'integer', min: 1 }, {}, locale);
+    keys(input, typed);
+    // Nothing after a refused key is taken: the box never holds a different number.
+    expect(input.value).toBe(shows);
+    leave(input);
+    expect(input.value).toBe(typed);
+    expect(value()).toBeNull();
+    expect(form.getState().unread['x']?.message).toBe(said);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(form.validate()).toBe(false);
   });
 
-  it('refuses a place past the field’s, in its plural form', () => {
+  it('"-3" in a whole number from 1 is never 3: left, the field holds -3 as typed, and check says its least', () => {
+    const { input, form, value } = numberBox({ type: 'integer', min: 1 });
+    keys(input, '-3');
+    expect(input.value).toBe('');
+    expect(hintSays()).toBe('Seats must be at least 1');
+    leave(input);
+    expect(input.value).toBe('-3');
+    expect(value()).toBe(-3);
+    expect(form.validate()).toBe(false);
+    expect(form.getState().errors['x']).toBe('Seats must be at least 1');
+  });
+
+  it('keeps text left marked when the box is entered and left again, never emptying it', () => {
+    const { input, form, value } = numberBox({ type: 'integer', min: 1 });
+    keys(input, '1e5');
+    leave(input);
+    enter(input);
+    leave(input);
+    expect(input.value).toBe('1e5');
+    expect(value()).toBeNull();
+    expect(form.getState().unread['x']?.text).toBe('1e5');
+  });
+
+  it('keeps the hint while it holds keys, says it again for each, and Backspace takes them back one by one', () => {
+    const { input, value } = numberBox({ type: 'integer', min: 1 });
+    keys(input, '12');
+    keys(input, '-');
+    expect(hintSays()).toBe('Seats must be at least 1');
+    keys(input, '3');
+    expect(input.value).toBe('12');
+    expect(hintSays()).toBe('Seats must be at least 1');
+    backspace(input);
+    expect(hintSays()).toBe('Seats must be at least 1');
+    backspace(input);
+    expect(hintSays()).toBeNull();
+    expect(input.value).toBe('12');
+    keys(input, '3');
+    expect(input.value).toBe('123');
+    expect(value()).toBe(123);
+  });
+
+  it('lets the keys held go once the caret moves: what is typed there is judged on its own', () => {
+    const { input, form, value } = numberBox({ type: 'integer', min: 1 });
+    keys(input, '12a');
+    input.setSelectionRange(0, 0);
+    keys(input, '3');
+    expect(input.value).toBe('312');
+    leave(input);
+    expect(value()).toBe(312);
+    expect(form.getState().unread).toEqual({});
+  });
+});
+
+describe('a number box keeps to its field', () => {
+  it('takes a decimal mark in a whole number, which zeros may follow, and refuses a digit that makes it a fraction', () => {
+    const { input, value } = numberBox({ type: 'integer' });
+    keys(input, '12.0');
+    expect(input.value).toBe('12.0');
+    expect(value()).toBe(12);
+    const ar = numberBox({ type: 'integer' }, {}, 'ar');
+    keys(ar.input, '١٢٫٥');
+    expect(ar.input.value).toBe('١٢٫');
+    expect(hintSays()).toBe('يجب أن يكون Seats رقمًا صحيحًا');
+  });
+
+  it('refuses a place past the field’s, in its plural form, once the mark can only be decimal', () => {
     const area = numberBox({ type: 'float', label: 'Floor area', digits: [10, 1] });
-    keys(area.input, '12.34');
-    expect(area.input.value).toBe('12.3');
+    keys(area.input, '0.34');
+    expect(area.input.value).toBe('0.3');
     expect(hintSays()).toBe('Floor area takes at most 1 decimal place');
     const ar = numberBox({ type: 'float', label: 'Rate', digits: [10, 2] }, {}, 'ar');
     keys(ar.input, '1٫234');
     expect(hintSays()).toBe('Rate: منزلتان عشريتان على الأكثر');
   });
 
+  it('says places past the field’s as the box is left, when the mark could still have grouped as they were typed', () => {
+    const { input, form, value } = numberBox({ type: 'float', label: 'Floor area', digits: [10, 1] });
+    keys(input, '12.34');
+    // "12.34" may be on its way to "12.345,6": nothing is refused, and nothing it cannot hold is set.
+    expect(input.value).toBe('12.34');
+    expect(value()).toBe(12.3);
+    leave(input);
+    expect(input.value).toBe('12.34');
+    expect(value()).toBeNull();
+    expect(form.getState().unread['x']?.message).toBe('Floor area takes at most 1 decimal place');
+  });
+
   it('gives money without digits its currency’s places: 3 for the Kuwaiti dinar, 2 for the pound', () => {
     const kwd = numberBox({ type: 'monetary', currency: 'KWD' });
     keys(kwd.input, '1.2345');
+    expect(kwd.input.value).toBe('1.234');
     expect(kwd.value()).toBe(1.234);
+    expect(hintSays()).toBe('Seats takes at most 3 decimal places');
+    backspace(kwd.input);
     leave(kwd.input);
     expect(kwd.input.value).toBe('1.234');
     const egp = numberBox({ type: 'monetary', currency: 'EGP' });
-    keys(egp.input, '12.345');
-    expect(egp.value()).toBe(12.34);
+    keys(egp.input, '0.345');
+    expect(egp.input.value).toBe('0.34');
+    expect(egp.value()).toBe(0.34);
+  });
+
+  it.each([
+    ['en', '0,500', 0.5],
+    ['en', '0,750', 0.75],
+    ['ar', '0,500', 0.5],
+    ['ar', '٠,٥٠٠', 0.5],
+    ['de', '0.500', 0.5],
+    ['fr', '0,500', 0.5],
+  ] as const)('%s: "%s", led by 0, is a fraction and never 500', (locale, typed, expected) => {
+    const { input, value } = numberBox({ type: 'float', label: 'Budget', digits: [12, 2] }, {}, locale);
+    keys(input, typed);
+    expect(value()).toBe(expected);
+    leave(input);
+    expect(value()).toBe(expected);
+  });
+
+  it.each([
+    ['en', '1.234,56', 1234.56],
+    ['ar', '1.234,56', 1234.56],
+    ['ar', '١.٢٣٤,٥٦', 1234.56],
+    ['fr', '1,234.56', 1234.56],
+    ['de', '1,234.56', 1234.56],
+  ] as const)('%s: "%s" typed key by key into a box of two places is %s, as pasted', (locale, typed, expected) => {
+    const { input, form, value } = numberBox({ type: 'monetary', label: 'Budget', currency: 'EGP' }, {}, locale);
+    keys(input, typed);
+    expect(input.value).toBe(typed);
+    expect(hintSays()).toBeNull();
+    leave(input);
+    expect(value()).toBe(expected);
+    expect(form.getState().unread).toEqual({});
   });
 
   it('shows every place a value from outside has, never a rounded picture of another value', () => {
@@ -288,6 +433,27 @@ describe('a number box and a paste', () => {
     expect(input.value).toBe('');
     expect(value()).toBeNull();
     expect(hintSays()).toBe('Seats must be a whole number');
+    const area = numberBox({ type: 'float', label: 'Floor area', digits: [10, 1] });
+    paste(area.input, '12.345');
+    expect(area.input.value).toBe('');
+    expect(hintSays()).toBe('Floor area takes at most 1 decimal place');
+  });
+
+  it.each([
+    ['en', 'integer', '1,200.00', 1200],
+    ['en', 'integer', '12.0', 12],
+    ['ar', 'integer', '1,200.00', 1200],
+    ['en', 'area', '12.50', 12.5],
+    ['ar', 'area', '٠٫٥٠', 0.5],
+    ['en', 'area', '0,500', 0.5],
+    ['de', 'area', '0.500', 0.5],
+    ['fr', 'area', '0,500', 0.5],
+  ] as const)('%s: takes a pasted value with trailing zeros, or led by 0, into %s: "%s" is %s', (locale, kind, pasted, expected) => {
+    const field = kind === 'integer' ? { type: 'integer' } : { type: 'float', label: 'Floor area', digits: [10, 1] };
+    const { input, value } = numberBox(field, {}, locale);
+    paste(input, pasted);
+    expect(hintSays()).toBeNull();
+    expect(value()).toBe(expected);
   });
 });
 
@@ -413,6 +579,7 @@ describe('an analytic distribution’s shares', () => {
     keys(first, 'abc');
     expect(first.value).toBe('70');
     expect(hintSays()).toBe('Percentage: numbers only');
+    for (const _ of 'abc') backspace(first);
     keys(first, '-');
     expect(hintSays()).toBe('Percentage must be at least 0');
     expect(value()).toEqual({ '1': 70, '3': 30 });
@@ -487,6 +654,44 @@ describe('tax amounts typed in', () => {
   });
 });
 
+describe('tax amounts in a currency of three places', () => {
+  const totals = { subtotals: [{ name: 'Untaxed Amount', amount: 1000 }], groups_by_subtotal: { 'Untaxed Amount': [{ tax_group_name: 'VAT 5%', tax_group_amount: 50.125 }] }, amount_total: 1050.125 };
+  const mount = () => mountWidget({ type: 'json', label: 'Taxes', default: totals } as Field, { widget: 'tax-totals', options: { editable: true, currency: 'KWD' } });
+
+  it('shows a Kuwaiti amount as it is, and takes one typed or pasted to three places', () => {
+    const { el, value } = mount();
+    const box = el.querySelector('input') as HTMLInputElement;
+    expect(box.value).toBe('50.125');
+    expect(el.querySelector('.fd-tax-total td')?.textContent).toContain('1,050.125');
+    enter(box);
+    selectAll(box);
+    keys(box, '12.345');
+    expect(hintSays()).toBeNull();
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect((value() as typeof totals).groups_by_subtotal['Untaxed Amount'][0].tax_group_amount).toBe(12.345);
+    expect((value() as typeof totals).amount_total).toBe(1012.345);
+    selectAll(box);
+    paste(box, 'KWD 12.346');
+    expect(hintSays()).toBeNull();
+    expect(box.value).toBe('12.346');
+  });
+
+  it('holds the keys typed after a refused one, and leaving says why, the amount kept', () => {
+    const { el, form, value } = mount();
+    const box = el.querySelector('input') as HTMLInputElement;
+    enter(box);
+    selectAll(box);
+    keys(box, '12a5');
+    expect(box.value).toBe('12');
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    leave(box);
+    expect(box.value).toBe('12a5');
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect((value() as typeof totals).amount_total).toBe(1050.125);
+    expect(form.validate()).toBe(false);
+  });
+});
+
 describe('an editable progress bar', () => {
   it('refuses a minus where the bar starts at 0, and says the real value', () => {
     const { el, form } = mountWidget({ type: 'integer', label: 'Progress' } as Field, { widget: 'progressbar', options: { editable: true } });
@@ -494,6 +699,7 @@ describe('an editable progress bar', () => {
     enter(input);
     keys(input, '-');
     expect(hintSays()).toBe('Progress must be at least 0');
+    backspace(input);
     keys(input, '150');
     const bar = el.querySelector('[role="progressbar"]') as HTMLElement;
     expect(bar.getAttribute('aria-valuenow')).toBe('150');

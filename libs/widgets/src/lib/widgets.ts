@@ -16,7 +16,7 @@ import type {
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
 import { formatNumber, formatPlain, ungroup } from './numbers';
-import { guard, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
@@ -289,8 +289,10 @@ const textareaWidget: WidgetFactory = (context) => {
  * is typed stays as typed while focused: "1." means 1 now and 1.5 a keystroke
  * later. The input rules refuse, as they are typed or pasted, letters, a
  * misplaced minus, a second decimal mark, places and digits past the
- * field's; text left that does not read stays in the box, marked, and the
- * field keeps the value it held (`FormState.unread`).
+ * field's, and hold the keys typed after a refused one; text left that does
+ * not read, or that the field cannot hold ("1.5" in whole numbers, keys held
+ * after a refused one), stays in the box as typed, marked, and the field
+ * keeps the value it held (`FormState.unread`).
  */
 const numberWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, labels, locale = 'en' } = context;
@@ -365,21 +367,32 @@ const numberWidget: WidgetFactory = (context) => {
   });
   input.addEventListener('input', () => {
     const reading = readNumber(input.value, locale);
-    // On its way to a number ("-", "1,"), or text that does not read: nothing is set; leaving the box says why.
-    if (!reading.ok) return;
+    // On its way to a number ("-", "1,", "12.345" on its way to "12.345,6"), or text that does not read: nothing is
+    // set; leaving the box says why.
+    if (!reading.ok || !numberFits(input.value, box)) return;
     form.setValue(name, reading.value);
     if (unreadNow()) form.setUnread(name, null);
   });
   input.addEventListener('blur', () => {
     if (input.readOnly) return;
-    const text = input.value;
-    const words = unreadWords(text, box);
+    // Keys held after a refused one are part of what was typed: "1.5" where the box shows "1". The field's own words
+    // take over from the hint, in its place.
+    const held = checks.held();
+    if (held) hint.hide();
+    const text = held?.text ?? input.value;
+    const reading = readNumber(text, locale);
+    // A value the box held as it was entered (one from outside with more places) is let be: check names it.
+    const words = !held && reading.ok && reading.value === (entered ?? null) ? unreadWords(text, box) : leftWords(text, box);
     if (words === null) {
       if (unreadNow()) form.setUnread(name, null);
+      // What reads and fits is the field's, as typed: "-3" held after its refused minus, or text left marked before
+      // and left again. Its least and most are check's to say, as the box is left.
+      if (reading.ok && reading.value !== (form.getState().values[name] ?? null)) form.setValue(name, reading.value);
       input.value = shown(form.getState().values[name]);
       return;
     }
     // What does not read stays in the box, marked; the field keeps what it held as the box was entered.
+    if (held) input.value = text;
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
     form.setUnread(name, { text, message: words });
   });
@@ -394,8 +407,9 @@ const numberWidget: WidgetFactory = (context) => {
       const unread = unreadNow();
       if (typing) {
         const reading = readNumber(input.value, locale);
-        // A value changed under the person editing it shows as they edit: plain.
-        if (reading.ok && reading.value !== (state.value ?? null)) {
+        // A value changed under the person editing it shows as they edit: plain. Text the box did not set ("1.5" in
+        // whole numbers, waiting to be said as the box is left) is theirs, and stays.
+        if (reading.ok && numberFits(input.value, box) && reading.value !== (state.value ?? null)) {
           input.value = !state.readonly && typeof state.value === 'number' ? plain(state.value) : shown(state.value);
           checks.accept();
         }

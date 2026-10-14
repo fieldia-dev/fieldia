@@ -375,9 +375,13 @@ describe('a properties field’s number rows', () => {
 
   it('read a decimal comma on a French page, and keep text that does not read, marked on its row, Save waiting', () => {
     const { box, form, el } = properties('fr');
-    // Text is refused as any number box refuses it.
+    // Text is refused as any number box refuses it, and the keys after it wait with it: never 12 from "douze12".
     enter(box('floor'));
     keys(box('floor'), 'douze12');
+    expect(box('floor').value).toBe('');
+    expect(form.getState().values['extra']).toBeNull();
+    box('floor').dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+    keys(box('floor'), '12');
     expect(form.getState().values['extra']).toEqual({ floor: 12 });
     leave(box('floor'));
     const weight = box('weight');

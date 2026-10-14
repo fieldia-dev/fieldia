@@ -1,6 +1,6 @@
 import { readDuration, readNumber, type Field, type Locale, type NumberLimits, type Value } from '@fieldia/core';
 import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
-import { guard, numberKeyboard, numberRules, quoted, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, quoted, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -84,19 +84,29 @@ function shownBox(
   input.addEventListener('focus', () => (entered = form.getState().values[name]));
   input.addEventListener('input', () => {
     const value = way.parse(input.value);
-    if (value === undefined) return;
+    // Not yet, or not as it stands ("25.555" in a box of two places, on its way to "25.555,5"): left, it is said.
+    if (value === undefined || (!way.duration && !numberFits(input.value, box))) return;
     form.setValue(name, value);
     if (unreadNow()) form.setUnread(name, null);
   });
   input.addEventListener('blur', () => {
     if (input.readOnly) return;
-    const text = input.value;
-    const words = way.parse(text) === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : null;
+    // Keys held after a refused one are part of what was typed; the field's own words take over from the hint.
+    const held = checks.held();
+    if (held) hint.hide();
+    const text = held?.text ?? input.value;
+    const parsed = way.parse(text);
+    const unreadable = parsed === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : null;
+    // A value the box held as it was entered (one from outside with more places) is let be: check names it.
+    const words = unreadable ?? (!held && parsed === (entered ?? null) ? null : leftWords(text, box));
     if (words === null) {
       if (unreadNow()) form.setUnread(name, null);
+      // What reads and fits is the field's, as typed ("-3" held after its refused minus): check says its least and most.
+      if (parsed !== undefined && parsed !== (form.getState().values[name] ?? null)) form.setValue(name, parsed);
       input.value = shown(form.getState().values[name]);
       return;
     }
+    if (held) input.value = text;
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
     form.setUnread(name, { text, message: words });
   });
@@ -109,7 +119,7 @@ function shownBox(
       const unread = unreadNow();
       if (typing) {
         const parsed = way.parse(input.value);
-        if (parsed !== undefined && parsed !== (state.value ?? null)) {
+        if (parsed !== undefined && (way.duration || numberFits(input.value, box)) && parsed !== (state.value ?? null)) {
           input.value = shown(state.value);
           checks.accept();
         }

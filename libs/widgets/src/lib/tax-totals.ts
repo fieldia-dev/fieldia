@@ -1,6 +1,6 @@
-import { readNumber, type JsonValue, type RelatedRecord, type Value } from '@fieldia/core';
+import { placesOf, placesOfCurrency, readNumber, type JsonValue, type RelatedRecord, type Value } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
-import { guard, numberRules, refusalHint, unreadWords, type Guard } from './input-rules';
+import { guard, leftWords, numberRules, refusalHint, type Guard } from './input-rules';
 import { formatMoney, formatNumber } from './numbers';
 import type { Widget, WidgetFactory, WidgetState } from './widgets';
 
@@ -72,17 +72,18 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
   /** The state last drawn from: drawn again from it once the boxes are left, even when the totals are the same. */
   let last: WidgetState | null = null;
 
-  /** The value with one group's amount typed in, and the total following. */
-  function typed(group: Group, amount: number) {
+  /** The value with one group's amount typed in, and the total following, to the currency's places. */
+  function typed(group: Group, amount: number, places: number) {
     const value = JSON.parse(JSON.stringify(form.getState().values[name])) as Record<string, unknown>;
     const was = group.amount;
+    const round = (n: number) => Math.round(n * 10 ** places) / 10 ** places;
     if (Array.isArray(group.at)) {
       const [subtotal, i] = group.at;
       ((value['groups_by_subtotal'] as Record<string, Record<string, unknown>[]>)[subtotal][i])['tax_group_amount'] = amount;
-      value['amount_total'] = Math.round((num(value['amount_total']) + amount - was) * 100) / 100;
+      value['amount_total'] = round(num(value['amount_total']) + amount - was);
     } else {
       (value['groups'] as Record<string, unknown>[])[group.at]['amount'] = amount;
-      value['total'] = Math.round((num(value['total']) + amount - was) * 100) / 100;
+      value['total'] = round(num(value['total']) + amount - was);
     }
     form.setValue(name, value as JsonValue);
   }
@@ -98,7 +99,12 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
       const totals = read(state.value, words.untaxed);
       const holder = currencyField ? state.values[currencyField] : null;
       const code = fixed ?? (holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : typeof holder === 'string' ? holder : '');
-      const money = (n: number) => (/^[A-Z]{3}$/.test(code) ? formatMoney(n, code, 2, locale) : formatNumber(n, 2, locale));
+      // The currency's places: 3 for the Kuwaiti, Bahraini, Omani and Jordanian dinars and rials, 2 for most; never
+      // fewer than an amount has, so a box never shows a rounded picture of another amount.
+      const places = placesOfCurrency(/^[A-Z]{3}$/.test(code) ? code : null);
+      const shownPlaces = (n: number) => Math.max(places, Math.min(placesOf(n), 20));
+      const amount = (n: number) => formatNumber(n, shownPlaces(n), locale);
+      const money = (n: number) => (/^[A-Z]{3}$/.test(code) ? formatMoney(n, code, shownPlaces(n), locale) : amount(n));
       const editable = options['editable'] === true && !state.readonly;
       const key = JSON.stringify([totals, code, editable]);
       // Drawn again only when what it shows changes, so a box being typed in stays.
@@ -106,7 +112,7 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
       drawn = key;
       guards.forEach((g) => g.destroy());
       guards = [];
-      const row = (label: string, amount: string | HTMLElement, className: string) => make('tr', { class: className }, make('th', { scope: 'row' }, label), make('td', {}, amount));
+      const row = (label: string, shown: string | HTMLElement, className: string) => make('tr', { class: className }, make('th', { scope: 'row' }, label), make('td', {}, shown));
       const rows: HTMLElement[] = [];
       for (const subtotal of totals?.subtotals ?? []) {
         rows.push(row(subtotal.name, money(subtotal.amount), 'fd-tax-subtotal'));
@@ -117,16 +123,22 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
           }
           const box = make('input', { type: 'text', class: 'fd-input fd-number-input', inputmode: 'text', autocomplete: 'off', 'aria-label': group.name });
           const left = unread.get(placeOf(group));
-          box.value = left ? left.text : formatNumber(group.amount, 2, locale);
+          box.value = left ? left.text : amount(group.amount);
           setAttr(box, 'aria-invalid', left ? 'true' : null);
           if (left) box.setAttribute('aria-describedby', note.id);
-          // The tax box's input rules: an amount, two places, in the record's currency (pasted with it too).
-          const rules = { label: group.name, locale, labels, limits: () => ({ places: 2 }), currency: () => (/^[A-Z]{3}$/.test(code) ? code : null) };
-          guards.push(guard(box, numberRules(rules), refusalHint(box)));
-          // Left, or Enter pressed, with an edit: what it says is read.
-          box.addEventListener('change', () => {
-            const text = box.value;
-            const problem = unreadWords(text, rules);
+          // The tax box's input rules: an amount, the currency's places, in the record's currency (pasted with it too).
+          const rules = { label: group.name, locale, labels, limits: () => ({ places }), currency: () => (/^[A-Z]{3}$/.test(code) ? code : null) };
+          const hint = refusalHint(box);
+          const checks = guard(box, numberRules(rules), hint);
+          guards.push(checks);
+          // Left, or Enter pressed, with an edit: what it says is read — with the keys held after a refused one, whose
+          // words the note under the totals takes over.
+          const take = () => {
+            const held = checks.held();
+            if (held) hint.hide();
+            const text = held?.text ?? box.value;
+            if (held) box.value = text;
+            const problem = held ? (leftWords(text, rules) ?? held.words) : leftWords(text, rules);
             const read = readNumber(text, locale);
             if (problem || !read.ok) {
               // Kept as typed, marked, with why: the amount stays what it was.
@@ -144,14 +156,17 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
             box.removeAttribute('aria-describedby');
             if (read.value === null) {
               // Emptied and left: it goes back to the amount kept, and says so.
-              box.value = formatNumber(group.amount, 2, locale);
+              box.value = amount(group.amount);
               say(fillIn(words.stillHolds, { label: group.name, value: money(group.amount) }));
               return;
             }
             say('');
-            box.value = formatNumber(read.value, 2, locale);
-            if (read.value !== group.amount) typed(group, read.value);
-          });
+            box.value = amount(read.value);
+            if (read.value !== group.amount) typed(group, read.value, places);
+          };
+          box.addEventListener('change', take);
+          // Keys held after a refused one change nothing the box shows, so no change is said for them: leaving reads them.
+          box.addEventListener('blur', () => checks.held() && take());
           rows.push(row(group.name, box, 'fd-tax-group'));
         }
       }
