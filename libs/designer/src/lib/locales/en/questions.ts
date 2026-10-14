@@ -253,11 +253,11 @@ export const questions = {
   showFilesAs: 'Show chosen files as',
   /** Photos made smaller before they are kept (`shrink`): the setting, the usual way, keeping them as taken, a side in pixels, and how sharp. */
   smallerPhotos: 'Make photos smaller',
-  smallerUsual: 'Usual: 2048 px where files are stored',
-  smallerNo: 'No, keep them as taken',
+  smallerUsual: 'As usual (2048 px)',
+  smallerNo: 'No',
   smallerTo: (px: number) => `To ${px} px`,
   photoQuality: 'Photo quality',
-  qualityUsual: 'Usual: 85%',
+  qualityUsual: 'As usual (85%)',
   qualityOf: (n: number) => `${n}%`,
   // ---- previews of the newer kinds
   addressLines: { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' },

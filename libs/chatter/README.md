@@ -22,7 +22,7 @@ after each save. On its own: `mountChatter(element, { source, record: { model, i
 
 The chatter reaches your server only through a `source` you write for your
 backend, as you write a data source. `messages` and `post` are all it needs;
-each other method adds a part — `upload`, `react`, `people` (mentions,
+each other method adds a part — `upload` (each file stored as it is chosen, with a bar, Cancel and Retry; Send waits for them), `react`, `people` (mentions,
 assignees, followers), `activityTypes` / `activities` / `schedule` / `markDone`
 / `cancel`, `followers` / `follow` / `unfollow` — and a part whose method is
 missing is not shown. `createMemoryChatter` keeps everything in memory, for

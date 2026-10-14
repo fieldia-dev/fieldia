@@ -101,7 +101,7 @@ export async function roomPhoto(name: string, n: number, width = 4032, height = 
  */
 export function photosBar(): HTMLElement {
   const bar = document.createElement('div');
-  bar.className = 'demo-bar demo-photos-bar';
+  bar.className = 'demo-bar demo-photos-bar fd-theme';
   const add = document.createElement('button');
   add.type = 'button';
   add.className = 'fd-button fd-button-primary';

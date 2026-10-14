@@ -74,7 +74,7 @@ describe('photos made smaller, in the side panel', () => {
   it('offers an image the usual, keeping them as taken, or a side — and how sharp, once they are made smaller', () => {
     const { id, host, page } = picked('image');
     const smaller = named<HTMLSelectElement>(panel(host), 'Make photos smaller')[0];
-    expect(shown(smaller)).toEqual(['Usual: 2048 px where files are stored', 'No, keep them as taken', 'To 1280 px', 'To 1600 px', 'To 2048 px', 'To 2560 px', 'To 3200 px', 'To 4096 px']);
+    expect(shown(smaller)).toEqual(['As usual (2048 px)', 'No', 'To 1280 px', 'To 1600 px', 'To 2048 px', 'To 2560 px', 'To 3200 px', 'To 4096 px']);
     expect(named(panel(host), 'Photo quality')).toHaveLength(1);
     choose(smaller, '1600');
     expect(fieldOf(page(), id).shrink).toEqual({ maxSide: 1600 });
@@ -91,7 +91,7 @@ describe('photos made smaller, in the side panel', () => {
   it('offers a file upload no shrinking unless a side is picked, and shows a side of the page’s own as it is', () => {
     const { designer, id, host, page } = picked('file');
     const smaller = named<HTMLSelectElement>(panel(host), 'Make photos smaller')[0];
-    expect(shown(smaller)).toEqual(['No, keep them as taken', 'To 1280 px', 'To 1600 px', 'To 2048 px', 'To 2560 px', 'To 3200 px', 'To 4096 px']);
+    expect(shown(smaller)).toEqual(['No', 'To 1280 px', 'To 1600 px', 'To 2048 px', 'To 2560 px', 'To 3200 px', 'To 4096 px']);
     expect(named(panel(host), 'Photo quality')).toHaveLength(0);
     choose(smaller, '2560');
     expect(fieldOf(page(), id).shrink).toEqual({ maxSide: 2560 });

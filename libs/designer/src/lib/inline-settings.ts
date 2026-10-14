@@ -205,7 +205,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         counts,
         el('div', { class: 'fd-inline-row' }, el('span', {}, w.showFilesAs), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.showFilesAs }, ...asChips)),
         el('span', { class: 'fd-inline-setting fd-inline-toggle' }, switchable, el('span', { 'aria-hidden': 'true' }, w.peopleCanSwitch)),
-        el('div', { class: 'fd-inline-row' }, word(w.smallerPhotos, smaller), qualityRow),
+        word(w.smallerPhotos, smaller),
+        qualityRow,
         ...(kind === 'image' ? [word(w.cameraOnPhones, camera)] : [])
       );
       refresh = (page, node) => {

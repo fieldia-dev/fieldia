@@ -26,6 +26,7 @@ interface DataSource {
   copy?(request: RecordRequest): Promise<SaveResult>;        // duplicate it: the copy's id
   delete?(request: RecordRequest): Promise<void>;            // delete it
   attachments?(request: RecordRequest): Promise<FileValue[]>; // its files, the main one first
+  upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>; // store one file as it is picked
 }`
 )}
 
@@ -45,6 +46,7 @@ interface DataSource {
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
     <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
+    <tr><td>${c('upload')}</td><td>Someone picks or drops a file in a file or picture field, uploads a picture of a signature, or saves one drawn</td><td>Files kept in your store, the record holding only their links — see <a href="#upload">files stored as they are picked</a></td></tr>
   </tbody>
 </table>
 </div>
@@ -62,6 +64,73 @@ interface DataSource {
   <li>${c('submit({ pageId, values })')} — the answers to the questions that were shown; skipped steps are left out.</li>
 </ul>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
+
+<h2 id="upload">Files stored as they are picked</h2>
+<p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>
+<ul>
+  <li>${c('upload(file, { model, field, recordId, line, signal, onProgress })')} — ${c('file')} is the browser's ${c('File')} (made smaller already, for a photo). ${c('recordId')} is ${c('null')} while the record is new: keep the file, and link it when the record's first save carries the field's ${c('{ url, fileId }')}. ${c('line')} names a table's line, ${c('{ field, key, id }')}, for a file on one. On a page of responses (a survey), ${c('model')} is the page's id.</li>
+  <li>Call ${c('onProgress(sent, total)')} as the bytes go, for the bar's number; without it the bar moves with none.</li>
+  <li>To fail, throw: the field says the file was not uploaded and offers Retry. Throw ${c("saveRefused({ kind: 'rule', message })")} when your store will not keep this file — its kind, its size — and the field shows your words, with no Retry, since trying again cannot help.</li>
+  <li>When ${c('signal')} aborts — the person pressed ×, discarded their changes, or left — stop, and reject with an error named ${c('AbortError')}: the file is dropped without being called a failure.</li>
+  <li><strong>Save waits and tells.</strong> Pressed while files are still going, Save waits for them, saying where <em>Saving…</em> would be: “2 files still uploading. Saving when they are done.” A file that failed stops the save under its field — “balcony.jpg was not uploaded: try again, or remove it” — until it is sent again or taken away. Save shows as soon as a file is picked, before it has arrived.</li>
+  <li>Bytes still in the record are stored by the save: a signature drawn on its pad, or a file your app set with its ${c('data')}. A record's stored files that did not change are never sent again.</li>
+  <li>A draft never keeps a file's bytes: a field holding one is left out of the draft, and its record's value stays when the draft is restored.</li>
+  <li>Without ${c('upload')}, a file travels inside the record as base64, as it always has; one larger than a megabyte warns once in the console.</li>
+</ul>
+<p>Photos are made smaller by the field's ${c('shrink')} — see <a href="/fields/#files">files and photos</a>.</p>
+
+<h3 id="upload-to">${c('uploadTo')}: a plain endpoint</h3>
+<p>${c('uploadTo')} from ${c('@fieldia/core')} writes ${c('upload')} for you. It sends through ${c('XMLHttpRequest')}, so the bar has its number, and through ${c('fetch')} where there is none. By default it POSTs a form with the file under ${c('file')}, and reads the stored file's address from the answer's JSON ${c('url')} (and its ${c('id')} as ${c('fileId')}), else from its ${c('Location')}. An answer of 400, 409, 413, 415 or 422 is a refusal, shown in the server's words (its JSON's ${c('message')}); any other failure offers Retry.</p>
+${code(
+  'ts',
+  `
+import { uploadTo } from '@fieldia/core';
+
+const dataSource = {
+  ...yourDataSource,
+  upload: uploadTo({
+    url: '/api/files',                          // or (file, request) => an address of the file's own
+    headers: { 'X-CSRF-Token': csrfToken },     // or (file, request) => headers
+    field: 'file',                              // the form's field the file goes under
+    // link: (answer, file) => ({ url: answer.json.location }),   // when your answer says it its own way
+  }),
+};`
+)}
+
+<h3 id="azure-blob">Straight to Azure Blob storage</h3>
+<p>The file need not pass through your server. Your server signs one address per file — a service SAS, write-only, for minutes — and the browser PUTs the file to it. The field keeps the blob's address, without the signature. No SDK on either side:</p>
+${code(
+  'ts',
+  `
+// In the page: ask your server for the address, then PUT the file there.
+const upload = uploadTo({
+  method: 'PUT',
+  url: async (file) => (await fetch(\`/api/upload-address?name=\${encodeURIComponent(file.name)}\`)).text(),
+  headers: { 'x-ms-blob-type': 'BlockBlob' },
+});
+
+// On your server (Node): the address, signed with the storage account's key.
+import { createHmac, randomUUID } from 'node:crypto';
+
+const ACCOUNT = 'yourstorage';
+const CONTAINER = 'listings';
+const KEY = process.env.AZURE_STORAGE_KEY; // the account's key, base64, as the portal gives it
+
+export function uploadAddress(fileName) {
+  const blob = \`\${new Date().toISOString().slice(0, 10)}/\${randomUUID()}-\${fileName.replace(/[^\\w.-]+/g, '-')}\`;
+  const expiry = new Date(Date.now() + 10 * 60_000).toISOString().replace(/\\.\\d+Z$/, 'Z');
+  const version = '2022-11-02';
+  const signed = [
+    'cw', '', expiry, \`/blob/\${ACCOUNT}/\${CONTAINER}/\${blob}\`, // permissions, start, expiry, resource
+    '', '', 'https', version, 'b', // identifier, IP, protocol, version, a blob
+    '', '', '', '', '', '', '', // snapshot, encryption scope, and the five response headers
+  ].join('\\n');
+  const sig = createHmac('sha256', Buffer.from(KEY, 'base64')).update(signed, 'utf8').digest('base64');
+  const query = new URLSearchParams({ sv: version, spr: 'https', se: expiry, sr: 'b', sp: 'cw', sig });
+  return \`https://\${ACCOUNT}.blob.core.windows.net/\${CONTAINER}/\${blob}?\${query}\`;
+}`
+)}
+<p>Let your site PUT to the account in its CORS rules, with the ${c('x-ms-blob-type')} and ${c('Content-Type')} headers. To show a stored file to people who may not read the container, give them a read SAS for it when your server sends the record. An S3 presigned PUT URL works the same way, without the ${c('x-ms-blob-type')} header.</p>
 
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
@@ -120,6 +189,18 @@ const dataSource = createMemoryDataSource({
   delayMs: 300,   // answer slowly, to see loading states
 });
 dataSource.responses;   // every submitted response, for tests`
+)}
+<p>Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
+${code(
+  'ts',
+  `
+const dataSource = createMemoryDataSource({
+  storage: {
+    bytesPerSecond: 150_000,                                          // a phone sending on mobile data
+    fails: (file, attempt) => file.name === 'balcony.jpg' && attempt === 1, // fails once, partway: Retry mends it
+    // or words, for the store refusing the file: (file) => file.size > 5e6 && 'Photos up to 5 MB'
+  },
+});`
 )}
 `,
 };
