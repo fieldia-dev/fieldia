@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { addField, editing, inAdvanced, watch } from './designer-support';
 import { node, open, screen } from './support';
 
 /**
@@ -516,4 +517,91 @@ test.describe('a date in a table’s cell', () => {
     expect(Object.values(await unread(page)).map((u) => u.message)).toContain('Date: February 2026 has 28 days');
     expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.validate())).toBe(false);
   });
+});
+
+test.describe('the designer’s dates', () => {
+  // The page's fields as the designer holds them, by label.
+  const fieldOf = (page: Page, label: string) =>
+    page.evaluate((l) => Object.values((window as any).fieldiaDesigner.designer.getPage().fields as Record<string, any>).find((f) => f.label === l), label);
+  const nodeOptions = (page: Page, label: string) =>
+    page.evaluate((l) => {
+      const designer = (window as any).fieldiaDesigner.designer;
+      const page = designer.getPage();
+      const name = Object.keys(page.fields).find((n) => page.fields[n].label === l);
+      const found: any[] = [];
+      const walk = (n: any) => {
+        if (n?.field === name) found.push(n);
+        for (const child of n?.children ?? []) walk(child);
+      };
+      walk(page.layout);
+      return found[0]?.options;
+    }, label);
+  const hintAfter = (box: Locator) => box.locator('xpath=following-sibling::*[contains(@class,"fd-refusal-hint")][1]');
+
+  for (const [locale, query, digits, words] of [
+    ['en', '', (t: string) => t, { earliest: 'Earliest', aDay: 'day', day: 'Earliest day', time: 'Earliest time', rules: 'Rules', setWhen: 'Set when…', setTo: 'Set to', as: 'Set', shape: 'dd/mm/yyyy', rest: '2 Mar 2026', stays: 'Earliest day: February 2026 has 28 days. It stays 2 Mar 2026.', due: '15 Oct 2026' }],
+    ['ar', '&locale=ar&dir=rtl', arabic, { earliest: 'الأقرب', aDay: 'day', day: 'أقرب يوم', time: 'أبكر وقت', rules: 'القواعد', setWhen: 'يُضبط عندما…', setTo: 'يُضبط على', as: 'يُضبط', shape: 'يوم/شهر/سنة', rest: '2 مارس 2026', stays: 'أقرب يوم: في فبراير 2026 28 يومًا. تبقى القيمة 2 مارس 2026.', due: '15 أكتوبر 2026' }],
+    ['fr', '&locale=fr', (t: string) => t, { earliest: 'Earliest', aDay: 'day', day: 'Earliest day', time: 'Earliest time', rules: 'Rules', setWhen: 'Set when…', setTo: 'Set to', as: 'Set', shape: 'dd/mm/yyyy', rest: '2 Mar 2026', stays: 'Earliest day: February 2026 has 28 days. It stays 2 Mar 2026.', due: '15 Oct 2026' }],
+  ] as const) {
+    test(`${locale}: a day typed day first in Fieldia’s own box, never the browser’s: a limit, a time, a value set when; 31/02 kept out, said`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await inAdvanced(page);
+      const problems = watch(page);
+      await page.goto(`/screen/?start=blank${query}`);
+      await expect(page.locator('.fd-toolbox')).toBeVisible();
+      await addField(page, 'number', 'Quantity');
+      await addField(page, 'date', 'Visit day');
+      const setting = (name: string) => editing(page).card.getByLabel(name, { exact: true });
+      await setting(words.earliest).selectOption(words.aDay);
+      const day = setting(words.day);
+      await expect(day).toHaveAttribute('type', 'text');
+      await expect(day).toHaveAttribute('placeholder', words.shape);
+      await day.click();
+      await day.pressSequentially(digits('2/3/2026'));
+      await day.press('Tab');
+      await expect.poll(async () => (await fieldOf(page, 'Visit day'))?.min).toBe('2026-03-02');
+      await expect(day).toHaveValue(words.rest);
+      // A letter never lands, and why is said under the box.
+      await day.click();
+      await day.press('ControlOrMeta+a');
+      await day.pressSequentially('3x');
+      await expect(day).toHaveValue('3');
+      await expect(hintAfter(day)).toBeVisible();
+      await day.press('Backspace');
+      await day.press('Backspace');
+      // A day that does not exist: the limit stays, the box shows it again, and says why, in view.
+      await day.pressSequentially(digits('31/02/2026'));
+      await day.press('Tab');
+      await expect(hintAfter(day)).toHaveText(words.stays);
+      await expect(hintAfter(day)).toBeInViewport();
+      await expect(day).toHaveValue(words.rest);
+      expect((await fieldOf(page, 'Visit day'))?.min).toBe('2026-03-02');
+      await screen(page, `input-dates-designer-day-${locale}`, { viewport: true });
+
+      // A time's earliest, with am or pm.
+      await addField(page, 'time', 'Arrival');
+      const time = setting(words.time);
+      await expect(time).toHaveAttribute('type', 'text');
+      await time.click();
+      await time.pressSequentially(digits('9:30') + ' am');
+      await time.press('Tab');
+      await expect.poll(async () => (await nodeOptions(page, 'Arrival'))?.min).toBe('09:30');
+
+      // A value the date is set to when Quantity changes.
+      await page.locator('.fd-canvas-field', { hasText: 'Visit day' }).first().click();
+      const panel = page.locator('.fd-properties');
+      await panel.getByRole('tab', { name: words.rules, exact: true }).click();
+      await panel.getByRole('button', { name: words.setWhen, exact: true }).click();
+      const to = panel.getByRole('textbox', { name: words.setTo, exact: true });
+      await expect(to).toHaveAttribute('type', 'text');
+      const as = panel.getByRole('combobox', { name: words.as, exact: true });
+      await as.selectOption((await as.locator('option', { hasText: 'Quantity' }).getAttribute('value')) as string);
+      await to.click();
+      await to.pressSequentially(digits('15/10/2026'));
+      await to.press('Tab');
+      await expect.poll(async () => (await fieldOf(page, 'Visit day'))?.setWhen?.[0]?.value).toBe("'2026-10-15'");
+      await expect(to).toHaveValue(words.due);
+      expect(problems).toEqual([]);
+    });
+  }
 });
