@@ -1,4 +1,4 @@
-import type { Form, MenuItem, RecordId, RecordToolbar, RunResult } from '@fieldia/core';
+import { workAtRisk, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
 import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -42,7 +42,7 @@ export interface RecordBarContext {
   press(button: HTMLElement, run: () => Promise<RunResult>): Promise<void>;
   /** The record's name, as its crumb says it; empty for a new one. */
   name(): string;
-  /** Save what changed before the pager moves on; false keeps the record where it is. */
+  /** Save what changed before the pager moves on, then the form's one check (`form.leave()`); false keeps the record where it is. */
   leave(): Promise<boolean>;
   /** Draw the form again: the pager's records changed, the record shown perhaps not. */
   render(): void;
@@ -79,10 +79,23 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
       {},
       ...trail.map((crumb) => {
         const link = crumb.href !== undefined ? el('a', { class: 'fd-crumb', href: crumb.href }, crumb.label) : el('button', { type: 'button', class: 'fd-crumb' }, crumb.label);
+        // The app's way back, through the form's one check: at once with nothing at risk, as always; else asked first.
+        const plain = (event: Event) => {
+          const click = event as MouseEvent;
+          return !click.button && !click.ctrlKey && !click.metaKey && !click.shiftKey && !click.altKey;
+        };
         if (crumb.open) {
           link.addEventListener('click', (event) => {
             event.preventDefault();
-            crumb.open?.();
+            if (!workAtRisk(context.form.getState())) return void crumb.open?.();
+            void context.form.leave().then((yes) => yes && crumb.open?.());
+          });
+        } else if (crumb.href !== undefined) {
+          // An address in this tab leaves the form: asked first when work is at risk. Another tab leaves it as it is.
+          link.addEventListener('click', (event) => {
+            if (!plain(event) || !workAtRisk(context.form.getState())) return;
+            event.preventDefault();
+            void context.form.leave().then((yes) => yes && context.doc.defaultView?.location.assign(crumb.href as string));
           });
         }
         return el('li', {}, link);
@@ -241,10 +254,12 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
     moving = true;
     try {
       const to = (from + by + total) % total;
-      if (!(await context.leave())) return;
+      // The id first, which may come from the server: a change made while it is looked up is saved with the rest.
       const id = await idAt(to);
+      if (!(await context.leave())) return;
       at = to;
       placed = id;
+      // Through the one check again, by construction: nothing is left to ask about by now.
       await form.openRecord(id);
     } finally {
       moving = false;

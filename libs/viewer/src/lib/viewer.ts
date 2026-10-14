@@ -43,8 +43,8 @@ import {
   type Values,
   MESSAGES,
   hotkeyWords,
-  unsavedWork,
   uploadGoing,
+  workAtRisk,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
@@ -68,7 +68,6 @@ import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
-import { lastSent, workLeft } from './discard';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
@@ -344,7 +343,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           root,
           title: (other) => shownAs(other).title || other.id,
           back: labels.back,
-          discardWords: labels,
           missing: (id) => fill(labels.pageMissing, { page: id }),
           say: (message, tone) => actionHost.say(message, tone),
           post: (message) => form.post(message),
@@ -439,8 +437,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   applyLook(root, theme ? { ...page.look, theme } : page.look);
   wearTokens(root, options.tokens);
   const confirm = options.confirm ?? dialogConfirm;
-  /** "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. */
-  const letGoAsked = (message = labels.discardChanges) => dialogConfirm(message, true, { yes: labels.discard, safe: true });
+  /** The "Discard your changes?" asked now, if one is: gone the moment it is answered. */
+  let discarding: Promise<boolean> | null = null;
+  /**
+   * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
+   * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
+   */
+  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, safe: true, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -1349,7 +1352,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           return;
         }
         // Changed while it saved: still being edited, and said, so nothing unsaved is locked away unseen.
-        if (unsavedWork(form.getState())) {
+        if (workAtRisk(form.getState())) {
           announce(labels.savedNotAll);
           return;
         }
@@ -1409,12 +1412,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const sending = page.data.kind === 'responses';
     return fill(going === 1 ? (sending ? labels.sendingAfterFile : labels.savingAfterFile) : sending ? labels.sendingAfterFiles : labels.savingAfterFiles, { n: going });
   }
-  /** What was last sent, for a page of responses: an answer changed since was not in it. */
-  const sent = lastSent(form);
-  // Told once the status says the answers went: what it says follows what was sent.
-  cleanups.push(sent.stop, form.on('send', () => render(form.getState())));
-  /** Saved, or sent — or not all of it: never "Saved" while a change is still to save. */
-  const savedWords = () => (!workLeft(form, sent.values()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
+  /** Saved, or sent — or not all of it: never "Saved" while a change of the person's is still to save, or a file on its way. */
+  const savedWords = () => (!workAtRisk(form.getState()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
   updaters.push((state) => {
     const problem = state.saveProblem;
     const text =
@@ -1514,7 +1513,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
     if (page.data.kind === 'responses') {
       // An answer changed while they were on their way was not sent: the form stays, and says so, not "Thank you".
-      if (workLeft(form, sent.values())) {
+      if (workAtRisk(form.getState())) {
         announce(labels.sentNotLatest);
         return;
       }
@@ -1556,21 +1555,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       async leave() {
-        // Changes Reload set aside are no save's to make: the person says whether to let them go, and stays if not.
-        if (form.getState().setAside) {
-          if (!(await letGoAsked())) return false;
-          form.discardSetAside();
+        // The changes are saved first, as the pager always has; a file still on its way is a change too: the save waits for it.
+        const state = form.getState();
+        if (state.dirty.length || state.uploads.some(uploadGoing)) {
+          const saved = await form.save();
+          if (!saved) {
+            if (!form.getState().saveProblem) announce(checkText(form.getState()));
+            focusFirstProblem();
+            return false;
+          }
         }
-        // A file still on its way is a change too: the save waits for it.
-        if (!unsavedWork(form.getState())) return true;
-        const saved = await form.save();
-        if (!saved) {
-          if (!form.getState().saveProblem) announce(checkText(form.getState()));
-          focusFirstProblem();
-          return false;
-        }
-        // Still unsaved — changed while it saved, a file picked meanwhile: asked, and kept, the record staying, unless let go.
-        return !unsavedWork(form.getState()) || letGoAsked();
+        // What that save could not take, and changes Reload set aside: the form's one check.
+        return form.leave();
       },
     });
     if (!bar) return null;
@@ -2175,9 +2171,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /**
    * A question with Cancel and OK, or with `withCancel` false a notice with OK
    * alone. `how.yes` words OK as what it does (Discard); `how.safe` puts the
-   * focus on Cancel, so Enter loses nothing.
+   * focus on Cancel, so Enter loses nothing; `how.ended` is told the moment it
+   * is answered, before the promise settles.
    */
-  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; safe?: boolean } = {}): Promise<boolean> {
+  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; safe?: boolean; ended?: () => void } = {}): Promise<boolean> {
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
@@ -2192,6 +2189,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const shown = (e: HTMLElement | null) => !!e && e !== doc.body && e.isConnected && !e.closest('[hidden]');
         const back = shown(opener) ? opener : root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])');
         back?.focus();
+        how.ended?.();
         resolve(answer);
       };
       cancel.addEventListener('click', () => close(false));

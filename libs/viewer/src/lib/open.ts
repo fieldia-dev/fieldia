@@ -1,6 +1,6 @@
-import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
+import { workAtRisk, type OpenRequest, type OpenResult, type Page, type PostedMessage, type Tone, type Values } from '@fieldia/core';
 import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
-import { askDiscard, keptWork, lastSent, workLeft, type DiscardWords } from './discard';
+import { stayed } from './discard';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
 
@@ -15,8 +15,6 @@ export interface Opener {
   title(page: Page): string;
   /** "Back", in the page's language. */
   back: string;
-  /** "Discard your changes?", Cancel and Discard, in the page's language: asked before a page in this form's place drops work of the person's. */
-  discardWords: DiscardWords;
   /** Why a page cannot be opened: the app has none by that id. */
   missing(page: string): string;
   /** Words said as this viewer says them: a page opened over it says its own here, so they show over it and outlive it. */
@@ -77,11 +75,10 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
  * where its page draws none (a list), Back. Saved or sent — once its own
  * after-save steps have run — it gives way back to this form, as it was, and
  * the run goes on; the way back, or a `close` step inside it, returns without.
- * Either way, work of the person's that would go with it is asked about first
- * ("Discard your changes?"), and kept, the page staying, on Cancel: after a
- * save, whatever is still unsaved (a change made while it saved); on the way
- * back, what Reload set aside and files on their way, a change not saved
- * going with it as it always has.
+ * Each way back goes through its form's one check (`form.leave()`): the
+ * person's work at risk is asked about first, and kept, the page staying, on
+ * Cancel. Once a save or a send in it went through, it returns saved, however
+ * it was left.
  */
 function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResult> {
   const { place, root } = opener;
@@ -89,6 +86,8 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
   const from = doc.activeElement as HTMLElement | null;
   return new Promise((resolve) => {
     let done = false;
+    /** Once a save or a send in it went through: returned saved, whichever way it is left. */
+    let savedAny = false;
     const end = (saved: boolean) => {
       if (done) return;
       done = true;
@@ -96,47 +95,36 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       opened.destroy();
       root.hidden = false;
       if (from?.isConnected) from.focus();
-      resolve({ saved, recordId: state.recordId ?? null, values: state.values as Values });
+      resolve({ saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values });
     };
-    /**
-     * One question at a time: another way out while it is asked is the same question. `afterSave`: what is unsaved
-     * counts whole, as after a save (a change made while it ran); else only what Reload set aside, files on their way.
-     */
-    let asking = false;
-    const endAsking = (saved: boolean, afterSave = saved) => {
-      if (done || asking) return;
-      if (!(afterSave ? workLeft(opened.form, sent.values()) : keptWork(opened.form.getState()))) return end(saved);
-      asking = true;
-      void askDiscard(opened.element, opener.discardWords, () => (asking = false)).then((discarding) => (discarding ? end(saved) : (stayedAt = saves)));
+    const endChecked = async (saved: boolean) => {
+      if (done) return;
+      // Nothing at risk: back at once, as it always was.
+      if (!workAtRisk(opened.form.getState())) return end(saved);
+      if (await opened.form.leave()) end(saved);
     };
-    /**
-     * The saves made in it, how many there were as the last run of steps ended (a run that saved, then closed), and
-     * as the person last chose to stay: a save they were asked about once does not ask again as it settles.
-     */
+    /** The saves made in it, and as many as there were when the person last chose to stay: a save they were asked about does not ask again as it settles. */
     let saves = 0;
-    let savesBefore = 0;
     let stayedAt = -1;
     root.hidden = true;
     // Where the app keeps a trail, this record joins it as the way back.
-    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => endAsking(false) }] : undefined;
-    // A `close` step returns without, as it always has; after a save in the same run, a change made while it ran is asked about.
-    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => endAsking(false, saves > savesBefore) } });
-    const sent = lastSent(opened.form);
-    opened.on('save', () => saves++);
-    opened.on('send', () => saves++);
-    opened.on('run', ({ id: run }) => {
-      if (!run.startsWith('on.')) savesBefore = saves;
+    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => void endChecked(false) }] : undefined;
+    // Its form takes this close once, its one check before it: a `close` step returns once nothing is at risk, or let go.
+    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
+    opened.on('run', ({ result }) => {
+      if (stayed(result)) stayedAt = saves;
     });
     const back = doc.createElement('button');
     back.type = 'button';
     back.className = 'fd-button fd-button-link fd-back';
     back.textContent = opener.back;
-    back.addEventListener('click', () => endAsking(false));
+    back.addEventListener('click', () => void endChecked(false));
     if (!opened.element.querySelector('.fd-breadcrumbs')) opened.element.prepend(back);
     const leave = () => {
-      const at = saves;
+      savedAny = true;
+      const at = ++saves;
       void opened.form.settled().then(() => {
-        if (stayedAt < at) endAsking(true);
+        if (stayedAt < at) void endChecked(true);
       });
     };
     opened.on('save', leave);
