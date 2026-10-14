@@ -1,0 +1,80 @@
+{
+  "fieldia": "0.1",
+  "id": "booking-week",
+  "title": "Bookings",
+  "description": "The booking desk's week, Saturday first: each booking in its day at its time, coloured by its service, with the agent it is with; a slot pressed or dragged across for a new one.",
+  "data": { "kind": "record", "model": "desk.booking" },
+  "fields": {
+    "customer": { "type": "char", "label": "Customer", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "service": {
+      "type": "selection",
+      "label": "Service",
+      "options": [
+        { "value": "viewing", "label": "Viewing" },
+        { "value": "consult", "label": "Consultation" },
+        { "value": "signing", "label": "Contract signing" },
+        { "value": "call", "label": "Video call" }
+      ]
+    },
+    "host": { "type": "many2one", "label": "With", "relation": "desk.staff" },
+    "start": { "type": "datetime", "label": "Starts" },
+    "stop": { "type": "datetime", "label": "Ends" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "confirmed", "label": "Confirmed" },
+        { "value": "hold", "label": "On hold" },
+        { "value": "done", "label": "Done" },
+        { "value": "no_show", "label": "Did not come" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "bookings",
+    "columns": ["customer", "service", "host", "start", "state"],
+    "sort": [{ "field": "start" }],
+    "pageSize": 20,
+    "searchFields": ["customer", "phone", "host"],
+    "filters": [
+      { "id": "viewings", "label": "Viewings", "filter": [{ "field": "service", "op": "=", "value": "viewing" }] },
+      { "id": "hold", "label": "On hold", "filter": [{ "field": "state", "op": "=", "value": "hold" }] }
+    ],
+    "groupBy": ["host", "service", "state"],
+    "calendar": {
+      "start": "start",
+      "end": "stop",
+      "title": "customer",
+      "colour": "service",
+      "resource": "host",
+      "views": ["week", "day", "month", "agenda"],
+      "opens": "calendar",
+      "firstDay": 6,
+      "hours": { "start": 9, "end": 21 }
+    }
+  },
+  "translations": {
+    "ar": {
+      "Bookings": "الحجوزات",
+      "The booking desk's week, Saturday first: each booking in its day at its time, coloured by its service, with the agent it is with; a slot pressed or dragged across for a new one.": "أسبوع مكتب الحجز، يبدأ بالسبت: كل حجز في يومه ووقته، بلون خدمته، ومع الوكيل المسؤول عنه؛ واضغط خانة أو اسحب عبرها لحجز جديد.",
+      "Customer": "العميل",
+      "Phone": "الهاتف",
+      "Service": "الخدمة",
+      "Viewing": "معاينة",
+      "Consultation": "استشارة",
+      "Contract signing": "توقيع عقد",
+      "Video call": "مكالمة فيديو",
+      "With": "مع",
+      "Starts": "يبدأ",
+      "Ends": "ينتهي",
+      "State": "الحالة",
+      "Confirmed": "مؤكد",
+      "On hold": "معلّق",
+      "Done": "تم",
+      "Did not come": "لم يحضر",
+      "Viewings": "المعاينات"
+    }
+  }
+}

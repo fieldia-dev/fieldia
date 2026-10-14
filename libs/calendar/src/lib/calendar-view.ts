@@ -1,0 +1,661 @@
+import { saveProblemOf, type CalendarView, type ListCalendar, type ListedRecord, type RecordVersion, type ResolvedFilter, type Value, type Values } from '@fieldia/core';
+import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
+import { moneyReads } from '@fieldia/widgets';
+import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
+import { addDays, addMinutes, atMinutes, dayKey, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, writeWhen, type Range } from './dates';
+import { colourOf, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
+import { pressEvent, pressSlot, stretch } from './gestures';
+import { onDayKey, onEventKey, onSlotKey } from './keys';
+import { calendarLabels, fill, type CalendarLabels } from './labels';
+import { moveTo } from './move-to';
+import type { CalendarSettings } from './settings';
+import { installCalendarStyles } from './styles';
+
+const ALL_VIEWS: CalendarView[] = ['day', 'week', 'month', 'agenda'];
+/** The least a slot or a record is tall, so a finger or a pointer can hit it (WCAG's 24 pixels). */
+const TARGET = 24;
+/** How long a record pressed into an empty slot lasts, in minutes. */
+const NEW_LENGTH = 60;
+/** How many records a month's day shows before "+2 more". */
+const IN_A_DAY = 3;
+/** Back and on, as the line reads left to right: flipped right to left by the stylesheet. */
+const CHEVRON = (back: boolean) => `<path d="${back ? 'M10 3 5 8l5 5' : 'M6 3l5 5-5 5'}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+let made = 0;
+
+/**
+ * A list's records on a calendar, for the list's switcher: the list's own
+ * search, its records by day, week or month, or as an agenda; a column for
+ * each person or room in the day view; dragged to move and stretched by
+ * their end (gestures.ts), or moved from the keyboard (keys.ts) with "Move
+ * to…" (move-to.ts), written through the data source's save with Undo; an
+ * empty slot pressed for a new record.
+ */
+export function calendarPart(context: ListViewContext, settings: CalendarSettings = {}): ListViewPart {
+  const { page, node, document: doc, locale } = context;
+  const spec = node.calendar as ListCalendar;
+  const source = context.dataSource;
+  const model = page.data.kind === 'record' ? page.data.model : '';
+  const labels: CalendarLabels = calendarLabels(locale, settings.labels?.[locale]);
+  const now = () => settings.now?.() ?? new Date();
+  const kind = kindOf(page, spec);
+  const views = (spec.views?.length ? spec.views : ALL_VIEWS).filter((v, i, all) => all.indexOf(v) === i);
+  const firstDay = firstDayOf(locale, spec.firstDay);
+  const slot = spec.slot ?? 30;
+  /** Pixels an hour takes in the day and the week (--fd-cal-hour): 48, or more where a slot would be under 24 pixels. */
+  const HOUR = Math.max(48, Math.ceil((TARGET * 60) / slot));
+  const hours = spec.hours ?? { start: 8, end: 20 };
+  const limit = settings.limit ?? 500;
+  const id = `fd-cal-${++made}`;
+  const rtl = () => element.closest('[dir]')?.getAttribute('dir') === 'rtl';
+  const phone = !!doc.defaultView?.matchMedia?.('(max-width: 640px)').matches;
+  const opened = startOfDay(now());
+  /** What it shows now: its view, its span, the keys' stop, its columns and hours as drawn, its people. */
+  const state: CalendarState = {
+    view: phone && views.includes('agenda') ? 'agenda' : spec.view && views.includes(spec.view) ? spec.view : views[0],
+    anchor: opened,
+    cursor: { day: opened, minutes: hours.start * 60, column: 0 },
+    columns: [],
+    shownHours: hours,
+    resources: [],
+  };
+  let records: ListedRecord[] = [];
+  let events: CalendarEvent[] = [];
+  let total = 0;
+  let knownResources: (Resource & { label: string })[] | null = null;
+  let asking = 0;
+  let destroyed = false;
+  let failed = false;
+  /** What Undo writes back, and the version the record holds after the move. */
+  let undo: { record: ListedRecord; values: Values; version?: RecordVersion; name: string } | null = null;
+  const canSave = !!source?.save;
+  const canCreate = !!context.create;
+  const canOpen = !!context.open;
+  const fields = [...new Set([spec.start, spec.end, spec.title, spec.colour, spec.resource, ...moneyReads(page.fields[spec.title])].filter((name): name is string => !!name && !!page.fields[name]))];
+
+  installCalendarStyles(doc);
+  const make = maker(doc);
+  const chevron = (back: boolean) => {
+    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = CHEVRON(back);
+    return svg;
+  };
+
+  // ---- the bar: Today, back and on, the span in words, the views, New ----------------------------------------
+
+  const today = make('button', { type: 'button', class: 'fd-button' }, labels.today);
+  const back = make('button', { type: 'button', class: 'fd-button fd-cal-step' }, chevron(true));
+  const on = make('button', { type: 'button', class: 'fd-button fd-cal-step' }, chevron(false));
+  const title = make('h2', { class: 'fd-cal-title', id: `${id}-title`, 'aria-live': 'polite' });
+  const viewButtons = views.map((name) => {
+    const button = make('button', { type: 'button', class: 'fd-button', 'data-range': name, 'aria-pressed': 'false' }, labels.views[name]);
+    button.addEventListener('click', () => showView(name));
+    return button;
+  });
+  const ranges = make('div', { class: 'fd-cal-ranges', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
+  ranges.hidden = views.length < 2;
+  const newButton = make('button', { type: 'button', class: 'fd-button fd-button-primary fd-cal-new' }, labels.newRecord);
+  newButton.hidden = !canCreate;
+  today.addEventListener('click', () => go(startOfDay(now())));
+  back.addEventListener('click', () => go(stepFrom(state.view, state.anchor, -1)));
+  on.addEventListener('click', () => go(stepFrom(state.view, state.anchor, 1)));
+  newButton.addEventListener('click', () => void createAt(...newPlace()));
+  const bar = make('div', { class: 'fd-cal-bar' }, make('div', { class: 'fd-cal-nav', role: 'group', 'aria-label': labels.moveThrough }, today, back, on), title, ranges, newButton);
+
+  // What a move says, with Undo; what went wrong, at once; how many it shows, when it cannot show all.
+  const said = make('div', { class: 'fd-cal-said', role: 'status' });
+  const alert = make('div', { class: 'fd-cal-alert', role: 'alert' });
+  const note = make('p', { class: 'fd-cal-note', hidden: '' });
+  const body = make('div', { class: 'fd-cal-body', role: 'region', 'aria-labelledby': `${id}-title` });
+  const keysEvent = make('span', { id: `${id}-keys-event`, class: 'fd-sr-only' }, canOpen && canSave ? labels.keysOpenMove : canOpen ? labels.keysOpen : labels.keysMove);
+  const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, labels.keysSlots);
+  const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, labels.keysDays);
+  const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysSlot, keysDay);
+  element.setAttribute('role', 'group');
+  element.style.setProperty('--fd-cal-hour', `${HOUR}px`);
+
+  // ---- asking for the records of the span shown ---------------------------------------------------------------
+
+  const range = (): Range => rangeOf(state.view, state.anchor, firstDay);
+  /** The records in the span: starting before it ends, and ending after it starts (or starting in it, with no end). */
+  function spanFilter({ from, to }: Range): ResolvedFilter[] {
+    const last = kind === 'date' ? dayKey(addDays(to, -1)) : writeWhen(to, kind);
+    const first = writeWhen(from, kind);
+    const starts: ResolvedFilter = { field: spec.start, op: kind === 'date' ? '<=' : '<', value: last };
+    if (!spec.end) return [starts, { field: spec.start, op: '>=', value: first }];
+    return [starts, { any: [{ field: spec.end, op: kind === 'date' ? '>=' : '>', value: first }, { field: spec.start, op: '>=', value: first }] }];
+  }
+
+  async function reload(): Promise<void> {
+    const mine = ++asking;
+    body.setAttribute('aria-busy', 'true');
+    try {
+      const answer = source?.list ? await source.list({ model, fields, filter: [...context.filter(), ...spanFilter(range())], sort: [{ field: spec.start }], offset: 0, limit }) : { records: [], total: 0 };
+      const people = await resourcesFor(answer.records);
+      if (mine !== asking || destroyed) return;
+      records = answer.records;
+      total = answer.total;
+      state.resources = people;
+      failed = false;
+    } catch {
+      if (mine !== asking || destroyed) return;
+      failed = true;
+    }
+    body.removeAttribute('aria-busy');
+    events = eventsOf(records, spec, page, locale);
+    draw();
+  }
+
+  /**
+   * The people or rooms the day shows a column for: a choice's options, a link's records (asked for once), the
+   * values the records hold besides; "No one" for records with none. Kept to those with records when the search
+   * names the field itself.
+   */
+  async function resourcesFor(found: readonly ListedRecord[]): Promise<Column['resource'][]> {
+    const field = spec.resource ? page.fields[spec.resource] : undefined;
+    if (!spec.resource || !field) return [null];
+    const name = spec.resource;
+    if (knownResources === null) {
+      knownResources = [];
+      if (field.type === 'selection') knownResources = field.options.map((o) => ({ value: o.value, key: String(o.value), label: o.label }));
+      else if (field.type === 'many2one' && source?.search) {
+        try {
+          knownResources = (await source.search({ model: field.relation, query: '', limit: 40 })).map((r) => ({ value: { id: r.id, label: r.label }, key: String(r.id), label: r.label }));
+        } catch {
+          knownResources = [];
+        }
+      }
+    }
+    const seen = new Map<string, Resource & { label: string }>();
+    let none = false;
+    for (const record of found) {
+      const value = record.values[name];
+      const key = keyOf(value);
+      if (key === null) none = true;
+      else if (!seen.has(key)) seen.set(key, { value: value as Value, key, label: eventsOf([record], { ...spec, title: name }, page, locale)[0]?.title ?? key });
+    }
+    const searched = JSON.stringify(context.filter()).includes(`"field":"${name}"`);
+    const listed = (searched ? knownResources.filter((r) => seen.has(r.key)) : knownResources).map((r) => seen.get(r.key) ?? r);
+    const more = [...seen.values()].filter((r) => !listed.some((l) => l.key === r.key));
+    const all: Column['resource'][] = [...listed, ...more];
+    if (none) all.push({ value: null, key: '', label: labels.noResource });
+    return all.length ? all : [null];
+  }
+
+  // ---- drawing ----------------------------------------------------------------------------------------------
+
+  const longDay = (d: Date) => format(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(d);
+  const time = (d: Date) => format(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  const isToday = (d: Date) => sameDay(d, now());
+
+  function drawTitle({ from, to }: Range) {
+    const { view } = state;
+    const last = addDays(to, -1);
+    if (view === 'day') title.textContent = format(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(from);
+    else if (view === 'month') title.textContent = format(locale, { month: 'long', year: 'numeric' }).format(state.anchor);
+    else {
+      const days = format(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+      title.textContent = typeof days.formatRange === 'function' ? days.formatRange(from, last) : `${days.format(from)} – ${days.format(last)}`;
+    }
+    back.setAttribute('aria-label', labels.previous[view]);
+    back.title = labels.previous[view];
+    on.setAttribute('aria-label', labels.next[view]);
+    on.title = labels.next[view];
+    for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset['range'] === view));
+  }
+
+  function draw() {
+    const active = doc.activeElement as HTMLElement | null;
+    const focusKey = active && body.contains(active) ? active.dataset['focus'] : undefined;
+    const shown = range();
+    element.dataset['range'] = state.view;
+    drawTitle(shown);
+    note.hidden = total <= records.length;
+    note.textContent = fill(labels.tooMany, { shown: records.length, total });
+    if (failed) {
+      const retry = make('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
+      retry.addEventListener('click', () => void reload());
+      body.replaceChildren(make('p', { class: 'fd-cal-failed', role: 'alert' }, labels.loadFailed, ' ', retry));
+      return;
+    }
+    if (state.view === 'month') body.replaceChildren(monthView(shown));
+    else if (state.view === 'agenda') body.replaceChildren(agendaView(shown));
+    else body.replaceChildren(timeView(shown));
+    if (focusKey) body.querySelector<HTMLElement>(`[data-focus="${focusKey}"]`)?.focus();
+    placeNow();
+  }
+
+  /**
+   * A record's block: its time, its words, its person; what it says to a screen reader; what a press does. In the day,
+   * the week and the month the block itself is the press; in the agenda, a row with its own Move to… button beside it,
+   * which a phone has no keys for.
+   */
+  function eventBlock(event: CalendarEvent, day: Date, compact: boolean, inOwnColumn = false): HTMLElement {
+    const movable = canSave && event.record.can?.edit !== false;
+    const why = canSave && !movable ? (event.record.can?.reason ?? labels.cannotMove) : '';
+    const span = event.allDay ? '' : fill(labels.fromTo, { from: time(event.start), to: time(event.end) });
+    const who = event.resourceLabel ? fill(labels.withWho, { name: event.resourceLabel }) : '';
+    const block = make('div', {
+      class: 'fd-cal-event',
+      'data-id': String(event.id),
+      'data-opens': canOpen ? '' : undefined,
+      'data-moves': movable ? '' : undefined,
+      // Its words whole when pointed at, as a narrow block cuts them; or why it stays where it is.
+      title: why || [span, event.title, event.resourceLabel].filter(Boolean).join(' · '),
+    });
+    block.style.setProperty('--fd-cal-c', colourOf(event.colour) ?? 'var(--fd-accent)');
+    const row = state.view === 'agenda';
+    /** What the keys and a press reach: the block, or the agenda row's own part. */
+    const target = row ? make('div', { class: 'fd-cal-event-open' }) : block;
+    target.dataset['focus'] = `e:${event.id}:${dayKey(day)}`;
+    if (canOpen || movable) {
+      target.tabIndex = 0;
+      target.setAttribute('role', 'button');
+      target.setAttribute('aria-describedby', keysEvent.id);
+    }
+    target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}, ${span}`, who, why].filter(Boolean).join(', '));
+    // Its words; in a block, in a box of their own, which the hours keep to whole lines (--fd-cal-lines).
+    const words = row ? target : make('span', { class: 'fd-cal-event-text' });
+    if (!event.allDay) words.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
+    // Its own direction: a Latin name on a right-to-left page reads, and is cut short, as Latin.
+    words.append(make('span', { class: 'fd-cal-event-title', dir: 'auto' }, event.title));
+    if (event.resourceLabel && !compact && !inOwnColumn) words.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
+    block.append(row ? target : words);
+    if (movable) {
+      // In a block, for a pointer alone: the keys reach Move to… by M, as the block tells a screen reader, and a
+      // button inside a button is no button. Beside an agenda's row, a button of its own, for a phone too.
+      const menu = row
+        ? make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-label': fill(labels.moveTitle, { name: event.title }), title: labels.moveTo }, '⋯')
+        : make('button', { type: 'button', class: 'fd-cal-event-menu', tabindex: '-1', 'aria-hidden': 'true', title: labels.moveTo }, '⋯');
+      menu.addEventListener('pointerdown', (e) => e.stopPropagation());
+      menu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mover.open(event, target);
+      });
+      block.append(menu);
+    }
+    target.addEventListener('keydown', (e) => onEventKey(cal, e, event, target));
+    if (!row) {
+      block.addEventListener('pointerdown', (e) => pressEvent(cal, e, event, block, movable));
+      // A screen reader's press is a click with no pointer behind it: it opens the record as Enter does.
+      block.addEventListener('click', (e) => {
+        if (e.detail === 0 && e.target === block) onEventKey(cal, new KeyboardEvent('keydown', { key: 'Enter' }), event, block, true);
+      });
+    } else target.addEventListener('click', () => open(event));
+    return block;
+  }
+
+  // ---- the day and the week ------------------------------------------------------------------------------------
+
+  function timeView(shown: Range): HTMLElement {
+    const columns: Column[] = state.view === 'day' && spec.resource ? state.resources.map((resource) => ({ day: shown.from, resource })) : shown.days.map((day) => ({ day, resource: null }));
+    state.columns = columns;
+    const { cursor } = state;
+    if (cursor.column >= columns.length || !sameDay(columns[cursor.column].day, cursor.day)) {
+      const at = Math.max(0, columns.findIndex((column) => sameDay(column.day, cursor.day)));
+      state.cursor = { ...cursor, column: at, day: columns[at].day };
+    }
+    const timed = events.filter((event) => !event.allDay);
+    let from = hours.start;
+    let to = hours.end;
+    for (const event of timed) {
+      for (const column of columns) {
+        const seg = segment(event, column.day);
+        if (!seg) continue;
+        from = Math.min(from, Math.floor(minutesOf(seg.start) / 60));
+        to = Math.max(to, sameDay(seg.end, column.day) ? Math.ceil(minutesOf(seg.end) / 60) : 24);
+      }
+    }
+    state.shownHours = { start: from, end: to };
+    const grid = make('div', { class: 'fd-cal-grid' });
+    grid.style.setProperty('--fd-cal-cols', String(columns.length));
+    grid.style.setProperty('--fd-cal-span', String(to - from));
+    grid.style.setProperty('--fd-cal-slot', String(slot));
+    if (columns.length > 7 || (state.view === 'day' && spec.resource)) grid.style.setProperty('--fd-cal-min', '120px');
+    // The heads: each day (a press shows it alone), or each person under the day.
+    grid.append(make('div', { class: 'fd-cal-corner', 'aria-hidden': 'true' }));
+    for (const column of columns) {
+      const head = make('div', { class: 'fd-cal-head', 'aria-current': isToday(column.day) && !column.resource ? 'date' : undefined });
+      if (column.resource) head.append(make('span', { class: 'fd-cal-head-who' }, make('bdi', {}, column.resource.label)));
+      else {
+        const button = make(
+          'button',
+          { type: 'button', class: 'fd-cal-head-day', 'aria-label': longDay(column.day) },
+          make('span', {}, format(locale, { weekday: 'short' }).format(column.day)),
+          make('span', { class: 'fd-cal-head-num' }, format(locale, { day: 'numeric' }).format(column.day))
+        );
+        if (state.view === 'week' && views.includes('day')) button.addEventListener('click', () => showView('day', column.day));
+        else button.tabIndex = -1;
+        head.append(button);
+      }
+      grid.append(head);
+    }
+    // A whole day's records over the hours; for a calendar of days alone, the whole of it.
+    const daysOnly = kind === 'date';
+    const allDay = events.filter((event) => event.allDay);
+    if (daysOnly || allDay.length) {
+      grid.append(make('div', { class: 'fd-cal-corner' }, labels.allDay));
+      columns.forEach((column, i) => {
+        const cell = make('div', { class: 'fd-cal-allday', 'data-day': dayKey(column.day), 'data-column': String(i), 'data-alone': daysOnly ? '' : undefined });
+        for (const event of allDay) if (covers(event, column.day) && inColumn(event, column)) cell.append(eventBlock(event, column.day, true));
+        cell.addEventListener('pointerdown', (e) => {
+          if (e.target !== cell || !canCreate || e.button !== 0) return;
+          void createAt(column.day, null, column, true);
+        });
+        grid.append(cell);
+      });
+    }
+    if (daysOnly) return make('div', { class: 'fd-cal-scroll' }, grid);
+    // The hours down the side, then a column of slots for each day or person, its records over them.
+    const side = make('div', { class: 'fd-cal-hours', 'aria-hidden': 'true' });
+    for (let h = from; h < to; h++) {
+      const label = make('span', { class: 'fd-cal-hour' }, time(atMinutes(new Date(2026, 0, 1), h * 60)));
+      label.style.top = `${(h - from) * HOUR}px`;
+      side.append(label);
+    }
+    grid.append(side);
+    columns.forEach((column, i) => {
+      const col = make('div', {
+        class: 'fd-cal-col',
+        role: 'group',
+        'aria-label': [longDay(column.day), column.resource?.label].filter(Boolean).join(', '),
+        'data-column': String(i),
+        'data-day': dayKey(column.day),
+        'data-today': isToday(column.day) ? '' : undefined,
+      });
+      if (canCreate) {
+        for (let m = from * 60; m < to * 60; m += slot) {
+          const at = atMinutes(column.day, m);
+          const busy = timed.filter((event) => event.start <= at && event.end > at && inColumn(event, column)).length;
+          const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(', ');
+          const cell = make('div', { class: 'fd-cal-slot', role: 'button', tabindex: '-1', 'data-minutes': String(m), 'data-focus': `s:${i}:${m}`, 'aria-label': words, 'aria-describedby': keysSlot.id });
+          cell.addEventListener('keydown', (e) => onSlotKey(cal, e, i, m));
+          // A screen reader's press, with no pointer behind it: a new record there, as Enter makes one.
+          cell.addEventListener('click', (e) => {
+            if (e.detail === 0) void createAt(atMinutes(column.day, m), null, column);
+          });
+          cell.addEventListener('focus', () => (state.cursor = { day: column.day, minutes: m, column: i }));
+          col.append(cell);
+        }
+        col.addEventListener('pointerdown', (e) => pressSlot(cal, e, col, i));
+      }
+      const mine = timed.flatMap((event) => {
+        const seg = segment(event, column.day);
+        return seg && inColumn(event, column) ? [{ event, ...seg }] : [];
+      });
+      const placed = sideBySide(mine.map(({ event, start, end }) => ({ id: event.id, start, end })));
+      for (const { event, start, end } of mine) {
+        // In a person's own column, the block need not name them again.
+        const block = eventBlock(event, column.day, false, !!column.resource);
+        const top = (minutesOf(start) - from * 60) * (HOUR / 60);
+        const length = (sameDay(end, column.day) ? minutesOf(end) : 24 * 60) - minutesOf(start);
+        const height = Math.max(TARGET, length * (HOUR / 60) - 2);
+        const place = placed.get(event.id) ?? { column: 0, columns: 1 };
+        block.style.top = `${top}px`;
+        block.style.height = `${height}px`;
+        block.style.setProperty('--fd-cal-lines', String(linesIn(height)));
+        block.style.insetInlineStart = `calc(${(place.column / place.columns) * 100}% + 1px)`;
+        block.style.width = `calc(${100 / place.columns}% - 3px)`;
+        if (height < 36) block.setAttribute('data-short', '');
+        // Its end stretches, when it has one to write and it ends on this day.
+        if (block.hasAttribute('data-moves') && spec.end && sameDay(end, column.day) && sameDay(start, event.start)) {
+          const grip = make('span', { class: 'fd-cal-resize', 'aria-hidden': 'true' });
+          grip.addEventListener('pointerdown', (e) => stretch(cal, e, event, block, col));
+          block.append(grip);
+        }
+        col.append(block);
+      }
+      grid.append(col);
+    });
+    // The slots' one stop: where the cursor is.
+    const stop = grid.querySelector<HTMLElement>(`[data-focus="s:${state.cursor.column}:${clampMinutes(state.cursor.minutes)}"]`) ?? grid.querySelector<HTMLElement>('.fd-cal-slot');
+    if (stop) stop.tabIndex = 0;
+    return make('div', { class: 'fd-cal-scroll' }, grid);
+  }
+
+  const clampMinutes = (m: number) => Math.min(Math.max(state.shownHours.start * 60, m - (m % slot)), state.shownHours.end * 60 - slot);
+  /** The part of an event on one day. */
+  function segment(event: CalendarEvent, day: Date): { start: Date; end: Date } | null {
+    const dayStart = startOfDay(day);
+    const dayEnd = addDays(dayStart, 1);
+    if (event.end <= dayStart || event.start >= dayEnd) return null;
+    return { start: event.start > dayStart ? event.start : dayStart, end: event.end < dayEnd ? event.end : dayEnd };
+  }
+  const covers = (event: CalendarEvent, day: Date) => !!segment(event, day);
+  const inColumn = (event: CalendarEvent, column: Column) => !column.resource || column.resource.key === (event.resource ?? '');
+
+  // ---- the month -----------------------------------------------------------------------------------------------
+
+  function monthView(shown: Range): HTMLElement {
+    const grid = make('div', { class: 'fd-cal-month' });
+    for (const day of shown.days.slice(0, 7)) grid.append(make('div', { class: 'fd-cal-weekday', 'aria-hidden': 'true' }, format(locale, { weekday: 'short' }).format(day)));
+    const cursorKey = shown.days.some((d) => sameDay(d, state.cursor.day)) ? dayKey(state.cursor.day) : dayKey(shown.days.find(isToday) ?? state.anchor);
+    for (const day of shown.days) {
+      const mine = events.filter((event) => covers(event, day));
+      const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getMonth() !== state.anchor.getMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
+      const number = make(
+        'button',
+        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(', '), 'aria-describedby': keysDay.id },
+        format(locale, { day: 'numeric' }).format(day)
+      );
+      number.addEventListener('click', () => (views.includes('day') ? showView('day', day) : undefined));
+      number.addEventListener('keydown', (e) => onDayKey(cal, e, day));
+      number.addEventListener('focus', () => (state.cursor = { ...state.cursor, day }));
+      cell.append(number);
+      for (const event of mine.slice(0, IN_A_DAY)) cell.append(eventBlock(event, day, true));
+      if (mine.length > IN_A_DAY) {
+        const n = mine.length - IN_A_DAY;
+        const more = make('button', { type: 'button', class: 'fd-cal-more', 'aria-label': fill(labels.moreOn, { n, when: longDay(day) }) }, fill(labels.more, { n }));
+        more.addEventListener('click', () => (views.includes('day') ? showView('day', day) : showView(views.includes('agenda') ? 'agenda' : state.view, day)));
+        cell.append(more);
+      }
+      cell.addEventListener('pointerdown', (e) => {
+        if (e.target !== cell || !canCreate || e.button !== 0) return;
+        void createAt(day, null, null, kind === 'date');
+      });
+      grid.append(cell);
+    }
+    return grid;
+  }
+
+  // ---- the agenda ---------------------------------------------------------------------------------------------
+
+  function agendaView(shown: Range): HTMLElement {
+    const list = make('div', { class: 'fd-cal-agenda' });
+    for (const day of shown.days) {
+      const mine = events.filter((event) => covers(event, day));
+      if (!mine.length) continue;
+      const items = make('ul', { class: 'fd-cal-agenda-list' });
+      for (const event of mine) items.append(make('li', {}, eventBlock(event, day, false)));
+      list.append(make('section', { class: 'fd-cal-agenda-day', 'aria-current': isToday(day) ? 'date' : undefined, 'aria-label': longDay(day) }, make('h3', { class: 'fd-cal-agenda-head' }, longDay(day)), items));
+    }
+    if (!list.childElementCount) list.append(make('p', { class: 'fd-cal-empty' }, labels.nothing));
+    return list;
+  }
+
+  // ---- now --------------------------------------------------------------------------------------------------
+
+  /** The line across today's columns at this minute, moved on each minute. */
+  function placeNow() {
+    for (const old of body.querySelectorAll('.fd-cal-now')) old.remove();
+    if (state.view !== 'day' && state.view !== 'week') return;
+    const at = now();
+    const minutes = minutesOf(at);
+    if (minutes < state.shownHours.start * 60 || minutes >= state.shownHours.end * 60) return;
+    for (const col of body.querySelectorAll<HTMLElement>('.fd-cal-col[data-today]')) {
+      const line = make('div', { class: 'fd-cal-now', 'aria-hidden': 'true' });
+      line.style.top = `${(minutes - state.shownHours.start * 60) * (HOUR / 60)}px`;
+      col.append(line);
+    }
+  }
+  const ticking = setInterval(placeNow, 60000);
+
+  // ---- going somewhere ------------------------------------------------------------------------------------------
+
+  function go(day: Date) {
+    state.anchor = startOfDay(day);
+    state.cursor = { ...state.cursor, day: state.anchor, column: 0 };
+    void reload();
+  }
+
+  function showView(next: CalendarView, day?: Date) {
+    state.view = next;
+    if (day) state.anchor = startOfDay(day);
+    state.cursor = { ...state.cursor, day: day ? startOfDay(day) : state.cursor.day, column: 0 };
+    void reload();
+  }
+
+  // ---- making a record --------------------------------------------------------------------------------------
+
+  /** Where New puts a record: the slot the keys stand on, else the next whole hour today in the span, else its first day. */
+  function newPlace(): [Date, Date | null, Column | null, boolean] {
+    const shown = range();
+    if ((state.view === 'day' || state.view === 'week') && kind === 'datetime' && body.querySelector('.fd-cal-slot')) {
+      const column = state.columns[state.cursor.column] ?? state.columns[0];
+      return [atMinutes(column.day, clampMinutes(state.cursor.minutes)), null, column, false];
+    }
+    const at = now();
+    const inSpan = at >= shown.from && at < shown.to;
+    const day = inSpan ? startOfDay(at) : shown.from;
+    if (kind === 'date') return [day, null, null, true];
+    const minutes = inSpan ? Math.min(Math.max(hours.start * 60, (Math.floor(minutesOf(at) / 60) + 1) * 60), (hours.end - 1) * 60) : hours.start * 60;
+    return [atMinutes(day, minutes), null, null, false];
+  }
+
+  /** A new record from `start` (to `end`, or an hour on; the whole day for a day's), with its column's person. */
+  async function createAt(start: Date, end: Date | null, column: Column | null, wholeDay = false) {
+    if (!context.create) return;
+    const values: Values = {};
+    if (kind === 'date') {
+      values[spec.start] = writeWhen(start, 'date');
+      if (spec.end) values[spec.end] = writeWhen(end ? addDays(end, -1) : start, 'date');
+    } else {
+      const from = wholeDay ? startOfDay(start) : start;
+      const until = end ?? (wholeDay ? addDays(from, 1) : addMinutes(from, NEW_LENGTH));
+      values[spec.start] = writeWhen(from, 'datetime');
+      if (spec.end) values[spec.end] = writeWhen(until, 'datetime');
+    }
+    if (spec.resource && column?.resource && column.resource.key !== '') values[spec.resource] = column.resource.value;
+    await context.create(values);
+  }
+
+  // ---- opening, and writing a move --------------------------------------------------------------------------
+
+  function open(event: CalendarEvent) {
+    if (!context.open) return;
+    const answer = context.open(event.id);
+    if (answer instanceof Promise) void answer.then(() => (destroyed ? undefined : reload()));
+  }
+
+  /**
+   * Write a move through the data source's save — at once on the page, put back if the save is refused — and offer
+   * Undo, which writes back what it held.
+   */
+  async function commit(event: CalendarEvent, values: Values, words: string) {
+    if (!source?.save || !Object.keys(values).length) return draw();
+    const record = event.record;
+    const before: Values = Object.fromEntries(Object.keys(values).map((key) => [key, record.values[key] ?? null]));
+    const after: ListedRecord = { ...record, values: { ...record.values, ...values } };
+    records = records.map((r) => (r === record ? after : r));
+    events = eventsOf(records, spec, page, locale);
+    draw();
+    for (const block of body.querySelectorAll<HTMLElement>('.fd-cal-event')) if (block.dataset['id'] === String(event.id)) block.setAttribute('aria-busy', 'true');
+    say('');
+    alert.replaceChildren();
+    try {
+      const result = await source.save({ model, id: event.id, fields: page.fields, changes: { values, lines: {}, links: {} }, values: after.values, ...(record.version ? { version: record.version } : {}) });
+      undo = { record: { ...after, ...(result.version ? { version: result.version } : {}) }, values: before, ...(result.version ? { version: result.version } : {}), name: event.title };
+      say(words, true);
+    } catch (error) {
+      records = records.map((r) => (r === after ? record : r));
+      events = eventsOf(records, spec, page, locale);
+      const problem = saveProblemOf(error);
+      const why = problem.message || Object.values(problem.fields ?? {}).join(' ');
+      alert.textContent = fill(labels.notMoved, { why });
+      draw();
+    }
+    if (!destroyed) await reload();
+  }
+
+  async function undoLast() {
+    const last = undo;
+    if (!last || !source?.save) return;
+    undo = null;
+    say('');
+    try {
+      await source.save({ model, id: last.record.id, fields: page.fields, changes: { values: last.values, lines: {}, links: {} }, values: { ...last.record.values, ...last.values }, ...(last.version ? { version: last.version } : {}) });
+      say(labels.undone);
+    } catch (error) {
+      alert.textContent = fill(labels.notMoved, { why: saveProblemOf(error).message });
+    }
+    if (!destroyed) await reload();
+  }
+
+  /** Words in the status line, with Undo after a move and a way to close them. */
+  function say(words: string, withUndo = false) {
+    said.replaceChildren();
+    if (!words) return;
+    said.append(make('span', {}, words));
+    if (withUndo) {
+      const undoButton = make('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.undo);
+      undoButton.addEventListener('click', () => void undoLast());
+      said.append(undoButton);
+    }
+    const close = make('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': labels.close, title: labels.close }, '×');
+    close.addEventListener('click', () => said.replaceChildren());
+    said.append(close);
+  }
+
+  // ---- what its gestures, its keys and Move to… reach ------------------------------------------------------------
+
+  const cal: CalendarCore = {
+    id,
+    doc,
+    element,
+    body,
+    page,
+    spec,
+    locale,
+    labels,
+    slot,
+    hour: HOUR,
+    firstDay,
+    canOpen,
+    state,
+    make,
+    rtl,
+    time,
+    segment,
+    clampMinutes,
+    draw,
+    reload,
+    open,
+    createAt,
+    commit,
+    openMove: (event, target) => mover.open(event, target),
+  };
+  const mover = moveTo(cal);
+
+  drawTitle(range());
+  return {
+    element,
+    reload,
+    highlight(recordId) {
+      for (const block of body.querySelectorAll('.fd-cal-event')) block.classList.toggle('fd-cal-hot', recordId !== null && (block as HTMLElement).dataset['id'] === String(recordId));
+    },
+    chosenChanged() {
+      // A calendar has no boxes to choose a record: what is chosen is the table's.
+    },
+    shown() {
+      placeNow();
+    },
+    destroy() {
+      destroyed = true;
+      clearInterval(ticking);
+      mover.close();
+      element.remove();
+    },
+  };
+}

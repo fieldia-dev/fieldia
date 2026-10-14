@@ -103,6 +103,13 @@ const SHOTS = [
       await page.waitForTimeout(600);
     } },
 
+  // A clinic's day on a calendar, a column for each doctor, at a busy moment of a Wednesday morning.
+  { file: 'lists/calendar.png', query: 'page=clinic-calendar&skin=underline&now=2026-10-14T09:40', width: 1280, height: 720, before: async (page) => {
+      await page.locator('.fd-cal-body:not([aria-busy]) .fd-cal-grid').waitFor();
+      await page.evaluate(() => window.scrollTo(0, document.querySelector('.fd-cal').getBoundingClientRect().top + window.scrollY - 140));
+      await page.waitForTimeout(300);
+    } },
+
   // ---- maps ----
   // Maps are JPEGs: their pictures are a quarter the size that way. Their images load from OpenStreetMap.
   { file: 'maps/fields.jpg', query: 'page=map-zone&skin=underline', width: 1280, height: 640, settle: 2500, before: async (page) => {

@@ -432,16 +432,23 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // address, the memory source as a slow store, a field's files on their way (a bar, × and Retry, said to a screen
 // reader) and their stylesheet, photos made smaller with their EXIF turn, a signature's picture through the store, and
 // the viewer saying why Save waits — 20.8 more, to 551.6 (with the safety kit's above).
-// A photo picked in a table's cell stored as its line's, the cell showing its line's on their way (form.uploading), 0.2 more, to 551.8.
+// A photo picked in a table's cell stored as its line's, the cell showing its line's on their way (form.uploading),
+// 0.2 more, to 551.8.
 // Save safety on that contract (lane w1-save): the form keeping a record's version and what the person may do —
 // fields locked or hidden, a save refused before the source is asked, Archive, Duplicate and Delete and the buttons
 // that would do them hidden — a conflict's who, when and fields, Reload with the person's changes set aside to put
 // back, Keep mine; the viewer's banner, the list of changes set aside, the line over a record only to read, a locked
-// field’s reason, the gear menu’s note, their words and their stylesheet (2.3 of it) — 10.9 more, to 562.7 (over the safety kit's and the files').
+// field’s reason, the gear menu’s note, their words and their stylesheet (2.3 of it) — 10.9 more, to 562.7 (over the
+// safety kit's and the files').
 // Keep mine reading the record first when a conflict did not carry it (so a source that saves whole records never
 // wipes the other person's work), Put back kept at the end of its change's row on a phone, and what a field set aside
 // holds now kept in its own direction (a phone number among Arabic words) — 0.4 more, to 563.1.
-const BUDGET_KB = 563.1;
+// 0.21's calendar (lane w1-calendar): a list's `calendar` (its start, end, words, colour, person, views, first day,
+// hours and slot) with its page checks, and a list's switcher open to other views — each by its name and its own
+// words, made the first time it is shown, asking the app for a new record (or the model's page in a dialog) — the
+// calendar itself being @fieldia/calendar's, never in this script — 2.8 more, to 565.9 (over
+// the three lanes above).
+const BUDGET_KB = 565.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -502,7 +509,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // read and what the person may do kept to, with their words and stylesheet), 3.5 more, to 172.4.
 // Keep mine reading the record first when a conflict did not carry it, Put back at the end of its row, and the value
 // it holds now in its own direction, 0.1 more, to 172.5.
-const GZIP_BUDGET_KB = 172.5;
+// 0.21's calendar (a list's `calendar` and its checks, the switcher open to other views and a new record asked of the
+// app; the calendar itself is @fieldia/calendar's), 1.0 more, to 173.5.
+const GZIP_BUDGET_KB = 173.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

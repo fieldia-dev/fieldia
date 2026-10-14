@@ -16,6 +16,7 @@ import {
   type SortOrder,
   type Tone,
   type Value,
+  type Values,
 } from '@fieldia/core';
 import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
@@ -50,8 +51,13 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
-  /** Other ways of showing the records, by name: `map` for a list with `map`. */
+  /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
   views?: Record<string, ListViewFactory>;
+  /**
+   * Another view asked for a new record with these values filled in (a calendar's empty slot pressed: its start and
+   * end). A promise answered: the records again once it settles. Without it, a view offers no way to make one.
+   */
+  onNewRecord?: (values: Values) => unknown;
 }
 
 /**
@@ -71,7 +77,8 @@ export interface ListViewContext {
   filter(): Resolved[];
   isChosen(id: RecordId): boolean;
   choose(id: RecordId, on: boolean): void;
-  open?: (id: RecordId) => void;
+  /** Open a record as its row's press does: settled once the app is done with it (a dialog closed) and the table has asked again. */
+  open?: (id: RecordId) => void | Promise<void>;
   /** Light a record's row in the table; null lights none. */
   highlight(id: RecordId | null): void;
   /** Put a search into the search bar, as a person's own: "In this area". */
@@ -84,6 +91,12 @@ export interface ListViewContext {
   actions: { id: string; label: string; style?: ButtonNode['style'] }[];
   /** Press one of them for these records, `button` busy meanwhile: its confirmation, its steps, then the records again. */
   act(id: string, ids: RecordId[], button: HTMLElement): Promise<void>;
+  /**
+   * Make a new record with these values filled in, as the app makes one (a calendar's empty slot: its start, its end,
+   * its person): settled once the app is done, the records asked for again. Absent where the app makes none: a view
+   * then offers no way to.
+   */
+  create?: (values: Values) => Promise<void>;
 }
 
 /** Another way of showing the list's records, made by a ListViewFactory. */
@@ -100,7 +113,19 @@ export interface ListViewPart {
   destroy(): void;
 }
 
-export type ListViewFactory = (context: ListViewContext) => ListViewPart;
+/**
+ * Another way of showing a list's records, registered by name in the viewer's `listViews`. The list offers it on its
+ * switcher when the list has the page option of its name (`map`, `calendar`) unless `offers` says otherwise, in its own
+ * words (`label`), and opens on it when `opens` says so. It is made the first time it is shown.
+ */
+export type ListViewFactory = ((context: ListViewContext) => ListViewPart) & {
+  /** Its words on the switcher, in the list's language: "Calendar". Its name unless given. */
+  label?: (locale: Locale) => string;
+  /** Whether a list offers it. Unless given: when the list has the page option of its name. */
+  offers?: (node: ListNode) => boolean;
+  /** Whether the list opens on it rather than on its table: as its page option says. */
+  opens?: (node: ListNode) => boolean;
+};
 
 /** How a record is opened from the app rather than by a row's press. */
 export interface OpenRowOptions {
@@ -325,7 +350,7 @@ export function listView(context: ListContext): ListView {
         if (box.checked) chosen.add(record.id);
         else chosen.delete(record.id);
         drawChoice();
-        mapPart?.chosenChanged();
+        viewParts.chosenChanged();
       });
     }
     const tr = el(
@@ -370,9 +395,9 @@ export function listView(context: ListContext): ListView {
       }
     });
     // Under the pointer or the focus: its pin on the map lights up.
-    tr.addEventListener('mouseenter', () => mapPart?.highlight(record.id));
-    tr.addEventListener('mouseleave', () => mapPart?.highlight(null));
-    tr.addEventListener('focus', () => mapPart?.highlight(record.id));
+    tr.addEventListener('mouseenter', () => viewParts.highlight(record.id));
+    tr.addEventListener('mouseleave', () => viewParts.highlight(null));
+    tr.addEventListener('focus', () => viewParts.highlight(record.id));
     recordOf.set(tr, record);
     return tr;
   }
@@ -467,7 +492,7 @@ export function listView(context: ListContext): ListView {
     button.addEventListener('click', () =>
       void context.press(button, async () => {
         const result = await form.runAction(action.id, { recordIds: [...chosen] });
-        await Promise.all([load(), mapPart?.reload()]);
+        await Promise.all([load(), viewParts.reload()]);
         return result;
       })
     );
@@ -543,7 +568,7 @@ export function listView(context: ListContext): ListView {
       for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
     }
     drawChoice();
-    mapPart?.chosenChanged();
+    viewParts.chosenChanged();
   }
 
   const grouped = (source: DataSource): GroupContext => ({
@@ -607,7 +632,7 @@ export function listView(context: ListContext): ListView {
     facets = next;
     offset = 0;
     void load();
-    void mapPart?.reload();
+    void viewParts.reload();
   };
   // The search bar, or a keyword and a list of values for each of a few fields.
   // The filter bar comes in the filters part, which the viewer has waited for; the search bar where it could not come.
@@ -617,17 +642,40 @@ export function listView(context: ListContext): ListView {
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, facets, onChange: searched });
 
-  // ---- the map, beside the table or instead of it ----------------------------------
+  // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
-  const mapFactory = node.map ? context.views?.['map'] : undefined;
-  let view: 'list' | 'map' | 'both' = mapFactory ? (node.map?.view ?? 'list') : 'list';
-  let mapPart: ListViewPart | null = null;
-  const mapHolder = el('div', { class: 'fd-list-map' });
+  /** The views this list offers, by name, in the order the app registered them: by the page option of its name, unless the view says. */
+  const offered = Object.entries(context.views ?? {}).filter(([name, factory]) => (factory.offers ? factory.offers(node) : (node as unknown as Record<string, unknown>)[name] !== undefined));
+  const factories = new Map(offered);
+  /** The table alone, `both` (the table and the map side by side), or a view's name. */
+  let view: string = node.map && factories.has('map') && node.map.view ? node.map.view : (offered.find(([name, factory]) => name !== 'map' && factory.opens?.(node))?.[0] ?? 'list');
+  /** Each view once made: the first time it is shown. */
+  const parts = new Map<string, ListViewPart>();
+  const holders = new Map(offered.map(([name]) => [name, el('div', { class: name === 'map' ? 'fd-list-addon fd-list-map' : 'fd-list-addon', 'data-addon': name })]));
+  /** What the table tells a view, it tells each one made. */
+  const viewParts = {
+    reload: () => Promise.all([...parts.values()].map((part) => part.reload())).then(() => undefined),
+    highlight: (id: RecordId | null) => parts.forEach((part) => part.highlight(id)),
+    chosenChanged: () => parts.forEach((part) => part.chosenChanged()),
+  };
   const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node)];
+  /** A new record, as the app makes one: then the records again, in the table and in each view. */
+  const newRecord = context.onNewRecord;
+  const create = newRecord
+    ? async (values: Values) => {
+        try {
+          await newRecord(values);
+        } catch {
+          // The app's own trouble: the records are asked for again all the same.
+        }
+        if (!destroyed) await Promise.all([load(), viewParts.reload()]);
+      }
+    : undefined;
 
-  function makeMap() {
-    if (mapPart || !mapFactory) return;
-    mapPart = mapFactory({
+  function makeView(name: string) {
+    const factory = factories.get(name);
+    if (parts.has(name) || !factory) return;
+    const part = factory({
       page,
       node,
       dataSource: context.dataSource,
@@ -645,9 +693,9 @@ export function listView(context: ListContext): ListView {
           if (box) box.checked = on;
         }
         drawChoice();
-        mapPart?.chosenChanged();
+        viewParts.chosenChanged();
       },
-      ...(context.onOpenRecord ? { open: (id: RecordId) => void openRow(id) } : {}),
+      ...(context.onOpenRecord ? { open: (id: RecordId) => openRow(id) } : {}),
       highlight(id) {
         for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
           const hot = id !== null && tr.dataset['id'] === String(id);
@@ -661,36 +709,45 @@ export function listView(context: ListContext): ListView {
         sort = order ?? defaultSort;
         offset = 0;
         void load();
-        void mapPart?.reload();
+        void viewParts.reload();
       },
       actions: (node.actions ?? []).map((action) => ({ id: action.id, label: action.label, ...(action.style ? { style: action.style } : {}) })),
       act: (id, ids, button) =>
         context.press(button, async () => {
           const result = await form.runAction(id, { recordIds: ids });
-          await Promise.all([load(), mapPart?.reload()]);
+          await Promise.all([load(), viewParts.reload()]);
           return result;
         }),
+      ...(create ? { create } : {}),
     });
-    mapHolder.append(mapPart.element);
-    void mapPart.reload();
+    parts.set(name, part);
+    holders.get(name)?.append(part.element);
+    void part.reload();
   }
 
-  const viewButtons = (['list', 'map', 'both'] as const).map((name) => {
-    const button = el('button', { type: 'button', class: 'fd-button fd-list-view', 'data-view': name, 'aria-pressed': 'false' }, name === 'list' ? labels.viewList : name === 'map' ? labels.viewMap : labels.viewBoth);
+  /** The switcher: the table, then each view offered — the map as Map, and List and map. */
+  const choices = ['list', ...offered.flatMap(([name]) => (name === 'map' ? ['map', 'both'] : [name]))];
+  const words = (name: string) =>
+    name === 'list' ? labels.viewList : name === 'map' ? labels.viewMap : name === 'both' ? labels.viewBoth : (factories.get(name)?.label?.(locale) ?? name);
+  const viewButtons = choices.map((name) => {
+    const button = el('button', { type: 'button', class: 'fd-button fd-list-view', 'data-view': name, 'aria-pressed': 'false' }, words(name));
     button.addEventListener('click', () => showAs(name));
     return button;
   });
   const views = el('div', { class: 'fd-list-views', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
-  views.hidden = !mapFactory;
+  views.hidden = !offered.length;
 
-  function showAs(next: typeof view) {
-    view = next;
+  function showAs(next: string) {
+    view = choices.includes(next) ? next : 'list';
     element.dataset['view'] = view;
+    // A view in place of the table: the table and its pager step aside.
+    element.toggleAttribute('data-alone', view !== 'list' && view !== 'both');
     for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset['view'] === view));
-    if (view !== 'list') {
-      makeMap();
-      mapPart?.shown();
-    }
+    const on = view === 'both' ? 'map' : view;
+    for (const [name, holder] of holders) holder.toggleAttribute('data-on', name === on);
+    if (view === 'list') return;
+    makeView(on);
+    parts.get(on)?.shown();
   }
 
   const element = el(
@@ -699,7 +756,7 @@ export function listView(context: ListContext): ListView {
     el('div', { class: 'fd-list-bar' }, search.element, views, ...(fieldsSearch ? [] : [pager])),
     // A list with no box to choose a row has nothing to act on.
     ...(choose ? [selection] : []),
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), mapHolder)
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   showAs(view);
   void load();
@@ -707,13 +764,13 @@ export function listView(context: ListContext): ListView {
   return {
     element,
     reload: async () => {
-      await Promise.all([load(), mapPart?.reload()]);
+      await Promise.all([load(), viewParts.reload()]);
     },
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
       search.destroy();
-      mapPart?.destroy();
+      parts.forEach((part) => part.destroy());
     },
   };
 }

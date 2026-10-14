@@ -188,6 +188,13 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * back on the row. Anything else it answers is let be.
    */
   onOpenRecord?: (id: RecordId) => unknown;
+  /**
+   * A list page: one of its other views asked for a new record with these values filled in — a calendar's empty slot
+   * pressed, its start and its end. The app shows it; a promise answered, the list asks again once it settles. Without
+   * it, the record opens in a dialog with the page `pages` gives for the list's model; with neither, no view offers to
+   * make one.
+   */
+  onNewRecord?: (values: Values) => unknown;
   /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
   listFilter?: ResolvedFilter[];
   /**
@@ -1950,6 +1957,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         onOpenRecord: options.onOpenRecord,
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
+        ...newListRecord(),
       });
       cleanups.push(list.destroy);
       reloadList = list.reload;
@@ -1963,6 +1971,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
     content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body);
     pageDrawn = true;
+  }
+  /** How a list's other view makes a record: the app's way, else the model's page in a dialog, else none. */
+  function newListRecord(): { onNewRecord?: (values: Values) => unknown } {
+    if (options.onNewRecord) return { onNewRecord: options.onNewRecord };
+    const model = page.data.kind === 'record' ? page.data.model : '';
+    if (!model || (!options.pages && !options.relatedPages) || !dialogs.canOpen(model)) return {};
+    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: labels.newRecord }) };
   }
   let pageDrawn = false;
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */

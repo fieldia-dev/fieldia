@@ -35,6 +35,8 @@ jobs:
       - run: node tools/release.mjs check
       # @fieldia/map's own code with the page, and Leaflet in a chunk of its own, each under its budget.
       - run: node tools/map-bundle.mjs
+      # @fieldia/calendar: its name on the list's switcher with the page, the calendar in a chunk of its own, each under its budget.
+      - run: node tools/calendar-bundle.mjs
 
   browser:
     name: Browser gates (every framework demo, ${{ matrix.shard }} of 3)

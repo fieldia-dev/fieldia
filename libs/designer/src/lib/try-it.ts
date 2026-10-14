@@ -1,4 +1,4 @@
-import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type MapNode, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type ListCalendar, type MapNode, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type ListViewFactory, type MapPartFactory, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -68,7 +68,29 @@ function madeUp(page: Page, centre = { lat: 0, lng: 0 }): Record<string, Record<
       if (map.longitude) values[map.longitude] = lng;
     });
   }
+  if (page.layout.calendar) madeUpTimes(page.layout.calendar, page, rows);
   return { [page.data.model]: Object.fromEntries(rows.map((values, i) => [String(i + 1), values as Values])) };
+}
+
+/**
+ * On a list's calendar, each made-up record in the week round today, in the day's working hours, half an hour to
+ * an hour and a half long: a calendar opens on today, and one of last January's records would show nothing.
+ */
+export function madeUpTimes(calendar: ListCalendar, page: Page, rows: Record<string, unknown>[], now = new Date()) {
+  const date = page.fields[calendar.start]?.type === 'date';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const key = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  rows.forEach((values, i) => {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (i % 7) - 3);
+    if (date) {
+      values[calendar.start] = key(day);
+      if (calendar.end) values[calendar.end] = key(new Date(day.getFullYear(), day.getMonth(), day.getDate() + (i % 3)));
+      return;
+    }
+    const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, ((i * 75) % 480) - (((i * 75) % 480) % 15));
+    values[calendar.start] = start.toISOString();
+    if (calendar.end) values[calendar.end] = new Date(start.getTime() + (30 + (i % 3) * 30) * 60000).toISOString();
+  });
 }
 
 /** On a form's maps, each place layer somewhere near the middle of the app's maps, a few hundred metres from the next: a map with nothing on it shows nothing. */

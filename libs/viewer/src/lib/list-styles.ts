@@ -18,6 +18,10 @@ export const LIST_STYLES = `
 /* Too narrow for two: the map over the table. */
 @container fd-list (max-width: 860px) { .fd-list[data-view="both"] .fd-list-body { grid-template-columns: minmax(0, 1fr); } .fd-list[data-view="both"] .fd-list-map { position: static; order: -1; } }
 .fd-list-row.fd-list-hot > td { background: var(--fd-accent-soft); }
+/* Another view (a calendar, an app's own) shows in place of the table: only the one shown takes room. */
+.fd-list-addon { min-width: 0; }
+.fd-list-addon:not([data-on]) { display: none; }
+.fd-list[data-alone] .fd-list-records, .fd-list[data-alone] .fd-list-bar > .fd-pager { display: none; }
 .fd-search { position: relative; flex: 1 1 360px; max-width: 680px; min-width: 0; container: fd-search / inline-size; }
 .fd-search-field { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 34px; box-sizing: border-box; padding: 2px 2px 2px 8px; padding-inline: 8px 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }
 .fd-search-field:focus-within { border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }

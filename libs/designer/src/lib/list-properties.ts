@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
 import { FILTERABLE, ruleIsGood, widthIsGood } from './list-commands';
+import { calendarSection } from './list-calendar';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -542,6 +543,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
   const parentRow = el('label', { class: 'fd-prop', 'data-part': 'parent' }, el('span', { class: 'fd-prop-name' }, w.parentField), parent, parentWhy);
 
   const onMap = mapSection(el, designer);
+  const onCalendar = calendarSection(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -557,6 +559,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.groupBy), groupsBox, addGroup),
     onMap.element,
+    onCalendar.element,
     el('p', { class: 'fd-properties-hint' }, w.rowOpens)
   );
 
@@ -645,6 +648,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
         })
       );
       onMap.update(page);
+      onCalendar.update(page);
     },
     focus() {
       const filters = element.querySelector<HTMLElement>('[data-part="filters"]');

@@ -21,9 +21,10 @@ const wordsOfReference = (text: (words: string) => string) => (reference: unknow
  * — a table's optional columns, a step's values and answers, a call's params —
  * where a field may well be called `description` or `title`; and a list's
  * map, whose pin `label` and card `title` name fields (a map's layers too,
- * but for each layer's own `label`, which is words).
+ * but for each layer's own `label`, which is words); and a list's calendar,
+ * whose `title` names a field too.
  */
-const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map']);
+const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map', 'calendar']);
 
 /** A part of a card's line: the words after its value are words ("m²", "beds", each plural form); its field stays. */
 const wordsOfPart = (text: (words: string) => string) => (part: unknown) => {
