@@ -46,13 +46,18 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
    */
   function focusOn(names: readonly string[]) {
     const root = context.root();
-    const shown = (wrapper: Element) => !wrapper.closest('[hidden]');
+    const shown = (element: Element) => !element.closest('[hidden], [aria-hidden="true"]');
+    // A box that will not take the focus — disabled, hidden by its look, kept from the keyboard — is passed over for the next.
+    const took = (box: HTMLElement) => {
+      if (box.getAttribute('tabindex') === '-1') return false;
+      box.focus();
+      return context.doc.activeElement === box;
+    };
     for (const name of names) {
-      const box = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${name}"]`)].filter(shown).map((wrapper) => wrapper.querySelector<HTMLElement>(FIELD_BOX)).find(Boolean);
-      if (box) return box.focus();
+      const boxes = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${name}"]`)].filter(shown).flatMap((wrapper) => [...wrapper.querySelectorAll<HTMLElement>(FIELD_BOX)].filter(shown));
+      if (boxes.some(took)) return;
     }
-    const first = [...root.querySelectorAll<HTMLElement>(FIELD_BOX)].find(shown);
-    if (first) return first.focus();
+    if ([...root.querySelectorAll<HTMLElement>(FIELD_BOX)].filter(shown).some(took)) return;
     if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
     root.focus();
   }

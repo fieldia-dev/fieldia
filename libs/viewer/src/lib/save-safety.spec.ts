@@ -405,6 +405,36 @@ describe('after each button in the banner and the list, the focus lands where th
     expect(document.activeElement).toBe(phoneBox(host));
   });
 
+  it('Keep mine, the first changed field’s box not taking the focus: on the next one that does', async () => {
+    const { host, handle } = await refusedOn((at) => {
+      type(at, 'phone', '+201009998887');
+      type(at, 'budget', '4200000');
+    });
+    (phoneBox(host) as HTMLInputElement).disabled = true;
+    const keep = button(conflict(host), 'Keep mine') as HTMLButtonElement;
+    keep.focus();
+    keep.click();
+    await until(() => handle.form.getState().status === 'saved' && !conflict(host).hasAttribute('aria-busy'));
+    expect(document.activeElement).toBe(host.querySelector('[data-field="budget"] input'));
+  });
+
+  it('in a panel: Keep mine puts the focus on the field in the panel, never outside it', async () => {
+    const ds = source();
+    void openFormPanel({ page: lead, dataSource: ds, recordId: 1, title: 'Lead' });
+    const panel = () => document.querySelector('.fd-form-panel') as HTMLElement;
+    await until(() => (phoneBox(panel() ?? document.body) as HTMLInputElement | null)?.value === '+201001234567');
+    type(panel(), 'phone', '+201009998887');
+    ds.changeElsewhere('lead', 1, { stage: 'visit', budget: 4500000 }, { by: 'Mona' });
+    button(panel(), 'Save & Close')?.click();
+    await until(() => shown(conflict(panel())));
+    const keep = button(conflict(panel()), 'Keep mine') as HTMLButtonElement;
+    keep.focus();
+    keep.click();
+    await until(() => !shown(conflict(panel())) && !conflict(panel()).hasAttribute('aria-busy'));
+    expect(document.activeElement).toBe(phoneBox(panel()));
+    expect(panel().contains(document.activeElement)).toBe(true);
+  });
+
   it('Reload with nothing to set aside: on the first field that changed, and told it reloaded', async () => {
     // The same change Mona made: nothing of mine differs from hers.
     const { host, handle } = await refusedOn((at) => type(at, 'budget', '4500000'));
