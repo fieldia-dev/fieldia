@@ -468,9 +468,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // record's place, Done and answers sent each asking "Discard your changes?" when a change made while it saved, files
 // on their way or changes set aside would go — one question, shared by the dialog and a page in place; the list's ×
 // asking too; the focus after each button of the banner and the list on a field; the status saying "Saved, but not
-// your latest changes"; and a field's box naming its value as the field shows it — 2.7 more (571.69 measured before,
-// 574.40 after), to 574.4.
-const BUDGET_KB = 574.4;
+// all your changes" (and "Sent, …" once answers went); Save & Close taking back the focus it let go of while it
+// saved; and a field's box naming its value as the field shows it — 2.8 more (571.69 measured before, 574.49 after),
+// to 574.5.
+const BUDGET_KB = 574.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -540,7 +541,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The two mended lanes joined (listed with the raw budget above): 173.54 measured before either, 175.63 with both,
 // to 175.7.
 // Every way out asking before it leaves work behind (listed with the raw budget above): 175.63 measured before,
-// 176.52 after, to 176.6.
+// 176.54 after, to 176.6.
 const GZIP_BUDGET_KB = 176.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -604,7 +605,7 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // French's to 14.7 and 5.6.
 // Every way out asking before it leaves work behind (lane w1-fix-save2): "Discard your changes?" said by core for a
 // step that leaves the record, and the status's "Saved" and "Sent" when not all of it was — three sentences in each,
-// measured 34.24 and 6.49 in Arabic, 14.56 and 5.61 in German, 14.86 and 5.55 in French: Arabic's to 34.3, German's
+// measured 34.22 and 6.50 in Arabic, 14.55 and 5.62 in German, 14.86 and 5.55 in French: Arabic's to 34.3, German's
 // to 14.6 and 5.7, French's to 14.9.
 const ADD_ON_BUDGET_KB = { ar: [34.3, 6.5], de: [14.6, 5.7], fr: [14.9, 5.6] };
 const sourceWords = async (locale) => {

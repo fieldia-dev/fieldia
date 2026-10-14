@@ -272,7 +272,7 @@ describe('saved, but not all of it', () => {
     const saving = handle.save();
     await typeWhileSaving(ds, host, 'budget', '4300000');
     expect(await saving).toBe(true);
-    expect(host.querySelector('.fd-status')?.textContent).toBe('Saved, but not your latest changes.');
+    expect(host.querySelector('.fd-status')?.textContent).toBe('Saved, but not all your changes.');
     expect(host.querySelector('.fd-status')?.classList.contains('fd-status-saved')).toBe(false);
     expect(await handle.save()).toBe(true);
     expect(host.querySelector('.fd-status')?.textContent).toBe('Saved');
@@ -287,7 +287,7 @@ describe('saved, but not all of it', () => {
     await until(() => handle.form.getState().status === 'saved');
     await pause();
     expect(host.querySelector('.fd-form')?.hasAttribute('data-readonly')).toBe(false);
-    expect(host.querySelector('.fd-announce')?.textContent).toBe('Saved, but not your latest changes.');
+    expect(host.querySelector('.fd-announce')?.textContent).toBe('Saved, but not all your changes.');
     expect(handle.form.getState().dirty).toEqual(['budget']);
   });
 

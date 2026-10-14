@@ -1350,7 +1350,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         }
         // Changed while it saved: still being edited, and said, so nothing unsaved is locked away unseen.
         if (unsavedWork(form.getState())) {
-          announce(labels.savedNotLatest);
+          announce(labels.savedNotAll);
           return;
         }
       }
@@ -1411,9 +1411,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
   /** What was last sent, for a page of responses: an answer changed since was not in it. */
   const sent = lastSent(form);
-  cleanups.push(sent.stop);
+  // Told once the status says the answers went: what it says follows what was sent.
+  cleanups.push(sent.stop, form.on('send', () => render(form.getState())));
   /** Saved, or sent — or not all of it: never "Saved" while a change is still to save. */
-  const savedWords = () => (!workLeft(form, sent.values()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotLatest);
+  const savedWords = () => (!workLeft(form, sent.values()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
   updaters.push((state) => {
     const problem = state.saveProblem;
     const text =

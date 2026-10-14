@@ -285,9 +285,12 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       return closeAsking(false, panel || headed ? unsavedWork(state) : keptWork(state));
     };
     saveClose.addEventListener('click', async () => {
+      const had = doc.activeElement === saveClose;
       saveClose.disabled = true;
       const accepted = options.mode === 'values' ? handle.check() : await handle.save();
       saveClose.disabled = false;
+      // Disabled while it saved, it let go of the focus: it takes it back, unless the person went on elsewhere in the box.
+      if (had && !box.contains(doc.activeElement)) saveClose.focus();
       if (accepted) await finish(true);
     });
     discard.addEventListener('click', () => close(false));

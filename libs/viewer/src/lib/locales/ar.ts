@@ -8,7 +8,7 @@ export const ar: ViewerLabels = {
   discard: 'تجاهل',
   saving: 'جارٍ الحفظ…',
   saved: 'تم الحفظ',
-  savedNotLatest: 'تم الحفظ، ما عدا تعديلاتك الأخيرة.',
+  savedNotAll: 'تم الحفظ، لكن ليس كل تعديلاتك.',
   sentNotLatest: 'تم الإرسال، ما عدا تعديلاتك الأخيرة.',
   savingAfterFile: 'ملف واحد ما زال يُرفع. سيُحفظ عند انتهائه.',
   savingAfterFiles: 'ما زالت الملفات تُرفع: {n}. سيُحفظ عند انتهائها.',
