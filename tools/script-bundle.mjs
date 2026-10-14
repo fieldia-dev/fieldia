@@ -422,7 +422,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // English words (3.2) — 24.3 more, to 546.1. The hint floating under a table's cell or a grid's editor (above it where the
 // table cuts it off), numbers read left to right in a right-to-left box, and the guard's names on window.Fieldia, 1.5
 // more, to 547.6.
-const BUDGET_KB = 547.6;
+// The input rules for text (0.21): a text box's guard — a key at the most refused, a paste over it kept and counted
+// by code point, a phone number's characters, an email's spaces, a line break pasted into one line — and what a box
+// keeps once left (2.5); web addresses read as a browser does, localhost, IP addresses and ports, javascript: and its
+// kind refused, a postcode by its country, a pattern about the whole answer with its digits folded, checkPage naming
+// one that does not read (2.4); a property checked by its kind on its own row (1.6); tags ended at ، and line breaks,
+// told when there already or past the most (1.2); JSON kept as typed with its reason in words (1.1); a colour's code
+// box, its swatch empty when it has none, and a way to clear it (2.5) — 11.6 more, to 559.2.
+const BUDGET_KB = 559.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -475,8 +482,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // lead and the room after its grid), 0.1 more, to 158.0.
 // the input rules (one set of readers, the box's guard and hint, unread text kept and said on leaving, the number boxes on
 // them, and their English words; listed with the raw budget above), 9.1 more, to 167.1; the cells' floating hint and
-// right-to-left numbers, 0.4 more, to 167.5.
-const GZIP_BUDGET_KB = 167.5;
+// right-to-left numbers, 0.4 more, to 167.5; the input rules for text (a text box's guard and what it keeps once
+// left, web addresses, postcodes and patterns, properties checked by row, tags, JSON's reasons, a colour's code box;
+// listed with the raw budget above), 4.1 more, to 171.6.
+const GZIP_BUDGET_KB = 171.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
