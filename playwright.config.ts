@@ -11,6 +11,19 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const demoPort = Number(process.env['FIELDIA_DEMO_PORT'] ?? 4321);
 const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
+
+/**
+ * Firefox and WebKit (Safari's engine: every browser on an iPhone) run a smoke set, not the whole suite: what a person
+ * meets first — forms drawn and filled, their behaviour and layout, lists, dialogs, the quiet look, a place on a map,
+ * right to left, and a part that fails kept to itself — in the plain demo alone, as the frameworks' bindings draw the
+ * same DOM. Chromium runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
+ */
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'dialogs', 'quiet-look', 'map-place', 'contain'];
+const smoke = {
+  testMatch: SMOKE.map((name) => `${name}.spec.ts`),
+  // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.
+  grepInvert: /(^|\s)(react|vue|angular)(:|\s)/,
+};
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
@@ -21,7 +34,17 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${demoPort}`,
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'firefox',
+      // Headless Firefox says it has no pointer, so `(hover: hover)` never holds there; a desktop's Firefox has a mouse.
+      // These say so: a fine pointer that hovers (2 + 4), as the quiet look's hover rules expect of a desktop.
+      use: { ...devices['Desktop Firefox'], launchOptions: { firefoxUserPrefs: { 'ui.primaryPointerCapabilities': 6, 'ui.allPointerCapabilities': 6 } } },
+      ...smoke,
+    },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] }, ...smoke },
+  ],
   webServer: [
     {
       command: `node tools/serve.mjs dist/demos ${demoPort}`,

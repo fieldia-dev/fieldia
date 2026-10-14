@@ -87,10 +87,60 @@ jobs:
       - run: node tools/build-demos.mjs
       # fieldia.dev, gated like the demos: every page, link and the live form.
       - run: node tools/build-site.mjs
-      - run: npx playwright test --shard=${{ matrix.shard }}/3
+      - run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: screens-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 14
+
+  engines:
+    name: Browser smoke in ${{ matrix.engine }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Firefox, and WebKit — Safari's engine, which every browser on an iPhone runs: the smoke set playwright.config.ts
+    # names (forms, behaviour, layout, lists, dialogs, the quiet look, a place on a map, right to left, a part that
+    # fails), in the plain demo. Chromium runs everything, in the job above.
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ matrix.engine }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # The engine and the system packages it needs, with the same guard against a stalled apt mirror as Chromium's.
+      - name: Install ${{ matrix.engine }} for Playwright
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
+          for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
+            timeout 300 npx playwright install --with-deps ${{ matrix.engine }} && exit 0
+            echo "Install try $try stalled or failed."
+          done
+          exit 1
+      - run: npx nx run-many -t build -p angular viewer designer
+        env:
+          NX_DAEMON: 'false'
+      - run: node tools/build-demos.mjs
+      - run: node tools/build-site.mjs
+      - run: npx playwright test --project=${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens-${{ matrix.engine }}
           path: test-results/
           retention-days: 14

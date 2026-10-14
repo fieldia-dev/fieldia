@@ -13,6 +13,8 @@ for (const variant of VARIANTS) {
     test('Create and edit… opens the customer page with the typed name, and Save & Close links the new client', async ({ page }) => {
       await open(page, variant, 'page=fields&skin=outlined');
       const client = node(page, 'f-client').getByRole('combobox');
+      // In sight first, as a person has it: WebKit types into a box out of sight, and its list opens out of sight too.
+      await client.scrollIntoViewIfNeeded();
       await client.fill('Hilton Cairo');
       await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
       const dialog = page.getByRole('dialog', { name: 'Client' });
@@ -141,6 +143,7 @@ for (const variant of VARIANTS) {
 test('a dialog wears the look of the page that opened it: the dark scheme on its box, its page and its buttons', async ({ page }) => {
   await open(page, 'plain', 'page=fields&skin=outlined&scheme=dark');
   const client = node(page, 'f-client').getByRole('combobox');
+  await client.scrollIntoViewIfNeeded();
   await client.fill('Hilton Cairo');
   await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Client' });
