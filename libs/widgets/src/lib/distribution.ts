@@ -28,6 +28,8 @@ interface Row {
   hint: RefusalHint;
   /** Text left in its share's box that does not read, and why: the share keeps what it held. */
   unread: { text: string; message: string } | null;
+  /** An account's name typed that names none, or is still looked up, and why: the line keeps the account it had. */
+  accountUnread: { text: string; message: string } | null;
 }
 
 /** The model a distribution's accounts are records of: its `options.model`, else Flectra's analytic accounts. */
@@ -82,9 +84,9 @@ export const distributionWidget: WidgetFactory = (context) => {
   let readonly = false;
   // A share is a per cent of 0 or more, with two places at most; "25%" and "٢٥٪" read too.
   const shareBox: NumberBox & { percent: boolean } = { label: words.share, locale, labels, limits: () => ({ min: 0, places: 2, percent: true }), percent: true };
-  /** The share boxes' unread text is the field's: Save refuses while one holds any. */
+  /** The share and account boxes' unread text is the field's: Save refuses while one holds any. */
   function sayUnread() {
-    const first = rows.find((row) => row.unread)?.unread ?? null;
+    const first = rows.find((row) => row.accountUnread)?.accountUnread ?? rows.find((row) => row.unread)?.unread ?? null;
     form.setUnread(name, first);
   }
 
@@ -102,7 +104,12 @@ export const distributionWidget: WidgetFactory = (context) => {
     const row = { key, share } as Row;
     const own: Form = {
       ...form,
-      getState: (): FormState => ({ ...form.getState(), values: { account: row.key ? ({ id: row.key, label: nameOf(row.key) } as RelatedRecord) : null } }),
+      getState: (): FormState => ({ ...form.getState(), values: { account: row.key ? ({ id: row.key, label: nameOf(row.key) } as RelatedRecord) : null }, unread: row.accountUnread ? { account: row.accountUnread } : {} }),
+      // An account's name that names none is the distribution's unread text: Save waits for it.
+      setUnread: (_name: string, unread) => {
+        row.accountUnread = unread;
+        sayUnread();
+      },
       setValue: (_name: string, picked: Value) => {
         const record = picked as RelatedRecord | null;
         row.key = record ? String(record.id) : '';
@@ -116,6 +123,7 @@ export const distributionWidget: WidgetFactory = (context) => {
     row.account = many2oneWidget({ ...context, form: own, name: 'account', field: accountField, node: { type: 'field', id: `${node.id}.account`, field: 'account', options: { create: false } }, id: cellId });
     row.input = make('input', { type: 'text', class: 'fd-input fd-number-input fd-share', inputmode: 'decimal', autocomplete: 'off', 'aria-label': words.share });
     row.unread = null;
+    row.accountUnread = null;
     const shareCell = make('span', { class: 'fd-number' }, row.input, make('span', { class: 'fd-unit' }, '%'));
     row.hint = refusalHint(row.input, shareCell);
     row.checks = guard(row.input, numberRules(shareBox), row.hint);
@@ -174,7 +182,7 @@ export const distributionWidget: WidgetFactory = (context) => {
       row.account.destroy?.();
       row.checks.destroy();
       row.element.remove();
-      if (row.unread) sayUnread();
+      if (row.unread || row.accountUnread) sayUnread();
       save();
       draw();
     });
@@ -212,7 +220,7 @@ export const distributionWidget: WidgetFactory = (context) => {
     setText(total, percent(Math.round(sum * 100) / 100));
     const wrong = rows.some((row) => row.key) && Math.abs(sum - 100) > 0.001;
     // A share left that does not read is said first: the total cannot be trusted until it is fixed.
-    const unread = rows.find((row) => row.unread)?.unread?.message ?? '';
+    const unread = rows.find((row) => row.accountUnread)?.accountUnread?.message ?? rows.find((row) => row.unread)?.unread?.message ?? '';
     setText(off, unread || (wrong ? fillIn(words.sharesOff, { n: percent(Math.round(sum * 100) / 100) }) : ''));
     setHidden(off, !unread && !wrong);
     setHidden(add, readonly);

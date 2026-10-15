@@ -305,6 +305,8 @@ export interface WidgetLabels {
   noMatchCreate: string;
   /** Typed words several choices are called (`{text}`): which one is meant is for the person to pick. */
   severalCalled: string;
+  /** Typed words (`{text}`) still being looked up among the records as a check is made: it waits for them. */
+  lookingUp: string;
   /** An own answer that is one of the choices: it is ticked. */
   isAnOption: string;
   /** A press past the most choices (`{max}`), and past the most ranked. */
@@ -546,6 +548,7 @@ const en: WidgetLabels = {
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',
   severalCalled: '{label}: more than one is called “{text}”; pick one from the list',
+  lookingUp: '{label}: still looking for “{text}”',
   isAnOption: '“{text}” is one of the choices, so it is ticked',
   chooseUpTo: 'You can choose {max}; untick one to choose another',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',

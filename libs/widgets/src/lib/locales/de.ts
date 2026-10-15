@@ -217,6 +217,7 @@ export const de: WidgetLabels = {
   noMatch: '{label}: Nichts heißt „{text}“; wählen Sie aus der Liste',
   noMatchCreate: '{label}: Noch heißt nichts „{text}“; wählen oder neu anlegen',
   severalCalled: '{label}: Mehrere heißen „{text}“; wählen Sie aus der Liste',
+  lookingUp: '{label}: „{text}“ wird noch gesucht',
   isAnOption: '„{text}“ ist eine der Optionen und ist jetzt angekreuzt',
   chooseUpTo: 'Sie können {max} wählen; entfernen Sie eine, um eine andere zu wählen',
   rankTop: 'Nur die ersten {max} werden gereiht; nehmen Sie eine heraus, um eine andere zu reihen',

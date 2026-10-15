@@ -29,6 +29,10 @@ interface Combobox {
   close(): void;
   /** The box's own aria-describedby (`base`) with its hint's, while one shows. */
   describedBy(base: string | undefined): string | undefined;
+  /** Whether the box holds words typed that the form keeps unread: marked, as a number box's are. */
+  unread(): boolean;
+  /** Its reader taken from the form: at once, or once a name it is looking up is found (a cell's editor closing). */
+  destroy(): void;
 }
 
 /**
@@ -41,8 +45,25 @@ interface TypedRules {
   label: string;
   /** Leaving with words typed takes the exact name: unless false (an adder button, which goes back to itself). */
   leave?: boolean;
-  /** Enter with nothing matching: true when the widget made something of it (a new tag). */
-  unmatched?: (text: string) => boolean;
+  /** Enter with nothing matching: what the widget makes of it (a new tag, made), or false when it makes nothing. */
+  unmatched?: (text: string) => Promise<unknown> | false;
+  /**
+   * The form the box writes, and its field's name there: words typed and not yet a pick are read for every save,
+   * check and step forward (`form.settling`) — the record they name taken, waited for by a save — and kept unread
+   * with why meanwhile, or when nothing is called so, so nothing is saved over them.
+   */
+  form?: Pick<Form, 'getState' | 'setUnread'> & Partial<Pick<Form, 'settling'>>;
+  name?: string;
+}
+
+/** A reading of words typed: what made it, whether a save waits for it, and its end. */
+interface Reading {
+  text: string;
+  /** Enter: the only match is taken too. Leaving, and a save, take the exact name only. */
+  enter: boolean;
+  /** A save (or a check) waits for it: words that name nothing are kept, unread, never put back under it. */
+  awaited: boolean;
+  done: Promise<void>;
 }
 
 /** Words as a search compares them: case, Arabic letter forms and digits folded. */
@@ -108,6 +129,8 @@ function combobox(options: {
   let seq = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let readonly = false;
+  /** The last list found, for the words it was asked for: a save reads an exact name from it without a wait. */
+  let lastFound: { query: string; found: RelatedRecord[] } | null = null;
 
   function render() {
     list.replaceChildren();
@@ -155,6 +178,10 @@ function combobox(options: {
     const typed = creatingText;
     close();
     editing = false;
+    // A record picked from the list: words a save kept unread go with it.
+    typedSeq++;
+    pending = null;
+    letGo();
     if (record === creating && options.create) {
       void options.create(typed).then(options.pick, () => undefined);
       return;
@@ -178,6 +205,7 @@ function combobox(options: {
       const held = reached && reached !== creating && !extras.has(reached) ? reached.id : undefined;
       const hidden = options.exclude?.() ?? new Set();
       const kept = found.filter((record) => !hidden.has(record.id));
+      lastFound = { query, found: kept };
       const overflow = options.shown !== undefined && kept.length > options.shown;
       results = overflow ? kept.slice(0, options.shown) : kept;
       // Nothing found by that name: offer to make it.
@@ -208,22 +236,129 @@ function combobox(options: {
     if (onlyMatch && kept.length === 1) return kept[0];
     return kept.find((record) => folded(record.label) === folded(text)) ?? null;
   }
+  /** Why nothing was taken of words typed: nothing is called so (or, where it can be, it is not made yet). */
+  const noMatchWords = (text: string) => fill(options.create ? labels.noMatchCreate : labels.noMatch, { label: options.typed?.label ?? '', text: quoted(text) });
   /** Nothing is called what was typed: said under the box, with what the field still holds. */
   function noMatch(text: string) {
     if (!hint || !options.typed) return;
-    const { label } = options.typed;
-    const words = fill(options.create ? labels.noMatchCreate : labels.noMatch, { label, text: quoted(text) });
-    hint.show(shown ? `${words}. ${fill(labels.stillHolds, { label, value: shown })}` : words);
+    const words = noMatchWords(text);
+    hint.show(shown ? `${words}. ${fill(labels.stillHolds, { label: options.typed.label, value: shown })}` : words);
   }
-  /** Words left typed in the box: one of every Enter or leaving, the latest, is acted on. */
+
+  // ---- words typed, read --------------------------------------------------------------------------------------
+  // Enter reads them (the only match, else the exact name), and so does leaving the box (the exact name); a save,
+  // a check and a step forward read them too (`form.settling`), as if the box were left, and a save waits for the
+  // record they name. Meanwhile, and when nothing is called so, the form keeps them unread, with why: a save made
+  // while they are looked up, or that finds none, never saves the record the box held before them.
+  const form = options.typed?.form;
+  const path = options.typed?.name;
+  const unreadNow = () => (form && path ? form.getState().unread?.[path] : undefined);
+  const keep = (text: string, message: string) => form && path && form.setUnread(path, { text, message });
+  const letGo = () => form && path && unreadNow() && form.setUnread(path, null);
+  /** Words left typed in the box: one of every Enter, leaving or save, the latest, is acted on. */
   let typedSeq = 0;
+  /** The words being looked up now, and what is waiting for them. */
+  let pending: Reading | null = null;
+
+  /** The record typed words name, taken: the box shows it, its words go, and the form's unread text with them. */
+  function take(record: RelatedRecord) {
+    close();
+    editing = false;
+    hint?.hide();
+    letGo();
+    options.pick(record);
+  }
+
+  /** Words read: the record they name taken; else said, and — when a save waits for them — kept unread, with why. */
+  function readWords(text: string, enter: boolean, awaited: boolean): Reading {
+    const mine = ++typedSeq;
+    const reading: Reading = { text, enter, awaited, done: Promise.resolve() };
+    reading.done = named(text, enter).then(async (record) => {
+      if (pending === reading) pending = null;
+      // Typed in again, or read again, since: the latest acts; a save waiting for these reads what the box holds now.
+      if (mine !== typedSeq) {
+        if (reading.awaited) await readForSave();
+        return;
+      }
+      const here = doc.activeElement === input;
+      if (here && input.value !== text) return;
+      // Left, then come back to before they were found: the words are still the person's, and the next leaving acts.
+      if (here && !enter && !reading.awaited) return;
+      if (record) return take(record);
+      if (here && enter) {
+        // Enter on words that name nothing: the widget may make something of them (a new tag), else it says so.
+        const made = options.typed?.unmatched?.(text.trim());
+        if (made) {
+          await made;
+          letGo();
+          return;
+        }
+        close();
+        noMatch(text.trim());
+        if (reading.awaited) keep(text, noMatchWords(text.trim()));
+        return;
+      }
+      if (reading.awaited) {
+        // A save waits: the words stay as typed, marked, and it is refused with why, never saving what the box held.
+        if (input.value !== text) input.value = text;
+        if (here) noMatch(text.trim());
+        keep(text, noMatchWords(text.trim()));
+        return;
+      }
+      // Left with words that name nothing: what it held comes back, and it says so.
+      input.value = shown;
+      letGo();
+      noMatch(text.trim());
+    });
+    pending = reading;
+    return reading;
+  }
+
+  /**
+   * The words typed, read for a save, a check or a step forward, as if the box were left: the exact name taken at
+   * once when the last list found holds it, else looked up — kept unread meanwhile, a save waiting for it.
+   */
+  function readForSave(): Promise<void> | undefined {
+    if (readonly || !options.typed) return undefined;
+    const typing = doc.activeElement === input && editing;
+    const text = typing ? input.value : (pending?.text ?? null);
+    if (text === null) return undefined;
+    if (typing && text.trim() === '') {
+      // Emptied, and saved so: no record, as leaving it would make it.
+      editing = false;
+      letGo();
+      if (shown !== '') options.onCommitEmpty?.();
+      return undefined;
+    }
+    if (typing && text === shown) return undefined;
+    if (pending && pending.text === text) {
+      pending.awaited = true;
+      keep(text, fill(labels.lookingUp, { label: options.typed.label, text: quoted(text.trim()) }));
+      return pending.done;
+    }
+    // The list for these very words is here: the record of that exact name in it, at once.
+    const listed = lastFound && folded(lastFound.query) === folded(text) ? lastFound.found.find((record) => folded(record.label) === folded(text)) : undefined;
+    if (listed) {
+      typedSeq++;
+      take(listed);
+      return undefined;
+    }
+    keep(text, fill(labels.lookingUp, { label: options.typed.label, text: quoted(text.trim()) }));
+    return readWords(text, false, true).done;
+  }
+  const stopReading = form && path && typeof form.settling === 'function' ? form.settling(readForSave) : null;
 
   input.addEventListener('input', () => {
     editing = true;
+    // Words typed since a reading began: that reading no longer acts on them.
+    typedSeq++;
     hint?.hide();
     if (!readonly) lookUp(input.value);
   });
   input.addEventListener('focus', () => {
+    // Come back to words the form keeps unread, or still being looked up: they are the person's own, and leaving
+    // reads them again.
+    if ((unreadNow() && input.value === unreadNow()?.text) || (pending && input.value === pending.text)) editing = true;
     if (!readonly) lookUp('');
   });
   // A click on the box opens its list, as a focus does: after Escape closed it, the focus has not left to come back.
@@ -250,23 +385,12 @@ function combobox(options: {
           return;
         }
         const text = input.value;
-        // Words typed: never the form's Enter. The only match, or the exact name, is taken; else it says so.
+        // Words typed: never the form's Enter. The only match, or the exact name, is taken; else it says so. With
+        // Ctrl, the form's save follows, and waits for this reading (`readForSave`).
         if (!options.typed || !editing || !text.trim()) return;
         event.preventDefault();
-        const mine = ++typedSeq;
-        void named(text, true).then((record) => {
-          if (mine !== typedSeq || input.value !== text) return;
-          if (record) {
-            close();
-            editing = false;
-            hint?.hide();
-            options.pick(record);
-          } else if (!options.typed?.unmatched?.(text.trim())) {
-            // The list closed, so the words under the box can be read; ↓ opens it again.
-            close();
-            noMatch(text.trim());
-          }
-        });
+        if (pending?.text === text && pending.enter) return;
+        readWords(text, true, !!pending?.awaited);
         return;
       }
       case 'Tab': {
@@ -279,7 +403,10 @@ function combobox(options: {
         if (!list.hidden) event.preventDefault();
         close();
         editing = false;
+        typedSeq++;
+        pending = null;
         input.value = shown;
+        letGo();
         return;
       case 'Backspace':
         if (input.value === '') options.onEmptyBackspace?.();
@@ -294,19 +421,19 @@ function combobox(options: {
     const emptied = editing && text.trim() === '' && shown !== '';
     const left = editing && text.trim() !== '' && text !== shown && options.typed && options.typed.leave !== false;
     editing = false;
-    if (emptied) return options.onCommitEmpty?.();
+    if (emptied) {
+      letGo();
+      return options.onCommitEmpty?.();
+    }
     if (!left) {
-      input.value = shown;
+      // Typed back to what it holds: nothing is left unread.
+      if (text === shown) letGo();
+      if (!unreadNow()) input.value = shown;
       return;
     }
-    // Words left in the box: the record of that exact name is taken; else what it held comes back, and it says so.
-    const mine = ++typedSeq;
-    void named(text, false).then((record) => {
-      if (mine !== typedSeq || doc.activeElement === input || editing) return;
-      if (record) return options.pick(record);
-      input.value = shown;
-      noMatch(text.trim());
-    });
+    // Words left in the box: the record of that exact name is taken; else what it held comes back, and it says so —
+    // unless a save is waiting for them, which keeps them, unread, with why. Enter's reading of them, on its way, acts.
+    if (pending?.text !== text) readWords(text, false, false);
   });
 
   return {
@@ -314,7 +441,10 @@ function combobox(options: {
     input,
     setText(text) {
       shown = text;
-      if (!editing && input.value !== text) input.value = text;
+      // Words the form keeps unread stay as typed, marked; anything else shows what the field holds.
+      const kept = unreadNow();
+      const want = kept && !pending ? kept.text : text;
+      if (!editing && !pending && input.value !== want) input.value = want;
     },
     setReadonly(next) {
       readonly = next;
@@ -323,6 +453,13 @@ function combobox(options: {
     },
     close,
     describedBy: (base) => (hint ? hint.describedBy(base) : base || undefined),
+    unread: () => !!unreadNow(),
+    destroy() {
+      if (!stopReading) return;
+      // A name still being looked up is still read for a save: its reader goes once it is found, or not.
+      if (pending) void pending.done.then(stopReading, stopReading);
+      else stopReading();
+    },
   };
 }
 
@@ -453,7 +590,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     onCommitEmpty: () => form.setValue(name, null),
     create: creator(form, name, node),
     placeholder: node.placeholder,
-    typed: { label: node.label ?? field.label },
+    typed: { label: node.label ?? field.label, form, name },
     // With dialogs: make a record in its own page, or pick from a full list when the short one has no room.
     more: (typed, overflow) => {
       if (!dialogs || readonly) return [];
@@ -520,6 +657,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   return {
     element,
     focus: () => box.input.focus(),
+    destroy: () => box.destroy(),
     update(state) {
       const record = state.value as RelatedRecord | null | undefined;
       if (avatar) linkAvatar(document, record, avatar);
@@ -537,7 +675,8 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
         setHidden(open, !record);
         if (record) setAttr(open, 'aria-label', fill(labels.openNamed, { name: record.label }));
       }
-      setAttr(box.input, 'aria-invalid', String(state.invalid));
+      // Words left unread are marked once the box is left, as a number box's are.
+      setAttr(box.input, 'aria-invalid', String(state.invalid || (box.unread() && document.activeElement !== box.input)));
       setAttr(box.input, 'aria-required', String(state.required));
       setAttr(box.input, 'aria-describedby', box.describedBy(state.describedBy) ?? null);
     },
@@ -577,13 +716,14 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
     typed: {
       label: node.label ?? field.label,
       leave: node.options?.['adder'] !== 'button',
+      form,
+      name,
       unmatched: (text) => {
         if (node.options?.['adder'] !== 'button' || !createTag) return false;
-        void createTag(text).then((record) => {
+        return createTag(text).then((record) => {
           if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
           adder?.added();
         }, () => undefined);
-        return true;
       },
     },
     // With dialogs: pick from a full list when the short one has no room.
@@ -605,6 +745,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   return {
     element,
     focus: () => box.input.focus(),
+    destroy: () => box.destroy(),
     update(state) {
       const records = (state.value as RelatedRecord[] | null) ?? [];
       // Rebuild the chips only when they change, not on every keystroke elsewhere.
@@ -613,7 +754,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       box.setReadonly(readonly);
       if (adder) adder.setReadonly(readonly);
       else box.element.hidden = readonly;
-      box.input.setAttribute('aria-invalid', String(state.invalid));
+      box.input.setAttribute('aria-invalid', String(state.invalid || (box.unread() && document.activeElement !== box.input)));
       setAttr(box.input, 'aria-describedby', box.describedBy(state.describedBy) ?? null);
       if (key === drawn) return;
       drawn = key;
@@ -899,12 +1040,13 @@ export const referenceWidget: WidgetFactory = (context: WidgetContext) => {
     search: (query) => (model ? form.search(name, query, 8, { model }) : Promise.resolve([])),
     pick: (record) => form.setValue(name, { model, id: record.id, label: record.label }),
     onCommitEmpty: () => form.setValue(name, null),
-    typed: { label: context.node.label ?? field.label },
+    typed: { label: context.node.label ?? field.label, form, name },
   });
   element.append(select, box.element);
   return {
     element,
     focus: () => (model ? box.input.focus() : select.focus()),
+    destroy: () => box.destroy(),
     update(state) {
       const value = state.value as ReferenceValue | null | undefined;
       if (value) model = value.model;

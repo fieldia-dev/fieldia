@@ -25,7 +25,10 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  * match, else the option of that exact name, and never sends the form. Left
  * with words typed, the box takes the option of that name (or, with
  * `ownAnswers`, adds them as an answer of one's own); words that name nothing
- * are put back, and the box says so under itself.
+ * are put back, and the box says so under itself. A save, a check or a step
+ * forward made while words are still typed reads them as leaving would
+ * (`form.settling`): words that name nothing stay then, kept unread with why,
+ * so the save is refused rather than made with the choice they were replacing.
  */
 export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
 export const searchWidget: WidgetFactory = (context) => combo(context, true);
@@ -100,6 +103,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     input.removeAttribute('aria-activedescendant');
   }
   function add(option: Option) {
+    letGo();
     if (single) {
       input.value = option.label;
       write(option.value);
@@ -118,6 +122,43 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   };
   /** Nothing is called what was typed: said under the box, which shows the choice it still holds. */
   const noMatch = (text: string) => hint.show(fillIn(words.noMatch, { label, text: quoted(text) }));
+  const unreadNow = () => form.getState().unread?.[name];
+  const letGo = () => unreadNow() && form.setUnread(name, null);
+
+  /**
+   * Words typed and not yet a choice, read for a save, a check or a step forward, as if the box were left: the option
+   * of that name taken (or an answer of one's own added); else they stay, kept unread with why, and the save waits.
+   */
+  function readNow() {
+    if (readonly || document.activeElement !== input) return;
+    const typed = input.value;
+    const text = typed.trim();
+    if (single) {
+      if (!text) {
+        letGo();
+        if (current() !== null && current() !== undefined) write(null);
+        return;
+      }
+      if (text === labelOf(current())) return letGo();
+    } else if (!text) return letGo();
+    const option = named(text);
+    if (option) {
+      letGo();
+      if (single) return add(option);
+      input.value = '';
+      return write(withAlone(options, chosen(), option.value));
+    }
+    if (!single && (chosen().some((value) => fold(labelOf(value)) === fold(text)) || own)) {
+      input.value = '';
+      letGo();
+      if (own && !chosen().some((value) => fold(labelOf(value)) === fold(text))) write([...chosen(), text]);
+      return;
+    }
+    close();
+    noMatch(text);
+    form.setUnread(name, { text: typed, message: fillIn(words.noMatch, { label, text: quoted(text) }) });
+  }
+  const stopReading = typeof form.settling === 'function' ? form.settling(readNow) : null;
 
   if (!single) input.addEventListener('focus', () => !readonly && open());
   input.addEventListener('click', () => !readonly && list.hidden && open());
@@ -129,6 +170,8 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     close();
     if (readonly) return;
     const text = input.value.trim();
+    // Left, the words are read as leaving reads them: what a save kept unread goes with them.
+    letGo();
     if (single) {
       // One answer: a box emptied takes the choice away; the exact name of an option picks it.
       if (!text) return write(null);
@@ -178,6 +221,11 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
       case 'Escape':
         if (!list.hidden) event.preventDefault();
         close();
+        // Words a save kept unread are let go: the box shows the choice it holds.
+        if (unreadNow()) {
+          letGo();
+          input.value = single ? labelOf(current()) : '';
+        }
         return;
       case 'Backspace':
         if (!single && input.value === '' && chosen().length) write(chosen().slice(0, -1));
@@ -189,15 +237,18 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   return {
     element,
     focus: () => input.focus(),
+    destroy: () => stopReading?.(),
     update(state) {
       readonly = state.readonly;
       if (readonly) close();
-      setAttr(input, 'aria-invalid', String(state.invalid));
+      const kept = unreadNow();
+      setAttr(input, 'aria-invalid', String(state.invalid || (!!kept && document.activeElement !== input)));
       setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
       setAttr(input, 'aria-required', String(state.required));
       if (single) {
         input.readOnly = readonly;
-        if (document.activeElement !== input) input.value = labelOf(state.value);
+        // Words a save kept unread stay as typed, marked; else the choice held.
+        if (document.activeElement !== input) input.value = kept ? kept.text : labelOf(state.value);
         return;
       }
       const values = Array.isArray(state.value) ? (state.value as unknown[]) : [];

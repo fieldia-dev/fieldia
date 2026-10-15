@@ -529,8 +529,10 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       otherChoice.addEventListener('change', () => {
         if (otherChoice.checked) otherBox.focus();
       });
-      // Left, the answer is held trimmed; one that names an option, by its value or its words, ticks that option and says so.
-      otherBox.addEventListener('blur', () => {
+      // Left, or read by a save made from inside it (a change), the answer is held trimmed; one that names an option,
+      // by its value or its words, ticks that option and says so.
+      const settleOther = () => {
+        if (otherBox.readOnly || otherBox.disabled) return;
         const text = otherBox.value.trim();
         if (text !== otherBox.value) otherBox.value = text;
         const at = text ? choices.findIndex((option) => fold(option.label) === fold(text) || fold(String(option.value)) === fold(text)) : -1;
@@ -540,7 +542,9 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         inputs[at].checked = true;
         save(inputs[at]);
         said?.show(fillIn(words.isAnOption, { text: choices[at].label }));
-      });
+      };
+      otherBox.addEventListener('change', settleOther);
+      otherBox.addEventListener('blur', settleOther);
     }
     if (limit?.element) group.append(limit.element);
     /** The answer the boxes say now: the options picked, and the words of "Other" when it is picked and has any. */

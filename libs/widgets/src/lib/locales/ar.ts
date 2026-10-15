@@ -217,6 +217,7 @@ export const ar: WidgetLabels = {
   noMatch: '{label}: لا شيء باسم «{text}»؛ اختر من القائمة',
   noMatchCreate: '{label}: لا شيء باسم «{text}» بعد؛ اختر من القائمة أو أنشئه',
   severalCalled: '{label}: أكثر من واحد باسم «{text}»؛ اختر من القائمة',
+  lookingUp: '{label}: ما زال البحث عن «{text}» جاريًا',
   isAnOption: '«{text}» أحد الاختيارات، فاختير',
   chooseUpTo: 'يمكنك اختيار {max}؛ ألغِ أحدها لتختار غيره',
   rankTop: 'يُرتَّب أول {max} فقط؛ أخرج واحدًا لترتّب غيره',

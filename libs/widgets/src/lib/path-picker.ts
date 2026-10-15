@@ -35,7 +35,11 @@ import type { Widget, WidgetFactory } from './widgets';
  * a click elsewhere, before or after their list came — take the record they
  * name exactly: its whole path, or its own name where only it has that name.
  * Else what the box held comes back, and it says so: that nothing is called
- * so, or that several are.
+ * so, or that several are. A save, a check or a step forward made while words
+ * are still typed, or still being found, reads them as leaving would
+ * (`form.settling`) and a save waits for them; words that name none stay then,
+ * kept unread with why, so the save is refused rather than made with the
+ * record they were replacing.
  *
  * Typed words find a path as a search finds words: in any case, Arabic
  * letters in any of their forms, digits in any script, and its separator
@@ -122,6 +126,10 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   let timer: ReturnType<typeof setTimeout> | undefined;
   /** Words left typed in the box: one of every leaving, the latest, is acted on. */
   let typedSeq = 0;
+  /** Words being found now, and whether a save waits for them. */
+  let pending: { text: string; awaited: boolean; done: Promise<void> } | null = null;
+  const unreadNow = () => form.getState().unread?.[name];
+  const letGo = () => unreadNow() && form.setUnread(name, null);
 
   // ---- the person's latest picks --------------------------------------------
   const store: PreferenceStore | undefined = preferences;
@@ -328,6 +336,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     close();
     remember(record);
     editing = false;
+    letGo();
     form.setValue(name, record);
     input.value = textOf(record);
   }
@@ -387,31 +396,80 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       .catch(() => [] as RelatedRecord[])
       .then(then);
   }
-  /** Words typed that are no pick yet, taken now: the record they name exactly; else what the box held comes back, and it says why. */
-  function settleTyped(text: string, leaving: boolean) {
+  /**
+   * Words typed that are no pick yet, taken now: the record they name exactly; else what the box held comes back
+   * (`leaving`), and it says why — unless a save waits for them (`awaited`), which keeps them, unread, with why.
+   */
+  function settleTyped(text: string, leaving: boolean, awaited = false): Promise<void> {
     const mine = ++typedSeq;
+    let finish: () => void = () => undefined;
+    const reading = { text, awaited, done: new Promise<void>((resolve) => (finish = resolve)) };
+    pending = reading;
     candidates(text, (found) => {
-      // Typed in again, or another leaving since: that one acts.
+      if (pending === reading) pending = null;
+      const after = act(found);
+      if (after) void after.then(finish, finish);
+      else finish();
+    });
+    return reading.done;
+
+    function act(found: readonly RelatedRecord[]): Promise<void> | void {
+      // Typed in again, or another leaving since: that one acts — and a save waiting for these reads the box again.
+      if (mine !== typedSeq) return reading.awaited ? readNow() : undefined;
       // Back in the box before they were found: the words are still the person's, and the next leaving acts on them.
-      if (mine !== typedSeq || (leaving && doc.activeElement === input)) return;
+      if (leaving && doc.activeElement === input && !reading.awaited) return;
       const record = named(text, found);
       if (record && record !== 'several') {
         close();
         remember(record);
         editing = false;
         hint.hide();
+        letGo();
         form.setValue(name, record);
         input.value = textOf(record);
         return;
       }
       const label = node.label ?? field.label;
       const said = fillIn(record === 'several' ? words.severalCalled : words.noMatch, { label, text: quoted(text) });
-      if (leaving) {
+      if (reading.awaited) {
+        // A save waits: the words stay as typed, marked, and it is refused with why, never saving what the box held.
+        if (input.value.trim() !== text) input.value = text;
+        hint.show(said);
+        form.setUnread(name, { text, message: said });
+      } else if (leaving) {
         restore();
+        letGo();
         hint.show(current ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
       } else hint.show(said);
-    });
+    }
   }
+
+  /**
+   * The words typed, read for a save, a check or a step forward, as if the box were left: the record they name
+   * exactly taken (at once when the tree is here), else kept unread with why — a save waiting while they are found.
+   */
+  function readNow(): Promise<void> | undefined {
+    if (readonly) return undefined;
+    const typing = doc.activeElement === input && editing;
+    const text = typing ? input.value.trim() : (pending?.text ?? null);
+    if (text === null) return undefined;
+    if (typing && text === '') {
+      // Emptied, and saved so: no value, as leaving it would make it.
+      editing = false;
+      letGo();
+      if (current !== null) form.setValue(name, null);
+      return undefined;
+    }
+    if (typing && text === textOf(current)) return void letGo();
+    const label = node.label ?? field.label;
+    form.setUnread(name, { text, message: fillIn(words.lookingUp, { label, text: quoted(text) }) });
+    if (pending && pending.text === text) {
+      pending.awaited = true;
+      return pending.done;
+    }
+    return settleTyped(text, false, true);
+  }
+  const stopReading = typeof form.settling === 'function' ? form.settling(readNow) : null;
 
   const forward = () => (getComputedStyle(element).direction === 'rtl' || rightToLeft(element) ? 'ArrowLeft' : 'ArrowRight');
   input.addEventListener('input', () => {
@@ -488,7 +546,10 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       case 'Enter':
         event.preventDefault();
         // Words typed whose list has not come yet, or found nothing: the record they name, or why there is none.
-        if (editing && input.value.trim() && !matches?.length) return settleTyped(input.value.trim(), false);
+        if (editing && input.value.trim() && !matches?.length) {
+          void settleTyped(input.value.trim(), false);
+          return;
+        }
         if (here) choose(here);
         return;
       case 'Escape':
@@ -496,7 +557,10 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         // Only the list closes: not a dialog the field is in.
         event.stopPropagation();
         close();
+        typedSeq++;
+        pending = null;
         restore();
+        letGo();
         return;
       case 'Tab':
         // A match that typing reached goes with the person; else, left, the box puts back what it held.
@@ -513,16 +577,32 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     const emptied = editing && text === '' && current !== null;
     const unmatched = editing && text !== '' && text !== textOf(current);
     if (!unmatched) editing = false;
-    if (emptied) return form.setValue(name, null);
-    if (!unmatched) return restore();
+    if (emptied) {
+      letGo();
+      return form.setValue(name, null);
+    }
+    if (!unmatched) {
+      letGo();
+      return restore();
+    }
     // Still the person's words while they are looked up: nothing redrawn puts the old value over them.
-    settleTyped(text, true);
+    if (pending?.text !== text) void settleTyped(text, true);
+  });
+  // Come back to words the form keeps unread: they are still the person's own, and leaving reads them again.
+  input.addEventListener('focus', () => {
+    const kept = unreadNow();
+    if (kept && input.value === kept.text) editing = true;
   });
 
   return {
     element,
     focus: () => input.focus(),
-    destroy: () => close(),
+    destroy: () => {
+      close();
+      // Words still being found are still read for a save: its reader goes once they are.
+      if (pending) void pending.done.then(() => stopReading?.());
+      else stopReading?.();
+    },
     update(state) {
       const value = (state.value as RelatedRecord | null | undefined) ?? null;
       const changed = value?.id !== current?.id;
@@ -531,8 +611,10 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       readonly = state.readonly;
       if (input.readOnly !== readonly) input.readOnly = readonly;
       if (readonly) close();
-      if (!editing && input.value !== textOf(current)) input.value = textOf(current);
-      setAttr(input, 'aria-invalid', String(state.invalid));
+      // Words a save kept unread stay as typed, marked; else the value's path.
+      const kept = unreadNow();
+      if (!editing && !pending && input.value !== (kept ? kept.text : textOf(current))) input.value = kept ? kept.text : textOf(current);
+      setAttr(input, 'aria-invalid', String(state.invalid || (!!kept && doc.activeElement !== input)));
       setAttr(input, 'aria-required', String(state.required));
       setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
     },
