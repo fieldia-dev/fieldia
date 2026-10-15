@@ -1,5 +1,5 @@
-import { numberMisfit, readNumber, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
-import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
+import { fill, numberMisfit, readNumber, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
+import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, typingText, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
@@ -148,6 +148,11 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
         const read = readDateText(text, { kind: date, order: dateOrder, locale, label: current.label, labels: words });
         if (!read.ok) return wait(read.words);
         if (read.value === null) return wait(words.enterDate.split('{example}').join(dateExample({ kind: date, order: dateOrder, locale })));
+        // A day and time where a day goes: the day is put in the box and the time it leaves out said; Apply again takes it.
+        if (read.timeLeftOut) {
+          value.value = typingText(read.value, date, dateOrder, locale);
+          return wait(fill(words.timeLeftOut, { label: current.label, time: read.timeLeftOut }));
+        }
         wanted = read.value;
         shown = displayValue(current as LineField, read.value, {}, locale);
       } else {

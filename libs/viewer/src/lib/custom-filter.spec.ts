@@ -201,6 +201,21 @@ describe('a custom filter’s date', () => {
     expect(chips()).toEqual(['Since greater than 1 Jan 2025']);
   });
 
+  it('takes a day and time where a day goes as its day only once it has said the time it leaves out', async () => {
+    const { choose, apply, chips, hint } = await open();
+    const box = choose('since', '>');
+    const instant = '2025-01-01T12:00:00Z';
+    const at = new Date(instant);
+    const day = `${String(at.getDate()).padStart(2, '0')}/${String(at.getMonth() + 1).padStart(2, '0')}/${at.getFullYear()}`;
+    type(box, instant);
+    apply();
+    expect(chips()).toEqual([]);
+    expect(box.value).toBe(day);
+    expect(hint()?.textContent).toBe(`Since takes a day only: the time ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')} was left out`);
+    apply();
+    expect(chips()).toHaveLength(1);
+  });
+
   it('says what a date looks like when none is typed', async () => {
     const { choose, apply, chips, hint } = await open();
     choose('since', '>');
