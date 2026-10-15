@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { axeFindings } from './a11y-support';
-import { at, drag, mapOf, mapReady, stubMaps, valueOf, zoomOf } from './map-support';
+import { at, drag, mapOf, mapReady, mapSettled, stubMaps, valueOf, zoomOf } from './map-support';
 import { node, open, screen } from './support';
 
 /**
@@ -111,7 +111,7 @@ test('a search suggests places as people type, nearest the map first, each on tw
   // The map moved east first: the search asks near where it now is, not where it opened.
   await map.focus();
   for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(400);
+  await mapSettled(map);
   const search = field.getByRole('combobox');
   await search.pressSequentially('tah', { delay: 60 });
   const options = field.getByRole('option');

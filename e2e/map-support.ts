@@ -92,11 +92,41 @@ export const mapOf = (page: Page, nodeId: string) => page.locator(`[data-node="$
 /** Wait until a map has drawn its images. */
 export async function mapReady(map: Locator) {
   await expect(map.locator('.leaflet-tile-loaded').first()).toBeVisible();
+  await mapSettled(map);
 }
 
-/** The map's zoom, read from the address of an image it shows. */
+/**
+ * The map has stopped moving: no zoom on its way, and the panes where they were a moment ago. A slow runner (WebKit on
+ * CI) is still gliding when a guessed wait ends; this waits for the map itself.
+ */
+export async function mapSettled(map: Locator) {
+  const where = () =>
+    map.evaluate((el) => {
+      const panes = el.querySelector<HTMLElement>('.leaflet-map-pane');
+      const levels = [...el.querySelectorAll<HTMLElement>('.leaflet-tile-container')].map((level) => level.style.transform);
+      return `${el.querySelector('.leaflet-zoom-anim') ? 'zooming' : ''}|${panes?.style.transform ?? ''}|${levels.join(';')}`;
+    });
+  let last = '';
+  await expect
+    .poll(async () => {
+      const now = await where();
+      const still = now === last && !now.startsWith('zooming');
+      last = now;
+      return still;
+    }, { intervals: [120], timeout: 10_000 })
+    .toBe(true);
+}
+
+/**
+ * The map's zoom, read from the address of an image of the level it shows — Leaflet draws that level on top, and keeps
+ * the last one's images under it until the new ones come, so the first image in the page may be of the zoom before.
+ */
 export async function zoomOf(map: Locator): Promise<number> {
-  const src = (await map.locator('.leaflet-tile-loaded').first().getAttribute('src')) ?? '';
+  const src = await map.evaluate((el) => {
+    const levels = [...el.querySelectorAll<HTMLElement>('.leaflet-tile-container')].filter((level) => level.querySelector('.leaflet-tile-loaded'));
+    const top = levels.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
+    return top?.querySelector('.leaflet-tile-loaded')?.getAttribute('src') ?? '';
+  });
   return Number(/\/(\d+)\/\d+\/\d+\.png/.exec(src)?.[1]);
 }
 
