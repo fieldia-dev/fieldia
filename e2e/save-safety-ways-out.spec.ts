@@ -122,6 +122,57 @@ test('the pager, Sara typing while its save is on its way: asked; Enter keeps he
   expect(problems).toEqual([]);
 });
 
+test('the app opening the next lead while Ctrl+Enter’s save is on its way, Sara typing meanwhile: it waits, saying so, then asks; Enter keeps lead 1', async ({ page }) => {
+  const problems = await openDemo(page);
+  const form = yours(page);
+  const phone = field(form, 'phone').locator('input');
+  await phone.fill('+20 100 999 8887');
+  const saves = await holdSaves(page);
+  await phone.press('ControlOrMeta+Enter');
+  await saves.asked();
+  await field(form, 'budget').locator('input').fill('4300000');
+  const going = page.evaluate(() => (window as any).fieldiaDemo.handle.form.openRecord(2));
+  // Nothing is asked about a record whose save has not answered yet: the page says what it waits for.
+  await expect(form.locator('.fd-status')).toHaveText('Waiting for the save to finish…');
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await saves.release();
+  await asked(page);
+  await page.keyboard.press('Enter');
+  expect(await going).toBe(false);
+  await expect(page.getByRole('alertdialog')).toBeHidden();
+  await expect(form.locator('.fd-title input')).toHaveValue('Villa in Sheikh Zayed');
+  expect(await state(page)).toMatchObject({ recordId: 1, dirty: ['budget'], leaving: false });
+  expect(await stored(page)).toMatchObject({ phone: '+20 100 999 8887', budget: 4000000 });
+  // Saved again, only lead 1 takes it: lead 2 keeps its own values.
+  await field(form, 'budget').locator('input').press('ControlOrMeta+Enter');
+  await saves.asked();
+  await saves.release();
+  await expect(form.locator('.fd-status')).toHaveText('Saved');
+  expect(await stored(page)).toMatchObject({ name: 'Villa in Sheikh Zayed', phone: '+20 100 999 8887', budget: 4300000 });
+  expect(await stored(page, 2)).toMatchObject({ name: 'Flat in Maadi', phone: '+20 111 222 3334', budget: 2500000 });
+  expect(problems).toEqual([]);
+});
+
+test('a reload while Ctrl+Enter’s save is on its way, nothing typed meanwhile: it waits for the save, then shows the lead as saved, unasked', async ({ page }) => {
+  const problems = await openDemo(page);
+  const form = yours(page);
+  const phone = field(form, 'phone').locator('input');
+  await phone.fill('+20 100 999 8887');
+  const saves = await holdSaves(page);
+  await phone.press('ControlOrMeta+Enter');
+  await saves.asked();
+  const going = page.evaluate(() => (window as any).fieldiaDemo.handle.reload());
+  await expect(form.locator('.fd-status')).toHaveText('Waiting for the save to finish…');
+  await saves.release();
+  await going;
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  // Never the old phone laid back as a change to save over the one just saved.
+  await expect(phone).toHaveValue('+20 100 999 8887');
+  expect(await state(page)).toMatchObject({ recordId: 1, dirty: [], unsent: [], leaving: false });
+  expect(await stored(page)).toMatchObject({ phone: '+20 100 999 8887' });
+  expect(problems).toEqual([]);
+});
+
 test('Duplicate from the gear after Reload: asked; Enter keeps the changes set aside, Discard opens the copy', async ({ page }) => {
   const problems = await openDemo(page);
   const form = await reloadedInYourTab(page);

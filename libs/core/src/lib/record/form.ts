@@ -855,6 +855,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * with the next.
    */
   let generation = 0;
+  /** Closed (`dispose`): a run still going stops quietly, as its dialog or page is gone — no other record replaced it. */
+  let disposed = false;
   /** The fields whose last write was the person's: a step's, a rule's or the app's write takes one over. */
   const personal = new Set<string>();
   /** Fields where a file the person picked landed from the store: at risk until a save sends it, a first save or not. */
@@ -2177,7 +2179,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     check,
     save: saving,
     generation: () => generation,
-    gone: () => ({ reason: 'cannot', message: messages.recordReplaced }),
+    gone: () => (disposed ? { reason: 'closed' } : { reason: 'cannot', message: messages.recordReplaced }),
     async reload(chain) {
       if (state.recordId == null) return { reason: 'cannot', message: 'The record is not saved yet: there is nothing to load again' };
       if (!(await loadAgain(true, chain))) return kept();
@@ -2780,6 +2782,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     dispose() {
       // An answer that lands after is for no record shown.
+      disposed = true;
       newGeneration();
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
