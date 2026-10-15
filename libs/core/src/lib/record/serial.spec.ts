@@ -633,6 +633,20 @@ describe('work at risk: worked out from the record as the last finished save lef
     expect(form.getState().unsent).toEqual(['budget', 'doc']);
   });
 
+  it('Delete through the app’s action (no delete in the source), refused by it: the work at risk stays, and is still asked about', async () => {
+    const ds = heldSource();
+    const { delete: _delete, ...noDelete } = ds;
+    const made = host([true, false]);
+    const form = await opened(noDelete as DataSource, { host: made.host, onAction: ({ action }) => (action === 'delete' ? { stop: 'This lead has payments: it cannot be deleted' } : undefined) });
+    form.setValue('phone', '+201009998887');
+    await typedDuring(form, ds);
+    expect(await form.runAction('m-delete')).toMatchObject({ done: false });
+    expect(form.getState()).toMatchObject({ recordId: 1, unsent: ['budget'] });
+    expect(await form.run([{ do: 'reload' }])).toMatchObject({ done: false, reason: 'no' });
+    expect(made.asked).toEqual([{ message: 'Are you sure you want to delete this record?' }, DISCARD]);
+    expect(form.getState().values['budget']).toBe(4300000);
+  });
+
   it('Delete: what the person typed while it was on its way goes with the record, unasked', async () => {
     const ds = heldSource();
     const made = host([true]);

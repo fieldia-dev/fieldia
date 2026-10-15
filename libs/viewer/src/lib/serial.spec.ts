@@ -376,6 +376,44 @@ describe('a dialog’s Discard during a save waits for it: the record it made is
     expect(ended).toMatchObject({ saved: true, recordId: 3 });
   });
 
+  it('a page of answers sent from a dialog, changed while they went: Save & Close asks; after Cancel, Discard closes saved', async () => {
+    const answers: Page = {
+      fieldia: '0.1',
+      id: 'ask',
+      title: 'Ask',
+      data: { kind: 'responses' },
+      fields: { question: { type: 'char', label: 'Question' }, more: { type: 'char', label: 'More' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-question', field: 'question' }, { type: 'field', id: 'f-more', field: 'more' }] },
+    };
+    const memory = createMemoryDataSource({});
+    let go: (() => void) | null = null;
+    const source: DataSource = {
+      ...memory,
+      async submit(request) {
+        await new Promise<void>((resolve) => (go = resolve));
+        return (memory.submit as NonNullable<DataSource['submit']>)(request);
+      },
+    };
+    let ended: FormDialogResult | null = null;
+    void openFormDialog({ page: answers, dataSource: source, title: 'Ask' }).then((result) => (ended = result));
+    await until(() => input(document.querySelector('.fd-form-dialog') ?? document.body, 'question'));
+    const box = document.querySelector('.fd-form-dialog') as HTMLElement;
+    type(box, 'question', 'When can I visit?');
+    button(box, 'Save & Close').click();
+    await until(() => go);
+    type(box, 'more', 'After five');
+    (go as unknown as () => void)();
+    await asked();
+    answer('Cancel');
+    await pause();
+    expect(ended).toBeNull();
+    button(box, 'Discard').click();
+    await until(() => ended);
+    // The answers went: the caller hears they were sent, however the dialog closed after.
+    expect(ended).toMatchObject({ saved: true });
+    expect(memory.responses.map((response) => response.values)).toEqual([expect.objectContaining({ question: 'When can I visit?' })]);
+  });
+
   it('Escape during Save & Close waits for the save, then closes saved, nothing asked', async () => {
     const ds = heldSource();
     let ended: FormDialogResult | null = null;
