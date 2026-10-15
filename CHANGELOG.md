@@ -15,9 +15,41 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
-## 0.22.0 — not released yet
+## 0.22.0 — 2026-10-15
 
-Its section is written in full in the commit that sets the version. Known now:
+**Files, conflicts, permissions and a calendar: what an app with real users
+needs from its data source.** Every new data source member is optional: an app
+that adds none of them behaves as in 0.21, apart from the one change under
+**Upgrading**. The contract is in `docs/plans/wave1-contract.md`.
+
+- **Files stored as they are picked** (`upload`): three at a time, each photo
+  made smaller first, each with a bar, × and Retry; Save waits for them and says
+  why. `uploadTo` covers a plain endpoint or a signed address. A signature's
+  uploaded picture goes the same way.
+- **Someone else changed this record**: a load or save can carry a version
+  (`RecordVersion`), and a save refused for an older one (`ConflictError`)
+  shows who changed what and when, with **Reload** (the person's changes set
+  aside, each to put back) or **Keep mine**.
+- **What a person may do** (`RecordPermissions`, `can`): fields locked or
+  hidden, a record only to read, Archive, Duplicate and Delete hidden where the
+  source says no.
+- **A calendar for any list** (new package `@fieldia/calendar`,
+  `calendarListViews`): day, week, month and agenda; a click on an empty slot,
+  or a drag across slots, opens a new record with its start and end; and a
+  list's switcher between its views.
+- **Saving that cannot lose work**: one save at a time, each carrying the
+  version the last got back; a way out of a record (another record, a reload, a
+  close, a breadcrumb, a dialog's Escape) goes through one check, `form.leave()`,
+  that asks "Discard your changes?" only when the person's work is at risk; an
+  answer that comes back after its record was replaced is not laid over the
+  one shown (its words are still said).
+- **A part that fails stays in its box**: a widget, a slot or a map that throws
+  shows a box naming it and tells `onError`; the rest of the form goes on.
+- **Page format versions**: a page says which Fieldia shape it has
+  (`"fieldia"`), and `upgradePage` brings an older one up to date.
+- Tested in Firefox and WebKit as well as Chromium, on every change.
+- **Renamed from 0.21:** `form.leave(path)`, which told the form a box was left,
+  is now `form.boxLeft(path)`; `form.leave()` is the check above.
 
 **Upgrading:** a way out of a record — another record, a reload, a close, a
 breadcrumb, a dialog's Escape, × or Discard — taken while a save is on its way
@@ -33,7 +65,10 @@ unless the person's work is at risk: a change of theirs that the record's last
 save did not send (typed while it was on its way, while the steps after it ran,
 or since), a file on its way, changes set aside. Then it asks "Discard your
 changes?". Before a record's first save nothing typed is at risk, so a way out
-lets a change not saved go, as in 0.20.
+lets a change not saved go, as in 0.21.
+
+**Size:** `fieldia.js` is 197.2 KB gzipped (0.21: 176.9). A size pass is
+planned for the next release.
 
 ## 0.21.0 — 2026-10-15
 
