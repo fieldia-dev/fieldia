@@ -395,6 +395,20 @@ describe('generations: an answer lands only on the record it was started for', (
     expect(form.getState().values['ref']).toBe('');
   });
 
+  it('a call answering after its form was closed: its words are still said, nothing else lands, and the run stops quietly', async () => {
+    const ds = heldSource();
+    let answer!: (result: ActionResult) => void;
+    const said: string[] = [];
+    const host = { open: async () => ({ saved: false }), ask: async () => true, say: (message: string) => said.push(message) };
+    const form = await opened(ds, { host, onAction: () => new Promise<ActionResult>((resolve) => (answer = resolve)) });
+    const run = form.run([{ do: 'call', action: 'slow' }, { do: 'set', field: 'ref', value: "'after'" }]);
+    await tick();
+    form.dispose();
+    answer({ say: 'Payment P1 of EGP 50.00 posted', values: { ref: 'R-1' } });
+    expect(await run).toMatchObject({ done: false, reason: 'closed' });
+    expect(said).toEqual(['Payment P1 of EGP 50.00 posted']);
+  });
+
   it('a conflict’s Reload pressed while Keep mine’s save is on its way waits for it: the record shown is the one stored after it', async () => {
     const memory = createMemoryDataSource({ records: { lead: leads() }, versions: { by: 'Sara' } });
     let holding = false;

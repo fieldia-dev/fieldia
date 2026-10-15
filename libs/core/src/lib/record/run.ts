@@ -446,8 +446,15 @@ export function createRunner(form: RunForm) {
     }
     form.answered(request, answer);
     if (!answer) return null;
-    // Answered for a record no longer shown: nothing of it is laid over the one shown now.
-    if (form.generation() !== on) return form.gone();
+    // Answered for a record no longer shown: nothing of it is laid over the one shown now. Its words to the person are
+    // laid over no record, and are said still — a dialog's "Payment … posted", answered as it closed, as before.
+    if (form.generation() !== on) {
+      if (answer.say !== undefined) {
+        const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
+        form.host?.say(said.message, said.tone ?? 'info');
+      }
+      return form.gone();
+    }
     // The server's record first, then what the app says over it.
     if (answer.reload) {
       const reloaded = await ownMove(scope, () => form.reload(scope.chain));
