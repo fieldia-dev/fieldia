@@ -160,3 +160,69 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: Ctrl+Enter with a box still type
     expect(record()['area']).toBe(12.5);
   });
 });
+
+describe.each(['en', 'ar', 'fr'] as const)('%s: autosave while a box is typed in', (locale) => {
+  /** Autosave's pause, moved by hand. */
+  function handClock() {
+    let now = 0;
+    let next = 0;
+    const timers = new Map<number, { at: number; run: () => void }>();
+    return {
+      setTimeout: (run: () => void, ms: number) => (timers.set(++next, { at: now + ms, run }), next),
+      clearTimeout: (handle: unknown) => void timers.delete(handle as number),
+      advance(ms: number) {
+        now += ms;
+        for (const [id, timer] of [...timers].sort((a, b) => a[1].at - b[1].at))
+          if (timer.at <= now) {
+            timers.delete(id);
+            timer.run();
+          }
+      },
+    };
+  }
+  async function mountSaving() {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { ...saved } } } });
+    const host = document.createElement('div');
+    if (locale === 'ar') host.dir = 'rtl';
+    document.body.append(host);
+    const clock = handClock();
+    handle = mountViewer(host, { page: page('fields'), dataSource, recordId: 1, locale, autosave: { delayMs: 800 }, scheduler: clock });
+    await handle.form.settled();
+    return { host, form: handle.form, clock, record: () => dataSource.records['project'][1] };
+  }
+
+  it('never reads a number under the keys ("12." of "12.5"), nor says it is wrong; it saves once the box is left', async () => {
+    const { host, form, clock, record } = await mountSaving();
+    const area = box(host, 'f-area');
+    enter(area);
+    keys(area, locale === 'fr' ? '12,' : '12.');
+    clock.advance(800);
+    await form.settled();
+    clock.advance(800);
+    await form.settled();
+    expect(area.value).toBe(locale === 'fr' ? '12,' : '12.');
+    expect(errorOf(host, 'f-area')?.textContent ?? '').toBe('');
+    expect(form.getState().unread['area']).toBeUndefined();
+    expect(record()['area']).toBe(120);
+    keys(area, '5');
+    area.blur();
+    clock.advance(800);
+    await form.settled();
+    expect(record()['area']).toBe(12.5);
+  });
+
+  it('never trims a word’s space under the keys: "Office " goes on to "Office Park"', async () => {
+    const { host, form, clock, record } = await mountSaving();
+    const name = box(host, 'f-name');
+    enter(name);
+    keys(name, 'Office ');
+    clock.advance(800);
+    await form.settled();
+    keys(name, 'Park');
+    expect(name.value).toBe('Office Park');
+    name.blur();
+    clock.advance(800);
+    await form.settled();
+    expect(record()['name']).toBe('Office Park');
+  });
+});

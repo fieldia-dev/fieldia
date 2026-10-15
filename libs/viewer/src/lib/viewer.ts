@@ -1913,11 +1913,31 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function commitTyping() {
     const active = doc.activeElement;
     if (!active || !root.contains(active)) return;
-    // A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take.
-    const typedIn = active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && !NOT_TYPED.has((active as HTMLInputElement).type));
-    if (typedIn) active.dispatchEvent(new Event('change', { bubbles: true }));
+    if (typedBox(active)) active.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  cleanups.push(form.settling(commitTyping));
+  /** A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take. */
+  const typedBox = (box: Element) => box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type));
+  /**
+   * The box typed in since it last read what it holds (a change: Enter, or the box left): autosave, which nobody
+   * pressed, waits while the focus is still in it, and never reads "12." of "12.5" or "Office " of "Office Park" under
+   * the person's keys.
+   */
+  let typedIn: Element | null = null;
+  const onTyped = (event: Event) => {
+    if (event.target instanceof Element && typedBox(event.target)) typedIn = event.target;
+  };
+  const onRead = (event: Event) => {
+    if (event.target === typedIn) typedIn = null;
+  };
+  root.addEventListener('input', onTyped, true);
+  root.addEventListener('change', onRead, true);
+  root.addEventListener('focusout', onRead, true);
+  cleanups.push(() => {
+    root.removeEventListener('input', onTyped, true);
+    root.removeEventListener('change', onRead, true);
+    root.removeEventListener('focusout', onRead, true);
+  });
+  cleanups.push(form.settling(commitTyping, () => !!typedIn && typedIn === doc.activeElement && root.contains(typedIn)));
 
   /** The fields Enter can move between: on this page, shown, with a box to type or choose in, outside tables of lines. */
   function nextField(from: HTMLElement): HTMLElement | null {
