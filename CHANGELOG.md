@@ -102,6 +102,32 @@
   "1.5", 12.3 of "12.34") is never saved; what does not read is refused with
   its words under its box. Every form has `settling(read)`, for a box that
   reads its text as it is left to say how to read it now, and `settle()`.
+- **Every way a value is committed reads every kind of box.** A link, tags
+  of links, a reference, a path and a choice typed by name are read by
+  Ctrl+Enter, Save, a step, the pager and the app's own save while their
+  name is still being looked up: the save waits for it and saves the record
+  it names, or refuses with "nothing is called …", never saving the one it
+  was replacing. A place's coordinate that does not read stops the save
+  (never a place saved half new), and so does JSON in a code editor that does
+  not parse. A reader may return what it waits for: `settle()` resolves once
+  it ends, and `reading()` says it still waits. The whole table is
+  docs/plans/input-rules.md.
+- **Autosave never reads a box under the person's keys.** It waits while a
+  box is still being typed in, and saves once it is left or Enter is pressed:
+  "12." on its way to "12.5" is never refused mid-number, "Office " never
+  trimmed before "Park". `settling(read, typing)` takes whether a box is
+  still typed in.
+- **A paste or a drop where keys wait after a refused one joins them**, the
+  words said again: "ahmed " then a pasted "ali@example.com" is never
+  "ahmedali@example.com". An IME's text, a phone keyboard's keys and an
+  autocorrection wait with them too.
+- **The designer reads a setting still typed before it publishes**, and a
+  date it refuses is never refused in silence.
+- **A paste into the grid names why a cell was left**, in its box's words
+  ("Hours, line 1 (“6:3” could be 6:03 or 6:30; …)"); one character over its
+  most is said as one; a language added with `addLanguage` says a count of one
+  in its own words; a date filter and the plain date box say the time a day
+  leaves out.
 - **A phone number, an email and a colour's code hold the keys typed after a
   refused one**, as numbers and dates do: "+20 1oo 123 4567" is never the
   number "+20 1 123 4567", "ahmed ali@example.com" never
