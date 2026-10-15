@@ -549,8 +549,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A late answer's words said though its record is gone, and a closed form's run stopping quietly — 0.1 more
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
-// with the box-left call renamed boxLeft and unread text counted as unsaved work, JOIN_MEASURED measured — to JOIN_BUDGET.
-const BUDGET_KB = 9999;
+// with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
+const BUDGET_KB = 629.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -648,9 +648,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a save reading what is still typed first, keys held in every text box, a one-digit minute named, a count of one in
 // the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11). Every way a value is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
-// The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.15 measured, to 197.2 —
+// The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.2;
+const GZIP_BUDGET_KB = 197.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
