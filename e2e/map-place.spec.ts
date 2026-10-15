@@ -295,12 +295,16 @@ test('a scroll over the map scrolls the page and says how to zoom; Ctrl with it 
   await expect(map.locator('.fd-map-veil')).toHaveText('Use Ctrl + scroll to zoom the map');
   await expect(map.locator('.fd-map-veil')).toHaveAttribute('data-show', '');
   expect(await zoomOf(map)).toBe(zoom);
-  const now = await at(map, 0.5, 0.5);
-  await page.mouse.move(now.x, now.y);
-  await page.keyboard.down('Control');
-  await page.mouse.wheel(0, -300);
-  await page.keyboard.up('Control');
-  await expect.poll(() => zoomOf(map)).toBeGreaterThan(zoom);
+  // Ctrl with the wheel zooms. Playwright's WebKit now and then drops one synthetic wheel (it passed and failed on the
+  // same commit): the gesture is made again until the map answers it, a few seconds at most.
+  await expect(async () => {
+    const now = await at(map, 0.5, 0.5);
+    await page.mouse.move(now.x, now.y);
+    await page.keyboard.down('Control');
+    await page.mouse.wheel(0, -300);
+    await page.keyboard.up('Control');
+    await expect.poll(() => zoomOf(map), { timeout: 1500 }).toBeGreaterThan(zoom);
+  }).toPass({ timeout: 8000 });
 });
 
 test('map images overlap their neighbours by a pixel, so no hairline shows between them at 125%', async ({ page }) => {
