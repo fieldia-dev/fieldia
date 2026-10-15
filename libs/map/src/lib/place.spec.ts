@@ -148,6 +148,34 @@ describe('a place kept in two number fields', () => {
     widget.destroy?.();
   });
 
+  it('keeps the coordinate that reads as typed while the other is still to come: never wiped by its half place', async () => {
+    const form = createForm({ page: { ...page, data: { kind: 'record', model: 'site' } } as Page, dataSource: createMemoryDataSource({ records: { site: { 1: { lat: null, lng: null } } } }), recordId: 1 });
+    await form.load();
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'lat', field: page.fields['lat'] as Field, node, id: 'fd-site', document }, widgets);
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['lat'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    const [lat, lng] = [input('Latitude'), input('Longitude')];
+    lat.focus();
+    lat.value = '30.0444';
+    // Left for the longitude's box, still empty: no place yet, said, and the latitude typed stays in its box.
+    lat.dispatchEvent(new Event('change'));
+    lng.focus();
+    // The page drawn again as the box is left (the field's problem said, as the viewer does).
+    form.leave('lat');
+    refresh();
+    expect(form.getState().unread['lat']?.message).toBe('Longitude: a number from -180 to 180');
+    expect(lat.value).toBe('30.0444');
+    expect(lat.getAttribute('aria-invalid')).toBe('false');
+    lng.value = '31.23';
+    lng.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(form.getState().values).toMatchObject({ lat: 30.0444, lng: 31.23 });
+    expect(form.getState().unread).toEqual({});
+    widget.destroy?.();
+  });
+
   it('read-only: its tools go and its coordinates cannot be typed in', () => {
     const { setReadonly } = mount();
     setReadonly(true);

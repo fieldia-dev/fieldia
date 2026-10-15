@@ -112,6 +112,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
      * refuse it — never a place saved half new, the new latitude with the old longitude.
      */
     let left: [string | null, string | null] = [null, null];
+    /** Which of the two boxes does not read: the other, kept as typed beside it, is not marked. */
+    let wrong: [boolean, boolean] = [false, false];
     const unread = () => form.getState().unread?.[name];
     /** Why a coordinate typed is none: no number in its range (or none, beside the other). */
     const why = (i: number, value: number | null): string | null => {
@@ -122,6 +124,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     /** The text left unread let go: a place set since, or the boxes put right. */
     const letGo = () => {
       left = [null, null];
+      wrong = [false, false];
       if (unread()) form.setUnread(name, null);
     };
     const typed = () => {
@@ -141,7 +144,10 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       if (words[0] || words[1]) {
         // Kept as typed, marked, with why: in the note under the map, and in the form, whose save refuses it.
         say(words[0] ?? words[1], 'error');
-        left = [words[0] ? texts[0] : null, words[1] ? texts[1] : null];
+        // Both boxes stay as typed while the place does not read: a coordinate that reads is never put back, under the
+        // other still to come, by the place the field held ("30.0444" typed, then the longitude's box entered).
+        left = [texts[0], texts[1]];
+        wrong = [!!words[0], !!words[1]];
         form.setUnread(name, { text: `${texts[0]} ${texts[1]}`.trim(), message: (words[0] ?? words[1]) as string });
         return;
       }
@@ -384,7 +390,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         const kept = left[i];
         input.value = kept ?? (n === undefined ? '' : String(n));
         checks[i].accept();
-        input.setAttribute('aria-invalid', String(kept !== null));
+        input.setAttribute('aria-invalid', String(kept !== null && wrong[i]));
       });
     };
 
@@ -414,7 +420,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         for (const input of [lat, lng]) input.readOnly = readonly;
         const target = found?.input ?? lat;
         // The latitude's box, when it is the one the field's label names, stays marked while its text is unread.
-        target.setAttribute('aria-invalid', String(state.invalid || (target === lat && left[0] !== null && !!unread())));
+        target.setAttribute('aria-invalid', String(state.invalid || (target === lat && wrong[0] && !!unread())));
         target.setAttribute('aria-required', String(state.required));
         if (state.describedBy) target.setAttribute('aria-describedby', state.describedBy);
         else target.removeAttribute('aria-describedby');
