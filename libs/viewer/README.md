@@ -168,7 +168,10 @@ a moment does”). The viewer is their host: it draws what they ask for.
   said too.
 - **A question** is the viewer's own box (Cancel, OK) or your `confirm`. A
   button's `confirm` is asked once, by the form. Escape answers No and leaves
-  a dialog or panel under it open.
+  a dialog or panel under it open. Your own `host.ask` gets every question,
+  and the one check's “Discard your changes?” comes with `{ discard: true }`
+  (a panel's Escape and × among them): word its Yes as Discard and put the
+  focus on Cancel, as the viewer's own box does.
 - **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
   steps — as for a tab a person picks.
 - **A button** whose steps run is busy (`aria-busy`, a turning ring) and is not

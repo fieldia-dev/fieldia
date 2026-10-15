@@ -23,14 +23,17 @@ Its section is written in full in the commit that sets the version. Known now:
 breadcrumb, a dialog's Escape, × or Discard — taken while a save is on its way
 now waits for that save before it goes, the page saying what it waits for. For
 an app that uses none of 0.21's new data source members this is the one
-deliberate change in how a way out goes: it keeps the save's answer from
-landing on whatever record the form shows by then, which wrote one record's
-values over another's. With no save on its way, a way out goes at once as in
-0.20, and asks "Discard your changes?" only about a change of the person's that
-the record's last save did not send. For the same reason, a run of steps whose
-record is replaced by anything but its own steps (an `onAction` that opens
-another record itself, say) stops before its next step: answer `{ record }`
-instead, and the steps after it go on with that record.
+deliberate change: it keeps the save's answer from landing on whatever record
+the form shows by then, which wrote one record's values over another's. The
+same race is why a run of steps whose record is replaced by anything but its
+own steps (an `onAction` that opens another record itself, say) now stops
+before its next step: answer `{ record }` instead, and the steps after it go on
+with that record. With no save on its way, a way out goes at once, as in 0.20,
+unless the person's work is at risk: a change of theirs that the record's last
+save did not send (typed while it was on its way, while the steps after it ran,
+or since), a file on its way, changes set aside. Then it asks "Discard your
+changes?". Before a record's first save nothing typed is at risk, so a way out
+lets a change not saved go, as in 0.20.
 
 ## 0.20.0 — 2026-10-13
 

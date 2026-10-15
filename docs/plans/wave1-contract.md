@@ -364,10 +364,12 @@ change not saved (a panel's Escape, as always); `leave({ discard: true })` is
 the person's own Discard: it waits like any way out, and asks nothing.
 
 **For an app with none of 0.21's new members:** with no save on its way, every
-way out behaves as in 0.20 until a save of the record leaves a change of the
-person's behind. **The one deliberate change:** a way out taken while a save is
-on its way now waits for that save. That is what keeps one record's values
-from being written over another's.
+way out behaves as in 0.20 until the person has a change the record's last save
+did not send — typed while it was on its way, while the steps after it ran, or
+since. Before the record's first save, nothing typed is at risk. **The one
+deliberate change:** a way out taken while a save is on its way now waits for
+that save. That is what keeps one record's values from being written over
+another's.
 
 **Every API that replaces or abandons a form's values, and its route.** Each
 row has a unit test that fails without the check (core
@@ -425,3 +427,21 @@ dialog, panel or page in place it was made in — Discard, Escape, ×, Back, a
 Removed with round 5: `taking`, the runs set and each run's `saved` flag, and
 the `lastSent` of a page of answers. `state.unsent` is worked out on every
 change from the record as last saved; nothing else keeps it.
+
+**Checked once by mutation** (lane w1-serial): the check taken out of one
+route at a time, and the core and viewer save-safety specs run against it. At
+least one test failed for every route: rows 1 and 17 (`openRecord`, 19
+tests), 2, 3, 9/18/25 (`loadAgain`), 10, 11/30, 12, 13, 14/15 (the check
+before the copy), 8 (the record's check for a saved form placed in it), 16
+(a delete the app's action refuses keeps the work), 21 (the pager, with both
+its own `leave()` and `openRecord`'s check taken out: each alone is enough),
+23, 24, 27/28, 29 (Discard waiting; a page of answers sent reporting saved),
+32, 34, 35, and a panel's Escape counting every change. So did each part of
+the design: waiting for the save on its way, a second way out joining that
+wait, a save's answer and a `call`'s answer dropped for a replaced record, a
+run stopping on one, a reset during a save landing as stored, work at risk
+told against the last finished save, the next record starting with none, and
+a file landing late counted. The one line no test notices is a saved form's
+own `close` handing to the record's: the form placed in a record is made with
+the record's host, and its check is the record's already (row 8), so either
+way it closes through the same check.
