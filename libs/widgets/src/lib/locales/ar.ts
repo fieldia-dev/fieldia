@@ -226,6 +226,7 @@ export const ar: WidgetLabels = {
   pastedCellsOne: 'لُصق في خلية واحدة.',
   notPastedCells: 'لم يُلصق في: {cells}',
   cellName: '{column}، السطر {n}',
+  notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'في الجدول {n} من الأسطر فقط، فلم يُلصق الباقي',
   pasteBeyondLinesOne: 'في الجدول سطر واحد فقط، فلم يُلصق الباقي',
   enterNumber: 'أدخل رقمًا',

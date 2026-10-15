@@ -322,6 +322,8 @@ export interface WidgetLabels {
   pastedCellsOne: string;
   notPastedCells: string;
   cellName: string;
+  /** A cell named in a paste's note, with why it did not take what was pasted: its box's own words. */
+  notPastedWhy: string;
   pasteBeyondLines: string;
   pasteBeyondLinesOne: string;
   /** A list's filter box waiting for its value. */
@@ -557,6 +559,7 @@ const en: WidgetLabels = {
   pastedCellsOne: 'Pasted into {n} cell.',
   notPastedCells: 'Not pasted: {cells}',
   cellName: '{column}, line {n}',
+  notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'Only {n} lines are here, so the rest was not pasted',
   pasteBeyondLinesOne: 'Only {n} line is here, so the rest was not pasted',
   enterNumber: 'Enter a number',

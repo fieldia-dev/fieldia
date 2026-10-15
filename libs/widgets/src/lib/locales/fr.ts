@@ -226,6 +226,7 @@ export const fr: WidgetLabels = {
   pastedCellsOne: 'Collé dans {n} cellule.',
   notPastedCells: 'Non collé : {cells}',
   cellName: '{column}, ligne {n}',
+  notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'Il n’y a que {n} lignes : le reste n’a pas été collé',
   pasteBeyondLinesOne: 'Il n’y a que {n} ligne : le reste n’a pas été collé',
   enterNumber: 'Saisissez un nombre',
