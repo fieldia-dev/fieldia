@@ -1,5 +1,5 @@
 import { readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Form, type Locale, type Value } from '@fieldia/core';
-import { minuteDigitsWords, quoted } from './input-rules';
+import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
 import { fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import type { WidgetFactory } from './widgets';
@@ -184,6 +184,8 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
     Object.assign(input, { type: 'text', id, className: `fd-input fd-${kind}`, autocomplete: 'off', placeholder: node.placeholder || dateShape(kind, order, wordsFor(labels, locale)) });
     const unread = () => form.getState().unread?.[name];
     const atRest = () => unread()?.text ?? restingText(form.getState().values[name], kind, locale);
+    // A day and time where a day goes: the day is taken, and the time it leaves out said under the box, never in silence.
+    const hint = refusalHint(input);
     input.addEventListener('focus', () => {
       if (!unread() && !input.readOnly) input.value = typingText(form.getState().values[name], kind, order, locale);
     });
@@ -192,7 +194,12 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
       if (read.ok) {
         if ((form.getState().values[name] ?? null) !== read.value) form.setValue(name, read.value);
         if (unread()) form.setUnread(name, null);
-      } else form.setUnread(name, { text: input.value, message: read.words });
+        if (read.timeLeftOut) hint.show(fillIn(wordsFor(labels, locale).timeLeftOut, { label: reader.label, time: read.timeLeftOut }));
+        else hint.hide();
+      } else {
+        hint.hide();
+        form.setUnread(name, { text: input.value, message: read.words });
+      }
     });
     input.addEventListener('blur', () => {
       input.value = atRest();
@@ -205,7 +212,7 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
         if (!typing) input.value = atRest();
         input.readOnly = state.readonly;
         setAttr(input, 'aria-invalid', String(state.invalid || (!!unread() && !typing)));
-        setAttr(input, 'aria-describedby', state.describedBy || null);
+        setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
       },
     };
   };
