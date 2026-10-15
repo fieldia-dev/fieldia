@@ -1,6 +1,7 @@
-import { workAtRisk, type OpenRequest, type OpenResult, type Page, type PostedMessage, type Tone, type Values } from '@fieldia/core';
+import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
 import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { stayed } from './discard';
+import type { Breadcrumb } from './record-bar';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
 
@@ -23,6 +24,10 @@ export interface Opener {
   post(message: PostedMessage): Promise<boolean>;
   /** This record's name, for the crumb a page opened in its place goes back by. */
   name(): string;
+  /** This record's one check (`form.leave()`): the app's own breadcrumbs inside a page opened in its place leave this record too. */
+  leave(): Promise<boolean>;
+  /** Whether that check lets this record go at once (`form.leaveNow()`). */
+  leaveNow(): boolean;
 }
 
 /**
@@ -97,18 +102,20 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       if (from?.isConnected) from.focus();
       resolve({ saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values });
     };
+    // Its form's one check first: it waits for a save on its way and files on theirs, then asks about what is at risk.
     const endChecked = async (saved: boolean) => {
       if (done) return;
-      // Nothing at risk: back at once, as it always was.
-      if (!workAtRisk(opened.form.getState())) return end(saved);
-      if (await opened.form.leave()) end(saved);
+      // Nothing to wait for and nothing at risk: back at once, as it always was.
+      if (opened.form.leaveNow()) return end(saved);
+      if ((await opened.form.leave()) && !done) end(saved);
     };
     /** The saves made in it, and as many as there were when the person last chose to stay: a save they were asked about does not ask again as it settles. */
     let saves = 0;
     let stayedAt = -1;
     root.hidden = true;
-    // Where the app keeps a trail, this record joins it as the way back.
-    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => void endChecked(false) }] : undefined;
+    // Where the app keeps a trail, this record joins it as the way back. The app's own crumbs leave this record too: each
+    // goes through its check as well, once this page's own let go (the bar over it asks that first).
+    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs.map((crumb) => throughOpener(opener, crumb, doc)), { label: opener.name(), open: () => void endChecked(false) }] : undefined;
     // Its form takes this close once, its one check before it: a `close` step returns once nothing is at risk, or let go.
     const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
     opened.on('run', ({ result }) => {
@@ -131,4 +138,17 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     opened.on('send', leave);
     (focusField(opened.element) ?? opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();
   });
+}
+
+/**
+ * One of the app's breadcrumbs, inside a page opened in a record's place: it leaves that record as well, so it goes
+ * through the record's one check too, once the page's own let go. An address goes as it would have; another tab or a
+ * click with a key held leaves both pages as they are.
+ */
+function throughOpener(opener: Opener, crumb: Breadcrumb, doc: Document): Breadcrumb {
+  const go = () => {
+    if (crumb.open) crumb.open();
+    else if (crumb.href !== undefined) doc.defaultView?.location.assign(crumb.href);
+  };
+  return { ...crumb, open: () => (opener.leaveNow() ? go() : void opener.leave().then((yes) => yes && go())) };
 }

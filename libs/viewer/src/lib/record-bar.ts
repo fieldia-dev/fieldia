@@ -1,4 +1,4 @@
-import { workAtRisk, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
+import type { Form, MenuItem, RecordId, RecordToolbar, RunResult } from '@fieldia/core';
 import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -79,25 +79,28 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
       {},
       ...trail.map((crumb) => {
         const link = crumb.href !== undefined ? el('a', { class: 'fd-crumb', href: crumb.href }, crumb.label) : el('button', { type: 'button', class: 'fd-crumb' }, crumb.label);
-        // The app's way back, through the form's one check: at once with nothing at risk, as always; else asked first.
+        // The app's way back, through the form's one check — which waits for a save on its way, and asks only about
+        // work at risk — then the app's own way, or the address in this tab. A link opened in another tab, or with a
+        // key held, leaves the form as it is: the browser's.
         const plain = (event: Event) => {
           const click = event as MouseEvent;
           return !click.button && !click.ctrlKey && !click.metaKey && !click.shiftKey && !click.altKey;
         };
-        if (crumb.open) {
-          link.addEventListener('click', (event) => {
+        link.addEventListener('click', (event) => {
+          if (crumb.href !== undefined && !plain(event)) return;
+          // Nothing to wait for and nothing at risk: at once, as always — an address followed as the browser follows it.
+          if (context.form.leaveNow()) {
+            if (!crumb.open) return;
             event.preventDefault();
-            if (!workAtRisk(context.form.getState())) return void crumb.open?.();
-            void context.form.leave().then((yes) => yes && crumb.open?.());
+            return crumb.open();
+          }
+          event.preventDefault();
+          void context.form.leave().then((yes) => {
+            if (!yes) return;
+            if (crumb.open) crumb.open();
+            else if (crumb.href !== undefined) context.doc.defaultView?.location.assign(crumb.href);
           });
-        } else if (crumb.href !== undefined) {
-          // An address in this tab leaves the form: asked first when work is at risk. Another tab leaves it as it is.
-          link.addEventListener('click', (event) => {
-            if (!plain(event) || !workAtRisk(context.form.getState())) return;
-            event.preventDefault();
-            void context.form.leave().then((yes) => yes && context.doc.defaultView?.location.assign(crumb.href as string));
-          });
-        }
+        });
         return el('li', {}, link);
       }),
       el('li', {}, current)

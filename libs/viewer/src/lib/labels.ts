@@ -18,6 +18,15 @@ export interface ViewerLabels {
   savingAfterFiles: string;
   sendingAfterFile: string;
   sendingAfterFiles: string;
+  /**
+   * A way out — another record, a close, a reload — waiting before it checks the person's work: for the save on its
+   * way, or for files still on theirs (one, or `{n}`).
+   */
+  leaveAfterSave: string;
+  leaveAfterFile: string;
+  leaveAfterFiles: string;
+  /** Done pressed with work of the person's not saved — a change set aside, a file no save sent: the form stays editable, and says so. */
+  notAllSaved: string;
   submit: string;
   next: string;
   back: string;
@@ -217,6 +226,10 @@ const en: ViewerLabels = {
   savingAfterFiles: '{n} files still uploading. Saving when they are done.',
   sendingAfterFile: '1 file still uploading. Sending when it is done.',
   sendingAfterFiles: '{n} files still uploading. Sending when they are done.',
+  leaveAfterSave: 'Waiting for the save to finish…',
+  leaveAfterFile: '1 file still uploading. Waiting for it to finish.',
+  leaveAfterFiles: '{n} files still uploading. Waiting for them to finish.',
+  notAllSaved: 'Not all your changes are saved.',
   submit: 'Submit',
   next: 'Next',
   back: 'Back',

@@ -1,4 +1,4 @@
-import { workAtRisk, type LeaveHow, type PageLook, type PanelSide, type RecordId, type RelatedRecord, type Theme, type Values } from '@fieldia/core';
+import type { LeaveHow, PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
@@ -7,6 +7,7 @@ import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 import { headPart, partsFor } from './viewer-parts';
+import { waitWords } from './waiting';
 
 /**
  * A page in a dialog: a new related record, a line to edit, a quick task. The
@@ -184,6 +185,10 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   const own = footer.map((node) => ({ node, button: make('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, node.label) }));
   for (const { node, button } of own) if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
   if (!headed) box.querySelector('.fd-form-dialog-foot')?.append(...(own.length ? own.map((b) => b.button) : [discard, saveClose]));
+  // What a way out waits for — the save on its way, files on theirs — said at its foot (a head of its own: under it).
+  const waiting = make('div', { class: 'fd-status fd-dialog-waiting', role: 'status', 'aria-live': 'polite', hidden: '' });
+  if (headed) box.append(waiting);
+  else box.querySelector('.fd-form-dialog-foot')?.prepend(waiting);
   const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}${options.backdrop === 'clear' ? ' fd-backdrop-clear' : ''}` });
   backdrop.append(box);
   // The panel this one opens over steps back while it is open.
@@ -221,6 +226,13 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   };
   mayEdit();
   handle.form.subscribe(mayEdit);
+  const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
+  const sayWaiting = () => {
+    const words = waitWords(handle.form.getState(), labels, options.page.data.kind === 'responses', fill);
+    if (waiting.textContent !== words) waiting.textContent = words;
+    waiting.hidden = !words;
+  };
+  handle.form.subscribe(sayWaiting);
   if (maximise) kit?.wireMaximise(box, maximise, labels, doc);
   if (grip) kit?.wireGrip(box, grip, doc);
   let done = false;
@@ -253,16 +265,17 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       resolve(result);
     };
     /**
-     * Close once the form's one check lets its values go (`form.leave()`): asked "Discard your changes?" when the
-     * person's work is at risk, and kept, the dialog open, on Cancel. Escape and × in a panel, or a dialog round a page
-     * with a head, count every change not saved, as they always have; any other dialog closes at once on a change not
-     * saved, as it always has.
+     * Close once the form's one check lets its values go (`form.leave()`): it waits for a save on its way and files on
+     * theirs — the dialog saying so — then asks "Discard your changes?" when the person's work is at risk, and keeps the
+     * dialog open on Cancel. Escape and × in a panel, or a dialog round a page with a head, count every change not
+     * saved, as they always have; any other dialog closes on a change not saved, as it always has. Discard asks
+     * nothing, but waits too: a save that went through meanwhile closes it saved.
      */
     const closeChecked = async (saved: boolean, how?: LeaveHow): Promise<void> => {
       if (done) return;
-      // Nothing at risk: closed at once, as it always has been.
-      if (!workAtRisk(handle.form.getState(), how)) return close(saved);
-      if (await handle.form.leave(how)) close(saved);
+      // Nothing to wait for and nothing at risk: closed at once, as it always has been.
+      if (handle.form.leaveNow(how)) return close(saved);
+      if ((await handle.form.leave(how)) && !done) close(saved);
     };
     const leave = () => closeChecked(false, panel || headed ? { changes: true } : undefined);
     saveClose.addEventListener('click', async () => {
@@ -275,7 +288,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       if (accepted) await closeChecked(true);
     });
     // Discard is the person's own answer: no question.
-    discard.addEventListener('click', () => close(false));
+    discard.addEventListener('click', () => void closeChecked(false, { discard: true }));
     // A footer button runs its steps; once they saved or sent, the dialog closes with the answers.
     let saved = false;
     handle.on('save', () => (saved = true));

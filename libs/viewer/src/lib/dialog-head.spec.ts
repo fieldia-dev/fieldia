@@ -91,6 +91,8 @@ describe('a large popup round a page with a head', () => {
     const question = dialog().querySelector('[role="alertdialog"]') as HTMLElement;
     expect(question.textContent).toContain('Discard your changes?');
     (question.querySelector('button') as HTMLButtonElement).click();
+    // The answer heard, the check is over: × is a way out of its own, asked again.
+    await flush();
     expect(dialog()).not.toBeNull();
     (dialog().querySelector('.fd-head-window button[aria-label="Close"]') as HTMLButtonElement).click();
     await flush();

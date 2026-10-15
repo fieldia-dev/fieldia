@@ -68,6 +68,7 @@ import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
+import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
@@ -347,6 +348,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           say: (message, tone) => actionHost.say(message, tone),
           post: (message) => form.post(message),
           name: () => recordName() || labels.newRecord,
+          leave: () => form.leave(),
+          leaveNow: () => form.leaveNow(),
         },
         request
       ),
@@ -1340,22 +1343,26 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /** The whole form locked: every field read-only, no Save; buttons still run. */
   let locked = options.readonly === true;
-  // Edit unlocks; Done saves what changed first, and locks only once that is saved.
+  // Edit unlocks; Done saves what changed first — a file on its way too, which the save waits for — and locks only once
+  // nothing of the person's is left unsaved.
   const editSwitch = options.editSwitch ? el('button', { type: 'button', class: 'fd-button fd-edit-switch' }) : null;
   editSwitch?.addEventListener('click', async () => {
     if (!locked) {
-      if (form.getState().dirty.length) {
+      const now = form.getState();
+      const saving = now.dirty.length > 0 || (now.uploads ?? []).some(uploadGoing);
+      if (saving) {
         const saved = await form.save();
         if (!saved) {
           if (!form.getState().saveProblem) announce(checkText(form.getState()));
           focusFirstProblem();
           return;
         }
-        // Changed while it saved: still being edited, and said, so nothing unsaved is locked away unseen.
-        if (workAtRisk(form.getState())) {
-          announce(labels.savedNotAll);
-          return;
-        }
+      }
+      // Work at risk — changed while it saved, a change set aside, a file no save sent — keeps it editable, and is
+      // said, so nothing unsaved is locked away unseen.
+      if (workAtRisk(form.getState())) {
+        announce(saving ? labels.savedNotAll : labels.notAllSaved);
+        return;
       }
       locked = true;
     } else locked = false;
@@ -1405,12 +1412,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
-  /** A save waiting for files still on their way: how many, said where Saving… would be. Save waits, and says why. */
+  /**
+   * A save waiting for files still on their way: how many, said where Saving… would be. Save waits, and says why. A way
+   * out waiting for the save on its way, or for files on theirs, before it checks the person's work, says so too.
+   */
   function waitingFor(state: FormState): string {
-    const going = state.status === 'saving' ? (state.uploads ?? []).filter(uploadGoing).length : 0;
-    if (!going) return '';
-    const sending = page.data.kind === 'responses';
-    return fill(going === 1 ? (sending ? labels.sendingAfterFile : labels.savingAfterFile) : sending ? labels.sendingAfterFiles : labels.savingAfterFiles, { n: going });
+    return waitWords(state, labels, page.data.kind === 'responses', fill);
   }
   /** Saved, or sent — or not all of it: never "Saved" while a change of the person's is still to save, or a file on its way. */
   const savedWords = () => (!workAtRisk(form.getState()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
@@ -2202,7 +2209,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           close(false);
         } else keepTabIn(dialog, event);
       });
-      root.append(backdrop);
+      // Asked where it is seen: over a page opened in this one's place (its breadcrumb leaving this record), in that one.
+      const over = root.hidden ? [...(root.parentElement?.children ?? [])].reverse().find((child): child is HTMLElement => child !== root && child.matches('form.fd-form') && !(child as HTMLElement).hidden) : undefined;
+      (over ?? root).append(backdrop);
       (how.safe && withCancel ? cancel : ok).focus();
     });
   }
