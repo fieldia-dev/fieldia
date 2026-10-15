@@ -1211,7 +1211,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const editSwitch = options.editSwitch ? el('button', { type: 'button', class: 'fd-button fd-edit-switch' }) : null;
   editSwitch?.addEventListener('click', async () => {
     if (!locked) {
-      if (form.getState().dirty.length) {
+      // What is still typed is read first (a name being looked up, waited for): Done never locks a record over text
+      // that is not saved.
+      const waiting = form.settle();
+      if (form.reading()) await waiting;
+      if (form.getState().dirty.length || Object.keys(form.getState().unread).length) {
         const saved = await form.save();
         if (!saved) {
           if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -1391,8 +1395,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       async leave() {
-        // What is still typed is read first: text that does not read keeps the record on screen, said, as a change does.
-        form.settle();
+        // What is still typed is read first (a name being looked up, waited for): text that does not read keeps the
+        // record on screen, said, as a change does.
+        const waiting = form.settle();
+        if (form.reading()) await waiting;
         if (!form.getState().dirty.length && !Object.keys(form.getState().unread).length) return true;
         const saved = await form.save();
         if (!saved) {
@@ -1464,9 +1470,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (list) {
       for (const step of node.children) {
         const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, step.label));
-        go.addEventListener('click', () => {
-          if (form.goTo(step.id)) focusStep();
-          else focusFirstProblem();
+        go.addEventListener('click', async () => {
+          if (form.goTo(step.id)) return focusStep();
+          // Refused while a name typed is still being looked up: once it is found, or not, it is asked again.
+          if (form.reading()) await form.settle();
+          if (form.reading() || !form.goTo(step.id)) return focusFirstProblem();
+          focusStep();
         });
         stepButtons.set(step.id, go);
         list.append(el('li', {}, go));
@@ -1498,8 +1507,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     };
     wizardForward = async () => {
       if (isLast()) return submitOrSave();
-      if (form.next()) focusStep();
-      else focusFirstProblem();
+      // What is still typed is read first (form.next): a step goes on with what the boxes show. Refused while a name
+      // typed is still being looked up, it waits for it, then asks again: the record it names, or why there is none.
+      if (form.next()) return focusStep();
+      if (form.reading()) await form.settle();
+      if (!form.reading() && form.next()) return focusStep();
+      focusFirstProblem();
     };
     function focusStep() {
       const current = panels.find((p) => p.step.id === form.getState().step);
@@ -1894,7 +1907,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /**
    * Text typed and not yet taken — a tag without its Enter, a number, a date or hours a box reads as it is left — is
    * taken now, as a change says to the box it is typed in. Every save, check and step forward of the form asks for it
-   * first (`form.settling`), whatever made it: Ctrl+Enter, a button's key, the app's own save.
+   * first (`form.settling`), whatever made it: Ctrl+Enter, a button's key, the app's own save. A box whose reading
+   * waits (a name looked up) gives the form its own reader too, which a save waits for.
    */
   function commitTyping() {
     const active = doc.activeElement;
