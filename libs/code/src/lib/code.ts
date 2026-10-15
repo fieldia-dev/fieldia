@@ -16,7 +16,10 @@ export { textCodeWidget } from './text-code';
  * works offline and loads only on pages that ask for it (`"widget": "code"` on
  * a json node, with `codeWidgets` passed to the viewer). Valid JSON reaches
  * the form as it is typed; text that is not valid is said so and kept, and the
- * last good value stays. Tab is left to move between fields.
+ * last good value stays — and the form keeps the text unread with where it goes
+ * wrong (`FormState.unread`), so a save made meanwhile is refused, never made
+ * with the last good value in place of what the editor shows. Tab is left to
+ * move between fields.
  */
 
 const show = (value: Value | undefined) => (value === null || value === undefined ? '' : JSON.stringify(value, null, 2));
@@ -80,6 +83,14 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   /** What the form holds, as last written or shown: an echo of it is not a change. */
   let known = JSON.stringify(form.getState().values[name] ?? null);
   let writing = false;
+  /** Whether the editor shows text that is not JSON, which the form keeps unread. */
+  let invalid = false;
+  const unreadNow = () => form.getState().unread?.[name];
+  /** Where the text stops being JSON, in words. */
+  const problemWords = (text: string) => {
+    const problem = jsonProblem(text);
+    return problem ? labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column)) : labels.invalidJson;
+  };
 
   const view = new EditorView({
     parent: element,
@@ -104,13 +115,17 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
           const parsed = read(text);
           clearTimeout(saying);
           if (parsed === undefined) {
-            // Said, and marked where it breaks, once typing pauses.
+            // Kept unread, with where it breaks: a save waits for it. Said, and marked there, once typing pauses.
+            invalid = true;
+            form.setUnread(name, { text, message: problemWords(text) });
             saying = setTimeout(() => say(jsonProblem(text)), SETTLE_MS);
             return;
           }
           queueMicrotask(() => say(null));
+          invalid = false;
           known = JSON.stringify(parsed);
           form.setValue(name, parsed);
+          if (unreadNow()) form.setUnread(name, null);
         }),
       ],
     }),
@@ -148,10 +163,12 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
       invalidByForm = state.invalid;
       view.contentDOM.setAttribute('aria-required', String(state.required));
       describe();
-      // A value from elsewhere (loaded, discarded) replaces the text; the echo of what was typed does not.
+      // A value from elsewhere (loaded, discarded) replaces the text; the echo of what was typed does not. Text that is not
+      // JSON stays while the form keeps it unread; let go (the record put back, saved), the value shows again.
       const incoming = JSON.stringify(state.value ?? null);
-      if (incoming === known) return;
+      if (incoming === known && !(invalid && !unreadNow())) return;
       known = incoming;
+      invalid = false;
       writing = true;
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: show(state.value) } });
       writing = false;

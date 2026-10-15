@@ -633,6 +633,16 @@ describe('JSON in VS Code’s editor', () => {
     expect(editor().input.getAttribute('aria-invalid')).toBe('false');
     expect(form.getState().values['script']).toEqual([]);
   });
+
+  it('keeps text that is not JSON unread, with where it breaks: a check made meanwhile refuses it', async () => {
+    const { arrive, editor, form } = await mount(pageWith('json'), { readers: 4 });
+    await arrive();
+    editor().type('{ "readers": ');
+    expect(form.validate()).toBe(false);
+    expect(form.getState().errors['script']).toBe('Not valid JSON: line 1, column 14');
+    editor().type('{ "readers": 6 }');
+    expect(form.validate()).toBe(true);
+  });
 });
 
 describe('language services, when the app gives workers', () => {

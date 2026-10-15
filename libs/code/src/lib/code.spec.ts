@@ -79,6 +79,18 @@ describe('JSON in a code editor', () => {
     expect(form.getState().values['settings']).toEqual([]);
   });
 
+  it('keeps text that is not JSON unread, with where it breaks: a save made meanwhile is refused, never made with the last good value', async () => {
+    const { view, form } = await mount();
+    replaceAll(view, '{ "badge_readers": 6, ');
+    expect(await form.save()).toBe(false);
+    expect(form.getState().errors['settings']).toBe('Not valid JSON: line 1, column 23');
+    expect(form.getState().values['settings']).toEqual({ badge_readers: 4, zones: ['reception'] });
+    // Put right, it is taken and saved.
+    replaceAll(view, '{ "badge_readers": 6 }');
+    expect(form.getState().unread['settings']).toBeUndefined();
+    expect(await form.save()).toBe(true);
+  });
+
   it('colours JSON as the other code editors do, readable in a dark scheme too, and reads left to right on an Arabic page', async () => {
     const { box } = await mount();
     const key = [...box.querySelectorAll('.cm-line span')].find((span) => span.textContent === '"badge_readers"');
