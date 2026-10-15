@@ -362,6 +362,8 @@ describe('an empty grid', () => {
     expect(box.querySelector('.fd-grid-empty')?.textContent).toBe('No lines yet');
     (box.querySelector('[data-add="line"]') as HTMLButtonElement).click();
     await frames();
+    // The grid starts editing when it has drawn the line, which a slow machine takes longer to do: waited for.
+    for (const end = Date.now() + 3000; !api?.getEditingCells().length && Date.now() < end; ) await frames();
     expect(formLines(form)).toHaveLength(1);
     expect(box.querySelector('.fd-grid-empty')).toBeNull();
     expect(api?.getEditingCells().map((c) => [c.rowIndex, c.column?.getColId()])).toEqual([[0, 'product_id']]);

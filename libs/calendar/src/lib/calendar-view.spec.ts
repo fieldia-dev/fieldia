@@ -27,7 +27,8 @@ async function mount(options: Partial<ViewerOptions> = {}, page: Page = clinicPa
   return host;
 }
 const cal = (host: Element) => host.querySelector('.fd-cal') as HTMLElement;
-const title = (host: Element) => host.querySelector('.fd-cal-title')?.textContent;
+/** The calendar's title, its range's dash read without the spaces around it: Intl puts them there or not by ICU version (CI's Node gives "12 – 18 Oct"). */
+const title = (host: Element) => host.querySelector('.fd-cal-title')?.textContent?.replace(/\s*–\s*/g, '–');
 const blocks = (host: Element) => [...host.querySelectorAll<HTMLElement>('.fd-cal-event')];
 const block = (host: Element, name: string) => blocks(host).find((b) => b.querySelector('.fd-cal-event-title')?.textContent === name) as HTMLElement;
 const button = (root: Element, words: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === words && !b.closest('[hidden]')) as HTMLButtonElement;
