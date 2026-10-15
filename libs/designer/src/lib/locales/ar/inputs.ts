@@ -8,6 +8,7 @@ export const inputs: DesignerWords['inputs'] = {
   settingMoreThan: (setting, min) => `${setting}: أكبر من ${min}`,
   settingFewer: (setting, n) => `${setting}: أقل من عدد الخيارات (${n})`,
   settingNeedsNumber: (setting) => `${setting}: يلزم رقم`,
+  settingDateRefused: (setting) => `${setting}: لا يقبل هذا التاريخ في هذه الصفحة`,
   settingStays: (value) => `تبقى القيمة ${value}.`,
   settingSetTo: (setting, min, max, value) => `${setting}: من ${min} إلى ${max}، فضُبط على ${value}`,
   formulaKept: (problem, formula) => `لم تُعتمد بعد: ${problem}. تبقى الصفحة على ${ltr(formula)}.`,

@@ -282,3 +282,22 @@ describe('set when, on a date', () => {
     expect((field(panel(), 'Set to') as HTMLInputElement).value).toBe('15 Oct 2026, 14:30');
   });
 });
+
+describe('a date the designer does not take', () => {
+  it.each(['en', 'ar'] as const)('%s: is never refused in silence, even when the designer names no reason', (locale) => {
+    const page = blankPage('screen', 'Visit');
+    const label = locale === 'ar' ? 'أول يوم' : 'Earliest day';
+    const made = settingDate(el, { words: DESIGNER_WORDS[locale], locale, getPage: () => page, getState: () => ({ issues: [] }) }, {
+      kind: 'date',
+      label,
+      saved: () => null,
+      commit: () => false,
+    });
+    const holder = document.createElement('div');
+    holder.append(made.input);
+    document.body.replaceChildren(holder);
+    retype(made.input, '15/10/2026');
+    expect(made.input.value).toBe('');
+    expect(hintOf(made.input)?.textContent).toBe(DESIGNER_WORDS[locale].inputs.settingDateRefused(label));
+  });
+});

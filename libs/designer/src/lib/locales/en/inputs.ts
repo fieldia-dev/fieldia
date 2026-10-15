@@ -11,6 +11,8 @@ export const inputs = {
   settingMoreThan: (setting: string, min: string | number) => `${setting} is more than ${min}`,
   settingFewer: (setting: string, n: number) => `${setting} is fewer than the ${n} options`,
   settingNeedsNumber: (setting: string) => `${setting} needs a number`,
+  /** A date the designer did not take, for a reason none of the above names. */
+  settingDateRefused: (setting: string) => `${setting} cannot be that date on this page`,
   /** After any of the above: what the page keeps meanwhile. */
   settingStays: (value: string | number) => `It stays ${value}.`,
   /** A setting brought into its range, and said so. */

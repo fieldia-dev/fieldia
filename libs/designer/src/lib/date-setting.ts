@@ -123,7 +123,8 @@ export function settingDate(el: ElementFactory, host: DateSettingHost, options: 
   /** A value (or none) kept and shown; refused by the designer, what is saved comes back, with why under the box. */
   const kept = (value: string | null) => {
     const done = value === (options.saved() ?? null) || options.commit(value) !== false;
-    if (!done) return keep(host.getState?.().issues[0]);
+    // Refused with no word of why from the designer: never in silence — that it was not taken, at least.
+    if (!done) return keep(host.getState?.().issues[0] ?? w.settingDateRefused(options.label));
     shown(focused() ? typing(value) : atRest(value));
     hint.hide();
     left = { text: input.value, said: null };
