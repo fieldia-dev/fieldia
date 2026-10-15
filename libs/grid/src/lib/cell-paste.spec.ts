@@ -1,5 +1,6 @@
 import type { LineField } from '@fieldia/core';
-import { blockOf, readPastedCell } from './cell-paste';
+import { WIDGET_LABELS } from '@fieldia/widgets';
+import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 
 /**
  * A block pasted on the grid's cells (FIELDIA INPUT RULES, 8), as a
@@ -88,5 +89,25 @@ describe('a block pasted on a table', () => {
     expect(readPastedCell(state, 'Lost', { locale: 'en' })).toBeNull();
     expect(readPastedCell({ type: 'char', label: 'Item' } as LineField, '‏Chair‏', { locale: 'en' })).toEqual({ value: 'Chair' });
     expect(readPastedCell({ type: 'many2one', label: 'Product', relation: 'product' } as LineField, 'Chair', { locale: 'en' })).toBeNull();
+  });
+});
+
+describe('why a cell did not take what was pasted', () => {
+  const hours = { type: 'float', label: 'Hours', min: 0 } as LineField;
+  it.each([
+    ['en', 'Hours: “⁨6:3⁩” could be 6:03 or 6:30; write the minutes with two digits', 'Start date takes a day only: the time 14:30 was left out', 'Seats: “⁨abc⁩” is not a number', 'Seats must be a whole number'],
+    ['fr', 'Hours : « ⁨6:3⁩ » peut être 6:03 ou 6:30 ; écrivez les minutes avec deux chiffres', 'Start date ne prend qu’un jour : l’heure 14:30 a été laissée de côté', null, null],
+  ] as const)('%s: is said in its box’s own words, as typing it and leaving says it', (locale, sixThree, timeLeft, notNumber, whole) => {
+    const reading = { locale, labels: WIDGET_LABELS[locale] };
+    expect(readPastedCell(hours, '6:3', { ...reading, widget: 'duration' })).toBeNull();
+    expect(whyNotPasted(hours, '6:3', { ...reading, widget: 'duration' })).toBe(sixThree);
+    const day = { type: 'date', label: 'Start date' } as LineField;
+    expect(readPastedCell(day, '13/10/2026 14:30', reading)).toBeNull();
+    expect(whyNotPasted(day, '13/10/2026 14:30', reading)).toBe(timeLeft);
+    if (notNumber) expect(whyNotPasted(integer, 'abc', reading)).toBe(notNumber);
+    if (whole) expect(whyNotPasted(integer, '1.5', reading)).toBe(whole);
+    expect(whyNotPasted({ type: 'selection', label: 'Stage', options: [{ value: 'a', label: 'Draft' }] } as LineField, 'Done', reading)).toContain('Done');
+    // A link is found by searching: nothing a paste can say of it.
+    expect(whyNotPasted({ type: 'many2one', label: 'Client', relation: 'partner' } as LineField, 'Acme', reading)).toBeNull();
   });
 });

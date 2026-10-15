@@ -209,13 +209,14 @@ describe('a block pasted on a chosen cell', () => {
       [3, 1890, 7560],
       [4, 100, 2280],
     ]);
-    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 3 cells. Not pasted: Unit price, line 1; Subtotal, line 1 Only 2 lines are here, so the rest was not pasted');
+    // Each named, and why where its box says why: a read-only cell is only named.
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 3 cells. Not pasted: Unit price, line 1 (Unit price: “⁨abc⁩” is not a number); Subtotal, line 1 Only 2 lines are here, so the rest was not pasted');
   });
 
   it('speaks the page’s language', async () => {
     const { box } = await chosen('ar');
     paste('abc');
-    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لم يُلصق في: Quantity، السطر 1');
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لم يُلصق في: Quantity، السطر 1 (Quantity: «⁨abc⁩» ليس رقمًا)');
   });
 
   it('counts one cell as one, in the page’s language: never “1 cells”', async () => {

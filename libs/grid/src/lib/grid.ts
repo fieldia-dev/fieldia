@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { blockOf, readPastedCell } from './cell-paste';
+import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 import {
   cellText,
   columnTotal,
@@ -1759,10 +1759,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         const column = shownColumns[from + c];
         if (!column) return;
         const sub = def.fields[column];
-        const read = typable(line, column)
-          ? readPastedCell(sub, value, { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) })
-          : null;
-        if (!read) return void missed.push(fill(labels.cellName, { column: sub.label, n: rowIndex + r + 1 }));
+        const reading = { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) };
+        const read = typable(line, column) ? readPastedCell(sub, value, reading) : null;
+        if (!read) {
+          // Named, and — where its box has words for it — why: "“6:3” could be 6:03 or 6:30", "the time 14:30 was left out".
+          const cell = fill(labels.cellName, { column: sub.label, n: rowIndex + r + 1 });
+          const why = typable(line, column) ? whyNotPasted(sub, value, { ...reading, labels }) : null;
+          return void missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
+        }
         form.setUnread(`${name}.${line.key}.${column}`, null);
         form.updateLine(name, line.key, column, read.value);
         pasted++;

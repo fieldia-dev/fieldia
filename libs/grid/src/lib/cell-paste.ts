@@ -1,5 +1,5 @@
-import { cleanPastedNumber, couldBeNumber, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
-import { readDateText } from '@fieldia/widgets';
+import { cleanPastedNumber, couldBeNumber, fill, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * Pasting a block on the grid's cells: the grid's own, so a page with no grid
@@ -106,6 +106,67 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     }
     default:
       // A link is found by searching, a file by choosing it: nothing a paste can say.
+      return null;
+  }
+}
+
+/** A number column's limits, as its box keeps them: whole or its places, its digits, its least. */
+function limitsOf(def: LineField, currency: string | null): NumberLimits {
+  const digits = def.type === 'float' || def.type === 'monetary' ? def.digits : undefined;
+  return {
+    integer: def.type === 'integer',
+    ...(def.type === 'integer' ? {} : digits ? { places: digits[1] } : def.type === 'monetary' ? { places: placesOfCurrency(currency) } : {}),
+    ...(digits ? { digits: digits[0] } : {}),
+    ...(leastOf(def) !== undefined ? { min: leastOf(def) } : {}),
+  };
+}
+
+/**
+ * Why a cell did not take what was pasted into it (`readPastedCell` gave null), in the words its box says as it is
+ * left: a number that does not read or does not fit, hours whose minute could be two, a date that does not read or
+ * whose time a day leaves out, a choice nothing is called. Null when there are no words for it (a link, a file).
+ */
+export function whyNotPasted(def: LineField, pasted: string, reading: CellReading & { labels: WidgetLabels }): string | null {
+  const text = stripMarks(pasted).trim();
+  const { locale, labels } = reading;
+  const label = def.label;
+  switch (def.type) {
+    case 'integer':
+    case 'float':
+    case 'monetary': {
+      if (reading.widget === 'duration') {
+        const unread = leftWords(text, { label, locale, labels, duration: true, limits: () => ({}) });
+        if (unread) return unread;
+        const least = leastOf(def);
+        const read = readDuration(text, locale);
+        return read.ok && read.value !== null && least !== undefined && read.value < least ? refusalWords({ problem: 'min', min: least }, { label, locale, labels }) : null;
+      }
+      if (reading.widget === 'percentage') {
+        const least = leastOf(def);
+        const limits: NumberLimits = { percent: true, places: def.type === 'float' ? (def.digits?.[1] ?? 2) : 2, ...(least !== undefined ? { min: least * 100 } : {}) };
+        const cleaned = cleanPastedNumber(text, locale, { percent: true });
+        return leftWords(cleaned.ok ? cleaned.text : text, { label, locale, labels, percent: true, limits: () => limits });
+      }
+      const currency = def.type === 'monetary' ? (reading.currency ?? null) : null;
+      const cleaned = cleanPastedNumber(text, locale, { currency });
+      return leftWords(cleaned.ok ? cleaned.text : text, { label, locale, labels, limits: () => limitsOf(def, currency) });
+    }
+    case 'date':
+    case 'datetime': {
+      const reader = { order: reading.dateOrder ?? 'dmy', locale, label, labels } as const;
+      const read = readDateText(text, { kind: def.type, ...reader });
+      if (read.ok) return read.timeLeftOut ? fill(labels.timeLeftOut, { label, time: read.timeLeftOut }) : null;
+      // A day and time pasted into a day: said as the date box says it, the time it would leave out named.
+      const moment = def.type === 'date' ? readDateText(text, { kind: 'datetime', ...reader }) : null;
+      if (moment?.ok && moment.value) {
+        const at = new Date(moment.value);
+        return fill(labels.timeLeftOut, { label, time: `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` });
+      }
+      return read.words;
+    }
+    case 'selection':
+      return fill(labels.noMatch, { label, text: quoted(text) });
+    default:
       return null;
   }
 }
