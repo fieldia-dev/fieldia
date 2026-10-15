@@ -188,6 +188,27 @@ describe('the keys held after a refused one, and the other edits', () => {
     expect(form.getState().unread['x']?.text).toBe('12x');
   });
 
+  it('the text chosen, deleted, takes the keys held over it with it: the box is emptied, as asked', () => {
+    const { el, form, value } = mountKind({ type: 'integer' });
+    const input = box(el);
+    enter(input);
+    keys(input, '129');
+    input.setSelectionRange(0, 3);
+    keys(input, 'abc');
+    expect(input.value).toBe('129');
+    expect(hintSays()).not.toBeNull();
+    // Delete on the text chosen: it goes, and the keys typed over it with it.
+    expect(edit(input, 'deleteContentForward')).toBe(true);
+    input.setRangeText('', 0, 3, 'end');
+    input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentForward', bubbles: true }));
+    expect(input.value).toBe('');
+    expect(hintSays()).toBeNull();
+    leave(input);
+    expect(input.value).toBe('');
+    expect(value()).toBeNull();
+    expect(form.getState().unread['x']).toBeUndefined();
+  });
+
   it('a paste refused on its own is refused there too, the keys still held', () => {
     const { el } = mountKind({ type: 'char' }, { widget: 'color' });
     const input = box(el);

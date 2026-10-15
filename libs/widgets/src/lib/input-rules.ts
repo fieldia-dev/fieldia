@@ -276,8 +276,13 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
         hint.show(held.words);
         return;
       }
-      // Anything else that deletes, after the caret: it lands, and the keys held stay where they wait.
-      if (type.startsWith('delete')) rebase = held;
+      // Anything else that deletes, after the caret: it lands, and the keys held stay where they wait. The text chosen,
+      // which the keys held were typed over, deleted (Delete on it): they go with it, and the box is emptied of it as
+      // asked — never a box that looks empty with keys still waiting in it.
+      if (type.startsWith('delete')) {
+        if (box.selectionStart === box.selectionEnd) rebase = held;
+        else letGoHeld();
+      }
     }
     // Deleting is never refused; a composition is judged once it ends; a paste or a drop has its own listener; a
     // correction, whose place a box does not say, is judged once it lands (onInput).
