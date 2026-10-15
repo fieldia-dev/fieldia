@@ -306,68 +306,119 @@ saves are not checked.
   lane's own spec files, not in `memory-data-source.spec.ts` (this commit
   changed only its two loads there), so the lanes don't edit the same blocks.
 
-## 10. One check before a form's values go (save safety, round 4)
+## 10. One check before a form's values go (save safety, round 5)
 
-Three rounds patched the ways out of a record one at a time, and each review
-found another. From round 4 there is **one check, inside the form**, and every
-operation that replaces or abandons a form's values goes through it by
-construction: `form.leave()`.
+Round 4 put one check in the form, `form.leave()`, and routed every way out
+through it. Its last review found the remaining class was **concurrency**: a
+way out taken while a save was on its way skipped the check, and the save's
+late answer landed on whatever record was shown; work typed while a page in
+place waited, or a file landing after a save, went uncounted; flags kept by
+runs leaked to the next record. Round 5 removes the race instead of chasing
+cases, in three parts.
 
-**What it asks about: the person's work at risk** (`workAtRisk(state)`):
+**1. Serialised.** Every way out — `form.leave()`, and so every route below —
+first waits for a save on its way and files on theirs to settle, the page saying
+what it waits for (`state.leaving`); then it looks at the record **as it is
+now**; then it asks, or goes on. A second way out taken while one waits joins
+that wait and that answer: it never starts another. A way out taken by the
+save's own `beforeSave` steps does not wait for the save that runs them.
 
-- changes **the person** made that a save went through without: typed while
-  the save was on its way, or while the run that saved goes on (an afterSave
-  run included) — `state.unsent`, until a save takes them, they are changed
-  back, or let go. Values set by the page's own steps, rules, computes, an
-  afterSave run or the app are never the person's: each change is told by
-  its origin (`change` event's `by`);
-- files still on their way to the store;
+**2. Generations.** Each record shown — opened, loaded again, a new one — is a
+generation of its own. A save's answer (its `recordId`, `version`, values) is
+laid on the form only while the generation it was started in is still shown; a
+late answer for a record replaced meanwhile is dropped from the form (the data
+source has it) and never lands on another record. The same holds for a run of
+steps: a `call`'s answer, or an opened page's `into`, for a record no longer
+shown is dropped, and the run stops. A save on its way when the person's own
+Discard resets the form still lands, as the record it stored, never with the
+reset values laid over it.
+
+**3. Work at risk** (`workAtRisk(state)`, `state.unsent`), worked out from the
+record as the last finished save of this generation left it (what it sent and
+what came back; a page of answers: what it sent) — never from flags kept by
+runs:
+
+- every change **of the person's** that the last finished save did not send:
+  typed while it was on its way, while the run that saved went on (its afterSave
+  run, Duplicate's copy, a `call` after the save), or since. A value set by a
+  step, a rule, a compute, an afterSave run or the app is never the person's;
+  each change is told by its origin (the `change` event's `by`);
+- a file the person picked that the store holds and no save sent yet (only
+  where the data source has `upload`), and files still on their way;
 - changes Reload set aside.
 
-With any of them, it asks "Discard your changes?" through the host
-(`ask(message, { discard: true })`: Discard words Yes, the focus on Cancel).
-Cancel keeps the person where they are, with their work; Discard stops the
-files, lets the changes set aside go, and goes on. With none, it answers at
-once and the way out behaves exactly as in 0.20. A change not saved that no
-save was asked for is not at risk: as in 0.20, the pager and Save & Close
-save it, Discard and a page's own `close` or `reload` let it go. Without a
-host or `confirm`, work at risk is kept (the way out does not happen).
+Before the first save of a generation, a change of the person's not saved is
+not at risk, as in 0.20: the pager and Save & Close save it, Discard and a
+page's own `close` or `reload` let it go. The next record starts with nothing
+at risk, whatever the last one held.
 
-**Every API that replaces or abandons a form's values, and its route:**
+With work at risk, the check asks "Discard your changes?" through the host
+(`ask(message, { discard: true })`: Discard words Yes, the focus on Cancel),
+else `confirm`. Cancel keeps the person where they are, with their work;
+Discard stops the files, lets the changes set aside go, and goes on. Without a
+host or `confirm`, work at risk is kept. `leave({ changes: true })` counts every
+change not saved (a panel's Escape, as always); `leave({ discard: true })` is
+the person's own Discard: it waits like any way out, and asks nothing.
 
-| # | API | Through the check |
+**For an app with none of 0.21's new members:** with no save on its way, every
+way out behaves as in 0.20 until a save of the record leaves a change of the
+person's behind. **The one deliberate change:** a way out taken while a save is
+on its way now waits for that save. That is what keeps one record's values
+from being written over another's.
+
+**Every API that replaces or abandons a form's values, and its route.** Each
+row has a unit test that fails without the check (core
+`libs/core/src/lib/record/serial.spec.ts`, viewer
+`libs/viewer/src/lib/serial.spec.ts`, besides the round-4 specs).
+
+| # | API | Route |
 |---|---|---|
-| 1 | `form.openRecord(id)`: any id, or null for a new record | at its start; false when kept |
-| 2 | an action's answer `{ record }` (a `call` step, a button's `action`, an app action of the gear) | `openRecord` |
-| 3 | `duplicate` step / gear Duplicate: copied by the source | saves first (0.20), then the check before the copy is made; then `openRecord` |
-| 4 | the same through the app's action (no `copy`) | the check, then its answer's `{ record }` (2) |
-| 5 | `delete` step / gear Delete | the person chose to delete: its work goes with the record, unasked; `openRecord(null)` or the pager's next record |
-| 6 | `archive` / `unarchive` step: archived, then loaded again | the check before archiving; then `reload` |
-| 7 | `reload` step, and `handle.reload()` | the check, then the load |
-| 8 | an action's answer `{ reload: true }` | the same |
-| 9 | `form.load()` called again by the app | the same (the first load has nothing to lose) |
+| | **core: the form** | |
+| 1 | `form.openRecord(id)`, any id or null for a new record | the check at its start; false when kept |
+| 2 | `form.load()` called again by the app | the check, then the load (the first load has nothing to lose) |
+| 3 | `form.leave(how)` | the check itself |
+| 4 | `form.reset()`: the Discard buttons, a page of answers' Submit another | the person's own Discard: no question, as in 0.20; a save on its way lands as stored (part 2) |
+| 5 | `form.reloadTheirs()` (a conflict's Reload) | the person's own choice: waits for a save on its way, then loads; their changes set aside are at risk |
+| 6 | `form.keepMine()`, `form.restoreDraft()`, `form.putBack()`, `form.setValues()` | write values, replace none: no check |
+| 7 | `form.dispose()` | the app's: nothing can keep the person; an answer landing after is dropped |
+| 8 | a saved form placed in a record (`form.embed`): its own ways out | the record's check |
+| | **core: steps** (a button's, a moment's — afterSave included — `form.run`) | |
+| 9 | `reload` step | the check, then the load |
 | 10 | `reset` step | the check, then `form.reset()` |
-| 11 | `close` step: the host's `close` — the viewer's dialog, panel or page in place, or **the app's own** (`host.close`, `mountViewer({ host: { close } })`) | the form takes the host's close once, where it is made: every close goes through the check first |
-| 12 | `openUrl` step in this tab (`newTab: false`): the page navigates away | the check first |
-| 13 | the pager (Previous, Next, Alt+P, Alt+N) | the next id looked up first, then its save of the changes (0.20), then `leave()`; `openRecord` |
-| 14 | the pager after a delete | (5) |
-| 15 | breadcrumbs (`open`, or an `href` clicked plainly) | `leave()`, then the app's way |
-| 16 | a dialog (`openFormDialog`): Save & Close, Ctrl+Enter, a footer button whose run saved | `leave()`, then it closes |
-| 17 | a dialog's Escape and × | `leave()`; a panel, or a dialog round a page with a head, `leave({ changes: true })`: every change not saved counts, as in 0.20 |
-| 18 | a dialog's `close` step | (11) |
-| 19 | a side panel (`openFormPanel`) | as a dialog (16–18) |
-| 20 | a page opened in this one's place (`open` as `page`): its save or send, Back, its breadcrumb, its `close` step | `leave()`, then back |
-| 21 | related records' Create and edit…, a link opened, a line's record, a payment (`pageDialogs().openRecord`) | a dialog (16–18) |
-| 22 | a line's own form (`editValues`, `values` mode): Done, Escape | a dialog (16–17) |
-| 23 | a wizard: Next, Back, Skip, `goTo` | the values stay: nothing to check; it ends through 11 or 16 |
-| 24 | the edit switch's Done, a page of answers' Thank you | they keep the values; with work at risk they stay, and say so |
-| 25 | React, Vue and Angular: unmount, and a prop that mounts again (`recordId`, `page`, `user`, `context`, …); `handle.destroy()`, `form.dispose()` | the framework's: nothing can keep the person there. The app asks `form.leave()` before it navigates, as it would before `beforeunload` |
-| 26 | `form.reset()` — the Discard button, Submit another | the person's own Discard: no question, as in 0.20 |
-| 27 | `restoreDraft()`, `reloadTheirs()`, `keepMine()` | the person's own choice; Reload sets their changes aside, which (3rd bullet) counts |
+| 11 | `close` step: the host's `close` — the viewer's dialog, panel or page in place, or **the app's own** (`host.close`) | the form takes the host's close once, where it is made: the check first |
+| 12 | `openUrl` step in this tab (`newTab: false`) | the check first; a new tab leaves the form as it is |
+| 13 | `archive` / `unarchive` step, gear Archive | the check before archiving, then `reload` (9) |
+| 14 | `duplicate` step / gear Duplicate, copied by the source | saves the changes first (0.20), the check before the copy, then `openRecord` (1): a change typed during the copy is asked about |
+| 15 | the same through the app's action (no `copy`) | saves first, the check, then its answer's `{ record }` (17) |
+| 16 | `delete` step / gear Delete | the person chose it: once deleted, their work goes with the record, unasked; refused, it stays. Then `openRecord(null)` or the pager's next |
+| 17 | an action's answer `{ record }`: a `call` step, a button's `action`, the gear's app action | `openRecord` (1) |
+| 18 | an action's answer `{ reload: true }` | (9) |
+| 19 | `open` step (`as` page, dialog or panel) | this form's values stay; the opened page's ways out are rows 27–33; its `into` and `then` only on the record that opened it |
+| 20 | a wizard's Next, Back, Skip, `goTo` | the values stay: nothing to check |
+| | **viewer** | |
+| 21 | the pager: Previous, Next, Alt+P, Alt+N | the next id looked up, then its save of the changes and files (0.20), then the check, then `openRecord` |
+| 22 | the pager after a delete | (16) |
+| 23 | breadcrumbs: `open`, or an `href` clicked plainly | the check, then the app's way |
+| 24 | the app's breadcrumbs inside a page opened in place | that page's check, then the opener's (each page in place adds its own) |
+| 25 | `handle.reload()` on a record | (9) |
+| 26 | `handle.destroy()` | the app's: as (7) |
+| 27 | a dialog (`openFormDialog`): Save & Close, Ctrl+Enter, a footer button whose run saved | the check, then it closes, saved |
+| 28 | a dialog's Escape and × | the check; a panel, or a dialog round a page with a head: `{ changes: true }` |
+| 29 | a dialog's Discard | `{ discard: true }`: waits for a save on its way, asks nothing; a save that went through closes saved |
+| 30 | a dialog's `close` step | (11) |
+| 31 | a side panel (`openFormPanel`) | as a dialog (27–30) |
+| 32 | a page opened in this one's place: its save or send (once its afterSave ran), Back, its own crumb, its `close` step | the check, then back; saved once a save went through |
+| 33 | related records' Create and edit…, a link opened, a line's record, a payment (`pageDialogs().openRecord`); a line's own form (`editValues`: Done, Escape) | a dialog (27–29) |
+| 34 | the edit switch's Done | the values stay: it saves the changes and files first, and with work at risk stays editable and says so |
+| 35 | a page of answers' Thank you | the values stay: with work at risk it stays, and says so |
+| 36 | the changes set aside: × (let them go) | the person's own: asked, then let go |
+| | **React, Vue, Angular** | |
+| 37 | `<FieldiaForm>` / `<fieldia-form>` unmounted; a prop that mounts it again (`page`, `form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`, `labels`, custom fields, slots) | the framework's: nothing can keep the person there. The app calls `form.leave()` (the handle's `form`) before it navigates or changes those props, as each wrapper's README says |
 
-A save that went through is reported as saved by **every** later exit of the
+A save that went through is reported as saved by every later exit of the
 dialog, panel or page in place it was made in — Discard, Escape, ×, Back, a
-`close` step: `{ saved: true }`, with the record's id, never `saved: false`
-after a save. The per-route checks of rounds 1–3 (`letGo(saved)`, a run's
-`scope.saved` at each step, `keptWork`, `workLeft`, `lastSent`, the
-dialog's and the page in place's own questions) are gone: one path.
+`close` step: `{ saved: true }`, with the record's id.
+
+Removed with round 5: `taking`, the runs set and each run's `saved` flag, and
+the `lastSent` of a page of answers. `state.unsent` is worked out on every
+change from the record as last saved; nothing else keeps it.
