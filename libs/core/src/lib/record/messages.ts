@@ -82,8 +82,9 @@ export interface Messages {
   /** What a record's gear menu asks before its built-in Archive and Delete run. */
   archiveConfirm: string;
   deleteConfirm: string;
-  /** A text longer than its most, pasted whole: `{over}` characters over its `{max}`. */
+  /** A text longer than its most, pasted whole: `{over}` characters over its `{max}`; one over (`overByOne`). */
   overBy: string;
+  overByOne: string;
   /** A postcode not of its country's shape: `{country}`, its `{n}` digits, and `{example}`. */
   postcode: string;
   /** A web address that is no web address: javascript:, data:, vbscript:, file:. */
@@ -157,6 +158,7 @@ const en: Messages = {
   archiveConfirm: 'Are you sure that you want to archive this record?',
   deleteConfirm: 'Are you sure you want to delete this record?',
   overBy: '{label} is {over} characters over its {max}: shorten it to save',
+  overByOne: '{label} is 1 character over its {max}: shorten it to save',
   postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
   urlScheme: 'Only a web address (http or https) can go here',
   endBeforeStart: '{end} can’t be before {start}',

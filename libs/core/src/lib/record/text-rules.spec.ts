@@ -35,7 +35,7 @@ describe('a text’s most characters', () => {
   it('counts an emoji as one, as a server counts characters', () => {
     const field = { type: 'char', label: 'Full name', size: 3 } as Field;
     expect(checkValue(field, '😀😀😀', false)).toBeUndefined();
-    expect(checkValue(field, 'a😀😀😀', false)).toBe('Full name is 1 characters over its 3: shorten it to save');
+    expect(checkValue(field, 'a😀😀😀', false)).toBe('Full name is 1 character over its 3: shorten it to save');
   });
 
   it('says how far over a pasted text is, in each language', () => {

@@ -57,6 +57,7 @@ export const de: Messages = {
   archiveConfirm: 'Möchten Sie diesen Datensatz wirklich archivieren?',
   deleteConfirm: 'Möchten Sie diesen Datensatz wirklich löschen?',
   overBy: '{label} ist {over} Zeichen zu lang (höchstens {max}); kürzen Sie es zum Speichern',
+  overByOne: '{label} ist 1 Zeichen zu lang (höchstens {max}); kürzen Sie es zum Speichern',
   postcode: '{label}: Postleitzahl für {country} mit {n} Ziffern, z. B. {example}',
   urlScheme: 'Hier ist nur eine Webadresse (http oder https) möglich',
   endBeforeStart: '{end} darf nicht vor {start} liegen',

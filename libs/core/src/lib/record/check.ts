@@ -35,7 +35,8 @@ export function checkValue(
       // kept whole, and told how far over it is.
       const count = (field.type === 'char' || field.type === 'text') && field.size !== undefined ? charCount(value) : 0;
       if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && count > field.size) {
-        return say('overBy', { max: field.size, over: count - field.size });
+        // One over is said as one: "1 character over", never "1 characters".
+        return say(count - field.size === 1 ? 'overByOne' : 'overBy', { max: field.size, over: count - field.size });
       }
       // The whole answer, trimmed, its digits as 0-9 and no direction marks: "١١٥١١" is five digits. A pattern that
       // does not read is the page's to fix (checkPage names it), never a reason to refuse a person.

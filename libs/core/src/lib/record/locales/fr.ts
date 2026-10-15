@@ -57,6 +57,7 @@ export const fr: Messages = {
   archiveConfirm: 'Voulez-vous vraiment archiver cet enregistrement ?',
   deleteConfirm: 'Voulez-vous vraiment supprimer cet enregistrement ?',
   overBy: '{label} dépasse de {over} caractères la limite de {max} : raccourcissez-le pour enregistrer',
+  overByOne: '{label} dépasse d’un caractère la limite de {max} : raccourcissez-le pour enregistrer',
   postcode: '{label} : code postal de {n} chiffres attendu pour {country}, par exemple {example}',
   urlScheme: 'Seule une adresse web (http ou https) est acceptée ici',
   endBeforeStart: '{end} ne peut pas précéder {start}',

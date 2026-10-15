@@ -47,7 +47,7 @@ export function counted(widget: Widget, { form, name, field, node, document, lab
       setHidden(shown, state.readonly);
       if (document.activeElement !== box) return;
       clearTimeout(pause);
-      pause = setTimeout(() => setText(said, past > 0 ? fill(messages.overBy, { label, over: past, max: size }) : fillIn(words.charactersLeft, { n: size - n })), 700);
+      pause = setTimeout(() => setText(said, past > 0 ? fill(past === 1 ? messages.overByOne : messages.overBy, { label, over: past, max: size }) : fillIn(words.charactersLeft, { n: size - n })), 700);
     },
   };
 }

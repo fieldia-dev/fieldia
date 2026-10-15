@@ -57,6 +57,7 @@ export const ar: Messages = {
   archiveConfirm: 'هل أنت متأكد من أرشفة هذا السجل؟',
   deleteConfirm: 'هل أنت متأكد من حذف هذا السجل؟',
   overBy: '{label}: أطول من الحد ({max}) بـ{over} من الأحرف؛ اختصره للحفظ',
+  overByOne: '{label}: أطول من الحد ({max}) بحرف واحد؛ اختصره للحفظ',
   postcode: '{label}: الرمز البريدي في {country} من {n} أرقام، مثل {example}',
   urlScheme: 'يُقبل هنا عنوان موقع فقط (http أو https)',
   endBeforeStart: 'لا يمكن أن يكون {end} قبل {start}',
