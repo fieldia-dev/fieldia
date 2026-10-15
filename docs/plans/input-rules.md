@@ -178,3 +178,6 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
   is left, never mid-word.
 - **The grid's own keys.** Ctrl+Enter inside the grid is the grid's (a note's end), as in 0.20, and saves nothing. The
   Save button leaves the cell first.
+- **Closing the tab or the window.** Fieldia saves nothing as the page goes, so nothing old or half typed is saved. A
+  host that wants to ask first does it in its own `beforeunload`: `form.settle()` (it reads what is typed at once; a
+  name looked up is kept unread meanwhile), then `form.getState().dirty` and `unread`.
