@@ -201,13 +201,14 @@ export interface RunForm {
   /** Write values the record holds where it is kept: no change to save. */
   store(values: Values): void;
   addLine(field: string, values: Values): void;
-  check(fields: readonly string[] | undefined): Stopped | null;
+  /** Check fields as sending does: what is still typed in a box read first, a name being looked up waited for. */
+  check(fields: readonly string[] | undefined): Stopped | null | Promise<Stopped | null>;
   save(chain: readonly string[]): Promise<Stopped | null>;
   /** Load the record again from its data source; a new record cannot be. */
   reload(): Promise<Stopped | null>;
   reset(): void;
   /** Go to a wizard's step; `undefined` when the target is none of its steps (a tab). */
-  goTo(target: string, chain: readonly string[]): Stopped | null | undefined;
+  goTo(target: string, chain: readonly string[]): Stopped | null | undefined | Promise<Stopped | null | undefined>;
   /** Run `show` of the host while `chain` is the run's, so a tab it shows knows who showed it. */
   showing(chain: readonly string[], show: () => void): void;
   host?: ActionHost;
@@ -523,7 +524,7 @@ export function createRunner(form: RunForm) {
         form.reset();
         return null;
       case 'goTo': {
-        const stepped = form.goTo(step.target, scope.chain);
+        const stepped = await form.goTo(step.target, scope.chain);
         if (stepped !== undefined) return stepped;
         const show = form.host?.show;
         if (!show) return cannot(`Nothing can show "${step.target}" here: the form has no host that shows tabs`);

@@ -1302,10 +1302,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return key;
   }
 
-  /** Check the form, or only these fields, showing what is found as sending does. */
-  function check(names: readonly string[] | undefined): Stopped | null {
+  /**
+   * Check the form, or only these fields, showing what is found as sending does: a step's check, which waits for a
+   * name still being looked up in a box, as a save does.
+   */
+  async function check(names: readonly string[] | undefined): Promise<Stopped | null> {
     names?.forEach(fieldDef);
-    readTyped();
+    const waiting = readTyped();
+    if (waiting) await waiting;
     const all = collectErrors();
     const found = names ? Object.fromEntries(Object.entries(all).filter(([key]) => names.some((name) => key === name || key.startsWith(`${name}.`)))) : all;
     set({ errors: found });
@@ -1314,9 +1318,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   }
 
   /** Go to a wizard's step for a run; undefined when the target is no step of it, but a tab. */
-  function goToStep(target: string, chain: readonly string[]): Stopped | null | undefined {
+  async function goToStep(target: string, chain: readonly string[]): Promise<Stopped | null | undefined> {
     if (!steps.includes(target)) return undefined;
     if (!form.steps().includes(target)) return { reason: 'cannot', message: `The step "${target}" does not apply now` };
+    // A name still being looked up in a box on the way is waited for, as a save waits for it.
+    const waiting = readTyped();
+    if (waiting) await waiting;
     let went = false;
     inRun(chain, () => (went = form.goTo(target)));
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };

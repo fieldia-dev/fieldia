@@ -128,6 +128,14 @@ describe('a reading that waits (a name looked up)', () => {
     expect(form.getState().values['seats']).toBe(12);
   });
 
+  it('is waited for by a button’s check step, which then goes on with what it found', async () => {
+    const form = createForm({ page: { ...page, data: { kind: 'responses' } } as Page });
+    lookingUp(form, 12);
+    const result = await form.run([{ do: 'check' }]);
+    expect(result.done).toBe(true);
+    expect(form.getState().values['seats']).toBe(12);
+  });
+
   it('in a saved form placed on the page, is waited for by the page round it', async () => {
     const inner: Page = { fieldia: '0.1', id: 'inner', data: { kind: 'responses' }, fields: { n: { type: 'integer', label: 'Nights' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'f-n', field: 'n' }] } } as Page;
     const outer = {
