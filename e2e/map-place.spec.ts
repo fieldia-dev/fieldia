@@ -99,10 +99,10 @@ test('typed coordinates move the pin there; a wrong one is said and changes noth
   await expect(field.getByLabel('Latitude')).toHaveAttribute('aria-invalid', 'true');
   await expect(field.getByLabel('Latitude')).toHaveValue('north');
   await expect(field.locator('.fd-map-note')).toHaveText('Latitude: numbers only');
-  // One that reads but is past the poles: not a coordinate.
+  // One that reads but is past the poles: the box says which numbers it takes.
   await field.getByLabel('Latitude').fill('95');
   await field.getByLabel('Latitude').press('Enter');
-  await expect(field.locator('.fd-map-note')).toHaveText('Not a coordinate');
+  await expect(field.locator('.fd-map-note')).toHaveText('Latitude: a number from -90 to 90');
   expect(await valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.22, 30.05] });
 });
 
