@@ -1,4 +1,4 @@
-import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { createWidget } from '@fieldia/widgets';
 import { tiles, type SearchRequest } from './providers';
 import { mapWidgets } from './widgets';
@@ -66,7 +66,10 @@ describe('a place kept in two number fields', () => {
     input('Longitude').dispatchEvent(new Event('change'));
     expect(form.getState().values['lat']).toBeNull();
     expect(input('Latitude').getAttribute('aria-invalid')).toBe('true');
-    expect(document.querySelector('.fd-map-note')?.textContent).toBe('Not a coordinate');
+    // Said with its range, under the map and by the form, whose check refuses it.
+    expect(document.querySelector('.fd-map-note')?.textContent).toBe('Latitude: a number from -90 to 90');
+    expect(form.getState().unread['lat']).toEqual({ text: '95 31', message: 'Latitude: a number from -90 to 90' });
+    expect(form.validate()).toBe(false);
   });
 
   it('reads Persian digits and direction marks, as every number box does', () => {
@@ -100,6 +103,49 @@ describe('a place kept in two number fields', () => {
     expect(lat.getAttribute('aria-invalid')).toBe('true');
     expect(form.getState().values['lat']).toBeNull();
     expect(document.querySelector('.fd-map-note')?.textContent).toBe('Latitude: numbers only');
+  });
+
+  it('a coordinate that does not read stops every save: never a place saved half new', async () => {
+    const dataSource = createMemoryDataSource({ records: { site: { 1: { lat: 30.0444, lng: 31.2357 } } } });
+    const form = createForm({ page: { ...page, data: { kind: 'record', model: 'site' } } as Page, dataSource, recordId: 1 });
+    await form.load();
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'lat', field: page.fields['lat'] as Field, node, id: 'fd-site', document }, widgets);
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['lat'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    const [lat, lng] = [input('Latitude'), input('Longitude')];
+    // The latitude typed, and taken as the box is left for the longitude's.
+    lat.focus();
+    lat.value = '31.2';
+    lat.dispatchEvent(new Event('change'));
+    // The longitude typed with a letter in it: the letter refused, the keys after it held.
+    lng.focus();
+    lng.value = '';
+    for (const key of '29.9x5') {
+      const typing = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: key });
+      lng.dispatchEvent(typing);
+      if (typing.defaultPrevented) continue;
+      lng.setRangeText(key, lng.selectionStart ?? lng.value.length, lng.selectionEnd ?? lng.value.length, 'end');
+      lng.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: key }));
+    }
+    // Saved now, from inside the box (Ctrl+Enter's change): refused, with why; nothing saved.
+    lng.dispatchEvent(new Event('change'));
+    expect(await form.save()).toBe(false);
+    expect(dataSource.records['site'][1]).toMatchObject({ lat: 30.0444, lng: 31.2357 });
+    expect(lng.value).toBe('29.9x5');
+    expect(form.getState().errors['lat']).toBe('Longitude: numbers only');
+    // Left, the text stays, marked; put right, the whole place is taken and saved.
+    lng.blur();
+    expect(lng.value).toBe('29.9x5');
+    expect(lng.getAttribute('aria-invalid')).toBe('true');
+    lng.focus();
+    lng.value = '29.95';
+    lng.dispatchEvent(new Event('change'));
+    expect(await form.save()).toBe(true);
+    expect(dataSource.records['site'][1]).toMatchObject({ lat: 31.2, lng: 29.95 });
+    widget.destroy?.();
   });
 
   it('read-only: its tools go and its coordinates cannot be typed in', () => {
@@ -169,6 +215,35 @@ describe('a place on a map that opened on the whole world (no centre given)', ()
     await new Promise((done) => setTimeout(done, 0));
     const near = (await search('zamalek')).near;
     expect([near?.lat.toFixed(3), near?.lng.toFixed(3)]).toEqual(['30.044', '31.236']);
+    widget.destroy?.();
+  });
+});
+
+describe('a place picked from its search, still being found', () => {
+  it('is waited for by a save: the place saved is the one picked', async () => {
+    let found: (at: { lat: number; lng: number }) => void = () => undefined;
+    const searching = mapWidgets({
+      provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }),
+      search: async () => [{ label: 'Zamalek', detail: 'Cairo, Egypt', locate: () => new Promise<{ lat: number; lng: number }>((done) => (found = done)) }],
+    });
+    const node = { type: 'field', id: 'f-note', field: 'note', widget: 'place', options: { myLocation: false } } as FieldNode;
+    const form = createForm({ page });
+    const widget = createWidget({ form, name: 'note', field: page.fields['note'] as Field, node, id: 'fd-note', document }, searching);
+    document.body.replaceChildren(widget.element);
+    form.subscribe(() => widget.update({ value: form.getState().values['note'], values: form.getState().values, readonly: false, required: false, invalid: false }));
+    form.setValue('note', { type: 'Point', coordinates: [31.0, 30.0] });
+    const box = document.querySelector('[role="combobox"]') as HTMLInputElement;
+    box.focus();
+    box.value = 'zamalek';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    for (let i = 0; i < 50 && !document.querySelector('[role="option"]'); i++) await new Promise((done) => setTimeout(done, 20));
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    const settled = form.settle();
+    expect(form.reading()).toBe(true);
+    setTimeout(() => found({ lat: 30.0626, lng: 31.2197 }), 20);
+    await settled;
+    expect(form.getState().values['note']).toEqual({ type: 'Point', coordinates: [31.2197, 30.0626] });
     widget.destroy?.();
   });
 });

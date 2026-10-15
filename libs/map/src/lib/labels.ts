@@ -24,6 +24,8 @@ export interface MapLabels {
   latitude: string;
   longitude: string;
   notACoordinate: string;
+  /** A coordinate typed that is no number in its range, or left out beside the other: `{label}`, `{min}` and `{max}`. */
+  coordinateRange: string;
   polygon: string;
   box: string;
   circle: string;
@@ -95,6 +97,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     latitude: 'Latitude',
     longitude: 'Longitude',
     notACoordinate: 'Not a coordinate',
+    coordinateRange: '{label}: a number from {min} to {max}',
     polygon: 'Polygon',
     box: 'Box',
     circle: 'Circle',
@@ -159,6 +162,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     latitude: 'خط العرض',
     longitude: 'خط الطول',
     notACoordinate: 'ليس إحداثيًا صحيحًا',
+    coordinateRange: '{label}: رقم من {min} إلى {max}',
     polygon: 'مضلّع',
     box: 'مستطيل',
     circle: 'دائرة',
@@ -223,6 +227,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     latitude: 'Latitude',
     longitude: 'Longitude',
     notACoordinate: 'Coordonnée non valide',
+    coordinateRange: '{label} : un nombre de {min} à {max}',
     polygon: 'Polygone',
     box: 'Rectangle',
     circle: 'Cercle',
@@ -287,6 +292,7 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     latitude: 'Breitengrad',
     longitude: 'Längengrad',
     notACoordinate: 'Keine gültige Koordinate',
+    coordinateRange: '{label}: eine Zahl von {min} bis {max}',
     polygon: 'Polygon',
     box: 'Rechteck',
     circle: 'Kreis',

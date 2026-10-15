@@ -839,3 +839,35 @@ describe('an address with suggestions', () => {
     expect(form.getState().values['address']).toBe('12 Tahrir Street');
   });
 });
+
+describe('an address with suggestions, and a save made from inside it', () => {
+  it('typed over in one go and saved at once (a change): the place and parts picked before are no longer its', async () => {
+    const { form, box, values } = await mount({ placeField: 'spot', partsField: 'parts' });
+    type(box, 'tahr');
+    await pause();
+    press(box, 'Enter');
+    await pause(0);
+    expect(values()).toMatchObject({ spot: { type: 'Point' }, parts: { city: 'Cairo' } });
+    box.value = '8 Road 9, Maadi';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    // A save made with the box still entered reads it as leaving would.
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(values()).toMatchObject({ address: '8 Road 9, Maadi', spot: null, parts: null });
+    void form;
+  });
+
+  it('picked, then saved while its place is still found: the save waits, and the place saved is the address’s own', async () => {
+    let found: (at: { lat: number; lng: number }) => void = () => undefined;
+    const locate = () => new Promise<{ lat: number; lng: number }>((done) => (found = done));
+    const { form, box, values } = await mount({ placeField: 'spot' }, {}, [{ label: 'Zamalek', detail: 'Cairo, Egypt', locate }]);
+    form.setValue('spot', { type: 'Point', coordinates: [31.0, 30.0] });
+    type(box, 'zam');
+    await pause();
+    press(box, 'Enter');
+    const settled = form.settle();
+    expect(form.reading()).toBe(true);
+    setTimeout(() => found({ lat: 30.0626, lng: 31.2197 }), 20);
+    await settled;
+    expect(values()['spot']).toEqual({ type: 'Point', coordinates: [31.2197, 30.0626] });
+  });
+});
