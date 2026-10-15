@@ -245,9 +245,11 @@ export interface Form {
    * and never save a value passed on the way ("1" of "1.5") or the one the box held before. The viewer gives one
    * for the box that has the focus (a change, which each box reads); a box whose reading waits — a name looked up
    * among records — gives its own, which keeps the text unread with why at once, and returns the wait: a save
-   * waits for it, while a check or a step forward, which cannot wait, refuses meanwhile. Returns what stops it.
+   * waits for it, while a check or a step forward, which cannot wait, refuses meanwhile. `typing` says whether the
+   * box is still being typed in (typed since it last read): autosave, which nobody pressed, waits while it is, and
+   * never reads text under the person's keys ("12." of "12.5", "Office " of "Office Park"). Returns what stops it.
    */
-  settling(read: () => void | Promise<unknown>): () => void;
+  settling(read: () => void | Promise<unknown>, typing?: () => boolean): () => void;
   /**
    * Read what is typed and not yet read in every box (`settling`), as if each were left: a save does it first.
    * Resolves once every reading that waits (a name looked up) has ended.
@@ -419,6 +421,8 @@ interface InnerForm {
   errorsNow(): Record<string, string>;
   /** Show the problems the form round it found inside it. */
   show(errors: Record<string, string>): void;
+  /** Whether a box of it is still being typed in (`settling`'s `typing`). */
+  typing(): boolean;
 }
 
 type Sync = 'start' | 'edit' | 'fresh';
@@ -500,6 +504,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   const attached = new Map<string, { name: string; inner: InnerForm }>();
   /** How each box with text typed and not yet read reads it now (`settling`). */
   const readers = new Set<() => void | Promise<unknown>>();
+  /** Whether each box that says so is still being typed in (`settling`'s `typing`): autosave waits for them. */
+  const typings = new Set<() => boolean>();
+  /** A box of this form, or of a saved form placed on it, still being typed in. */
+  const typingNow = (): boolean => [...typings].some((typing) => typing()) || [...attached.values()].some((part) => part.inner.typing());
   /** Readings of typed text still waiting, as readTyped started them. */
   let readingNow = 0;
   /**
@@ -1112,6 +1120,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     autosaveTimer = scheduler.setTimeout(() => {
       autosaveTimer = null;
+      // Nobody pressed anything: a box still typed in is never read under the person's keys. The save waits until it is
+      // left (or Enter is pressed in it), and reads it then, as any save does.
+      if (typingNow()) return scheduleAutosave();
       if (state.dirty.length && Object.keys(collectErrors()).length === 0) void track(save());
     }, autosave.delayMs);
   }
@@ -1602,9 +1613,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ errors: { ...state.errors, [path]: problem } });
     },
 
-    settling(read) {
+    settling(read, typing) {
       readers.add(read);
-      return () => void readers.delete(read);
+      if (typing) typings.add(typing);
+      return () => {
+        readers.delete(read);
+        if (typing) typings.delete(typing);
+      };
     },
 
     settle: () => readTyped() ?? Promise.resolve(),
@@ -1955,6 +1970,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {} });
     },
     errorsNow: () => collectErrors(),
+    typing: typingNow,
     show(errors) {
       if (JSON.stringify(errors) !== JSON.stringify(state.errors)) set({ errors });
     },

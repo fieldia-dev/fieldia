@@ -162,3 +162,61 @@ describe('a reading that waits (a name looked up)', () => {
     expect(dataSource.responses[0].values['stay']).toEqual({ n: 3 });
   });
 });
+
+describe('autosave while a box is typed in', () => {
+  /** A clock moved by hand, for autosave's pause. */
+  function handClock() {
+    let now = 0;
+    const timers = new Map<number, { at: number; run: () => void }>();
+    let next = 0;
+    return {
+      setTimeout: (run: () => void, ms: number) => (timers.set(++next, { at: now + ms, run }), next),
+      clearTimeout: (handle: unknown) => void timers.delete(handle as number),
+      advance(ms: number) {
+        now += ms;
+        for (const [id, timer] of [...timers].sort((a, b) => a[1].at - b[1].at))
+          if (timer.at <= now) {
+            timers.delete(id);
+            timer.run();
+          }
+      },
+    };
+  }
+  const twoFields = { ...page, fields: { ...page.fields, name: { type: 'char', label: 'Name' } } } as Page;
+
+  it('waits while the box is still typed in, never reading it under the person’s keys; it saves once the box is left', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { seats: 4, name: 'Office' } } } });
+    const clock = handClock();
+    const form = createForm({ page: twoFields, dataSource, recordId: 1, autosave: { delayMs: 100 }, scheduler: clock });
+    await form.load();
+    let typing = true;
+    // "-" on its way to "-12": a reading now would refuse it, under the person's keys.
+    const read = jest.fn(() => (typing ? form.setUnread('seats', { text: '-', message: 'Workstations: not a number yet' }) : form.setValue('seats', 12)));
+    form.settling(read, () => typing);
+    form.setValue('name', 'Office Park');
+    clock.advance(100);
+    await form.settled();
+    clock.advance(100);
+    await form.settled();
+    expect(read).not.toHaveBeenCalled();
+    expect(dataSource.records['project'][1]['name']).toBe('Office');
+    expect(form.getState().errors).toEqual({});
+    // Left: the box is read as the save reads it, and what it shows is saved with the rest.
+    typing = false;
+    clock.advance(100);
+    await form.settled();
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(dataSource.records['project'][1]).toMatchObject({ name: 'Office Park', seats: 12 });
+  });
+
+  it('a Save pressed meanwhile reads the box at once, typed in or not', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { seats: 4, name: 'Office' } } } });
+    const form = createForm({ page: twoFields, dataSource, recordId: 1, autosave: { delayMs: 100 }, scheduler: handClock() });
+    await form.load();
+    const read = jest.fn(() => form.setValue('seats', 12));
+    form.settling(read, () => true);
+    expect(await form.save()).toBe(true);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(dataSource.records['project'][1]['seats']).toBe(12);
+  });
+});
