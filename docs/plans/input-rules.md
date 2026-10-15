@@ -140,6 +140,7 @@ refused one, with the same words, however the text arrives:
 | Backspace | takes back the last key held | `deleteContentBackward` |
 | A word's or line's deletion, Undo | all held keys go | `letGoHeld()` |
 | A deletion after the caret | lands; the keys stay held where they wait | `rebase` |
+| Delete on the text chosen (the keys were typed over it) | lands, and the held keys go with it: the box is emptied as asked | `letGoHeld()` |
 | Moving the caret | lets them go | `holding()` |
 | Enter in a one-line box | never judged, held or stopped | `insertLineBreak` / `insertParagraph` |
 
@@ -159,7 +160,7 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
 | A line taken away takes its cell's reading with it | widgets `names-save.spec.ts` | — |
 | The hold: paste, drop, IME, correction | widgets `input-hold.spec.ts` | `e2e/input-commit.spec.ts` (paste) |
 | Text and an address settle the same whichever key saved | widgets `input-rules-save.spec.ts` | `e2e/input-keys.spec.ts` |
-| A coordinate that does not read stops a save | map `place.spec.ts`, `address-search.spec.ts` | `e2e/input-commit.spec.ts` |
+| A coordinate that does not read stops a save; one that reads stays as typed beside it | map `place.spec.ts`, `address-search.spec.ts` | `e2e/input-commit.spec.ts`, `e2e/input-numbers.spec.ts` |
 | JSON that does not read stops a save | code `code.spec.ts`, monaco `monaco.spec.ts` | `e2e/code-editors.spec.ts` |
 | Enter and Ctrl+Enter as in 0.20 | viewer `typing-save.spec.ts` | `e2e/input-keys.spec.ts`, `e2e/keys.spec.ts` |
 | A paste into the grid says why a cell was left | grid `cell-paste.spec.ts`, `grid-input-rules.spec.ts` | `e2e/input-tables.spec.ts` |
