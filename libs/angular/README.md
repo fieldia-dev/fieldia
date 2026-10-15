@@ -53,6 +53,15 @@ export class OrderComponent {
 The viewer's `host` and `onOpen` are `[actionHost]` and `[openPage]`; the
 handle from `(ready)` has `on`, `setValues` and `run`.
 
+**Before your app leaves the form**, ask its one check: `await
+handle.form.leave()` in a route's `canDeactivate`, before removing
+`<fieldia-form>`, and before changing an input that mounts it again (`page`,
+`form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
+`labels`, `fieldTypes`). Angular destroys it at once, so nothing else can keep
+the person there. It waits for a save on its way, then asks "Discard your
+changes?" only when their work is at risk, and answers false when they choose to
+stay.
+
 A part that throws as it is drawn or brought up to date — a field's component, a
 slot's content, the app's widget, a map — shows a small box that names it, and
 the rest of the form goes on; `(partError)` hears `{ error, where }` (not

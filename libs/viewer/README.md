@@ -153,11 +153,14 @@ a moment does”). The viewer is their host: it draws what they ask for.
   returns to the form as it was. A page your `pages` has none of stops the
   steps with “The page “…” cannot be found.”, said as a toast. Each page opened
   has a host of its own, so its steps run there, and a `close` step closes it.
-  Every way out of it — and of the record: the pager, the breadcrumbs, a
-  reload — goes through its form's one check (`form.leave()`), which asks
-  “Discard your changes?”, the focus on Cancel, only when the person's work is
-  at risk: a change of theirs a save went through without, a file on its way,
-  changes set aside.
+  Every way out of it — and of the record: the pager, the breadcrumbs (your
+  own too, inside a page opened in place: they leave the record under it as
+  well), a reload — goes through its form's one check (`form.leave()`). It
+  first waits for a save on its way and files on theirs, saying what it waits
+  for where “Saving…” would be (at a dialog's foot), then asks “Discard your
+  changes?”, the focus on Cancel, only when the person's work is at risk: a
+  change of theirs the last save did not send, a file on its way or not saved
+  yet, changes set aside. A dialog's Discard waits too, and asks nothing.
 - **Words said** are toasts at the foot of the screen, in their tone: one over
   another, read out by a polite live region, going after a few seconds (not
   while pointed at or focused), or with their ×. Your app's `stop` words come

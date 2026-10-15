@@ -46,6 +46,14 @@ prop, so what it returns comes back):
 `host` and `on-open` are the viewer's own options (see `@fieldia/viewer`); the
 handle from `@ready` has `on`, `setValues` and `run`.
 
+**Before your app leaves the form**, ask its one check: `await
+handle.form.leave()` in a router's `beforeRouteLeave`, before removing
+`<FieldiaForm>`, and before changing a prop that mounts it again (`page`,
+`form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
+`labels`). Vue unmounts at once, so nothing else can keep the person there. It
+waits for a save on its way, then asks "Discard your changes?" only when their
+work is at risk, and answers false when they choose to stay.
+
 A field's component or a slot's content that throws as it renders is kept to its
 place: it shows a small box that names it, `@error="(error, where) => …"` is
 told, and the error goes no further up Vue's tree. MIT licensed.

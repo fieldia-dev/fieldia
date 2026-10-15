@@ -133,15 +133,21 @@ Every way a form's values go — `openRecord` (the pager, an action's answer
 naming a record, Duplicate's copy), a reload (the step, an answer's
 `reload: true`, `form.load()` again), a `reset` step, the host's `close` (yours
 too: the form takes it once, where it is made) — goes through one check,
-`form.leave()`. It asks only about the person's work at risk
-(`workAtRisk(state)`): their changes a save went through without, typed while
-it was on its way or while the run that saved went on (`state.unsent`; a value
-set by a step, a rule, a compute or your app is never theirs), files still on
-their way, and changes Reload set aside. Then it asks "Discard your changes?"
-through the host's `ask(message, { discard: true })`, or `confirm`; Cancel keeps
-the person where they are, and with neither to ask with the work is kept. With
-nothing at risk, every way out behaves as it did in 0.20: a change not saved
-that no save was asked for goes where a step leaves the record. Call
+`form.leave()`. It first waits for a save on its way and files on theirs
+(`state.leaving` meanwhile, so the page can say so; a second way out joins that
+wait), then looks at the record as it is now. A save's answer lands only on the
+record it was started for: one shown in its place meanwhile never gets its
+values. It asks only about the person's work at risk (`workAtRisk(state)`):
+each change of theirs the last finished save of the record did not send —
+typed while it was on its way, while the run that saved went on, or since
+(`state.unsent`, told against the record as that save left it; a value set by
+a step, a rule, a compute or your app is never theirs) — a file the store holds
+that no save sent, files still on their way, and changes Reload set aside. Then
+it asks "Discard your changes?" through the host's `ask(message, { discard:
+true })`, or `confirm`; Cancel keeps the person where they are, and with
+neither to ask with the work is kept. Before a record's first save, every way
+out behaves as it did in 0.20: a change not saved goes where a step leaves the
+record. `form.leaveNow()` says whether a way out can go at once. Call
 `form.leave()` before your app's own ways out — a route change, an unmount —
 and `unsavedWork(state)` (any change, file or change set aside) for a browser's
 `beforeunload`. What `can` does

@@ -15,6 +15,20 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.21.0 — not released yet
+
+Its section is written in full in the commit that sets the version. Known now:
+
+**Upgrading:** a way out of a record — another record, a reload, a close, a
+breadcrumb, a dialog's Escape, × or Discard — taken while a save is on its way
+now waits for that save before it goes, the page saying what it waits for. For
+an app that uses none of 0.21's new data source members this is the one
+deliberate change in how a way out goes: it keeps the save's answer from
+landing on whatever record the form shows by then, which wrote one record's
+values over another's. With no save on its way, a way out goes at once as in
+0.20, and asks "Discard your changes?" only about a change of the person's that
+the record's last save did not send.
+
 ## 0.20.0 — 2026-10-13
 
 **A work item in a popup, as Azure DevOps draws it.** Built from twelve
