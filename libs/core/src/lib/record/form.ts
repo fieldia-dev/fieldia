@@ -1582,6 +1582,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (path.includes('.') && def.type !== 'properties') lineField(field);
       const had = state.unread[path];
       if (!unread && !had) return;
+      // A line taken away takes its cells' text with it: a box of it still reading (a name looked up) keeps none.
+      if (unread && !had && path.split('.').length >= 3 && def.type !== 'properties' && valueAt(state.values, path) === gone) return;
       if (unread && had && had.text === unread.text && had.message === unread.message) return;
       const next = { ...state.unread };
       if (unread) next[path] = { text: unread.text, message: unread.message };

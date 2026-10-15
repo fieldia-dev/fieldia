@@ -537,6 +537,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   return {
     element,
     focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? adds.querySelector('button'))?.focus(),
+    destroy: () => {
+      for (const row of rows.values()) for (const cell of row.cells) cell.widget.destroy?.();
+    },
     update(state) {
       readonly = state.readonly;
       const current = (state.value as Line[] | null) ?? [];
@@ -576,6 +579,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         if (!keep.has(key)) {
           row.element.remove();
           rows.delete(key);
+          // Its cells' widgets go with it, and what they gave the form (a reader of what is typed) with them.
+          for (const cell of row.cells) cell.widget.destroy?.();
         }
       }
       current.forEach((line, index) => {
@@ -583,6 +588,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         // A line that changed kind is drawn afresh.
         if (row && row.kind !== lineKind(def, line.values)) {
           row.element.remove();
+          for (const cell of row.cells) cell.widget.destroy?.();
           row = undefined;
         }
         if (!row) {

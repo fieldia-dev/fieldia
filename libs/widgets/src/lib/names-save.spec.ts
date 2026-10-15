@@ -234,3 +234,38 @@ describe('a choice found by its name', () => {
 });
 
 
+
+describe('a link in a line taken away', () => {
+  const linesPage = {
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'order' },
+    fields: {
+      line_ids: { type: 'one2many', label: 'Lines', relation: 'order.line', fields: { partner_id: { type: 'many2one', label: 'Supplier', relation: 'partner' } } },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-lines', field: 'line_ids' }] },
+  } as unknown as Page;
+
+  it('takes the words typed in it away too: a save waits for none of them, and is not refused by them', async () => {
+    const dataSource = createMemoryDataSource({ records: { order: { 1: { line_ids: [] } }, partner: { 1: { name: 'Acme' } } }, delayMs: 15 });
+    const form = createForm({ page: linesPage, dataSource, recordId: 1 });
+    await form.load();
+    const node = (linesPage.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'line_ids', field: linesPage.fields['line_ids'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['line_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    form.addLine('line_ids', {});
+    const cell = widget.element.querySelector('tbody input[role="combobox"]') as HTMLInputElement;
+    // Words that name none, left for the line's delete button: their lookup is on its way as the line goes.
+    type(cell, 'Narnia');
+    cell.blur();
+    (widget.element.querySelector('.fd-line-delete') as HTMLButtonElement).click();
+    expect(form.getState().values['line_ids']).toEqual([]);
+    expect(await form.save()).toBe(true);
+    await wait(60);
+    expect(form.getState().unread).toEqual({});
+    expect(form.getState().errors).toEqual({});
+  });
+});
