@@ -194,7 +194,8 @@ describe('a signature’s settings', () => {
     expect(click).toHaveBeenCalled();
     Object.defineProperty(input, 'files', { value: [new File(['ABCD'], 'mine.png', { type: 'image/png' })], configurable: true });
     input.dispatchEvent(new Event('change'));
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The file is read as it would be in a browser, which takes what it takes: waited for, never a guessed 20 ms.
+    for (const end = Date.now() + 3000; value() == null && Date.now() < end; ) await new Promise((resolve) => setTimeout(resolve, 10));
     expect(value()).toEqual({ name: 'mine.png', type: 'image/png', size: 4, data: 'QUJDRA==' });
     // Shown as its picture, until Clear.
     expect((el.querySelector('img') as HTMLImageElement).hidden).toBe(false);

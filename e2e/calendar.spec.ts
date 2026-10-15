@@ -159,9 +159,10 @@ test.describe("a list's calendar", () => {
     const dialog = page.getByRole('dialog', { name: 'New' });
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('[data-node="f-doctor"] input')).toHaveValue('Dr Nour Adel');
+    // Fieldia's own date-and-time box shows the time in the page's words (the record keeps 2026-10-14T15:00).
     const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-    await expect(dialog.locator('[data-node="f-start"] input')).toHaveValue(`2026-10-14T${hhmm(minutes!)}`);
-    await expect(dialog.locator('[data-node="f-stop"] input')).toHaveValue(`2026-10-14T${hhmm(minutes! + 60)}`);
+    await expect(dialog.locator('[data-node="f-start"] input')).toHaveValue(`14 Oct 2026, ${hhmm(minutes!)}`);
+    await expect(dialog.locator('[data-node="f-stop"] input')).toHaveValue(`14 Oct 2026, ${hhmm(minutes! + 60)}`);
     await dialog.locator('[data-node="f-patient"] input').fill('Farida Selim');
     await screen(page, 'calendar-new-visit', { viewport: true });
     await dialog.getByRole('button', { name: 'Save & Close' }).click();
@@ -173,8 +174,8 @@ test.describe("a list's calendar", () => {
     const from = await pointAt(nobody, 8 * 60 + 5);
     await dragTo(page, from, { x: from.x, y: from.y + (await hourOf(nobody)) / 2 });
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('[data-node="f-start"] input')).toHaveValue('2026-10-14T17:00');
-    await expect(dialog.locator('[data-node="f-stop"] input')).toHaveValue('2026-10-14T17:45');
+    await expect(dialog.locator('[data-node="f-start"] input')).toHaveValue('14 Oct 2026, 17:00');
+    await expect(dialog.locator('[data-node="f-stop"] input')).toHaveValue('14 Oct 2026, 17:45');
     await expect(dialog.locator('[data-node="f-doctor"] input')).toHaveValue('');
     await dialog.getByRole('button', { name: 'Discard' }).click();
     expect(problems).toEqual([]);
