@@ -4,6 +4,12 @@ import { createMemoryDataSource, type Locale, type Page } from '@fieldia/core';
 import { quoted, WIDGET_LABELS } from '@fieldia/widgets';
 import { mountViewer, type ViewerHandle } from './viewer';
 
+/** Waits for what a test expects next, instead of guessing how long the machine takes (a slow CI runner lost to 100 ms). */
+async function until(happened: () => boolean, ms = 3000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!happened() && Date.now() < end) await new Promise((done) => setTimeout(done, 10));
+}
+
 /**
  * Words typed into a box that picks a record by its name — a link — and every
  * way a value is saved: Ctrl+Enter while the name is still being looked up,
@@ -125,7 +131,7 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: a link box’s words and the key
     box.focus();
     leave(box);
     await form.settled();
-    await new Promise((done) => setTimeout(done, 60));
+    await until(() => box.value === 'Acme');
     expect(box.value).toBe('Acme');
     expect(form.getState().unread['client_id']).toBeUndefined();
   });
@@ -187,7 +193,7 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: a link box’s words and the key
     keys(box, NILE[locale]);
     const next = host.querySelectorAll<HTMLButtonElement>('.fd-record-step')[1];
     next.click();
-    await new Promise((done) => setTimeout(done, 200));
+    await until(() => form.getState().recordId === 2);
     await form.settled();
     expect(label(stored())).toBe(NILE[locale]);
     expect(form.getState().recordId).toBe(2);
@@ -220,13 +226,13 @@ describe('a wizard’s Next with a name still being looked up', () => {
     enter(box);
     keys(box, 'Narnia');
     ctrlEnter(box);
-    await new Promise((done) => setTimeout(done, 100));
+    await until(() => (form.getState().errors['client'] ?? '').includes('Narnia'));
     expect(form.getState().step).toBe('s1');
     expect(form.getState().errors['client']).toContain('Narnia');
     box.value = '';
     keys(box, 'Nile Interiors');
     ctrlEnter(box);
-    await new Promise((done) => setTimeout(done, 100));
+    await until(() => form.getState().step === 's2');
     expect(form.getState().step).toBe('s2');
     expect(label(form.getState().values['client'])).toBe('Nile Interiors');
   });
