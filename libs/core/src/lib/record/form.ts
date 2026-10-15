@@ -239,14 +239,25 @@ export interface Form {
    */
   leave(path: string): void;
   /**
-   * How a box that reads what is typed in it as it is left — a number, hours, a date, a colour's code — reads it
-   * now, while it still has the focus: every save and send, every check and step forward runs these first
-   * (`settle`), so Ctrl+Enter, a button's key or the app's own save keep what the box shows, or refuse it with its
-   * words, and never save a value passed on the way ("1" of "1.5"). Returns what stops it, for when the box goes.
+   * How a box reads what is typed in it and not yet read — a number, hours, a date, a colour's code, a name looked
+   * up — now, as if it were left: every save and send, every check and step forward runs these first (`settle`), so
+   * Ctrl+Enter, a button's key, a pager or the app's own save keep what the box shows, or refuse it with its words,
+   * and never save a value passed on the way ("1" of "1.5") or the one the box held before. The viewer gives one
+   * for the box that has the focus (a change, which each box reads); a box whose reading waits — a name looked up
+   * among records — gives its own, which keeps the text unread with why at once, and returns the wait: a save
+   * waits for it, while a check or a step forward, which cannot wait, refuses meanwhile. Returns what stops it.
    */
-  settling(read: () => void): () => void;
-  /** Read what is typed and not yet read in every box (`settling`), as if each were left: a save does it first. */
-  settle(): void;
+  settling(read: () => void | Promise<unknown>): () => void;
+  /**
+   * Read what is typed and not yet read in every box (`settling`), as if each were left: a save does it first.
+   * Resolves once every reading that waits (a name looked up) has ended.
+   */
+  settle(): Promise<void>;
+  /**
+   * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
+   * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
+   */
+  reading(): boolean;
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
@@ -488,11 +499,29 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** Those given their page, with the inner form that holds their answers. */
   const attached = new Map<string, { name: string; inner: InnerForm }>();
   /** How each box with text typed and not yet read reads it now (`settling`). */
-  const readers = new Set<() => void>();
-  /** Every box's text read now, this form's and its saved forms' placed on the page, before it is checked or saved. */
-  function readTyped() {
-    for (const read of [...readers]) read();
-    for (const part of attached.values()) part.inner.form.settle();
+  const readers = new Set<() => void | Promise<unknown>>();
+  /** Readings of typed text still waiting, as readTyped started them. */
+  let readingNow = 0;
+  /**
+   * Every box's text read now, this form's and its saved forms' placed on the page, before it is checked or saved:
+   * what a reading that waits (a name looked up) is waiting for, or null when none does. Such a box keeps its text
+   * unread meanwhile, so a check made now refuses it; a save waits.
+   */
+  function readTyped(): Promise<void> | null {
+    const waits: Promise<unknown>[] = [];
+    for (const read of [...readers]) {
+      const wait = read();
+      if (wait && typeof (wait as Promise<unknown>).then === 'function') waits.push((wait as Promise<unknown>).catch(() => undefined));
+    }
+    for (const part of attached.values()) {
+      const inner = part.inner.form;
+      const wait = inner.settle();
+      if (inner.reading()) waits.push(wait);
+    }
+    if (!waits.length) return null;
+    // Waiting on its own readings, or a saved form's: `reading` says so until they end.
+    readingNow++;
+    return Promise.all(waits).then(() => void readingNow--);
   }
   /** The page's fields, and each saved form's answers as a JSON value: what is loaded, told as changed and saved. */
   const fields: Fields = { ...page.fields };
@@ -1156,8 +1185,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
    * and a stop keeps it unsaved; `afterSave` runs once it is saved.
    */
   async function saving(chain: readonly string[]): Promise<Stopped | null> {
-    // What is still typed in a box is read first: it is what is saved, or why nothing is.
-    readTyped();
+    // What is still typed in a box is read first: it is what is saved, or why nothing is. A name still being looked
+    // up is waited for, so the record it names is what is saved — or, named by none, why nothing is.
+    const waiting = readTyped();
+    if (waiting) await waiting;
     if (page.on?.beforeSave) {
       const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
       if (!before.done) {
@@ -1567,7 +1598,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       return () => void readers.delete(read);
     },
 
-    settle: readTyped,
+    settle: () => readTyped() ?? Promise.resolve(),
+    reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate() {
       readTyped();

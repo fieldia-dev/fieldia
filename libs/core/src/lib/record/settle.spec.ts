@@ -77,3 +77,80 @@ describe('text typed and not yet read', () => {
     expect(read).toHaveBeenCalled();
   });
 });
+
+describe('a reading that waits (a name looked up)', () => {
+  /** A box whose words name a record found later: unread meanwhile, the record taken once found. */
+  function lookingUp(form: ReturnType<typeof createForm>, found: number | null, ms = 10) {
+    return form.settling(() => {
+      form.setUnread('seats', { text: 'twelve', message: 'Workstations: still looking for “twelve”' });
+      return new Promise<void>((done) =>
+        setTimeout(() => {
+          if (found === null) form.setUnread('seats', { text: 'twelve', message: 'Workstations: nothing is called “twelve”' });
+          else {
+            form.setUnread('seats', null);
+            form.setValue('seats', found);
+          }
+          done();
+        }, ms)
+      );
+    });
+  }
+
+  it('is waited for by a save, which saves what it found', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { seats: 4 } } } });
+    const form = createForm({ page, dataSource, recordId: 1 });
+    await form.load();
+    const off = lookingUp(form, 12);
+    expect(await form.save()).toBe(true);
+    off();
+    expect(dataSource.records['project'][1]['seats']).toBe(12);
+  });
+
+  it('refuses a save with why when it finds none, saving nothing', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { seats: 4 } } } });
+    const form = createForm({ page, dataSource, recordId: 1 });
+    await form.load();
+    lookingUp(form, null);
+    expect(await form.save()).toBe(false);
+    expect(form.getState().errors['seats']).toBe('Workstations: nothing is called “twelve”');
+    expect(dataSource.records['project'][1]['seats']).toBe(4);
+  });
+
+  it('is said by `reading` while it waits; a check made meanwhile refuses it, and `settle` waits for it', async () => {
+    const form = createForm({ page: { ...page, data: { kind: 'responses' } } as Page });
+    lookingUp(form, 12);
+    expect(form.reading()).toBe(false);
+    expect(form.validate()).toBe(false);
+    expect(form.reading()).toBe(true);
+    expect(form.getState().errors['seats']).toBe('Workstations: still looking for “twelve”');
+    await form.settle();
+    expect(form.reading()).toBe(false);
+    expect(form.getState().values['seats']).toBe(12);
+  });
+
+  it('in a saved form placed on the page, is waited for by the page round it', async () => {
+    const inner: Page = { fieldia: '0.1', id: 'inner', data: { kind: 'responses' }, fields: { n: { type: 'integer', label: 'Nights' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'f-n', field: 'n' }] } } as Page;
+    const outer = {
+      fieldia: '0.1',
+      id: 'outer',
+      data: { kind: 'responses' },
+      fields: {},
+      layout: { type: 'sections', id: 'root', children: [{ type: 'form', id: 'stay', page: 'inner', name: 'stay' }] },
+    } as unknown as Page;
+    const dataSource = createMemoryDataSource();
+    const form = createForm({ page: outer, dataSource });
+    const placed = form.embed('stay', inner);
+    placed.settling(() => {
+      placed.setUnread('n', { text: 'three', message: 'Nights: still looking' });
+      return new Promise<void>((done) =>
+        setTimeout(() => {
+          placed.setUnread('n', null);
+          placed.setValue('n', 3);
+          done();
+        }, 10)
+      );
+    });
+    expect(await form.save()).toBe(true);
+    expect(dataSource.responses[0].values['stay']).toEqual({ n: 3 });
+  });
+});
