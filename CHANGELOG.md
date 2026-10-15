@@ -45,8 +45,11 @@ that adds none of them behaves as in 0.21, apart from the one change under
   one shown (its words are still said).
 - **A part that fails stays in its box**: a widget, a slot or a map that throws
   shows a box naming it and tells `onError`; the rest of the form goes on.
-- **Page format versions**: a page says which Fieldia shape it has
-  (`"fieldia"`), and `upgradePage` brings an older one up to date.
+- **Page format 0.2**: a page says which Fieldia shape it has (`"fieldia"`),
+  and `upgradePage` brings an older one up to date. 0.2 only adds (a list's
+  `calendar`, a date's order, a pattern's hint, a photo's `shrink`), so a 0.1
+  page is read as it is; the designer writes 0.2. A Fieldia older than 0.22
+  may refuse a 0.2 page.
 - Tested in Firefox and WebKit as well as Chromium, on every change.
 - **Renamed from 0.21:** `form.leave(path)`, which told the form a box was left,
   is now `form.boxLeft(path)`; `form.leave()` is the check above.

@@ -1,4 +1,4 @@
-import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, FORMAT_VERSION, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { createWidget, type ErrorHandler } from '@fieldia/widgets';
 import { tiles, type SearchRequest } from './providers';
 import { mapWidgets } from './widgets';
@@ -10,7 +10,7 @@ import { mapWidgets } from './widgets';
  */
 
 const page = {
-  fieldia: '0.1',
+  fieldia: FORMAT_VERSION,
   id: 'site',
   data: { kind: 'responses' },
   fields: {

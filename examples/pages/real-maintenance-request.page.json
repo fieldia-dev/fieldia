@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "real-maintenance-request",
   "title": "Maintenance Request",
   "description": "Sherkety ERP, maintenance: maintenance.request, hr_equipment_request_view_form, with hr_maintenance's Created By.",

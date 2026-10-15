@@ -7,7 +7,7 @@ import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
 
-import { FORMAT_VERSION, formatProblem, type FormatVersion } from './version';
+import { FORMAT_VERSIONS, formatProblem, type FormatVersion } from './version';
 import type { DateOrder } from '../record/input-rules';
 export { FORMAT_VERSION } from './version';
 
@@ -133,7 +133,9 @@ const PartsLookSchema = z.strictObject(
 export const PageSchema = z
   .strictObject({
     // Newer than this Fieldia, or no format at all: said in words (formatProblem), not as a literal expected.
-    fieldia: z.literal(FORMAT_VERSION, { error: (issue) => formatProblem(issue.input) ?? undefined }),
+    // Any format Fieldia has had: a page is brought up to date before it is checked, and an app's own older pages
+    // ("0.1", from 0.20 and 0.21) still type as pages.
+    fieldia: z.enum(FORMAT_VERSIONS, { error: (issue) => formatProblem(issue.input) ?? undefined }),
     id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/),
     title: z.string().optional(),
     description: z.string().optional(),

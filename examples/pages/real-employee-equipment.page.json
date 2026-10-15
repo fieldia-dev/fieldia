@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "real-employee-equipment",
   "title": "Equipment",
   "description": "Sherkety ERP, maintenance: maintenance.equipment, hr_equipment_view_tree — the employee's Equipment smart button opens it, filtered on the employee.",

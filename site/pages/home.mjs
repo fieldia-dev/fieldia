@@ -97,7 +97,7 @@ const power = ([name, figure, words, href]) =>
 
 /** The page the hero writes, as it is mounted at its last step; home.js writes it again, line by line. */
 const HERO_JSON = `{
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "project-brief",
   "title": "Start a project",
   "fields": {

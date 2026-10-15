@@ -1,4 +1,4 @@
-import { checkPage, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
+import { checkPage, FORMAT_VERSION, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
 import { kindById } from './kinds';
 import { DESIGNER_WORDS, type DesignerLocale, type DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -60,7 +60,7 @@ function made(kind: 'survey' | 'screen', id: string, title: string, description:
       : { type: 'sections', id: 'sections', children: groups.map(([label, asks], i) => ({ type: 'section', id: `section-${i + 1}`, title: label, columns: 2, children: nodes(asks) })) };
   const data: Page['data'] = kind === 'survey' ? { kind: 'responses' } : { kind: 'record', model: id.replace(/-/g, '.') };
   // Written in another language than English: the page says so, and its form speaks it.
-  return { id, title, description, page: { fieldia: '0.1', id, title, description, ...(language ? { language } : {}), data, fields, layout } };
+  return { id, title, description, page: { fieldia: FORMAT_VERSION, id, title, description, ...(language ? { language } : {}), data, fields, layout } };
 }
 
 /** Fieldia's surveys to start from, in the designer's language. */

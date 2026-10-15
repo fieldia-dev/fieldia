@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "map-zones",
   "title": "Orders this week",
   "description": "The week's orders by district: each district shaded by how many there are, with a legend. A district pressed searches for its orders.",

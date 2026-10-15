@@ -25,7 +25,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { upgradePage } from '@fieldia/core';
+import { FORMAT_VERSION, upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
@@ -130,7 +130,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
   const written = locale === 'en' ? {} : { language: locale };
   if (kind === 'survey') {
     return {
-      fieldia: '0.1',
+      fieldia: FORMAT_VERSION,
       id,
       title,
       ...written,
@@ -142,7 +142,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
   if (kind === 'list') {
     // A list shows at least one column: the records' names, to begin with.
     return {
-      fieldia: '0.1',
+      fieldia: FORMAT_VERSION,
       id,
       title,
       ...written,
@@ -154,7 +154,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
   if (kind === 'sheet') {
     // A record named in big letters at the top, as a business record is.
     return {
-      fieldia: '0.1',
+      fieldia: FORMAT_VERSION,
       id,
       title,
       ...written,
@@ -164,7 +164,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
     };
   }
   return {
-    fieldia: '0.1',
+    fieldia: FORMAT_VERSION,
     id,
     title,
     ...written,

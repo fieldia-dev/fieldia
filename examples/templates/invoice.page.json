@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "invoice",
   "title": "Invoice",
   "description": "A customer invoice: lines, tax and totals worked out as you type, confirmed and then paid.",

@@ -80,8 +80,8 @@ describe('upgradePage', () => {
 
 describe('the format in the checks', () => {
   it('a page newer than this Fieldia: checkPage and validatePage say to update Fieldia', () => {
-    const newer = { ...page(), fieldia: '0.2' };
-    const said = `this page is in format 0.2, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
+    const newer = { ...page(), fieldia: '0.3' };
+    const said = `this page is in format 0.3, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
     expect(checkPage(newer)).toEqual({ ok: false, issues: [{ path: 'fieldia', message: said }] });
     const validated = validatePage(newer);
     expect(validated.ok).toBe(false);
@@ -109,6 +109,21 @@ describe('the format in the checks', () => {
     expect(compareFormats('1.0', '0.21')).toBeGreaterThan(0);
     expect(compareFormats('0.1', '0.1')).toBe(0);
     expect(compareFormats('0.1', 'x')).toBeNull();
+  });
+});
+
+describe('a page from 0.20 or 0.21 (format 0.1)', () => {
+  it('is read as it is, its version moved on and its own fields, layout and options the very objects given', () => {
+    const fields = { name: { type: 'char', label: 'Name', size: 20 } };
+    const layout = { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'name' }] };
+    const given = { fieldia: '0.1', id: 'old', data: { kind: 'responses' }, fields, layout };
+    const read = upgradePage(given);
+    expect(read).not.toBe(given);
+    expect(given.fieldia).toBe('0.1');
+    expect(read.fieldia).toBe(FORMAT_VERSION);
+    expect(read.fields).toBe(fields);
+    expect(read.layout).toBe(layout);
+    expect(validatePage(given)).toMatchObject({ ok: true });
   });
 });
 

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "map-zone",
   "title": "Delivery zone",
   "description": "A zone drawn on the map as a polygon, a box or a circle, or chosen from the named ones, with its fee and its time.",

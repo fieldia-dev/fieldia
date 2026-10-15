@@ -1,4 +1,5 @@
 import type { Page } from '../format/page';
+import { FORMAT_VERSION } from '../format/version';
 import { validatePage } from '../format/validate';
 import { createForm, type FormEvents } from './form';
 import { createMemoryDataSource } from './memory-data-source';
@@ -12,7 +13,7 @@ import type { PostedMessage } from './run';
  */
 
 const employee: Page = {
-  fieldia: '0.1',
+  fieldia: FORMAT_VERSION,
   id: 'employee',
   title: 'Employee',
   data: { kind: 'record', model: 'hr.employee' },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.1",
+  "fieldia": "0.2",
   "id": "customer",
   "title": "Customer",
   "data": { "kind": "record", "model": "partner" },

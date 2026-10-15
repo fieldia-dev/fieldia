@@ -1,4 +1,4 @@
-import type { FormNode, Page, Skin } from '@fieldia/core';
+import { FORMAT_VERSION, type FormNode, type Page, type Skin } from '@fieldia/core';
 import { mountViewer, type PageRequest, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -44,7 +44,7 @@ interface View {
 /** A page of one part, the saved form placed as this page places it: what the form draws, without the page's own conditions round it. */
 function placing(node: FormNode, look: Page['look'], language: string | undefined): Page {
   return {
-    fieldia: '0.1',
+    fieldia: FORMAT_VERSION,
     id: 'fieldia-designer-preview',
     // In the page's language, as the form will draw it: the saved form's own words in it, where it keeps them.
     ...(language ? { language } : {}),
