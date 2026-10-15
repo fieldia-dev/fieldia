@@ -469,7 +469,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     }
     return settleTyped(text, false, true);
   }
-  const stopReading = typeof form.settling === 'function' ? form.settling(readNow) : null;
+  // Still typed in: autosave, which nobody pressed, waits until the box is left, never reading the words under the keys.
+  const stopReading = typeof form.settling === 'function' ? form.settling(readNow, () => doc.activeElement === input && editing) : null;
 
   const forward = () => (getComputedStyle(element).direction === 'rtl' || rightToLeft(element) ? 'ArrowLeft' : 'ArrowRight');
   input.addEventListener('input', () => {

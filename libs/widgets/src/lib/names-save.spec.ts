@@ -269,3 +269,30 @@ describe('a link in a line taken away', () => {
     expect(form.getState().errors).toEqual({});
   });
 });
+
+describe('autosave while a name is typed', () => {
+  it('waits until the box is left, never looking the words up under the keys; then saves the record they name', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { client_id: { id: 1, label: 'Acme' }, tag_ids: [] } }, partner: { 1: { name: 'Acme' }, 2: { name: 'Nile Interiors' } } }, delayMs: 5 });
+    const form = createForm({ page, dataSource, recordId: 1, autosave: { delayMs: 30 } });
+    await form.load();
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'client_id', field: page.fields['client_id'] as Field, node, id: 'fd-auto', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element, document.createElement('button'));
+    const refresh = () => widget.update({ value: form.getState().values['client_id'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    const input = widget.element.querySelector('input[role="combobox"]') as HTMLInputElement;
+    // Something else changed, so autosave is on its way; then a name typed, half of it.
+    form.setValue('tag_ids', [{ id: 10, label: 'VIP' }]);
+    type(input, 'Nile');
+    await wait(120);
+    expect(form.getState().unread).toEqual({});
+    expect(dataSource.records['project'][1]['tag_ids']).toEqual([]);
+    type(input, 'Nile Interiors');
+    input.blur();
+    await wait(150);
+    await form.settled();
+    expect(label(dataSource.records['project'][1]['client_id'])).toBe('Nile Interiors');
+    expect(dataSource.records['project'][1]['tag_ids']).toHaveLength(1);
+  });
+});

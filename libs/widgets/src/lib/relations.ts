@@ -346,7 +346,8 @@ function combobox(options: {
     keep(text, fill(labels.lookingUp, { label: options.typed.label, text: quoted(text.trim()) }));
     return readWords(text, false, true).done;
   }
-  const stopReading = form && path && typeof form.settling === 'function' ? form.settling(readForSave) : null;
+  // Still typed in: autosave, which nobody pressed, waits until the box is left, never reading the words under the keys.
+  const stopReading = form && path && typeof form.settling === 'function' ? form.settling(readForSave, () => doc.activeElement === input && editing) : null;
 
   input.addEventListener('input', () => {
     editing = true;

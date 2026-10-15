@@ -158,7 +158,9 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     noMatch(text);
     form.setUnread(name, { text: typed, message: fillIn(words.noMatch, { label, text: quoted(text) }) });
   }
-  const stopReading = typeof form.settling === 'function' ? form.settling(readNow) : null;
+  // Still typed in (words that are no choice yet): autosave, which nobody pressed, waits until the box is left.
+  const typingHere = () => document.activeElement === input && !readonly && input.value.trim() !== (single ? labelOf(current()) : '');
+  const stopReading = typeof form.settling === 'function' ? form.settling(readNow, typingHere) : null;
 
   if (!single) input.addEventListener('focus', () => !readonly && open());
   input.addEventListener('click', () => !readonly && list.hidden && open());
