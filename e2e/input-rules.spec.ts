@@ -96,6 +96,13 @@ test.describe('a number box in the viewer', () => {
     await compose(page, 'ab');
     await expect(seats).toHaveValue('12');
     await expect(hintOf(page, 'f-seats')).toHaveText('Workstations: numbers only');
+    // Composed where the refused letters wait, a digit waits with them, as a key typed there does: "12ab３" is never 123.
+    await compose(page, '３');
+    await expect(seats).toHaveValue('12');
+    await expect(hintOf(page, 'f-seats')).toHaveText('Workstations: numbers only');
+    // Taken back, the letters and the digit with them, a digit composed then is a number like any other.
+    for (let i = 0; i < 3; i++) await seats.press('Backspace');
+    await expect(hintOf(page, 'f-seats')).toBeHidden();
     await compose(page, '３');
     await expect(seats).toHaveValue('12３');
     expect(await valueOf(page, 'seats')).toBe(123);
