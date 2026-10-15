@@ -267,3 +267,30 @@ describe('a date and time pasted into a box that keeps a day', () => {
     expect(value()).toBe('2026-10-15');
   });
 });
+
+describe('a save reads a text box as leaving does: the same text whichever key saved it', () => {
+  it.each([
+    ['a phone number’s Arabic digits are 0-9', { type: 'char' }, { widget: 'phone' }, '٠١٠٠١٢٣٤٥٦٧', '01001234567'],
+    ['a line’s ends are trimmed', { type: 'char' }, {}, 'Office ', 'Office'],
+    ['an email’s marks go', { type: 'char' }, { widget: 'email' }, '‏name@example.com', 'name@example.com'],
+  ] as const)('%s', (_, field, node, typed, kept) => {
+    const { input, value } = box(field, node);
+    keys(input, typed);
+    readNow(input);
+    expect(value()).toBe(kept);
+  });
+});
+
+describe('a save reads an address’s parts as leaving does', () => {
+  it('its postcode’s digits as 0-9 and its parts trimmed', () => {
+    const { el, value } = mountKind({ type: 'json', label: 'Home address' }, { widget: 'address' });
+    const postcode = el.querySelector('[data-part="postcode"]') as HTMLInputElement;
+    const street = el.querySelector('[data-part="street"]') as HTMLInputElement;
+    for (const [input, text] of [[street, ' 12 Nile Street '], [postcode, '١١٥١١']] as const) {
+      enter(input);
+      keys(input, text);
+      readNow(input);
+    }
+    expect(value()).toMatchObject({ street: '12 Nile Street', postcode: '11511' });
+  });
+});

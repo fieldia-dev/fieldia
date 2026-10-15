@@ -113,9 +113,10 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
  * placed after `anchor`, and the text settled as the box is left — written
  * to the field before the page hears it was left, so what is checked then is
  * what is kept. Keys held after a refused one are part of what was typed: all
- * of it is the box's then, and the field's — and a save made with the box
- * still entered (a change) takes them too, changing nothing else while the
- * box has the focus.
+ * of it is the box's then, and the field's. A save made with the box still
+ * entered (a change: Enter, Ctrl+Enter, the app's own save) settles it as
+ * leaving would — its digits as 0-9, its ends trimmed — so the text saved is
+ * the same whichever key saved it.
  */
 export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: WidgetContext, kind: TextKind, anchor: HTMLElement = input): TextBox {
   const { form, name, field, node } = context;
@@ -144,8 +145,7 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
     }
     write(settled);
   };
-  const taken = () => !input.readOnly && takeHeld() && write(input.value);
-  input.addEventListener('change', taken);
+  input.addEventListener('change', settle);
   input.addEventListener('blur', settle);
   return {
     hint,
@@ -153,7 +153,7 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
     accept: () => checks.accept(),
     destroy() {
       checks.destroy();
-      input.removeEventListener('change', taken);
+      input.removeEventListener('change', settle);
       input.removeEventListener('blur', settle);
     },
   };

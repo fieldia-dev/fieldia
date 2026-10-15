@@ -77,16 +77,19 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
         ? make('select', attrs, make('option', { value: '' }), ...countriesIn(locale).map(([code, country]) => make('option', { value: code }, country)))
         : make('input', { type: 'text', ...attrs });
     input.addEventListener(part === 'country' ? 'change' : 'input', () => write(part, input.value));
-    // Left, a part is kept trimmed, spaces alone being nothing; a postcode with its digits as 0-9 ("١١٥١١" is 11511).
+    // Left, or read by a save made from inside it (a change), a part is kept trimmed, spaces alone being nothing; a
+    // postcode with its digits as 0-9 ("١١٥١١" is 11511): the same whichever key saved it.
     if (part !== 'country') {
       const box = input as HTMLInputElement;
-      box.addEventListener('blur', () => {
+      const settle = () => {
         if (box.readOnly) return;
         const settled = part === 'postcode' ? settledPostcode(box.value) : settledText(box.value, {});
         if (settled === box.value) return;
         box.value = settled;
         write(part, settled);
-      });
+      };
+      box.addEventListener('change', settle);
+      box.addEventListener('blur', settle);
     }
     if (part === 'country') input.classList.add('fd-select');
     element.append(make('div', { class: `fd-address-part fd-address-${part}${needed.includes(part) ? ' fd-required' : ''}` }, make('label', { class: 'fd-address-label', for: input.id }, words[label]), input));
