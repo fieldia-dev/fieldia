@@ -480,7 +480,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // page in place's own questions gone for it, each reporting a save that went through as saved however it closes; the
 // pager looking up its next id before it saves; the breadcrumbs asking; the safety kit's focus passed on to a box that
 // takes it — 0.7 more (574.68 measured before, 575.39 after), to 575.4.
-const BUDGET_KB = 575.4;
+// Ways out serialised, answers kept to their record (lane w1-serial): every way out waiting for the save on its way and
+// the files on theirs (`leaving`, said where Saving… would be, and at a dialog's foot), a way out taken meanwhile
+// joining it; each record shown a generation of its own, a save's or a call's answer laid only on the record it was
+// started for and a run stopping on one replaced; the person's work at risk told against the record as the last save
+// left it, a file the store holds that no save sent among it; `leaveNow`; Discard waiting too; the app's breadcrumbs
+// inside a page in place through the record under it, its question shown over that page; Done saving a file on its
+// way first — 2.9 more (575.39 measured before, 578.23 after), to 578.3.
+const BUDGET_KB = 578.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -555,7 +562,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 176.62 after, to 176.7.
 // One check in the form before its values go (listed with the raw budget above): 176.62 measured before, 176.84 after,
 // to 176.9.
-const GZIP_BUDGET_KB = 176.9;
+// Ways out serialised, answers kept to their record (listed with the raw budget above): 176.84 measured before, 177.83
+// after, to 177.9.
+const GZIP_BUDGET_KB = 177.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -620,7 +629,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // step that leaves the record, and the status's "Saved" and "Sent" when not all of it was — three sentences in each,
 // measured 34.22 and 6.50 in Arabic, 14.55 and 5.62 in German, 14.86 and 5.55 in French: Arabic's to 34.3, German's
 // to 14.6 and 5.7, French's to 14.9.
-const ADD_ON_BUDGET_KB = { ar: [34.3, 6.5], de: [14.6, 5.7], fr: [14.9, 5.6] };
+// Ways out serialised (lane w1-serial): what a way out waits for — the save, one file, {n} files — Done's "Not all your
+// changes are saved", and core's word for a run whose record was replaced — five sentences in each, measured 35.15 and
+// 6.60 in Arabic, 14.94 and 5.71 in German, 15.28 and 5.65 in French: Arabic's to 35.2 and 6.6, German's to 15.0 and
+// 5.8, French's to 15.3 and 5.7.
+const ADD_ON_BUDGET_KB = { ar: [35.2, 6.6], de: [15.0, 5.8], fr: [15.3, 5.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
