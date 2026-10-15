@@ -423,8 +423,17 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setSeveral(id: string, on: boolean): boolean;
   undo(): void;
   redo(): void;
-  /** Publish the draft as the next version. Returns its number. */
+  /**
+   * Publish the draft as the next version. Returns its number. A setting still typed in its box is read first, as
+   * leaving the box reads it (`settling`): kept when it fits, else the box shows what the setting holds and says why —
+   * never a version published under text the person was still typing.
+   */
   publish(): Promise<number>;
+  /**
+   * How the editors read a setting typed and not yet left — a number, a date, a word — now, as leaving its box would:
+   * `publish` runs these first, whatever asked for it (a button's key, the app's own call). Returns what stops it.
+   */
+  settling(read: () => void): () => void;
   /** What people would trip over on the page as it is, what would stop them first. */
   checks(): PageCheck[];
   /** Do a check's fix: delete an empty page, drop a rule that can never hold, or pick what it is about. */
@@ -601,6 +610,8 @@ export function createDesigner(options: {
   regionSets?: readonly RegionSet[];
 }): Designer {
   const store = options.store;
+  /** How each editor reads a setting typed and not yet left (`settling`): publish runs them first. */
+  const readers = new Set<() => void>();
   const locale = designerLocale(options.locale);
   const words = DESIGNER_WORDS[locale ?? 'en'];
   const appKinds = registerKinds(options.kinds ?? []);
@@ -819,6 +830,10 @@ export function createDesigner(options: {
     words,
     locale,
     getPage: () => page,
+    settling(read) {
+      readers.add(read);
+      return () => void readers.delete(read);
+    },
     modelFields() {
       const shown = shownFields(page);
       return Object.keys(model)
@@ -1502,6 +1517,8 @@ export function createDesigner(options: {
     },
 
     async publish() {
+      // A setting still typed is read first, as leaving its box reads it: what is published is what the boxes show.
+      for (const read of [...readers]) read();
       const checked = validatePage(page);
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
       const version = store ? await store.publish(clone(page)) : versions.length + 1;

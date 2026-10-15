@@ -463,3 +463,22 @@ describe('the words for what changed, when published', () => {
     expect(pageChanges(before, designer.getPage())).toEqual(['“Hours”: from 0 to 320', '“Hours”: always red', '“Hours”: no percent on the bar']);
   });
 });
+
+describe('a setting still typed as the page is published', () => {
+  it('is read first, as leaving its box would: the version published holds what the box shows', async () => {
+    const { designer, id, host } = screenWith('short-answer');
+    // Typed, and published by the app (a key of its own) with the focus still in the box.
+    type(inline(host, 'Most characters') ?? undefined, '80');
+    const version = await designer.publish();
+    expect(version).toBe(1);
+    expect(fieldOf(designer, id)).toMatchObject({ size: 80 });
+  });
+
+  it('that does not fit is refused at its box, with why, and the setting keeps what it held', async () => {
+    const { designer, id, host } = screenWith('short-answer');
+    type(inline(host, 'Most characters') ?? undefined, '0');
+    await designer.publish();
+    expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    expect(inline(host, 'Most characters')?.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Most characters is a whole number, 1 or more');
+  });
+});

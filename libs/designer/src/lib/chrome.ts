@@ -146,6 +146,15 @@ export function designerBar(
     }
   };
   doc.addEventListener('keydown', onKey);
+  // A setting typed in its box and not yet left is read as leaving it would (its change), before a publish: a button's
+  // key or the app's own call publishes what the boxes show, or the box says why it keeps what it held.
+  const stopReading = designer.settling(() => {
+    const active = doc.activeElement;
+    if (!(active instanceof HTMLElement) || !root.contains(active)) return;
+    if (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && !['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'color', 'range', 'hidden'].includes((active as HTMLInputElement).type))) {
+      active.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
 
   return {
     element,
@@ -161,6 +170,7 @@ export function designerBar(
       setText(issues, state.issues.join('\n'));
     },
     destroy() {
+      stopReading();
       doc.removeEventListener('keydown', onKey);
       sized?.disconnect();
       scroller.style.removeProperty('scroll-padding-top');
