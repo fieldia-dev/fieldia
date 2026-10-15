@@ -41,7 +41,8 @@ jobs:
   browser:
     name: Browser gates (every framework demo, ${{ matrix.shard }} of 4)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The first quarter took 19 minutes on 0.22's first green run: room above it, so a slow runner is not a failure.
+    timeout-minutes: 30
     # Four runners, each the whole build and a quarter of the scenarios: one alone
     # had grown to 19 of its 20 minutes, and so had half of them by Phase 26; a
     # third of them passed 20 minutes once 0.22 brought some 400 more.
