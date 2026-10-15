@@ -487,7 +487,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // left it, a file the store holds that no save sent among it; `leaveNow`; Discard waiting too; the app's breadcrumbs
 // inside a page in place through the record under it, its question shown over that page; Done saving a file on its
 // way first — 2.9 more (575.39 measured before, 578.23 after), to 578.3.
-const BUDGET_KB = 578.3;
+// A late answer's words said though its record is gone, and a closed form's run stopping quietly — 0.1 more
+// (578.23 measured before, 578.38 after), to 578.4.
+const BUDGET_KB = 578.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
