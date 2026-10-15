@@ -61,5 +61,6 @@ export const de: Messages = {
   mayNotDelete: 'Sie können diesen Datensatz nicht löschen.',
   theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
   discardChanges: 'Ihre Änderungen verwerfen?',
+  recordReplaced: 'Jetzt wird ein anderer Datensatz angezeigt: die übrigen Schritte wurden nicht ausgeführt.',
   locale: 'de',
 };

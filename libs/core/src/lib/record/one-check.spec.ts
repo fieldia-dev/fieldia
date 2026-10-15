@@ -178,10 +178,10 @@ describe('the person’s work at risk: their changes a save went through without
     // Changed back to the value stored: nothing at risk.
     form.setValue('budget', 4000000);
     expect(form.getState().unsent).toEqual([]);
-    form.setValue('budget', 4300000);
-    expect(form.getState().unsent).toEqual([]);
-    // A change not saved that no save was asked for is not at risk: as in 0.20, the way out decides.
     expect(workAtRisk(form.getState())).toBe(false);
+    // Changed again since: the last save did not send it either (round 5: told against the record as it left it).
+    form.setValue('budget', 4300000);
+    expect(form.getState().unsent).toEqual(['budget']);
   });
 
   it('values the page’s own steps, the app, a rule or an afterSave run set while it saves are never the person’s', async () => {

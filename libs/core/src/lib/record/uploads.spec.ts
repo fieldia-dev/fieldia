@@ -256,7 +256,7 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(form.uploading('photos')).toEqual([]);
   });
 
-  it('stops every upload when the changes are discarded, or another record is opened — asked first, through the one check', async () => {
+  it('stops every upload when the changes are discarded; another record opened waits for the file on its way, then asks, through the one check', async () => {
     const store = handStore();
     const asked: string[] = [];
     const { form, state } = setup({ upload: store.upload, recordId: 1, confirm: (message) => (asked.push(message), true) });
@@ -268,10 +268,15 @@ describe('a file picked is stored at once, where the source stores files', () =>
     expect(state().uploads).toEqual([]);
     form.upload('photos', [photo('c.jpg')]);
     await tick();
-    expect(await form.openRecord(null)).toBe(true);
+    const going = form.openRecord(null);
+    await tick();
+    // It waits for the file on its way, saying so; landed, the file is the person's work no save sent: asked.
+    expect(state().leaving).toBe(true);
+    expect(asked).toEqual([]);
+    store.sent[2].end();
+    expect(await going).toBe(true);
     expect(asked).toEqual(['Discard your changes?']);
-    expect(store.sent[2].aborted()).toBe(true);
-    expect(state().uploads).toEqual([]);
+    expect(state()).toMatchObject({ recordId: null, uploads: [], unsent: [], leaving: false });
   });
 });
 
