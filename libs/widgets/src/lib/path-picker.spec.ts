@@ -20,7 +20,7 @@ const ITERATIONS = {
   7: { name: 'Night shift', path: ['Warehouse', 'Night shift'] },
 };
 
-function mount(options: { value?: number | null; node?: Partial<FieldNode>; preferences?: PreferenceStore; dir?: 'rtl'; readonly?: boolean } = {}) {
+function mount(options: { value?: number | null; node?: Partial<FieldNode>; preferences?: PreferenceStore; dir?: 'rtl'; readonly?: boolean; records?: Record<number, { name: string; path: string[]; dates?: string }> } = {}) {
   const page = {
     fieldia: '0.1',
     id: 'bug',
@@ -28,7 +28,7 @@ function mount(options: { value?: number | null; node?: Partial<FieldNode>; pref
     fields: { iteration: { type: 'many2one', label: 'Iteration', relation: 'work.iteration' } },
     layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-iteration', field: 'iteration', widget: 'path', ...options.node }] },
   } as unknown as Page;
-  const dataSource = createMemoryDataSource({ records: { 'work.iteration': ITERATIONS }, shows: { 'work.iteration': { path: 'path', aside: 'dates' } } });
+  const dataSource = createMemoryDataSource({ records: { 'work.iteration': options.records ?? ITERATIONS }, shows: { 'work.iteration': { path: 'path', aside: 'dates' } } });
   const form = createForm({ page, dataSource });
   const preferences = options.preferences ?? memoryPreferences();
   const node = (page.layout as { children: FieldNode[] }).children[0];
@@ -40,7 +40,7 @@ function mount(options: { value?: number | null; node?: Partial<FieldNode>; pref
   const refresh = () => widget.update({ value: form.getState().values['iteration'], values: form.getState().values, readonly: options.readonly ?? false, required: false, invalid: false });
   form.subscribe(refresh);
   if (options.value) {
-    const record = ITERATIONS[options.value as keyof typeof ITERATIONS];
+    const record = (options.records ?? ITERATIONS)[options.value as keyof typeof ITERATIONS];
     form.setValue('iteration', { id: options.value, label: record.name, path: record.path, ...('dates' in record ? { aside: record.dates } : {}) });
   }
   refresh();
@@ -252,5 +252,84 @@ describe('a path picker', () => {
     await open(el, input);
     expect(callout(el).hidden).toBe(true);
     expect(input.readOnly).toBe(true);
+  });
+
+  describe('words typed and left', () => {
+    /** Typed into the box, as keys do (each an input event), and left by a click elsewhere at once, before any list came. */
+    function typeAndLeave(input: HTMLInputElement, text: string) {
+      input.focus();
+      input.value = text;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.blur();
+    }
+    const hintSays = (el: Element) => {
+      const hint = el.ownerDocument.querySelector<HTMLElement>('.fd-refusal-hint');
+      return hint && !hint.hidden ? hint.textContent : null;
+    };
+
+    it.each([
+      ['its whole path', 'Portal\\Sprint 12'],
+      ['its path written with /', 'portal / sprint 12'],
+      ['its own name, which only it has', 'Sprint 12'],
+    ])('take the record they name exactly — %s — whether or not its list came, and say nothing false', async (_, typed) => {
+      for (const node of [{}, { options: { tree: false } }]) {
+        const { el, input, value } = mount({ value: 4, node });
+        await open(el, input);
+        typeAndLeave(input, typed);
+        await settle();
+        expect({ typed, node, id: value()?.id, shown: input.value, said: hintSays(el) }).toEqual({ typed, node, id: 3, shown: 'Portal\\Sprint 12', said: null });
+      }
+    });
+
+    it('that name nothing put back what it held, and say so', async () => {
+      const { el, input, value } = mount({ value: 4 });
+      await open(el, input);
+      typeAndLeave(input, 'Sprint 99');
+      await settle();
+      expect(value()?.id).toBe(4);
+      expect(input.value).toBe('Portal\\Sprint 14');
+      expect(hintSays(el)).toBe('Iteration: nothing is called “⁨Sprint 99⁩”; pick one from the list. Iteration still holds Portal\\Sprint 14');
+    });
+
+    it('that name several put back what it held, and say several are called so: never that nothing is', async () => {
+      const records = { ...ITERATIONS, 8: { name: 'Night shift', path: ['Portal', 'Night shift'] } };
+      const { el, input, value } = mount({ value: 4, records });
+      await open(el, input);
+      typeAndLeave(input, 'night shift');
+      await settle();
+      expect(value()?.id).toBe(4);
+      expect(hintSays(el)).toBe('Iteration: more than one is called “⁨night shift⁩”; pick one from the list. Iteration still holds Portal\\Sprint 14');
+      // Its whole path names one.
+      typeAndLeave(input, 'Warehouse\\Night shift');
+      await settle();
+      expect(value()?.id).toBe(7);
+    });
+
+    it('left, then entered again before the record they name was found, are acted on as the box is next left', async () => {
+      const { el, input, value } = mount({ value: 4, node: { options: { tree: false } } });
+      await open(el, input);
+      typeAndLeave(input, 'Sprint 12');
+      // Back in the box at once, before the data source answered: the words wait there, still the person's.
+      input.focus();
+      await settle();
+      expect(value()?.id).toBe(4);
+      expect(input.value).toBe('Sprint 12');
+      input.blur();
+      await settle();
+      expect(value()?.id).toBe(3);
+      expect(input.value).toBe('Portal\\Sprint 12');
+      expect(hintSays(el)).toBeNull();
+    });
+
+    it('with Enter before their list came, take the record they name exactly, never the row the tree had reached', async () => {
+      const { el, input, value } = mount({ value: 4, node: { options: { tree: false } } });
+      await open(el, input);
+      input.value = 'Sprint 12';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      press(input, 'Enter');
+      await settle();
+      expect(value()?.id).toBe(3);
+      expect(input.value).toBe('Portal\\Sprint 12');
+    });
   });
 });

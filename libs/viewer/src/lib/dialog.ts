@@ -281,6 +281,11 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     saveClose.addEventListener('click', async () => {
       const had = doc.activeElement === saveClose;
       saveClose.disabled = true;
+      // Values checked, not saved: a name still being looked up in a box is waited for first, as a save waits for it.
+      if (options.mode === 'values') {
+        const waiting = handle.form.settle();
+        if (handle.form.reading()) await waiting;
+      }
       const accepted = options.mode === 'values' ? handle.check() : await handle.save();
       saveClose.disabled = false;
       // Disabled while it saved, it let go of the focus: it takes it back, unless the person went on elsewhere in the box.

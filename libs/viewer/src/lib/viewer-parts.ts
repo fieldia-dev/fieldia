@@ -1,5 +1,5 @@
-import type { ButtonNode, FieldNode, Page, SectionNode } from '@fieldia/core';
-import { choicePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import type { ButtonNode, Field, FieldNode, Page, SectionNode } from '@fieldia/core';
+import { choicePart, datePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -16,7 +16,7 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart];
+const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -29,11 +29,27 @@ const markdownAlone = (node: SectionNode) => {
  * a record's head, a button split, toggled or shown by its icon alone, or a
  * group's work heading; the filters part for a list's filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
- * a path picker, a choice in Fieldia's own list) — unless the app's `widgets` draw those fields; and those the
- * app's `slots` name for the slots the page has (a Discussion's).
+ * a path picker, a choice in Fieldia's own list, a date's box and calendar) — unless the app's `widgets` draw those
+ * fields; and those the app's `slots` name for the slots the page has (a Discussion's).
+ *
+ * A table's lines draw each cell with its column's widget (as its cells say: a time of day, a path picker), so their
+ * columns' parts are the page's too; and a properties field may hold a date — one added in place, or worked out from
+ * its value — whatever the page names, so it asks for the date part.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
+  const fieldParts = (field: Field, node: FieldNode): void => {
+    const part = widgetPart(field, node, widgets);
+    if (part) found.add(part);
+    // Its rows are drawn with each kind's widget: a date's, unless the app draws dates.
+    const dated = field.type === 'properties' ? widgetPart({ type: 'date', label: field.label }, { type: 'field', id: node.id, field: node.field }, widgets) : undefined;
+    if (dated) found.add(dated);
+    if (field.type !== 'one2many' || !field.fields) return;
+    for (const [column, sub] of Object.entries(field.fields)) {
+      const cell = node.cells?.[column];
+      fieldParts(sub as Field, { type: 'field', id: `${node.id}.${column}`, field: column, ...(cell?.widget ? { widget: cell.widget } : {}), ...(cell?.options ? { options: cell.options } : {}) });
+    }
+  };
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
       for (const item of value) visit(item);
@@ -48,8 +64,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) found.add(part);
     else if (node.type === 'field' && typeof node['field'] === 'string') {
       const field = page.fields[node['field']];
-      const part = field ? widgetPart(field, node as unknown as FieldNode, widgets) : undefined;
-      if (part) found.add(part);
+      if (field) fieldParts(field, node as unknown as FieldNode);
     }
     for (const key of Object.keys(node)) {
       const child = node[key];

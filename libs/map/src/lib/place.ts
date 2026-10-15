@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
-import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { formatNumber, guard, numberRules, refusalHint, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { addressLine } from './address-line';
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
@@ -81,36 +81,87 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     // ---- the coordinates, typeable -------------------------------------------
     const coords = doc.createElement('div');
     coords.className = 'fd-map-coords';
+    const locale = context.locale ?? 'en';
+    /**
+     * A coordinate's box, guarded as every number box is (FIELDIA INPUT RULES): letters and a misplaced minus are
+     * refused as they are typed, said under the box (after its label, so the words never join the box's name), and
+     * the keys typed after a refused one are held with it. A coordinate is never grouped: its one mark is decimal.
+     */
+    const checks: Guard[] = [];
+    const hints: RefusalHint[] = [];
     const coordinate = (words: string, inputId: string) => {
       const label = doc.createElement('label');
       const input = doc.createElement('input');
       input.className = 'fd-input';
       input.id = inputId;
-      input.inputMode = 'decimal';
+      input.inputMode = 'text';
       input.autocomplete = 'off';
       input.spellcheck = false;
       label.append(words, input);
       coords.append(label);
+      const box = { label: words, locale, labels: context.labels, limits: () => ({ ungrouped: true }) };
+      hints.push(refusalHint(input, label));
+      checks.push(guard(input, numberRules(box), hints[hints.length - 1]));
       return input;
     };
     const lat = coordinate(labels.latitude, search ? `${id}-lat` : id);
     const lng = coordinate(labels.longitude, `${id}-lng`);
+    /**
+     * The text each box was left with that does not read. The form keeps it as the place's field's unread text (its
+     * latitude's, for a place in two number fields: the field the page places), with why, so its check and save
+     * refuse it — never a place saved half new, the new latitude with the old longitude.
+     */
+    let left: [string | null, string | null] = [null, null];
+    /** Which of the two boxes does not read: the other, kept as typed beside it, is not marked. */
+    let wrong: [boolean, boolean] = [false, false];
+    const unread = () => form.getState().unread?.[name];
+    /** Why a coordinate typed is none: no number in its range (or none, beside the other). */
+    const why = (i: number, value: number | null): string | null => {
+      const most = i === 0 ? 90 : 180;
+      if (value !== null && Math.abs(value) <= most) return null;
+      return fill(labels.coordinateRange, { label: i === 0 ? labels.latitude : labels.longitude, min: formatNumber(-most, 0, locale), max: formatNumber(most, 0, locale) });
+    };
+    /** The text left unread let go: a place set since, or the boxes put right. */
+    const letGo = () => {
+      left = [null, null];
+      wrong = [false, false];
+      if (unread()) form.setUnread(name, null);
+    };
     const typed = () => {
-      const a = parseCoordinate(lat.value);
-      const b = parseCoordinate(lng.value);
-      const empty = !lat.value.trim() && !lng.value.trim();
-      const good = empty || isLatLng(a, b);
-      lat.setAttribute('aria-invalid', String(!good || (a !== null && Math.abs(a) > 90)));
-      lng.setAttribute('aria-invalid', String(!good || (b !== null && Math.abs(b) > 180)));
-      if (!good) return say(labels.notACoordinate, 'error');
+      // Keys held after a refused one are part of what was typed: the box shows them, marked, with why in the note.
+      const held = checks.map((guarded) => guarded.held());
+      [lat, lng].forEach((input, i) => {
+        if (!held[i]) return;
+        hints[i].hide();
+        input.value = (held[i] as { text: string }).text;
+        checks[i].accept();
+      });
+      const texts = [lat.value, lng.value] as const;
+      const empty = !texts[0].trim() && !texts[1].trim();
+      const words = texts.map((text, i) => (empty ? null : (held[i]?.words ?? why(i, parseCoordinate(text, locale)))));
+      lat.setAttribute('aria-invalid', String(!!words[0]));
+      lng.setAttribute('aria-invalid', String(!!words[1]));
+      if (words[0] || words[1]) {
+        // Kept as typed, marked, with why: in the note under the map, and in the form, whose save refuses it.
+        say(words[0] ?? words[1], 'error');
+        // Both boxes stay as typed while the place does not read: a coordinate that reads is never put back, under the
+        // other still to come, by the place the field held ("30.0444" typed, then the longitude's box entered).
+        left = [texts[0], texts[1]];
+        wrong = [!!words[0], !!words[1]];
+        form.setUnread(name, { text: `${texts[0]} ${texts[1]}`.trim(), message: (words[0] ?? words[1]) as string });
+        return;
+      }
+      letGo();
       say(null);
       if (empty) return set(null);
-      set({ lat: a!, lng: b! }, { fly: true, name: true });
+      set({ lat: parseCoordinate(texts[0], locale)!, lng: parseCoordinate(texts[1], locale)! }, { fly: true, name: true });
     };
-    for (const input of [lat, lng]) {
+    [lat, lng].forEach((input, i) => {
       input.addEventListener('change', typed);
       input.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), typed()));
-    }
+      // Keys held change nothing the box shows, so no change is said for them: leaving reads them.
+      input.addEventListener('blur', () => checks[i].held() && typed());
+    });
 
     // ---- writing ---------------------------------------------------------------
     /** While the widget writes its own place: shown already, and in two fields half written at first (the new latitude, the old longitude), which is no place. */
@@ -128,6 +179,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     }
 
     let naming: AbortController | null = null;
+    /** A place picked from the search, while where it is is found: a save waits for it. */
+    let finding: Promise<void> | null = null;
     /** The address from the point, where the provider can say one, unless a person typed their own. */
     function nameFrom(at: LatLng) {
       if (!addressField || !reverse) return;
@@ -146,6 +199,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
 
     function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string; within?: number } = {}) {
       if (readonly) return;
+      // A place set — typed, clicked, dragged, found — is the boxes' now: text left in them unread goes.
+      if (left[0] !== null || left[1] !== null) letGo();
       // How sure "My location" was: a circle while the place is the one it gave.
       showAccuracy(next && how.within !== undefined ? { at: next, metres: how.within } : null);
       if (next) next = { lat: round6(next.lat), lng: round6(next.lng) };
@@ -248,19 +303,28 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
             return centre ? { lat: centre.lat, lng: centre.lng } : (point ?? settings.center);
           },
           zoom: () => shown?.getZoom(),
-          // A place picked: where it is (looked up now, when the provider's suggestions carry no place), and its whole address for Address.
-          pick: async (place) => {
-            const located =
-              place.lat !== undefined && place.lng !== undefined
-                ? { lat: place.lat, lng: place.lng, address: undefined }
-                : await place.locate?.().catch((error: Error) => (warnOnce(`Finding the place picked failed: ${error.message}`), null));
-            if (!located) return say(labels.searchFailed, 'error');
-            set({ lat: located.lat, lng: located.lng }, { fly: true, address: addressLine(located.address ? [located.address] : [place.label, place.detail], context.locale) });
+          // A place picked: where it is (looked up now, when the provider's suggestions carry no place), and its whole address
+          // for Address. A save made while it is found waits for it (`finding`): the place picked is what is saved.
+          pick: (place) => {
+            const run = (async () => {
+              const located =
+                place.lat !== undefined && place.lng !== undefined
+                  ? { lat: place.lat, lng: place.lng, address: undefined }
+                  : await place.locate?.().catch((error: Error) => (warnOnce(`Finding the place picked failed: ${error.message}`), null));
+              if (!located) return say(labels.searchFailed, 'error');
+              set({ lat: located.lat, lng: located.lng }, { fly: true, address: addressLine(located.address ? [located.address] : [place.label, place.detail], context.locale) });
+            })();
+            finding = run;
+            void run.finally(() => {
+              if (finding === run) finding = null;
+            });
+            return run;
           },
           say,
         })
       : null;
     if (found) tools.append(found.element);
+    const stopReading = typeof form.settling === 'function' ? form.settling(() => finding ?? undefined) : null;
 
     const myLocation = doc.createElement('button');
     myLocation.type = 'button';
@@ -319,17 +383,23 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     element.append(tools, box.element, coords, note);
 
     const showCoords = () => {
-      for (const [input, n] of [[lat, point?.lat], [lng, point?.lng]] as const) {
-        if (doc.activeElement === input) continue;
-        input.value = n === undefined ? '' : String(n);
-        input.setAttribute('aria-invalid', 'false');
-      }
+      ([[lat, point?.lat], [lng, point?.lng]] as const).forEach(([input, n], i) => {
+        // Text left that does not read stays as typed, marked, while the form keeps it; else the place's coordinate.
+        if (left[i] !== null && !unread()) left[i] = null;
+        if (doc.activeElement === input) return;
+        const kept = left[i];
+        input.value = kept ?? (n === undefined ? '' : String(n));
+        checks[i].accept();
+        input.setAttribute('aria-invalid', String(kept !== null && wrong[i]));
+      });
     };
 
     return {
       element,
       focus: () => (found?.input ?? lat).focus(),
       destroy: () => {
+        stopReading?.();
+        checks.forEach((guarded) => guarded.destroy());
         naming?.abort();
         found?.destroy();
         box.destroy();
@@ -349,7 +419,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         myLocation.hidden = !geolocation || blocked || readonly;
         for (const input of [lat, lng]) input.readOnly = readonly;
         const target = found?.input ?? lat;
-        target.setAttribute('aria-invalid', String(state.invalid));
+        // The latitude's box, when it is the one the field's label names, stays marked while its text is unread.
+        target.setAttribute('aria-invalid', String(state.invalid || (target === lat && wrong[0] && !!unread())));
         target.setAttribute('aria-required', String(state.required));
         if (state.describedBy) target.setAttribute('aria-describedby', state.describedBy);
         else target.removeAttribute('aria-describedby');

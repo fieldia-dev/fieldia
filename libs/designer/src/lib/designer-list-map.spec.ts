@@ -234,9 +234,11 @@ describe('the list’s Map, in its panel', () => {
     expect(closest.placeholder).toBe('16');
     change(closest, '14');
     expect(list(designer).map?.fitZoom).toBe(14);
-    // A zoom the maps have, from the world (1) to a building (22).
+    // A zoom the maps have, from the world (1) to a building (22): one past it is refused, said, and the zoom kept.
     change(closest, '40');
-    expect(list(designer).map?.fitZoom).toBe(22);
+    expect(list(designer).map?.fitZoom).toBe(14);
+    expect(closest.value).toBe('14');
+    expect(closest.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Closest it zooms to show the records is a whole number from 1 to 22. It stays 14.');
     change(closest, '');
     expect(list(designer).map?.fitZoom).toBeUndefined();
     expect(validatePage(designer.getPage()).ok).toBe(true);

@@ -7,6 +7,7 @@ import { createForm } from './form';
 import { dayOf } from './limits';
 import { MESSAGES } from './messages';
 import { initialValues } from './values';
+import { settledText } from './inputs';
 
 /** One question on a page of its own, as the form checks it. */
 function ask(field: Record<string, unknown>, node: Partial<FieldNode> = {}, options: { now?: Date; locale?: keyof typeof MESSAGES } = {}) {
@@ -31,10 +32,27 @@ describe('a website', () => {
     for (const ok of ['example.com', 'www.example.com', 'https://example.com', 'http://shop.example.co.uk/a/b?c=1#d', 'https://example.com:8080/x', 'مثال.مصر']) expect({ ok, says: site(ok) }).toEqual({ ok, says: null });
   });
 
+  it('takes an internal address: localhost, a name alone, an IP address, a port', () => {
+    for (const ok of ['http://localhost:3000', 'localhost:3000/admin', 'intranet', 'http://erp/web#id=7', 'http://192.168.1.10/admin', '10.0.0.4:8069', 'http://[::1]:8080/', 'https://[2001:db8::1]/x']) {
+      expect({ ok, says: site(ok) }).toEqual({ ok, says: null });
+    }
+  });
+
+  it('takes an address copied with its direction marks, as an Arabic page carries them', () => {
+    for (const ok of ['\u200eexample.com', '\u2066https://example.com/a\u2069', 'example.com\u200f']) expect({ ok, says: site(ok) }).toEqual({ ok, says: null });
+  });
+
   it('refuses anything else, saying what to type', () => {
-    for (const bad of ['example', 'not a site', 'ftp://example.com', 'https://', 'example .com', 'mailto:sara@example.com', 'www.example.c']) {
+    for (const bad of ['not a site', 'https://', 'example .com', 'www.example.c', '999.1.1.1', 'http://example.com:99999']) {
       expect({ bad, says: site(bad) }).toEqual({ bad, says: 'Enter a web address, like example.com' });
     }
+  });
+
+  it('refuses an address of another kind, javascript: and data: above all, saying only a web address goes here', () => {
+    for (const bad of ['javascript:alert(1)', 'JavaScript:void(0)', 'data:text/html,<b>x</b>', 'vbscript:msgbox', 'file:///etc/passwd', 'ftp://example.com', 'mailto:sara@example.com']) {
+      expect({ bad, says: site(bad) }).toEqual({ bad, says: 'Only a web address (http or https) can go here' });
+    }
+    expect(ask({ type: 'char' }, { widget: 'url' }, { locale: 'ar' })('javascript:alert(1)')).toBe(MESSAGES.ar.urlScheme);
   });
 
   it('keeps what was typed, and asks nothing of an empty one', () => {
@@ -71,6 +89,20 @@ describe('an email', () => {
     }
   });
 
+  it('has no ":" or other mark no address has before its @: a link’s "mailto:" is no part of one', () => {
+    const email = ask({ type: 'char' }, { widget: 'email' });
+    for (const bad of ['mailto:ahmed@example.com', 'MAILTO:ahmed@example.com', 'ahmed;sara@example.com', 'ahmed,sara@example.com', 'Ahmed<ahmed@example.com']) {
+      expect({ bad, says: email(bad) }).toEqual({ bad, says: 'Enter an email address, like name@example.com' });
+    }
+    expect(email('ahmed.ali+news@example.com')).toBeNull();
+    expect(email("o'brien@example.com")).toBeNull();
+  });
+
+  it('is kept with no zero-width character once left, as its direction marks are not', () => {
+    expect(settledText('ahmed\u200b@example.com', { widget: 'email' })).toBe('ahmed@example.com');
+    expect(settledText('\u200fahmed@exam\u200dple.com\u2060', { widget: 'email' })).toBe('ahmed@example.com');
+  });
+
   it('keeps the field’s own pattern where the page has one of its own', () => {
     expect(ask({ type: 'char', pattern: '@nile\\.example$' }, { widget: 'email' })('sara@example.com')).toBe('Answer is not in the expected format');
   });
@@ -102,7 +134,7 @@ describe('keywords', () => {
 
 describe('the checks in other languages', () => {
   it('speaks Arabic, German and French', () => {
-    expect(ask({ type: 'char' }, { widget: 'url' }, { locale: 'ar' })('x')).toBe(MESSAGES.ar.url);
+    expect(ask({ type: 'char' }, { widget: 'url' }, { locale: 'ar' })('x y')).toBe(MESSAGES.ar.url);
     expect(ask({ type: 'char' }, { widget: 'phone' }, { locale: 'de' })('x')).toBe(MESSAGES.de.phone);
     expect(ask({ type: 'char' }, { widget: 'email' }, { locale: 'fr' })('x')).toBe(MESSAGES.fr.email);
     for (const locale of ['ar', 'de', 'fr'] as const) for (const key of ['email', 'url', 'phone', 'time', 'before', 'after', 'weekday'] as const) expect(MESSAGES[locale][key]).not.toBe(MESSAGES.en[key]);

@@ -124,7 +124,7 @@ test('in Arabic, right to left: the list under the box from its right edge, its 
   await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('شارع التحرير 12');
   // Joined with the Arabic comma, the city once.
   await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('وسط البلد، القاهرة، مصر');
-  await expect(field.locator('.fd-address-search > [role="status"]')).toHaveText('الاقتراحات: 2');
+  await expect(field.locator('.fd-address-search > [role="status"]:not(.fd-refusal-hint)')).toHaveText('الاقتراحات: 2');
   const input = (await box.boundingBox())!;
   const list = (await field.locator('.fd-address-popup').boundingBox())!;
   expect(Math.abs(list.x + list.width - (input.x + input.width))).toBeLessThanOrEqual(1);

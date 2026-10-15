@@ -20,7 +20,20 @@ export interface LanguageWords {
  * again takes the new words.
  */
 export function addLanguage(locale: Locale, words: LanguageWords): void {
-  MESSAGES[locale] = { ...MESSAGES.en, ...words.messages };
-  WIDGET_LABELS[locale] = { ...WIDGET_LABELS.en, ...words.widgets };
-  VIEWER_LABELS[locale] = { ...VIEWER_LABELS.en, ...words.viewer };
+  MESSAGES[locale] = { ...MESSAGES.en, ...ownCounts(words.messages, MESSAGES.en) };
+  WIDGET_LABELS[locale] = { ...WIDGET_LABELS.en, ...ownCounts(words.widgets, WIDGET_LABELS.en) };
+  VIEWER_LABELS[locale] = { ...VIEWER_LABELS.en, ...ownCounts(words.viewer, VIEWER_LABELS.en) };
+}
+
+/**
+ * A count's own words a language gave (`pastedCells`) without those for one, two or many (`pastedCellsOne`): its own
+ * words stand for them too — "1 cellules" reads better in French than English in the middle of a French page.
+ */
+function ownCounts<T extends object>(given: Partial<T> | undefined, english: T): Partial<T> {
+  if (!given) return {};
+  const words: Record<string, unknown> = { ...given };
+  for (const [key, value] of Object.entries(given)) {
+    for (const count of ['One', 'Two', 'Many']) if (`${key}${count}` in english && !(`${key}${count}` in given)) words[`${key}${count}`] = value;
+  }
+  return words as Partial<T>;
 }

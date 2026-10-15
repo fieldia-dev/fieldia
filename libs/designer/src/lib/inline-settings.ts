@@ -8,6 +8,7 @@ import { inputSettings } from './kind-settings-inputs';
 import { structureSettings } from './kind-settings-structures';
 import { pickerSettings } from './kind-settings-picker';
 import type { DesignerWords } from './designer-words';
+import { settingNumber } from './number-box';
 
 /**
  * What a kind of field has beyond its words, set in the picked field itself,
@@ -157,16 +158,22 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       // Several files, as few and as many as it takes: a box left empty is no limit. Saved once typed and left.
       const several = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': w.severalFiles }) as HTMLButtonElement;
       several.addEventListener('click', () => designer.setFileRules(id, { multiple: several.getAttribute('aria-checked') !== 'true' }));
-      const count = (label: string, key: 'minFiles' | 'maxFiles') => {
-        const box = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: key === 'minFiles' ? '0' : '1', step: '1', inputmode: 'numeric', placeholder: w.any }) as HTMLInputElement;
-        box.addEventListener('change', () => designer.setFileRules(id, { [key]: box.value.trim() === '' ? null : Number(box.value) }));
-        return box;
-      };
+      const held: Record<'minFiles' | 'maxFiles', number | null> = { minFiles: null, maxFiles: null };
+      const count = (label: string, key: 'minFiles' | 'maxFiles') =>
+        settingNumber(el, designer, {
+          label,
+          attrs: { class: 'fd-inline-input fd-inline-number', placeholder: w.any },
+          integer: true,
+          min: key === 'minFiles' ? 0 : 1,
+          optional: true,
+          saved: () => held[key],
+          commit: (n) => designer.setFileRules(id, { [key]: n }),
+        });
       const least = count(w.atLeast, 'minFiles');
       const most = count(w.atMost, 'maxFiles');
       // Each box with its word for what it counts, so the two never part on a narrow card.
       const files = (text: string, box: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), box, el('span', {}, w.files));
-      const counts = el('div', { class: 'fd-inline-row' }, files(w.atLeast, least), files(w.atMost, most));
+      const counts = el('div', { class: 'fd-inline-row' }, files(w.atLeast, least.input), files(w.atMost, most.input));
       // How the chosen files show: as a list, as thumbnails or as cards; what the kind shows anyway is kept as nothing.
       // And whether the person filling the form can switch them between a list and the pictures.
       let shownAs = 'list';
@@ -221,8 +228,10 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         largest.value = String(def.maxSize ?? '');
         several.setAttribute('aria-checked', String(def.multiple === true));
         counts.hidden = def.multiple !== true;
-        if (!focused(least)) least.value = def.minFiles === undefined ? '' : String(def.minFiles);
-        if (!focused(most)) most.value = def.maxFiles === undefined ? '' : String(def.maxFiles);
+        held.minFiles = def.minFiles ?? null;
+        held.maxFiles = def.maxFiles ?? null;
+        least.refresh();
+        most.refresh();
         usual = def.type === 'image' ? 'thumbnails' : 'list';
         shownAs = String(node.options?.['files'] ?? usual);
         for (const chip of asChips) chip.setAttribute('aria-pressed', String(chip.dataset['choice'] === shownAs));

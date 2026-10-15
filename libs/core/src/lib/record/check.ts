@@ -1,12 +1,14 @@
-import type { Field, LineField } from '../format/field';
+import type { Field, LineField, PropertyDefinition } from '../format/field';
+import { fieldPattern } from '../format/pattern';
 import { checkDay } from './limits';
 import { fill, MESSAGES, type Messages } from './messages';
+import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
  * Check one value against its field. Returns the message to show, or
- * undefined when the value is fine. The wording follows the React engine's
- * ("Name is required", "Maximum 120 characters allowed").
+ * undefined when the value is fine, naming the field ("Name is required",
+ * "Bio takes at most 120 characters").
  *
  * An empty optional value passes everything: a pattern or a minimum applies
  * to what someone typed, not to a field they left alone.
@@ -29,11 +31,18 @@ export function checkValue(
     case 'text':
     case 'html': {
       if (typeof value !== 'string') return say('text');
-      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && value.length > field.size) {
-        return say('maxLength', { max: field.size });
+      // Characters as a person sees them and a server counts them: an emoji is one. A text pasted over its most is
+      // kept whole, and told how far over it is.
+      const count = (field.type === 'char' || field.type === 'text') && field.size !== undefined ? charCount(value) : 0;
+      if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && count > field.size) {
+        // One over is said as one: "1 character over", never "1 characters".
+        return say(count - field.size === 1 ? 'overByOne' : 'overBy', { max: field.size, over: count - field.size });
       }
-      if (field.type === 'char' && field.pattern !== undefined && !new RegExp(field.pattern).test(value)) {
-        return say('pattern');
+      // The whole answer, trimmed, its digits as 0-9 and no direction marks: "١١٥١١" is five digits. A pattern that
+      // does not read is the page's to fix (checkPage names it), never a reason to refuse a person.
+      const pattern = field.type === 'char' && field.pattern !== undefined ? fieldPattern(field.pattern) : null;
+      if (field.type === 'char' && pattern instanceof RegExp && !pattern.test(foldDigits(stripMarks(value)).trim())) {
+        return field.patternHint ? fill(field.patternHint, { label }) : say('pattern');
       }
       return undefined;
     }
@@ -44,9 +53,14 @@ export function checkValue(
       if (field.type === 'integer' && !Number.isInteger(value)) return say('integer');
       if (field.min !== undefined && value < field.min) return say('min', { min: field.min });
       if (field.max !== undefined && value > field.max) return say('max', { max: field.max });
-      if (field.type !== 'integer' && field.digits && decimals(value) > field.digits[1]) {
-        return say('decimals', { digits: field.digits[1] });
-      }
+      const digits = field.type === 'integer' ? undefined : field.digits;
+      if (digits && placesOf(value) > digits[1]) return digits[1] === 0 ? say('integer') : say(decimalsKey(digits[1], messages.locale), { digits: digits[1] });
+      // Past what a number keeps exactly (15 digits, a safe whole number), or past the field's own digits[0]: a value
+      // from outside, as a box never takes one. The whole part counts, and the places the field keeps.
+      const integerPart = Math.trunc(Math.abs(value));
+      const whole = integerPart === 0 ? 0 : integerPart < 1e21 ? String(integerPart).length : 22;
+      if (whole > MOST_DIGITS || (field.type === 'integer' && !Number.isSafeInteger(value))) return say('digits', { n: MOST_DIGITS });
+      if (digits && whole > digits[0] - digits[1]) return say('digits', { n: digits[0] });
       return undefined;
     }
     case 'boolean':
@@ -86,9 +100,30 @@ export function checkValue(
     case 'binary':
     case 'image':
       return checkFiles(field, value, say, messages);
+    case 'properties':
+      return Object.values(checkProperties(field.definitions, value, messages, today))[0];
     default:
       return undefined;
   }
+}
+
+/**
+ * A properties value checked property by property, each as a field of its
+ * kind: text, a whole number, a number, yes or no, a choice, a date. Their
+ * problems by property name, in their definitions' order, each naming its
+ * property ("Floor must be a whole number"). Nothing is asked of properties
+ * with no definitions: each is then worked out from what it holds.
+ */
+export function checkProperties(definitions: readonly PropertyDefinition[] | undefined, value: Value | undefined, messages: Messages = MESSAGES.en, today?: string): Record<string, string> {
+  const problems: Record<string, string> = {};
+  if (!definitions || !value || typeof value !== 'object' || Array.isArray(value)) return problems;
+  const values = value as Record<string, Value>;
+  for (const definition of definitions) {
+    const field = { type: definition.type, label: definition.label, ...(definition.options ? { options: definition.options } : {}) } as Field;
+    const problem = checkValue(field, values[definition.name], false, messages, today);
+    if (problem) problems[definition.name] = problem;
+  }
+  return problems;
 }
 
 /** A matrix: an answer per row, each from the columns; every row answered when required. */
@@ -116,11 +151,29 @@ function checkMatrix(
   return undefined;
 }
 
-function decimals(value: number): number {
-  const text = String(value);
-  if (text.includes('e-')) return Number(text.split('e-')[1]);
-  const dot = text.indexOf('.');
-  return dot === -1 ? 0 : text.length - dot - 1;
+/** A field takes at most `places` decimal places, in its language's words and plural form ("Area takes at most 1 decimal place"). */
+export function decimalsWords(label: string, places: number, messages: Messages = MESSAGES.en): string {
+  return fill(places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
+}
+
+const pluralRules = new Map<string, Intl.PluralRules>();
+
+/**
+ * The decimals message for `places`, in the plural form the language takes for
+ * it: one; two (Arabic's dual); 3 to 10; 11 and more (Arabic's singular after them).
+ */
+function decimalsKey(places: number, locale: string): 'decimals' | 'decimalsOne' | 'decimalsTwo' | 'decimalsMany' {
+  let rules = pluralRules.get(locale);
+  if (!rules) {
+    try {
+      rules = new Intl.PluralRules(locale);
+    } catch {
+      rules = new Intl.PluralRules('en');
+    }
+    pluralRules.set(locale, rules);
+  }
+  const form = rules.select(places);
+  return form === 'one' ? 'decimalsOne' : form === 'two' ? 'decimalsTwo' : form === 'many' || (form === 'other' && locale === 'ar') ? 'decimalsMany' : 'decimals';
 }
 
 function isRecord(value: unknown): value is RelatedRecord {
@@ -150,8 +203,9 @@ function checkDateTime(value: Value | undefined, say: Say): string | undefined {
   return realDay(y, mo, d) && h < 24 && mi < 60 && s < 60 ? undefined : say('datetimeInvalid');
 }
 
+/** A day of the calendar people write: its year of four digits (never year 2, which a box half typed once made), a month and a day it has. */
 function realDay(year: number, month: number, day: number): boolean {
-  if (month < 1 || month > 12 || day < 1) return false;
+  if (year < 1000 || month < 1 || month > 12 || day < 1) return false;
   const lengths = [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return day <= lengths[month - 1];
 }
@@ -180,7 +234,7 @@ function checkFiles(field: FileField, value: Value | undefined, say: Say, messag
 export function fileProblem(field: FileField, file: { name: string; type: string; size: number }, messages: Messages = MESSAGES.en, label = file.name): string | undefined {
   if (field.maxSize !== undefined && file.size > field.maxSize) return fill(messages.fileSize, { label, size: formatBytes(field.maxSize) });
   const accept = field.type === 'image' ? ['image/*'] : field.accept;
-  if (accept && !accepts(accept, file.type)) {
+  if (accept && !(file.type ? accepts(accept, file.type) : acceptsByName(accept, file.name))) {
     const types = describeTypes(accept, messages.or);
     return fill(messages.fileType, { label, types, aTypes: article(types) });
   }
@@ -199,6 +253,19 @@ function accepts(patterns: readonly string[], type: string): boolean {
 
 /** Office kinds by the extension people know them by, from a word in their media type. */
 const EXTENSIONS = 'pdf PDF,msword DOC,wordprocessingml DOCX,opendocument.text ODT,plain TXT,ms-excel XLS,spreadsheetml XLSX,opendocument.spreadsheet ODS,csv CSV,ms-powerpoint PPT,presentationml PPTX,opendocument.presentation ODP'.split(',').map((pair) => pair.split(' '));
+
+/** The extensions a picture's file ends in, as people know them. */
+const PICTURES = 'PNG JPG JPEG GIF WEBP AVIF HEIC HEIF BMP TIF TIFF SVG'.split(' ');
+
+/**
+ * Whether a file the browser or the system gave no media type (a dropped PDF, on some systems) is one of these kinds,
+ * by the extension its name ends in, in any case: "REPORT.PDF" is a PDF, "me.jpg" a picture.
+ */
+function acceptsByName(patterns: readonly string[], name: string): boolean {
+  const extension = /\.([A-Za-z0-9]+)$/.exec(name.trim())?.[1]?.toUpperCase();
+  if (!extension) return false;
+  return patterns.some((pattern) => (pattern === 'image/*' ? PICTURES.includes(extension) : !pattern.endsWith('/*') && [describeType(pattern), pattern === 'image/jpeg' ? 'JPG' : ''].includes(extension)));
+}
 
 function describeType(pattern: string): string {
   if (pattern.endsWith('/*')) return pattern.slice(0, -2);

@@ -14,7 +14,16 @@ export interface Messages {
   integer: string;
   min: string;
   max: string;
+  /**
+   * More decimal places than a field keeps: `{digits}` of them. By the number's plural form in the language —
+   * one, two (Arabic), 3 to 10 (`decimals`), 11 and more (`decimalsMany`, Arabic) — chosen with Intl.PluralRules.
+   */
   decimals: string;
+  decimalsOne: string;
+  decimalsTwo: string;
+  decimalsMany: string;
+  /** More digits than a field keeps, or than a number keeps exactly (15): `{n}`. */
+  digits: string;
   boolean: string;
   dateFormat: string;
   dateInvalid: string;
@@ -94,6 +103,19 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
+  /** A text longer than its most, pasted whole: `{over}` characters over its `{max}`; one over (`overByOne`). */
+  overBy: string;
+  overByOne: string;
+  /** A postcode not of its country's shape: `{country}`, its `{n}` digits, and `{example}`. */
+  postcode: string;
+  /** A web address that is no web address: javascript:, data:, vbscript:, file:. */
+  urlScheme: string;
+  /** A range whose end (`{end}`, its label) comes before its start (`{start}`). */
+  endBeforeStart: string;
+  /** A time between a field's steps (`{step}` minutes): `{example}` and `{next}` are the steps either side. */
+  timeStep: string;
+  /** A field's pattern that is no pattern, as checkPage says it: `{problem}` is the browser's words. */
+  patternBroken: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -103,14 +125,18 @@ export type Locale = 'en' | 'ar' | 'de' | 'fr';
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {
   required: '{label} is required',
-  maxLength: 'Maximum {max} characters allowed',
+  maxLength: '{label} takes at most {max} characters',
   pattern: '{label} is not in the expected format',
   text: '{label} must be text',
   number: '{label} must be a number',
   integer: '{label} must be a whole number',
   min: '{label} must be at least {min}',
   max: '{label} must be at most {max}',
-  decimals: 'Maximum {digits} decimal places allowed',
+  decimals: '{label} takes at most {digits} decimal places',
+  decimalsOne: '{label} takes at most 1 decimal place',
+  decimalsTwo: '{label} takes at most {digits} decimal places',
+  decimalsMany: '{label} takes at most {digits} decimal places',
+  digits: '{label} takes at most {n} digits',
   boolean: '{label} must be yes or no',
   dateFormat: 'Invalid date format (expected YYYY-MM-DD)',
   dateInvalid: 'Invalid date (check month/day values)',
@@ -162,6 +188,13 @@ const en: Messages = {
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
+  overBy: '{label} is {over} characters over its {max}: shorten it to save',
+  overByOne: '{label} is 1 character over its {max}: shorten it to save',
+  postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
+  urlScheme: 'Only a web address (http or https) can go here',
+  endBeforeStart: '{end} can’t be before {start}',
+  timeStep: '{label}: times go in steps of {step} minutes, like {example} or {next}',
+  patternBroken: 'The pattern of {label} is not a valid pattern: {problem}',
   locale: 'en',
 };
 

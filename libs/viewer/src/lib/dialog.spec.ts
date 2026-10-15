@@ -95,6 +95,25 @@ describe('a form in a dialog', () => {
     expect(done.values).toEqual(expect.objectContaining({ full_name: 'Sara', role: 'designer', email: 'sara@example.com' }));
   });
 
+  it('in values mode waits for a name still being looked up in a link, and hands back the record it names', async () => {
+    const linked: Page = {
+      fieldia: '0.1',
+      id: 'line',
+      title: 'Order line',
+      data: { kind: 'record', model: 'line' },
+      fields: { product_id: { type: 'many2one', label: 'Product', relation: 'product' } },
+      layout: { type: 'sections', id: 'l', children: [{ type: 'field', id: 'l-product', field: 'product_id', options: { create: false } }] },
+    };
+    const dataSource = createMemoryDataSource({ records: { product: { 1: { name: 'Desk' }, 2: { name: 'Chair' } } }, delayMs: 20 });
+    const result = openFormDialog({ page: linked, title: 'Order line', mode: 'values', values: {}, dataSource });
+    await flush();
+    typeIn(dialog()?.querySelector('[data-node="l-product"] input[role="combobox"]') as HTMLInputElement, 'Chair');
+    button('Save & Close').click();
+    const done = await result;
+    expect(done.saved).toBe(true);
+    expect((done.values['product_id'] as { label: string } | null)?.label).toBe('Chair');
+  });
+
   /** A line's fields: its subtotal is worked out from the others. */
   const linePage: Page = {
     fieldia: '0.1',

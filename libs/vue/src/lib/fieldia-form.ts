@@ -197,6 +197,12 @@ export const FieldiaForm = defineComponent({
       const element = host.value;
       if (!element) return;
       const found: Portal[] = [];
+      let mounted = false;
+      /** A field or slot of Vue's: rendered at once, or — drawn after mounting, as a page that waited for its parts is — as it comes. */
+      const add = (portal: Portal) => {
+        found.push(portal);
+        if (mounted) portals.value = [...found];
+      };
 
       const widgets: Record<string, WidgetFactory> = { ...props.widgets };
       for (const key of Object.keys(props.fieldTypes ?? {})) {
@@ -204,7 +210,7 @@ export const FieldiaForm = defineComponent({
           const box = context.document.createElement('div');
           box.className = 'fd-custom';
           const state = shallowRef<WidgetState>(EMPTY_STATE);
-          found.push({
+          add({
             key: `field:${context.node.id}`,
             element: box,
             fail: context.fail,
@@ -237,7 +243,7 @@ export const FieldiaForm = defineComponent({
       for (const name of Object.keys(slots)) {
         if (name === 'default') continue;
         slotRenderers[name] = (box, context) => {
-          found.push({ key: `slot:${name}:${found.length}`, element: box, fail: context.fail, render: () => slots[name]?.({ form: context.form, name }) });
+          add({ key: `slot:${name}:${found.length}`, element: box, fail: context.fail, render: () => slots[name]?.({ form: context.form, name }) });
         };
       }
 
@@ -284,7 +290,8 @@ export const FieldiaForm = defineComponent({
       });
       for (const event of EVENTS) handle.on(event, (payload) => (emit as (event: string, payload: unknown) => void)(event, payload));
       handle.on('open', (payload) => emit('record', payload));
-      portals.value = found;
+      portals.value = [...found];
+      mounted = true;
       emit('ready', handle);
     }
 

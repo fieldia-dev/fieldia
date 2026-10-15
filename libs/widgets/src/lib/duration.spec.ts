@@ -18,8 +18,9 @@ describe('a duration', () => {
     expect(parseDuration('-0:30')).toBe(-0.5);
     expect(parseDuration('')).toBeNull();
     expect(parseDuration('6:')).toBeUndefined();
-    expect(parseDuration('six')).toBe('six');
-    expect(parseDuration('6:75')).toBe('6:75');
+    // Words, and minutes past 59, are no hours: never the field's value.
+    expect(parseDuration('six')).toBeUndefined();
+    expect(parseDuration('6:75')).toBeUndefined();
   });
 
   it('shows the hours of a float as HH:MM, and saves what is typed as hours', () => {

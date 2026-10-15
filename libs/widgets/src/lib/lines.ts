@@ -50,6 +50,41 @@ interface Row {
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
 
+/** A column's total: the sum of its lines' numbers, or the line (counted from 1, as the table names them) it waits for. */
+export type ColumnTotal = { sum: number } | { waits: number };
+
+/**
+ * A column's total over a table's lines. It adds only numbers: a cell holding
+ * text that does not read (`unread`), or a value that is no number (words from
+ * a server, an old draft), makes the total wait for that line — never NaN,
+ * never a confident 0.00 worked out without it. Sections and notes
+ * (`isItem` false) hold no amounts. Shared with @fieldia/grid.
+ */
+export function columnTotal(lines: readonly Line[], column: string, isItem: (line: Line) => boolean, unread: (line: Line) => boolean): ColumnTotal {
+  let sum = 0;
+  for (const [index, line] of lines.entries()) {
+    if (!isItem(line)) continue;
+    const value = line.values[column];
+    if (unread(line) || (value !== null && value !== undefined && value !== '' && (typeof value !== 'number' || !Number.isFinite(value)))) return { waits: index + 1 };
+    if (typeof value === 'number') sum += value;
+  }
+  return { sum };
+}
+
+/** A total that waits for a line: a dash, said in words to a screen reader and on pointing at it. */
+export function waitingTotal(cell: HTMLElement, words: string): void {
+  const document = cell.ownerDocument;
+  const dash = document.createElement('span');
+  dash.setAttribute('aria-hidden', 'true');
+  dash.textContent = '—';
+  const said = document.createElement('span');
+  said.className = 'fd-sr-only';
+  said.textContent = words;
+  cell.replaceChildren(dash, said);
+  cell.title = words;
+  cell.dataset['waits'] = '';
+}
+
 /** The field a section or note is typed into: one line for a heading, a growing box for a note. */
 export function kindTextField(def: LineField, kind: 'section' | 'note'): LineField {
   return kind === 'section' ? ({ ...def, type: 'char' } as LineField) : ({ ...def, type: 'text' } as LineField);
@@ -58,10 +93,15 @@ export function kindTextField(def: LineField, kind: 'section' | 'note'): LineFie
 /** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
 export function lineForm(form: Form, field: string, key: string): Form {
   const values = () => (((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key)?.values ?? {});
+  // A cell's unread text is kept by its path in the record's form (`field.key.column`): the cell sees its own by its column.
+  const at = `${field}.${key}.`;
+  const unread = () => Object.fromEntries(Object.entries(form.getState().unread ?? {}).flatMap(([path, text]) => (path.startsWith(at) ? [[path.slice(at.length), text]] : [])));
   return {
     ...form,
-    getState: (): FormState => ({ ...form.getState(), values: values() }),
+    getState: (): FormState => ({ ...form.getState(), values: values(), unread: unread() }),
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
+    setUnread: (name: string, text) => form.setUnread(`${at}${name}`, text),
+    boxLeft: (name: string) => form.boxLeft(`${at}${name}`),
     search: (name: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }) => form.searchLine(field, key, name, query, limit, options),
     canCreate: (name: string) => form.canCreateLine(field, name),
     quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),
@@ -276,6 +316,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   });
 
   const rows = new Map<string, Row>();
+  /** The cell being left now, by its path: a problem leaving it finds is said by its message. */
+  let leaving: string | null = null;
   let focusNew: string | null = null;
   let readonly = false;
   /** The lines the columns were last sized for, by their keys. */
@@ -374,11 +416,25 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     label.className = 'fd-sr-only';
     label.htmlFor = cellId;
     label.textContent = sub.label;
+    // Its message, linked to its box (aria-describedby), and said once, politely, when leaving the cell finds it.
     const error = document.createElement('div');
     error.className = 'fd-cell-error';
+    error.id = `${cellId}-error`;
     error.hidden = true;
     td.append(label, widget.element, error);
     tr.append(td);
+    const path = `${name}.${line.key}.${column}`;
+    td.addEventListener('focusin', () => error.removeAttribute('aria-live'));
+    td.addEventListener('focusout', (event) => {
+      if (td.contains(event.relatedTarget as Node | null)) return;
+      // The cell's own problem — text that does not read, min, max, a whole number — is said now; required waits for Save.
+      leaving = path;
+      try {
+        form.boxLeft(path);
+      } finally {
+        leaving = null;
+      }
+    });
     return { name: column, def: sub, widget, error, td };
   }
 
@@ -484,13 +540,16 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   return {
     element,
     focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? adds.querySelector('button'))?.focus(),
+    destroy: () => {
+      for (const row of rows.values()) for (const cell of row.cells) cell.widget.destroy?.();
+    },
     update(state) {
       readonly = state.readonly;
       const current = (state.value as Line[] | null) ?? [];
       adds.hidden = readonly || current.length >= max;
       if (readonly) confirm.element.hidden = true;
       if (empty) empty.hidden = current.length > 0;
-      const errors = form.getState().errors;
+      const { errors, unread } = form.getState();
       // Columns the record hides now: their head, cells and total go with them.
       const gone = new Set(ruled ? columns.filter((column) => form.columnHidden(node.id, column)) : []);
       for (const [column, th] of heads) th.hidden = gone.has(column);
@@ -523,6 +582,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         if (!keep.has(key)) {
           row.element.remove();
           rows.delete(key);
+          // Its cells' widgets go with it, and what they gave the form (a reader of what is typed) with them.
+          for (const cell of row.cells) cell.widget.destroy?.();
         }
       }
       current.forEach((line, index) => {
@@ -530,6 +591,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         // A line that changed kind is drawn afresh.
         if (row && row.kind !== lineKind(def, line.values)) {
           row.element.remove();
+          for (const cell of row.cells) cell.widget.destroy?.();
           row = undefined;
         }
         if (!row) {
@@ -565,6 +627,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
           cell.widget.element.hidden = !!rules?.invisible;
           setData(cell.td, 'tone', rules?.tone);
           cell.td.classList.toggle('fd-cell-bold', !!rules?.bold);
+          const path = `${name}.${line.key}.${cell.name}`;
+          // Raised by leaving the cell, it is said once, politely; a refused Save's announcer says the rest, once.
+          if (leaving === path && message && message !== cell.error.textContent) cell.error.setAttribute('aria-live', 'polite');
           cell.error.hidden = !message;
           cell.error.textContent = message ?? '';
           cell.widget.update({
@@ -575,12 +640,21 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
             readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined || !!rules?.readonly,
             required: cell.def.required === true || !!rules?.required,
             invalid: !!message,
+            ...(message ? { describedBy: cell.error.id } : {}),
           });
         }
       });
       for (const [column, td] of sums) {
-        const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-        td.textContent = cellText(def.fields[column], sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
+        // Numbers only: a line holding text that does not read, or no number, makes the total wait for it.
+        const total = columnTotal(current, column, (line) => !lineKind(def, line.values), (line) => !!unread?.[`${name}.${line.key}.${column}`]);
+        if ('waits' in total) {
+          const said = fillIn(labels.totalWaits, { n: total.waits });
+          if (td.title !== said) waitingTotal(td, said);
+          continue;
+        }
+        td.removeAttribute('title');
+        delete td.dataset['waits'];
+        td.textContent = cellText(def.fields[column], total.sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
       }
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       showChosen();

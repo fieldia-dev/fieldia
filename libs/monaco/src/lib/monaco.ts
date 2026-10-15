@@ -206,16 +206,20 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     }
     const parsed = readJson(text);
     valid = parsed !== undefined;
+    // Where it goes wrong, as the CodeMirror editor and the plain JSON box say it.
+    const problem = valid ? null : jsonProblem(text);
+    const words = problem ? labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column)) : labels.invalidJson;
     if (error) {
       error.hidden = valid;
-      // Where it goes wrong, as the CodeMirror editor and the plain JSON box say it.
-      const problem = valid ? null : jsonProblem(text);
-      if (problem) error.textContent = labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
+      if (problem) error.textContent = words;
     }
     describe();
-    if (parsed === undefined) return;
+    // Text that is not JSON is kept unread, with where it breaks: a save made meanwhile is refused, never made with the
+    // last good value in place of what the editor shows.
+    if (parsed === undefined) return form.setUnread(name, { text, message: words });
     known = JSON.stringify(parsed);
     form.setValue(name, parsed);
+    if (form.getState().unread?.[name]) form.setUnread(name, null);
   }
   plain.addEventListener('input', () => typed(plain.value));
 
@@ -382,8 +386,9 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
       if (!worn) wear();
       describe();
       // A value from elsewhere (loaded, discarded, set by a step) replaces the text; the echo of what was typed does not.
+      // Text that is not JSON stays while the form keeps it unread; let go (the record put back, saved), the value shows.
       const incoming = keyOf(state.value);
-      if (incoming === known) return;
+      if (incoming === known && (valid || !json || form.getState().unread?.[name])) return;
       known = incoming;
       valid = true;
       if (error) error.hidden = true;

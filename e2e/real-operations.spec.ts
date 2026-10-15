@@ -383,16 +383,37 @@ test('the receipt at a phone’s width: nothing scrolls sideways, and the button
   expect(problems).toEqual([]);
 });
 
-test('a quantity typed with two decimal marks is said to be no number at once, and nothing is worked out from it', async ({ page }) => {
+test('a quantity typed past its places or with a second decimal mark is refused as it is typed, saying why, and nothing is worked out from it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { problems } = await open(page, 'plain', PRODUCTION);
   const quantity = page.locator('[data-node="f-product-qty"] input').first();
+  const hint = page.locator('[data-node="f-product-qty"] .fd-refusal-hint');
   await quantity.click();
   await page.keyboard.press('End');
   await page.keyboard.type('1234567.5');
+  // Two places at most. "4.001" may still be on its way to a number grouped the other way round ("4.001,5"), so it
+  // stands; the 2 after it never can, and is refused, the box saying why under it, and the keys after it wait with it:
+  // never a number made of the rest.
+  await expect(quantity).toHaveValue('4.001');
+  await expect(hint).toHaveText('To Produce takes at most 2 decimal places');
+  // Left so, all that was typed stays in the box, marked, with why; the quantity keeps what it held.
   await page.keyboard.press('Tab');
+  await expect(quantity).toHaveValue('4.001234567.5');
   await expect(quantity).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('[data-node="f-product-qty"] .fd-error')).toHaveText(/must be a number/);
+  await expect(page.locator('[data-node="f-product-qty"] .fd-error').first()).toHaveText('Digits are grouped in threes, like 1,234,567');
+  expect(await value(page, 'product_qty')).toBe(4);
+  await expect(page.locator('body')).not.toContainText('NaN');
+  // A second decimal mark is refused as it is typed, saying why; Backspace takes it back.
+  await quantity.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('4.00.');
+  await expect(quantity).toHaveValue('4.00');
+  await expect(hint).toHaveText('A number has only one decimal mark');
+  await page.keyboard.press('Backspace');
+  await expect(hint).toBeHidden();
+  await page.keyboard.press('Tab');
+  await expect(quantity).toHaveAttribute('aria-invalid', 'false');
+  expect(await value(page, 'product_qty')).toBe(4);
   // The components' quantities and the work orders' durations keep what they held: no NaN anywhere.
   await expect(page.locator('body')).not.toContainText('NaN');
   expect(problems).toEqual([]);

@@ -1,5 +1,6 @@
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { JsonValue } from '@fieldia/core';
+import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem } from './json-problem';
 import { linkAddress, sanitizeHtml } from './sanitize';
@@ -249,7 +250,17 @@ function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabel
   return { bar, linkRow, destroy: () => doc.removeEventListener('selectionchange', reflect) };
 }
 
-export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels = WIDGET_LABELS.en }) => {
+/**
+ * JSON, typed as text. While what is typed is not JSON it stays as typed —
+ * never put back to the last value that was — and the form keeps it as text
+ * that does not read (`FormState.unread`), so Save says so. Why, in words —
+ * a comma with nothing after it, curly quotes, digits that are not 0-9, a
+ * character that cannot be there — and where, by line and column, shows
+ * under the box once typing pauses, a polite status the box is described by;
+ * once the box is left, the field's own error says it.
+ */
+export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels, locale }) => {
+  const words = labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
   const element = document.createElement('div');
   element.className = 'fd-json';
   const area = document.createElement('textarea');
@@ -258,30 +269,73 @@ export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels = W
   area.spellcheck = false;
   const error = document.createElement('div');
   error.className = 'fd-cell-error';
+  error.id = `${id}-json`;
+  error.setAttribute('role', 'status');
   error.hidden = true;
   element.append(area, error);
+  const unread = () => form.getState().unread?.[name];
+  let pause: ReturnType<typeof setTimeout> | undefined;
+  /** Why the text is not JSON, in words, and where. */
+  const said = (text: string) => {
+    const problem = jsonProblem(text);
+    if (!problem) return null;
+    const where = { line: problem.line, column: problem.column };
+    if (problem.reason === 'end') return fillIn(words.invalidJsonAt, where);
+    const reason = problem.reason === 'char' ? fillIn(words.jsonChar, { char: problem.char ?? '' }) : words[problem.reason === 'comma' ? 'jsonComma' : problem.reason === 'quotes' ? 'jsonQuotes' : 'jsonDigits'];
+    return fillIn(words.json, { reason, ...where });
+  };
+  /** The field's own help and error, as the page describes the box. */
+  let base = '';
+  const describe = () => {
+    const ids = [base, error.hidden ? '' : error.id].filter(Boolean).join(' ');
+    if (ids) area.setAttribute('aria-describedby', ids);
+    else area.removeAttribute('aria-describedby');
+  };
+  /** The words under the box: what the form keeps, while the box is being typed in; the field's error says them after. */
+  const show = () => {
+    const message = document.activeElement === area ? (unread()?.message ?? '') : '';
+    if (error.textContent !== message) error.textContent = message;
+    error.hidden = !message;
+    describe();
+  };
   area.addEventListener('input', () => {
     if (area.value.trim() === '') {
-      error.hidden = true;
       form.setValue(name, null);
-      return;
+      form.setUnread(name, null);
+    } else {
+      // Where it goes wrong, by line and column: a long document is not read again to find it.
+      const message = said(area.value);
+      if (message) form.setUnread(name, { text: area.value, message });
+      else {
+        form.setValue(name, JSON.parse(area.value) as JsonValue);
+        form.setUnread(name, null);
+      }
     }
-    // Where it goes wrong, by line and column: a long document is not read again to find it.
-    const problem = jsonProblem(area.value);
-    error.hidden = !problem;
-    if (problem) error.textContent = labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
-    else form.setValue(name, JSON.parse(area.value));
+    // Said once typing pauses, not at every key.
+    clearTimeout(pause);
+    pause = setTimeout(show, 600);
+  });
+  area.addEventListener('blur', () => {
+    clearTimeout(pause);
+    show();
   });
   return {
     element,
     focus: () => area.focus(),
+    destroy: () => clearTimeout(pause),
     update(state) {
+      const kept = unread();
       if (document.activeElement !== area) {
-        const text = state.value === null || state.value === undefined ? '' : JSON.stringify(state.value, null, 2);
+        // Text that does not read stays as it was typed; anything else shows the value.
+        const text = kept ? kept.text : state.value === null || state.value === undefined ? '' : JSON.stringify(state.value, null, 2);
         if (area.value !== text) area.value = text;
       }
       area.readOnly = state.readonly;
-      area.setAttribute('aria-invalid', String(state.invalid || !error.hidden));
+      area.setAttribute('aria-invalid', String(state.invalid || !!kept));
+      base = state.describedBy ?? '';
+      // Put right, its words go at once; new ones wait for typing to pause.
+      if (!kept) show();
+      else describe();
     },
   };
 };

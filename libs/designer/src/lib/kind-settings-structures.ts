@@ -1,9 +1,10 @@
-import { ADDRESS_PARTS, type FieldNode, type Page } from '@fieldia/core';
+import { ADDRESS_PARTS, readNumber, type FieldNode, type Page } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { USUAL_ADDRESS } from './kind-commands';
 import { linksPart, richTextPart } from './work-text';
+import { settingNumber } from './number-box';
 
 /**
  * The settings of the kinds that hold more than one value — a signature, an
@@ -120,14 +121,25 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
   }
 
-  /** A whole number, 1 or more, saved once typed and left; anything else takes it away. */
-  const countBox = (label: string, key: string) => {
-    const input = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: '0', step: '1', inputmode: 'numeric', placeholder: w.any }) as HTMLInputElement;
-    input.addEventListener('change', () => {
-      const n = Number(input.value);
-      widget({ [key]: input.value.trim() !== '' && Number.isInteger(n) && n > 0 ? n : null });
+  /** A whole number, `least` or more, saved once typed and left; emptied, it goes; anything else is said, and the count kept. */
+  const countBox = (label: string, key: string, least: number) => {
+    let saved: number | null = null;
+    const box = settingNumber(el, designer, {
+      label,
+      attrs: { class: 'fd-inline-input fd-inline-number', placeholder: w.any },
+      integer: true,
+      min: least,
+      optional: true,
+      saved: () => saved,
+      commit: (n) => widget({ [key]: n === 0 ? null : n }),
     });
-    return input;
+    return {
+      input: box.input,
+      show(value: unknown) {
+        saved = typeof value === 'number' ? value : null;
+        box.refresh();
+      },
+    };
   };
 
   /**
@@ -136,8 +148,8 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
    * the table, or one people may hide, shown or hidden to start with.
    */
   function table(): StructurePart {
-    const least = countBox(w.atLeast, 'min');
-    const most = countBox(w.atMost, 'max');
+    const least = countBox(w.atLeast, 'min', 0);
+    const most = countBox(w.atMost, 'max', 1);
     const button = textBox(w.buttonWords, w.addALine);
     button.addEventListener('input', () => widget({ addLabel: button.value }));
     const empty = textBox(w.whenEmpty, w.noLines);
@@ -151,7 +163,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
       element: el(
         'div',
         { class: 'fd-kind-block' },
-        row(word(w.atLeast, least), word(w.atMost, most)),
+        row(word(w.atLeast, least.input), word(w.atMost, most.input)),
         row(word(w.buttonWords, button), word(w.whenEmpty, empty)),
         ask.element,
         el('span', { class: 'fd-prop-name' }, w.eachColumn),
@@ -185,8 +197,8 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
         }
         for (const chip of list.querySelectorAll<HTMLButtonElement>('button[data-column]')) chip.setAttribute('aria-pressed', String(totals.includes(chip.dataset['column'] ?? '')));
         for (const shown of list.querySelectorAll<HTMLSelectElement>('select')) shown.value = optional[shown.dataset['column'] ?? ''] ?? '';
-        show(least, option(node, 'min'));
-        show(most, option(node, 'max'));
+        least.show(option(node, 'min'));
+        most.show(option(node, 'max'));
         show(button, option(node, 'addLabel'));
         show(empty, option(node, 'emptyLabel'));
         ask.button.setAttribute('aria-checked', String(option(node, 'confirmDelete') === true));
@@ -199,10 +211,12 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     const create = toggle(w.canCreate, (on) => widget({ create: on ? null : false }));
     const where = textBox(w.onlyWhere, 'active');
     const value = textBox(w.hasTheValue, 'true');
-    // Saved once typed and left: "true" and "false" are yes and no, a number a number.
+    // Saved once typed and left: "true" and "false" are yes and no, a number a number — read as every box reads one,
+    // in the designer's language (٥ is 5, 1,5 one and a half), never hex or an exponent ("0x10" and "1e3" stay words).
     const save = () => {
       const typed = value.value.trim();
-      designer.setLinkFilter(id, where.value.trim() ? { field: where.value, value: typed === 'true' ? true : typed === 'false' ? false : typed !== '' && Number.isFinite(Number(typed)) ? Number(typed) : typed } : null);
+      const read = readNumber(typed, designer.locale ?? 'en');
+      designer.setLinkFilter(id, where.value.trim() ? { field: where.value, value: typed === 'true' ? true : typed === 'false' ? false : read.ok && read.value !== null ? read.value : typed } : null);
     };
     where.addEventListener('change', save);
     value.addEventListener('change', save);

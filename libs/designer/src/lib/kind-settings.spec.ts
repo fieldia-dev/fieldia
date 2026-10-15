@@ -1,7 +1,7 @@
 import type { Field, FieldNode, WizardNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
 import { mountSurveyEditor, type SurveyEditorHandle } from './survey-editor';
-import { type } from './test-editor';
+import { typeAndLeave as type } from './test-editor';
 
 /** The newer kinds' settings in the picked question: a slider's range, pictures, a matrix's rows and columns, an address's parts, a repeating group's cards, Shuffle and points. */
 
@@ -130,6 +130,25 @@ describe('the choices’ Shuffle and points', () => {
     expect((field() as Extract<Field, { type: 'selection' }>).options.map((o) => o.score)).toEqual([2, 0.5]);
     type(box('Points for Giza'), '');
     expect((field() as Extract<Field, { type: 'selection' }>).options[1]).not.toHaveProperty('score');
+  });
+
+  it('keeps the quiz, and the box, while its only points are emptied or half typed, and reads ٥', () => {
+    const { designer, id, box, card, field } = open('dropdown');
+    designer.setOptions(id, ['Cairo', 'Giza']);
+    (card().querySelector('.fd-kind-give-points') as HTMLButtonElement).click();
+    const points = box('Points for Cairo');
+    type(points, '5');
+    // Emptied while it has the focus, to type 3 instead: the box, and the quiz, stay.
+    points.focus();
+    points.value = '';
+    points.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(document.activeElement).toBe(points);
+    expect(points.closest('[hidden]')).toBeNull();
+    expect((field() as Extract<Field, { type: 'selection' }>).options[0].score).toBe(5);
+    points.value = '٣';
+    points.dispatchEvent(new Event('input', { bubbles: true }));
+    points.blur();
+    expect((field() as Extract<Field, { type: 'selection' }>).options[0].score).toBe(3);
   });
 
   it('takes points for each column of a matrix once the page is a quiz', () => {

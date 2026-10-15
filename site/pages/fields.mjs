@@ -1,7 +1,7 @@
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size, pattern (the whole answer), patternHint'],
   ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],

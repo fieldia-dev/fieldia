@@ -413,8 +413,9 @@ describe('free-text tags', () => {
 
   it('keeps a tag typed and left without Enter', () => {
     const { form, input } = mountTags();
+    input.focus();
     type(input, 'brass');
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.blur();
     expect(stored(form)).toBe('brass');
   });
 

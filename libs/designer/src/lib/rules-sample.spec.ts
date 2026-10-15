@@ -1,7 +1,7 @@
 import type { AnswerRule, Field, FieldNode, Page, SectionNode, WizardNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
 import { mountSurveyEditor, type SurveyEditorHandle } from './survey-editor';
-import { button, choose, field, mount, openTab, type } from './test-editor';
+import { button, choose, field, mount, openTab, type, typeAndLeave } from './test-editor';
 
 /**
  * Try a value: under a field's answer rules, the field drawn by its own
@@ -89,7 +89,7 @@ describe('try a value beside the answer rules', () => {
     type(box('Email'), 'abc');
     expect(results()).toEqual(['pass: Passes']);
     (panel().querySelector('.fd-answer-rule-say') as HTMLButtonElement).click();
-    type(field(panel(), 'Shortest'), '5');
+    typeAndLeave(field(panel(), 'Shortest'), '5');
     expect(results()).toEqual(['error: Email must be at least 5 characters']);
     type(field(panel(), 'Message when it does not fit'), 'Five at least');
     expect(results()).toEqual(['error: Five at least']);

@@ -52,7 +52,7 @@ test.describe('at rest, pointed at, worked in', () => {
     expect(problems).toEqual([]);
   });
 
-  test('pointed at, a light box and the control’s sign show, and nothing moves', async ({ page, browserName }) => {
+  test('pointed at, a light box and the control’s sign show, and nothing moves', async ({ page }) => {
     await visit(page, QUIET);
     const area = node(page, 'f-area').locator('select');
     const before = { area: await at(area), next: await at(node(page, 'f-iteration').locator('select')), label: await at(node(page, 'f-area').locator('.fd-label')) };
@@ -65,8 +65,9 @@ test.describe('at rest, pointed at, worked in', () => {
     // A date shows its calendar, a link its ×. Firefox draws a date's calendar button inside the box, with no part a
     // page can style or read: it shows at rest there too.
     const due = node(page, 'f-due').locator('input');
+    await expect(node(page, 'f-due').locator('.fd-calendar-button')).toBeHidden();
     await due.hover();
-    if (browserName !== 'firefox') await expect.poll(() => due.evaluate((el) => getComputedStyle(el, '::-webkit-calendar-picker-indicator').opacity)).toBe('1');
+    await expect(node(page, 'f-due').locator('.fd-calendar-button')).toBeVisible();
     const assigned = node(page, 'f-assigned');
     await expect(assigned.locator('.fd-combo-clear')).toBeHidden();
     await assigned.locator('input').hover();
@@ -95,9 +96,12 @@ test.describe('at rest, pointed at, worked in', () => {
     await screen(page, 'quiet-state-open', { viewport: true });
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
-    // A date opens its calendar at the click; tabbed into, it is typed in.
+    // A date opens its calendar at the click — Fieldia's own, beside its own box; tabbed into, it is typed in.
     await node(page, 'f-due').locator('input').click();
-    expect(await page.evaluate(() => (window as unknown as { pickers: string[] }).pickers)).toEqual(['f-due']);
+    await expect(node(page, 'f-due').getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(node(page, 'f-due').getByRole('dialog')).toBeHidden();
+    expect(await page.evaluate(() => (window as unknown as { pickers: string[] }).pickers)).toEqual([]);
     // A link: its list.
     await node(page, 'f-assigned').locator('input').click();
     await expect(node(page, 'f-assigned').getByRole('listbox')).toBeVisible();
@@ -153,6 +157,49 @@ test.describe('Escape, leaving, and Save', () => {
     const stored = await page.evaluate(() => (window as unknown as { fieldiaDemo: { dataSource: { records: Record<string, Record<number, Record<string, unknown>>> } } }).fieldiaDemo.dataSource.records['work.item'][1]['found_in']);
     expect(stored).toBe('Build 2026.10.5');
   });
+});
+
+test.describe('a date typed with its calendar open', () => {
+  for (const [locale, url, why] of [
+    ['en', QUIET, 'February 2026 has 28 days'],
+    ['ar', `${QUIET}&locale=ar&dir=rtl`, 'فبراير 2026 28 يومًا'],
+  ] as const) {
+    test(`${locale}: Tab out of a date that does not read closes the calendar, and why is in sight, said by the month too`, async ({ page }) => {
+      const problems = await visit(page, url);
+      const due = node(page, 'f-due');
+      const box = due.locator('input');
+      const calendar = due.getByRole('dialog');
+      const button = due.locator('.fd-calendar-button');
+      // Clicked, the calendar opens; clicked again, the box is typed in, the month still open beside it.
+      await box.click();
+      await expect(calendar).toBeVisible();
+      await box.click();
+      await expect(box).toBeFocused();
+      await expect(calendar).toBeVisible();
+      await box.press('Control+A');
+      await box.pressSequentially('31/02/2026');
+      await page.keyboard.press('Tab');
+      await expect(button).toBeFocused();
+      await expect(calendar).toBeHidden();
+      await expect(button).toHaveAttribute('aria-expanded', 'false');
+      const error = due.locator(':scope > .fd-error');
+      await expect(error).toContainText(why);
+      // Nothing is drawn over the words: their middle and their end are their own.
+      const covered = await error.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return [r.left + r.width / 2, r.right - 6, r.left + 6].map((x) => {
+          const top = document.elementFromPoint(x, r.top + r.height / 2);
+          return top && !el.contains(top) ? (top as HTMLElement).className : null;
+        });
+      });
+      expect(covered).toEqual([null, null, null]);
+      await screen(page, `quiet-date-unread-${locale}`, { viewport: true });
+      // Opened again over them, the month says them too.
+      await button.click();
+      await expect(calendar.locator('.fd-calendar-note')).toContainText(why);
+      expect(problems).toEqual([]);
+    });
+  }
 });
 
 test.describe('a field the workflow locks', () => {

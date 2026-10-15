@@ -194,6 +194,11 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     writeFound(null, undefined);
   };
   input.addEventListener('blur', left);
+  // Read by a save made from inside it (a change) as leaving reads it: typed over, the address picked is no longer its.
+  input.addEventListener('change', left);
+  /** An address picked, while its place and parts are found: a save waits for them. */
+  let finding: Promise<void> | null = null;
+  const stopReading = typeof form.settling === 'function' ? form.settling(() => finding ?? undefined) : null;
 
   const box = searchBox({
     document: doc,
@@ -207,40 +212,50 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     zoom: () => settings.zoom,
     freeText: true,
     say,
-    // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose suggestions carry none).
-    async pick(place: PlaceFound) {
-      const mine = ++picking;
-      emptied = false;
-      picked = [plain(place.label)];
-      tell(null);
-      const whole = addressLine([place.label, place.detail], locale);
-      write(whole);
-      let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
-      let parts = place.parts;
-      if (!at && place.locate && (placeField || (partsField && !parts))) {
-        let failed = false;
-        const located = await place.locate().catch((error: Error) => {
-          failed = unanswered(error, doc.defaultView?.navigator.onLine === false);
-          warnOnce(`Finding the address picked failed: ${error.message}`);
-          return null;
-        });
-        if (mine !== picking) return;
-        // Not found where it is: no place written, its parts still are; and the person is told, or told the map did not answer (it may well be on it). Only near it: written, and said.
-        tell(!located ? (failed ? words.locateFailed : words.notPlaced) : located.precise === false ? words.placedNear : null);
-        if (located) {
-          at = located;
-          parts = located.parts ?? parts;
-          // The provider's own way of writing it, unless a person has typed since.
-          if (located.address && input.value === whole) {
-            write(addressLine([located.address], locale));
-            picked.push(firstPiece(located.address));
-          }
-        }
-      }
-      // The pick before's place and parts, still as it wrote them, were another address's: they go, though nothing comes in their place.
-      writeFound(at, parts);
+    // Its whole address at once; its place and parts as soon as they are known (looked up now, for a provider whose
+    // suggestions carry none). A save made meanwhile waits for them (`finding`): never the address with another's place.
+    pick(place: PlaceFound) {
+      const run = pickPlace(place);
+      finding = run;
+      void run.finally(() => {
+        if (finding === run) finding = null;
+      });
+      return run;
     },
   });
+
+  async function pickPlace(place: PlaceFound) {
+    const mine = ++picking;
+    emptied = false;
+    picked = [plain(place.label)];
+    tell(null);
+    const whole = addressLine([place.label, place.detail], locale);
+    write(whole);
+    let at: LatLng | null = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng } : null;
+    let parts = place.parts;
+    if (!at && place.locate && (placeField || (partsField && !parts))) {
+      let failed = false;
+      const located = await place.locate().catch((error: Error) => {
+        failed = unanswered(error, doc.defaultView?.navigator.onLine === false);
+        warnOnce(`Finding the address picked failed: ${error.message}`);
+        return null;
+      });
+      if (mine !== picking) return;
+      // Not found where it is: no place written, its parts still are; and the person is told, or told the map did not answer (it may well be on it). Only near it: written, and said.
+      tell(!located ? (failed ? words.locateFailed : words.notPlaced) : located.precise === false ? words.placedNear : null);
+      if (located) {
+        at = located;
+        parts = located.parts ?? parts;
+        // The provider's own way of writing it, unless a person has typed since.
+        if (located.address && input.value === whole) {
+          write(addressLine([located.address], locale));
+          picked.push(firstPiece(located.address));
+        }
+      }
+    }
+    // The pick before's place and parts, still as it wrote them, were another address's: they go, though nothing comes in their place.
+    writeFound(at, parts);
+  }
 
   // The list with what the provider's terms ask to be said under it: its mark, or its credit.
   const popup = doc.createElement('div');
@@ -271,8 +286,10 @@ export function suggest({ settings, context, search, element, input, searchBox, 
     described,
     destroy() {
       box.destroy();
+      stopReading?.();
       input.removeEventListener('input', typedOn);
       input.removeEventListener('blur', left);
+      input.removeEventListener('change', left);
       tell(null);
       popup.remove();
       note.remove();

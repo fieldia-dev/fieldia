@@ -7,6 +7,7 @@ import { lookRow } from './look-row';
 import { onTab, segmented, setting, type Choice, type Segmented } from './panel-controls';
 import type { DesignerWords } from './designer-words';
 import { partLookSettings } from './panel-look-parts';
+import { settingNumber } from './number-box';
 
 /**
  * The Look tab's settings: looks to start from, then the page's look — its
@@ -115,14 +116,22 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
 
   // ---- how wide labels beside their boxes are ----
   const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': w.labelWidth });
-  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': w.labelWidth });
-  const width = (value: string) => {
-    const n = Number(value);
-    if (Number.isInteger(n) && n >= 60 && n <= 320) designer.setLook({ labelWidth: n });
-  };
-  slider.addEventListener('input', () => width(slider.value));
-  number.addEventListener('input', () => width(number.value));
-  const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
+  // A whole number of pixels, 60 to 320: kept as it is typed once it reads and fits, as the slider beside it is;
+  // anything else is said as the box is left, and the width it had stays.
+  let labelsWide = 140;
+  const number = settingNumber(el, designer, {
+    label: w.labelWidth,
+    attrs: { class: 'fd-input fd-insp-number' },
+    integer: true,
+    min: 60,
+    max: 320,
+    step: 10,
+    live: true,
+    saved: () => labelsWide,
+    commit: (n) => n !== null && designer.setLook({ labelWidth: n }),
+  });
+  slider.addEventListener('input', () => designer.setLook({ labelWidth: Number(slider.value) }));
+  const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number.input, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
   const readonlyRow = rows[CHOICES.findIndex((c) => c.key === 'readonlyShown')];
   // ---- what an empty quiet field shows at rest: what to add, or nothing ----
   const quietHints = segmented<string>(
@@ -158,9 +167,9 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
       quietRow.hidden = page.data.kind !== 'record';
       quietHints.set(look.quietHints === undefined ? undefined : look.quietHints ? 'say' : 'nothing');
       widthRow.hidden = look.labels !== 'beside';
-      const value = String(look.labelWidth ?? 140);
-      if (number.ownerDocument.activeElement !== number) number.value = value;
-      if (number.ownerDocument.activeElement !== slider) slider.value = value;
+      labelsWide = look.labelWidth ?? 140;
+      number.refresh();
+      if (slider.ownerDocument.activeElement !== slider) slider.value = String(labelsWide);
     },
   };
 }

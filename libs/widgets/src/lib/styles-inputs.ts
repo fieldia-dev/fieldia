@@ -8,10 +8,13 @@
  */
 export const INPUTS_CSS = /* css */ `
 /* ---- inputs' details ------------------------------------------------------- */
-.fd-counted { display: grid; gap: 2px; min-width: 0; }
-/* "12 / 100" reads so on a right-to-left page too. */
-.fd-count { justify-self: end; direction: ltr; unicode-bidi: isolate; font-size: 12px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
-.fd-count-near { color: var(--fd-warning); font-weight: 600; }
+.fd-counted { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 2px; min-width: 0; }
+.fd-counted > * { grid-column: 1 / -1; }
+/* "12 / 100" reads so on a right-to-left page too, at the box's end; how many are too many beside it, at its start. */
+.fd-counted > .fd-count { grid-column: 2; justify-self: end; direction: ltr; unicode-bidi: isolate; font-size: 12px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+.fd-counted > .fd-count-over { grid-column: 1; font-size: 12px; color: var(--fd-error); font-weight: 600; }
+.fd-counted > .fd-count-near { color: var(--fd-warning); font-weight: 600; }
+.fd-counted > .fd-count-past { color: var(--fd-error); font-weight: 600; }
 /* A unit inside the number's box, at its start or end; the box keeps room for it. */
 .fd-number:not(.fd-currency-picked) { position: relative; display: block; }
 /* As tall as its box, not its row: a label on two lines would stretch it, and the unit would sit below the value. */

@@ -1,6 +1,6 @@
 import type { FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, field, mount, openTab, type } from './test-editor';
+import { button, field, mount, openTab, typeAndLeave } from './test-editor';
 
 /** Words in a field's empty box chosen by a condition, set in the Placeholder row as a person does. */
 function screen(locale?: 'ar') {
@@ -21,9 +21,9 @@ describe('words in an empty box chosen by a condition, in the panel', () => {
     const { host, row, node, designer } = screen();
     openTab(host, 'Content');
     (button(row(), 'Add words for a condition') as HTMLButtonElement).click();
-    type(field(row(), 'Words'), 'e.g. Lumber Inc');
+    typeAndLeave(field(row(), 'Words'), 'e.g. Lumber Inc');
     expect(node().placeholderWhen).toBeUndefined();
-    type(field(row(), 'While'), 'is_company');
+    typeAndLeave(field(row(), 'While'), 'is_company');
     expect(node().placeholderWhen).toEqual([{ when: 'is_company', text: 'e.g. Lumber Inc' }]);
     expect(designer.setPlaceholderWhen('f-name', [{ when: 'is_compny', text: 'x' }])).toBe(false);
     (button(row(), 'Remove words 1') as HTMLButtonElement).click();

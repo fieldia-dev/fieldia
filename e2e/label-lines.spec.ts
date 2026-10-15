@@ -38,12 +38,12 @@ for (const [skin, labels] of [['underline', 'beside'], ['outlined', 'beside'], [
     await page.goto('/script/');
     await page.waitForFunction(() => 'Fieldia' in window);
     const offsets = await page.evaluate(
-      ({ fields, skin, labels }) => {
+      async ({ fields, skin, labels }) => {
         const host = document.createElement('div');
         document.body.prepend(host);
         const names = Object.keys(fields);
         const W = window as any;
-        W.Fieldia.mountViewer(host, {
+        const handle = W.Fieldia.mountViewer(host, {
           page: {
             fieldia: '0.1', id: 'every-type', title: 'Every type', data: { kind: 'responses' }, ...(labels ? { look: { labels } } : {}),
             fields,
@@ -52,6 +52,8 @@ for (const [skin, labels] of [['underline', 'beside'], ['outlined', 'beside'], [
           dataSource: W.Fieldia.createMemoryDataSource(),
           skin,
         });
+        // Drawn once the parts it draws from have come: a date's box, from fieldia.date.js.
+        await handle.drawn;
         return names.map((name) => {
           const field = host.querySelector(`.fd-field[data-field="${name}"]`)!;
           const label = field.querySelector(':scope > .fd-label')!;

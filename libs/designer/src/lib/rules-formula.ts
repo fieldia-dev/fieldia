@@ -1,4 +1,4 @@
-import { compileModifier, createForm, type Field, type Page } from '@fieldia/core';
+import { compileModifier, createForm, foldDigits, type Field, type Page } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -25,8 +25,10 @@ export interface FormulaToken {
   to: number;
 }
 
-/** The same pieces, in the same order, as the page's own reader takes them. */
-const PIECE = /(\(|\)|,|==|!=|<=|>=|<>|<|>|[-+*/%]|not\s+in\b|in\b|and\b|or\b|not\b|\[[^\]]*\]|'[^']*'|"[^"]*"|\d+\.?\d*|\w+(?:\.\w+)*)/iy;
+/** The same pieces, in the same order, as the page's own reader takes them: a number in Arabic or Persian digits too, with ٫. */
+const PIECE = /(\(|\)|,|==|!=|<=|>=|<>|<|>|[-+*/%]|not\s+in\b|in\b|and\b|or\b|not\b|\[[^\]]*\]|'[^']*'|"[^"]*"|[\d\u0660-\u0669\u06f0-\u06f9]+[.\u066b]?[\d\u0660-\u0669\u06f0-\u06f9]*|\w+(?:\.\w+)*)/iy;
+/** A number piece's value, whatever its digits: "٢٫٥" is 2.5. */
+const numberOf = (text: string) => Number(foldDigits(text).replace('\u066b', '.'));
 const SPACE = /\s*/y;
 const WORDS = new Set(['and', 'or', 'not', 'in']);
 const CONSTANTS = new Set(['True', 'False', 'None', 'true', 'false', 'null']);
@@ -37,7 +39,7 @@ function kindOf(text: string): FormulaToken['kind'] {
   if (text === ',') return 'comma';
   if (text.startsWith('[')) return 'list';
   if (text.startsWith("'") || text.startsWith('"')) return 'text';
-  if (/^\d/.test(text)) return 'number';
+  if (/^[\d\u0660-\u0669\u06f0-\u06f9]/.test(text)) return 'number';
   if (WORDS.has(text.toLowerCase().split(/\s+/)[0]) || CONSTANTS.has(text)) return 'word';
   if (/^\w/.test(text)) return 'name';
   return 'sign';
@@ -205,10 +207,10 @@ export function literalOf(source: string): { value: string | number | boolean | 
   const tokens = formulaTokens(source.trim());
   if (!Array.isArray(tokens)) return null;
   const [first, second] = tokens;
-  if (tokens.length === 2 && first.text === '-' && second.kind === 'number') return { value: -Number(second.text) };
+  if (tokens.length === 2 && first.text === '-' && second.kind === 'number') return { value: -numberOf(second.text) };
   if (tokens.length !== 1) return null;
   if (first.kind === 'text') return { value: first.text.slice(1, -1) };
-  if (first.kind === 'number') return { value: Number(first.text) };
+  if (first.kind === 'number') return { value: numberOf(first.text) };
   if (first.kind === 'word' && CONSTANTS.has(first.text)) return { value: /^t/i.test(first.text) ? true : /^f/i.test(first.text) ? false : null };
   return null;
 }

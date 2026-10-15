@@ -181,7 +181,8 @@ describe("a list's other views", () => {
     const making = context.create!({ since: '2026-10-14' });
     const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement | null;
     await until(() => dialog()?.querySelector('[data-node="f-since"] input'));
-    expect(dialog()?.querySelector<HTMLInputElement>('[data-node="f-since"] input')?.value).toBe('2026-10-14');
+    // Fieldia's own date box shows the day in the page's words; the record keeps it as 2026-10-14.
+    expect(dialog()?.querySelector<HTMLInputElement>('[data-node="f-since"] input')?.value).toBe('14 Oct 2026');
     const name = dialog()!.querySelector<HTMLInputElement>('[data-node="f-name"] input')!;
     name.value = 'Delta Labs';
     name.dispatchEvent(new Event('input', { bubbles: true }));

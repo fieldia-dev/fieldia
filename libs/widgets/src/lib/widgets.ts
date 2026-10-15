@@ -1,3 +1,4 @@
+import { foldForSearch, placesOf, placesOfCurrency, readNumber, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -14,7 +15,9 @@ import type {
   Values,
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
-import { formatNumber, formatPlain, normalizeNumber, ungroup } from './numbers';
+import { formatNumber, formatPlain, ungroup } from './numbers';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
+import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -22,7 +25,7 @@ import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
-import { withCalendar } from './calendar';
+import { plainDateWidget, type DateKind } from './date-text';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
@@ -33,9 +36,9 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, fillIn, maker, setAttr, setText, wordsFor } from './kind-parts';
+import { clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
-import { bounds, counted, grower } from './limits';
+import { counted, grower } from './limits';
 import { currencySymbol } from './units';
 import { currencyOf } from './display';
 import { drawIcon } from './icons';
@@ -47,17 +50,15 @@ import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
-import { choicePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import { choicePart, datePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
 import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
-import { dateRangeWidget } from './date-range';
 import { timerWidget } from './timer';
 import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
-import { openOnClick } from './quiet';
 import { containWidget, type ErrorHandler } from './contain';
 
 /**
@@ -234,34 +235,51 @@ function describe(element: HTMLElement, state: WidgetState) {
 
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 
+/** The text box each input type is: a line of words, a password, a phone number, an email, a web address. A time is a date box's (date-box.ts). */
+const TEXT_KINDS: Record<string, TextKind | undefined> = { text: 'line', password: 'password', tel: 'phone', email: 'email', url: 'url' };
+
 function textWidget(inputType: string): WidgetFactory {
   return (context) => {
-    const { form, name, field, node, id, document } = context;
+    const { form, name, node, id, document } = context;
+    // An email or a web address in a text box: the browser's own would keep an international domain as punycode
+    // (ali@xn--mgbh0fb.xn--wgbh1c) and trim as it is typed. A phone still shows its keyboard for them.
+    const written = inputType === 'email' || inputType === 'url';
     // A person's own email, phone or web address, the browser may offer.
-    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
-    if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
-    if (inputType === 'time') bounds(input, field, node);
+    const input = make(document, 'input', {
+      id,
+      type: written ? 'text' : inputType,
+      class: 'fd-input',
+      autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off',
+      ...(written ? { inputmode: inputType } : {}),
+    });
     if (node.placeholder) input.placeholder = node.placeholder;
+    // No maxlength: the browser would cut a paste without a word. The box refuses a key at the most, and says so.
+    const kind = TEXT_KINDS[inputType];
+    const box = kind ? textBox(input, context, kind) : null;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
     return counted({
       element: input,
       focus: () => input.focus(),
+      destroy: () => box?.destroy(),
       update(state) {
         const text = textOf(state.value);
-        if (input.value !== text) input.value = text;
+        if (input.value !== text) {
+          input.value = text;
+          box?.accept();
+        }
         if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-        describe(input, state);
+        describe(input, { ...state, describedBy: box ? box.describedBy(state.describedBy) : state.describedBy });
       },
     }, context, input);
   };
 }
 
 const textareaWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document } = context;
+  const { form, name, node, id, document } = context;
   const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3' });
-  if (field.type === 'text' && field.size !== undefined) area.maxLength = field.size;
   if (node.placeholder) area.placeholder = node.placeholder;
   const grow = grower(area, node);
+  const box = textBox(area, context, 'paragraph');
   area.addEventListener('input', () => {
     grow();
     form.setValue(name, area.value === '' ? null : area.value);
@@ -269,66 +287,58 @@ const textareaWidget: WidgetFactory = (context) => {
   return counted({
     element: area,
     focus: () => area.focus(),
+    destroy: () => box.destroy(),
     update(state) {
       const text = textOf(state.value);
       if (area.value !== text) {
         area.value = text;
+        box.accept();
         grow();
       }
       if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
-      describe(area, state);
+      describe(area, { ...state, describedBy: box.describedBy(state.describedBy) });
     },
   }, context, area);
 };
 
-const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;
-const UNFINISHED = /^-?\.?$/;
-
 /**
  * Numbers are written as readers of the page's language write them, grouped,
- * with the field's decimals, and read back the same way. Entered, the box
- * shows the plain number, no grouping marks — a digit typed mid-number would
- * leave them in the wrong places ("600,1000.00") — and a whole-text selection
- * made on the way in holds, so typing replaces it. What is typed stays as
- * typed while focused: "1." means 1 now and 1.5 a keystroke later.
+ * with the field's decimals, and read back the same way (@fieldia/core's
+ * readNumber: Arabic digits, ٫ and ، too, a German or French decimal comma).
+ * Entered, the box shows the plain number, no grouping marks — a digit typed
+ * mid-number would leave them in the wrong places ("600,1000.00") — and a
+ * whole-text selection made on the way in holds, so typing replaces it. What
+ * is typed stays as typed while focused: "1." means 1 now and 1.5 a keystroke
+ * later. The input rules refuse, as they are typed or pasted, letters, a
+ * misplaced minus, a second decimal mark, places and digits past the
+ * field's, and hold the keys typed after a refused one; text left that does
+ * not read, or that the field cannot hold ("1.5" in whole numbers, keys held
+ * after a refused one), stays in the box as typed, marked, and the field
+ * keeps the value it held (`FormState.unread`). A save made with the box
+ * still entered (Ctrl+Enter) reads it first, as leaving it would.
  */
 const numberWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document, locale = 'en' } = context;
+  const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const integer = field.type === 'integer';
-  const decimals = integer ? 0 : (field.type === 'float' || field.type === 'monetary' ? field.digits?.[1] : undefined) ?? 2;
-  const shown = (value: Value | undefined) => (typeof value === 'number' ? formatNumber(value, decimals, locale) : textOf(value));
+  /** The box's currency now: a money box's places, and an amount pasted with it, follow it. */
+  let currencyNow: string | null = field.type === 'monetary' ? currencyOf(field, form.getState().values) : null;
+  const digits = field.type === 'float' || field.type === 'monetary' ? field.digits : undefined;
+  /** The places a value is written with at rest: the field's, padded; a money field's currency's when it has no digits. */
+  const fieldPlaces = () => (integer ? 0 : (digits?.[1] ?? (field.type === 'monetary' ? placesOfCurrency(currencyNow) : 2)));
+  /** Never fewer places than the value has: the box never shows a rounded picture of a different value. */
+  const placesFor = (value: number) => Math.max(fieldPlaces(), Math.min(placesOf(value), 20));
+  const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? formatNumber(value, placesFor(value), locale) : '') : textOf(value));
+  const plain = (value: number) => formatPlain(value, placesFor(value), locale);
+  const min = 'min' in field && typeof field.min === 'number' ? field.min : undefined;
+  const limits = (): NumberLimits => ({
+    integer,
+    ...(integer ? {} : digits ? { places: digits[1] } : field.type === 'monetary' ? { places: placesOfCurrency(currencyNow) } : {}),
+    ...(digits ? { digits: digits[0] } : {}),
+    ...(min !== undefined ? { min } : {}),
+  });
   const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', autocomplete: 'off' });
-  input.inputMode = integer ? 'numeric' : 'decimal';
+  input.inputMode = numberKeyboard(limits());
   if (node.placeholder) input.placeholder = node.placeholder;
-
-  const parse = (raw: string): Value | undefined => {
-    const text = normalizeNumber(raw.trim(), locale);
-    if (text === '') return null;
-    if (NUMBER.test(text)) return Number(text);
-    if (UNFINISHED.test(text)) return undefined; // "-" or ".": keep typing
-    return text; // not a number: validation names it
-  };
-  input.addEventListener('input', () => {
-    const value = parse(input.value);
-    if (value !== undefined) form.setValue(name, value);
-  });
-  input.addEventListener('focus', () => {
-    // Once the browser has put its selection in the box: a selection made before focus() is put back only after
-    // the focus event, and a click places its caret after it, against the plain words.
-    queueMicrotask(() => {
-      const value = form.getState().values[name];
-      if (document.activeElement !== input || input.readOnly || typeof value !== 'number' || input.value !== shown(value)) return;
-      const grouped = input.value;
-      const [start, end] = [input.selectionStart ?? grouped.length, input.selectionEnd ?? grouped.length];
-      // Where the selection stands among the digits, the grouping marks taken out.
-      const at = (index: number) => ungroup(grouped.slice(0, index), locale).length;
-      input.value = ungroup(grouped, locale);
-      input.setSelectionRange(at(start), at(end));
-    });
-  });
-  input.addEventListener('blur', () => {
-    input.value = shown(form.getState().values[name]);
-  });
 
   // Money shows its currency beside the amount (options.symbol "after" puts it
   // after), or with options.pickCurrency the currency field's own widget, to change it.
@@ -355,25 +365,101 @@ const numberWidget: WidgetFactory = (context) => {
       ? make(document, 'span', { class: `fd-number${after ? ' fd-currency-after' : ''}${picker ? ' fd-currency-picked' : ''}` }, ...[first, input, last].filter((u): u is HTMLElement => !!u))
       : input;
 
+  // The input rules: refused keystrokes and pastes are said under the box (after the units round it).
+  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow };
+  const hint = refusalHint(input, element);
+  const checks = guard(input, numberRules(box), hint);
+  /** Unread text the form keeps for this box, and what the field held as the box was entered. */
+  const unreadNow = () => form.getState().unread?.[name];
+  let entered: Value | undefined;
+  input.addEventListener('focus', () => {
+    entered = form.getState().values[name];
+    // Once the browser has put its selection in the box: a selection made before focus() is put back only after
+    // the focus event, and a click places its caret after it, against the plain words.
+    queueMicrotask(() => {
+      const value = form.getState().values[name];
+      if (document.activeElement !== input || input.readOnly || typeof value !== 'number' || input.value !== shown(value)) return;
+      const grouped = input.value;
+      const [start, end] = [input.selectionStart ?? grouped.length, input.selectionEnd ?? grouped.length];
+      // Where the selection stands among the digits, the grouping and direction marks taken out.
+      const at = (index: number) => ungroup(grouped.slice(0, index), locale).length;
+      input.value = plain(value);
+      input.setSelectionRange(at(start), at(end));
+      checks.accept();
+    });
+  });
+  input.addEventListener('input', () => {
+    const reading = readNumber(input.value, locale);
+    // On its way to a number ("-", "1,", "12.345" on its way to "12.345,6"), or text that does not read: nothing is
+    // set; leaving the box says why.
+    if (!reading.ok || !numberFits(input.value, box)) return;
+    form.setValue(name, reading.value);
+    if (unreadNow()) form.setUnread(name, null);
+  });
+  /**
+   * What is typed, read: as the box is left, and as a save reads it first (a change) — never the value that fitted on
+   * the way ("1" of "1.5"). Taken when it reads and fits; else kept as typed, marked with why, the field holding what
+   * it held as the box was entered. True when it was taken.
+   */
+  const read = (): boolean => {
+    // Keys held after a refused one are part of what was typed: "1.5" where the box shows "1". All of it is the box's
+    // now, and the field's own words take over from the hint, in its place.
+    const held = checks.held();
+    if (held) {
+      hint.hide();
+      input.value = held.text;
+      checks.accept();
+    }
+    const text = input.value;
+    const reading = readNumber(text, locale);
+    // A value the box held as it was entered (one from outside with more places) is let be: check names it.
+    const words = !held && reading.ok && reading.value === (entered ?? null) ? unreadWords(text, box) : leftWords(text, box);
+    if (words === null) {
+      if (unreadNow()) form.setUnread(name, null);
+      // What reads and fits is the field's, as typed: "-3" held after its refused minus, or text left marked before
+      // and left again. Its least and most are check's to say, as the box is left.
+      if (reading.ok && reading.value !== (form.getState().values[name] ?? null)) form.setValue(name, reading.value);
+      return true;
+    }
+    // What does not read stays in the box, marked; the field keeps what it held as the box was entered.
+    if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
+    form.setUnread(name, { text, message: words });
+    return false;
+  };
+  input.addEventListener('change', () => !input.readOnly && read());
+  input.addEventListener('blur', () => {
+    if (input.readOnly) return;
+    if (read()) input.value = shown(form.getState().values[name]);
+  });
+
   return {
     element,
     focus: () => input.focus(),
+    destroy: () => checks.destroy(),
     update(state) {
+      if (field.type === 'monetary') currencyNow = currencyOf(field, state.values, state.parent);
       const typing = document.activeElement === input;
-      const parsed = parse(input.value);
-      const showsSame = parsed === undefined || parsed === state.value;
-      if (!(typing && showsSame)) {
-        // A value changed under the person editing it shows as they edit: plain.
-        const text = typing && !state.readonly && typeof state.value === 'number' ? formatPlain(state.value, decimals, locale) : shown(state.value);
+      const unread = unreadNow();
+      if (typing) {
+        const reading = readNumber(input.value, locale);
+        // A value changed under the person editing it shows as they edit: plain. Text the box did not set ("1.5" in
+        // whole numbers, waiting to be said as the box is left) is theirs, and stays.
+        if (reading.ok && numberFits(input.value, box) && reading.value !== (state.value ?? null)) {
+          input.value = !state.readonly && typeof state.value === 'number' ? plain(state.value) : shown(state.value);
+          checks.accept();
+        }
+      } else {
+        // Text left that does not read stays as it was typed; anything else shows the value at rest.
+        const text = unread ? unread.text : shown(state.value);
         if (input.value !== text) input.value = text;
       }
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      describe(input, { ...state, describedBy: [state.describedBy, ...units.map((u) => u.id)].filter(Boolean).join(' ') });
+      describe(input, { ...state, invalid: state.invalid || (!!unread && !typing), describedBy: hint.describedBy([state.describedBy, ...units.map((u) => u.id)].filter(Boolean).join(' ')) });
       if (picker && currencyField) {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
-        const code = currencyOf(field, state.values, state.parent) ?? '';
+        const code = currencyNow ?? '';
         // By its symbol, or its code when the field's money look says so.
         setText(currency, /^[A-Z]{3}$/.test(code) && look?.currency !== 'code' ? currencySymbol(code, locale).text : code);
       }
@@ -446,16 +532,42 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const other = field.type === 'selection' && field.other === true;
     const otherChoice = other ? make(document, 'input', { type: kind, name: id, value: 'other', id: `${id}-other` }) : null;
     const otherBox = other ? make(document, 'input', { type: 'text', class: 'fd-input fd-other-input', 'aria-label': words.otherAnswer, autocomplete: 'off' }) : null;
-    if (otherChoice && otherBox) {
-      group.append(make(document, 'div', { class: 'fd-choice fd-choice-other' }, make(document, 'label', { class: 'fd-choice-other-pick', for: `${id}-other` }, otherChoice, make(document, 'span', {}, words.other)), otherBox));
+    const otherRow = otherChoice && otherBox ? make(document, 'div', { class: 'fd-choice fd-choice-other' }, make(document, 'label', { class: 'fd-choice-other-pick', for: `${id}-other` }, otherChoice, make(document, 'span', {}, words.other)), otherBox) : null;
+    // An answer of one's own that is one of the options, said under it as it is ticked.
+    const said = otherBox && otherRow ? refusalHint(otherBox, otherRow) : null;
+    /** The most ticked already: one more ticks nothing, and says why. */
+    const atMost = () => !!limit?.most && (Array.isArray(form.getState().values[name]) ? (form.getState().values[name] as unknown[]).length : 0) >= limit.most;
+    const fold = (text: string) => foldForSearch(text).trim();
+    if (otherChoice && otherBox && otherRow) {
+      group.append(otherRow);
       // Typing picks "Other"; picking "Other" puts the cursor in its box.
       otherBox.addEventListener('input', () => {
-        if (!otherChoice.checked) otherChoice.checked = true;
+        said?.hide();
+        if (!otherChoice.checked) {
+          if (kind === 'checkbox' && atMost()) return limit?.say(fillIn(words.chooseUpTo, { max: limit.most }));
+          otherChoice.checked = true;
+        }
         save(otherChoice);
       });
       otherChoice.addEventListener('change', () => {
         if (otherChoice.checked) otherBox.focus();
       });
+      // Left, or read by a save made from inside it (a change), the answer is held trimmed; one that names an option,
+      // by its value or its words, ticks that option and says so.
+      const settleOther = () => {
+        if (otherBox.readOnly || otherBox.disabled) return;
+        const text = otherBox.value.trim();
+        if (text !== otherBox.value) otherBox.value = text;
+        const at = text ? choices.findIndex((option) => fold(option.label) === fold(text) || fold(String(option.value)) === fold(text)) : -1;
+        if (at === -1) return;
+        otherBox.value = '';
+        otherChoice.checked = false;
+        inputs[at].checked = true;
+        save(inputs[at]);
+        said?.show(fillIn(words.isAnOption, { text: choices[at].label }));
+      };
+      otherBox.addEventListener('change', settleOther);
+      otherBox.addEventListener('blur', settleOther);
     }
     if (limit?.element) group.append(limit.element);
     /** The answer the boxes say now: the options picked, and the words of "Other" when it is picked and has any. */
@@ -466,7 +578,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         inputs.forEach((input, i) => input !== ticked && (alone || choices[i].exclusive) && (input.checked = false));
         if (alone && otherChoice) otherChoice.checked = false;
       }
-      const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value : null;
+      const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value.trim() : null;
       if (kind === 'radio') {
         const chosen = inputs.findIndex((input) => input.checked);
         form.setValue(name, chosen !== -1 ? choices[chosen].value : own);
@@ -477,7 +589,14 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       }
     }
     group.addEventListener('change', (event) => {
-      if (event.target !== otherBox) save(event.target);
+      if (event.target === otherBox) return;
+      // At the most a question takes, one more is not ticked: the box says why, and stays as it was.
+      const ticked = event.target;
+      if (kind === 'checkbox' && ticked instanceof HTMLInputElement && ticked.checked && atMost() && !(choices[inputs.indexOf(ticked)]?.exclusive === true)) {
+        ticked.checked = false;
+        return limit?.say(fillIn(words.chooseUpTo, { max: limit.most }));
+      }
+      save(ticked);
     });
     const known = new Set(choices.map((o) => o.value as unknown));
     const picked = () => inputs.some((input) => input.checked) || otherChoice?.checked === true;
@@ -495,22 +614,21 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
-        // At the most a question takes, the boxes not ticked wait; "None of these" stays open.
-        const full = !!limit?.full(Array.isArray(state.value) ? state.value.length : 0);
+        // At the most a question takes, "Up to 3" says so; a box more, pressed, says why (hide, never disable).
+        limit?.full(Array.isArray(state.value) ? state.value.length : 0);
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
-          const off = state.readonly || (full && !input.checked && !choices[i].exclusive);
-          if (input.disabled !== off) input.disabled = off;
+          if (input.disabled !== state.readonly) input.disabled = state.readonly;
         });
         if (otherChoice && otherBox) {
           // A value not among the options is an answer of its own: "Other", with its words.
           const own = chosen.find((v) => typeof v === 'string' && !known.has(v));
-          // Picked with its box still empty, "Other" stays picked until something else is.
+          // Picked with its box still empty, "Other" stays picked until something else is; while its words are typed, too.
+          const typing = document.activeElement === otherBox && otherChoice.checked && !!otherBox.value.trim();
           const waiting = otherChoice.checked && !otherBox.value.trim() && (kind === 'checkbox' || chosen.every((v) => v === null || v === undefined));
-          otherChoice.checked = own !== undefined || waiting;
+          otherChoice.checked = own !== undefined || waiting || typing;
           if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
-          const off = state.readonly || (full && !otherChoice.checked);
-          if (otherChoice.disabled !== off) otherChoice.disabled = otherBox.disabled = off;
+          if (otherChoice.disabled !== state.readonly) otherChoice.disabled = otherBox.disabled = state.readonly;
         }
         clear?.allow(state);
         clear?.show(picked());
@@ -552,7 +670,10 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     group.addEventListener('keydown', (event) => {
       const current = form.getState().values[name];
       const value = typeof current === 'number' ? current : min - 1;
-      const step = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+      // Right to left the points run from the right: ← goes to the next one on screen, a higher value.
+      const back = rightToLeft(group);
+      const steps: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, ArrowRight: back ? -1 : 1, ArrowLeft: back ? 1 : -1 };
+      const step = steps[event.key] ?? 0;
       if (!step) return;
       event.preventDefault();
       const next = Math.min(max, Math.max(min, value + step));
@@ -591,60 +712,12 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   };
 }
 
-const dateWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
-  bounds(input, field, node);
-  input.addEventListener('input', () => form.setValue(name, input.value || null));
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = textOf(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      // Empty, its mask is no answer: read-only, it is not drawn.
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'date');
-  openOnClick(input);
-  return widget;
-};
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Shown in local time, stored as an ISO instant in UTC. */
-const dateTimeWidget: WidgetFactory = (context) => {
-  const { form, name, field, id, document, node } = context;
-  const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
-  bounds(input, field, node);
-  const local = (iso: Value | undefined) => {
-    if (typeof iso !== 'string' || !iso) return '';
-    const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-  input.addEventListener('input', () => {
-    if (!input.value) return form.setValue(name, null);
-    const d = new Date(input.value);
-    if (!Number.isNaN(d.getTime())) form.setValue(name, d.toISOString());
-  });
-  const widget: Widget = {
-    element: input,
-    focus: () => input.focus(),
-    update(state) {
-      const text = local(state.value);
-      if (input.value !== text) input.value = text;
-      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      input.classList.toggle('fd-blank', !text);
-      describe(input, state);
-    },
-  };
-  if (node.options?.['weekNumbers'] === true) return withCalendar(widget, context, 'datetime');
-  openOnClick(input);
-  return widget;
-};
+// A date, a date and time, and a time of day are typed in Fieldia's own box, a date's calendar beside it (date-box.ts),
+// which comes in the date part: a plain box of the same reader meanwhile. A date and time is shown in local time, stored
+// as an ISO instant in UTC.
+const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateBoxWidget(kind), plainDateWidget(kind));
+/** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
+const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
@@ -686,7 +759,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
-  'char.time': textWidget('time'),
+  'char.time': dateBoxOf('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,
@@ -721,8 +794,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.copy': copyWidget,
   'text.copy': copyWidget,
   // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
-  'date.daterange': dateRangeWidget,
-  'datetime.daterange': dateRangeWidget,
+  'date.daterange': dateRangeOf('date'),
+  'datetime.daterange': dateRangeOf('datetime'),
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
   'float.timer': timerWidget,
   'datetime.timer': timerWidget,
@@ -743,8 +816,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.image-choice': imageChoiceWidget,
   'selection.ranking': rankingWidget,
   'selection.statusbar': statusbarWidget,
-  date: dateWidget,
-  datetime: dateTimeWidget,
+  date: dateBoxOf('date'),
+  datetime: dateBoxOf('datetime'),
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarWidget,
   // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).

@@ -66,18 +66,21 @@ describe('text widgets', () => {
     expect(q<HTMLInputElement>(el, 'input').value).toBe('From the server');
   });
 
+  // An email and a web address are text boxes with their phone keyboards: the browser's own would keep an
+  // international domain as punycode and trim as it is typed.
   it.each([
-    ['email', 'email'],
-    ['phone', 'tel'],
-    ['url', 'url'],
-    ['password', 'password'],
-  ])('uses the %s input type', (widget, inputType) => {
+    ['email', 'text', 'email'],
+    ['phone', 'tel', null],
+    ['url', 'text', 'url'],
+    ['password', 'password', null],
+  ])('uses the %s input type', (widget, inputType, keyboard) => {
     const { el } = setup({ type: 'char' }, { widget });
     expect(q<HTMLInputElement>(el, 'input').type).toBe(inputType);
+    expect(q<HTMLInputElement>(el, 'input').getAttribute('inputmode')).toBe(keyboard);
   });
 
-  it('limits length to the field size, and uses a textarea for text', () => {
-    expect(q<HTMLInputElement>(setup({ type: 'char', size: 12 }).el, 'input').maxLength).toBe(12);
+  it('never lets the browser cut a text at the field size, and uses a textarea for text', () => {
+    expect(q<HTMLInputElement>(setup({ type: 'char', size: 12 }).el, 'input').hasAttribute('maxlength')).toBe(false);
     const { form, el } = setup({ type: 'text' });
     type(q<HTMLTextAreaElement>(el, 'textarea'), 'Line one\nLine two');
     expect(valueOf(form)).toBe('Line one\nLine two');
@@ -315,15 +318,21 @@ describe('number widgets — typing a number is not one keystroke', () => {
     expect(input.value).toBe('2.00');
   });
 
-  it('passes text that is not a number on, so validation can name it', () => {
+  it('never holds words: letters a keyboard could not be stopped from typing are put back, with why', () => {
     const { form, el } = setup({ type: 'integer' });
-    type(q<HTMLInputElement>(el, 'input'), '12a');
-    expect(valueOf(form)).toBe('12a');
+    const input = q<HTMLInputElement>(el, 'input');
+    type(input, '12');
+    type(input, '12a');
+    expect(input.value).toBe('12');
+    expect(valueOf(form)).toBe(12);
   });
 
-  it('asks for a decimal keypad, or a numeric one for integers', () => {
-    expect(q<HTMLInputElement>(setup({ type: 'float' }).el, 'input').inputMode).toBe('decimal');
-    expect(q<HTMLInputElement>(setup({ type: 'integer' }).el, 'input').inputMode).toBe('numeric');
+  it('asks for digits alone, digits and a mark, or the full keyboard where a minus may be typed', () => {
+    expect(q<HTMLInputElement>(setup({ type: 'integer', min: 0 }).el, 'input').inputMode).toBe('numeric');
+    expect(q<HTMLInputElement>(setup({ type: 'float', min: 0 }).el, 'input').inputMode).toBe('decimal');
+    // An iPhone's number pad has no minus.
+    expect(q<HTMLInputElement>(setup({ type: 'float' }).el, 'input').inputMode).toBe('text');
+    expect(q<HTMLInputElement>(setup({ type: 'integer', min: -5 }).el, 'input').inputMode).toBe('text');
   });
 
   it('shows the currency’s symbol with a monetary amount', () => {
@@ -565,7 +574,8 @@ describe('dates', () => {
   it('reads and writes YYYY-MM-DD', () => {
     const { form, el } = setup({ type: 'date' });
     const input = q<HTMLInputElement>(el, 'input');
-    expect(input.type).toBe('date');
+    // Fieldia's own box (date-box.ts): a date written year first is always read.
+    expect(input.type).toBe('text');
     type(input, '2026-10-02');
     expect(valueOf(form)).toBe('2026-10-02');
   });
@@ -573,7 +583,7 @@ describe('dates', () => {
   it('stores a date and time as ISO in UTC, shown in local time', () => {
     const { form, el } = setup({ type: 'datetime' });
     const input = q<HTMLInputElement>(el, 'input');
-    expect(input.type).toBe('datetime-local');
+    expect(input.type).toBe('text');
     type(input, '2026-10-02T10:30');
     const stored = valueOf(form) as string;
     expect(new Date(stored).getTime()).toBe(new Date(2026, 9, 2, 10, 30).getTime());

@@ -33,8 +33,8 @@ describe('a list of records', () => {
     button(host, 'Next page')!.click();
     await until(() => rows(host)[0]?.textContent?.includes('Petra'));
     expect(rows(host).map((r) => cells(r)[0])).toEqual(['Petra Tours', 'Zamalek Studio']);
-    // An amount in the record's own currency, which the list asks for though it is not a column.
-    expect(cells(rows(host)[0])[3]).toBe('JOD\u00a080,000.00');
+    // An amount in the record's own currency, which the list asks for though it is not a column, in its places: a dinar's three.
+    expect(cells(rows(host)[0])[3]).toBe('JOD\u00a080,000.000');
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('3–4 / 4');
     expect(button(host, 'Next page')?.disabled).toBe(true);
   });

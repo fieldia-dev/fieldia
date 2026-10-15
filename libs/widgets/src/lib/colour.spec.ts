@@ -58,6 +58,6 @@ describe('a colour as text', () => {
     expect(value()).toBe('#2c8397');
     form.setValue('x', '#F06050');
     expect(input.value).toBe('#f06050');
-    expect(el.querySelector('.fd-colour-code')?.textContent).toBe('#F06050');
+    expect((el.querySelector('.fd-colour-code') as HTMLInputElement).value).toBe('#F06050');
   });
 });

@@ -8,8 +8,12 @@ import type { DesignerWords } from './designer-words';
  * name — or @ — lists the page's fields by their labels, and picking one puts
  * its name in; the arrows go down the list, Enter or Tab picks, Escape closes
  * it. What is wrong shows under the box, the place it is about marked in a
- * copy of the formula. A formula that reads is handed on as it is typed; one
- * that does not is kept here, so the page keeps the last one that read.
+ * copy of the formula. A formula is handed on as the box is left (or at
+ * Enter), and only when all of it reads — never the part typed so far that
+ * happens to read. While it does not read, the page keeps the formula it had,
+ * and the words under the box say which (or that it has none). Arabic and
+ * Persian digits and ٫ are read in its numbers; a decimal comma is said to be
+ * a point or ٫ in a formula.
  *
  * The box holds the formula as the page stores it, its fields by their
  * names, and a line above it reads it in words, its fields by their labels:
@@ -27,7 +31,7 @@ export interface FormulaBoxOptions {
   own?(): string | undefined;
   /** What is wrong with a formula, or null when it reads. */
   check(page: Page, source: string): FormulaProblem | null;
-  /** A formula that reads, or an empty box, as it is typed. */
+  /** A formula that reads, or an empty box, as the box is left. */
   commit(source: string): void;
   /** Said after each change: the result on made-up values. */
   said?(page: Page, source: string): string;
@@ -149,21 +153,33 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     changed();
   }
 
-  /** The box as typed: checked, said, and handed on when it reads. */
+  /** The box as typed: checked and said; handed on only as it is left. */
   function changed() {
     if (!page) return;
     const source = input.value;
     const wrong = source.trim() ? options.check(page, source) : null;
     showProblem(source, wrong);
     say(page, wrong || !source.trim() ? '' : source);
-    if (!wrong) options.commit(source.trim());
+  }
+
+  /** The box left (or Enter pressed): the whole formula handed on when it reads, or an empty box; else the page keeps its own. */
+  function leave() {
+    if (!page) return;
+    const source = input.value.trim();
+    if (source === lastKept.trim()) return;
+    if (source && options.check(page, source)) return;
+    lastKept = source;
+    options.commit(source);
   }
 
   function showProblem(source: string, wrong: FormulaProblem | null) {
     // While a name is being picked, the half-typed name is not yet wrong.
     problem.hidden = !wrong || !list.hidden;
     if (!wrong) return;
-    words.textContent = problemWords(wrong, options.words);
+    // What is wrong, and what the page keeps meanwhile: the formula it had, or none; a decimal comma said to be a point.
+    const what = problemWords(wrong, options.words);
+    const kept = lastKept.trim() ? options.words.inputs.formulaKept(what, lastKept.trim()) : options.words.inputs.formulaNone(what);
+    words.textContent = /[\d\u0660-\u0669\u06f0-\u06f9],[\d\u0660-\u0669\u06f0-\u06f9]/.test(source) ? `${kept} ${options.words.inputs.formulaPoint}` : kept;
     if (wrong.from === undefined) {
       copy.hidden = true;
       return;
@@ -192,9 +208,16 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     changed();
   });
   input.addEventListener('click', () => suggest());
-  input.addEventListener('blur', () => close());
+  input.addEventListener('blur', () => {
+    close();
+    leave();
+  });
+  input.addEventListener('change', leave);
   input.addEventListener('keydown', (event) => {
-    if (list.hidden) return;
+    if (list.hidden) {
+      if (event.key === 'Enter' && !event.isComposing) leave();
+      return;
+    }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       at = (at + (event.key === 'ArrowDown' ? 1 : -1) + found.length) % found.length;

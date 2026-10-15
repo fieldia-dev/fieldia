@@ -141,3 +141,16 @@ describe('the one-tag script, English alone', () => {
     expect(fieldia.VIEWER_LABELS.de.next).toBe('Next');
   });
 });
+
+describe('a language added with its words for a count, not those for one', () => {
+  it('says one in its own words, never in English', async () => {
+    const { addLanguage } = await import('./add-language');
+    const { inPlural } = await import('@fieldia/widgets');
+    // An add-on with fewer words than the package's own German: its count's words, none for one.
+    addLanguage('de', { widgets: { pastedCells: 'In {n} Zellen eingefügt.' }, messages: { overBy: '{label}: {over} Zeichen über {max}' } });
+    expect(inPlural(WIDGET_LABELS.de.pastedCells, WIDGET_LABELS.de.pastedCellsOne, 1, 'de')).toBe('In 1 Zellen eingefügt.');
+    expect(MESSAGES.de.overByOne).toBe('{label}: {over} Zeichen über {max}');
+    // A word it left out altogether is still English.
+    expect(WIDGET_LABELS.de.pasteBeyondLinesOne).toBe(WIDGET_LABELS.en.pasteBeyondLinesOne);
+  });
+});

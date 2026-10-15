@@ -40,9 +40,10 @@ test.describe('the inputs’ details in the viewer', () => {
   const send = (page: Page) => page.getByRole('button', { name: 'Submit' }).click();
 
   test('a day keeps its limits and its working days, the picker too, and says which', async ({ page }) => {
+    // Fieldia's own date box keeps them, for its calendar; a date written year first is always read.
     const day = node(page, 'q-move-day').locator('input');
-    await expect(day).toHaveAttribute('min', dayFrom(0));
-    await expect(day).toHaveAttribute('max', dayFrom(60));
+    await expect(day).toHaveAttribute('data-min', dayFrom(0));
+    await expect(day).toHaveAttribute('data-max', dayFrom(60));
     await day.fill(dayFrom(1, 5));
     await send(page);
     await expect(errorOf(page, 'q-move-day')).toHaveText('Which day shall we move your things? can’t be on a Friday or Saturday');
@@ -56,8 +57,8 @@ test.describe('the inputs’ details in the viewer', () => {
 
   test('a time of day steps by a quarter hour between its earliest and latest', async ({ page }) => {
     const time = node(page, 'q-arrival').locator('input');
-    await expect(time).toHaveAttribute('type', 'time');
-    await expect(time).toHaveAttribute('step', '900');
+    await expect(time).toHaveAttribute('type', 'text');
+    await expect(time).toHaveAttribute('data-step', '15');
     await time.fill('06:30');
     await send(page);
     await expect(errorOf(page, 'q-arrival')).toHaveText('What time will you arrive on your first day? can’t be before 07:00');
@@ -127,7 +128,8 @@ test.describe('the inputs’ details in the viewer', () => {
     const count = wishes.locator('.fd-count');
     await expect(count).toHaveText('0 / 300');
     await expect(area).toHaveAttribute('rows', '2');
-    await expect(area).toHaveAttribute('maxlength', '300');
+    // No maxlength: the browser never cuts a paste; the box refuses a key at the most, with words.
+    await expect(area).not.toHaveAttribute('maxlength', /.*/);
     const before = (await box(area)).height;
     await area.fill('Fragile: the plants.\nThe big monitor.\nThe chair with the cushion.\nMy books, in four boxes.');
     await expect(count).toHaveText('90 / 300');
@@ -136,12 +138,13 @@ test.describe('the inputs’ details in the viewer', () => {
     await area.fill('x'.repeat(280));
     await expect(count).toHaveText('280 / 300');
     expect(await count.evaluate((c) => getComputedStyle(c).color)).not.toBe(plain);
-    // The box stops at the most.
+    // The box stops at the most, and says why under it.
     await area.press('End');
     await page.keyboard.type('y'.repeat(40));
     expect(((await valueOf(page, 'wishes')) as string).length).toBe(300);
+    await expect(wishes.locator('.fd-refusal-hint')).toHaveText(/takes at most 300 characters$/);
     // Said to a screen reader once typing pauses.
-    await expect(wishes.locator('[aria-live=polite]')).toHaveText('Characters left: 0');
+    await expect(wishes.locator('.fd-sr-only[aria-live=polite]')).toHaveText('Characters left: 0');
     await wishes.scrollIntoViewIfNeeded();
     await screen(page, 'inputs-paragraph-count', { viewport: true });
   });
@@ -198,7 +201,8 @@ test.describe('web addresses, phones, emails and money', () => {
   test('a record’s web address, phone and email say what to type', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     await node(page, 'f-portal').locator('input').fill('the client portal');
-    await node(page, 'f-phone').locator('input').fill('call me');
+    // Letters never land in a phone number's box (the input rules, 0.21): too few digits are said instead.
+    await node(page, 'f-phone').locator('input').fill('0100 12');
     await node(page, 'f-email').locator('input').fill('site@');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(errorOf(page, 'f-portal')).toHaveText('Enter a web address, like example.com');
@@ -302,18 +306,18 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await setting(page, 'Days after today, latest').press('Tab');
     await setting(page, 'Weekends').selectOption('fri-sat');
     await card(page).getByRole('switch', { name: 'Starts on today' }).click();
-    await expect(card(page).locator('.fd-canvas-widget input[type=date]')).toHaveAttribute('max', dayFrom(30));
+    await expect(card(page).locator('.fd-canvas-widget input.fd-date')).toHaveAttribute('data-max', dayFrom(30));
     await screen(page, 'inputs-designer-date', { viewport: true });
 
     await addField(page, 'date-time', 'Meeting');
     await setting(page, 'Minutes').selectOption('15');
-    await expect(card(page).locator('.fd-canvas-widget input[type=datetime-local]')).toHaveAttribute('step', '900');
+    await expect(card(page).locator('.fd-canvas-widget input.fd-datetime')).toHaveAttribute('data-step', '15');
 
     await addField(page, 'time', 'Arrival');
     await setting(page, 'Earliest time').fill('09:00');
     await setting(page, 'Latest time').fill('17:00');
     await setting(page, 'Minutes').selectOption('30');
-    await expect(card(page).locator('.fd-canvas-widget input[type=time]')).toHaveAttribute('min', '09:00');
+    await expect(card(page).locator('.fd-canvas-widget input.fd-time')).toHaveAttribute('data-min', '09:00');
     await screen(page, 'inputs-designer-time', { viewport: true });
 
     await addField(page, 'keywords', 'Materials');
@@ -334,7 +338,8 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await expect(tried.locator('.fd-rating-thumb')).toBeVisible();
     await expect(tried.locator('.fd-nps')).toBeVisible();
     // Starts on today, and a Friday is refused once the answers are checked.
-    await expect(tried.getByLabel('Visit day')).toHaveValue(dayFrom(0));
+    // Today, in words, as Fieldia's own date box shows a date once left.
+    await expect(tried.getByLabel('Visit day')).toHaveValue(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date()));
     await tried.getByLabel('Visit day').fill(dayFrom(1, 5));
     await tried.getByLabel('Arrival').fill('08:00');
     const materials = tried.getByRole('combobox');
@@ -342,7 +347,9 @@ test.describe('the inputs’ settings in the screen designer', () => {
     await expect(tried.getByRole('option')).toHaveText(['oak', 'glass', 'steel']);
     await tried.getByRole('option', { name: 'oak' }).click();
     await materials.fill('walnut,');
-    await expect(materials).toBeHidden();
+    // At its most the box stays, and says so if more is typed (the input rules, 0.21).
+    await expect(tried.locator('.fd-chip-label')).toHaveText(['oak', 'walnut']);
+    await expect(materials).toBeVisible();
     await page.getByRole('button', { name: 'Problems' }).click().catch(() => undefined);
     await expect(tried.getByText('Visit day can’t be on a Friday or Saturday').first()).toBeVisible();
     await expect(tried.getByText('Arrival can’t be before 09:00').first()).toBeVisible();

@@ -7,7 +7,7 @@ import { upgradePage } from '../format/upgrade';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
-import { checkValue } from './check';
+import { checkProperties, checkValue } from './check';
 import { checkInput } from './inputs';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
@@ -17,7 +17,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { MESSAGES, type Messages } from './messages';
+import { fill, MESSAGES, type Messages } from './messages';
 import {
   loadedRecordOf,
   saveProblemOf,
@@ -111,6 +111,18 @@ export interface FormState {
    * before it checks: the page says what it waits for.
    */
   readonly leaving: boolean;
+  /**
+   * Text a person left in a box that does not read as its field's value — "12 34" in a number, "31/02/2026" in a
+   * date — by its path (`field`, or a line's `field.lineKey.subfield`), with why in words. The field keeps the
+   * value it held as the box was entered; validate and save refuse with the words until the text is fixed.
+   */
+  readonly unread: Readonly<Record<string, UnreadText>>;
+}
+
+/** Text left in a box that does not read, and why, as `FormState.unread` keeps it. */
+export interface UnreadText {
+  readonly text: string;
+  readonly message: string;
 }
 
 /** A save refused because someone else saved the record first: who and when, and what each of them changed. */
@@ -133,10 +145,11 @@ export interface FormConflict {
 /**
  * Whether leaving the record now would lose the person's work: changes not
  * saved, files still on their way to the store, or changes Reload set aside
- * and not yet put back or let go. Every way out of a record asks this.
+ * and not yet put back or let go, or text left in a box that does not read.
+ * Every way out of a record asks this.
  */
 export function unsavedWork(state: FormState): boolean {
-  return state.dirty.length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing);
+  return state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing);
 }
 
 /**
@@ -149,7 +162,7 @@ export function unsavedWork(state: FormState): boolean {
  * 0.20, each way out decides.
  */
 export function workAtRisk(state: FormState, how: LeaveHow = {}): boolean {
-  return (state.unsent ?? []).length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing) || (how.changes === true && state.dirty.length > 0);
+  return (state.unsent ?? []).length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing) || (how.changes === true && (state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0));
 }
 
 /**
@@ -310,6 +323,39 @@ export interface Form {
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
+  /**
+   * Keep text a person left in a box that does not read (`FormState.unread`), by its path — `field`, or a line's
+   * `field.lineKey.subfield` — with why in words; null once it reads, or is let go. Nothing is shown until the box
+   * is left (`boxLeft`) or the form is checked.
+   */
+  setUnread(path: string, unread: UnreadText | null): void;
+  /**
+   * A person left a field's box, by its path: its own problem — text that does not read, a format, min or max, a
+   * whole number, decimals, a pattern — is shown now, in the words Save would use. That it is required waits for Save.
+   */
+  boxLeft(path: string): void;
+  /**
+   * How a box reads what is typed in it and not yet read — a number, hours, a date, a colour's code, a name looked
+   * up — now, as if it were left: every save and send, every check and step forward runs these first (`settle`), so
+   * Ctrl+Enter, a button's key, a pager or the app's own save keep what the box shows, or refuse it with its words,
+   * and never save a value passed on the way ("1" of "1.5") or the one the box held before. The viewer gives one
+   * for the box that has the focus (a change, which each box reads); a box whose reading waits — a name looked up
+   * among records — gives its own, which keeps the text unread with why at once, and returns the wait: a save
+   * waits for it, while a check or a step forward, which cannot wait, refuses meanwhile. `typing` says whether the
+   * box is still being typed in (typed since it last read): autosave, which nobody pressed, waits while it is, and
+   * never reads text under the person's keys ("12." of "12.5", "Office " of "Office Park"). Returns what stops it.
+   */
+  settling(read: () => void | Promise<unknown>, typing?: () => boolean): () => void;
+  /**
+   * Read what is typed and not yet read in every box (`settling`), as if each were left: a save does it first.
+   * Resolves once every reading that waits (a name looked up) has ended.
+   */
+  settle(): Promise<void>;
+  /**
+   * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
+   * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
+   */
+  reading(): boolean;
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
@@ -542,6 +588,8 @@ interface InnerForm {
   show(errors: Record<string, string>): void;
   /** Its files, which the form round it saves with its answers. */
   files: PartFiles;
+  /** Whether a box of it is still being typed in (`settling`'s `typing`). */
+  typing(): boolean;
 }
 
 /**
@@ -577,6 +625,9 @@ interface Place {
 }
 
 type Sync = 'start' | 'edit' | 'fresh';
+
+/** A line's cell whose line is no longer there. */
+const gone: unique symbol = Symbol('gone');
 
 const isRecord = (value: unknown): value is Values => value !== null && typeof value === 'object' && !Array.isArray(value);
 /** A saved form's answers, as the one value they are in the form round it. */
@@ -664,6 +715,35 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   for (const node of index.values()) if (node.kind === 'form') parts.set(node.id, node.source as FormNode);
   /** Those given their page, with the inner form that holds their answers. */
   const attached = new Map<string, { name: string; inner: InnerForm }>();
+  /** How each box with text typed and not yet read reads it now (`settling`). */
+  const readers = new Set<() => void | Promise<unknown>>();
+  /** Whether each box that says so is still being typed in (`settling`'s `typing`): autosave waits for them. */
+  const typings = new Set<() => boolean>();
+  /** A box of this form, or of a saved form placed on it, still being typed in. */
+  const typingNow = (): boolean => [...typings].some((typing) => typing()) || [...attached.values()].some((part) => part.inner.typing());
+  /** Readings of typed text still waiting, as readTyped started them. */
+  let readingNow = 0;
+  /**
+   * Every box's text read now, this form's and its saved forms' placed on the page, before it is checked or saved:
+   * what a reading that waits (a name looked up) is waiting for, or null when none does. Such a box keeps its text
+   * unread meanwhile, so a check made now refuses it; a save waits.
+   */
+  function readTyped(): Promise<void> | null {
+    const waits: Promise<unknown>[] = [];
+    for (const read of [...readers]) {
+      const wait = read();
+      if (wait && typeof (wait as Promise<unknown>).then === 'function') waits.push((wait as Promise<unknown>).catch(() => undefined));
+    }
+    for (const part of attached.values()) {
+      const inner = part.inner.form;
+      const wait = inner.settle();
+      if (inner.reading()) waits.push(wait);
+    }
+    if (!waits.length) return null;
+    // Waiting on its own readings, or a saved form's: `reading` says so until they end.
+    readingNow++;
+    return Promise.all(waits).then(() => void readingNow--);
+  }
   /** The page's fields, and each saved form's answers as a JSON value: what is loaded, told as changed and saved. */
   const fields: Fields = { ...page.fields };
   for (const part of parts.values()) fields[part.name] = { type: 'json', label: part.title || part.name };
@@ -765,6 +845,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     setAside: null,
     unsent: [],
     leaving: false,
+    unread: {},
   };
   started = true;
   /**
@@ -1068,7 +1149,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function checked(name: string): Field {
     const def = page.fields[name];
     const loaded = state.choices[name]?.options;
+    if (def.type === 'properties' && def.definitionsFrom) {
+      // The definitions the linked record keeps, once loaded: each property checked as one of its kind.
+      const definitions = state.definitions[name]?.definitions;
+      return definitions ? { ...def, definitions } : def;
+    }
     return def.type === 'selection' && def.optionsFrom && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
+  }
+
+  /** A properties field's problems, each at its property's path (`field.property`), as its row shows them. */
+  function propertyProblems(name: string): Record<string, string> {
+    const def = checked(name);
+    if (def.type !== 'properties') return {};
+    return Object.fromEntries(Object.entries(checkProperties(def.definitions, state.values[name], messages, today())).map(([property, message]) => [`${name}.${property}`, message]));
+  }
+
+  /** A field's own problem, less what its properties' rows say of themselves. */
+  function besidesRows(name: string, message: string | undefined): string | undefined {
+    return message !== undefined && page.fields[name]?.type === 'properties' && Object.values(propertyProblems(name)).includes(message) ? undefined : message;
   }
 
   function track<T>(promise: Promise<T>): Promise<T> {
@@ -1129,8 +1227,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     };
   }
 
-  /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now. */
-  function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field'): IndexedNode[] {
+  /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now; `field`'s alone, when named. */
+  function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field', field?: string): IndexedNode[] {
     const inside = (node: IndexedNode) => {
       if (!root) return true;
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (at === root) return true;
@@ -1142,7 +1240,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (state.skipped.includes(at)) return true;
       return false;
     };
-    return [...index.values()].filter((node) => node.kind === kind && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
+    return [...index.values()].filter((node) => node.kind === kind && (field === undefined || node.field === field) && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
   /** What a field node's answer rules say of its value now: the first error and the first warning. */
@@ -1191,15 +1289,48 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     }
   }
 
+  /** A range's last day (`options.endField` of a `daterange`), the field it writes besides its own; null for any other node. */
+  function rangeEnd(node: IndexedNode): string | null {
+    const source = node.source as FieldNode;
+    const end = source.widget === 'daterange' ? source.options?.['endField'] : undefined;
+    return typeof end === 'string' && page.fields[end] && end !== node.field ? end : null;
+  }
+
+  /**
+   * A range's end, a field of its own though no node shows it alone: its required, min, max and days, and that it
+   * is not before its start ("Ends can’t be before Starts"). Required when its field is, or the range is.
+   */
+  function rangeEndError(node: IndexedNode, end: string, required = nodeState(node.id).required): string | undefined {
+    const def = page.fields[end];
+    const value = state.values[end];
+    const own = checkValue(checked(end), value, required || def.required === true, messages, today());
+    if (own) return own;
+    const start = state.values[node.field as string];
+    if (typeof start !== 'string' || typeof value !== 'string' || !start || !value) return undefined;
+    const at = (v: string) => (def.type === 'datetime' ? Date.parse(v) : Date.parse(v.slice(0, 10)));
+    if (at(value) < at(start)) return fill(messages.endBeforeStart, { end: def.label, start: page.fields[node.field as string].label });
+    return undefined;
+  }
+
   /** Errors for the visible fields under `root`, without publishing them. */
   function collectErrors(root?: string): Record<string, string> {
     const errors: Record<string, string> = {};
+    const seen = new Set<string>();
     for (const node of visibleFieldNodes(root)) {
       const name = node.field as string;
+      seen.add(name);
+      const end = rangeEnd(node);
+      if (end) {
+        seen.add(end);
+        const problem = errors[end] ? undefined : rangeEndError(node, end);
+        if (problem) errors[end] = problem;
+      }
       if (errors[name]) continue;
       const def = page.fields[name];
       const message = nodeError(node);
-      if (message) errors[name] = message;
+      // A property says its own problem on its row; the field, only what is its own (that it is required).
+      if (def.type === 'properties') Object.assign(errors, propertyProblems(name));
+      if (besidesRows(name, message)) errors[name] = message as string;
       if (def.type === 'one2many') {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
           // A section or note answers only for its text, never for what an item needs.
@@ -1216,12 +1347,68 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         }
       }
     }
+    // Text left in a box that does not read answers for its field, in the words it was left with.
+    for (const [path, unread] of Object.entries(state.unread)) if (seen.has(path.split('.')[0])) errors[path] = unread.message;
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
       if (part) for (const [key, message] of Object.entries(part.inner.errorsNow())) errors[`${part.name}.${key}`] = message;
     }
     return errors;
+  }
+
+  /** The value at a path: a field's, or a line's cell (`field.lineKey.subfield`); `gone` when the line is not there. */
+  function valueAt(values: Readonly<Values>, path: string): Value | undefined | typeof gone {
+    const parts = path.split('.');
+    // A property of a properties field (`field.property`).
+    if (parts.length === 2 && page.fields[parts[0]]?.type === 'properties') {
+      const held = values[parts[0]];
+      return held && typeof held === 'object' && !Array.isArray(held) ? (held as Record<string, Value>)[parts[1]] : undefined;
+    }
+    if (parts.length < 3) return values[path];
+    const [field, sub] = [parts[0], parts[parts.length - 1]];
+    const key = parts.slice(1, -1).join('.');
+    const line = ((values[field] as Line[] | null) ?? []).find((l) => l.key === key);
+    return line ? line.values[sub] : gone;
+  }
+
+  /** Unread text whose field has since been written another way — a value typed that reads, the app's — is let go. */
+  function unreadKept(values: Readonly<Values>): Readonly<Record<string, UnreadText>> {
+    let kept: Record<string, UnreadText> | null = null;
+    for (const path of Object.keys(state.unread)) {
+      const now = valueAt(values, path);
+      if (now !== gone && now === valueAt(state.values, path)) continue;
+      kept ??= { ...state.unread };
+      delete kept[path];
+    }
+    return kept ?? state.unread;
+  }
+
+  /** A field's own problem as its box is left, never that it is required: undefined when it has none, or is not shown. */
+  function leftProblem(path: string): string | undefined {
+    const parts = path.split('.');
+    const field = parts[0];
+    const shown = visibleFieldNodes(undefined, 'field', field);
+    // A range's end is left from its own box in the range: its problems, that it is before its start too.
+    const range = shown.length ? undefined : visibleFieldNodes().find((node) => rangeEnd(node) === field);
+    if (!shown.length && !range) return undefined;
+    if (state.unread[path]) return state.unread[path].message;
+    if (range) return isEmpty(fieldDef(field), state.values[field]) ? undefined : rangeEndError(range, field, false);
+    if (parts.length === 1) {
+      const value = state.values[field];
+      if (isEmpty(fieldDef(field), value)) return undefined;
+      return (
+        shown.map((node) => checkInput(page.fields[field], node.source as FieldNode, value, messages)).find(Boolean) ??
+        besidesRows(field, checkValue(checked(field), value, false, messages, today())) ??
+        shown.map((node) => ruleCheck(node).error).find(Boolean)
+      );
+    }
+    if (parts.length === 2 && page.fields[field]?.type === 'properties') return propertyProblems(field)[path];
+    const def = lineField(field);
+    const sub = def.fields[parts[parts.length - 1]] as LineField | undefined;
+    const value = valueAt(state.values, path);
+    if (!sub || value === gone || isEmpty(sub, value)) return undefined;
+    return checkValue(sub, value, false, messages, today());
   }
 
   /**
@@ -1270,20 +1457,26 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
     const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
-    let errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
-    // Words typed where a number goes are said at once, as Flectra marks a box it cannot read; what is missing waits for sending.
-    const unread: Record<string, string> = {};
+    // Text left unread in a box goes once its field is written another way, and its words with it.
+    const unread = unreadKept(values);
+    const before = state;
+    state = { ...state, unread };
+    let errors = Object.keys(before.errors).length ? revalidateShown(values) : before.errors;
+    state = before;
+    // Words where a number goes — from a server or an old draft: a box never sets them — are said at once; what is
+    // missing waits for sending.
+    const words: Record<string, string> = {};
     for (const name of Object.keys(written)) {
       const def = page.fields[name];
       if (written[name] === state.values[name] || !def) continue;
-      if (notANumber(def, written[name])) unread[name] = checkValue(def, written[name], false, messages) as string;
+      if (notANumber(def, written[name])) words[name] = checkValue(def, written[name], false, messages) as string;
       if (def.type !== 'one2many') continue;
       for (const line of (written[name] as Line[] | null) ?? []) {
-        for (const [sub, v] of Object.entries(line.values)) if (notANumber(def.fields[sub] as Field | undefined, v)) unread[`${name}.${line.key}.${sub}`] = checkValue(def.fields[sub], v, false, messages) as string;
+        for (const [sub, v] of Object.entries(line.values)) if (notANumber(def.fields[sub] as Field | undefined, v)) words[`${name}.${line.key}.${sub}`] = checkValue(def.fields[sub], v, false, messages) as string;
       }
     }
-    if (Object.keys(unread).length) errors = { ...errors, ...unread };
-    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), ...extra });
+    if (Object.keys(words).length) errors = { ...errors, ...words };
+    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), unread, ...extra });
   }
 
   /** Once errors are on screen, keep them current as the person fixes things. */
@@ -1357,6 +1550,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
     autosaveTimer = scheduler.setTimeout(() => {
       autosaveTimer = null;
+      // Nobody pressed anything: a box still typed in is never read under the person's keys. The save waits until it is
+      // left (or Enter is pressed in it), and reads it then, as any save does.
+      if (typingNow()) return scheduleAutosave();
       if (state.dirty.length && Object.keys(collectErrors()).length === 0) void track(save());
     }, autosave.delayMs);
   }
@@ -1478,6 +1674,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
       return { reason: 'save', message: problem.message };
     }
+    // What is still typed in a box is read first: it is what is saved, or why nothing is. A name still being looked
+    // up is waited for, so the record it names is what is saved — or, named by none, why nothing is.
+    const waiting = readTyped();
+    if (waiting) await waiting;
     // Files still on their way are waited for first — a saved form's placed here too: the state says how many, so the page can say why it waits.
     if (filesGoing()) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -1669,9 +1869,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return key;
   }
 
-  /** Check the form, or only these fields, showing what is found as sending does. */
-  function check(names: readonly string[] | undefined): Stopped | null {
+  /**
+   * Check the form, or only these fields, showing what is found as sending does: a step's check, which waits for a
+   * name still being looked up in a box, as a save does.
+   */
+  async function check(names: readonly string[] | undefined): Promise<Stopped | null> {
     names?.forEach(fieldDef);
+    const waiting = readTyped();
+    if (waiting) await waiting;
     const all = collectErrors();
     const found = names ? Object.fromEntries(Object.entries(all).filter(([key]) => names.some((name) => key === name || key.startsWith(`${name}.`)))) : all;
     set({ errors: found });
@@ -1680,9 +1885,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   /** Go to a wizard's step for a run; undefined when the target is no step of it, but a tab. */
-  function goToStep(target: string, chain: readonly string[]): Stopped | null | undefined {
+  async function goToStep(target: string, chain: readonly string[]): Promise<Stopped | null | undefined> {
     if (!steps.includes(target)) return undefined;
     if (!form.steps().includes(target)) return { reason: 'cannot', message: `The step "${target}" does not apply now` };
+    // A name still being looked up in a box on the way is waited for, as a save waits for it.
+    const waiting = readTyped();
+    if (waiting) await waiting;
     let went = false;
     inRun(chain, () => (went = form.goTo(target)));
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
@@ -1767,7 +1975,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seq !== loads) return;
       // Lines load in their tables' orders; where a person moves them after, they stay.
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {} });
       if (again) return;
       offerDraft();
       void track(opening());
@@ -1794,7 +2002,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     told = null;
     showing = false;
     clearFiles();
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [] };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {} };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -2097,6 +2305,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
+      if (state.unread[name]) return state.unread[name].message;
+      // A property's text left unread answers for its field.
+      if (page.fields[name].type === 'properties') {
+        const row = Object.keys(state.unread).find((path) => path.startsWith(`${name}.`));
+        if (row) return state.unread[row].message;
+      }
       const own =
         shown.map(unticked).find(Boolean) ??
         shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
@@ -2104,7 +2318,47 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
     },
 
+    setUnread(path, unread) {
+      const field = path.split('.')[0];
+      // A line's cell (`field.lineKey.subfield`), or a property (`field.property`).
+      const def = fieldDef(field);
+      if (path.includes('.') && def.type !== 'properties') lineField(field);
+      const had = state.unread[path];
+      if (!unread && !had) return;
+      // A line taken away takes its cells' text with it: a box of it still reading (a name looked up) keeps none.
+      if (unread && !had && path.split('.').length >= 3 && def.type !== 'properties' && valueAt(state.values, path) === gone) return;
+      if (unread && had && had.text === unread.text && had.message === unread.message) return;
+      const next = { ...state.unread };
+      if (unread) next[path] = { text: unread.text, message: unread.message };
+      else delete next[path];
+      // Problems on screen stay current: an unread text put right takes its words with it.
+      const before = state;
+      state = { ...state, unread: next };
+      const errors = Object.keys(before.errors).length ? revalidateShown(state.values) : before.errors;
+      state = before;
+      set({ unread: next, errors });
+    },
+
+    boxLeft(path) {
+      const problem = leftProblem(path);
+      if (!problem || state.errors[path] === problem) return;
+      set({ errors: { ...state.errors, [path]: problem } });
+    },
+
+    settling(read, typing) {
+      readers.add(read);
+      if (typing) typings.add(typing);
+      return () => {
+        readers.delete(read);
+        if (typing) typings.delete(typing);
+      };
+    },
+
+    settle: () => readTyped() ?? Promise.resolve(),
+    reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
+
     validate() {
+      readTyped();
       const errors = collectErrors();
       set({ errors });
       return Object.keys(errors).length === 0;
@@ -2138,7 +2392,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filed.clear();
       sentAs = null;
       const values = syncParts(structuredCopy(baseline), 'start');
-      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [] });
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {} });
     },
 
     changes,
@@ -2236,6 +2490,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     next() {
       if (!state.step) return false;
+      readTyped();
       // A step skipped before and gone back to is answered now, and checked like any other.
       if (state.skipped.includes(state.step)) set({ skipped: state.skipped.filter((id) => id !== state.step) });
       const errors = collectErrors(state.step);
@@ -2278,6 +2533,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         set({ step: target, errors: {} });
         return true;
       }
+      readTyped();
       const skipped = [...state.skipped];
       for (const id of visible.slice(at, to)) {
         if (skipped.includes(id)) continue;
@@ -2547,9 +2803,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       filed.clear();
       baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
       const start = syncParts(structuredCopy(baseline), 'start');
-      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null });
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null, unread: {} });
     },
     errorsNow: () => collectErrors(),
+    typing: typingNow,
     show(errors) {
       if (JSON.stringify(errors) !== JSON.stringify(state.errors)) set({ errors });
     },

@@ -487,7 +487,68 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // left it, a file the store holds that no save sent among it; `leaveNow`; Discard waiting too; the app's breadcrumbs
 // inside a page in place through the record under it, its question shown over that page; Done saving a file on its
 // way first — 2.9 more (575.39 measured before, 578.23 after), to 578.3.
-const BUDGET_KB = 578.3;
+// The input rules (0.21), what every box needs at mount: one set of readers in @fieldia/core — a number in any script
+// with the page's marks or ٫ ، ٬, its places and digits, a pasted amount with its own currency or an accounting minus,
+// hours, a date and a time in the page's order, words folded for finding (10.1); the box's guard on keystrokes, pastes,
+// drops and an IME's edits, with its hint (5.2); text left that does not read, kept by the form and said as the box is
+// left, and Save refusing it (1.4); the number boxes, shares, tax amounts and a bar's box on them (3.5); and the rules'
+// English words (3.2) — 24.3 more, to 546.1. The hint floating under a table's cell or a grid's editor (above it where the
+// table cuts it off), numbers read left to right in a right-to-left box, and the guard's names on window.Fieldia, 1.5
+// more, to 547.6.
+// The input rules for text (0.21): a text box's guard — a key at the most refused, a paste over it kept and counted
+// by code point, a phone number's characters, an email's spaces, a line break pasted into one line — and what a box
+// keeps once left (2.5); web addresses read as a browser does, localhost, IP addresses and ports, javascript: and its
+// kind refused, a postcode by its country, a pattern about the whole answer with its digits folded, checkPage naming
+// one that does not read (2.4); a property checked by its kind on its own row (1.6); tags ended at ، and line breaks,
+// told when there already or past the most (1.2); JSON kept as typed with its reason in words (1.1); a colour's code
+// box, its swatch empty when it has none, and a way to clear it (2.5) — 11.6 more, to 559.2.
+// The dates', times' and choices' input rules — Fieldia's own date, date-and-time and time box in the page's order with
+// its calendar on every date (date-box.ts, 6.8), a range's end checked as a field of its own with its note and limits on
+// its calendar (0.8), a time's steps and stars' range checked, a file's kind by its name (1.4), and words typed into
+// links, choices, tags, own answers and ranks taken or said, Arabic letters folded (2.8) — 11.5 more beside the text's
+// (sharing their readers), to 570.7 (measured 570.62).
+// The input rules in tables and lists: a table's totals that add only numbers and wait, in words, for the line that
+// does not read, a cell's message linked to its box and said as it is left, words where a number goes shown as they
+// are; a custom filter's value read and refused as every box's is, a day in the page's order, and words beside it when
+// Apply waits; a list's search reading the page's numbers and a phone by its digits, the memory source finding them;
+// and a formula's Arabic digits — 2.6 more, to 573.3 (measured 573.25). (A grid's block paste is the grid's own: never in this script.)
+// Numbers never made of what was typed by dropping a key (0.20.1): the keys typed after a refused one held with it,
+// Backspace taking them back, and leaving with them saying why (1.0); a decimal mark judged only once it can no longer
+// group ("1.234,56" typed on an English page), trailing zeros no places, a 0 never leading a group, and a number read
+// whole as its box is left or pasted (0.9); the boxes on it — a field's, an hours' or per cent's, shares, tax amounts in
+// their currency's places, the custom filter's (0.7); the hint kept as a box is left with keys held, so nothing under
+// the pointer moves (0.1) — 2.7 more, to 576.0 (measured 575.96). A formula list's numbers read as the formula's own
+// (Arabic and Persian digits, ٫; never hex or an exponent) — 0.1 more, to 576.1 (measured 576.05).
+// The input rules' last gaps (0.20.1): a date read as Fieldia writes it at rest, its month in words in any of its four
+// languages from Intl's own names (none carried in the code), and an instant with its zone, and a year of two digits
+// said with both centuries it could be (core 1.4; the date box's guard letting a month's name be typed, 0.4); the
+// calendar closed as its box is left and saying why its text was not read, for a date and a range (0.6); a colour's
+// code never changing the colour held (0.3); an email's link and zero-width characters cleaned, and its ":" refused
+// (0.4); their English words (0.3) — 3.4 more; with the numbers' gaps above, measured together, to 579.8 (measured
+// 579.75).
+// Fieldia's own date box loaded on first use (0.20.1): the box with its guard and what it keeps once left, a date's
+// calendar and a range of dates on its own calendar out of this script, into fieldia.date.js (date-box, calendar,
+// date-range: 19.8 of code). This script keeps what every box that reads a date shares (date-text.ts) — the reader in
+// the page's order, a date's words at rest and while typed, its placeholder and example, the ISO week (3.0) — and a
+// plain box on that reader for a date drawn before its part came, or if it cannot come (1.0); the parts a table's lines
+// and a properties field draw from, found before a page is drawn, and a saved form placed in a page waiting for its own
+// as the page does (0.4); the date part's names in the parts' table and its wiring (0.3) — 15.0 less, to 564.8
+// (measured 564.71).
+// The keys that save, with the input rules (0.20.1): Enter in a one-line box never judged as typing, and a paste that
+// says what it left out (0.2); every save, check and step forward reading what is still typed first — the form's
+// readers, the viewer's change to the box typed in, a number's, hours', per cent's, share's and colour's reading
+// split from their leaving (0.6); a phone number's, an email's, a line's and a colour code's keys held after a refused
+// one (0.3); a time's or hours' one-digit minute named with both times it could be, never quietly :03, and the time a
+// day leaves out named (0.8); a count of one said in the singular by the language's own rules (0.3); their English
+// words (0.4) — 2.6 more, to 567.4 (measured 567.32).
+// Every way a value is committed reading every kind of box (0.20.1): a save, a check and a step waiting for a name
+// still looked up, a link's, tags', a choice's and a path's own reader of what is typed, a line's cells read no more
+// once it goes, autosave waiting while a box is typed in, the hold kept through a paste, a drop, an IME and an
+// autocorrection, a plain date box saying the time it leaves out, a count of one's own words for a language added,
+// a designer's setting read before it publishes — 5.6 more, to 573.0 (measured 572.94).
+// The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
+// with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.60 measured — to 629.7.
+const BUDGET_KB = 629.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -564,7 +625,30 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 176.9.
 // Ways out serialised, answers kept to their record (listed with the raw budget above): 176.84 measured before, 177.83
 // after, to 177.9.
-const GZIP_BUDGET_KB = 177.9;
+// the input rules (one set of readers, the box's guard and hint, unread text kept and said on leaving, the number boxes on
+// them, and their English words; listed with the raw budget above), 9.1 more, to 167.1; the cells' floating hint and
+// right-to-left numbers, 0.4 more, to 167.5; the input rules for text (a text box's guard and what it keeps once
+// left, web addresses, postcodes and patterns, properties checked by row, tags, JSON's reasons, a colour's code box;
+// listed with the raw budget above), 4.1 more, to 171.6; the dates', times' and choices' input rules (Fieldia's own date
+// box with its calendar on every date, a range's end as a field of its own, a time's steps, words typed into links and
+// choices taken or said; listed with the raw budget above), 4.2 more, to 175.8 (measured 175.74); the input rules in
+// tables and lists (totals that wait for the line that does not read, a cell's message said as it is left, the custom
+// filter's number and day, the search's numbers and phones, a formula's Arabic digits; listed with the raw budget
+// above), 1.1 more, to 176.9 (measured 176.87); numbers never made of what was typed by dropping a key (keys held after
+// a refused one, a decimal mark judged once it can no longer group, trailing zeros, a number read whole as its box is
+// left, a tax amount's places; listed with the raw budget above), 1.0 more, to 177.9 (measured 177.86); the input
+// rules' last gaps (dates as written at rest, a year of two digits said, the calendar never over why, a colour's code,
+// an email's link; listed with the raw budget above), 1.3 more; with the numbers', measured together, to 179.3
+// (measured 179.22). Fieldia's own date box, its calendar and a range of dates loaded on first use, in fieldia.date.js
+// (7.0 gzipped), the reader they share with tables, pastes and filters kept, and a plain box on it for a date drawn
+// before its part came (listed with the raw budget above): 4.9 less, to 174.4 (measured 174.35) — 16.5 over 0.20.0's
+// 157.9 for the input rules every page draws at mount. The keys that save with the input rules (Enter never judged,
+// a save reading what is still typed first, keys held in every text box, a one-digit minute named, a count of one in
+// the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11). Every way a value is
+// committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
+// The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.15 measured, to 197.2 —
+// 39.3 over 0.20.0's 157.9, a size pass still owed.
+const GZIP_BUDGET_KB = 197.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -633,7 +717,21 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // changes are saved", and core's word for a run whose record was replaced — five sentences in each, measured 35.15 and
 // 6.60 in Arabic, 14.94 and 5.71 in German, 15.28 and 5.65 in French: Arabic's to 35.2 and 6.6, German's to 15.0 and
 // 5.8, French's to 15.3 and 5.7.
-const ADD_ON_BUDGET_KB = { ar: [35.2, 6.6], de: [15.0, 5.8], fr: [15.3, 5.7] };
+// The input rules' words (0.21) — every hint a box gives as it refuses a keystroke or a paste, text that does not read,
+// the decimals' plural forms, a postcode's, a web address's, a range's and a time step's checks, a date box's shapes,
+// a table's totals and pastes, a list's filters, 61 in each — Arabic's to 35.3 and 7.0 (Arabic letters are six ASCII
+// bytes each), German's to 15.1 and 6.0, French's to 15.5 and 6.0.
+// Their last gaps (0.20.1) — a year of two digits and both centuries it could be, several choices of one name, a ":"
+// before an email's @, three in each — Arabic's to 35.9 and 7.1, German's to 15.4 and 6.1, French's to 15.7 and 6.1.
+// The keys that save (0.20.1) — a time's one-digit minute and both times it could be, the time a day leaves out, and a
+// pasted count, a count of lines and the characters over said for one — five in each: Arabic's to 36.6, German's to
+// 15.7 and 6.2, French's to 16.1 and 6.2.
+// Every box by every commit (0.20.1) — "still looking for" a name, a cell a paste left named with why, one character
+// over said as one, three in each — Arabic's to 37.0 and 7.2, German's to 15.9, French's to 16.3 (as measured 36.96
+// and 7.15, 15.86, 16.27).
+// The input rules' words and Wave 1's joined for 0.22, as measured: Arabic's 45.0 and 8.2, German's 19.2 and 7.1,
+// French's 19.8 and 7.1 — each to 0.1 over.
+const ADD_ON_BUDGET_KB = { ar: [45.1, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -700,8 +798,21 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // carries esbuild's small helpers of its own (0.6). The third side-by-side: the head's band rows on whole pixels, its
 // comments' link led by its bubble and its paperclip's box (head 34.0); the rich toolbar's lists, colour, emoji lit
 // from above, code, clear formatting and links drawn as the tracker's, and Markdown's own smaller </> (text 54.8, 18.2);
-// the path picker's chevron and divider as measured (path 13.1, 5.2).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [13.1, 5.2], choice: [5.4, 2.4], filters: [11.1, 4.2] };
+// the path picker's chevron and divider as measured (path 13.1, 5.2). A path found as typed whatever its separator and
+// script, Tab taking the match typing reached, and words naming nothing said under the box (path 13.6, 5.4). The filter
+// bar's keyword read in the page's language — its marks, Arabic digits — as every box reads a number (filters 11.2).
+// Words typed in a path picker and left — by a click, Tab or Enter, before or after their list came — taking the
+// record they name exactly, by its path or its own name, or saying that nothing or several are called so (path 14.4, 5.7).
+// Fieldia's own date box (0.20.1) — its guard and what it keeps once left — with a date's calendar and a range of dates
+// on its own calendar, cut out of the main script (date-box, calendar, date-range: 18.9, 7.1, as measured, 18.89 and 7.02).
+// The date box's input rules given to every other box a date is typed into — a designer's day, time and value set
+// when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03). The keys typed after a
+// refused one waiting with it, read whole as the box is left, so "1x5/10/2026" is never 15 October (date 7.2 gzipped,
+// as measured 19.09 and 7.1). A date's box read as a save reads it first (a change), and a date and time pasted into
+// it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
+// save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
+// several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -709,9 +820,10 @@ const PART_GIVES = {
   path: ['pathPickerWidget'],
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
+  date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -799,7 +911,13 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await backlog.drawn;
   if (loaded() !== 'choice, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
+  // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
+  const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
+  await signup.drawn;
+  if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  signup.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, and a backlog's filter bar, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
 }

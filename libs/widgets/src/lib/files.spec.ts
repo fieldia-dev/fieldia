@@ -88,11 +88,14 @@ describe('json', () => {
     area.value = '{"a": 1}';
     area.dispatchEvent(new Event('input', { bubbles: true }));
     expect(form.getState().values['x']).toEqual({ a: 1 });
+    area.focus();
     area.value = '{"a": ';
     area.dispatchEvent(new Event('input', { bubbles: true }));
     expect(form.getState().values['x']).toEqual({ a: 1 });
-    // Where it stops: the end of the text, line 1, column 7.
-    expect(el.querySelector('.fd-cell-error')?.textContent).toBe('Not valid JSON: line 1, column 7');
+    // Where it stops: the end of the text, line 1, column 7 — kept by the form, so Save says so; under the box once left.
+    expect(form.getState().unread['x']?.message).toBe('Not valid JSON: line 1, column 7');
+    area.blur();
+    expect(form.validate()).toBe(false);
   });
 });
 
@@ -149,7 +152,8 @@ describe('properties', () => {
     form.setValue('x', { floor: 12, lift_access: 'Freight lift', sprinklers: true });
     expect(labelsOf(el)).toEqual(['Floor', 'Lift access', 'Sprinklers']);
     const boxes = [...el.querySelectorAll('.fd-property input')] as HTMLInputElement[];
-    expect([boxes[0].inputMode, boxes[1].type, boxes[2].type]).toEqual(['numeric', 'text', 'checkbox']);
+    // A whole number that may be negative: the full keyboard, as an iPhone's number pad has no minus.
+    expect([boxes[0].inputMode, boxes[1].type, boxes[2].type]).toEqual(['text', 'text', 'checkbox']);
     expect(boxes[2].checked).toBe(true);
   });
 

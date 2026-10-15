@@ -301,6 +301,9 @@ interface Scope {
 
 let mounts = 0;
 
+/** The inputs nothing is typed in: their change says a choice, never text to take. */
+const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
+
 /**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
  * React, Angular and Vue bindings are thin shells around this function.
@@ -700,7 +703,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Pointing at a locked quiet value, or focusing it, says why too.
       const point = (on: boolean) => lock?.point(on && lockedNow && wrapper.hasAttribute('data-in-quiet'));
       if (reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
-      // Not an alert of its own: a refused save is announced once, naming every field to look at.
+      // Not an alert of its own: a refused save is announced once, naming every field to look at. A problem found as
+      // the box is left (min, max, a whole number, text that does not read) is said by it, once and politely.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
@@ -714,10 +718,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // mid-word. One already shown stays while they put it right, and goes once they have.
       let typing = false;
       let advice = '';
-      wrapper.addEventListener('focusin', () => (typing = true));
+      /** Leaving the field now: a problem it raises is said by its error, politely. */
+      let leaving = false;
+      wrapper.addEventListener('focusin', () => {
+        typing = true;
+        setAttr(error, 'aria-live', null);
+      });
       wrapper.addEventListener('focusout', (event) => {
         if (wrapper.contains(event.relatedTarget as Node | null)) return;
         typing = false;
+        // The field's own problem is said now, as its box is left; that it is required waits for Save.
+        leaving = true;
+        try {
+          form.boxLeft(node.field);
+        } finally {
+          leaving = false;
+        }
         // Not at once: focus also leaves when a redraw removes the focused part
         // (a deleted line's button), and that redraw must finish first.
         queueMicrotask(() => update(form.getState()));
@@ -753,6 +769,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         }
         if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
         const message = state.errors[node.field];
+        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once.
+        if (leaving && message && message !== error.textContent) setAttr(error, 'aria-live', 'polite');
         setHidden(error, !message);
         setText(error, message ?? '');
         const now = state.warnings[node.field] ?? '';
@@ -1278,7 +1296,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         note.textContent = words;
         note.classList.add('fd-form-part-problem');
       };
-      const draw = (found: Page | null) => {
+      const draw = (found: Page | null, waited = false) => {
         if (gone) return;
         if (!found) return refuse(fill(labels.formMissing, { page: node.page }));
         // Saved by an older Fieldia: read in the current format, as the page round it is.
@@ -1287,6 +1305,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const at = scope.chain.findIndex((p) => p.id === found.id);
         if (at !== -1) return refuse(fill(labels.formInItself, { page: name, chain: [...scope.chain.slice(at).map((p) => p.title), name].join(' → ') }));
         if (found.layout.type !== 'sections' && found.layout.type !== 'tabs') return refuse(fill(labels.formNotPlaceable, { page: name }));
+        // The parts it draws from (a date's box, a path picker) in first, as for the page round it: its placeholder
+        // meanwhile, then drawn whole — never plainly, then again.
+        const awaited = waited ? [] : partsFor(saved, options.widgets, options.slots).filter((part) => !part.loaded);
+        if (awaited.length) return void settleParts(awaited).then(() => draw(found, true));
         const checked = checkPage(saved);
         let inner: Form;
         try {
@@ -1348,8 +1370,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const editSwitch = options.editSwitch ? el('button', { type: 'button', class: 'fd-button fd-edit-switch' }) : null;
   editSwitch?.addEventListener('click', async () => {
     if (!locked) {
+      // What is still typed is read first (a name being looked up, waited for): Done never locks a record over text
+      // that is not saved.
+      const waiting = form.settle();
+      if (form.reading()) await waiting;
       const now = form.getState();
-      const saving = now.dirty.length > 0 || (now.uploads ?? []).some(uploadGoing);
+      const saving = now.dirty.length > 0 || Object.keys(now.unread).length > 0 || (now.uploads ?? []).some(uploadGoing);
       if (saving) {
         const saved = await form.save();
         if (!saved) {
@@ -1562,9 +1588,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       name: recordName,
       render: renderNow,
       async leave() {
-        // The changes are saved first, as the pager always has; a file still on its way is a change too: the save waits for it.
+        // What is still typed is read first (a name being looked up, waited for): text that does not read keeps the
+        // record on screen, said, as a change does. The changes are saved first, as the pager always has; a file still
+        // on its way is a change too: the save waits for it.
+        const waiting = form.settle();
+        if (form.reading()) await waiting;
         const state = form.getState();
-        if (state.dirty.length || state.uploads.some(uploadGoing)) {
+        if (state.dirty.length || Object.keys(state.unread).length || state.uploads.some(uploadGoing)) {
           const saved = await form.save();
           if (!saved) {
             if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -1639,9 +1669,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (list) {
       for (const step of node.children) {
         const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, step.label));
-        go.addEventListener('click', () => {
-          if (form.goTo(step.id)) focusStep();
-          else focusFirstProblem();
+        go.addEventListener('click', async () => {
+          if (form.goTo(step.id)) return focusStep();
+          // Refused while a name typed is still being looked up: once it is found, or not, it is asked again.
+          if (form.reading()) await form.settle();
+          if (form.reading() || !form.goTo(step.id)) return focusFirstProblem();
+          focusStep();
         });
         stepButtons.set(step.id, go);
         list.append(el('li', {}, go));
@@ -1673,8 +1706,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     };
     wizardForward = async () => {
       if (isLast()) return submitOrSave();
-      if (form.next()) focusStep();
-      else focusFirstProblem();
+      // What is still typed is read first (form.next): a step goes on with what the boxes show. Refused while a name
+      // typed is still being looked up, it waits for it, then asks again: the record it names, or why there is none.
+      if (form.next()) return focusStep();
+      if (form.reading()) await form.settle();
+      if (!form.reading() && form.next()) return focusStep();
+      focusFirstProblem();
     };
     function focusStep() {
       const current = panels.find((p) => p.step.id === form.getState().step);
@@ -2075,13 +2112,40 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   // ---- keys -------------------------------------------------------------------
 
-  /** Text typed and not yet taken, such as a tag without its Enter, is taken now. */
+  /**
+   * Text typed and not yet taken — a tag without its Enter, a number, a date or hours a box reads as it is left — is
+   * taken now, as a change says to the box it is typed in. Every save, check and step forward of the form asks for it
+   * first (`form.settling`), whatever made it: Ctrl+Enter, a button's key, the app's own save. A box whose reading
+   * waits (a name looked up) gives the form its own reader too, which a save waits for.
+   */
   function commitTyping() {
     const active = doc.activeElement;
-    if (active && root.contains(active) && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
-      active.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    if (!active || !root.contains(active)) return;
+    if (typedBox(active)) active.dispatchEvent(new Event('change', { bubbles: true }));
   }
+  /** A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take. */
+  const typedBox = (box: Element) => box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type));
+  /**
+   * The box typed in since it last read what it holds (a change: Enter, or the box left): autosave, which nobody
+   * pressed, waits while the focus is still in it, and never reads "12." of "12.5" or "Office " of "Office Park" under
+   * the person's keys.
+   */
+  let typedIn: Element | null = null;
+  const onTyped = (event: Event) => {
+    if (event.target instanceof Element && typedBox(event.target)) typedIn = event.target;
+  };
+  const onRead = (event: Event) => {
+    if (event.target === typedIn) typedIn = null;
+  };
+  root.addEventListener('input', onTyped, true);
+  root.addEventListener('change', onRead, true);
+  root.addEventListener('focusout', onRead, true);
+  cleanups.push(() => {
+    root.removeEventListener('input', onTyped, true);
+    root.removeEventListener('change', onRead, true);
+    root.removeEventListener('focusout', onRead, true);
+  });
+  cleanups.push(form.settling(commitTyping, () => !!typedIn && typedIn === doc.activeElement && root.contains(typedIn)));
 
   /** The fields Enter can move between: on this page, shown, with a box to type or choose in, outside tables of lines. */
   function nextField(from: HTMLElement): HTMLElement | null {
@@ -2107,8 +2171,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Saves even after a field used the Enter (a tag box adding its tag); the grid keeps its own keys.
       if (keys.saveWithCtrlEnter === false || options.showActions === false) return;
       if ((event.target as Element).closest('.ag-root-wrapper')) return;
+      // What is still typed is read first by the save itself (commitTyping, through form.settling).
       event.preventDefault();
-      commitTyping();
       if (wizardForward) void wizardForward();
       else void submitOrSave();
       return;

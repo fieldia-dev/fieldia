@@ -1,4 +1,4 @@
-import type { Locale } from '@fieldia/core';
+import type { Field, Locale } from '@fieldia/core';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /**
@@ -48,7 +48,10 @@ export const progressbarWidget: WidgetFactory = (context) => {
   let box: Widget | null = null;
   let element: HTMLElement = bar;
   if (options['editable'] === true) {
-    box = createWidget({ ...context, node: { ...node, widget: undefined } });
+    // The bar's own range is the box's least and most: a minus is refused where it starts at 0 or more, and a value
+    // outside is said on leaving and at Save (checkInput), so the bar and its box never disagree.
+    const ranged = { ...field, min, ...(maxField ? {} : { max: fixedMax }) } as Field;
+    box = createWidget({ ...context, field: ranged, node: { ...node, widget: undefined } });
     bar.setAttribute('aria-hidden', 'true');
     element = document.createElement('div');
     element.className = 'fd-progressbar-edit';
@@ -66,14 +69,16 @@ export const progressbarWidget: WidgetFactory = (context) => {
     update(state) {
       const value = typeof state.value === 'number' ? state.value : 0;
       const max = maxField ? Number(state.values[maxField] ?? 0) : fixedMax;
-      const share = max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
+      // The bar fills no further than its ends; its words say the real share ("150%"), as a screen reader hears it.
+      const real = max > min ? ((value - min) / (max - min)) * 100 : 0;
+      const share = Math.min(100, Math.max(0, real));
       const rounded = Math.round(share * 10) / 10;
       fill.style.width = `${rounded}%`;
       bar.setAttribute('aria-valuenow', String(value));
       bar.setAttribute('aria-valuemin', String(min));
       bar.setAttribute('aria-valuemax', String(max));
-      bar.setAttribute('aria-valuetext', percent(share, locale));
-      text.textContent = showPercent ? percent(share, locale) : '';
+      bar.setAttribute('aria-valuetext', percent(real, locale));
+      text.textContent = showPercent ? percent(real, locale) : '';
       bar.dataset['tone'] = color !== 'auto' ? color : share < 30 ? 'danger' : share < 70 ? 'warning' : 'success';
       box?.update(state);
     },

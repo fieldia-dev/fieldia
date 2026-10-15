@@ -182,6 +182,24 @@ describe('a link’s settings', () => {
     expect(field()).not.toHaveProperty('filter');
   });
 
+  it('reads the value’s number as every box does: Arabic and Persian digits, a decimal comma; never hex or an exponent', () => {
+    const { box, field, panel } = openScreen('links');
+    type(box('Only where'), 'level');
+    change(box('Only where'), 'level');
+    const valueOf = () => (field() as { filter?: { value: unknown }[] }).filter?.[0]?.value;
+    for (const [typed, expected] of [
+      ['٥', 5],
+      ['۵', 5],
+      ['\u200f٥\u200f', 5],
+      ['1,5', 1.5],
+      ['0x10', '0x10'],
+      ['1e3', '1e3'],
+    ] as const) {
+      change(box('has the value', panel()), typed);
+      expect([typed, valueOf()]).toEqual([typed, expected]);
+    }
+  });
+
   it('leaves a filter of its own as it is, and says so', () => {
     const { card, field } = openScreen('link', (designer) => {
       designer.setPageJson(designer.pageJson().replace('"relation": "contact"', '"relation": "contact", "filter": [{ "any": [{ "field": "a", "op": "=", "value": 1 }, { "field": "b", "op": "=", "value": 2 }] }]'));

@@ -3,6 +3,7 @@ import type { ListNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { ResolvedFilter, ResolvedFilterCondition } from './data-source';
 import { fill } from './messages';
+import { foldDigits, foldForSearch, readNumber, stripMarks } from './input-rules';
 
 /**
  * What a list's search bar holds, each shown as a chip: values searched in
@@ -29,27 +30,44 @@ const TEXT = new Set(['char', 'text', 'html']);
 const NUMBER = new Set(['integer', 'float', 'monetary']);
 const LINK = new Set(['many2one', 'many2many']);
 
+/** What a phone number is typed with: digits in any script, spaces, a plus and ( ) . - — no letters. */
+const PHONE_LIKE = /^[+\d\s().\-\u0660-\u0669\u06f0-\u06f9\uff10-\uff19]+$/;
+
 /**
  * The searches the typed text can be: text looked for in each text field, a
  * choice whose label it matches, a number where it is one, a link by its
  * record's name. Only the list's search fields, the columns unless it says.
+ *
+ * What is typed is read as every box reads it (FIELDIA INPUT RULES): digits in
+ * any script are 0-9, direction marks are dropped, and a number is read in the
+ * page's language (`locale`) — its grouping and decimal marks, never hex or an
+ * exponent. A column the list shows as a phone (`cells.<field>.widget: "phone"`)
+ * is searched by the typed digits in order, whatever the spacing: "3334400",
+ * "+٢٠ ٤٠ ٣٣٣ ٤٤٠٠" and "333 4400" all find "+20 40 333 4400".
  */
-export function suggestions(typed: string, page: Page, list: ListNode, words: { searchFor: string } = { searchFor: 'Search {field} for: {text}' }): Suggestion[] {
+export function suggestions(typed: string, page: Page, list: ListNode, words: { searchFor: string } = { searchFor: 'Search {field} for: {text}' }, locale = 'en'): Suggestion[] {
   const text = typed.trim();
   if (!text) return [];
+  /** The typed text as it is searched for: digits as 0-9, no direction marks. */
+  const sought = foldDigits(stripMarks(text)).trim();
   const found: Suggestion[] = [];
   for (const field of list.searchFields ?? list.columns) {
     const def = page.fields[field];
     if (!def) continue;
     const say = (op: Suggestion['op'], value: JsonValue, valueLabel: string, label?: string) =>
       found.push({ field, fieldLabel: def.label, op, value, valueLabel, label: label ?? fill(words.searchFor, { field: def.label, text }) });
-    if (TEXT.has(def.type) || LINK.has(def.type)) say('ilike', text, text);
+    if (list.cells?.[field]?.widget === 'phone' && TEXT.has(def.type)) {
+      // Its digits in order, whatever lies between them: a server's ilike finds them with % between.
+      const digits = sought.replace(/\D/g, '');
+      if (PHONE_LIKE.test(stripMarks(text)) && digits) say('ilike', digits.split('').join('%'), text);
+      else say('ilike', sought, text);
+    } else if (TEXT.has(def.type) || LINK.has(def.type)) say('ilike', sought, text);
     else if (def.type === 'selection') {
-      const lower = text.toLowerCase();
-      for (const option of def.options) if (option.label.toLowerCase().includes(lower)) say('=', option.value, option.label, `${def.label}: ${option.label}`);
+      const wanted = foldForSearch(text);
+      for (const option of def.options) if (foldForSearch(option.label).includes(wanted)) say('=', option.value, option.label, `${def.label}: ${option.label}`);
     } else if (NUMBER.has(def.type)) {
-      const number = Number(text.replace(/[\s,]/g, ''));
-      if (text && Number.isFinite(number)) say('=', number, text);
+      const read = readNumber(text, locale);
+      if (read.ok && read.value !== null) say('=', read.value, text);
     }
   }
   // Text fields first, then the choices, then the links: the order a person looks in.

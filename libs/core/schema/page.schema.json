@@ -312,6 +312,14 @@
             "outlined",
             "quiet"
           ]
+        },
+        "dateOrder": {
+          "type": "string",
+          "enum": [
+            "dmy",
+            "mdy",
+            "ymd"
+          ]
         }
       },
       "additionalProperties": false
@@ -397,6 +405,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1896,6 +1908,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -2494,6 +2510,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -3674,6 +3694,10 @@
             },
             "pattern": {
               "type": "string"
+            },
+            "patternHint": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [

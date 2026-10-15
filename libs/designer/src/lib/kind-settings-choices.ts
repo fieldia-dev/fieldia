@@ -2,6 +2,7 @@ import type { Field, FieldNode, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { findNode } from './page-tree';
+import { settingNumber } from './number-box';
 
 /**
  * The choice kinds' own settings, in the picked question and the side panel
@@ -126,16 +127,25 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** A ranking of the top few only: picked from the rest, then put in order. */
   function top(): ChoicePart {
-    const box = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': w.rankTop, min: '1', step: '1', placeholder: w.all, inputmode: 'numeric' }) as HTMLInputElement;
-    box.addEventListener('change', () => {
-      const n = Number(box.value);
-      widget({ top: box.value.trim() && Number.isInteger(n) && n >= 1 && n < count() ? n : null });
+    // A whole number, 1 or more and fewer than the options, said so when it is not; emptied, all are ranked.
+    let ranked: number | null = null;
+    const box = settingNumber(el, designer, {
+      label: w.rankTop,
+      attrs: { class: 'fd-inline-input fd-inline-number', placeholder: w.all },
+      integer: true,
+      min: 1,
+      optional: true,
+      check: (n) => (n < count() ? null : designer.words.inputs.settingFewer(w.rankTop, count())),
+      saved: () => ranked,
+      commit: (n) => widget({ top: n }),
     });
     return {
-      element: word(w.rankTop, box),
+      element: word(w.rankTop, box.input),
       standsIn: false,
       refresh(_page, node) {
-        if (!focused(box)) box.value = typeof option(node, 'top') === 'number' ? String(option(node, 'top')) : '';
+        const top = option(node, 'top');
+        ranked = typeof top === 'number' ? top : null;
+        box.refresh();
       },
     };
   }

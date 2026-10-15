@@ -1,6 +1,6 @@
-import type { Field, Locale, Value } from '@fieldia/core';
-import { normalizeNumber } from './numbers';
-import { describeState, maker, setAttr } from './kind-parts';
+import { readDuration, readNumber, type Field, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { guard, leftWords, numberFits, numberKeyboard, numberRules, quoted, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -20,23 +20,15 @@ export function formatDuration(hours: number): string {
 }
 
 /**
- * What was typed as hours: "6:30", "06:30" or "6.5" (in the page's language,
- * "6,5"). Null when emptied; undefined while it is still being typed ("6:");
- * the text itself when it is no time, for the form to say so.
+ * What was typed as hours: "6:30", "06:30", "6.5" (in the page's language,
+ * "6,5"), "6h30", "6h" or "6:30:00", Arabic digits too (@fieldia/core's
+ * readDuration). Null when emptied; undefined while it is still being typed
+ * ("6:") or when it does not read ("6 30", "12:75"): a number field never
+ * holds words.
  */
-export function parseDuration(raw: string, locale: Locale = 'en'): Value | undefined {
-  const text = normalizeNumber(raw.trim(), locale);
-  if (text === '') return null;
-  const time = /^(-?)(\d+):(\d{1,2})$/.exec(text);
-  if (time) {
-    const minutes = Number(time[3]);
-    if (minutes > 59) return raw.trim();
-    const hours = Number(time[2]) + minutes / 60;
-    return time[1] ? -hours : hours;
-  }
-  if (/^-?(\d+\.?\d*|\.\d+)$/.test(text)) return Number(text);
-  if (/^-?(\d+:?)?\.?$/.test(text)) return undefined;
-  return raw.trim();
+export function parseDuration(raw: string, locale: Locale = 'en'): number | null | undefined {
+  const read = readDuration(raw, locale);
+  return read.ok ? read.value : undefined;
 }
 
 const percents = new Map<string, Intl.NumberFormat>();
@@ -58,38 +50,94 @@ export function formatPercentage(fraction: number, locale: Locale = 'en', decima
 /** The places a percentage shows: the field's own, else two. */
 const placesOf = (field: Field) => (field.type === 'float' ? (field.digits?.[1] ?? 2) : 2);
 
-/** A box whose value is shown and typed in its own way, with words after it inside the box. */
-function shownBox(context: WidgetContext, way: { show(value: number): string; parse(text: string): Value | undefined; unit?: string; inputMode: string; className: string }) {
-  const { form, name, node, id, document } = context;
+/**
+ * A box whose value is shown and typed in its own way, with words after it inside the box. The input rules
+ * guard it as a number box (`duration` takes a colon and an h too); text left that does not read stays, marked,
+ * and the field keeps what it held as the box was entered.
+ */
+function shownBox(
+  context: WidgetContext,
+  way: { show(value: number): string; parse(text: string): number | null | undefined; unit?: string; className: string; percent?: boolean; duration?: boolean; places?: number }
+) {
+  const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const make = maker(document);
-  const input = make('input', { id, type: 'text', class: `fd-input fd-number-input ${way.className}`, autocomplete: 'off', inputmode: way.inputMode });
+  const min = 'min' in field && typeof field.min === 'number' ? field.min : undefined;
+  // A per cent's least is the fraction's: 0 is 0 %.
+  const limits = (): NumberLimits => ({
+    ...(way.percent ? { percent: true } : {}),
+    ...(way.places !== undefined ? { places: way.places } : {}),
+    ...(min !== undefined ? { min: way.percent ? min * 100 : min } : {}),
+  });
+  const input = make('input', { id, type: 'text', class: `fd-input fd-number-input ${way.className}`, autocomplete: 'off', inputmode: way.duration ? 'text' : numberKeyboard(limits()) });
   if (node.placeholder) input.placeholder = node.placeholder;
-  const shown = (value: Value | undefined) => (typeof value === 'number' ? way.show(value) : value === null || value === undefined ? '' : String(value));
-  input.addEventListener('input', () => {
-    const value = way.parse(input.value);
-    if (value !== undefined) form.setValue(name, value);
-  });
-  input.addEventListener('blur', () => {
-    input.value = shown(form.getState().values[name]);
-  });
+  const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? way.show(value) : '') : value === null || value === undefined ? '' : String(value));
   // Inside the box after the value, as a number's unit is.
   const suffix = typeof node.options?.['suffix'] === 'string' && node.options['suffix'] ? node.options['suffix'] : way.unit;
   const unit = suffix ? make('span', { class: 'fd-unit', id: `${id}-unit2` }, suffix) : null;
   const element = unit ? make('span', { class: 'fd-number' }, input, unit) : input;
   if (unit) input.style.setProperty('padding-inline-end', `calc(var(--fd-pad-x) + ${suffix?.length ?? 0}ch + 4px)`);
+  const box: NumberBox & { percent?: boolean } = { label: node.label ?? field.label, locale, labels, limits, duration: way.duration, percent: way.percent };
+  const hint = refusalHint(input, element);
+  const checks = guard(input, numberRules(box), hint);
+  const unreadNow = () => form.getState().unread?.[name];
+  let entered: Value | undefined;
+  input.addEventListener('focus', () => (entered = form.getState().values[name]));
+  input.addEventListener('input', () => {
+    const value = way.parse(input.value);
+    // Not yet, or not as it stands ("25.555" in a box of two places, on its way to "25.555,5"): left, it is said.
+    if (value === undefined || (!way.duration && !numberFits(input.value, box))) return;
+    form.setValue(name, value);
+    if (unreadNow()) form.setUnread(name, null);
+  });
+  /** What is typed, read as the box is left or as a save reads it first (a change), never a value passed on the way. True when taken. */
+  const read = (): boolean => {
+    // Keys held after a refused one are part of what was typed: the box's now, and the field's own words take over from the hint.
+    const held = checks.held();
+    if (held) {
+      hint.hide();
+      input.value = held.text;
+      checks.accept();
+    }
+    const text = input.value;
+    const parsed = way.parse(text);
+    const unreadable = parsed === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : null;
+    // A value the box held as it was entered (one from outside with more places) is let be: check names it.
+    const words = unreadable ?? (!held && parsed === (entered ?? null) ? null : leftWords(text, box));
+    if (words === null) {
+      if (unreadNow()) form.setUnread(name, null);
+      // What reads and fits is the field's, as typed ("-3" held after its refused minus): check says its least and most.
+      if (parsed !== undefined && parsed !== (form.getState().values[name] ?? null)) form.setValue(name, parsed);
+      return true;
+    }
+    if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
+    form.setUnread(name, { text, message: words });
+    return false;
+  };
+  input.addEventListener('change', () => !input.readOnly && read());
+  input.addEventListener('blur', () => {
+    if (input.readOnly) return;
+    if (read()) input.value = shown(form.getState().values[name]);
+  });
   return {
     element,
     focus: () => input.focus(),
+    destroy: () => checks.destroy(),
     update(state: { value: Value | undefined; readonly: boolean; invalid: boolean; required: boolean; describedBy?: string }) {
       const typing = document.activeElement === input;
-      const parsed = way.parse(input.value);
-      if (!(typing && (parsed === undefined || parsed === state.value))) {
-        const text = shown(state.value);
+      const unread = unreadNow();
+      if (typing) {
+        const parsed = way.parse(input.value);
+        if (parsed !== undefined && (way.duration || numberFits(input.value, box)) && parsed !== (state.value ?? null)) {
+          input.value = shown(state.value);
+          checks.accept();
+        }
+      } else {
+        const text = unread ? unread.text : shown(state.value);
         if (input.value !== text) input.value = text;
       }
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       setAttr(input, 'aria-required', String(state.required));
-      describeState(input, { ...state, describedBy: [state.describedBy, unit?.id].filter(Boolean).join(' ') });
+      describeState(input, { ...state, invalid: state.invalid || (!!unread && !typing), describedBy: hint.describedBy([state.describedBy, unit?.id].filter(Boolean).join(' ')) });
     },
   };
 }
@@ -97,8 +145,15 @@ function shownBox(context: WidgetContext, way: { show(value: number): string; pa
 /** Hours typed and shown as HH:MM. */
 export const durationWidget: WidgetFactory = (context) => {
   const locale = context.locale ?? 'en';
-  return shownBox(context, { show: formatDuration, parse: (text) => parseDuration(text, locale), inputMode: 'text', className: 'fd-duration' });
+  return shownBox(context, { show: formatDuration, parse: (text) => parseDuration(text, locale), className: 'fd-duration', duration: true });
 };
+
+/** A per cent typed: "25", "25%", "٢٥٪" (and the page's decimal mark); the fraction it is, 0.25. Null when emptied, undefined while it does not read. */
+export function parsePercentage(raw: string, locale: Locale = 'en'): number | null | undefined {
+  const read = readNumber(raw, locale, { percent: true });
+  if (!read.ok) return undefined;
+  return read.value === null ? null : Math.round((read.value / 100) * 1e10) / 1e10;
+}
 
 /** A fraction typed and shown as a per cent: 0.25 is "25", "%" after it. */
 export const percentageWidget: WidgetFactory = (context) => {
@@ -106,16 +161,11 @@ export const percentageWidget: WidgetFactory = (context) => {
   const places = placesOf(context.field);
   return shownBox(context, {
     show: (value) => percentFormat(locale, places, 'decimal').format(Math.round(value * 100 * 10 ** places) / 10 ** places),
-    parse(raw) {
-      const text = normalizeNumber(raw.trim(), locale).replace(/%$/, '');
-      if (text === '') return null;
-      if (/^-?(\d+\.?\d*|\.\d+)$/.test(text)) return Math.round((Number(text) / 100) * 1e10) / 1e10;
-      if (/^-?\.?$/.test(text)) return undefined;
-      return raw.trim();
-    },
+    parse: (text) => parsePercentage(text, locale),
     unit: '%',
-    inputMode: 'decimal',
     className: 'fd-percentage',
+    percent: true,
+    places,
   });
 };
 

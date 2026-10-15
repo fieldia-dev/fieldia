@@ -158,7 +158,17 @@ const valueMap = z.record(z.string().regex(FIELD_NAME), z.string().min(1));
  */
 const createValues = valueMap.optional();
 
-const Char = z.object({ type: z.literal('char'), ...common, size, pattern: z.string().optional() }).strict();
+const Char = z
+  .object({
+    type: z.literal('char'),
+    ...common,
+    size,
+    /** What the whole answer must look like, as a regular expression: tested trimmed, its digits as 0-9. */
+    pattern: z.string().optional(),
+    /** Why an answer does not fit the pattern, in words, in place of "not in the expected format": `{label}` is the field's. */
+    patternHint: z.string().min(1).optional(),
+  })
+  .strict();
 const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
 const Html = z.object({ type: z.literal('html'), ...common }).strict();
 const Integer = z

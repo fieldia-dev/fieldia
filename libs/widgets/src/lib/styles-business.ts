@@ -51,8 +51,13 @@ export const BUSINESS_CSS = /* css */ `
 .fd-colour-none, .fd-colour[data-colour="0"] { background: linear-gradient(to top right, transparent calc(50% - 1px), var(--fd-error) calc(50% - 1px), var(--fd-error) calc(50% + 1px), transparent calc(50% + 1px)); }
 .fd-colour-palette { position: absolute; top: calc(100% + 4px); inset-inline-start: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 24px); gap: 6px; padding: 8px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
 .fd-colour[aria-checked="true"] { box-shadow: 0 0 0 2px var(--fd-surface), 0 0 0 4px var(--fd-accent); }
-.fd-colour-input { width: 44px; height: 30px; padding: 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }
-.fd-colour-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--fd-muted); }
+/* A colour as text: the browser's picker over a swatch of its own, so an empty colour shows as none, never black; its code beside it. */
+.fd-colour-well { position: relative; display: inline-block; flex: none; width: 44px; height: 30px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); }
+.fd-colour-well:focus-within { outline: 2px solid var(--fd-focus); }
+.fd-colour-swatch { position: absolute; inset: 3px; border-radius: 2px; background-color: var(--fd-swatch); }
+.fd-colour-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.fd-input.fd-colour-code { width: 11ch; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.fd-colour-clear { border: 0; background: none; color: var(--fd-muted); font-size: 18px; cursor: pointer; }
 /* A value to copy: its box, the button after it. */
 .fd-copy { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
@@ -63,7 +68,11 @@ export const BUSINESS_CSS = /* css */ `
 /* Too narrow for a date and the calendar's button beside it, the button goes under: a date is never cut. */
 .fd-range-box { flex: 1 1 8em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
-.fd-range-box > .fd-input[type="datetime-local"] { flex-basis: 13em; }
+.fd-range-box > .fd-input.fd-range-input:is([data-kind="datetime"]) { flex-basis: 13em; }
+/* Under the range, on a line of its own: a box's hint, and the end's own problem; nothing at all while there is none. */
+.fd-range-notes { flex: 1 0 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.fd-range-notes:not(:has(> :not([hidden]))) { display: none; }
+.fd-range-notes > .fd-refusal-hint { margin: 0; }
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
 .fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
 .fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }

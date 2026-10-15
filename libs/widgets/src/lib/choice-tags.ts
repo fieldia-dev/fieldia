@@ -1,7 +1,8 @@
-import type { Option } from '@fieldia/core';
+import { foldForSearch, type Option } from '@fieldia/core';
 import { withAlone } from './choice-rules';
 import { floatUnder } from './float';
-import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { quoted, refusalHint } from './input-rules';
+import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -15,8 +16,19 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  * their own; "None of these" goes alone.
  *
  * One answer, the same box (`searchWidget`): a dropdown that searches its
- * list — the box shows the choice, typing finds others, and a box left half
- * typed shows the choice again; emptied, it takes the choice away.
+ * list — the box shows the choice, typing finds others; emptied, it takes the
+ * choice away.
+ *
+ * Words are found as people write them: in any case, Arabic letters in any of
+ * their forms (أ إ آ as ا, ة as ه, ى as ي, no tatweel or short vowels), digits
+ * in any script. Enter takes the match the arrows reached, else the only
+ * match, else the option of that exact name, and never sends the form. Left
+ * with words typed, the box takes the option of that name (or, with
+ * `ownAnswers`, adds them as an answer of one's own); words that name nothing
+ * are put back, and the box says so under itself. A save, a check or a step
+ * forward made while words are still typed reads them as leaving would
+ * (`form.settling`): words that name nothing stay then, kept unread with why,
+ * so the save is refused rather than made with the choice they were replacing.
  */
 export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
 export const searchWidget: WidgetFactory = (context) => combo(context, true);
@@ -42,6 +54,10 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   const chips = make('ul', { class: 'fd-chips' });
   const box = make('div', { class: 'fd-combo' }, input, list);
   const floating = floatUnder(input, list);
+  // Why typed words were not taken: under the box, polite, gone at the next key.
+  const hint = refusalHint(input, box);
+  const label = node.label ?? field.label;
+  const fold = (text: string) => foldForSearch(text).trim();
   const element = single ? make('div', { class: 'fd-choice-search' }, box) : make('div', { class: 'fd-tags fd-choice-tags' }, chips, box);
 
   const current = () => form.getState().values[name];
@@ -70,11 +86,11 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   function open() {
     const written = input.value.trim();
     // The choice's own words in the box find every option, not only itself.
-    const typed = single && written === labelOf(current()) ? '' : written.toLowerCase();
+    const typed = single && written === labelOf(current()) ? '' : fold(written);
     const taken = new Set(chosen());
-    found = options.filter((o) => !taken.has(o.value) && o.label.toLowerCase().includes(typed));
+    found = options.filter((o) => !taken.has(o.value) && fold(o.label).includes(typed));
     // Words that match nothing, offered as an answer of one's own.
-    if (own && typed && !taken.has(written) && !options.some((o) => o.label.toLowerCase() === typed)) found.push({ value: written, label: fillIn(words.createNamed, { name: written }) });
+    if (own && typed && !taken.has(written) && !options.some((o) => fold(o.label) === typed)) found.push({ value: written, label: fillIn(words.createNamed, { name: written }) });
     active = -1;
     draw();
     floating.show();
@@ -87,6 +103,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     input.removeAttribute('aria-activedescendant');
   }
   function add(option: Option) {
+    letGo();
     if (single) {
       input.value = option.label;
       write(option.value);
@@ -98,16 +115,82 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     else close();
   }
 
+  /** The option typed words name exactly, folded: one not chosen yet. */
+  const named = (text: string) => {
+    const taken = new Set(chosen());
+    return options.find((o) => !taken.has(o.value) && fold(o.label) === fold(text));
+  };
+  /** Nothing is called what was typed: said under the box, which shows the choice it still holds. */
+  const noMatch = (text: string) => hint.show(fillIn(words.noMatch, { label, text: quoted(text) }));
+  const unreadNow = () => form.getState().unread?.[name];
+  const letGo = () => unreadNow() && form.setUnread(name, null);
+
+  /**
+   * Words typed and not yet a choice, read for a save, a check or a step forward, as if the box were left: the option
+   * of that name taken (or an answer of one's own added); else they stay, kept unread with why, and the save waits.
+   */
+  function readNow() {
+    if (readonly || document.activeElement !== input) return;
+    const typed = input.value;
+    const text = typed.trim();
+    if (single) {
+      if (!text) {
+        letGo();
+        if (current() !== null && current() !== undefined) write(null);
+        return;
+      }
+      if (text === labelOf(current())) return letGo();
+    } else if (!text) return letGo();
+    const option = named(text);
+    if (option) {
+      letGo();
+      if (single) return add(option);
+      input.value = '';
+      return write(withAlone(options, chosen(), option.value));
+    }
+    if (!single && (chosen().some((value) => fold(labelOf(value)) === fold(text)) || own)) {
+      input.value = '';
+      letGo();
+      if (own && !chosen().some((value) => fold(labelOf(value)) === fold(text))) write([...chosen(), text]);
+      return;
+    }
+    close();
+    noMatch(text);
+    form.setUnread(name, { text: typed, message: fillIn(words.noMatch, { label, text: quoted(text) }) });
+  }
+  // Still typed in (words that are no choice yet): autosave, which nobody pressed, waits until the box is left.
+  const typingHere = () => document.activeElement === input && !readonly && input.value.trim() !== (single ? labelOf(current()) : '');
+  const stopReading = typeof form.settling === 'function' ? form.settling(readNow, typingHere) : null;
+
   if (!single) input.addEventListener('focus', () => !readonly && open());
   input.addEventListener('click', () => !readonly && list.hidden && open());
-  input.addEventListener('input', () => !readonly && open());
+  input.addEventListener('input', () => {
+    hint.hide();
+    if (!readonly) open();
+  });
   input.addEventListener('blur', () => {
     close();
-    // One answer: a box emptied takes the choice away; one left half typed shows the choice again.
-    if (single && !readonly) {
-      if (!input.value.trim()) write(null);
-      else input.value = labelOf(current());
+    if (readonly) return;
+    const text = input.value.trim();
+    // Left, the words are read as leaving reads them: what a save kept unread goes with them.
+    letGo();
+    if (single) {
+      // One answer: a box emptied takes the choice away; the exact name of an option picks it.
+      if (!text) return write(null);
+      if (text === labelOf(current())) return;
+      const option = named(text);
+      if (option) return add(option);
+      input.value = labelOf(current());
+      return noMatch(text);
     }
+    if (!text) return;
+    // Tags: the option of that name is added, or the words as an answer of one's own; else they go, and it says so.
+    input.value = '';
+    const option = named(text);
+    if (option) return write(withAlone(options, chosen(), option.value));
+    if (chosen().some((value) => fold(labelOf(value)) === fold(text))) return;
+    if (own) return write([...chosen(), text]);
+    noMatch(text);
   });
   input.addEventListener('keydown', (event) => {
     if (readonly) return;
@@ -125,15 +208,26 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
         return;
       }
       case 'Enter': {
-        const pick = found[active] ?? (input.value.trim() ? found[0] : undefined);
-        if (list.hidden || !pick) return;
+        const text = input.value.trim();
+        // Words typed: never the form's Enter. The match reached, the only one, or the option of that exact name.
+        if (!text && !(found[active] && !list.hidden)) return;
         event.preventDefault();
-        add(pick);
+        if (list.hidden) open();
+        // The options themselves, not the offer of an answer of one's own, which Enter takes when nothing else matches.
+        const real = found.filter((o) => options.includes(o));
+        const pick = found[active] ?? (real.length === 1 ? real[0] : undefined) ?? real.find((o) => fold(o.label) === fold(text)) ?? (real.length ? undefined : found[0]);
+        if (pick) add(pick);
+        else if (!(single && text === labelOf(current()))) noMatch(text);
         return;
       }
       case 'Escape':
         if (!list.hidden) event.preventDefault();
         close();
+        // Words a save kept unread are let go: the box shows the choice it holds.
+        if (unreadNow()) {
+          letGo();
+          input.value = single ? labelOf(current()) : '';
+        }
         return;
       case 'Backspace':
         if (!single && input.value === '' && chosen().length) write(chosen().slice(0, -1));
@@ -145,14 +239,18 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   return {
     element,
     focus: () => input.focus(),
+    destroy: () => stopReading?.(),
     update(state) {
       readonly = state.readonly;
       if (readonly) close();
-      describeState(input, state);
+      const kept = unreadNow();
+      setAttr(input, 'aria-invalid', String(state.invalid || (!!kept && document.activeElement !== input)));
+      setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
       setAttr(input, 'aria-required', String(state.required));
       if (single) {
         input.readOnly = readonly;
-        if (document.activeElement !== input) input.value = labelOf(state.value);
+        // Words a save kept unread stay as typed, marked; else the choice held.
+        if (document.activeElement !== input) input.value = kept ? kept.text : labelOf(state.value);
         return;
       }
       const values = Array.isArray(state.value) ? (state.value as unknown[]) : [];

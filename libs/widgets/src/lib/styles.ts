@@ -180,6 +180,22 @@ const SKINS_CSS = /* css */ `
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px;
   padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start;
 }
+/* A keystroke or a paste a box refused, said right under it until the next one it takes (input-rules.ts): the
+   warning's colours, never the error's — nothing is wrong yet, the character simply did not land. */
+.fd-refusal-hint {
+  color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4;
+  padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start; width: fit-content; max-width: 100%;
+  box-sizing: border-box; margin-block-start: 4px; text-align: start;
+}
+.fd-field > .fd-refusal-hint { margin-block-start: 0; }
+/* In a table's cell or a grid's editor it floats just under the box, over the line below, never making the row taller. */
+:is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint { position: absolute; inset-block-start: calc(100% + 2px); inset-inline-start: 0; z-index: 6; margin: 0; width: max-content; max-width: 320px; flex: none; box-shadow: 0 2px 8px rgb(0 0 0 / 0.14); }
+:is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint[data-above] { inset-block-start: auto; inset-block-end: calc(100% + 2px); }
+.fd-lines-table td:has(.fd-refusal-hint:not([hidden])), .fd-grid-editor { position: relative; }
+.ag-cell-inline-editing:has(.fd-refusal-hint:not([hidden])), .ag-row:has(.fd-refusal-hint:not([hidden])) { overflow: visible; z-index: 6; }
+.fd-progressbar-edit:has(> .fd-refusal-hint) { flex-wrap: wrap; }
+.fd-progressbar-edit > .fd-refusal-hint { flex-basis: 100%; }
+.fd-tax-note-row > td { padding: 0; border: 0; }
 
 /* underline: label beside the value, the way a Flectra sheet reads. A field whose page or group
    says where its label goes (data-labels) is laid out by those rules instead, in either skin. */
@@ -272,6 +288,11 @@ const SKINS_CSS = /* css */ `
 .fd-currency { color: var(--fd-muted); font-size: 12.5px; font-weight: 600; }
 /* With the currency after it, the amount ends right beside it. */
 .fd-currency-after > .fd-number-input { text-align: end; }
+/* Right to left, a number is read as a number — "-5" and "12 34" as typed, never "5-" or "34 12" — while it is edited (it
+   carries no direction mark then) and when text that does not read is left in it: its words run left to right, where
+   they stood. Its side is said outright, as a paragraph of its own takes start and end from its words. */
+.fd-number-input:dir(rtl) { unicode-bidi: plaintext; text-align: right; }
+:is(.fd-currency-after > .fd-number-input, .fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input, .fd-tax-totals .fd-input, .fd-grid-editor:is([data-type="integer"], [data-type="float"], [data-type="monetary"]) input):dir(rtl) { text-align: left; }
 /* A picked currency is a small box of its own beside the amount. */
 .fd-currency-picked { align-items: center; }
 .fd-currency-picked > :not(.fd-number-input) { flex: 0 0 104px; min-width: 0; }
@@ -360,6 +381,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-chip-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 0 4px; border-radius: 999px; }
 .fd-chip-remove:hover { color: var(--fd-error); }
 .fd-tags .fd-combo { flex: 1 1 140px; }
+/* A tag typed again: its chip, marked a moment, as the hint under the tags says it is there already. */
+.fd-chip.fd-chip-there { box-shadow: 0 0 0 2px var(--fd-warning); }
 .fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
 
 /* ---- one2many lines ------------------------------------------------------- */
@@ -831,14 +854,22 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-calendar-grid td button[aria-current="date"] { box-shadow: inset 0 0 0 1px var(--fd-accent); }
 .fd-calendar-grid td button[aria-selected="true"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
 .fd-calendar-grid td button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* A day past the field's limits: faint and struck through; pressed, the note under the month says why. */
+.fd-calendar-grid td button.fd-off { color: var(--fd-muted); opacity: 0.55; text-decoration: line-through; }
+.fd-calendar-note {
+  max-width: 17em; margin-block-start: 6px; padding: 3px 8px; border-radius: var(--fd-control-radius);
+  color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4; text-align: start;
+}
 .fd-properties { display: grid; gap: 8px; min-width: 0; }
 .fd-property { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
 .fd-property > label { color: var(--fd-muted); font-size: 13px; }
-.fd-property[data-type="boolean"] > :last-child { justify-self: start; }
+.fd-property[data-type="boolean"] > :nth-child(2) { justify-self: start; }
+/* A row's problem and a refused key's hint, under its value, not its label. */
+.fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 2; margin-block-start: -8px; }
 /* Beside their values, as the sheet's labels are: the same label column, the same words, the same gap between halves — the properties read as fields of the sheet. */
 .fd-form[data-fd-skin="underline"] .fd-property { grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-property > label { color: var(--fd-text); font-size: inherit; font-weight: var(--fd-label-weight); }
-@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } .fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 1; margin-block-start: 0; } }
 .fd-progressbar {
   position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
   background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;

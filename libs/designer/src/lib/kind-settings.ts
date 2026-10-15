@@ -7,6 +7,7 @@ import { ADDRESS_PARTS, USUAL_ADDRESS } from './kind-commands';
 import { choiceSettings } from './kind-settings-choices';
 import { LARGEST_PICTURE } from './choice-commands';
 import { pictureForPage } from './picture-upload';
+import { settingNumber, type SettingNumberOptions } from './number-box';
 
 /**
  * The settings of the newer kinds, in the picked question itself, as the
@@ -31,14 +32,16 @@ const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-ch
 const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
-const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
+/** A setting's number as the page holds it, or null. */
+const held = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 
 export function kindSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): KindSettings | null {
   const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
-  const numberBox = (label: string, extra: Record<string, string> = {}) =>
-    el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, inputmode: 'decimal', ...extra }) as HTMLInputElement;
+  /** The designer's number box: Arabic digits and a decimal comma read, kept as it is left, what does not fit said. */
+  const numberBox = (options: SettingNumberOptions & { placeholder?: string }) =>
+    settingNumber(el, designer, { ...options, attrs: { class: 'fd-inline-input fd-inline-number', ...(options.placeholder ? { placeholder: options.placeholder } : {}), ...options.attrs } });
   const textBox = (label: string, placeholder: string) => el('input', { class: 'fd-inline-input fd-inline-words', 'aria-label': label, placeholder, autocomplete: 'off' }) as HTMLInputElement;
   const toggle = (label: string, onClick: (on: boolean) => void) => {
     const button = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': label }) as HTMLButtonElement;
@@ -49,28 +52,28 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   const optionOf = (node: FieldNode, key: string) => node.options?.[key];
 
   function slider(): Part {
-    const from = numberBox(w.from, { step: 'any' });
-    const to = numberBox(w.toLabel, { step: 'any' });
-    const step = numberBox(w.step, { min: '0', step: 'any' });
-    // Saved once a number is typed and left, so a range half typed is not refused.
-    const range = () => {
-      const min = numberOrNull(from.value);
-      const max = numberOrNull(to.value);
-      if (min !== null && max !== null) designer.setLimits(id, { min, max });
-    };
-    from.addEventListener('change', range);
-    to.addEventListener('change', range);
+    // Its ends as drawn — 0 to 100 unless said — each kept with the other once typed and left; its step more than 0, 1 unless said.
+    let [least, most, by] = [0, 100, 1];
+    const fromOptions: SettingNumberOptions = { label: w.from, saved: () => least, commit: (n) => designer.setLimits(id, { min: n, max: most }) };
+    const toOptions: SettingNumberOptions = { label: w.toLabel, saved: () => most, commit: (n) => designer.setLimits(id, { min: least, max: n }) };
+    const from = numberBox(fromOptions);
+    const to = numberBox(toOptions);
+    const stepping: SettingNumberOptions = { label: w.step, above: 0, optional: true, saved: () => by, commit: (n) => designer.setStep(id, n) };
     // A step with decimals makes the field a decimal, so the values it reaches are ones the field takes.
-    step.addEventListener('change', () => designer.setStep(id, numberOrNull(step.value)));
+    const step = numberBox(stepping);
     return {
-      element: el('div', { class: 'fd-inline-row' }, word(w.from, from), word(w.to, to), word(w.step, step)),
+      element: el('div', { class: 'fd-inline-row' }, word(w.from, from.input), word(w.to, to.input), word(w.step, step.input)),
       standsIn: false,
       refresh(page, node) {
         const def = page.fields[node.field];
-        if (!focused(from)) from.value = String('min' in def && def.min !== undefined ? def.min : 0);
-        if (!focused(to)) to.value = String('max' in def && def.max !== undefined ? def.max : 100);
-        const n = optionOf(node, 'step');
-        if (!focused(step)) step.value = String(typeof n === 'number' ? n : 1);
+        // A whole-number field's ends are whole numbers.
+        fromOptions.integer = toOptions.integer = def.type === 'integer';
+        least = 'min' in def && typeof def.min === 'number' ? def.min : 0;
+        most = 'max' in def && typeof def.max === 'number' ? def.max : 100;
+        by = held(optionOf(node, 'step')) ?? 1;
+        from.refresh();
+        to.refresh();
+        step.refresh();
       },
     };
   }
@@ -227,17 +230,14 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     if (heading) heading.textContent = w.fieldsInCard;
     const addField = columns.element.querySelector('[data-add-column]');
     if (addField) addField.textContent = w.addField;
-    const least = numberBox(w.atLeast, { min: '0', step: '1' });
-    const most = numberBox(w.atMost, { min: '1', step: '1' });
+    // Whole numbers, at least 0 and at most 1 or more; emptied (or at least 0), none.
+    const counts: Record<'min' | 'max', number | null> = { min: null, max: null };
+    const count = (label: string, key: 'min' | 'max', min: number) =>
+      numberBox({ label, integer: true, min, optional: true, saved: () => counts[key], commit: (n) => designer.setWidgetOptions(id, { [key]: n === 0 ? null : n }) });
+    const least = count(w.atLeast, 'min', 0);
+    const most = count(w.atMost, 'max', 1);
     const title = textBox(w.cardTitle, w.entry);
     const button = textBox(w.buttonWords, w.addAnother);
-    const count = (input: HTMLInputElement, key: 'min' | 'max') =>
-      input.addEventListener('change', () => {
-        const n = numberOrNull(input.value);
-        designer.setWidgetOptions(id, { [key]: n !== null && Number.isInteger(n) && n > 0 ? n : null });
-      });
-    count(least, 'min');
-    count(most, 'max');
     title.addEventListener('input', () => designer.setWidgetOptions(id, { itemLabel: title.value }));
     button.addEventListener('input', () => designer.setWidgetOptions(id, { addLabel: button.value }));
     return {
@@ -245,15 +245,17 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         'div',
         { class: 'fd-kind-block' },
         columns.element,
-        el('div', { class: 'fd-inline-row' }, word(w.atLeast, least), word(w.atMost, most)),
+        el('div', { class: 'fd-inline-row' }, word(w.atLeast, least.input), word(w.atMost, most.input)),
         el('div', { class: 'fd-inline-row' }, word(w.cardTitle, title), word(w.buttonWords, button))
       ),
       standsIn: true,
       refresh(page, node) {
         columns.update(page.fields[node.field]);
         const text = (input: HTMLInputElement, value: unknown) => !focused(input) && (input.value = value === undefined || value === null ? '' : String(value));
-        text(least, optionOf(node, 'min'));
-        text(most, optionOf(node, 'max'));
+        counts.min = held(optionOf(node, 'min'));
+        counts.max = held(optionOf(node, 'max'));
+        least.refresh();
+        most.refresh();
         text(title, optionOf(node, 'itemLabel'));
         text(button, optionOf(node, 'addLabel'));
       },
@@ -279,14 +281,17 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     });
     const list = el('ul', { class: 'fd-kind-points' });
     const block = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, w.points), list);
-    const rows: { name: HTMLElement; input: HTMLInputElement }[] = [];
+    /** Each option's points box, kept as it is left: emptying one, or half typing it, never takes the quiz away under the keys. */
+    const rows: { name: HTMLElement; input: HTMLInputElement; options: SettingNumberOptions; refresh(): void; score: number | null }[] = [];
     return {
       element: el('div', { class: 'fd-kind-points-box' }, start, block),
       standsIn: false,
       refresh(page, node) {
         const quiz = Object.values(page.fields).some((f) => optionsOf(f).some((o) => o.score !== undefined));
-        start.hidden = quiz;
-        block.hidden = !quiz;
+        // While one of its boxes is typed in, the block stays, so the box and what is typed in it do too.
+        const typing = list.contains(list.ownerDocument.activeElement);
+        start.hidden = quiz || typing;
+        block.hidden = !quiz && !typing;
         const options = optionsOf(page.fields[node.field]);
         while (rows.length > options.length) {
           rows.pop();
@@ -295,15 +300,19 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         while (rows.length < options.length) {
           const index = rows.length;
           const name = el('span', { class: 'fd-kind-points-name' });
-          const input = numberBox(w.points, { step: 'any', placeholder: '0' });
-          input.addEventListener('input', () => designer.setOptionDetails(id, index, { score: numberOrNull(input.value) }));
-          list.append(el('li', { class: 'fd-kind-points-row' }, name, input));
-          rows.push({ name, input });
+          const row = { name, score: null as number | null } as (typeof rows)[number];
+          const options: SettingNumberOptions & { placeholder: string } = { label: w.points, optional: true, placeholder: '0', saved: () => row.score, commit: (n) => designer.setOptionDetails(id, index, { score: n }) };
+          const box = numberBox(options);
+          Object.assign(row, { input: box.input, options, refresh: box.refresh });
+          list.append(el('li', { class: 'fd-kind-points-row' }, name, box.input));
+          rows.push(row);
         }
         options.forEach((option, i) => {
           rows[i].name.textContent = option.label;
-          rows[i].input.setAttribute('aria-label', w.pointsFor(option.label));
-          if (!focused(rows[i].input)) rows[i].input.value = option.score === undefined ? '' : String(option.score);
+          rows[i].options.label = w.pointsFor(option.label);
+          rows[i].input.setAttribute('aria-label', rows[i].options.label);
+          rows[i].score = held(option.score);
+          rows[i].refresh();
         });
       },
     };

@@ -69,8 +69,10 @@ describe('the most characters, and a paragraph’s rows', () => {
     expect(host.querySelector('.fd-canvas-field.fd-editing .fd-count')?.textContent).toBe('0 / 80');
     enter(inline(host, 'Most characters'), '');
     expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    // Refused by its box, in words under it, the setting kept: never taken away in silence.
     enter(inline(host, 'Most characters'), '0');
-    expect(designer.getState().issues).toEqual(['The most characters is a whole number, 1 or more']);
+    expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    expect(inline(host, 'Most characters')?.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Most characters is a whole number, 1 or more');
   });
 
   it('sets a paragraph’s most characters, rows, and whether it grows as people type', () => {
@@ -263,7 +265,8 @@ describe('a date’s earliest and latest day, its days and its start', () => {
     choose(inline(host, 'Earliest') ?? undefined, 'day');
     enter(inline(host, 'Earliest day'), '2026-03-02');
     expect(fieldOf(designer, id)).toMatchObject({ min: '2026-03-02' });
-    expect((card(host).querySelector('input[type=date]') as HTMLInputElement).min).toBe('2026-03-02');
+    // Fieldia's own date box keeps it, for its calendar.
+    expect(card(host).querySelector('input.fd-date')?.getAttribute('data-min')).toBe('2026-03-02');
     choose(inline(host, 'Earliest') ?? undefined, '');
     expect(fieldOf(designer, id)).not.toHaveProperty('min');
   });
@@ -286,7 +289,7 @@ describe('a date’s earliest and latest day, its days and its start', () => {
     choose(inline(host, 'Minutes') ?? undefined, '15');
     expect(fieldOf(designer, id)).toMatchObject({ type: 'datetime', min: 'today' });
     expect(nodeOf(designer, id).options).toEqual({ step: 15 });
-    expect((card(host).querySelector('input[type=datetime-local]') as HTMLInputElement).step).toBe('900');
+    expect(card(host).querySelector('input.fd-datetime')?.getAttribute('data-step')).toBe('15');
     expect(inline(host, 'Starts on today')).toBeNull();
     choose(inline(host, 'Minutes') ?? undefined, '1');
     expect(nodeOf(designer, id).options).toBeUndefined();
@@ -309,8 +312,8 @@ describe('a time of day', () => {
     enter(inline(host, 'Latest time'), '17:30');
     choose(inline(host, 'Minutes') ?? undefined, '30');
     expect(nodeOf(designer, id).options).toEqual({ min: '09:00', max: '17:30', step: 30 });
-    const time = card.querySelector('input[type=time]') as HTMLInputElement;
-    expect([time.min, time.max, time.step]).toEqual(['09:00', '17:30', '1800']);
+    const time = card.querySelector('input.fd-time') as HTMLInputElement;
+    expect(['data-min', 'data-max', 'data-step'].map((name) => time.getAttribute(name))).toEqual(['09:00', '17:30', '30']);
     enter(inline(host, 'Earliest time'), '');
     expect(nodeOf(designer, id).options).toEqual({ max: '17:30', step: 30 });
   });
@@ -458,5 +461,24 @@ describe('the words for what changed, when published', () => {
     designer.setLimits(q, { max: 320 });
     designer.setWidgetOptions(q, { color: 'danger', showPercent: false });
     expect(pageChanges(before, designer.getPage())).toEqual(['“Hours”: from 0 to 320', '“Hours”: always red', '“Hours”: no percent on the bar']);
+  });
+});
+
+describe('a setting still typed as the page is published', () => {
+  it('is read first, as leaving its box would: the version published holds what the box shows', async () => {
+    const { designer, id, host } = screenWith('short-answer');
+    // Typed, and published by the app (a key of its own) with the focus still in the box.
+    type(inline(host, 'Most characters') ?? undefined, '80');
+    const version = await designer.publish();
+    expect(version).toBe(1);
+    expect(fieldOf(designer, id)).toMatchObject({ size: 80 });
+  });
+
+  it('that does not fit is refused at its box, with why, and the setting keeps what it held', async () => {
+    const { designer, id, host } = screenWith('short-answer');
+    type(inline(host, 'Most characters') ?? undefined, '0');
+    await designer.publish();
+    expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    expect(inline(host, 'Most characters')?.parentElement?.querySelector('.fd-refusal-hint')?.textContent).toBe('Most characters is a whole number, 1 or more');
   });
 });

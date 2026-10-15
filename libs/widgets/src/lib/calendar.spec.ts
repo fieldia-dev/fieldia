@@ -1,7 +1,7 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { createWidget } from './widgets';
 import { WIDGET_LABELS } from './labels';
-import { isoWeek } from './calendar';
+import { isoWeek } from './date-text';
 
 function mountDate(type: 'date' | 'datetime', value: string | null, locale: 'en' | 'de' = 'en') {
   const page = {
@@ -107,6 +107,60 @@ describe('a date with week numbers', () => {
   });
 });
 
+describe('a calendar open while its box is typed in', () => {
+  /** Focus moved from `from` to `to`, as Tab moves it: blur and focusout on the one, focus and focusin on the other. */
+  function tab(from: HTMLElement, to: HTMLElement) {
+    from.dispatchEvent(new FocusEvent('blur', { relatedTarget: to }));
+    from.dispatchEvent(new FocusEvent('focusout', { relatedTarget: to, bubbles: true }));
+    to.focus();
+  }
+  const typeIn = (input: HTMLInputElement, text: string) => {
+    input.value = text;
+    input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: text, bubbles: true }));
+  };
+
+  it('closes as Tab leaves the box for the calendar’s button, never covering why the date was not read', () => {
+    const { el, button, dialog, form } = mountDate('date', '2026-10-11');
+    const input = el.querySelector('input') as HTMLInputElement;
+    button.click();
+    input.focus();
+    expect(dialog().hidden).toBe(false);
+    typeIn(input, '31/02/2026');
+    tab(input, button);
+    expect(dialog().hidden).toBe(true);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    // Left on the button, not taken back to it: the person's Tab is where the focus is.
+    expect(document.activeElement).toBe(button);
+    expect(form.getState().unread['when']?.message).toBe('Start: February 2026 has 28 days');
+  });
+
+  it('closes as the focus leaves the field from inside it, and stays open while it moves within the month', () => {
+    const { el, button, dialog, day } = mountDate('date', '2026-10-11');
+    const input = el.querySelector('input') as HTMLInputElement;
+    button.click();
+    const eleven = day(11);
+    tab(input, eleven);
+    expect(dialog().hidden).toBe(false);
+    const after = document.createElement('input');
+    document.body.append(after);
+    tab(eleven, after);
+    expect(dialog().hidden).toBe(true);
+  });
+
+  it('opened on text that did not read, says why under its month', () => {
+    const { el, button, dialog, form } = mountDate('date', '2026-10-11');
+    const input = el.querySelector('input') as HTMLInputElement;
+    input.focus();
+    typeIn(input, '31/02/2026');
+    tab(input, button);
+    expect(form.getState().unread['when']).toBeDefined();
+    button.click();
+    const note = dialog().querySelector('.fd-calendar-note') as HTMLElement;
+    expect(note.hidden).toBe(false);
+    expect(note.textContent).toBe('Start: February 2026 has 28 days');
+  });
+});
+
 describe('a pick from the calendar, announced', () => {
   it('tells what is round it that a day was picked (fd-picked), by the mouse and by Enter, the value already set', () => {
     const { el, button, day, key, value } = mountDate('date', '2026-10-11');
@@ -123,5 +177,16 @@ describe('a pick from the calendar, announced', () => {
     key(day(20), 'ArrowRight');
     expect(heard).toHaveLength(2);
     expect(el.isConnected).toBe(true);
+  });
+});
+
+describe('a calendar’s days of the week', () => {
+  it('head their columns by short names, or narrow ones where the short name is a whole word, as in Arabic', async () => {
+    const { weekdayHead } = await import('./calendar');
+    const monday = new Date(2024, 0, 1);
+    const week = (lang: string) => Array.from({ length: 7 }, (_, i) => weekdayHead(lang)(new Date(2024, 0, 1 + i)));
+    expect(week('en-GB')).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+    expect(week('ar').every((name) => [...name].length <= 2)).toBe(true);
+    expect(weekdayHead('de')(monday)).toBe('Mo');
   });
 });

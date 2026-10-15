@@ -159,7 +159,7 @@ test.describe('what the templates’ cards say to try', () => {
 
   test('time off: the days count themselves, half a day is 0.5, and sick leave asks for a certificate', async ({ page }) => {
     await open(page, 'plain', query('leave-request'));
-    const dates = node(page, 'f-from').locator('input[type="date"]');
+    const dates = node(page, 'f-from').locator('input.fd-date');
     await dates.first().fill('2026-10-12');
     await dates.last().fill('2026-10-14');
     await expect(box(page, 'f-days')).toHaveValue('3.0');

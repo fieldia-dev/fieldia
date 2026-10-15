@@ -130,7 +130,7 @@ export {
   type Value,
   type Values,
 } from './lib/record/values';
-export { checkValue, formatBytes, fileProblem, describeTypes } from './lib/record/check';
+export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
 export type {
   DataSource,
@@ -201,5 +201,40 @@ export {
 } from './lib/record/form';
 export type { ActionHost, ActionResult, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
+export {
+  stripMarks,
+  foldDigits,
+  oneLine,
+  charCount,
+  foldForSearch,
+  numberMarks,
+  readNumber,
+  couldBeNumber,
+  numberMisfit,
+  cleanPastedNumber,
+  readDuration,
+  readDate,
+  couldBeMonth,
+  readTime,
+  placesOfCurrency,
+  placesOf,
+  MOST_DIGITS,
+  type NumberMarks,
+  type NumberProblem,
+  type NumberReading,
+  type NumberRead,
+  type NumberReadOptions,
+  type NumberLimits,
+  type NumberRefusal,
+  type PastedNumber,
+  type DurationProblem,
+  type DurationRead,
+  type DateOrder,
+  type DateProblem,
+  type DateRead,
+  type TimeRead,
+} from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
-export { ADDRESS_PARTS } from './lib/record/structures';
+export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
+export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
+export { fieldPattern } from './lib/format/pattern';

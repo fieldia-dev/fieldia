@@ -8,6 +8,7 @@ import { calendarSection } from './list-calendar';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
+import { settingNumber, type SettingNumberOptions } from './number-box';
 
 /**
  * The panels of a list page: the list's own — the rows a page holds, its
@@ -110,7 +111,12 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
     save({ op: test.value as FilterCondition['op'], ...(current.value === undefined && field ? { value: firstValue(field) } : {}) });
   });
 
+  /** The value the filter holds now, as the page last drew it. */
+  let heldValue: unknown;
+  /** Its number box, drawn again when the page changes. */
+  let numberShown: { refresh(): void } | null = null;
   function valueControl(field: Field, condition: FilterCondition): HTMLElement {
+    numberShown = null;
     if (field.type === 'selection' || field.type === 'boolean') {
       const options: [string, string][] = field.type === 'boolean' ? [['true', w.yes], ['false', w.no]] : field.options.map((o) => [String(o.value), o.label]);
       const box = select(el, w.filterValue, options);
@@ -121,14 +127,21 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
       });
       return box;
     }
-    const numeric = ['integer', 'float', 'monetary'].includes(field.type);
-    const kind = numeric ? 'number' : field.type === 'date' || field.type === 'datetime' ? 'date' : 'text';
-    const box = el('input', { class: 'fd-input', type: kind, 'aria-label': w.filterValue }) as HTMLInputElement;
+    if (['integer', 'float', 'monetary'].includes(field.type)) {
+      // A number read as every box reads one, kept as it is left; a whole number for a whole-number field.
+      const number = settingNumber(el, designer, {
+        label: w.filterValue,
+        integer: field.type === 'integer',
+        saved: () => (typeof heldValue === 'number' ? heldValue : null),
+        commit: (n) => save({ value: n }),
+      });
+      numberShown = number;
+      number.refresh();
+      return number.input;
+    }
+    const box = el('input', { class: 'fd-input', type: field.type === 'date' || field.type === 'datetime' ? 'date' : 'text', 'aria-label': w.filterValue }) as HTMLInputElement;
     box.value = String(condition.value ?? '');
-    box.addEventListener('input', () => {
-      if (numeric && box.value.trim() === '') return;
-      save({ value: numeric ? Number(box.value) : box.value });
-    });
+    box.addEventListener('input', () => save({ value: box.value }));
     return box;
   }
 
@@ -148,11 +161,13 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
       which.value = single.field;
       test.replaceChildren(...testsFor(field, designer.words).map(([op, words]) => el('option', { value: op }, words)));
       test.value = single.op;
+      heldValue = single.value;
       const key = `${single.field}:${single.op}`;
       if (key !== valueKey) {
         valueKey = key;
         valueBox.replaceChildren(...(single.op === 'set' || single.op === 'notset' ? [] : [valueControl(field, single)]));
       }
+      numberShown?.refresh();
     },
     focus() {
       name.focus();
@@ -208,7 +223,22 @@ function mapSection(el: ElementFactory, designer: Designer) {
   // How the map sits in its page: its height, the gestures it takes, the closest it zooms to show its records.
   const height = el('select', { class: 'fd-input fd-select', 'aria-label': w.mapHeight }) as HTMLSelectElement;
   const allGestures = el('input', { type: 'checkbox' }) as HTMLInputElement;
-  const fitZoom = el('input', { class: 'fd-input', type: 'number', min: '1', max: '22', placeholder: '16', 'aria-label': w.fitZoom }) as HTMLInputElement;
+  // A whole number, 1 to 22, refused with its range rather than brought into it in silence; emptied, the usual 16.
+  let zoomHeld: number | null = null;
+  const fitZoom = settingNumber(el, designer, {
+    label: w.fitZoom,
+    attrs: { class: 'fd-input', placeholder: '16' },
+    integer: true,
+    min: 1,
+    max: 22,
+    optional: true,
+    saved: () => zoomHeld,
+    commit: (n) =>
+      change((map) => {
+        if (n === null) delete map.fitZoom;
+        else map.fitZoom = n;
+      }),
+  });
   const rows = {
     lat: prop(el, w.latitude, lat),
     lng: prop(el, w.longitude, lng),
@@ -251,7 +281,7 @@ function mapSection(el: ElementFactory, designer: Designer) {
     areaWhy,
     prop(el, w.mapHeight, height),
     el('label', { class: 'fd-q-required' }, allGestures, el('span', {}, w.allGestures)),
-    prop(el, w.fitZoom, fitZoom),
+    prop(el, w.fitZoom, fitZoom.input),
     el('p', { class: 'fd-properties-hint' }, w.mapNote)
   );
   const element = el('div', { class: 'fd-prop', 'data-part': 'map' }, el('span', { class: 'fd-prop-name' }, w.map), onRow, noPlace, details);
@@ -275,7 +305,7 @@ function mapSection(el: ElementFactory, designer: Designer) {
     if (pin && money && !Object.keys(money).length) delete pin['money'];
     if (pin && !Object.keys(pin).length) delete map.pin;
     if (card && !Object.keys(card).length) delete map.card;
-    designer.setListOptions({ map });
+    return designer.setListOptions({ map });
   };
   const pinOf = (map: ListMap): Pin => (map.pin ??= {});
 
@@ -371,13 +401,6 @@ function mapSection(el: ElementFactory, designer: Designer) {
       else delete map.gestures;
     })
   );
-  fitZoom.addEventListener('change', () =>
-    change((map) => {
-      const zoom = Math.round(Number(fitZoom.value));
-      if (fitZoom.value.trim() === '' || !Number.isFinite(zoom)) delete map.fitZoom;
-      else map.fitZoom = Math.min(22, Math.max(1, zoom));
-    })
-  );
   addToCard.addEventListener('click', () => {
     const page = designer.getPage();
     const lines = current()?.card?.fields ?? [];
@@ -470,7 +493,8 @@ function mapSection(el: ElementFactory, designer: Designer) {
       height.replaceChildren(...heights.map(([value, text]) => el('option', { value }, text)));
       height.value = own;
       allGestures.checked = map.gestures === 'all';
-      if (!focused(fitZoom)) fitZoom.value = map.fitZoom === undefined ? '' : String(map.fitZoom);
+      zoomHeld = map.fitZoom ?? null;
+      fitZoom.refresh();
     },
   };
 }
@@ -479,9 +503,16 @@ function mapSection(el: ElementFactory, designer: Designer) {
 
 export function listProperties(el: ElementFactory, designer: Designer): PropertiesView {
   const w = designer.words.list;
-  const size = el('input', { class: 'fd-input', type: 'number', min: '1', max: '500', placeholder: '40', 'aria-label': w.rowsOnPage }) as HTMLInputElement;
-  size.addEventListener('input', () => {
-    if (size.value.trim() !== '') designer.setListOptions({ pageSize: Number(size.value) });
+  // A whole number, 1 to 500, kept as it is left: never the 60 that "600" passes on its way.
+  let pageSize = 40;
+  const size = settingNumber(el, designer, {
+    label: w.rowsOnPage,
+    attrs: { class: 'fd-input', placeholder: '40' },
+    integer: true,
+    min: 1,
+    max: 500,
+    saved: () => pageSize,
+    commit: (n) => n !== null && designer.setListOptions({ pageSize: n }),
   });
   const sortBy = el('select', { class: 'fd-input fd-select', 'aria-label': w.sortedBy }) as HTMLSelectElement;
   const direction = select(el, w.direction, [['asc', w.ascending], ['desc', w.descending]]);
@@ -547,7 +578,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
   const element = el(
     'div',
     { class: 'fd-props' },
-    prop(el, w.rowsOnPage, size),
+    prop(el, w.rowsOnPage, size.input),
     prop(el, w.sortedBy, sortBy),
     directionRow,
     chooseRow,
@@ -567,7 +598,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     element,
     update(page) {
       const list = listOf(page);
-      if (!focused(size)) size.value = list.pageSize === undefined ? '' : String(list.pageSize);
+      pageSize = list.pageSize ?? 40;
+      size.refresh();
       const sortable = everyField(page, designer).filter(({ field }) => !UNSORTABLE.has(field.type));
       sortBy.replaceChildren(el('option', { value: '' }, w.appOrder), ...sortable.map(({ name, field }) => el('option', { value: name }, field.label)));
       const order = list.sort?.[0];
@@ -720,35 +752,56 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
   const leadLooks = el('div', { class: 'fd-list-cell-looks' });
   const leadRow = el('div', { class: 'fd-prop', 'data-part': 'lead' }, el('span', { class: 'fd-prop-name' }, w.leadFrom), lead, leadLooks);
   // Its width, in characters of its words or in pixels for the whole column: a number and its unit.
-  const width = el('input', { class: 'fd-input', type: 'number', min: '1', max: '200', 'aria-label': w.cellWidth }) as HTMLInputElement;
+  // A whole number: 1 to 200 characters, or 8 to 4000 pixels; kept as it is left, refused with its range; emptied, as its words need.
   const unit = select(el, w.cellWidthUnit, [['ch', w.cellWidthUnits.characters], ['px', w.cellWidthUnits.pixels]]);
-  const saveWidth = () => {
-    const value = width.value.trim();
-    if (value === '') return void save({ ...cellNow(), width: undefined });
-    const next: ListCell['width'] = unit.value === 'px' ? (`${Number(value)}px` as `${number}px`) : Number(value);
-    if (widthIsGood(next)) save({ ...cellNow(), width: next });
+  const widthIn = (n: number): ListCell['width'] => (unit.value === 'px' ? (`${n}px` as `${number}px`) : n);
+  const sizing: SettingNumberOptions = {
+    label: w.cellWidth,
+    integer: true,
+    min: 1,
+    max: 200,
+    optional: true,
+    saved: () => {
+      const now = cellNow().width;
+      return now === undefined ? null : Number.parseInt(String(now), 10);
+    },
+    commit: (n) => save({ ...cellNow(), width: n === null ? undefined : widthIn(n) }),
   };
-  width.addEventListener('input', saveWidth);
+  const width = settingNumber(el, designer, sizing);
+  const unitRange = () => {
+    sizing.min = unit.value === 'px' ? 8 : 1;
+    sizing.max = unit.value === 'px' ? 4000 : 200;
+  };
   unit.addEventListener('change', () => {
-    width.max = unit.value === 'px' ? '4000' : '200';
-    width.min = unit.value === 'px' ? '8' : '1';
-    saveWidth();
+    unitRange();
+    // The same number in the other unit, when it is a width in that one too.
+    const n = sizing.saved();
+    if (typeof n === 'number' && widthIsGood(widthIn(n))) save({ ...cellNow(), width: widthIn(n) });
   });
-  const widthRow = el('div', { class: 'fd-prop', 'data-part': 'width' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), el('div', { class: 'fd-list-width' }, width, unit), el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
+  const widthRow = el('div', { class: 'fd-prop', 'data-part': 'width' }, el('span', { class: 'fd-prop-name' }, w.cellWidth), el('div', { class: 'fd-list-width' }, width.input, unit), el('p', { class: 'fd-properties-hint' }, w.cellWidthHint));
   const side = select(el, w.cellSide, [['', w.cellSides.auto], ['start', w.cellSides.start], ['end', w.cellSides.end]]);
   side.addEventListener('change', () => save({ ...cellNow(), align: (side.value || undefined) as ListCell['align'] }));
   // Its header's rule: at its end, none, or set in from its end by some pixels.
   const rule = select(el, w.cellRule, [['', w.cellRules.end], ['none', w.cellRules.none], ['in', w.cellRules.in]]);
-  const ruleIn = el('input', { class: 'fd-input', type: 'number', min: '0', max: '400', 'aria-label': w.cellRuleIn }) as HTMLInputElement;
-  const saveRule = () => {
+  // Pixels in from the column's end, a whole number 0 to 400, kept as it is left: letters never become 0px.
+  const ruleNow = () => {
+    const now = cellNow().rule;
+    return typeof now === 'string' ? Number.parseInt(now, 10) : null;
+  };
+  const ruleIn = settingNumber(el, designer, {
+    label: w.cellRuleIn,
+    integer: true,
+    min: 0,
+    max: 400,
+    saved: ruleNow,
+    commit: (n) => n !== null && ruleIsGood(`${n}px`) && save({ ...cellNow(), rule: `${n}px` as `${number}px` }),
+  });
+  rule.addEventListener('change', () => {
     if (rule.value === 'none') return void save({ ...cellNow(), rule: false });
     if (rule.value === '') return void save({ ...cellNow(), rule: undefined });
-    const next = `${Number(ruleIn.value.trim() || '0')}px` as `${number}px`;
-    if (ruleIsGood(next)) save({ ...cellNow(), rule: next });
-  };
-  rule.addEventListener('change', saveRule);
-  ruleIn.addEventListener('input', saveRule);
-  const ruleInRow = prop(el, w.cellRuleIn, ruleIn);
+    save({ ...cellNow(), rule: `${ruleNow() ?? 0}px` as `${number}px` });
+  });
+  const ruleInRow = prop(el, w.cellRuleIn, ruleIn.input);
   const ruleRow = el('div', { class: 'fd-prop', 'data-part': 'rule' }, el('span', { class: 'fd-prop-name' }, w.cellRule), rule, el('p', { class: 'fd-properties-hint' }, w.cellRuleHint));
 
   /** A value's colour, and its icon for a lead: a row for each option of a choice. */
@@ -799,13 +852,12 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
         })
       );
       const inPixels = typeof cell.width === 'string';
-      if (!focused(width)) width.value = cell.width === undefined ? '' : String(Number.parseInt(String(cell.width), 10));
       if (!focused(unit) && cell.width !== undefined) unit.value = inPixels ? 'px' : 'ch';
-      width.max = unit.value === 'px' ? '4000' : '200';
-      width.min = unit.value === 'px' ? '8' : '1';
+      unitRange();
+      width.refresh();
       side.value = cell.align ?? '';
       if (!focused(rule)) rule.value = cell.rule === false ? 'none' : cell.rule ? 'in' : '';
-      if (!focused(ruleIn) && typeof cell.rule === 'string') ruleIn.value = String(Number.parseInt(cell.rule, 10));
+      ruleIn.refresh();
       ruleInRow.hidden = rule.value !== 'in';
     },
   };

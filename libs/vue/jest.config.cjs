@@ -2,6 +2,8 @@ module.exports = {
   displayName: 'vue',
   preset: '../../jest.preset.js',
   testEnvironment: 'jsdom',
+  // The parts loaded on first use, in before the tests (src/test-parts.ts).
+  setupFilesAfterEnv: ['<rootDir>/src/test-parts.ts'],
   // @vue/test-utils and Vue resolve to their browser builds under jsdom.
   testEnvironmentOptions: { customExportConditions: ['node', 'node-addons'] },
   transform: {

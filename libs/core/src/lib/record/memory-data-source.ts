@@ -1,4 +1,5 @@
 import type { Field, Fields, Option, PropertyDefinition } from '../format/field';
+import { foldForSearch } from './input-rules';
 import type { JsonValue } from '../format/json';
 import type {
   DataSource,
@@ -293,12 +294,13 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async search(request: SearchRequest): Promise<RelatedRecord[]> {
       calls.push({ method: 'search', request });
       await pause();
-      const query = request.query.trim().toLowerCase();
+      // Found as a person writes it: in any case, with Arabic letters in any of their forms and digits in any script.
+      const query = findable(request.query.trim());
       return Object.entries(table(request.model))
         .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
-        // By its name, or a tree's record by its whole path: "Portal\Sprint".
-        .filter((record) => record.label.toLowerCase().includes(query) || pathWords(request.model, record.id).toLowerCase().includes(query))
+        // By its name, or a tree's record by its whole path: "Portal\Sprint", "Portal / Sprint".
+        .filter((record) => findable(record.label).includes(query) || findable(pathWords(request.model, record.id)).includes(query))
         .slice(0, request.limit ?? 8)
         .map((record) => shown(request.model, record));
     },
@@ -466,6 +468,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     },
   };
 }
+
+/** Words as a search finds them: folded (foldForSearch), and a path's separators — \\ or /, with spaces round them or not — as one. */
+const findable = (text: string) => foldForSearch(text).replace(/\s*[\\/]\s*/g, '\\');
 
 /** A tree's record's names from the top down: a list of names, or names joined by a backslash; null for anything else. */
 function pathOf(value: unknown): string[] | null {

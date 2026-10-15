@@ -335,7 +335,8 @@ test('the properties line up with the fields round them: their labels as the she
   const { problems } = await open(page, 'plain', 'page=real-opportunity&record=7701&skin=underline');
   const props = page.locator('.fd-field[data-type="properties"] .fd-property');
   await expect(props.first()).toBeVisible();
-  const value = (await props.first().locator(':scope > :last-child').boundingBox())!;
+  // Its value: the part after its label (its problem, when it has one, goes under it).
+  const value = (await props.first().locator(':scope > :nth-child(2)').boundingBox())!;
   const rightLabel = (await props.nth(1).locator(':scope > label').boundingBox())!;
   const customer = (await page.locator('[data-node="f-customer"] input').first().boundingBox())!;
   const userLabel = (await page.locator('[data-node="f-user"] .fd-label').boundingBox())!;

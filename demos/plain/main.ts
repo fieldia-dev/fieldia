@@ -1,5 +1,5 @@
 import type { ActionRequest, Locale, Theme } from '@fieldia/core';
-import { mountViewer, openFormDialog, type FormDialogResult, type Skin } from '@fieldia/viewer';
+import { loadParts, mountViewer, openFormDialog, type FormDialogResult, type Skin, type ViewerOptions } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
@@ -69,8 +69,7 @@ const monaco =
 const failures = name === 'contained' ? errorLog(document) : null;
 if (failures) document.getElementById('app')?.after(failures.element);
 
-const opened = timeFirstPaint('viewer');
-const handle = mountViewer(document.getElementById('app') as HTMLElement, {
+const options: ViewerOptions = {
   page,
   dataSource,
   recordId: recordFromQuery(params, page),
@@ -127,7 +126,13 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
       dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
     }),
   },
-});
+};
+// The parts the page draws from (a date's box, a work item's head), in before it is mounted, as an app that wants its
+// page drawn the moment it mounts loads them: what is timed is the page drawn, never the wait for a file. (The
+// framework demos mount at once, and the viewer waits for them itself.)
+await loadParts(page, options.widgets, options.slots).catch(() => undefined);
+const opened = timeFirstPaint('viewer');
+const handle = mountViewer(document.getElementById('app') as HTMLElement, options);
 opened();
 
 /**
