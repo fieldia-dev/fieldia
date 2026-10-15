@@ -27,7 +27,10 @@ deliberate change in how a way out goes: it keeps the save's answer from
 landing on whatever record the form shows by then, which wrote one record's
 values over another's. With no save on its way, a way out goes at once as in
 0.20, and asks "Discard your changes?" only about a change of the person's that
-the record's last save did not send.
+the record's last save did not send. For the same reason, a run of steps whose
+record is replaced by anything but its own steps (an `onAction` that opens
+another record itself, say) stops before its next step: answer `{ record }`
+instead, and the steps after it go on with that record.
 
 ## 0.20.0 — 2026-10-13
 

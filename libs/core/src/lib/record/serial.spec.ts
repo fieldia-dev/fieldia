@@ -3,6 +3,7 @@ import type { Page } from '../format/page';
 import { validatePage } from '../format/validate';
 import type { DataSource, SaveRequest, UploadFile, UploadRequest, UploadedFile } from './data-source';
 import { createForm, workAtRisk, type Form, type FormOptions } from './form';
+import { createMemoryDataSource } from './memory-data-source';
 import type { ActionHost, ActionResult } from './run';
 import type { RecordId, Values } from './values';
 
@@ -392,6 +393,61 @@ describe('generations: an answer lands only on the record it was started for', (
     expect(await run).toMatchObject({ done: false, reason: 'cannot' });
     expect(form.getState()).toMatchObject({ recordId: 2, dirty: [] });
     expect(form.getState().values['ref']).toBe('');
+  });
+
+  it('a conflict’s Reload pressed while Keep mine’s save is on its way waits for it: the record shown is the one stored after it', async () => {
+    const memory = createMemoryDataSource({ records: { lead: leads() }, versions: { by: 'Sara' } });
+    let holding = false;
+    let go: (() => void) | null = null;
+    const ds: DataSource = {
+      ...memory,
+      async save(request) {
+        if (holding) {
+          holding = false;
+          await new Promise<void>((resolve) => (go = resolve));
+        }
+        return memory.save(request);
+      },
+    };
+    const form = await opened(ds);
+    form.setValue('budget', 4300000);
+    memory.changeElsewhere('lead', 1, { phone: '+201000000000' }, { by: 'Mona' });
+    expect(await form.save()).toBe(false);
+    expect(form.getState().conflict).not.toBeNull();
+    holding = true;
+    const keeping = form.keepMine();
+    await until(() => go);
+    const reloading = form.reloadTheirs();
+    await tick();
+    (go as unknown as () => void)();
+    expect(await keeping).toBe(true);
+    expect(await reloading).toBe(true);
+    expect(form.getState().values).toMatchObject({ budget: 4300000, phone: '+201000000000' });
+    expect(form.getState()).toMatchObject({ setAside: null, dirty: [] });
+  });
+
+  it('a run whose record another way out replaced stops before its next step: nothing of it lands on record 2', async () => {
+    const ds = heldSource();
+    const made = host(['open']);
+    const form = await opened(ds, { host: made.host });
+    const run = form.run([{ do: 'ask', message: 'Send the offer?' }, { do: 'set', field: 'ref', value: "'after'" }]);
+    await until(() => made.asked.length);
+    expect(await form.openRecord(2)).toBe(true);
+    made.answer(true);
+    expect(await run).toMatchObject({ done: false, reason: 'cannot', stoppedAt: 1, message: 'Another record is shown now: the rest of these steps did not run.' });
+    expect(form.getState()).toMatchObject({ recordId: 2, dirty: [] });
+  });
+
+  it('a run goes on with the records its own steps show: an answer’s record, a reload, Duplicate’s copy', async () => {
+    const ds = heldSource();
+    const form = await opened(ds, { onAction: () => ({ record: 2 }) });
+    expect((await form.run([{ do: 'call', action: 'next' }, { do: 'set', field: 'ref', value: "'R-2'" }])).done).toBe(true);
+    expect(form.getState()).toMatchObject({ recordId: 2, dirty: ['ref'] });
+    expect((await form.run([{ do: 'reload' }, { do: 'set', field: 'ref', value: "'R-again'" }])).done).toBe(true);
+    expect(form.getState().values['ref']).toBe('R-again');
+    expect((await form.run([{ do: 'duplicate' }, { do: 'set', field: 'ref', value: "'R-copy'" }])).done).toBe(true);
+    expect(form.getState()).toMatchObject({ recordId: 3 });
+    expect(form.getState().values['ref']).toBe('R-copy');
   });
 
   it('a form disposed while it saves: the late answer lays nothing', async () => {

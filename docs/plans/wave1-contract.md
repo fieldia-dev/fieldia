@@ -328,10 +328,13 @@ generation of its own. A save's answer (its `recordId`, `version`, values) is
 laid on the form only while the generation it was started in is still shown; a
 late answer for a record replaced meanwhile is dropped from the form (the data
 source has it) and never lands on another record. The same holds for a run of
-steps: a `call`'s answer, or an opened page's `into`, for a record no longer
-shown is dropped, and the run stops. A save on its way when the person's own
-Discard resets the form still lands, as the record it stored, never with the
-reset values laid over it.
+steps: it is on the record shown as it starts, and moves on with the records
+its own steps show (a `call`'s `{ record }`, Duplicate's copy, a reload). Shown
+another by anything else — the pager, the app — it stops before its next step,
+and a `call`'s answer, or an opened page's `into`, that comes back meanwhile is
+dropped: an afterSave run of record 1 never writes on record 2. A save on its
+way when the person's own Discard resets the form still lands, as the record it
+stored, never with the reset values laid over it.
 
 **3. Work at risk** (`workAtRisk(state)`, `state.unsent`), worked out from the
 record as the last finished save of this generation left it (what it sent and

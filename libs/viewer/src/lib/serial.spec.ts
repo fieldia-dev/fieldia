@@ -180,6 +180,29 @@ describe('round 4 #1: a way out taken while a save is on its way (c-race, i-race
   }
 });
 
+describe('the pager: its save first, then the check, then the record', () => {
+  it('Next with the budget typed during its own save: asked; Cancel keeps record 1 and the pager’s place', async () => {
+    const ds = heldSource();
+    const { host, handle } = await mount(ds, { records: { total: 2, at: 0, id: (at) => at + 1 } });
+    const text = () => host.querySelector('.fd-record-pager-text')?.textContent;
+    expect(text()).toBe('1 / 2');
+    type(host, 'phone', '+201009998887');
+    ds.hold();
+    (host.querySelectorAll<HTMLButtonElement>('.fd-record-pager button')[1] as HTMLButtonElement).click();
+    await ds.held();
+    type(host, 'budget', '4300000');
+    ds.release();
+    await asked();
+    answer('Cancel');
+    await pause();
+    expect(handle.form.getState()).toMatchObject({ recordId: 1, unsent: ['budget'] });
+    // Drawn again as the person goes on: still record 1 of 2.
+    type(host, 'phone', '+201000000001');
+    expect(text()).toBe('1 / 2');
+    expect((host.querySelector('.fd-record-pager') as HTMLElement).hidden).toBe(false);
+  });
+});
+
 describe('round 4 #2: a page opened in place counts the work done while it waits to give way (f-uploads)', () => {
   const opening = leadWith([{ type: 'button', id: 'open', label: 'Open other', steps: [{ do: 'open', page: 'lead-other', as: 'page', record: '2' }] }]);
 
@@ -351,5 +374,26 @@ describe('a dialog’s Discard during a save waits for it: the record it made is
     await until(() => ended);
     expect(question()).toBeNull();
     expect(ended).toMatchObject({ saved: true, recordId: 3 });
+  });
+
+  it('Escape during Save & Close waits for the save, then closes saved, nothing asked', async () => {
+    const ds = heldSource();
+    let ended: FormDialogResult | null = null;
+    void openFormDialog({ page: leadWith([]), dataSource: ds.source, recordId: 1, title: 'Lead' }).then((result) => (ended = result));
+    await until(() => input(document.querySelector('.fd-form-dialog') ?? document.body, 'phone')?.value);
+    const box = document.querySelector('.fd-form-dialog') as HTMLElement;
+    type(box, 'phone', '+201009998887');
+    ds.hold();
+    button(box, 'Save & Close').click();
+    await ds.held();
+    input(box, 'phone').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await pause();
+    expect(ended).toBeNull();
+    expect((box.querySelector('.fd-dialog-waiting') as HTMLElement).textContent).toBe('Waiting for the save to finish…');
+    ds.release();
+    await until(() => ended);
+    expect(question()).toBeNull();
+    expect(ended).toMatchObject({ saved: true, recordId: 1 });
+    expect(ds.source.records['lead'][1]).toMatchObject({ phone: '+201009998887' });
   });
 });

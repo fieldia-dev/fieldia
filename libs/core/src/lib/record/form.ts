@@ -1760,7 +1760,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const seq = ++loads;
     // The record loaded again is shown anew: an answer started for it before is not laid over it.
     newGeneration();
-    set({ status: 'loading', error: null });
+    set({ status: 'loading', error: null, unsent: [] });
     try {
       // A source may give the record's version and what the person may do with it beside its values.
       const { values: loaded, version, can } = loadedRecordOf(await source.load({ model: page.data.model, id: state.recordId, fields }));
