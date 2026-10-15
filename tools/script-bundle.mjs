@@ -468,7 +468,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // one (0.3); a time's or hours' one-digit minute named with both times it could be, never quietly :03, and the time a
 // day leaves out named (0.8); a count of one said in the singular by the language's own rules (0.3); their English
 // words (0.4) — 2.6 more, to 567.4 (measured 567.32).
-const BUDGET_KB = 567.4;
+// Every way a value is committed reading every kind of box (0.20.1): a save, a check and a step waiting for a name
+// still looked up, a link's, tags', a choice's and a path's own reader of what is typed, a line's cells read no more
+// once it goes, autosave waiting while a box is typed in, the hold kept through a paste, a drop, an IME and an
+// autocorrection, a plain date box saying the time it leaves out, a count of one's own words for a language added,
+// a designer's setting read before it publishes — 5.6 more, to 573.0 (measured 572.94).
+const BUDGET_KB = 573.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -538,8 +543,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before its part came (listed with the raw budget above): 4.9 less, to 174.4 (measured 174.35) — 16.5 over 0.20.0's
 // 157.9 for the input rules every page draws at mount. The keys that save with the input rules (Enter never judged,
 // a save reading what is still typed first, keys held in every text box, a one-digit minute named, a count of one in
-// the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11).
-const GZIP_BUDGET_KB = 175.2;
+// the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11). Every way a value is
+// committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
+const GZIP_BUDGET_KB = 176.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -585,7 +591,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The keys that save (0.20.1) — a time's one-digit minute and both times it could be, the time a day leaves out, and a
 // pasted count, a count of lines and the characters over said for one — five in each: Arabic's to 36.6, German's to
 // 15.7 and 6.2, French's to 16.1 and 6.2.
-const ADD_ON_BUDGET_KB = { ar: [36.6, 7.1], de: [15.7, 6.2], fr: [16.1, 6.2] };
+// Every box by every commit (0.20.1) — "still looking for" a name, a cell a paste left named with why, one character
+// over said as one, three in each — Arabic's to 37.0 and 7.2, German's to 15.9, French's to 16.3 (as measured 36.96
+// and 7.15, 15.86, 16.27).
+const ADD_ON_BUDGET_KB = { ar: [37.0, 7.2], de: [15.9, 6.2], fr: [16.3, 6.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -663,8 +672,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // when (dateRules) — their label and order read as they stand (date 19.1, as measured 19.03). The keys typed after a
 // refused one waiting with it, read whole as the box is left, so "1x5/10/2026" is never 15 October (date 7.2 gzipped,
 // as measured 19.09 and 7.1). A date's box read as a save reads it first (a change), and a date and time pasted into
-// it saying the time it left out (date 19.3, as measured 19.29 and 7.17).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [14.4, 5.7], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
+// save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
+// several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
