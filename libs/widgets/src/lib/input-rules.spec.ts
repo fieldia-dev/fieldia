@@ -144,7 +144,14 @@ describe('a number box refuses what can never be part of a number', () => {
     expect([input.selectionStart, input.selectionEnd]).toEqual([1, 1]);
     expect(value()).toBe(12);
     expect(hintSays()).toBe('Seats: numbers only');
-    // Digits a composition makes (fullwidth, Arabic) are numbers like any other.
+    // Composed where the refused text waits, more waits with it, the words said again: never 1３2 made round it.
+    compose(input, '３');
+    expect(input.value).toBe('12');
+    expect(value()).toBe(12);
+    expect(hintSays()).toBe('Seats: numbers only');
+    // Backspace takes back what waits, one by one; then digits a composition makes (fullwidth, Arabic) are numbers like any other.
+    for (let n = 0; n < 3; n++) backspace(input);
+    expect(hintSays()).toBeNull();
     compose(input, '３');
     expect(value()).toBe(132);
   });

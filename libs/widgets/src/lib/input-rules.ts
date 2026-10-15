@@ -35,10 +35,15 @@ import { formatNumber } from './numbers';
  * A box holds what is typed after a refused key at the same place (`hold`):
  * refused too, with the same words, so "1.5" typed into a box of whole numbers
  * never becomes 15, nor "-3" 3, nor "+20 1oo 123" a phone number of other
- * digits. Backspace takes the keys held back one by one; moving the caret lets
- * them go. Left while it holds them, the hint stays (nothing under the pointer
- * moves as the box is left), and the box is left with all that was typed,
- * which its widget reads and marks with why.
+ * digits. The hold holds whichever way text comes: keys, a paste or a drop
+ * there (joined to the keys held, the words said again), an IME's or a phone
+ * keyboard's text (put back, and held with them), an autocorrection (refused
+ * while keys are held, with the same words). Backspace takes the keys held
+ * back one by one, a word's or a line's deletion and Undo all of them; a
+ * deletion after the caret leaves them held; moving the caret lets them go.
+ * Left while it holds them, the hint stays (nothing under the pointer moves as
+ * the box is left), and the box is left with all that was typed, which its
+ * widget reads and marks with why.
  *
  * Enter in a one-line box types nothing: it is never judged, held or stopped,
  * so it sends the form, or moves to the next field, as the page has it.
@@ -154,6 +159,15 @@ export interface Guard {
 
 type Box = HTMLInputElement | HTMLTextAreaElement;
 
+/** Keys a box holds after a refused one: the box as it stood (its text, the caret where they went), them, and why. */
+interface Held {
+  value: string;
+  start: number;
+  end: number;
+  typed: string;
+  words: string;
+}
+
 /** The text a box would hold with `text` put in place of its selection. */
 function spliced(box: Box, text: string): string {
   const start = box.selectionStart ?? box.value.length;
@@ -176,7 +190,7 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   let composing = false;
   let inserting = false;
   /** Keys refused, and those typed after them at the same place (`rules.hold`): where they went, and why the first was refused. */
-  let held: { value: string; start: number; end: number; typed: string; words: string } | null = null;
+  let held: Held | null = null;
   /** Whether the box still stands as it did when the held keys were refused: its text, and the caret where they went. */
   const holding = () => !!held && box.value === held.value && box.selectionStart === held.start && box.selectionEnd === held.end;
   /** Keys refused: held with their words, where the box holds keys. */
@@ -219,35 +233,54 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   const onFocus = () => accept();
   /** A one-line box: Enter there types nothing, it sends the form or moves on, as the page has it. */
   const oneLine = box.tagName === 'INPUT';
+  /** Keys held as an edit began that changes nothing where they wait (a deletion after the caret): kept held once it lands. */
+  let rebase: Held | null = null;
+  /** Keys held as a composition began there: what it makes is held with them once it ends. */
+  let composingAt: Held | null = null;
+  /** The held keys taken back, all of them: Undo, or a word's or a line's deletion, typed after them. */
+  const letGoHeld = () => {
+    held = null;
+    hint.hide();
+  };
   const onBeforeInput = (event: Event) => {
     const edit = event as InputEvent;
     const type = edit.inputType ?? '';
     // Enter in one line: never judged, never held, never stopped — the form hears it as it did before the rules came.
     if (oneLine && (type === 'insertLineBreak' || type === 'insertParagraph')) return;
-    before = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
+    // Where the selection was as the edit began: not the steps of a composition, whose text the box holds on the way.
+    if (!composing) before = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
     if (inserting || box.readOnly) return;
-    const typing = type.startsWith('insert') && type !== 'insertCompositionText' && type !== 'insertFromPaste' && type !== 'insertFromDrop';
+    const typing = type.startsWith('insert') && type !== 'insertCompositionText' && type !== 'insertFromPaste' && type !== 'insertFromDrop' && type !== 'insertReplacementText';
     const text = type === 'insertLineBreak' || type === 'insertParagraph' ? '\n' : (edit.data ?? edit.dataTransfer?.getData('text/plain') ?? '');
+    // A keyboard whose keys cannot be stopped (a phone's), typing where keys are held: what it types is put back once it
+    // lands, and held with them (onInput).
+    if (held && holding() && !edit.cancelable && !type.startsWith('delete')) return;
     if (held && holding() && edit.cancelable) {
       if (type === 'deleteContentBackward') {
         // Backspace takes back the last key held, as it would have taken back a key that landed.
         event.preventDefault();
         held.typed = [...held.typed].slice(0, -1).join('');
-        if (!held.typed) {
-          held = null;
-          hint.hide();
-        }
+        if (!held.typed) letGoHeld();
         return;
       }
-      if (typing) {
-        // A key typed after a refused one, at the same place: it waits with it, the words said again.
+      if (type === 'historyUndo' || /^delete(Word|SoftLine|HardLine)Backward$/.test(type)) {
+        // Undo, or a word or a line taken back: the keys held were the last typed, and they go, all of them.
         event.preventDefault();
-        held.typed += text;
+        return letGoHeld();
+      }
+      if (typing || type === 'insertReplacementText' || type === 'historyRedo') {
+        // A key typed after a refused one, at the same place: it waits with it, the words said again. A correction
+        // offered meanwhile (a spelling's, a phone keyboard's) would change what was typed round them: it waits too.
+        event.preventDefault();
+        if (typing) held.typed += text;
         hint.show(held.words);
         return;
       }
+      // Anything else that deletes, after the caret: it lands, and the keys held stay where they wait.
+      if (type.startsWith('delete')) rebase = held;
     }
-    // Deleting is never refused; a composition is judged once it ends; a paste or a drop has its own listener.
+    // Deleting is never refused; a composition is judged once it ends; a paste or a drop has its own listener; a
+    // correction, whose place a box does not say, is judged once it lands (onInput).
     if (!typing) return;
     const words = rules.judge(spliced(box, text), box.value);
     if (!words) {
@@ -265,6 +298,15 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     if ('refuse' in cleaned) {
       event.preventDefault();
       hint.show(cleaned.refuse);
+      return;
+    }
+    if (held && holding()) {
+      // Pasted or dropped where keys wait after a refused one: it joins them, the words said again — never landing
+      // beside the text typed before the refused key, as though that key had never been typed.
+      event.preventDefault();
+      if (event.type === 'drop') box.focus();
+      held.typed += oneLine ? cleaned.text.replace(/\r\n|[\r\n]/g, ' ') : cleaned.text;
+      hint.show(held.words);
       return;
     }
     const words = rules.judge(spliced(box, cleaned.text), box.value);
@@ -292,6 +334,16 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     if (inserting) return accept();
     if (composing || edit.isComposing) return;
     const type = edit.inputType ?? '';
+    const kept = rebase;
+    rebase = null;
+    if (kept && kept === held && type.startsWith('delete') && box.selectionStart === box.selectionEnd) {
+      // A deletion after the caret, keys held there: taken, and the keys wait where they were, said still.
+      taken = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
+      Object.assign(kept, { value: box.value, start: taken.start, end: taken.end });
+      return;
+    }
+    // The box as it was taken, keys held there (a composition's last word, after its text was put back): they wait on.
+    if (box.value === taken.value && held && holding() && !type.startsWith('delete') && !type.startsWith('history')) return;
     if (type.startsWith('delete') || type.startsWith('history') || box.value === taken.value) {
       hint.hide();
       return accept();
@@ -305,7 +357,8 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     }
     // An edit that could not be stopped: the last text taken comes back, and the widget never hears of it.
     event.stopImmediatePropagation();
-    const typed = before.value === taken.value ? insertedSince(before) : '';
+    // A correction's place is not said: put back, and said, but nothing of it held.
+    const typed = before.value === taken.value && type !== 'insertReplacementText' ? insertedSince(before) : '';
     putBack();
     hint.show(words);
     if (after) after.typed += typed;
@@ -314,19 +367,26 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   const onCompositionStart = () => {
     composing = true;
     before = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
+    composingAt = held && holding() ? held : null;
   };
   const onCompositionEnd = () => {
     composing = false;
-    const words = box.value === taken.value ? null : rules.judge(box.value, taken.value);
-    if (!words) return;
+    const at = composingAt;
+    composingAt = null;
     const typed = before.value === taken.value ? insertedSince(before) : '';
+    // Composed where keys wait after a refused one: what it made waits with them, the words said again.
+    const words = at && at === held ? at.words : box.value === taken.value ? null : rules.judge(box.value, taken.value);
+    if (!words) return;
     putBack();
     hint.show(words);
-    if (typed) hold(before, typed, words);
-    // The widget heard the composing text: it hears the text put back too.
+    if (at && at === held) at.typed += typed;
+    else if (typed) hold(before, typed, words);
+    // The widget heard the composing text: it hears the text put back too — the keys held kept, as they were.
+    const waiting = held;
     inserting = true;
     box.dispatchEvent(new Event('input', { bubbles: true }));
     inserting = false;
+    held = waiting;
   };
   // Left with keys held, the words still say why what was typed is not taken: the box's widget makes them its own.
   const onBlur = () => !(held && holding()) && hint.hide();
