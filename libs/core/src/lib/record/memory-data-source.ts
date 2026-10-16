@@ -299,8 +299,12 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return Object.entries(table(request.model))
         .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
-        // By its name, or a tree's record by its whole path: "Portal\Sprint", "Portal / Sprint".
-        .filter((record) => findable(record.label).includes(query) || findable(pathWords(request.model, record.id)).includes(query))
+        // By its name, or a tree's record by its whole path: "Portal\Sprint", "Portal / Sprint"; asked exactly, the name or path itself.
+        .filter((record) =>
+          request.exact
+            ? findable(record.label) === query || findable(pathWords(request.model, record.id)) === query
+            : findable(record.label).includes(query) || findable(pathWords(request.model, record.id)).includes(query)
+        )
         .slice(0, request.limit ?? 8)
         .map((record) => shown(request.model, record));
     },

@@ -223,6 +223,15 @@ export interface SearchRequest {
   /** The field's filter, with every `valueFrom` already replaced by its value. */
   filter?: ResolvedFilter[];
   limit?: number;
+  /**
+   * Only the records named exactly `query`, in any case — not every one whose
+   * name holds it. A box asks so for a name typed when a search's first
+   * answers, cut at their limit, did not hold it ("Nile" after ten "Blue
+   * Nile"s), and to tell whether more than one record has that name. A source
+   * that does not know it searches as ever: the box looks for the name among
+   * what comes.
+   */
+  exact?: boolean;
 }
 
 export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value'> & { value: JsonValue };

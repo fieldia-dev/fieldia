@@ -9,7 +9,7 @@ import { splitValues } from '../format/words';
 import { fitTo } from './compute';
 import type { ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
-import { emptyValue, structuredCopy, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import { emptyValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 /**
  * The engine that runs steps — a button's, a moment's, or the app's own —
@@ -203,6 +203,14 @@ export interface RunScope {
    * the run stops: its steps are not for that record.
    */
   generation?: number;
+  /**
+   * A run the person or the app set off — a button, its key, a line's button, `form.run` — reads what is typed
+   * first (`'first'`), as a save does: before its first step that reads the form or hands its values on (`set`, a
+   * `call`, an `open` with values, a `when`…), every box is read and a name looked up waited for, and text that does
+   * not read stops it, said under its box. `'read'` once done. A moment's run takes the values as they are: it never
+   * reads a box under the person's keys.
+   */
+  typed?: 'first' | 'read';
 }
 
 /** What a run reaches its form by: the form gives these. */
@@ -223,6 +231,11 @@ export interface RunForm {
   addLine(field: string, values: Values): void;
   /** Check fields as sending does: what is still typed in a box read first, a name being looked up waited for. */
   check(fields: readonly string[] | undefined): Stopped | null | Promise<Stopped | null>;
+  /**
+   * What is typed read, as a save reads it — a name being looked up waited for: null to go on, else why the run
+   * stops — text left in a box that does not read, said under its box as a check says it.
+   */
+  typedFirst(): Promise<Stopped | null>;
   save(chain: readonly string[]): Promise<Stopped | null>;
   /** The number of the record shown now: each record shown — opened, loaded again, a new one — has its own. */
   generation(): number;
@@ -671,6 +684,29 @@ export function createRunner(form: RunForm) {
     }
   }
 
+  /**
+   * A run the person or the app set off reads what is typed before its first step that reads the form or hands its
+   * values on: THE one place a run of steps meets the input rules, whatever its steps are. The line its button was
+   * pressed on is taken again then, as what was typed in it reads.
+   */
+  async function typedFirst(scope: RunScope): Promise<Stopped | null> {
+    scope.typed = 'read';
+    const stopped = await form.typedFirst();
+    if (stopped) return stopped;
+    const linesOf = (field: string) => (form.values()[field] as Line[] | null | undefined) ?? [];
+    if (scope.line) {
+      const { field, key } = scope.line;
+      const now = linesOf(field).find((line) => line.key === key);
+      if (now) scope.line = { field, key, values: structuredCopy(now.values) };
+    }
+    if (scope.lines) {
+      const { field, keys } = scope.lines;
+      const now = keys.map((key) => linesOf(field).find((line) => line.key === key));
+      if (now.every(Boolean)) scope.lines = { ...scope.lines, values: now.map((line) => structuredCopy((line as Line).values)) };
+    }
+    return null;
+  }
+
   async function runSteps(steps: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
     scope.generation ??= form.generation();
     for (let at = 0; at < steps.length; at++) {
@@ -679,7 +715,10 @@ export function createRunner(form: RunForm) {
       try {
         // The record it ran on was replaced by something else meanwhile: the rest is not for the one shown now.
         if (form.generation() !== scope.generation) stopped = form.gone();
-        else if (step.when !== undefined && !holds(step.when)) continue;
+        // Asked only where it reads: a run with nothing to read goes on in the same tick, as ever.
+        else if (scope.typed === 'first' && readsForm(step) && (stopped = await typedFirst(scope))) {
+          // What is typed does not read: nothing is done with the values under it.
+        } else if (step.when !== undefined && !holds(step.when)) continue;
         else stopped = await runStep(step, scope);
       } catch (error) {
         stopped = { reason: 'cannot', message: wordsOf(error), error };
@@ -699,6 +738,29 @@ export function createRunner(form: RunForm) {
   }
 
   return { runSteps, ask };
+}
+
+/**
+ * Whether a step reads the form's values or hands them on — what is typed is read before it, for a run the person or
+ * the app set off: a `when`; `set` and `addLine`, which work values out; a `call`, handing them to the app; an `open`
+ * with values, a record or a filter from them; `post`, `openUrl`. A save, a check and a step forward read on their own;
+ * the ways out (`reload`, `close`, `reset`, another record) ask about what is typed instead; `archive`, `duplicate`
+ * and `delete` act on the record as stored.
+ */
+function readsForm(step: ActionStep): boolean {
+  if (step.when !== undefined) return true;
+  switch (step.do) {
+    case 'set':
+    case 'addLine':
+    case 'call':
+    case 'post':
+    case 'openUrl':
+      return true;
+    case 'open':
+      return step.values !== undefined || step.record !== undefined || step.filter !== undefined;
+    default:
+      return false;
+  }
 }
 
 /** What an expression reads in another form's answers, its fields unknown: a link as its id, links as their ids, a reference as "model,id", lines by their keys, a file by its name. */
