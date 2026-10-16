@@ -134,6 +134,27 @@ test.describe('typing while a box’s part comes', () => {
   });
 });
 
+test.describe('text left unread in a box whose part takes its place', () => {
+  test('a whole-number slider left with "1.5" before its part came is still marked once the slider takes its place', async ({ page }) => {
+    const { problems, release } = await ownBoxes(page, 'survey', { days: { type: 'integer', label: 'Days', min: 0, max: 5 } }, { days: 3 }, { days: 'slider' });
+    const plain = page.locator('#own-days');
+    await plain.click();
+    await plain.press('Control+A');
+    await page.keyboard.type('1.5');
+    await page.keyboard.press('Tab');
+    // The number box keeps it, marked: a save is refused with "Days must be a whole number".
+    await expect(plain).toHaveAttribute('aria-invalid', 'true');
+    expect((await stateOf(page)).unread['days']?.text).toBe('1.5');
+    release();
+    const slider = page.locator('#own input[type="range"]');
+    await expect(slider).toBeAttached();
+    // The text still stops a save: the slider says so, never a plain 3 with nothing wrong to be seen.
+    expect((await stateOf(page)).unread['days']?.text).toBe('1.5');
+    await expect(slider).toHaveAttribute('aria-invalid', 'true');
+    expect(problems).toEqual([]);
+  });
+});
+
 // Firefox and WebKit, where taking a focused box out of the page sends it no change: each launched here, as the
 // firefox and webkit projects run a smoke list alone.
 for (const browserName of ['firefox', 'webkit'] as const) {
