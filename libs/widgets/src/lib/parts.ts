@@ -49,3 +49,24 @@ export function settleParts(parts: readonly Part[]): Promise<void> {
     () => undefined
   ))).then(() => undefined);
 }
+
+/**
+ * A part that draws with others' widgets — an analytic distribution's lines, each with a link's box: in once they all
+ * are, its own code its answer. A page that needs it waits for them all; a widget drawn from it before they came is
+ * drawn plainly until they have.
+ */
+export function partWith<M>(part: Part<M>, ...others: readonly Part[]): Part<M> & { readonly parts: readonly Part[] } {
+  return {
+    name: part.name,
+    parts: [part, ...others],
+    get loaded() {
+      return others.every((other) => other.loaded) ? part.loaded : undefined;
+    },
+    load: () => Promise.all([part.load(), ...others.map((other) => other.load())]).then(([module]) => module),
+  };
+}
+
+/** The parts a part stands for: those it was made `partWith`, or itself. */
+export function partsOf(part: Part): readonly Part[] {
+  return (part as { parts?: readonly Part[] }).parts ?? [part];
+}

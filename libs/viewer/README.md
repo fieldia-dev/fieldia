@@ -313,9 +313,10 @@ why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 167 KB gzipped). What a page uses beyond
-plain fields — a list's screen, a table of lines, a date's box, a phone, a
-theme… — comes in 15 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
+(core, widgets and viewer; about 158 KB gzipped). What a page uses beyond
+plain fields — a list's screen, a table of lines, a date's box, a link to
+another record, a phone, a theme… — comes in 16 parts beside it
+(`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
 each loaded from the same folder the first time a page uses it:
 
 ```html

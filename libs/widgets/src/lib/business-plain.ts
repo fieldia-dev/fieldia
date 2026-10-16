@@ -10,9 +10,10 @@ import type { WidgetContext, WidgetFactory, WidgetState } from './widgets';
 /**
  * The business widgets drawn plainly, until their part comes (business-part.ts): drawn by something that did not wait
  * for it as the viewer does, each shows its value — read-only words for a statusbar (the state's words), priority stars
- * (how many of how many), a distribution (its shares), tax totals (their total) and payments (each one's day and
- * amount); a plain text box for hours and a per cent, read as they are typed — and the part's own widget takes its place
- * with the last value it was given (partWidget). A part that cannot come leaves them, and they work.
+ * (how many of how many), a distribution (its shares), tax totals (their total), payments (each one's day and
+ * amount) and a timer (its time, standing still); a plain text box for hours and a per cent, read as they are typed, and
+ * for a value to copy — and the part's own widget takes its place with the last value it was given (partWidget). A part
+ * that cannot come leaves them, and they work.
  */
 
 /** A payment on a record, as Flectra's invoice_payments_widget gives it. */
@@ -172,3 +173,38 @@ export const plainPayments = plainWords(({ value, values }, context) => {
     .map((payment) => `${fillIn(words.paidOn, { date: displayValue(day, payment.date, {}, context.locale) })} ${money(payment.amount)}`)
     .join(' · ');
 });
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Seconds as HH:MM:SS: a timer's time (timer.ts, in the business part), and its plain words meanwhile. */
+export function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+}
+
+/** A date and time's instant, in milliseconds; null when it holds none. */
+export function instantOf(value: Value | undefined): number | null {
+  if (typeof value !== 'string' || !value) return null;
+  const t = new Date(value).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/**
+ * A timer before its part came: its time as words, HH:MM:SS — on a number, the time logged; on a date and time, the
+ * time since it — as it stood when drawn, not ticking. Never typed, as the timer is not.
+ */
+export const plainTimer: WidgetFactory = ({ field, node, id, document }) => {
+  const output = document.createElement('output');
+  output.id = id;
+  output.className = 'fd-value-text';
+  const perSecond = node.options?.['unit'] === 'minutes' ? 60 : 3600;
+  return {
+    element: output,
+    focus: () => undefined,
+    update({ value }) {
+      const start = field.type === 'datetime' ? instantOf(value) : null;
+      const seconds = start !== null ? (Date.now() - start) / 1000 : typeof value === 'number' ? value * perSecond : 0;
+      setText(output, formatClock(seconds));
+    },
+  };
+};

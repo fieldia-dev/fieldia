@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
 import { quietPart, themesPart, wearQuiet, wearTheme } from './look-parts';
-import { choicePart, datePart, pathPart, surveyPart, textPart } from './widget-parts';
+import { choicePart, datePart, pathPart, relationsPart, surveyPart, textPart } from './widget-parts';
 import { createWidget, widgetPart, type Widget } from './widgets';
 
 /**
@@ -63,9 +63,17 @@ describe('a part', () => {
     expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes', options: { toolbar: 'focus' } })).toBe(textPart);
     expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes' })).toBeUndefined();
     expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area', widget: 'path' })).toBe(pathPart);
-    expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area' })).toBeUndefined();
+    // A link to another record: the relations part's box (relations-lazy.spec.ts).
+    expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area' })).toBe(relationsPart);
     expect(widgetPart(fields['priority'], { type: 'field', id: 'p', field: 'priority', options: { list: 'own' } })).toBe(choicePart);
     expect(widgetPart(fields['priority'], { type: 'field', id: 'p', field: 'priority' })).toBeUndefined();
+    // A choice searched as it is typed — asked for, or of more than 15 options — and several chosen as tags: the choice
+    // part's too. A long list the page says not to search is the browser's.
+    const long = { ...fields['priority'], options: Array.from({ length: 16 }, (_, i) => ({ value: String(i), label: `Floor ${i}` })) } as Field;
+    expect(widgetPart(long, { type: 'field', id: 'p', field: 'priority' })).toBe(choicePart);
+    expect(widgetPart(long, { type: 'field', id: 'p', field: 'priority', options: { search: false } })).toBeUndefined();
+    expect(widgetPart(fields['priority'], { type: 'field', id: 'p', field: 'priority', options: { search: true } })).toBe(choicePart);
+    expect(widgetPart(fields['order'], { type: 'field', id: 'o', field: 'order', widget: 'tags' })).toBe(choicePart);
     // A date, a date and time, a time of day and a range of dates: Fieldia's own box and its calendar.
     expect(widgetPart(fields['due'], { type: 'field', id: 'd', field: 'due' })).toBe(datePart);
     expect(widgetPart(fields['at'], { type: 'field', id: 't', field: 'at' })).toBe(datePart);

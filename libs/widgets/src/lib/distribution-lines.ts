@@ -2,7 +2,7 @@ import { readNumber, type Field, type Form, type FormState, type JsonValue, type
 import { fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { guard, leftWords, numberFits, numberRules, refusalHint, type Guard, type NumberBox, type RefusalHint } from './input-rules';
 import { formatNumber } from './numbers';
-import { many2oneWidget } from './relations';
+import { linkBox } from './relations-plain';
 import { distributionModel, sharesOf } from './distribution';
 import { installBusinessStyles } from './styles-business-part';
 import type { Widget, WidgetFactory } from './widgets';
@@ -98,7 +98,7 @@ export const distributionWidget: WidgetFactory = (context) => {
       canCreate: () => false,
     };
     const accountField = { type: 'many2one', label: words.account, relation: model } as Field;
-    row.account = many2oneWidget({ ...context, form: own, name: 'account', field: accountField, node: { type: 'field', id: `${node.id}.account`, field: 'account', options: { create: false } }, id: cellId });
+    row.account = linkBox({ ...context, form: own, name: 'account', field: accountField, node: { type: 'field', id: `${node.id}.account`, field: 'account', options: { create: false } }, id: cellId });
     row.input = make('input', { type: 'text', class: 'fd-input fd-number-input fd-share', inputmode: 'decimal', autocomplete: 'off', 'aria-label': words.share });
     row.unread = null;
     row.accountUnread = null;

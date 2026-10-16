@@ -2,7 +2,8 @@ import { installPartStyles, PART_RANK } from './styles';
 
 /**
  * The business part's sheet (business-part.ts): a record's statusbar, priority
- * stars, an analytic distribution, tax totals and payments — put in its place
+ * stars, an analytic distribution, tax totals, payments, a value to copy and a
+ * running timer — put in its place
  * among Fieldia's the first time a page draws one (installPartStyles,
  * PART_RANK.business). Its rules stood in the main sheet before the quiet look
  * and the pickers', and none of the rules after them there reshapes what they
@@ -78,6 +79,18 @@ export const BUSINESS_PART_CSS = /* css */ `
 .fd-payment-details dd { margin: 0; }
 .fd-payment-open { justify-self: start; }
 .fd-payment-due { display: flex; justify-content: space-between; gap: 16px; padding-top: 6px; border-top: 1px solid var(--fd-border); font-weight: 600; }
+/* A value to copy: its box, the button after it. */
+.fd-copy { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
+.fd-copy-long { align-items: flex-start; }
+.fd-copy-button { flex: none; }
+/* A timer: its time in even digits, a green dot beating while it runs. */
+.fd-timer { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+.fd-timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fd-border-strong); }
+.fd-timer[data-running] .fd-timer-dot { background: var(--fd-success); animation: fd-timer-beat 1s ease-in-out infinite alternate; }
+.fd-timer[data-running] .fd-timer-time { color: var(--fd-success); }
+@keyframes fd-timer-beat { to { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .fd-timer[data-running] .fd-timer-dot { animation: none; } }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

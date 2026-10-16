@@ -1,5 +1,5 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pathPart, phonePart, phoneSettings, quietPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -38,7 +38,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -53,7 +53,9 @@ const markdownAlone = (node: SectionNode) => {
  * it for its filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
- * records, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking slots) — unless the app's
+ * records or its cards, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking
+ * slots, a link to other records — a many2one, a many2many's tags, a reference — and an analytic distribution's links
+ * with the business part) — unless the app's
  * `widgets` draw those fields; and those the app's `slots` name for the slots the page has (a Discussion's). The
  * page's own look's too: the themes part for the theme it names, and the quiet look's for its quiet skin, or a group
  * or a field it marks quiet. (A theme or a skin the app gives the viewer is worn as its part comes: look-parts.ts in
@@ -66,19 +68,29 @@ const markdownAlone = (node: SectionNode) => {
  * A table's lines draw each cell with its column's widget (as its cells say: a time of day, a path picker, a photo,
  * a progress bar), so their columns' parts are the page's too; a sheet's title draws the fields it names (its avatar:
  * a picture field); and a properties field, itself in the survey part, may hold a date — one added in place, or worked
- * out from its value — whatever the page names, so it asks for the date part too (never a file: a property holds none).
+ * out from its value — whatever the page names, so it asks for the date part too; and the choice part where one may be
+ * a choice of many options, searched: one of its own definitions, or any its data source gives (never a file or a
+ * link: a property holds none).
  *
  * A phone field is read the world over where its page's `phone` or its own options say so, and a list's phone column
  * then writes its numbers as people read them: both ask for the phone part.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
+  // A part made with others (an analytic distribution's, with its links') stands for each of them.
+  const add = (part: Part | undefined) => {
+    for (const one of part ? partsOf(part) : []) found.add(one);
+  };
   const fieldParts = (field: Field, node: FieldNode): void => {
-    const part = widgetPart(field, node, widgets, page);
-    if (part) found.add(part);
-    // Its rows are drawn with each kind's widget: a date's, unless the app draws dates.
-    const dated = field.type === 'properties' ? widgetPart({ type: 'date', label: field.label }, { type: 'field', id: node.id, field: node.field }, widgets, page) : undefined;
-    if (dated) found.add(dated);
+    add(widgetPart(field, node, widgets, page));
+    // Its rows are drawn with each kind's widget: a date's, unless the app draws dates; and a long choice's, searched —
+    // one of the page's own, or any of those the data source gives.
+    if (field.type === 'properties') {
+      const row = { type: 'field', id: node.id, field: node.field } as const;
+      const dated = widgetPart({ type: 'date', label: field.label }, row, widgets, page);
+      const choices = field.definitionsFrom ? [widgetPart({ type: 'selection', label: field.label, options: [] }, { ...row, options: { search: true } }, widgets, page)] : (field.definitions ?? []).map((one) => (one.type === 'selection' ? widgetPart({ type: 'selection', label: one.label, options: one.options ?? [] }, row, widgets, page) : undefined));
+      for (const part of [dated, ...choices]) add(part);
+    }
     if (field.type !== 'one2many' || !field.fields) return;
     for (const [column, sub] of Object.entries(field.fields)) {
       const cell = node.cells?.[column];
@@ -111,7 +123,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
-    else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) found.add(part);
+    else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) add(part);
     else if (node.type === 'field' && typeof node['field'] === 'string') {
       const field = page.fields[node['field']];
       if (field) fieldParts(field, node as unknown as FieldNode);

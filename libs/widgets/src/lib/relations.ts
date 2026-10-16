@@ -2,8 +2,9 @@ import { foldDigits, foldForSearch, stripMarks, type FieldNode, type Form, type 
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { floatUnder } from './float';
 import { guard, quoted, refusalHint } from './input-rules';
-import { setAttr, setHidden } from './kind-parts';
+import { setAttr, setHidden, typeInto } from './kind-parts';
 import { drawIcon } from './icons';
+import { detailLines, linkAvatar } from './link-avatar';
 import { stillShown, whileShown } from './shown';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -11,6 +12,10 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  * Pickers for related records: a search-as-you-type combobox (the ARIA 1.2
  * combobox pattern), tags for a many2many, and a reference picker. Results
  * come from the data source through the form, so a field's filter applies.
+ *
+ * In the relations part (relations-part.ts), loaded the first time a page shows
+ * one: drawn plainly meanwhile (relations-plain.ts), where words typed before it
+ * came are kept and handed to its box as typed (`takeTyped`).
  */
 
 const DEBOUNCE_MS = 180;
@@ -554,48 +559,6 @@ function combobox(options: {
   };
 }
 
-/**
- * A linked record's picture, as Flectra's avatar widgets show one: its own,
- * or the initials of its name in a circle when it has none.
- */
-export function linkAvatar(doc: Document, record: RelatedRecord | null | undefined, into?: HTMLElement): HTMLElement {
-  const box = into ?? doc.createElement('span');
-  box.className = 'fd-link-avatar';
-  box.setAttribute('aria-hidden', 'true');
-  if (!record) {
-    box.hidden = true;
-    box.replaceChildren();
-    return box;
-  }
-  box.hidden = false;
-  if (record.avatar) {
-    const img = doc.createElement('img');
-    img.src = record.avatar;
-    img.alt = '';
-    box.replaceChildren(img);
-  } else {
-    const words = record.label.trim().split(/\s+/).filter(Boolean);
-    box.textContent = (words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0]?.[0] ?? '')).toUpperCase();
-  }
-  return box;
-}
-
-/**
- * A linked record's lines under it — an address, a tax number — each a line
- * of its own that reads its own way: an address in English stays in its order
- * on a page read right to left, still lined up with the page.
- */
-export function detailLines(box: HTMLElement, text: string): void {
-  const doc = box.ownerDocument;
-  box.replaceChildren(
-    ...text.split('\n').map((line) => {
-      const row = doc.createElement('div');
-      row.textContent = line;
-      return row;
-    })
-  );
-}
-
 /** What a link's node asks of it beyond its name: a picture, lines under it, a colour, and whether its record opens. */
 function shows(node: FieldNode) {
   const options = node.options ?? {};
@@ -750,6 +713,12 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   return {
     element,
     focus: () => box.input.focus(),
+    // Words typed in the plain box drawn before this one came: still the person's, found as they are typed on.
+    takeTyped: (typed) => {
+      if (box.input.readOnly) return false;
+      typeInto(box.input, typed);
+      return true;
+    },
     destroy: () => box.destroy(),
     update(state) {
       const record = state.value as RelatedRecord | null | undefined;
@@ -843,6 +812,14 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   return {
     element,
     focus: () => box.input.focus(),
+    // Words typed in the plain box drawn before this one came, a tag to add: still the person's, found as they are typed
+    // on — in the box its button opens, where tags are added from a button.
+    takeTyped: (typed) => {
+      if (readonly) return false;
+      adder?.button.click();
+      typeInto(box.input, typed);
+      return true;
+    },
     destroy: () => box.destroy(),
     update(state) {
       const records = (state.value as RelatedRecord[] | null) ?? [];

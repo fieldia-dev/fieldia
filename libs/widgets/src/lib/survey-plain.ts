@@ -12,7 +12,8 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  * its code or its name, an address its lines, properties a line each. A
  * slider is a number box meanwhile, pictures to choose from the choices' own
  * radios or boxes, and a progress bar its number (widgets.ts): each reads and
- * writes the same value its part's widget does.
+ * writes the same value its part's widget does. Several answers chosen as
+ * tags, which come in the choice part, are their words too.
  */
 
 /** The value in words, a line each, named by the field's label: shown, never written. */
@@ -38,6 +39,12 @@ const labelOf = (options: readonly Option[], value: unknown) => options.find((op
 const entries = (value: Value) => (value && typeof value === 'object' && !Array.isArray(value) ? Object.entries(value).filter(([, v]) => v !== null && v !== undefined && v !== '') : []);
 
 /** A ranking as its order in words: "1. Kitchen", "2. Gym". Not yet ranked, nothing. */
+/**
+ * Several answers chosen as tags (choice-tags.ts, in the choice part) as their options' words, a line each, in the order
+ * they were chosen; an answer of one's own as its words.
+ */
+export const plainChosen = plainLines((value, { field }) => (Array.isArray(value) ? value.map((v) => labelOf(optionsOf(field), v)) : []));
+
 export const plainRanking = plainLines((value, { field }) => (Array.isArray(value) ? value.map((v, i) => `${i + 1}. ${labelOf(optionsOf(field), v)}`) : []));
 
 /** A matrix as its answers, a row each, in its rows' order: "Service: Good". */

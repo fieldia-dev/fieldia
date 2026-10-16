@@ -20,14 +20,12 @@ import { formatNumber, formatPlain, ungroup } from './numbers';
 import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
-import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
+import { linkCheckboxesWidget, many2oneWidget, plainLinkWidget, plainTagsWidget, referenceWidget, tagsWidget } from './relations-plain';
 import { plainLinesWidget, plainLinksWidget } from './lines-plain';
 import { labelWidget } from './label';
 import { plainDateWidget, type DateKind } from './date-text';
 import { htmlWidget, jsonWidget } from './extras';
 
-import { choiceTagsWidget, searchWidget } from './choice-tags';
-import { cardsWidget } from './cards';
 import { boxPurpose, clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { counted, grower } from './limits';
@@ -39,13 +37,11 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, relationsPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { phoneSettings } from './phone-settings';
-import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTotal } from './business-plain';
-import { plainAddress, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
-import type { Part } from './parts';
-import { copyWidget } from './copy';
-import { timerWidget } from './timer';
+import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTimer, plainTotal } from './business-plain';
+import { plainAddress, plainChosen, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
+import { partWith, type Part } from './parts';
 import { embedWidget } from './embed';
 import { containWidget, type ErrorHandler } from './contain';
 
@@ -210,7 +206,7 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
  * for a widget its page's settings choose (a phone read the world over).
  */
 export function widgetPart(field: Field, node: FieldNode, registry: Record<string, WidgetFactory> = {}, page?: Page): Part | undefined {
-  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node, page);
+  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node, page, field);
 }
 
 /** The factory for a field: the app's or the built-in one for `type.widget`, then for the type alone. */
@@ -632,11 +628,17 @@ function options(field: Field) {
   return field.type === 'selection' ? field.options : [];
 }
 
+/** A long list, or one the page asks to: a box to type in, its options found as one types (choice-tags.ts, the choice part's). */
+function searched(node: FieldNode, field: Field | undefined): boolean {
+  const search = node.options?.['search'];
+  return search === true || (search !== false && !!field && options(field).length > 15);
+}
+/** Fieldia's own list in place of the browser's (own-list.ts, the choice part's). */
+const ownList = (node: FieldNode) => node.options?.['list'] === 'own';
+
+/** A choice in the browser's own list: a long one's too, until the choice part's box that searches it has come. */
 const selectWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document } = context;
-  // A long list, or one the page asks to: a box to type in, its options found as one types.
-  const search = node.options?.['search'];
-  if (search === true || (search !== false && options(field).length > 15)) return searchWidget(context);
   const choices = shownOptions(options(field), form, name, node);
   const blank = make(document, 'option', { value: '' });
   // A country, a card's month: what the browser fills it in with, when the page says.
@@ -866,6 +868,8 @@ const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dat
  * only, the value kept (lines-plain.ts). What its cells edit a line through stays here (lines.ts).
  */
 export const linesWidget: PartFactory = partFactory(linesPart, (part) => part.linesWidget(createWidget), plainLinesWidget);
+/** A one2many as a repeating group of cards (cards.ts), in the lines part: its lines as plain words meanwhile, as a table's. */
+const cardsWidget: PartFactory = partFactory(linesPart, (part) => part.cardsWidget(createWidget), plainLinesWidget);
 // Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
 // totals, payments — come in the business part (business-part.ts): their value plainly meanwhile (business-plain.ts).
 // A state's dot stays in the main script: a work item's State is one, and its list is drawn as the choice part's and the
@@ -875,6 +879,14 @@ const statusbarOf = business((part) => part.statusbarWidget, plainState);
 /** A statusbar, as 0.22 gave it: the business part's, the state's label meanwhile. */
 export const statusbarWidget: WidgetFactory = statusbarOf;
 const priorityOf = business((part) => part.priorityWidget, plainStars);
+
+// Links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes (relations-plain.ts)
+// and a char field's tags — come in the relations part (relations.ts). A char field's tags are its words meanwhile, in
+// the text box that reads and writes them as they are, the part's tags taking its place once it is left.
+/** A char field's tags, as 0.24 gave them: the relations part's, its words in a text box meanwhile. */
+export const charTagsWidget: PartFactory = partFactory(relationsPart, (part) => part.charTagsWidget, textWidget('text'));
+/** An analytic distribution's lines each draw a link's box: its page waits for the relations part too. */
+const businessWithLinks = partWith(businessPart, relationsPart);
 
 /**
  * A file, a picture, a signature or a PDF field before the files part came (files-part.ts): the names of the files its
@@ -951,14 +963,14 @@ export function summary(value: Value | undefined, field: Field): string {
 
 /**
  * A widget the registry reads as a field is drawn, never as this module starts. The widgets that draw with this module
- * — a bar's box, cards' fields and a property's value through `createWidget`, a label's words through `summary` —
+ * — a bar's box and a property's value through `createWidget`, a label's words through `summary` —
  * import it back; an app's bundler that splits its code into chunks may start them after this one (esbuild orders a
  * chunk's modules by how near each is to an entry point, and a new part moves them), when they would not be there yet.
  * The part a widget comes in is told through it all the same (`partOf`), so a page waits for it as for any other.
  */
 const later = (factory: () => WidgetFactory): WidgetFactory =>
   Object.assign((context: WidgetContext) => factory()(context), {
-    partOf: (node: FieldNode, page?: Page) => (factory() as Partial<PartFactory>).partOf?.(node, page),
+    partOf: (node: FieldNode, page?: Page, field?: Field) => (factory() as Partial<PartFactory>).partOf?.(node, page, field),
   });
 
 export const builtInWidgets: Record<string, WidgetFactory> = {
@@ -1002,30 +1014,32 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'integer.color': colourKind,
   'char.color': colourKind,
   // A value and a button that copies it: Flectra's CopyClipboardChar and CopyClipboardText.
-  'char.copy': copyWidget,
-  'text.copy': copyWidget,
+  'char.copy': business((part) => part.copyWidget, textWidget('text')),
+  'text.copy': business((part) => part.copyWidget, textareaWidget),
   // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
   'date.daterange': dateRangeOf('date'),
   'datetime.daterange': dateRangeOf('datetime'),
   // A booking's time picked from those free, asked of the data source's slots: the date and time box without them.
   'datetime.slots': partFactory(slotsPart, (part) => part.slotsWidget, plainDateWidget('datetime')),
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
-  'float.timer': timerWidget,
-  'datetime.timer': timerWidget,
+  'float.timer': business((part) => part.timerWidget, plainTimer),
+  'datetime.timer': business((part) => part.timerWidget, plainTimer),
   // A PDF, or a web page at an address, shown inline: Flectra's pdf_viewer and embed_viewer.
   'binary.pdf': filesOf((part) => part.pdfWidget),
   'char.embed': embedWidget,
   // Shares of accounts, {accountId: percent}, as lines adding up to 100 %: Flectra's analytic_distribution.
-  'json.distribution': business((part) => part.distributionWidget, plainShares),
+  'json.distribution': partFactory(businessWithLinks, (part) => part.distributionWidget, plainShares),
   // Untaxed amount, a line per tax group, the total, from a value the app works out: Flectra's tax_totals.
   'json.tax-totals': business((part) => part.taxTotalsWidget, plainTotal),
   // Each payment's date and amount, its details in a popover: Flectra's invoice_payments_widget.
   'json.payments': business((part) => part.paymentsWidget, plainPayments),
-  // Fieldia's own list in place of the browser's, a tick by the option picked (own-list.ts, in the choice part).
-  selection: partFactory(choicePart, (part) => part.ownListWidget, (context) => selectWidget(context), (node) => node.options?.['list'] === 'own'),
+  // Fieldia's own list in place of the browser's, a tick by the option picked (own-list.ts), or a long list searched as
+  // it is typed (choice-tags.ts): the choice part's, the browser's own list meanwhile.
+  selection: partFactory(choicePart, (part) => (context) => (ownList(context.node) ? part.ownListWidget : part.searchWidget)(context), (context) => selectWidget(context), (node, _page, field) => ownList(node) || searched(node, field)),
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
-  'selection.tags': choiceTagsWidget,
+  // Several answers as tags in a box (choice-tags.ts), in the choice part: their words meanwhile.
+  'selection.tags': partFactory(choicePart, (part) => part.choiceTagsWidget, plainChosen),
   'selection.image-choice': surveyKind((part) => part.imageChoiceWidget, (context) => choiceGroup(context.field.type === 'selection' && context.field.multiple ? 'checkbox' : 'radio')(context)),
   'selection.ranking': surveyKind((part) => part.rankingWidget, plainRanking),
   'selection.statusbar': statusbarOf,
@@ -1034,17 +1048,17 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2one: many2oneWidget,
   'many2one.statusbar': statusbarOf,
   // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).
-  'many2one.path': partFactory(pathPart, (part) => part.pathPickerWidget, (context) => many2oneWidget(context)),
+  'many2one.path': partFactory(pathPart, (part) => part.pathPickerWidget, plainLinkWidget),
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
   // A table of the records it links to, in the lines part: their names as plain words meanwhile.
   'many2many.table': partFactory(linesPart, (part) => part.linksTableWidget, plainLinksWidget),
   // The links box comes with the text part, whose menus and words it shares; the tags meanwhile.
-  'many2many.links': partFactory(textPart, (part) => part.linksWidget, (context) => tagsWidget(context)),
+  'many2many.links': partFactory(textPart, (part) => part.linksWidget, plainTagsWidget),
   reference: referenceWidget,
   one2many: linesWidget,
-  'one2many.cards': later(() => cardsWidget),
+  'one2many.cards': cardsWidget,
   // A file, a signature and a picture, in the files part (files-part.ts): the files' names meanwhile.
   binary: binaryWidget,
   'binary.signature': filesOf((part) => part.signatureWidget),

@@ -1,5 +1,6 @@
-import type { Value } from '@fieldia/core';
+import { instantOf, formatClock } from './business-plain';
 import { maker, setAttr, setText } from './kind-parts';
+import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -9,23 +10,12 @@ import type { WidgetFactory } from './widgets';
  * top of it, ticking each second. On a date and time, the time since it.
  * Never typed: the page's buttons start and stop it, setting the start and
  * logging the time, as Flectra's do.
+ *
+ * In the business part (business-part.ts): its time as words meanwhile, not ticking (business-plain.ts).
  */
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Seconds as HH:MM:SS. */
-export function formatClock(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
-}
-
-const instant = (value: Value | undefined): number | null => {
-  if (typeof value !== 'string' || !value) return null;
-  const t = new Date(value).getTime();
-  return Number.isNaN(t) ? null : t;
-};
-
 export const timerWidget: WidgetFactory = ({ field, node, id, document }) => {
+  installBusinessStyles(document);
   const make = maker(document);
   const own = field.type === 'datetime';
   const startField = !own && typeof node.options?.['startField'] === 'string' ? (node.options['startField'] as string) : null;
@@ -47,7 +37,7 @@ export const timerWidget: WidgetFactory = ({ field, node, id, document }) => {
     destroy: stop,
     update(state) {
       logged = !own && typeof state.value === 'number' ? state.value * perSecond : 0;
-      start = own ? instant(state.value) : startField ? instant(state.values[startField]) : null;
+      start = own ? instantOf(state.value) : startField ? instantOf(state.values[startField]) : null;
       if (start !== null) element.dataset['running'] = 'true';
       else delete element.dataset['running'];
       show();
