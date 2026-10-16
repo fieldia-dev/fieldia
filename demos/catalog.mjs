@@ -26,6 +26,41 @@ export const CATEGORIES = [
   { id: 'real', label: 'Real screens from a working ERP', colour: '#9a3412' },
 ];
 
+/**
+ * The business areas the gallery groups its demos by, as a business owner looks for them, and the one for the demos
+ * that show a part of Fieldia rather than a business's screen. Each demo is in exactly one (AREA_OF, below; a browser
+ * test holds every demo to one). `blurb`: the area in a line, for the gallery.
+ */
+export const AREAS = [
+  { id: 'sales', label: 'Sales', blurb: 'Quotations, orders and their lines, products and contracts, and where the orders are.' },
+  { id: 'accounting', label: 'Accounting', blurb: 'Invoices and bills, payments, expenses, and the records round them.' },
+  { id: 'crm', label: 'CRM', blurb: 'Customers and contacts, leads and opportunities, tenders, and what people ask for.' },
+  { id: 'people', label: 'People', blurb: 'Hiring, onboarding, employees’ files and time off.' },
+  { id: 'operations', label: 'Operations', blurb: 'Tasks and work items, the warehouse, making things, maintenance, deliveries and cases.' },
+  { id: 'clinic', label: 'Clinic', blurb: 'A clinic’s day by doctor, appointments, bookings and a patient’s first visit.' },
+  { id: 'real-estate', label: 'Real estate', blurb: 'Homes on a map, a listing’s photos, viewings and enquiries.' },
+  { id: 'surveys', label: 'Surveys', blurb: 'Surveys, sign-ups and feedback forms, with steps that follow the answers.' },
+  { id: 'building-blocks', label: 'Building blocks', blurb: 'One part of Fieldia at a time, for developers: every field, your own parts, languages, keys and the script tag.' },
+];
+
+/** Each area's demos, by id: every demo of the catalog in exactly one. */
+const AREA_OF = {
+  sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract'],
+  accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense'],
+  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender'],
+  people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
+  operations: ['backlog', 'work-item', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
+  clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment'],
+  'real-estate': ['map-homes', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry'],
+  surveys: ['survey', 'signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
+  'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
+};
+
+/** The area a demo is in, by its id; undefined for one in none (the browser test says which). */
+export const areaOf = (id) => Object.keys(AREA_OF).find((area) => AREA_OF[area].includes(id));
+/** Every demo id each area names, as written: for the test that no demo is in two or none. */
+export const AREA_IDS = AREA_OF;
+
 /** The flagships, first in the gallery and in the menu. */
 export const FEATURED = ['customer', 'order', 'customers', 'fields'];
 
