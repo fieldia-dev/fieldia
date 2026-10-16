@@ -42,8 +42,9 @@ for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'story.js', 's
 // The feature pages' pictures, taken from the real demos (tools/feature-shots.mjs).
 cpSync(join(WORKSPACE, 'site/img'), join(OUT, 'img'), { recursive: true });
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));
-// Each language's add-on beside it: the live form fetches one when its language is picked. And each part (a work item's
-// head, its text, a path picker, a filter bar), which fieldia.js asks for from beside itself the first time a page uses it.
+// Each language's add-on beside it: the live form fetches one when its language is picked. And each part (a list screen,
+// a work item's head, its text, a path picker, a filter bar), which fieldia.js asks for from beside itself the first time
+// a page uses it.
 for (const file of readdirSync(dirname(BUNDLE)).filter((name) => /^fieldia\.[a-z]+\.js$/.test(name))) cpSync(join(dirname(BUNDLE), file), join(OUT, file));
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
 // The template library's pages, each beside its gallery: /templates/<id>.page.json.
