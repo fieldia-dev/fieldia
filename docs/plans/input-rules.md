@@ -75,6 +75,7 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Plain date box (before the date part comes) | date-text.ts `plainDateWidget` | change | unread; a time left out is said under the box | no guard (by design) | R | R | L | P | R | R | R | R |
 | Text line, password | `char`, `char.password` (text-box.ts) | T; held keys and the trim on change / blur | the field's check (most characters, pattern) | yes | R | R | L | P | R | R | R | R |
 | Phone, email, web address | `char.phone`, `char.email`, `char.url` (text-box.ts) | T; digits as 0-9, marks and ends stripped on change / blur | the field's check, with its words | yes | R | R | L | P | R | R | R | R |
+| Phone read the world over | `char.phone` where the page's `phone` or its options say so (phone-box.ts, phone part; the text box above before it comes) | change / blur: read in the country typed with its + or picked, kept as E.164; a country picked reads it again | unread: no country, no country's code, too short, too long, a start none has; the field keeps what it held | yes | R | R | L | P | R | R | R | R |
 | Paragraph | `text` (text-box.ts) | T; held keys on change / blur | the field's check | yes | own: a new line | R | L | P | R | R | R | R |
 | Tags typed as words | `char.tags` (relations.ts `charTagsWidget`) | change / blur adds them | unread: tags past the most wait for room | guard, no refused keys | own: adds the tags | R | L | P | R | R | R | R |
 | Colour code | `char.color`, `integer.color` (colour.ts) | a whole code as typed; change / blur reads | unread, the colour as entered | yes | R | R | L | P | R | R | R | R |
@@ -144,8 +145,8 @@ refused one, with the same words, however the text arrives:
 | Moving the caret | lets them go | `holding()` |
 | Enter in a one-line box | never judged, held or stopped | `insertLineBreak` / `insertParagraph` |
 
-Every guard holds: numbers, money, hours, per cents, shares, tax amounts, dates, times, ranges, every text kind, the
-colour code, a place's coordinates, the designer's number and date settings, and the filter's number. The guard of
+Every guard holds: numbers, money, hours, per cents, shares, tax amounts, dates, times, ranges, every text kind (a
+phone read the world over among them), the colour code, a place's coordinates, the designer's number and date settings, and the filter's number. The guard of
 typed tags refuses no keys. A box with no guard reads whole words when it is left or saved: link, path and choice names,
 the plain date box, the code and JSON editors, formatted text, and the filter's date. Held keys are part of what was
 typed. Leaving and every save in §1 take them into the box and read all of it.
