@@ -33,7 +33,8 @@ export const phoneWidget: WidgetFactory = (context) => {
   const select = make('select', { class: 'fd-phone-select', 'aria-label': fillIn(words.phoneCountry, { label }) }, make('option', { value: '' }, words.phoneNoCountry));
   for (const [code, country] of names.sorted) select.append(make('option', { value: code }, `${flagOf(code)} ${country} ⁦+${(phoneCountry(code) as { dial: string }).dial}⁩`));
   const flag = make('span', { class: 'fd-phone-flag', 'aria-hidden': 'true' });
-  const dial = make('span', { class: 'fd-phone-dial', 'aria-hidden': 'true' });
+  // Its code reads left to right on a right-to-left page too: +20, never 20+.
+  const dial = make('span', { class: 'fd-phone-dial', 'aria-hidden': 'true', dir: 'ltr' });
   const picker = make('span', { class: 'fd-input fd-phone-country' }, flag, dial, select);
   const input = make('input', { id, type: 'tel', class: 'fd-input fd-phone-input', autocomplete: 'tel', dir: 'ltr' });
   if (node.placeholder) input.placeholder = node.placeholder;
@@ -58,7 +59,10 @@ export const phoneWidget: WidgetFactory = (context) => {
     setText(dial, code ? `+${(phoneCountry(code) as { dial: string }).dial}` : words.phoneNoCountry);
     setAttr(picker, 'data-empty', code ? null : '');
     setAttr(picker, 'title', code ? (names.byCode.get(code) ?? code) : null);
+    drawDial();
   }
+  /** The dialling code beside the flag, unless the number written in the box says it ("+971 50…"): its flag alone then. */
+  const drawDial = () => setHidden(dial, !!picked && typedCode(input.value) !== undefined);
 
   /** A number the field holds, read: E.164 as it is, or one kept another way (an older record's) read in the home country. */
   const numberOf = (value: Value | undefined): { number: string; country: string } | null => {
@@ -123,6 +127,7 @@ export const phoneWidget: WidgetFactory = (context) => {
         input.value = shown;
         checks.accept();
       }
+      drawDial();
       return linksTo(reading.number);
     }
     if (reading.country) show(reading.country);
@@ -133,6 +138,7 @@ export const phoneWidget: WidgetFactory = (context) => {
   input.addEventListener('input', () => {
     typing = true;
     linksTo(null);
+    drawDial();
     // Typed with its + and code, the country follows the number as it comes: +1 876… is Jamaica.
     const code = typedCode(input.value);
     if (!code) return;
@@ -178,6 +184,7 @@ export const phoneWidget: WidgetFactory = (context) => {
         }
         if (!kept) show(number?.country ?? picked);
       }
+      drawDial();
       setAttr(element, 'data-readonly', state.readonly ? '' : null);
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       // At rest, a number that reads has its links; one typed, or that does not read, none.
