@@ -157,6 +157,24 @@ gear menu's Archive, Duplicate and Delete and the buttons whose steps would do
 them hidden. `createMemoryDataSource({ versions: { by: 'Sara' }, can })` does
 it all in memory, and `changeElsewhere` changes a record as someone else would.
 
+## Many records at once
+
+A list's "Select all 1,284 that match", its Export and its Edit of many
+records read three optional members. `list({ …, allIds: true })` answers with
+`allIds`, every matching id in the list's order (fewer than `total` means the
+source stopped short, and the list says so). `writeMany({ model, ids, values,
+fields, versions })` writes one value in a field of each record and answers
+`{ failed: [{ id, message, problem? }] }`; without it the list saves each record
+in turn (`save` with `partial: true` and the version it was listed at).
+`exportRecords(request)` writes an export on the server: answer with the file
+(`{ name, data }`, data a Blob, bytes or text, or `{ name, url }`), with
+`{ message }` when it is handed over another way, or with `false` to let the
+browser write it. A page offers Edit with its list's `bulkEdit` (`true`, or the
+fields), and hides Export with `"export": false`; `bulkEditFields(page, list)`
+says which fields Edit offers. `createMemoryDataSource` gives `allIds` and
+`writeMany` (each record refused as its save would be), and no `exportRecords`.
+See [many records at once](https://fieldia.dev/data/#many).
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its

@@ -231,6 +231,17 @@ view that makes a record (a calendar's empty slot) asks `onNewRecord(values)`;
 without it the record's page from `pages` opens in a dialog with the values
 filled in.
 
+A list takes its records away and changes them in bulk. With every row on
+show ticked it offers **Select all 1,284 that match** (the source's `allIds`,
+or its pages read through); its buttons then get every id. **Export**, in its
+bar, writes the rows ticked — or, none ticked, every record the search finds —
+as an Excel workbook or a CSV file, in the browser (no library: the workbook is
+written in the list's part) or on your server (`exportRecords`); `"export":
+false` hides it. With `"bulkEdit": true` (or the fields) **Edit** sets one field
+to one value on the records chosen, after a question, by `writeMany` or a save
+per record, each record's `can` kept, and names what it could not change and
+why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
