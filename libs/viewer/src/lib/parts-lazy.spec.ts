@@ -2,14 +2,15 @@ import { createMemoryDataSource, type Page } from '@fieldia/core';
 import { datePart, pathPart, textPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
+import { customers, partners } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
-import { filtersPart, headPart, partsFor } from './viewer-parts';
+import { filtersPart, headPart, installListStyles, listPart, partsFor } from './viewer-parts';
 
 /**
  * Before its parts have come (parts.ts in @fieldia/widgets): a page that uses
  * none is drawn at once and asks for none; a page that draws from one — a
  * record's head, a split button, a work heading, a work item's text, a path
- * picker, a filter bar — is drawn whole once its parts have come, nothing of
+ * picker, a list, a filter bar — is drawn whole once its parts have come, nothing of
  * it before, its element busy meanwhile; a dialog opens once its parts are in.
  * This file starts with no part loaded (src/test-parts.ts leaves it so), and
  * its tests run in order: the first sees no part at all.
@@ -47,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, filtersPart, textPart, pathPart, datePart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -59,7 +60,10 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections({ type: 'section', id: 'g', title: 'G', children: [md] }), fields))).toEqual([headPart, textPart]);
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields))).toEqual([pathPart]);
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'links', widget: 'links' }), fields))).toEqual([textPart]);
-    expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([filtersPart]);
+    // A list: its screen's part, and its filter bar's beside it for a search by fields.
+    expect(partsFor(page({ type: 'list', id: 'l', columns: [] }))).toEqual([listPart]);
+    expect(partsFor(customers)).toEqual([listPart]);
+    expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([listPart, filtersPart]);
     // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box).
     expect(partsFor(BUG)).toEqual([headPart]);
     // The classic formatted text, the plain many2one: no part.
@@ -93,6 +97,40 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections(field('slot')), fields))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections(field('due'), field('lines')), fields), { date: own })).toEqual([]);
+  });
+
+  it('a list: nothing of it drawn, its element busy, until the list part has come; then the list whole, its records in', async () => {
+    expect(listPart.loaded).toBeUndefined();
+    expect(document.getElementById('fd-list-styles')).toBeNull();
+    const { host, handle } = mount(customers, { dataSource: partners() });
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('.fd-list')).toBeNull();
+    // What needs the list waits for it: the app's reload.
+    let reloaded = false;
+    const reload = handle.reload().then(() => (reloaded = true));
+    expect(reloaded).toBe(false);
+    await handle.drawn;
+    await reload;
+    expect(listPart.loaded).toBeDefined();
+    expect(filtersPart.loaded).toBeUndefined();
+    expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+    expect(host.querySelector('.fd-list-waiting')).toBeNull();
+    expect(host.querySelector('.fd-search-input')).not.toBeNull();
+    await until(() => host.querySelectorAll('.fd-list-table tbody tr.fd-list-row').length === 2);
+    expect(document.getElementById('fd-list-styles')).not.toBeNull();
+    // Drawn from the part now loaded: a second list is drawn at once.
+    const second = mount(customers, { dataSource: partners() });
+    expect(second.host.querySelector('.fd-list-table')).not.toBeNull();
+    expect(second.handle.element.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('the list’s look put in a page from its part, for what draws it without a list (the designer’s canvas): at once once the part is in', async () => {
+    const other = document.implementation.createHTMLDocument('canvas');
+    await installListStyles(other);
+    expect(other.getElementById('fd-list-styles')?.textContent).toContain('.fd-list-table');
+    // Once, however often it is asked for.
+    await installListStyles(other);
+    expect(other.querySelectorAll('#fd-list-styles')).toHaveLength(1);
   });
 
   it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {
@@ -228,6 +266,69 @@ describe('a part that cannot come', () => {
       expect(host.querySelector('[data-node="f-notes"]')).not.toBeNull();
       handle.destroy();
       jest.dontMock('./head-part');
+    });
+  });
+
+  /** A viewer of its own, whose list part cannot come while `offline.now` holds. */
+  async function offlineList() {
+    const offline = { now: true };
+    jest.doMock('./list-part', () => {
+      if (offline.now) throw new Error('offline');
+      return jest.requireActual('./list-part');
+    });
+    const { mountViewer: fresh } = await import('./viewer');
+    const { listPart: freshList } = await import('./viewer-parts');
+    const host = document.createElement('div');
+    document.body.append(host);
+    const opened: unknown[] = [];
+    const handle = fresh(host, { page: customers, dataSource: partners(), onOpenRecord: (id) => void opened.push(id) });
+    handles.push(handle);
+    await handle.drawn;
+    return { offline, host, handle, opened, freshList };
+  }
+
+  it('leaves a list saying “Loading…” in its place while it is asked for again, then the records could not be loaded, with Retry; Retry brings it in place', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { offline, host, handle, freshList } = await offlineList();
+      expect(freshList.loaded).toBeUndefined();
+      expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+      // The page round it is drawn; in the list's place, its words while the part is asked for again.
+      const holder = host.querySelector('.fd-list[data-node="list"]') as HTMLElement;
+      expect(holder.querySelector('.fd-list-waiting')?.textContent).toBe('Loading…');
+      expect(holder.querySelector('.fd-list-waiting')?.getAttribute('role')).toBe('status');
+      expect(holder.getAttribute('aria-busy')).toBe('true');
+      // It could not come again: the list's own words, and Retry.
+      await until(() => !holder.hasAttribute('aria-busy'));
+      const failed = holder.querySelector('.fd-list-failed') as HTMLElement;
+      expect(failed.hidden).toBe(false);
+      expect(failed.getAttribute('role')).toBe('alert');
+      expect(failed.textContent).toContain('Could not load the records.');
+      expect((holder.querySelector('.fd-list-waiting') as HTMLElement).hidden).toBe(true);
+      // Back online: Retry asks again, "Loading…" meanwhile, and the list takes the holder's place.
+      offline.now = false;
+      (failed.querySelector('button') as HTMLButtonElement).click();
+      expect((holder.querySelector('.fd-list-waiting') as HTMLElement).hidden).toBe(false);
+      await until(() => host.querySelectorAll('.fd-list-table tbody tr.fd-list-row').length === 2);
+      expect(freshList.loaded).toBeDefined();
+      expect(holder.isConnected).toBe(false);
+      expect(host.querySelectorAll('.fd-list[data-node="list"]')).toHaveLength(1);
+      expect(host.querySelector('.fd-list-waiting')).toBeNull();
+      // The app's reload is the list's own now.
+      await handle.reload();
+      expect(host.querySelectorAll('.fd-list-table tbody tr.fd-list-row')).toHaveLength(2);
+      jest.dontMock('./list-part');
+    });
+  });
+
+  it('opens a record the app asks for once the list has come, asking for the part again', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { offline, host, handle, opened } = await offlineList();
+      await until(() => !host.querySelector('.fd-list[data-node="list"]')?.hasAttribute('aria-busy'));
+      offline.now = false;
+      await handle.openRecord(2, { lit: false });
+      expect(opened).toEqual([2]);
+      expect(host.querySelector('.fd-list-table')).not.toBeNull();
+      jest.dontMock('./list-part');
     });
   });
 });

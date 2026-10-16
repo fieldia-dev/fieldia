@@ -50,7 +50,8 @@ import { browserPreferences, createWidget, displayValue, drawIcon, installStyles
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { upgradePage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
-import { listView, type ListViewFactory, type OpenRowOptions } from './list';
+import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
+import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
@@ -66,7 +67,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { headPart, partsFor, type HeadPart } from './viewer-parts';
+import { headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
@@ -2025,7 +2026,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     else if (layout.type === 'wizard') body = wizardLayout(layout);
     else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
     else if (layout.type === 'list') {
-      const list = listView({
+      const context: ListContext = {
         page,
         node: layout,
         form,
@@ -2044,7 +2045,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
         ...newListRecord(),
-      });
+      };
+      // The list comes in its part, which the page waited for; "Loading…" in its place where it could not come.
+      const list = listPart.loaded ? listPart.loaded.listView(context) : waitingList(listPart, context);
       cleanups.push(list.destroy);
       reloadList = list.reload;
       openInList = list.open;

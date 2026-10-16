@@ -3,20 +3,42 @@ import { choicePart, datePart, lazyPart, pathPart, textPart, widgetPart, type Pa
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
+import type * as ListModule from './list-part';
 import { workHeading } from './section-head';
 
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
 export type HeadPart = typeof HeadModule;
 /** The filters part: a list's filter bar. */
 export type FiltersPart = typeof FiltersModule;
+/** The list part: a list screen, its search bar and its stylesheet. */
+export type ListPart = typeof ListModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
 /** A list's filter bar, loaded the first time a list draws one. */
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
+/** A list screen — its table, search bar, pager and switcher — loaded the first time a page draws a list. */
+export const listPart: Part<ListPart> = lazyPart('list', () => import('./list-part'));
+
+/**
+ * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
+ * else as soon as it comes (settled then; a part that cannot come puts none). For what draws a list's look without the
+ * list: the designer's canvas.
+ */
+export function installListStyles(doc: Document): Promise<void> {
+  const loaded = listPart.loaded;
+  if (loaded) {
+    loaded.installListStyles(doc);
+    return Promise.resolve();
+  }
+  return listPart.load().then(
+    (part) => part.installListStyles(doc),
+    () => undefined
+  );
+}
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -27,7 +49,8 @@ const markdownAlone = (node: SectionNode) => {
 /**
  * The parts a page draws from (parts.ts in @fieldia/widgets): the head part for
  * a record's head, a button split, toggled or shown by its icon alone, or a
- * group's work heading; the filters part for a list's filter bar; and the
+ * group's work heading; the list part for a list, and the filters part beside
+ * it for its filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar) — unless the app's `widgets` draw those
  * fields; and those the app's `slots` name for the slots the page has (a Discussion's).
@@ -60,7 +83,10 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
-    else if (node.type === 'list' && node['search'] === 'fields') found.add(filtersPart);
+    else if (node.type === 'list') {
+      found.add(listPart);
+      if (node['search'] === 'fields') found.add(filtersPart);
+    }
     else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) found.add(part);
     else if (node.type === 'field' && typeof node['field'] === 'string') {
       const field = page.fields[node['field']];
