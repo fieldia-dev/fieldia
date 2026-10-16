@@ -18,6 +18,7 @@ import { wiHeadAction, wiHeadTokens } from '../shared/wi-header';
 import { wiTextDiscussion } from '../shared/wi-text';
 import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
+import { botLog, captchaSlot } from '../shared/captcha';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -94,6 +95,8 @@ const options: ViewerOptions = {
   pages: appPages,
   ...optionsFromQuery(params),
   slots: {
+    // The sign-up's captcha: a stand-in for the app's own Turnstile, reCAPTCHA or hCaptcha (shared/captcha.ts).
+    captcha: captchaSlot,
     // The app's delivery planner, which fails as it loads ("A part that fails").
     planner: plannerSlot,
     // The record's conversation, to-dos and followers, beside it.
@@ -184,6 +187,9 @@ if (name === 'fields') {
   const dir = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   document.getElementById('app')?.before(panelBar({ dataSource, pages: appPages, skin, locale, dir, look: page.look }, panelResults));
 }
+
+// The sign-up says under it what the app was told with each response: its bot check's report (shared/captcha.ts).
+if (name === 'signup') document.getElementById('app')?.after(botLog(document, handle.form));
 
 // The listing has a bar over it: ten photos as a phone takes them, added at once (shared/listing-photos.ts).
 if (name === 'listing-photos') document.getElementById('app')?.before(photosBar());

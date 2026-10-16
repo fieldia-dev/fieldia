@@ -14,6 +14,7 @@
       "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
     },
     "company": { "type": "char", "label": "Company" },
+    "phone": { "type": "char", "label": "Mobile phone", "help": "Only if the day changes." },
     "role": {
       "type": "selection",
       "label": "Your role",
@@ -53,9 +54,9 @@
         "title": "About you",
         "columns": 2,
         "children": [
-          { "type": "field", "id": "f-name", "field": "full_name", "placeholder": "Sara Hassan" },
+          { "type": "field", "id": "f-name", "field": "full_name", "placeholder": "Sara Hassan", "autocomplete": "name" },
           { "type": "field", "id": "f-email", "field": "email", "widget": "email", "placeholder": "sara@example.com" },
-          { "type": "field", "id": "f-company", "field": "company" },
+          { "type": "field", "id": "f-company", "field": "company", "autocomplete": "organization" },
           { "type": "field", "id": "f-role", "field": "role" },
           {
             "type": "field",
@@ -64,7 +65,8 @@
             "invisible": "role != 'other'",
             "required": "role == 'other'"
           },
-          { "type": "field", "id": "f-team", "field": "team_size", "invisible": "role != 'manager'" }
+          { "type": "field", "id": "f-team", "field": "team_size", "invisible": "role != 'manager'" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel" }
         ]
       },
       {
@@ -89,7 +91,9 @@
           { "type": "field", "id": "f-dietary", "field": "dietary", "invisible": "not attends_dinner", "colspan": 2 },
           { "type": "field", "id": "f-newsletter", "field": "newsletter" }
         ]
-      }
+      },
+      { "type": "slot", "id": "s-captcha", "name": "captcha" }
     ]
-  }
+  },
+  "botCheck": { "minSeconds": 3, "captcha": "captcha" }
 }
