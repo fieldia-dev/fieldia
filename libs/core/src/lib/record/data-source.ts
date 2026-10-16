@@ -67,6 +67,80 @@ export interface DataSource {
    * size) and is shown as it is.
    */
   upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>;
+  /**
+   * Change many records at once, the same value in each field given: a
+   * list's bulk edit, of the rows ticked or of every record the search
+   * finds. Answer with those not changed and why; every other one is taken
+   * as changed. Without it, the list saves each in turn (`save`, `partial`).
+   * Refuse a record this person may not change, or one changed since the
+   * version it was listed at (`versions`), as a save would.
+   */
+  writeMany?(request: WriteManyRequest): Promise<WriteManyResult>;
+  /**
+   * Write a list's export on the server, in place of the browser: for
+   * exports too big for a browser, or files the server words its own way.
+   * Answer with the file — its bytes (`data`: a Blob fits) or its address
+   * (`url`) — for the browser to save; with `{ message }` when the server
+   * hands it over its own way (an email on its way), the list saying it; or
+   * with `false` to let the list write it in the browser after all, as it
+   * does without this (a small export, say).
+   */
+  exportRecords?(request: ExportRequest): Promise<ExportedFile | { message: string } | false>;
+}
+
+/** The same value written in a field of each record: a list's bulk edit. */
+export interface WriteManyRequest {
+  model: string;
+  ids: RecordId[];
+  /** The fields written and their value, the same in each record: `{ state: 'active' }`. */
+  values: Values;
+  /** Those fields' definitions, as a save gets them. */
+  fields: Fields;
+  /** The version each record was listed at, by its id, where the list knew it: one changed since is refused, as a save over someone else's. */
+  versions?: Record<string, RecordVersion>;
+}
+
+export interface WriteManyResult {
+  /** Each record not changed, with why in the person's words — and, where the source has it, the problem as a save would throw it (a conflict's who and when). */
+  failed: { id: RecordId; message: string; problem?: SaveProblem }[];
+}
+
+/** A list's records to put in a file: those ticked, or every one its search finds. */
+export interface ExportRequest {
+  model: string;
+  format: 'xlsx' | 'csv';
+  /** The list's columns, in its order, each with its header's words. */
+  columns: { field: string; label: string }[];
+  /** The records ticked, by id; left out, every record `filter` finds. */
+  ids?: RecordId[];
+  /** The list's search, as `list` gets it. */
+  filter: ResolvedFilter[];
+  /** The list's order now. */
+  sort: SortOrder[];
+  /** How many records go. */
+  count: number;
+  /** The file's name, as the list would give it: "Customers 2026-10-16.xlsx". */
+  name: string;
+  /** The page's language, for values written as people there read them. */
+  locale: string;
+}
+
+/** A file for the browser to save: its bytes, or where to fetch them. */
+export interface ExportedFile {
+  name: string;
+  /** Its media type, when `data` does not say it. */
+  type?: string;
+  /** Its bytes: a Blob, an ArrayBuffer, a typed array, or text. */
+  data?: ExportBytes | ArrayBuffer | ArrayBufferView | string;
+  /** Where the browser fetches it, in place of `data`. */
+  url?: string;
+}
+
+/** A Blob, as far as an export reads one: core names no DOM types. */
+export interface ExportBytes {
+  readonly size: number;
+  readonly type: string;
+  arrayBuffer(): Promise<ArrayBuffer>;
 }
 
 /**

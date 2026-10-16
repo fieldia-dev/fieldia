@@ -32,8 +32,10 @@ import type {
   UploadFile,
   UploadRequest,
   UploadedFile,
+  WriteManyRequest,
+  WriteManyResult,
 } from './data-source';
-import { ConflictError, loadedRecord, saveRefused } from './data-source';
+import { ConflictError, loadedRecord, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
@@ -101,7 +103,12 @@ export interface MemoryDataSourceOptions {
   scheduler?: Scheduler;
 }
 
-export interface MemoryDataSource extends Required<DataSource> {
+/**
+ * Every member of a data source but `exportRecords`: a memory source leaves an
+ * export to the browser, as a source without a server of its own does. A test
+ * or a demo gives it one by setting it.
+ */
+export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords'>>, Pick<DataSource, 'exportRecords'> {
   readonly records: Record<string, Record<string, Values>>;
   readonly responses: SubmitRequest[];
   readonly calls: { method: keyof DataSource; request: unknown }[];
@@ -194,6 +201,33 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   /** The stored records a filter keeps. */
   const matchingRows = (model: string, filter: TotalsRequest['filter']): Values[] => Object.entries(table(model)).filter(([key, values]) => matchesFilter(withId(key, values), filter)).map(([, values]) => values);
 
+  /** A save, as a backend makes one: refused where the person may not, or over a newer version; else stored, its version moved on. */
+  function write(request: SaveRequest): SaveResult {
+    if (request.id !== null && table(request.model)[String(request.id)]) {
+      const can = permissions(request.model, request.id);
+      allowed(can, 'edit');
+      const locked = Object.keys(request.changes.values).filter((name) => can?.readonlyFields?.includes(name) || can?.hiddenFields?.includes(name));
+      if (locked.length) throw saveRefused({ kind: 'fields', message: 'You may not change these fields', fields: Object.fromEntries(locked.map((name) => [name, 'You may not change this field'])) });
+      const now = versionOf(request.model, request.id);
+      // A save that says which version it was opened at is checked; one that says none is not.
+      if (now && request.version && request.version.token !== now.token) {
+        throw new ConflictError({ version: now, theirs: readable(structuredCopy(table(request.model)[String(request.id)]), can) });
+      }
+    }
+    const id = request.id ?? nextId(request.model);
+    const stored: Values = { ...(table(request.model)[String(id)] ?? {}), ...structuredCopy(request.changes.values) };
+    for (const [name, ops] of Object.entries(request.changes.lines)) {
+      stored[name] = applyLines((stored[name] as Line[] | undefined) ?? [], ops);
+    }
+    for (const [name, ops] of Object.entries(request.changes.links)) {
+      stored[name] = applyLinks((stored[name] as RelatedRecord[] | undefined) ?? [], ops, relationOf(request.fields, name));
+    }
+    table(request.model)[String(id)] = stored;
+    const version = options.versions ? moveOn(request.model, id, me) : undefined;
+    const can = permissions(request.model, id);
+    return { id, values: readable(structuredCopy(stored), can), ...told(version, can) };
+  }
+
   function applyLines(current: Line[], ops: LineOp[]): Line[] {
     let lines = [...current];
     for (const op of ops) {
@@ -256,29 +290,26 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
-      if (request.id !== null && table(request.model)[String(request.id)]) {
-        const can = permissions(request.model, request.id);
-        allowed(can, 'edit');
-        const locked = Object.keys(request.changes.values).filter((name) => can?.readonlyFields?.includes(name) || can?.hiddenFields?.includes(name));
-        if (locked.length) throw saveRefused({ kind: 'fields', message: 'You may not change these fields', fields: Object.fromEntries(locked.map((name) => [name, 'You may not change this field'])) });
-        const now = versionOf(request.model, request.id);
-        // A save that says which version it was opened at is checked; one that says none is not.
-        if (now && request.version && request.version.token !== now.token) {
-          throw new ConflictError({ version: now, theirs: readable(structuredCopy(table(request.model)[String(request.id)]), can) });
+      return write(request);
+    },
+
+    async writeMany(request: WriteManyRequest): Promise<WriteManyResult> {
+      calls.push({ method: 'writeMany', request });
+      await pause();
+      const failed: WriteManyResult['failed'] = [];
+      // Each as a save of these fields alone would be: refused where the person may not, or where it changed since it was listed.
+      for (const id of request.ids) {
+        try {
+          if (!table(request.model)[String(id)]) throw new Error(`No ${request.model} record with id ${id}`);
+          const version = request.versions?.[String(id)];
+          write({ model: request.model, id, fields: request.fields, values: request.values, changes: { values: request.values, lines: {}, links: {} }, partial: true, ...(version ? { version } : {}) });
+        } catch (error) {
+          const problem = saveProblemOf(error);
+          const message = Object.values(problem.fields ?? {})[0] ?? problem.message;
+          failed.push({ id, message, problem });
         }
       }
-      const id = request.id ?? nextId(request.model);
-      const stored: Values = { ...(table(request.model)[String(id)] ?? {}), ...structuredCopy(request.changes.values) };
-      for (const [name, ops] of Object.entries(request.changes.lines)) {
-        stored[name] = applyLines((stored[name] as Line[] | undefined) ?? [], ops);
-      }
-      for (const [name, ops] of Object.entries(request.changes.links)) {
-        stored[name] = applyLinks((stored[name] as RelatedRecord[] | undefined) ?? [], ops, relationOf(request.fields, name));
-      }
-      table(request.model)[String(id)] = stored;
-      const version = options.versions ? moveOn(request.model, id, me) : undefined;
-      const can = permissions(request.model, id);
-      return { id, values: readable(structuredCopy(stored), can), ...told(version, can) };
+      return { failed };
     },
 
     async onchange(request: OnchangeRequest): Promise<OnchangeResult> {

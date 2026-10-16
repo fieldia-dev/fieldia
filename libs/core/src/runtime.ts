@@ -75,6 +75,7 @@ export type {
 export type { AddressSearchOptions } from './lib/format/address-search';
 export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-options';
 export { wideColumns } from './lib/format/columns';
+export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
 export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';
 export type {
   ActionStep,
@@ -171,6 +172,11 @@ export type {
   UploadSignal,
   UploadRequest,
   UploadedFile,
+  WriteManyRequest,
+  WriteManyResult,
+  ExportRequest,
+  ExportedFile,
+  ExportBytes,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
