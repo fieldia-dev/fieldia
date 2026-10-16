@@ -2175,6 +2175,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     today,
     write: (values) => write(values, 'step'),
     store: (values) => store(values),
+    mine: (field) => personal.has(field),
+    putBack(values, mine) {
+      write(values, 'step');
+      for (const name of mine) noteOrigin(name, 'person');
+    },
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
     save: saving,
@@ -2235,7 +2240,22 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   });
   const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
-  /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
+  /**
+   * Whether steps do something before their first save — set a status, call the app, open a page — so a record's
+   * button made of them saves first. Steps that start with the save (Save and close), or only check before it, need
+   * no save before them: theirs is the first.
+   */
+  function actsBeforeSaving(list: readonly ActionStep[]): boolean {
+    const first = list.findIndex((step) => step.do === 'save');
+    return first > 0 && list.slice(0, first).some((step) => step.do !== 'check');
+  }
+
+  /**
+   * A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. A
+   * record's button whose steps act and then save saves the record first when it is new or changed, as Flectra's
+   * button does: refused — a field it requires left empty — none of its steps run, so nothing it does happens to a
+   * record that cannot be saved.
+   */
   function press(source: ButtonNode | StatButton | MenuItem, scope: RunScope): Promise<RunResult> {
     const list: ActionStep[] = [...(source.steps ?? [])];
     if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
@@ -2250,6 +2270,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           const result: RunResult = { done: false, reason: 'no', message: confirm };
           emit('run', { id: scope.id, steps: list, result });
           return result;
+        }
+        if (page.data.kind === 'record' && actsBeforeSaving(list) && (state.recordId == null || state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0 || state.uploads.some(uploadGoing))) {
+          const first = await saving(scope.chain);
+          if (first) {
+            const result: RunResult = { done: false, step: { do: 'save' }, reason: first.reason, ...(first.message !== undefined ? { message: first.message } : {}), ...(first.error !== undefined ? { error: first.error } : {}) };
+            emit('run', { id: scope.id, steps: list, result });
+            return result;
+          }
         }
         return runTop(list, scope);
       })()

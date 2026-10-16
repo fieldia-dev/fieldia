@@ -9,7 +9,7 @@ import { splitValues } from '../format/words';
 import { fitTo } from './compute';
 import type { ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
-import { emptyValue, structuredCopy, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import { emptyValue, sameValue, structuredCopy, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 /**
  * The engine that runs steps — a button's, a moment's, or the app's own —
@@ -17,6 +17,11 @@ import { emptyValue, structuredCopy, type RecordId, type RelatedRecord, type Val
  * passed over; the first that fails or is refused stops the rest, and the
  * run's result says which and why. What the core cannot draw — a page opened,
  * words said, a question asked — it asks of the host the viewer gives.
+ *
+ * A run that saves is one piece of work, as a record's button is in Flectra:
+ * when its save, or a check before it, is refused, what its own steps wrote
+ * since its last save is put back — a status a button moved stays where it
+ * was, and a field it locked stays open to put right.
  */
 
 /** A button pressed, or a `call` step run: what the app's `onAction` is handed. */
@@ -163,7 +168,8 @@ export interface RunResult {
   /**
    * The place, among the steps run, of the one that stopped: for a step of
    * an `open`'s `then`, the open step's place; for a button's `action`, one
-   * past its steps. Absent when a button's `confirm` was answered No.
+   * past its steps. Absent when a button's `confirm` was answered No, or when
+   * the save a record's button makes before its steps was refused.
    */
   stoppedAt?: number;
   /** The step that stopped, wherever it was. */
@@ -203,6 +209,12 @@ export interface RunScope {
    * the run stops: its steps are not for that record.
    */
   generation?: number;
+  /**
+   * What the run's own steps wrote since its last save, by field: what it held
+   * before the first of them, whether that was the person's own change, and
+   * what the last wrote. Put back when the run's save is refused.
+   */
+  wrote?: Map<string, { before: Value; mine: boolean; after: Value }>;
 }
 
 /** What a run reaches its form by: the form gives these. */
@@ -217,6 +229,10 @@ export interface RunForm {
   write(values: Values): void;
   /** Write values the record holds where it is kept: no change to save. */
   store(values: Values): void;
+  /** Whether a field holds the person's own change, not one a step or the app wrote. */
+  mine(field: string): boolean;
+  /** Put back what a run's steps wrote, as `write` does; the fields in `mine` are the person's own changes again. */
+  putBack(values: Values, mine: readonly string[]): void;
   addLine(field: string, values: Values): void;
   /** Check fields as sending does: what is still typed in a box read first, a name being looked up waited for. */
   check(fields: readonly string[] | undefined): Stopped | null | Promise<Stopped | null>;
@@ -356,6 +372,38 @@ export function createRunner(form: RunForm) {
     return def;
   }
 
+  /** Write as a step does, noting in the run what each field held before its first write and what it holds now. */
+  function writeIn(scope: RunScope, names: readonly string[], write: () => void) {
+    const journal = (scope.wrote ??= new Map());
+    const before = new Map(names.filter((name) => !journal.has(name)).map((name) => [name, { before: structuredCopy(form.values()[name] ?? null) as Value, mine: form.mine(name) }]));
+    write();
+    for (const name of names) {
+      const first = journal.get(name) ?? before.get(name);
+      if (first) journal.set(name, { before: first.before, mine: first.mine, after: structuredCopy(form.values()[name] ?? null) as Value });
+    }
+  }
+
+  /**
+   * The run's save was refused: what its steps wrote since its last save is put back, each field only while it
+   * still holds what they wrote — a change made since by anyone else stays.
+   */
+  function putBack(scope: RunScope) {
+    const journal = scope.wrote;
+    if (!journal?.size) return;
+    const back: Values = {};
+    const mine: string[] = [];
+    // On the record it wrote to: another shown since holds none of it.
+    if (form.generation() === scope.generation) {
+      for (const [name, { before, mine: was, after }] of journal) {
+        if (!sameValue(form.values()[name], after)) continue;
+        back[name] = before;
+        if (was) mine.push(name);
+      }
+    }
+    journal.clear();
+    if (Object.keys(back).length) form.putBack(back, mine);
+  }
+
   async function ask(message: string): Promise<boolean> {
     if (form.host) return form.host.ask(message);
     if (form.confirm) return form.confirm(message);
@@ -391,9 +439,12 @@ export function createRunner(form: RunForm) {
     if (!result.saved) return { reason: 'closed' };
     // Its answers are for the record that opened it: another shown meanwhile takes none of them.
     if (form.generation() !== on) return form.gone();
-    if (step.into) form.write(into(step.into, result));
+    if (step.into) {
+      const values = into(step.into, result);
+      writeIn(scope, Object.keys(values), () => form.write(values));
+    }
     if (!step.then) return null;
-    const then = await runSteps(step.then, scope);
+    const then = await runSteps(step.then, scope, true);
     return then.done ? null : { reason: then.reason as RunStop, message: then.message, step: then.step, error: then.error };
   }
 
@@ -469,7 +520,7 @@ export function createRunner(form: RunForm) {
     if (answer.values) {
       const known: Values = {};
       for (const [name, value] of Object.entries(answer.values)) if (name in form.fields) known[name] = fit(form.fields[name], value);
-      form.write(known);
+      writeIn(scope, Object.keys(known), () => form.write(known));
     }
     if (answer.say !== undefined) {
       const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
@@ -536,6 +587,7 @@ export function createRunner(form: RunForm) {
       if (form.changed()) {
         const saved = await form.save(scope.chain);
         if (saved) return saved;
+        scope.wrote?.clear();
       }
       const kept = await form.letGo(scope.chain);
       if (kept) return kept;
@@ -573,6 +625,8 @@ export function createRunner(form: RunForm) {
   async function ownMove(scope: RunScope, move: () => Promise<Stopped | null>): Promise<Stopped | null> {
     const stopped = await move();
     scope.generation = form.generation();
+    // The record as it is now, loaded or another: what was written before is no longer the run's to put back.
+    scope.wrote?.clear();
     return stopped;
   }
 
@@ -580,12 +634,15 @@ export function createRunner(form: RunForm) {
     switch (step.do) {
       case 'set': {
         const def = fieldOf(step.field);
-        form.write({ [step.field]: fit(def, read(step.value, !EXPRESSIBLE.has(def.type))) });
+        const value = fit(def, read(step.value, !EXPRESSIBLE.has(def.type)));
+        writeIn(scope, [step.field], () => form.write({ [step.field]: value }));
         return null;
       }
-      case 'clear':
-        form.write({ [step.field]: emptyValue(fieldOf(step.field)) });
+      case 'clear': {
+        const value = emptyValue(fieldOf(step.field));
+        writeIn(scope, [step.field], () => form.write({ [step.field]: value }));
         return null;
+      }
       case 'addLine': {
         const def = fieldOf(step.field);
         if (def.type !== 'one2many') return cannot(`"${step.field}" is a ${def.type}; a line is added to a one2many`);
@@ -595,13 +652,17 @@ export function createRunner(form: RunForm) {
           if (!sub) return cannot(`The lines of "${step.field}" have no field "${name}"`);
           values[name] = fit(sub, read(source, !EXPRESSIBLE.has(sub.type)));
         }
-        form.addLine(step.field, values);
+        writeIn(scope, [step.field], () => form.addLine(step.field, values));
         return null;
       }
       case 'check':
         return form.check(step.fields);
-      case 'save':
-        return form.save(scope.chain);
+      case 'save': {
+        const stopped = await form.save(scope.chain);
+        // Saved: what the steps wrote is the record's now.
+        if (!stopped) scope.wrote?.clear();
+        return stopped;
+      }
       case 'reset':
         return form.reset(scope.chain);
       case 'goTo': {
@@ -649,7 +710,8 @@ export function createRunner(form: RunForm) {
     }
   }
 
-  async function runSteps(steps: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
+  /** Run steps; a run's own (not an open step's `then`, which its open step answers for) puts back what it wrote when its save is refused. */
+  async function runSteps(steps: readonly ActionStep[], scope: RunScope, inner = false): Promise<RunResult> {
     scope.generation ??= form.generation();
     for (let at = 0; at < steps.length; at++) {
       const step = steps[at];
@@ -663,6 +725,7 @@ export function createRunner(form: RunForm) {
         stopped = { reason: 'cannot', message: wordsOf(error), error };
       }
       if (stopped) {
+        if (!inner && (stopped.reason === 'save' || stopped.reason === 'check') && savesIn(steps)) putBack(scope);
         return {
           done: false,
           stoppedAt: at,
@@ -677,6 +740,11 @@ export function createRunner(form: RunForm) {
   }
 
   return { runSteps, ask };
+}
+
+/** Whether steps save, themselves or in an opened page's `then`. */
+function savesIn(steps: readonly ActionStep[]): boolean {
+  return steps.some((step) => step.do === 'save' || (step.do === 'open' && !!step.then && savesIn(step.then)));
 }
 
 /** What an expression reads in another form's answers, its fields unknown: a link as its id, links as their ids, a reference as "model,id", lines by their keys, a file by its name. */
