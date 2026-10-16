@@ -146,7 +146,16 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
         // As a date box reads it: the day it is, or why it is none ("Since: February 2026 has 28 days"); a date and
         // time as the instant its field keeps.
         const read = readDateText(text, { kind: date, order: dateOrder, locale, label: current.label, labels: words });
-        if (!read.ok) return wait(read.words);
+        if (!read.ok) {
+          // A day and time written the page's way where a day goes ("15/10/2026 14:30"): as one written the ISO way,
+          // the day put in the box and the time it leaves out said — never "not a whole date".
+          const moment = date === 'date' ? readDateText(text, { kind: 'datetime', order: dateOrder, locale, label: current.label, labels: words }) : null;
+          if (!moment?.ok || !moment.value) return wait(read.words);
+          const at = new Date(moment.value);
+          const two = (n: number) => String(n).padStart(2, '0');
+          value.value = typingText(`${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`, date, dateOrder, locale);
+          return wait(fill(words.timeLeftOut, { label: current.label, time: `${two(at.getHours())}:${two(at.getMinutes())}` }));
+        }
         if (read.value === null) return wait(words.enterDate.split('{example}').join(dateExample({ kind: date, order: dateOrder, locale })));
         // A day and time where a day goes: the day is put in the box and the time it leaves out said; Apply again takes it.
         if (read.timeLeftOut) {
