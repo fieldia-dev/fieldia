@@ -552,11 +552,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
 // The survey kinds loaded on first use (0.23): a ranking, a matrix, a slider, pictures to choose from, a colour,
 // properties, an address and a progress bar, with the rules only they use, out of this script into fieldia.survey.js
-// (ranking, matrix, slider, choice-images, colour, properties, address, progress and their two sheets: 35.1 of code).
+// (ranking, matrix, slider, choice-images, colour, properties, address, progress and their two sheets: 35.0 of code).
 // This script keeps the countries an address lists, which the designer and the map list too (countries.ts), and each
 // kind's value shown plainly before its part came — a ranking's order, a matrix's answers by row, a colour's code, an
 // address's lines, properties a line each, a slider in the number box (survey-plain.ts) — and the part's name in the
-// parts' table: 30.2 less (629.78 measured before, 599.60 after), to 599.7.
+// parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
 const BUDGET_KB = 599.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -825,8 +825,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
-// from the head of the page's own looks, cut out of the main script (survey 35.1, 12.2, as measured 35.09 and 12.13).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], survey: [35.1, 12.2] };
+// from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], survey: [35.0, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

@@ -718,13 +718,16 @@ const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dat
 
 // The survey kinds come in the survey part (survey-part.ts), each shown plainly meanwhile (survey-plain.ts): a slider's
 // number in the number box, pictures to choose from as the choices' own radios or boxes, a progress bar's number in words.
+// A property's rows and an editable progress bar's box are drawn by createWidget, handed to the part rather than imported
+// by it: a part that imported this module would make an app's bundler split it off with the part, and run it before
+// the widgets it holds (lines, cards) are there.
 const surveyKind = (real: (part: SurveyPart) => WidgetFactory, plain: WidgetFactory) => partFactory(surveyPart, real, plain);
 const sliderKind = surveyKind((part) => part.sliderWidget, numberWidget);
 const colourKind = surveyKind((part) => part.colourWidget, plainColour);
 /** A number shown as a bar that fills towards a maximum (progress.ts, in the survey part). */
-export const progressbarWidget: WidgetFactory = surveyKind((part) => part.progressbarWidget, labelWidget);
+export const progressbarWidget: WidgetFactory = surveyKind((part) => part.progressbarWidget(createWidget), labelWidget);
 /** A properties field, a row per property, each edited with the widget for its type (properties.ts, in the survey part). */
-export const propertiesWidget: WidgetFactory = surveyKind((part) => part.propertiesWidget, plainProperties);
+export const propertiesWidget: WidgetFactory = surveyKind((part) => part.propertiesWidget(createWidget), plainProperties);
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {

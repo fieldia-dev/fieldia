@@ -1,6 +1,6 @@
 import type { Field, Locale } from '@fieldia/core';
 import { installSurveyStyles } from './styles-survey';
-import { createWidget, type Widget, type WidgetFactory } from './widgets';
+import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
  * A number shown as a bar that fills towards a maximum, coloured by how far
@@ -11,6 +11,9 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  *   color      "auto", or always "success", "warning", "danger" or "info"
  *   showPercent  false to leave the percentage off the bar
  *   editable   true for a box beside the bar to type the value in
+ *
+ * The box is the number box, drawn by `widgetFor`: the main script's createWidget,
+ * which the registry hands over (widgets.ts), so this part never imports it.
  */
 
 const percents = new Map<Locale, Intl.NumberFormat>();
@@ -23,7 +26,7 @@ function percent(value: number, locale: Locale) {
   return format.format(value / 100);
 }
 
-export const progressbarWidget: WidgetFactory = (context) => {
+export const progressbarWidget = (widgetFor: (context: WidgetContext) => Widget): WidgetFactory => (context) => {
   const { field, node, id, document, locale = 'en' } = context;
   installSurveyStyles(document);
   const options = node.options ?? {};
@@ -53,7 +56,7 @@ export const progressbarWidget: WidgetFactory = (context) => {
     // The bar's own range is the box's least and most: a minus is refused where it starts at 0 or more, and a value
     // outside is said on leaving and at Save (checkInput), so the bar and its box never disagree.
     const ranged = { ...field, min, ...(maxField ? {} : { max: fixedMax }) } as Field;
-    box = createWidget({ ...context, field: ranged, node: { ...node, widget: undefined } });
+    box = widgetFor({ ...context, field: ranged, node: { ...node, widget: undefined } });
     bar.setAttribute('aria-hidden', 'true');
     element = document.createElement('div');
     element.className = 'fd-progressbar-edit';

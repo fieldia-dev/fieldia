@@ -1,4 +1,6 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
 import { choicePart, datePart, pathPart, surveyPart, textPart } from './widget-parts';
@@ -78,6 +80,24 @@ describe('a part', () => {
     // Their neighbours stay in the main script: a plain choice, checkboxes, a number box, a rating, JSON as text.
     for (const [name, widget] of [['desk', undefined], ['order', undefined], ['days', undefined], ['days', 'rating'], ['home', undefined]] as const) {
       expect(widgetPart(fields[name], { type: 'field', id: name, field: name, ...(widget ? { widget } : {}) })).toBeUndefined();
+    }
+  });
+
+  it('never reaches the registry (widgets.ts) but for its types: a bundler would split the registry off with the part, and run it before the widgets it holds', () => {
+    // The modules a module takes values from, or hands on: its imports and re-exports of this folder, types aside.
+    const takes = (name: string) =>
+      [...readFileSync(join(__dirname, `${name}.ts`), 'utf8').matchAll(/^(?:import|export)\s+(type\s+)?\{[^}]*\}\s+from\s+'\.\/([a-z-]+)'/gm)].filter(([, types]) => !types).map(([, , from]) => from);
+    const parts = readdirSync(__dirname).filter((file) => file.endsWith('-part.ts')).map((file) => file.slice(0, -3));
+    expect(parts).toEqual(expect.arrayContaining(['text-part', 'path-part', 'choice-part', 'date-part', 'survey-part']));
+    for (const part of parts) {
+      const reached = new Set<string>();
+      const visit = (name: string): void => {
+        if (reached.has(name)) return;
+        reached.add(name);
+        for (const next of takes(name)) visit(next);
+      };
+      visit(part);
+      expect([part, reached.has('widgets')]).toEqual([part, false]);
     }
   });
 
