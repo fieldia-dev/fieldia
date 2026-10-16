@@ -22,6 +22,6 @@ test('locked by its save while a phone was typed: Next asks to let the phone go,
   const ask = page.getByRole('alertdialog');
   await expect(ask).toContainText('Discard your changes?');
   await ask.getByRole('button', { name: 'Discard' }).click();
-  await expect(page.locator('#app .fd-title input')).toHaveValue('Order two');
+  await expect(page.locator('#app .fd-title textarea')).toHaveValue('Order two');
   expect(problems).toEqual([]);
 });

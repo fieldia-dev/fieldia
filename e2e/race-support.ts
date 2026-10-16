@@ -103,7 +103,7 @@ export async function harness(page: Page, more: { options?: string; source?: str
     },
     { options: more.options, source: more.source, pageJson: more.page }
   );
-  if (more.wait !== false) await expect(page.locator('#app .fd-title input')).toHaveValue('Order one');
+  if (more.wait !== false) await expect(page.locator('#app .fd-title textarea')).toHaveValue('Order one');
   return problems;
 }
 

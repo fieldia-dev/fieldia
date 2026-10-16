@@ -20,7 +20,7 @@ async function openDemo(page: Page) {
   page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(DEMO);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
 }
 
@@ -57,7 +57,7 @@ test('the answer to lead 1’s change, come after the pager moved on, is never l
   await email.press('Tab');
   await onchange.asked();
   await form.getByRole('button', { name: 'Next record' }).click();
-  await expect(form.locator('.fd-title input')).toHaveValue('Flat in Maadi');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Flat in Maadi');
   await onchange.release();
   await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((c: { method: string }) => c.method === 'load').length)).toBeGreaterThan(1);
   await page.waitForTimeout(300);
@@ -65,7 +65,7 @@ test('the answer to lead 1’s change, come after the pager moved on, is never l
   await expect(field(form, 'notes').locator('textarea, input').first()).toHaveValue('');
   // Back to lead 1: the pager saves what changed first — lead 1's notes must not be written into lead 2.
   await form.getByRole('button', { name: 'Previous record' }).click();
-  await expect(form.locator('.fd-title input')).toHaveValue('Villa in Sheikh Zayed');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Villa in Sheikh Zayed');
   expect(await stored(page, 2)).toMatchObject({ name: 'Flat in Maadi', notes: '' });
   expect(problems).toEqual([]);
 });
@@ -83,7 +83,7 @@ for (const how of ['openRecord', 'reload'] as const) {
     // Left: the name is looked up, as leaving the box does.
     await page.keyboard.press('Tab');
     await page.evaluate((h) => (h === 'openRecord' ? (window as any).zz.handle.form.openRecord(2) : (window as any).zz.handle.reload()), how);
-    await expect(page.locator('#app .fd-title input')).toHaveValue(how === 'openRecord' ? 'Order two' : 'Order one');
+    await expect(page.locator('#app .fd-title textarea')).toHaveValue(how === 'openRecord' ? 'Order two' : 'Order one');
     await zzRelease(page, 'search');
     await page.waitForTimeout(300);
     await zzRelease(page, 'search');

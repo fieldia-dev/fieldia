@@ -11,7 +11,7 @@ import { VARIANTS } from './variants';
 const bar = (page: Page) => page.locator('.fd-record-bar');
 const pagerText = (page: Page) => bar(page).locator('.fd-record-pager-text');
 const gear = (page: Page) => bar(page).locator('.fd-record-gear');
-const title = (page: Page) => page.locator('.fd-title [data-field="name"] input');
+const title = (page: Page) => page.locator('.fd-title [data-field="name"] textarea');
 
 for (const variant of VARIANTS) {
   test.describe(`${variant} · around a record`, () => {

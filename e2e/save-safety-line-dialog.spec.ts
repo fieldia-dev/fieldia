@@ -20,7 +20,7 @@ test('a line’s dialog saved after the pager moved on never writes order 1’s 
   await expect(dialog.locator('.fd-field[data-field="label"] input')).toHaveValue('Desk');
   await dialog.locator('.fd-field[data-field="qty"] input').fill('9');
   await zzRelease(page, 'save');
-  await expect(page.locator('#app .fd-title input')).toHaveValue('Order two');
+  await expect(page.locator('#app .fd-title textarea')).toHaveValue('Order two');
   await dialog.getByRole('button', { name: 'Save & Close' }).click();
   await expect(dialog).toHaveCount(0);
   // Order 2 keeps its own line, and nothing of order 1's is a change to save in it.

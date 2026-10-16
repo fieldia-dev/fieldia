@@ -19,7 +19,7 @@ async function openDemo(page: Page) {
   page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(DEMO);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
 }
 

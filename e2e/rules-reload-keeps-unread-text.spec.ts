@@ -18,7 +18,7 @@ async function refusedThenTyped(page: Page, typed: string) {
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto('/save-safety/');
   const form = yours(page);
-  await expect(form.locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(form.locator('.fd-title textarea')).toHaveValue(/Villa/);
   await field(form, 'phone').locator('input').fill('+20 100 999 8887');
   await page.locator('.ss-button').click();
   await expect(page.locator('.ss-said')).toContainText('Mona saved');

@@ -20,7 +20,7 @@ async function openDemo(page: Page) {
   page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(DEMO);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
 }
 
@@ -50,7 +50,7 @@ async function hold(page: Page, method: string, answer?: string) {
 async function onLead2Typing(page: Page) {
   const form = yours(page);
   await page.keyboard.press('Alt+n');
-  await expect(form.locator('.fd-title input')).toHaveValue('Flat in Maadi');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Flat in Maadi');
   const budget = field(form, 'budget').locator('input');
   await budget.fill('2600000');
   await budget.press('Tab');
@@ -88,7 +88,7 @@ test('Duplicate answering after the pager moved on leaves Sara on lead 2 with th
   await page.waitForTimeout(400);
   // The copy is made; the form is not taken from lead 2 to it, and what Sara typed in lead 2 is not dropped unasked.
   expect(await state(page)).toMatchObject({ recordId: 2, dirty: ['budget'] });
-  await expect(form.locator('.fd-title input')).toHaveValue('Flat in Maadi');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Flat in Maadi');
   await expect(field(form, 'budget').locator('input')).toHaveValue(/2,?600,?000/);
   expect(problems).toEqual([]);
 });
@@ -101,7 +101,7 @@ test('Delete answering after the pager moved on leaves order 2, and the phone ty
   await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
   await zzHeld(page, 'delete');
   await page.keyboard.press('Alt+n');
-  await expect(page.locator('#app .fd-title input')).toHaveValue('Order two');
+  await expect(page.locator('#app .fd-title textarea')).toHaveValue('Order two');
   const phone = page.locator('#app .fd-field[data-field="phone"] input');
   await phone.fill('+2 typed');
   await phone.press('Tab');

@@ -18,7 +18,7 @@ async function savedThenUnread(page: Page) {
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto('/save-safety/');
   const form = yours(page);
-  await expect(form.locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(form.locator('.fd-title textarea')).toHaveValue(/Villa/);
   const phone = field(form, 'phone').locator('input');
   await phone.fill('+20 100 123 4568');
   await phone.press('ControlOrMeta+Enter');

@@ -286,9 +286,9 @@ test('the sheet of shortcuts, by “?” and by ⌘K', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
   await expect(row(page, 'f-city')).toBeFocused();
-  // From Find anything.
+  // From Find anything — by its name: a field picked, "keyboard" alone finds its Keyboard on a phone first.
   await page.keyboard.press('ControlOrMeta+k');
-  await page.keyboard.type('keyboard');
+  await page.keyboard.type('keyboard shortcuts');
   await page.keyboard.press('Enter');
   await expect(sheet).toBeVisible();
   await page.keyboard.press('Escape');
