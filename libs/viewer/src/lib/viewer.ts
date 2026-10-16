@@ -728,6 +728,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let leaving = false;
       /** The problem last said politely as the box was left: one shown while typing (a paste past the most) is said as it is left. */
       let saidLeaving = '';
+      /** The box was just left: the next drawing of it says its problem, though leaving it raised none new. */
+      let justLeft = false;
       wrapper.addEventListener('focusin', () => {
         typing = true;
         setAttr(error, 'aria-live', null);
@@ -747,6 +749,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           } finally {
             leaving = false;
           }
+          justLeft = true;
           // Not at once: focus also leaves when a redraw removes the focused part
           // (a deleted line's button), and that redraw must finish first.
           queueMicrotask(() => update(form.getState()));
@@ -785,11 +788,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const message = state.errors[node.field];
         // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once. Shown
         // already while it was typed in (a paste past its most), it is said now, as the box is left.
-        if (leaving && message && message !== saidLeaving) {
+        const left = leaving || justLeft;
+        justLeft = false;
+        if (left && message && message !== saidLeaving) {
           setAttr(error, 'aria-live', 'polite');
           if (message === error.textContent) error.textContent = '';
         }
-        if (leaving) saidLeaving = message ?? '';
+        if (left) saidLeaving = message ?? '';
         else if (!message) saidLeaving = '';
         setHidden(error, !message);
         setText(error, message ?? '');
