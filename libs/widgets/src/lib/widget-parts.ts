@@ -52,6 +52,13 @@ export function datePartIn(): DatePart | undefined {
 }
 /** A table of lines and a many2many's table of records, loaded the first time a page shows one. */
 export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
+/**
+ * The lines part, asked for, for another part: a list's Import reads each cell of a file with its readers. A
+ * function, as `datePartIn` is, for a part takes the main script's names as they stood when it started.
+ */
+export function loadLinesPart(): Promise<LinesPart> {
+  return linesPart.load();
+}
 /** Flectra's business widgets — a statusbar, priority stars, hours, a per cent, a distribution, tax totals, payments — loaded the first time a page shows one. */
 export const businessPart: Part<BusinessPart> = lazyPart('business', () => import('./business-part'));
 /** A file field, a picture field, a signature's pad and a PDF under its file box, loaded the first time a page shows one. */
@@ -76,6 +83,10 @@ export const slotsPart: Part<SlotsPart> = lazyPart('slots', () => Promise.all([i
  * `phone`, or the field's own `country` or `shown`): every country's numbers, the box with its country, its links.
  */
 export const phonePart: Part<PhonePart> = lazyPart('phone', () => import('./phone-part'));
+/** The phone part, asked for, for another part: a list's Import reads a phone column so. A function, as `loadLinesPart`. */
+export function loadPhonePart(): Promise<PhonePart> {
+  return phonePart.load();
+}
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

@@ -3,6 +3,7 @@ import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pat
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
+import type * as ImportModule from './import-part';
 import type * as ListModule from './list-part';
 import { workHeading } from './section-head';
 
@@ -12,6 +13,8 @@ export type HeadPart = typeof HeadModule;
 export type FiltersPart = typeof FiltersModule;
 /** The list part: a list screen, its search bar and its stylesheet. */
 export type ListPart = typeof ListModule;
+/** The import part: a list's Import, its dialog and its stylesheet. */
+export type ImportPart = typeof ImportModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -19,6 +22,8 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 /** A list screen — its table, search bar, pager and switcher — loaded the first time a page draws a list. */
 export const listPart: Part<ListPart> = lazyPart('list', () => import('./list-part'));
+/** A list's Import — a file read, its columns matched, its rows checked and written — loaded the first time Import is pressed. */
+export const importPart: Part<ImportPart> = lazyPart('import', () => import('./import-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -38,7 +43,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, importPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {

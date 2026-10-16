@@ -144,6 +144,81 @@ export interface ViewerLabels {
   bulkWhy: string;
   bulkChangedSince: string;
   /**
+   * A list's Import: its button and dialog (`{title}`, the list's); a file dropped or chosen (`{most}` rows at most),
+   * read (`{name}`), or why it cannot be (`{why}`: one of the reasons after it); its rows and columns (`{n}`); a CSV
+   * file's characters and separator; each column matched to the field it goes into, those left out (`{columns}`) and a
+   * required field none fills (`{field}`); the rows checked (`{done}` of `{n}`), those ready and those refused (`Row
+   * {n}: {why}`), the file to fix them in; the rows written, stopped, done or not (`{n}` of `{total}`); Undo; and why a
+   * cell does not read: a link's name (`{label}`, `{text}`) or a yes or no. `…One` for a count the language says apart.
+   */
+  import: string;
+  importTitle: string;
+  importDrop: string;
+  importChoose: string;
+  importHint: string;
+  importReading: string;
+  importCannotRead: string;
+  importNotSheet: string;
+  importOldExcel: string;
+  importLocked: string;
+  importDamaged: string;
+  importNoRows: string;
+  importNoUnzip: string;
+  importTooMany: string;
+  importColumnLetter: string;
+  importFileRows: string;
+  importFileRowsOne: string;
+  importSheet: string;
+  importEncoding: string;
+  importUnicode: string;
+  importSeparator: string;
+  importComma: string;
+  importSemicolon: string;
+  importTab: string;
+  importBar: string;
+  importColumn: string;
+  importExample: string;
+  importField: string;
+  importLeaveOut: string;
+  importLeftOut: string;
+  importNeeded: string;
+  importMoved: string;
+  importCheck: string;
+  importCheckOne: string;
+  importChecking: string;
+  importReady: string;
+  importReadyOne: string;
+  importRefused: string;
+  importRefusedOne: string;
+  importRow: string;
+  importMore: string;
+  importMoreOne: string;
+  importDownload: string;
+  importPreview: string;
+  importNone: string;
+  importStart: string;
+  importStartOne: string;
+  importWhy: string;
+  importFixName: string;
+  importing: string;
+  importStop: string;
+  importDone: string;
+  importDoneOne: string;
+  importStopped: string;
+  importSome: string;
+  importFailed: string;
+  importNotMade: string;
+  importUndo: string;
+  importUndoAsk: string;
+  importUndoAskOne: string;
+  importUndoing: string;
+  importUndone: string;
+  importUndoneOne: string;
+  importUndoSome: string;
+  importNoneCalled: string;
+  importSeveralCalled: string;
+  importNotYesNo: string;
+  /**
    * A list's search bar: the box (`{field}` and `{text}` in a suggestion), its
    * chips (`{label}`), the Filters, Group By and Favourites menu (`{name}`),
    * and the conditions a custom filter offers.
@@ -389,6 +464,73 @@ const en: ViewerLabels = {
   bulkSome: '{done} of {n} updated. Not changed:',
   bulkWhy: '{name}: {why}',
   bulkChangedSince: '{name} changed it after it was listed.',
+  import: 'Import',
+  importTitle: 'Import into {title}',
+  importDrop: 'Drop an Excel or CSV file here',
+  importChoose: 'Choose a file',
+  importHint: 'Its first row names the columns. Up to {most} rows at a time.',
+  importReading: 'Reading {name}…',
+  importCannotRead: '{name} cannot be read: {why}.',
+  importNotSheet: 'it is not an Excel workbook (.xlsx) or a CSV file',
+  importOldExcel: 'it is an older Excel file (.xls), or one locked with a password: save it as .xlsx without a password, or as CSV',
+  importLocked: 'it is locked with a password: save it without one',
+  importDamaged: 'it is damaged',
+  importNoRows: 'it holds no rows',
+  importNoUnzip: 'this browser cannot open Excel workbooks: save it as CSV',
+  importTooMany: '{name} has {n} rows: at most {most} can be imported here at once. Split it into files of {most} rows or fewer.',
+  importColumnLetter: 'Column {letter}',
+  importFileRows: '{name}: {n} rows',
+  importFileRowsOne: '{name}: {n} row',
+  importSheet: 'Sheet',
+  importEncoding: 'Characters',
+  importUnicode: 'Unicode ({name})',
+  importSeparator: 'Values separated by',
+  importComma: 'Commas',
+  importSemicolon: 'Semicolons',
+  importTab: 'Tabs',
+  importBar: 'Vertical bars',
+  importColumn: 'Column in the file',
+  importExample: 'First value',
+  importField: 'Goes into',
+  importLeaveOut: 'Leave out',
+  importLeftOut: 'Left out: {columns}',
+  importNeeded: '{field} is required, and no column fills it: every row would be refused.',
+  importMoved: '{field} comes from “{column}” now; “{other}” is left out.',
+  importCheck: 'Check {n} rows',
+  importCheckOne: 'Check {n} row',
+  importChecking: 'Checking {done} of {n}…',
+  importReady: '{n} rows can be imported.',
+  importReadyOne: '{n} row can be imported.',
+  importRefused: '{n} rows cannot be imported:',
+  importRefusedOne: '{n} row cannot be imported:',
+  importRow: 'Row {n}: {why}',
+  importMore: 'And {n} more, in the file to fix.',
+  importMoreOne: 'And {n} more, in the file to fix.',
+  importDownload: 'Download the rows to fix',
+  importPreview: 'The first rows, as they will be saved',
+  importNone: 'None of the rows can be imported.',
+  importStart: 'Import {n} records',
+  importStartOne: 'Import {n} record',
+  importWhy: 'Why it was not imported',
+  importFixName: '{name} – not imported',
+  importing: 'Importing {done} of {n}…',
+  importStop: 'Stop',
+  importDone: '{n} records imported.',
+  importDoneOne: '{n} record imported.',
+  importStopped: 'Stopped: {n} of {total} records imported.',
+  importSome: '{n} of {total} records imported. Not imported:',
+  importFailed: 'Could not import the records.',
+  importNotMade: 'the data source made no record of it',
+  importUndo: 'Undo the import',
+  importUndoAsk: 'Delete the {n} records this import made?',
+  importUndoAskOne: 'Delete the {n} record this import made?',
+  importUndoing: 'Deleting {done} of {n}…',
+  importUndone: 'Import undone: {n} records deleted.',
+  importUndoneOne: 'Import undone: {n} record deleted.',
+  importUndoSome: '{done} of {n} records deleted. Not deleted:',
+  importNoneCalled: '{label}: nothing is called “{text}”',
+  importSeveralCalled: '{label}: more than one is called “{text}”',
+  importNotYesNo: '{label}: “{text}” is neither yes nor no',
   search: 'Search…',
   searchLabel: 'Search',
   searchFor: 'Search {field} for: {text}',

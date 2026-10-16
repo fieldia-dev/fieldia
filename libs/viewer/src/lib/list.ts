@@ -1,6 +1,7 @@
 import {
   facetsToFilter,
   groupByFields,
+  importFields,
   ownZone,
   type ButtonNode,
   type DayCount,
@@ -28,12 +29,13 @@ import type { ViewerLabels } from './labels';
 import { daysFilter, periodDays } from './list-days';
 import { askBulkValue, bulkOffered, bulkQuestion, lockedOut, writeBulk, type BulkList, type KnownRecord } from './list-bulk';
 import { everyId } from './list-every';
-import { exportList, type ExportFormat, type ExportList, type ExportWhich } from './list-export';
+import { csvOf, csvSeparator, exportList, saveFile, type ExportFormat, type ExportList, type ExportWhich } from './list-export';
 import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { searchBar } from './search-bar';
-import { filtersPart } from './viewer-parts';
+import { filtersPart, importPart } from './viewer-parts';
+import { xlsxOf, XLSX_TYPE } from './xlsx';
 
 export interface ListContext {
   page: Page;
@@ -575,10 +577,15 @@ export function listView(context: ListContext): ListView {
   const reportWords = el('p', { class: 'fd-list-report-words' });
   const reportList = el('ul', { class: 'fd-list-report-list' });
   const dismiss = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.dismiss);
-  const report = el('div', { class: 'fd-list-report', role: 'alert', hidden: '' }, reportWords, reportList, dismiss);
+  // An import's end: the rows not imported in a file to fix, and Undo, beside Dismiss.
+  const reportFix = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-report-fix', hidden: '' }, labels.importDownload);
+  const reportUndo = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-report-undo', hidden: '' }, labels.importUndo);
+  const report = el('div', { class: 'fd-list-report', role: 'alert', hidden: '' }, reportWords, reportList, el('div', { class: 'fd-list-report-tools' }, reportFix, reportUndo, dismiss));
+  /** What a report's Dismiss gives the focus back to: the button whose work it reports. */
+  let reported: HTMLElement = edit;
   dismiss.addEventListener('click', () => {
     report.hidden = true;
-    edit.focus();
+    reported.focus();
   });
   /** Let go of every record chosen, those past the page too. */
   const clearAll = () => {
@@ -1053,6 +1060,8 @@ export function listView(context: ListContext): ListView {
           if (destroyed) return;
           reportWords.textContent = fill(labels.bulkSome, { done: number(done), n: number(n) });
           reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
+          reportFix.hidden = reportUndo.hidden = true;
+          reported = edit;
           report.hidden = false;
         } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.bulkDoneOne : labels.bulkDone, { n: number(done) }), 'success');
         await Promise.all([load(), viewParts.reload()]);
@@ -1060,6 +1069,100 @@ export function listView(context: ListContext): ListView {
     } finally {
       editing = false;
     }
+  }
+
+  // Import, in the list's bar: records made from an Excel or CSV file, in a dialog of its own (the import part, loaded
+  // the first time it is pressed). Asked for by the page (`import`), and only where the source can make records and a
+  // field can be filled: a link's by its name where the source can search, a choice the app lists where it lists them.
+  const importOffered = importFields(page, node).filter((name) => {
+    const def = page.fields[name];
+    if (def.type === 'many2one' || def.type === 'many2many') return !!context.dataSource?.search;
+    if (def.type === 'selection' && def.optionsFrom) return !!context.dataSource?.options;
+    return true;
+  });
+  const importOn = importOffered.length > 0 && !!(context.dataSource?.createMany || context.dataSource?.save);
+  // A tray with an arrow out of it, unless the app's icons have their own "upload".
+  const importIcon = drawIcon(doc, 'upload', { upload: '<path d="M12 15V5M7.5 9.5L12 5l4.5 4.5"/><path d="M4 15v4.5h16V15"/>', ...context.icons });
+  importIcon?.setAttribute('aria-hidden', 'true');
+  const importButton = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-list-import-button', 'aria-haspopup': 'dialog' }, ...(importIcon ? [importIcon] : []), labels.import);
+  importButton.hidden = !importOn;
+  importButton.addEventListener('click', () => void importFile());
+
+  /** A file's rows made records: the dialog; then the records again, and how it ended said under the bar, with Undo. */
+  function importFile(): Promise<void> {
+    const source = context.dataSource;
+    if (!importOn || !source) return Promise.resolve();
+    return busy(importButton, async () => {
+      let part;
+      try {
+        part = await importPart.load();
+      } catch {
+        context.say?.(labels.importFailed, 'danger');
+        return;
+      }
+      if (destroyed) return;
+      const end = await part.openImport({
+        page,
+        node,
+        form,
+        model,
+        dataSource: source,
+        doc,
+        from: element,
+        labels,
+        locale,
+        fill,
+        number,
+        fields: importOffered,
+        icons: context.icons,
+        files: { xlsxOf, csvOf, csvSeparator, saveFile, xlsxType: XLSX_TYPE },
+      });
+      if (!end || destroyed) return;
+      if ('message' in end) {
+        context.say?.(end.message, 'info');
+        return;
+      }
+      const made = end.made.length;
+      const one = new Intl.PluralRules(locale).select(made) === 'one';
+      reportWords.textContent = end.stopped
+        ? fill(labels.importStopped, { n: number(made), total: number(end.total) })
+        : end.notImported.length
+          ? fill(labels.importSome, { n: number(made), total: number(end.total) })
+          : fill(one ? labels.importDoneOne : labels.importDone, { n: number(made) });
+      reportList.replaceChildren(...end.notImported.slice(0, 50).map(({ number: row, why }) => el('li', {}, fill(labels.importRow, { n: number(row), why }))));
+      reportFix.hidden = !end.notImported.length;
+      reportFix.onclick = () => void end.downloadFix(end.notImported);
+      const undo = end.undo;
+      reportUndo.hidden = !undo || !made || !context.ask;
+      reportUndo.onclick = undo ? () => void undoImport(end.made.map(({ id }) => id), undo) : null;
+      reported = importButton;
+      report.hidden = false;
+      await Promise.all([load(), viewParts.reload()]);
+    });
+  }
+
+  /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
+  async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
+    const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
+    if (!context.ask || !(await context.ask(fill(one ? labels.importUndoAskOne : labels.importUndoAsk, { n: number(ids.length) }))) || destroyed) return;
+    await busy(reportUndo, async () => {
+      const { done, failed } = await undo(ids, (at, of) => {
+        if (!destroyed) progress.textContent = fill(labels.importUndoing, { done: number(at), n: number(of) });
+      });
+      if (destroyed) return;
+      reportFix.hidden = reportUndo.hidden = true;
+      if (failed.length) {
+        const names = await namesOf(failed.map(({ id }) => id));
+        if (destroyed) return;
+        reportWords.textContent = fill(labels.importUndoSome, { done: number(done), n: number(ids.length) });
+        reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
+      } else {
+        report.hidden = true;
+        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.importUndoneOne : labels.importUndone, { n: number(done) }), 'success');
+        importButton.focus();
+      }
+      await Promise.all([load(), viewParts.reload()]);
+    });
   }
 
   /** Records' names, as the list shows them: from the rows on show, else asked of the source by their ids. */
@@ -1081,9 +1184,10 @@ export function listView(context: ListContext): ListView {
   const element = el(
     'div',
     { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none' },
-    el('div', { class: 'fd-list-bar' }, search.element, progress, exportBox, views, ...(fieldsSearch ? [] : [pager])),
-    // A list with no box to choose a row has nothing to act on.
-    ...(choose ? [selection, report] : []),
+    el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, views, ...(fieldsSearch ? [] : [pager])),
+    // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
+    ...(choose ? [selection] : []),
+    report,
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   showAs(view);
