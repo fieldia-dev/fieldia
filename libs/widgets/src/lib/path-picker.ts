@@ -2,7 +2,7 @@ import { foldDigits, foldForSearch, stripMarks, type JsonValue, type RelatedReco
 import { floatUnder } from './float';
 import { drawIcon } from './icons';
 import { quoted, refusalHint } from './input-rules';
-import { fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
+import { fillIn, maker, rightToLeft, setAttr, setHidden, typeInto, wordsFor } from './kind-parts';
 import { scrollToRow } from './pick-list';
 import { stillShown } from './shown';
 import { installPathStyles } from './styles-path';
@@ -605,6 +605,11 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   return {
     element,
     focus: () => input.focus(),
+    // Words typed in the plain box before this one came: still the person's, found as they are typed on.
+    takeTyped: (typed) => {
+      typeInto(input, typed);
+      return true;
+    },
     destroy: () => {
       close();
       // Words still being found are still read for a save: its reader goes once they are.

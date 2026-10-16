@@ -1,11 +1,11 @@
-import { checkValue, couldBeMonth, foldDigits, MESSAGES, stripMarks, type Field, type Form, type Locale, type Value } from '@fieldia/core';
+import { checkValue, couldBeMonth, foldTyped, MESSAGES, stripMarks, type Field, type Form, type Locale, type Value } from '@fieldia/core';
 import { withCalendar } from './calendar';
 import { dateExample, dateOrderOf, dateShape, localOf, readDateText, restingText, typingText, type DateKind, type DateReader } from './date-text';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
-import { boxPurpose, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { boxPurpose, fillIn, maker, setAttr, typeInto, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { bounds, markBounds, type DayLimits } from './limits';
-import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
+import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /**
  * Fieldia's own box for a date, a date and time, and a time of day: a text
@@ -65,7 +65,8 @@ const MAY_TYPE: Record<DateKind, RegExp> = {
 };
 /** How many characters a text has that no date or time is written with: a word on its way to a month's name is none. */
 function strangers(text: string, kind: DateKind, locale?: Locale): number {
-  let t = foldDigits(stripMarks(text));
+  // A full-width keyboard's slash and colon ("１５／１０", "１４：３０") are a date's and a time's, as the readers read them.
+  let t = foldTyped(text);
   if (kind !== 'time') t = t.replace(/\p{L}+/gu, (word) => (couldBeMonth(word, locale) ? ' ' : word));
   return (t.match(MAY_TYPE[kind]) ?? []).length;
 }
@@ -78,7 +79,7 @@ const WHOLE_DATETIME = new RegExp(`[\\sT]\\d{1,2}\\s*[:.hH]\\s*\\d{2}$|\\s\\d{1,
 
 /** A typed date or time whole enough to take while it is still typed: its year of four digits (its day, written year first), its minutes. */
 function whole(text: string, kind: DateKind): boolean {
-  const t = foldDigits(stripMarks(text)).trim();
+  const t = foldTyped(text).trim();
   if (kind === 'time') return WHOLE_TIME.test(t);
   if (kind === 'datetime') return WHOLE_DATETIME.test(t);
   return /^\d{4}/.test(t) ? /\d{2}$/.test(t) : /\d{4}$/.test(t);
@@ -118,6 +119,8 @@ export interface DateBox {
   update(state: Pick<WidgetState, 'value' | 'readonly' | 'invalid' | 'describedBy'>): void;
   /** Text typed and not yet read is read now, as if the box were left: Enter, a cell closed. */
   settle(): void;
+  /** Text typed in a plain box before this one came, taken as typed: focused, read as this box is left. */
+  take(typed: TypedText): void;
   /** Why a value (as its field would hold it) breaks its limits, in the page's words: what the calendar refuses. */
   refuse(value: string): string | undefined;
   destroy(): void;
@@ -156,16 +159,16 @@ export function dateRules(input: HTMLInputElement, reader: DateReader): InputRul
       }
       const replacing = (input.selectionStart ?? 0) === 0 && (input.selectionEnd ?? 0) >= input.value.length;
       if (read.ok && read.value) {
-        // A whole date takes the box's place, written the page's way.
-        input.setSelectionRange(0, input.value.length);
+        // A whole date takes the box's place, written the page's way (`whole`: where keys wait after a refused one, it
+        // joins them as it was pasted instead, the hold's rule).
         const taken = typingText(read.value, kind, reader.order, locale);
-        return read.timeLeftOut ? { text: taken, say: fillIn(words.timeLeftOut, { label: reader.label, time: read.timeLeftOut }) } : { text: taken };
+        return read.timeLeftOut ? { text: taken, whole: true, say: fillIn(words.timeLeftOut, { label: reader.label, time: read.timeLeftOut }) } : { text: taken, whole: true };
       }
       // A piece of one, put where the caret is; never a text no date is written with, nor a whole one that does not read.
       if (plain && !replacing && !strangers(plain, kind, locale)) return { text: plain };
-      // A date it cannot tell the century of, or a date whose time does not read (seconds a box kept to the minute would
-      // drop), is a date all the same: why it was not taken is said.
-      if (!read.ok && (read.problem === 'shortYear' || (read.problem === 'time' && kind === 'datetime'))) return { refuse: read.words };
+      // A whole date or time that does not read is refused saying why, as its reader says it — 31/02 "February 2026 has
+      // 28 days", a time with seconds "is not a time" — never only "not a date"; a time's box never calls it a date.
+      if (!read.ok && (kind === 'time' || read.problem !== 'unfinished')) return { refuse: read.words };
       return { refuse: fillIn(words.notPastedDate, { text: quoted(text) }) };
     },
   };
@@ -220,6 +223,13 @@ export function dateBox(options: DateBoxOptions): DateBox {
     // left (its change), the field holding what it held as the write came should it not read.
     if (!typing()) entered = { value: form.getState().values[name], text: restingText(form.getState().values[name], kind, locale) };
     const text = input.value;
+    // Typed back to what it showed as it was entered: the value it came with, as it came (never rewritten to the
+    // reader's own way of keeping it, seconds and all).
+    if (entered && text === entered.text) {
+      write((entered.value ?? null) as string | null);
+      if (unreadNow()) form.setUnread(name, null);
+      return;
+    }
     if (!stripMarks(text).trim()) {
       write(null);
       if (unreadNow()) form.setUnread(name, null);
@@ -283,6 +293,13 @@ export function dateBox(options: DateBoxOptions): DateBox {
   return {
     input,
     settle,
+    take(typed) {
+      typeInto(input, typed, () => {
+        // Entered as the plain box was: its text then is what was shown for the value it held.
+        entered = { value: typed.entered, text: typingText(typed.entered, kind, order, locale) };
+        checks.accept();
+      });
+    },
     refuse(value) {
       // The field's own limits, in the page's words: before its earliest, after its latest, a day it may not fall on.
       return checkValue(field, value, false, MESSAGES[locale] ?? MESSAGES.en);
@@ -333,6 +350,10 @@ export function dateBoxWidget(kind: DateKind): WidgetFactory {
       focus: () => box.input.focus(),
       update: (state) => box.update(state),
       destroy: () => box.destroy(),
+      takeTyped: (typed) => {
+        box.take(typed);
+        return true;
+      },
     };
     if (kind === 'time' || !into) return inner;
     return withCalendar(inner, context, kind, { weekNumbers: node.options?.['weekNumbers'] === true, refuse: (value) => box.refuse(value), into });

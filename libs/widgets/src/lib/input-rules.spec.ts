@@ -392,10 +392,11 @@ describe('a number box keeps to its field', () => {
     keys(input, '12345678901234567890');
     expect(value()).toBe(123456789012345);
     expect(hintSays()).toBe('Seats takes at most 15 digits');
+    // Digits [10, 1] keep one place after the mark, so nine before it, as the field's check counts them (df827a7).
     const area = numberBox({ type: 'float', label: 'Area', digits: [10, 1] });
     keys(area.input, '12345678901');
-    expect(area.value()).toBe(1234567890);
-    expect(hintSays()).toBe('Area takes at most 10 digits');
+    expect(area.value()).toBe(123456789);
+    expect(hintSays()).toBe('Area takes at most 9 digits before the decimal point');
   });
 });
 

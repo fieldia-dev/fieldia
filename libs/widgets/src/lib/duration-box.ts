@@ -1,8 +1,8 @@
 import type { NumberLimits, Value } from '@fieldia/core';
-import { boxPurpose, describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { boxPurpose, describeState, fillIn, maker, setAttr, typeInto, wordsFor } from './kind-parts';
 import { guard, leftWords, numberFits, numberKeyboard, numberRules, quoted, refusalHint, unreadWords, type NumberBox } from './input-rules';
-import { formatDuration, parseDuration, parsePercentage, percentFormat, percentPlaces } from './duration';
-import type { WidgetContext, WidgetFactory } from './widgets';
+import { decimalHours, formatDuration, hoursKept, parseDuration, parsePercentage, percentFormat, percentPlaces } from './duration';
+import type { TypedText, WidgetContext, WidgetFactory } from './widgets';
 
 /**
  * The boxes hours and a per cent are typed in, as they are shown — hours as
@@ -20,7 +20,17 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  */
 function shownBox(
   context: WidgetContext,
-  way: { show(value: number): string; parse(text: string): number | null | undefined; unit?: string; className: string; percent?: boolean; duration?: boolean; places?: number }
+  way: {
+    show(value: number): string;
+    parse(text: string): number | null | undefined;
+    /** What is said of text read (its reading named), under the box once it is read. */
+    said?(text: string, value: number | null): string | null;
+    unit?: string;
+    className: string;
+    percent?: boolean;
+    duration?: boolean;
+    places?: number;
+  }
 ) {
   const { form, name, field, node, id, document, labels, locale = 'en' } = context;
   const make = maker(document);
@@ -44,10 +54,26 @@ function shownBox(
   const checks = guard(input, numberRules(box), hint);
   const unreadNow = () => form.getState().unread?.[name];
   let entered: Value | undefined;
-  input.addEventListener('focus', () => (entered = form.getState().values[name]));
+  /**
+   * The text the box showed for the value as it was entered: shown rounded — hours to the minute, a per cent to its
+   * places — it is never read back as the value. Nothing typed, or typed back to it, the value stays as it came.
+   */
+  let enteredText: string | null = null;
+  input.addEventListener('focus', () => {
+    entered = form.getState().values[name];
+    enteredText = input.value;
+  });
   input.addEventListener('input', () => {
     // Written while the person is elsewhere (the browser's autofill): what the field held as it came is kept should it not read.
-    if (document.activeElement !== input) entered = form.getState().values[name];
+    if (document.activeElement !== input) {
+      entered = form.getState().values[name];
+      enteredText = null;
+    }
+    if (input.value === enteredText) {
+      if ((form.getState().values[name] ?? null) !== (entered ?? null)) form.setValue(name, (entered ?? null) as Value);
+      if (unreadNow()) form.setUnread(name, null);
+      return;
+    }
     const value = way.parse(input.value);
     // Not yet, or not as it stands ("25.555" in a box of two places, on its way to "25.555,5"): left, it is said.
     if (value === undefined || (!way.duration && !numberFits(input.value, box))) return;
@@ -64,6 +90,8 @@ function shownBox(
       checks.accept();
     }
     const text = input.value;
+    // Passed through, nothing typed: the value stays as it came, never the rounded picture of it read back.
+    if (!held && text === enteredText && !unreadNow()) return true;
     const parsed = way.parse(text);
     const unreadable = parsed === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : null;
     // A value the box held as it was entered (one from outside with more places) is let be: check names it.
@@ -72,6 +100,10 @@ function shownBox(
       if (unreadNow()) form.setUnread(name, null);
       // What reads and fits is the field's, as typed ("-3" held after its refused minus): check says its least and most.
       if (parsed !== undefined && parsed !== (form.getState().values[name] ?? null)) form.setValue(name, parsed);
+      // Hours written with a point and two digits are hours with a decimal, as Flectra reads them: "6.45" is 06:27,
+      // never 06:45. Said once the box is read, never taken so in silence.
+      const said = way.said?.(text, parsed ?? null);
+      if (said) hint.show(said);
       return true;
     }
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
@@ -82,11 +114,21 @@ function shownBox(
   input.addEventListener('blur', () => {
     if (input.readOnly) return;
     if (read()) input.value = shown(form.getState().values[name]);
+    enteredText = null;
   });
   return {
     element,
     focus: () => input.focus(),
     destroy: () => checks.destroy(),
+    // What was typed in the plain box before this one came: this box's own, as typed, never the value made of it.
+    takeTyped: (typed: TypedText) => {
+      typeInto(input, typed, () => {
+        entered = typed.entered;
+        enteredText = shown(typed.entered);
+        checks.accept();
+      });
+      return true;
+    },
     update(state: { value: Value | undefined; readonly: boolean; invalid: boolean; required: boolean; describedBy?: string }) {
       const typing = document.activeElement === input;
       const unread = unreadNow();
@@ -107,10 +149,16 @@ function shownBox(
   };
 }
 
-/** Hours typed and shown as HH:MM. */
+/** Hours typed and shown as HH:MM; typed, kept to the field's places when it has them (`hoursKept`). */
 export const durationWidget: WidgetFactory = (context) => {
-  const locale = context.locale ?? 'en';
-  return shownBox(context, { show: formatDuration, parse: (text) => parseDuration(text, locale), className: 'fd-duration', duration: true });
+  const { field, node, labels, locale = 'en' } = context;
+  return shownBox(context, {
+    show: formatDuration,
+    parse: (text) => hoursKept(parseDuration(text, locale), field),
+    said: (text, value) => (value !== null && decimalHours(text) ? fillIn(wordsFor(labels, locale).hoursDecimal, { label: node.label ?? field.label, text: quoted(text.trim()), time: formatDuration(value) }) : null),
+    className: 'fd-duration',
+    duration: true,
+  });
 };
 
 /** A fraction typed and shown as a per cent: 0.25 is "25", "%" after it. */

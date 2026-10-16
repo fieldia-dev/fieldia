@@ -11,7 +11,7 @@ export { fileShown, readFile, INLINE_FILE_WARNING, SHRINK_DEFAULTS } from './lib
 export type { Going, GoingItem } from './lib/files-going';
 export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
-export { jsonProblem, type JsonProblem } from './lib/json-problem';
+export { jsonProblem, keptExactly, readJson, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
 export * from './lib/preferences';
 export * from './lib/numbers';

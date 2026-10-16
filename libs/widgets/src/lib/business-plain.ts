@@ -1,8 +1,8 @@
 import { placesOfCurrency, type LineField, type RecordId, type RelatedRecord, type Value } from '@fieldia/core';
 import { displayValue } from './display';
 import { distributionWords } from './distribution';
-import { parseDuration, parsePercentage, shownNumber } from './duration';
-import { quoted } from './input-rules';
+import { hoursKept, parseDuration, parsePercentage, percentPlaces, shownNumber } from './duration';
+import { leftWords, numberFits, quoted, unreadWords, type NumberBox } from './input-rules';
 import { boxPurpose, fillIn, setAttr, setText, wordsFor } from './kind-parts';
 import { formatMoney, formatNumber } from './numbers';
 import type { WidgetContext, WidgetFactory, WidgetState } from './widgets';
@@ -70,10 +70,13 @@ function moneyOf({ node, locale = 'en' }: WidgetContext, values: WidgetState['va
 export const plainState = plainWords(({ value }, { field, locale }) => displayValue(field as LineField, value, {}, locale));
 
 /**
- * Hours and a per cent in a plain text box: shown as a cell writes them, "06:30" and "25%", and read as they are typed
- * with the main script's readers, "6:30" and "25". Each keystroke that reads is the field's value at once; text that
- * does not read (yet) is the field's unread text, which Save refuses, so the part's own box shows it as it stands when
- * it takes this one's place, and nothing typed is lost.
+ * Hours and a per cent in a plain text box: shown as a cell writes them, "06:30" and "25%", and read as the part's own
+ * box reads them, with the main script's readers and the same limits — a per cent's places, hours kept to the field's.
+ * What reads and fits as it is typed is the field's value at once; as the box is left (or a save reads it first: a
+ * change), text that does not read, or that the field cannot hold ("12.345" in a per cent of two places), is kept
+ * unread with why (`FormState.unread`), the field holding what it held as the box was entered: Save refuses it, and the
+ * part's own box shows it as it stands when it takes this one's place. Entered and left with nothing typed, the value
+ * stays as it came, never the rounded picture of it read back.
  */
 export const plainNumber: WidgetFactory = ({ form, name, field, node, id, document, labels, locale = 'en' }) => {
   const percent = node.widget === 'percentage';
@@ -82,20 +85,54 @@ export const plainNumber: WidgetFactory = ({ form, name, field, node, id, docume
   for (const [key, value] of Object.entries(boxPurpose(node, { autocomplete: 'off' }))) input.setAttribute(key, value);
   if (node.placeholder) input.placeholder = node.placeholder;
   input.setAttribute('data-fd-plain', '');
-  const read = (text: string) => (percent ? parsePercentage(text, locale) : parseDuration(text, locale));
+  const min = 'min' in field && typeof field.min === 'number' ? field.min : undefined;
+  // The part's box's limits: a per cent's places and least are the per cent's.
+  const box: NumberBox & { percent?: boolean } = {
+    label: node.label ?? field.label,
+    locale,
+    labels,
+    duration: !percent,
+    percent,
+    limits: () => (percent ? { percent: true, places: percentPlaces(field), ...(min !== undefined ? { min: min * 100 } : {}) } : {}),
+  };
+  const parse = (text: string) => (percent ? parsePercentage(text, locale) : hoursKept(parseDuration(text, locale), field));
   const unread = () => form.getState().unread?.[name];
   const shown = (value: Value | undefined) => (typeof value === 'number' ? shownNumber(node.widget, field, value, locale) ?? '' : value === null || value === undefined ? '' : String(value));
-  input.addEventListener('input', () => {
-    const value = read(input.value);
-    if (value === undefined) {
-      form.setUnread(name, { text: input.value, message: fillIn(wordsFor(labels, locale).notANumber, { label: node.label ?? field.label, text: quoted(input.value) }) });
-      return;
-    }
-    if (unread()) form.setUnread(name, null);
-    if ((form.getState().values[name] ?? null) !== value) form.setValue(name, value);
+  let entered: Value | undefined;
+  let enteredText: string | null = null;
+  input.addEventListener('focus', () => {
+    entered = form.getState().values[name];
+    enteredText = input.value;
   });
+  input.addEventListener('input', () => {
+    if (document.activeElement !== input) [entered, enteredText] = [form.getState().values[name], null];
+    // Typed back to what it showed as it was entered: the value as it came.
+    const back = input.value === enteredText;
+    const value = back ? entered : parse(input.value);
+    // Not yet, or not as it stands ("25.555" in a per cent of two places, on its way to "25.555,5"): left, it is said.
+    if (value === undefined || (!back && percent && !numberFits(input.value, box))) return;
+    if (unread()) form.setUnread(name, null);
+    if ((form.getState().values[name] ?? null) !== (value ?? null)) form.setValue(name, (value ?? null) as Value);
+  });
+  /** What is typed, read: taken when it reads and fits, else kept unread with why. True when taken. */
+  const read = (): boolean => {
+    const text = input.value;
+    if (text === enteredText && !unread()) return true;
+    const value = parse(text);
+    const words = value === undefined ? (unreadWords(text, box) ?? fillIn(wordsFor(labels, locale).notANumber, { label: box.label, text: quoted(text) })) : value === (entered ?? null) ? null : leftWords(text, box);
+    if (words === null) {
+      if (unread()) form.setUnread(name, null);
+      if (value !== undefined && (form.getState().values[name] ?? null) !== value) form.setValue(name, value);
+      return true;
+    }
+    if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
+    form.setUnread(name, { text, message: words });
+    return false;
+  };
+  input.addEventListener('change', () => !input.readOnly && read());
   input.addEventListener('blur', () => {
-    if (!unread()) input.value = shown(form.getState().values[name]);
+    if (!input.readOnly && read()) input.value = shown(form.getState().values[name]);
+    enteredText = null;
   });
   return {
     element: input,
