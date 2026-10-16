@@ -35,6 +35,54 @@ mine's read — is laid on no other record, as a save's already was
 - `warnOnLeave` (viewer, React, Vue, Angular): the browser's Back, Reload or a
   closed tab ask first while a change is not saved. Off unless set.
 
+**The input rules held for names, tables and ways out.** A check of 0.21's
+input rules on 0.23.0 found values handed on, saved or let go over what the
+person typed; each way is now one rule:
+
+- **A run of steps reads what is typed first.** A button's steps, its key's,
+  a line's button's and the app's `form.run` read every box — waiting while a
+  name is looked up — before the first step that reads the form or hands its
+  values on (a `call`, `set`, an `open` with values, a `when`…), and stop on
+  text that does not read, said under its box: "1.5" in a whole number is
+  never handed to the app as 1, nor a customer's name typed as the one before.
+  A moment's run (`on.change`, `afterSave`) takes the values as they are.
+- **Text that does not read is the person's work.** After a save, a way out
+  asks about "12a" as it asks about "12" (`workAtRisk`); a conflict's Reload
+  keeps it in its box beside the changes it sets aside.
+- **A name typed is taken as the person meant it** — by a link, its tags, a
+  reference, a path and a choice typed by name. Words that name none, or
+  several, stay as typed when the box is left, kept unread with why: a save is
+  refused in words, never made with the record the box held, however fast the
+  source answers; Escape puts that back. Two records of one name are said
+  ("more than one is called …"), never the first taken; a record of exactly
+  the name typed is taken whatever row the list reached; a path's Ctrl+Enter
+  reads the words as a save does, however soon it is pressed; a name past the
+  search's limit is asked for exactly; a tag already chosen, typed again, is
+  said to be there.
+- **In a table**: a grid cell left with a name of none keeps its words,
+  marked, with why; a line's dialog opened while a name is looked up waits for
+  it; `confirmDelete` asks over a line holding only text typed; tags waiting
+  for room are taken by a save once there is room; a reference's name found
+  after its model changed is let go.
+- The Enter an IME takes its word with is the IME's: never a name box's, a
+  list's or the grid's.
+- A grid paste reads a spreadsheet's quoted cells (line breaks, tabs, quotes
+  inside) as one cell, names an amount in another currency as its box does,
+  and leaves words past a column's most, saying by how much.
+- A list's custom filter says the time a day leaves out when it is written
+  the page's way too ("15/10/2026 14:30"); and a press of a button just after
+  a refused paste is the button's: words said or unsaid as a press leaves a box
+  wait for the release, so nothing under the pointer moves.
+- `SearchRequest.exact` (optional): only the records named exactly the query.
+  A box asks so for a typed name a search's first answers did not hold; a
+  source that leaves it out still works.
+- What an app sees change: a button's or `form.run`'s steps stop (reason
+  `check`) over text that does not read, where they ran with the value under
+  it; and words that name nothing, left in a link, tags, a reference, a path or
+  a choice typed by name, stay in the box (unread) instead of the old record
+  coming back — a save is refused until they are put right or Escape puts back
+  what the box held.
+
 **Upgrading:** for an app with none of 0.22's data source members, two things
 are new: a line's dialog asks before Escape drops a change, and the `save`
 event's `values` are the record as that save left it — a change typed while it
