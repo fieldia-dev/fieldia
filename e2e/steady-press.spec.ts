@@ -7,9 +7,9 @@ import { node, open, screen } from './support';
  * saves and the record's next button slides into its place: the second click
  * of the double-click lands on a button the person never saw there, and it is
  * not taken for it — a leave not approved, an appointment not confirmed, a
- * customer not asked about blocking. Once the pointer moves, or a moment
- * later, that button takes a press as any does; a key never waits. And a
- * question a button asks opens on Cancel, so Enter never answers it Yes.
+ * customer not asked about blocking. A click of its own on that button is
+ * taken as any is; a key never waits. And a question a button asks opens on
+ * Cancel, so Enter never answers it Yes.
  */
 
 const current = (page: Page) => page.locator('.fd-header .fd-statusbar [aria-current="step"]');
@@ -71,7 +71,7 @@ test.describe('a double-click on Save', () => {
     await expect(current(page)).toHaveText('Booked');
     expect((await stored(page, 'clinic.appointment', 4001)).state).toBe('booked');
     expect((await stored(page, 'clinic.appointment', 4001)).deposit_amount).toBe(250);
-    // Pressed again a moment after the press it refused, where it stands, Confirm is taken: never a dead button.
+    // Clicked once more a moment later, a click of its own, where it stands: Confirm is taken — a click is never lost.
     await page.waitForTimeout(600);
     await page.mouse.click(at.x, at.y);
     await expect(current(page)).toHaveText('Confirmed');

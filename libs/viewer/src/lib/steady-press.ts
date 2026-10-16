@@ -2,32 +2,36 @@
  * A press lands on what the person aimed at. Save hides itself the moment it
  * saves, and the button beside it slides into its place: the second click of a
  * double-click on Save would press that one — "Approve", "Confirm", "Block" —
- * though the person never saw it there. So a press on a button that has come
- * under a pointer that has not moved since it last saw what was there — the
- * button it pressed or rested on hid, moved or was drawn over — is not taken:
- * it goes nowhere, and the focus stays where it was. Presses there stay refused
- * for half a second; one after that is taken, as is any once the pointer moves
- * (a mouse more than a double-click's few pixels, a finger a tap's; a finger
- * lifts between taps, so a tap a second after the last is a new look). Nothing is
- * disabled or dimmed — the buttons show as they are — and a key (Enter, Space,
- * a button's own key) or a program's `click()` is never refused.
+ * though the person never saw it there. So a click that goes on a double or a
+ * triple click (the browser counts them: the pointer not moved past a few
+ * pixels, the clicks a moment apart) is not taken by a bar's button that was
+ * not where the first click of it landed — it goes nowhere, and the focus
+ * stays where it was. A finger's double tap the same: a second tap a moment
+ * after the first, where it landed, on a bar's button that came there since.
+ * A single click is always taken, wherever the button came from, and so is a
+ * key (Enter, Space, a button's own key) or a program's `click()`. Nothing is
+ * disabled or dimmed: the buttons show as they are.
  */
 
-/** How far, in CSS pixels, a second press may land from the first and still be the same press: a double-click's, a double tap's. */
-const SLOP: Record<string, number> = { mouse: 4, pen: 4, touch: 16 };
-/** How long presses on a button that came under a still pointer stay refused, from the first refused, in ms. */
-const SETTLE_MS = 500;
-/** A finger lifts between taps, so it is still only for a double tap's moment: a tap this long after the last is a new look, in ms. */
-const TAP_MS = 1000;
+/** How far, in CSS pixels, a second tap may land from the first and still be a double tap. */
+const TAP_SLOP = 16;
+/** How long after a tap a second one is a double tap, in ms. */
+const TAP_MS = 500;
 
 /** What is pressed: a button, a link, a summary. */
 const PRESSABLE = 'button, [role="button"], a[href], summary';
+/**
+ * The bars whose buttons hide and show as the record changes, so that one slides into another's place: a sheet's
+ * header (Save, Discard, the record's buttons, its statusbar), a page's actions and foot, a wizard's Back and Next,
+ * the bar over a record, a work item's head, a dialog's head and foot, a question's Cancel and OK. A line's × in a
+ * table is not one of them: lines deleted one after another, each × coming up under the pointer, are deleted.
+ */
+const BARS = '.fd-header, .fd-actions, .fd-wizard-nav, .fd-page-footer, .fd-record-bar, .fd-head-actions, .fd-form-dialog-head, .fd-form-dialog-foot';
 
-/** What the pointer last saw: where it was, the button under it then, and that button's place and words. */
-interface Seen {
+/** Where a press landed and what it landed on: the button, its place and its words. */
+interface Landed {
   x: number;
   y: number;
-  /** When it was seen. */
   at: number;
   button: Element | null;
   rect: { x: number; y: number; width: number; height: number } | null;
@@ -40,32 +44,25 @@ interface Seen {
  */
 export function steadyPresses(scope: HTMLElement, now: () => number = () => scope.ownerDocument.defaultView?.performance.now() ?? Date.now()): () => void {
   const doc = scope.ownerDocument;
-  let seen: Seen | null = null;
-  /** When the first press since the pointer last saw what was there was refused; null when none was. */
-  let refusedAt: number | null = null;
+  /** Where the first click of the click going on landed (a mouse's), or the last tap (a finger's). */
+  let first: Landed | null = null;
+  let lastTap: Landed | null = null;
   /** The press refused: its mousedown and its click go nowhere. */
   let swallow = false;
+  /** The pointer of the press going on. */
+  let pointerType = 'mouse';
 
   const pressable = (target: EventTarget | null): Element | null => (target instanceof Element ? target.closest(PRESSABLE) : null);
-  const slop = (event: PointerEvent) => SLOP[event.pointerType] ?? SLOP['mouse'];
-  const far = (event: PointerEvent, from: Seen) => Math.hypot(event.clientX - from.x, event.clientY - from.y) > slop(event);
+  /** A bar's button of this scope: one that may have slid into another's place. */
+  const barred = (button: Element | null): button is Element => !!button && scope.contains(button) && !!button.closest(BARS);
 
-  function look(event: PointerEvent) {
-    const button = pressable(event.target);
+  function land(event: MouseEvent, button: Element | null): Landed {
     const rect = button?.getBoundingClientRect();
-    seen = {
-      x: event.clientX,
-      y: event.clientY,
-      at: now(),
-      button,
-      rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
-      words: button?.textContent ?? '',
-    };
-    refusedAt = null;
+    return { x: event.clientX, y: event.clientY, at: now(), button, rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null, words: button?.textContent ?? '' };
   }
 
-  /** Whether `now` is the button that was seen there: the same one, or one drawn again in its place with its words. */
-  function stayed(was: Seen, button: Element): boolean {
+  /** Whether `button` is the one that was there: the same, or one drawn again in its place with its words. */
+  function stayed(was: Landed, button: Element): boolean {
     if (was.button === button) return true;
     if (!was.button || was.button.isConnected || !was.rect) return false;
     const rect = button.getBoundingClientRect();
@@ -73,31 +70,36 @@ export function steadyPresses(scope: HTMLElement, now: () => number = () => scop
     return was.words === (button.textContent ?? '') && same(rect.x, was.rect.x) && same(rect.y, was.rect.y) && same(rect.width, was.rect.width) && same(rect.height, was.rect.height);
   }
 
-  const onMove = (event: PointerEvent) => {
-    // A finger only moves while it is down: a tap elsewhere is seen at its press.
-    if (event.pointerType === 'touch' || !event.isPrimary) return;
-    if (!seen || far(event, seen)) look(event);
-  };
-
-  const onDown = (event: PointerEvent) => {
+  const onPointerDown = (event: PointerEvent) => {
     swallow = false;
     if (!event.isPrimary) return;
+    pointerType = event.pointerType || 'mouse';
+    if (pointerType !== 'touch') return;
+    // A finger: a second tap where the first landed, a moment after it, on a bar's button that came there since.
     const button = pressable(event.target);
-    const was = seen;
-    const at = now();
-    const still = was && !far(event, was) && (event.pointerType !== 'touch' || at - was.at < TAP_MS);
-    if (button && scope.contains(button) && was && still && !stayed(was, button)) {
-      refusedAt ??= at;
-      if (at - refusedAt < SETTLE_MS) {
-        swallow = true;
-        return;
-      }
+    const was = lastTap;
+    const double = !!was && now() - was.at < TAP_MS && Math.hypot(event.clientX - was.x, event.clientY - was.y) <= TAP_SLOP;
+    if (double && barred(button) && !stayed(was as Landed, button)) {
+      swallow = true;
+      return;
     }
-    look(event);
+    lastTap = land(event, button);
   };
 
   const onMouseDown = (event: MouseEvent) => {
-    // Its focus stays where it was: the button it fell on was never chosen.
+    if (pointerType === 'touch') {
+      // Its focus stays where it was: the button it fell on was never chosen.
+      if (swallow) event.preventDefault();
+      return;
+    }
+    const button = pressable(event.target);
+    // The browser's count of the clicks going on: 1 starts one, 2 and on go on with it where it began.
+    if (event.detail <= 1 || !first) {
+      swallow = false;
+      first = land(event, button);
+      return;
+    }
+    swallow = barred(button) && !stayed(first, button);
     if (swallow) event.preventDefault();
   };
 
@@ -106,8 +108,7 @@ export function steadyPresses(scope: HTMLElement, now: () => number = () => scop
     swallow = false;
     // A click made by a key or a program has no pointer, and is the person's (or the app's) own.
     if (event.detail === 0) return;
-    const button = pressable(event.target);
-    if (!button || !scope.contains(button)) return;
+    if (!barred(pressable(event.target))) return;
     event.preventDefault();
     event.stopImmediatePropagation();
   };
@@ -116,14 +117,12 @@ export function steadyPresses(scope: HTMLElement, now: () => number = () => scop
     swallow = false;
   };
 
-  doc.addEventListener('pointermove', onMove, true);
-  doc.addEventListener('pointerdown', onDown, true);
+  doc.addEventListener('pointerdown', onPointerDown, true);
   doc.addEventListener('mousedown', onMouseDown, true);
   doc.addEventListener('click', onClick, true);
   doc.addEventListener('keydown', onKey, true);
   return () => {
-    doc.removeEventListener('pointermove', onMove, true);
-    doc.removeEventListener('pointerdown', onDown, true);
+    doc.removeEventListener('pointerdown', onPointerDown, true);
     doc.removeEventListener('mousedown', onMouseDown, true);
     doc.removeEventListener('click', onClick, true);
     doc.removeEventListener('keydown', onKey, true);

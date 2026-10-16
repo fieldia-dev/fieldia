@@ -1,10 +1,9 @@
 import { steadyPresses } from './steady-press';
 
 /**
- * A press on a button that came under a pointer that did not move is not
- * taken: the second click of a double-click on Save, which hid, never presses
- * the button that slid into its place. Moved onto, or pressed again a moment
- * later, the button takes it; a key never waits.
+ * The second click of a double-click on Save, which hid as it saved, never
+ * presses the button that slid into its place; nor does a finger's double
+ * tap. A single click, a key and the app's own click() always go through.
  */
 
 let clock = 0;
@@ -15,28 +14,26 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-/** A pointer event as a browser sends it: where, which pointer, the first. */
-function pointer(type: string, target: Element, x: number, y: number, pointerType = 'mouse') {
-  const event = new MouseEvent(type, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, detail: 1 });
-  Object.defineProperty(event, 'pointerType', { value: pointerType });
-  Object.defineProperty(event, 'isPrimary', { value: true });
-  target.dispatchEvent(event);
-  return event;
-}
-
-/** A whole press at (x, y) on `target`: down, mousedown, up, click — and whether its click reached the button. */
-function press(target: HTMLElement, x: number, y: number, pointerType = 'mouse') {
-  pointer('pointerdown', target, x, y, pointerType);
-  const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, detail: 1 });
+/** A press as a browser sends it: pointerdown, mousedown, pointerup, click — `count` the browser's count of clicks going on. Whether its click reached the button, and whether its focus stayed. */
+function press(target: HTMLElement, x: number, y: number, count = 1, pointerType = 'mouse') {
+  const pointer = (type: string) => {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y });
+    Object.defineProperty(event, 'pointerType', { value: pointerType });
+    Object.defineProperty(event, 'isPrimary', { value: true });
+    target.dispatchEvent(event);
+  };
+  pointer('pointerdown');
+  const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: x, clientY: y, detail: count });
   target.dispatchEvent(down);
-  pointer('pointerup', target, x, y, pointerType);
-  const click = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y, detail: 1 });
+  pointer('pointerup');
+  const click = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y, detail: count });
   target.dispatchEvent(click);
   return { focusKept: down.defaultPrevented, clicked: !click.defaultPrevented };
 }
 
 function bar() {
   const scope = document.createElement('div');
+  scope.className = 'fd-header';
   const save = document.createElement('button');
   save.textContent = 'Save';
   const approve = document.createElement('button');
@@ -52,81 +49,82 @@ function bar() {
 describe('a press on a bar’s button', () => {
   beforeEach(() => (clock = 1000));
 
-  it('the second click of a double-click lands on Save’s place: Approve, slid there, is not pressed', () => {
+  it('the second click of a double-click lands where Save was: Approve, slid there, is not pressed', () => {
     const { save, approve, pressed } = bar();
-    pointer('pointermove', save, 30, 10);
-    expect(press(save, 30, 10).clicked).toBe(true);
+    expect(press(save, 30, 10, 1).clicked).toBe(true);
     // Save hid as it saved; Approve now stands where it was, under the pointer.
     save.hidden = true;
-    clock += 120;
-    const second = press(approve, 30, 10);
-    expect(second).toEqual({ focusKept: true, clicked: false });
-    // A third click, as quick, is no different.
-    clock += 120;
-    expect(press(approve, 31, 11).clicked).toBe(false);
+    expect(press(approve, 30, 10, 2)).toEqual({ focusKept: true, clicked: false });
+    // A triple click is no different.
+    expect(press(approve, 31, 11, 3).clicked).toBe(false);
     expect(pressed).toEqual(['Save']);
   });
 
-  it('moved onto, the button that slid there is pressed at once', () => {
+  it('a single click on the button that slid there presses it: a click is never lost', () => {
     const { save, approve, pressed } = bar();
-    press(save, 30, 10);
+    press(save, 30, 10, 1);
     save.hidden = true;
-    clock += 100;
-    pointer('pointermove', approve, 60, 14);
-    expect(press(approve, 60, 14).clicked).toBe(true);
-    expect(pressed).toEqual(['Save', 'Approve']);
-  });
-
-  it('pressed again a moment after the press it refused, it is taken: never a dead button', () => {
-    const { save, approve, pressed } = bar();
-    press(save, 30, 10);
-    save.hidden = true;
-    clock += 150;
-    expect(press(approve, 30, 10).clicked).toBe(false);
-    clock += 600;
-    expect(press(approve, 30, 10).clicked).toBe(true);
+    expect(press(approve, 30, 10, 1).clicked).toBe(true);
     expect(pressed).toEqual(['Save', 'Approve']);
   });
 
   it('a double-click on a button that stays where it is presses it twice, as before', () => {
     const { approve, pressed } = bar();
-    press(approve, 60, 10);
-    clock += 100;
-    press(approve, 60, 10);
+    press(approve, 60, 10, 1);
+    press(approve, 60, 10, 2);
     expect(pressed).toEqual(['Approve', 'Approve']);
   });
 
   it('a key, or the app’s own click(), is never refused', () => {
     const { save, approve, pressed } = bar();
-    press(save, 30, 10);
+    press(save, 30, 10, 1);
     save.hidden = true;
-    clock += 50;
     approve.click();
     approve.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     approve.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 }));
     expect(pressed).toEqual(['Save', 'Approve', 'Approve']);
   });
 
-  it('a finger: a double tap is refused, a tap a second later is a new look', () => {
+  it('a finger: a double tap is refused; a tap a moment later, or elsewhere, is taken', () => {
     const { save, approve, pressed } = bar();
-    press(save, 30, 10, 'touch');
+    press(save, 30, 10, 1, 'touch');
     save.hidden = true;
     clock += 90;
-    expect(press(approve, 32, 12, 'touch').clicked).toBe(false);
-    clock += 1500;
-    expect(press(approve, 30, 10, 'touch').clicked).toBe(true);
+    expect(press(approve, 34, 12, 1, 'touch').clicked).toBe(false);
+    clock += 600;
+    expect(press(approve, 30, 10, 1, 'touch').clicked).toBe(true);
     expect(pressed).toEqual(['Save', 'Approve']);
   });
 
-  it('a button outside the bar it keeps is left alone', () => {
+  it('a line’s × in a table is no bar’s: lines deleted one after another, each × coming up under the pointer', () => {
+    const scope = document.createElement('div');
+    const table = document.createElement('table');
+    const deleted: string[] = [];
+    const rows = ['Chair', 'Desk', 'Lamp'].map((name) => {
+      const remove = document.createElement('button');
+      remove.textContent = '×';
+      remove.addEventListener('click', () => {
+        deleted.push(name);
+        remove.closest('tr')?.remove();
+      });
+      table.insertRow().insertCell().append(remove);
+      return remove;
+    });
+    scope.append(table);
+    document.body.append(scope);
+    stop = steadyPresses(scope, () => clock);
+    rows.forEach((remove, i) => press(remove, 200, 40, i + 1));
+    expect(deleted).toEqual(['Chair', 'Desk', 'Lamp']);
+  });
+
+  it('a button outside the scope it keeps is left alone', () => {
     const { save, pressed } = bar();
     const other = document.createElement('button');
     other.textContent = 'Elsewhere';
     other.addEventListener('click', () => pressed.push('Elsewhere'));
     document.body.append(other);
-    press(save, 30, 10);
-    clock += 50;
-    expect(press(other, 30, 10).clicked).toBe(true);
+    press(save, 30, 10, 1);
+    expect(press(other, 30, 10, 2).clicked).toBe(true);
     expect(pressed).toEqual(['Save', 'Elsewhere']);
   });
 });
