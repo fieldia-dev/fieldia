@@ -65,7 +65,7 @@ test.describe('screen designer · record sheet', () => {
     // The preview is the real sheet: its title, and its tabs.
     await page.getByRole('button', { name: 'Try it' }).click();
     const preview = page.locator('.fd-try');
-    await expect(preview.locator('[data-node="#title"] input')).toHaveAttribute('placeholder', 'Name');
+    await expect(preview.locator('[data-node="#title"] textarea')).toHaveAttribute('placeholder', 'Name');
     await expect(preview.getByRole('tab')).toHaveText(['Contacts', 'Notes']);
     await expect(preview.getByLabel('Contact person')).toBeVisible();
     await expect(preview.locator('[data-type="many2one"] .fd-label')).toHaveText('Company');

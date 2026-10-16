@@ -245,7 +245,7 @@ test.describe('customer sheet', () => {
 
   test('a warning from the server appears under the field that changed', async ({ page }) => {
     await open(page, variant, 'page=customer&skin=underline');
-    await expect(page.locator('[data-node="#title"] input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Nile Traders');
     await page.getByRole('tab', { name: 'Sales and billing' }).click();
     const limit = field(page, 'f-credit-limit');
     await limit.fill('250000');

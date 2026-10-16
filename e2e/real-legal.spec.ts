@@ -82,7 +82,7 @@ for (const variant of VARIANTS) {
       await page.addInitScript(harness);
       const { problems } = await open(page, variant, CASE);
       await expect(page.locator('.fd-sheet-title, [data-node="#title"]').first()).toBeVisible();
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
       const opened = await page.evaluate(() => (window as any).fieldiaTimings?.viewer?.work as number | undefined);
 
       // The statusbar, the header buttons a case that is open has, and the stat buttons with their numbers.
@@ -163,7 +163,7 @@ for (const variant of VARIANTS) {
     test('the case closed through its dialog: the outcome, the notes, pending tasks cancelled, the Outcome tab', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, CASE);
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
       await page.getByRole('button', { name: 'Close Case' }).click();
       const dialog = page.getByRole('dialog', { name: 'Close Case' });
       await expect(dialog).toBeVisible();
@@ -202,7 +202,7 @@ for (const variant of VARIANTS) {
     test('time and trust money: a shortcode fills a time entry, the timer logs one, a deposit made in its dialog lands in the ledger', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, CASE);
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
       const consumed = (await value(page, 'budget_consumed_fees')) as number;
 
       // COURT typed in a new line's Shortcode: the server applies its category, words and rate, and clears the code.
@@ -292,7 +292,7 @@ for (const variant of VARIANTS) {
     test('a draft case: Start Work refused by the conflict gate, in the server’s words', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, DRAFT_CASE);
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LAB/0043');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LAB/0043');
       await expect(tab(page, 'Contract Reviews')).toBeHidden();
       await page.getByRole('button', { name: 'Start Work' }).click();
       await expect(toast(page, 'no cleared conflict check is attached')).toHaveAttribute('data-tone', 'warning');
@@ -432,7 +432,7 @@ for (const variant of VARIANTS) {
     test('a table in a tab out of sight rests: nothing redrawn frame after frame while nobody types', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, CASE);
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
       // The tabs with tables, shown once and left: Expenses, then Billing's two.
       for (const label of ['Expenses', 'Billing', 'Description']) {
         await tab(page, label).scrollIntoViewIfNeeded();
@@ -474,7 +474,7 @@ for (const variant of VARIANTS) {
       for (const [look, width] of [['', 390], ['&scheme=dark', 390], ['&locale=ar&dir=rtl', 390], ['', 1440], ['&locale=ar&dir=rtl', 1440]] as const) {
         await page.setViewportSize({ width, height: 900 });
         const { problems } = await open(page, variant, `${CASE}${look}`);
-        await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+        await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
         const overflows = await list.evaluate((l) => l.scrollWidth > l.clientWidth + 1);
         if (!overflows) {
           // Room for every tab: no fade, no buttons.
@@ -520,7 +520,7 @@ for (const variant of VARIANTS) {
     test('at a phone’s width: the case and the survey fit, nothing scrolls sideways', async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       const { problems } = await open(page, variant, CASE);
-      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
       await expectNoSidewaysScroll(page);
       if (variant === 'plain') await screen(page, 'real-legal-case-phone');
       await page.goto(`/${variant}/?${SURVEY}`);

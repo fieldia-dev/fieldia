@@ -103,7 +103,7 @@ for (const [locale, query] of LOCALES) {
 
     test('Enter saves a name typed to its most, and says nothing of the most', async ({ page }) => {
       ({ problems } = await open(page, 'plain', `page=customer&skin=outlined${query}`));
-      const name = node(page, '#title').locator('input');
+      const name = node(page, '#title').locator('textarea');
       await name.fill('N'.repeat(119));
       await name.press('End');
       await name.pressSequentially('o');

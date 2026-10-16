@@ -79,7 +79,7 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=real-contact&record=7001&skin=underline');
       await expect.poll(() => value(page, 'name')).toBe('Nile Crest Developments');
       // default_focus on the name: the cursor is in it as the record opens.
-      const name = page.locator('[data-node="#title"] input').first();
+      const name = page.locator('[data-node="#title"] textarea').first();
       await expect(name).toBeFocused();
       // A company's name, "e.g. Lumber Inc"; a person's, "e.g. Brandom Freeman".
       await expect(name).toHaveAttribute('placeholder', 'e.g. Lumber Inc');

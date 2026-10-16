@@ -129,7 +129,7 @@ for (const variant of VARIANTS) {
       await expect(back).toBeVisible();
       const order = page.locator('form.fd-form').first();
       await expect(order).toBeHidden();
-      const title = page.locator('[data-node="#title"] input');
+      const title = page.locator('[data-node="#title"] textarea');
       await expect(title).toHaveValue('Nile Traders');
       if (variant === 'plain') await screen(page, 'actions-customer-in-place');
       await back.click();

@@ -116,7 +116,7 @@ for (const variant of VARIANTS) {
       await expect.poll(() => demo<{ action: string; recordIds?: number[] }[]>('requests')).toEqual([expect.objectContaining({ action: 'archive', recordIds: [23, 24] })]);
       await names(page).filter({ hasText: 'Delta Foods' }).click();
       await expect(page).toHaveURL(/page=customer&record=23/);
-      await expect(page.locator('[data-node="#title"] input')).toHaveValue('Delta Foods');
+      await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Delta Foods');
     });
 
     test('keeps a search as the default, and starts with it next time', async ({ page }) => {

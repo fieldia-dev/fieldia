@@ -181,7 +181,7 @@ test.describe('what the templates’ cards say to try', () => {
 
   test('customer: a person’s name is asked for as a person’s', async ({ page }) => {
     await open(page, 'plain', query('customer'));
-    const name = page.locator('[data-node="#title"] input');
+    const name = page.locator('[data-node="#title"] textarea');
     await expect(name).toHaveAttribute('placeholder', 'e.g. Nile Traders');
     await node(page, 'f-kind').getByLabel('Person').check();
     await expect(name).toHaveAttribute('placeholder', 'e.g. Sara Hassan');

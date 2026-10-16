@@ -88,7 +88,7 @@ async function mount(options: Partial<ViewerOptions> = {}) {
   return { host, handle };
 }
 
-const input = (scope: Element, field: string) => scope.querySelector(`[data-field="${field}"] input`) as HTMLInputElement;
+const input = (scope: Element, field: string) => scope.querySelector(`[data-field="${field}"] :is(input, textarea)`) as HTMLInputElement;
 const type = (scope: Element, field: string, value: string) => {
   const box = input(scope, field);
   box.value = value;

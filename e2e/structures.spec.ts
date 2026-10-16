@@ -245,9 +245,9 @@ test.describe('the structures on “Every field”', () => {
     await expect(partners.locator('.fd-chip-label')).toHaveText(['Amira Clinics', 'Zamalek Studio']);
     await partners.getByRole('button', { name: 'Open Amira Clinics' }).click();
     const record = page.getByRole('dialog', { name: 'Amira Clinics' });
-    await expect(record.locator('[data-node="#title"] input')).toHaveValue('Amira Clinics');
+    await expect(record.locator('[data-node="#title"] textarea')).toHaveValue('Amira Clinics');
     await screen(page, 'structures-links-open', { viewport: true });
-    await record.locator('[data-node="#title"] input').fill('Amira Clinics Group');
+    await record.locator('[data-node="#title"] textarea').fill('Amira Clinics Group');
     await record.getByRole('button', { name: 'Save & Close' }).click();
     await expect(partners.locator('.fd-chip-label')).toHaveText(['Amira Clinics Group', 'Zamalek Studio']);
     expect(await valueOf(page, 'partner_ids')).toEqual([{ id: 20, label: 'Amira Clinics Group' }, { id: 30, label: 'Zamalek Studio' }]);

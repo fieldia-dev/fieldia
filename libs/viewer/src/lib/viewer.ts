@@ -1859,7 +1859,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
       if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
-      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}) });
+      // The record's name, and its subtitle, wrap on a narrow screen rather than be cut: a long name reads from its start.
+      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}), options: { wraps: true } });
       // Fields on the title's line, before and after it: a priority star, a state's dot (Flectra's <h1>).
       const before = node.title.before ?? [];
       const after = node.title.after ?? [];
@@ -1872,7 +1873,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         };
         title.append(el('div', { class: 'fd-title-line' }, ...before.map(side), name, ...after.map(side)));
       } else title.append(name);
-      if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
+      if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField, options: { wraps: true } }));
       if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map((part) => fieldItem(part))));
       const row = el('div', { class: 'fd-title-row' }, title);
       if (node.title.avatarField) {
@@ -2201,6 +2202,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const from = event.target as HTMLElement;
     // A one-line code editor is a text box to the form: it says it is one line, and keeps Enter only from adding one.
     const oneLine = from.getAttribute('aria-multiline') === 'false';
+    // A line that wraps (a record's title) sends the form with Enter, as an input does by itself.
+    if (oneLine && from.tagName === 'TEXTAREA' && !keys.enterMovesToNext && !event.shiftKey && !event.altKey) {
+      event.preventDefault();
+      root.requestSubmit();
+      return;
+    }
     // A plain Enter a field used itself, such as picking from an open list, is the field's.
     if ((event.defaultPrevented && !oneLine) || !keys.enterMovesToNext || event.shiftKey || event.altKey) return;
     if (from.tagName !== 'INPUT' && from.tagName !== 'SELECT' && !oneLine) return;

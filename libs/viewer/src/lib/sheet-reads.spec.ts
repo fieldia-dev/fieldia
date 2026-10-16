@@ -675,7 +675,7 @@ describe('parts on one line, and a label over the title', () => {
     const { host } = mount(page(), { values: {} });
     const label = host.querySelector('.fd-title .fd-title-label') as HTMLLabelElement;
     expect(label.textContent).toBe('Survey Title');
-    expect(label.htmlFor).toBe((host.querySelector('[data-node="#title"] input') as HTMLInputElement).id);
+    expect(label.htmlFor).toBe((host.querySelector('[data-node="#title"] textarea') as HTMLInputElement).id);
   });
 });
 
@@ -726,7 +726,7 @@ describe('words in an empty box chosen by a condition', () => {
       },
     } as unknown as Page;
     const { host, form } = mount(page);
-    const title = host.querySelector('[data-node="#title"] input') as HTMLInputElement;
+    const title = host.querySelector('[data-node="#title"] textarea') as HTMLInputElement;
     const parent = host.querySelector('[data-node="f-parent"] input') as HTMLInputElement;
     const drawn = parent.placeholder;
     expect(title.placeholder).toBe('e.g. Brandom Freeman');

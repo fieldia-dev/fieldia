@@ -232,7 +232,8 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
 
   const onFocus = () => accept();
   /** A one-line box: Enter there types nothing, it sends the form or moves on, as the page has it. */
-  const oneLine = box.tagName === 'INPUT';
+  // A box of one line: an input, or one that wraps its line and says it is one (a record's title).
+  const oneLine = box.tagName === 'INPUT' || box.getAttribute('aria-multiline') === 'false';
   /** Keys held as an edit began that changes nothing where they wait (a deletion after the caret): kept held once it lands. */
   let rebase: Held | null = null;
   /** Keys held as a composition began there: what it makes is held with them once it ends. */

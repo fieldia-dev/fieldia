@@ -22,7 +22,7 @@ async function openDemo(page: Page) {
   page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(DEMO);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
 }
 
@@ -90,7 +90,7 @@ test('after Reload, the pager asks before Sara’s changes set aside are left be
   await page.keyboard.press('Enter');
   await ask.getByRole('button', { name: 'Discard' }).click();
   await expect(form.locator('.fd-record-pager-text')).toHaveText('2 / 2');
-  await expect(form.locator('.fd-title input')).toHaveValue('Flat in Maadi');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Flat in Maadi');
   await expect(aside).toBeHidden();
   expect(problems).toEqual([]);
 });
