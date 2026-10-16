@@ -313,7 +313,10 @@ why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 90 KB gzipped):
+(core, widgets and viewer; about 167 KB gzipped). What a page uses beyond
+plain fields — a list's screen, a table of lines, a date's box, a phone, a
+theme… — comes in 15 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
+each loaded from the same folder the first time a page uses it:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
@@ -326,7 +329,7 @@ This package carries a `<script>` bundle that sets the global `Fieldia`
 ```
 
 Its own words are English. For Arabic, German or French, add that language's
-script after it (about 3–4 KB gzipped each), then pass `locale`:
+script after it (about 8–10 KB gzipped each), then pass `locale`:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
