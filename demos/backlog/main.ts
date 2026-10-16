@@ -61,7 +61,7 @@ const WORDS = {
     team: 'Portal Team', teams: 'Other teams', favourite: 'Add to favourites', members: 'Team members', newItem: 'New Work Item', asBoard: 'View as Board', columns: 'Column Options', more: 'More actions',
     backlog: 'Backlog', analytics: 'Analytics', views: 'Backlog views', level: 'Stories', viewOptions: 'View options', filter: 'Filter', backlogSettings: 'Settings', fullScreen: 'Full screen',
     notHere: 'Only the backlog and its bugs are in this demo.', me: 'Salma Nabil', bug: 'Bug',
-    create: 'Create', myWork: 'My work items', extensions: 'Extensions', help: 'Help', userSettings: 'User settings',
+    create: 'Create', myWork: 'My work items', extensions: 'Extensions', help: 'Help', userSettings: 'User settings', loading: 'Loading…',
   },
   ar: {
     org: 'Harbor Supply', project: 'Portal', boards: 'اللوحات', backlogs: 'قوائم الأعمال', search: 'بحث', language: 'اللغة', path: 'موقعك', menu: 'المشروع',
@@ -69,7 +69,7 @@ const WORDS = {
     team: 'فريق Portal', teams: 'فرق أخرى', favourite: 'إضافة إلى المفضلة', members: 'أعضاء الفريق', newItem: 'بند عمل جديد', asBoard: 'عرض كلوحة', columns: 'خيارات الأعمدة', more: 'إجراءات أخرى',
     backlog: 'قائمة الأعمال', analytics: 'التحليلات', views: 'طرق عرض قائمة الأعمال', level: 'القصص', viewOptions: 'خيارات العرض', filter: 'تصفية', backlogSettings: 'الإعدادات', fullScreen: 'ملء الشاشة',
     notHere: 'لا يضم هذا العرض إلا قائمة الأعمال وأخطاءها.', me: 'سلمى نبيل', bug: 'خلل',
-    create: 'إنشاء', myWork: 'بنود عملي', extensions: 'الإضافات', help: 'المساعدة', userSettings: 'إعدادات المستخدم',
+    create: 'إنشاء', myWork: 'بنود عملي', extensions: 'الإضافات', help: 'المساعدة', userSettings: 'إعدادات المستخدم', loading: 'جارٍ التحميل…',
   },
   de: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Boards', backlogs: 'Backlogs', search: 'Suchen', language: 'Sprache', path: 'Wo Sie sind', menu: 'Projekt',
@@ -77,7 +77,7 @@ const WORDS = {
     team: 'Portal-Team', teams: 'Andere Teams', favourite: 'Zu Favoriten hinzufügen', members: 'Teammitglieder', newItem: 'Neues Arbeitselement', asBoard: 'Als Board anzeigen', columns: 'Spaltenoptionen', more: 'Weitere Aktionen',
     backlog: 'Backlog', analytics: 'Analyse', views: 'Backlog-Ansichten', level: 'Storys', viewOptions: 'Ansichtsoptionen', filter: 'Filter', backlogSettings: 'Einstellungen', fullScreen: 'Vollbild',
     notHere: 'In dieser Demo gibt es nur das Backlog und seine Fehler.', me: 'Salma Nabil', bug: 'Fehler',
-    create: 'Erstellen', myWork: 'Meine Arbeitselemente', extensions: 'Erweiterungen', help: 'Hilfe', userSettings: 'Benutzereinstellungen',
+    create: 'Erstellen', myWork: 'Meine Arbeitselemente', extensions: 'Erweiterungen', help: 'Hilfe', userSettings: 'Benutzereinstellungen', loading: 'Wird geladen…',
   },
   fr: {
     org: 'Harbor Supply', project: 'Portal', boards: 'Tableaux', backlogs: 'Backlogs', search: 'Rechercher', language: 'Langue', path: 'Où vous êtes', menu: 'Projet',
@@ -85,7 +85,7 @@ const WORDS = {
     team: 'Équipe Portal', teams: 'Autres équipes', favourite: 'Ajouter aux favoris', members: 'Membres de l’équipe', newItem: 'Nouvel élément de travail', asBoard: 'Afficher en tableau', columns: 'Options des colonnes', more: 'Autres actions',
     backlog: 'Backlog', analytics: 'Analyse', views: 'Vues du backlog', level: 'Récits', viewOptions: 'Options d’affichage', filter: 'Filtrer', backlogSettings: 'Paramètres', fullScreen: 'Plein écran',
     notHere: 'Cette démo ne contient que le backlog et ses bogues.', me: 'Salma Nabil', bug: 'Bogue',
-    create: 'Créer', myWork: 'Mes éléments de travail', extensions: 'Extensions', help: 'Aide', userSettings: 'Paramètres utilisateur',
+    create: 'Créer', myWork: 'Mes éléments de travail', extensions: 'Extensions', help: 'Aide', userSettings: 'Paramètres utilisateur', loading: 'Chargement…',
   },
 }[locale];
 
@@ -351,6 +351,18 @@ head.querySelector('.bl-level')?.addEventListener('click', notHere);
 for (const a of head.querySelectorAll('.bl-pivots a')) a.addEventListener('click', (event) => (event.preventDefault(), a.getAttribute('aria-current') ? undefined : notHere()));
 
 const listHost = el('div', { class: 'bl-list' });
+/**
+ * The list's own stand-in, in its place at once: the list screen comes in a part of its own (a chunk the page asks for
+ * the first time it draws a list), and until it has come the list's place would be blank under the page's head. Its
+ * "Loading…" and the shape of its rows, gone the moment the list is drawn.
+ */
+const standIn = el(
+  'div',
+  { class: 'bl-waiting', role: 'status', 'aria-busy': 'true' },
+  el('p', { class: 'fd-list-waiting' }, WORDS.loading),
+  ...Array.from({ length: 8 }, () => el('i', { 'aria-hidden': 'true' }))
+);
+listHost.append(standIn);
 app.append(top, el('div', { class: 'bl-frame' }, nav, el('main', { class: 'bl-page' }, head, listHost)), note);
 
 // ---- what the person keeps: the backlog's default filter, and their latest Area and Iteration picks ----------------------
@@ -381,6 +393,8 @@ const list = mountViewer(listHost, {
   // A row opens its bug in the popup; the list asks again once it closes, and its row takes the focus back.
   onOpenRecord: (id) => openBug(id),
 });
+
+void list.drawn.then(() => standIn.remove());
 
 // ---- the bug, in a large popup over the backlog --------------------------------------------------------------------------
 
