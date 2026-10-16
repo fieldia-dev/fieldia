@@ -169,10 +169,16 @@ const widgets = { ...APP_WIDGETS, ...codeWidgets };
 const onMaps = { listViews: demoListViews, maps: demoMaps, sampleCentre: { lat: 30.0444, lng: 31.2357 } };
 const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant, ...onMaps }), reopen };
 opened();
+// The tab names the page being made, not the tool it is made in: “Invoice — Fieldia designer”.
+const named = () => (document.title = `${demo.designer.getPage().title || say('A new page', 'صفحة جديدة')} — Fieldia designer`);
+named();
+designer.subscribe(named);
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
   demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale, regionSets: DEMO_REGION_SETS });
   demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant, ...onMaps });
+  named();
+  demo.designer.subscribe(named);
 }
 Object.assign(window, { fieldiaDesigner: demo });

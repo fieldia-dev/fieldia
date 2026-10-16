@@ -32,4 +32,8 @@ const opened = timeFirstPaint('designer');
 const designer = createDesigner({ page: start, store, lists: arabic ? APP_LISTS_AR : APP_LISTS, kinds: appKinds(locale as Locale | undefined), assistant, locale });
 const handle = mountSurveyEditor(document.getElementById('app') as HTMLElement, { designer, skin: (params.get('skin') as Skin) ?? 'outlined', dataSource: sampleDataSource(), widgets: APP_WIDGETS });
 opened();
+// The tab names the page being made, not the tool it is made in: “Job application — Fieldia designer”.
+const named = () => (document.title = `${designer.getPage().title || (arabic ? 'صفحة جديدة' : 'A new page')} — Fieldia designer`);
+named();
+designer.subscribe(named);
 Object.assign(window, { fieldiaDesigner: { designer, store, handle } });
