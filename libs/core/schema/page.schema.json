@@ -359,6 +359,9 @@
     },
     "timeZone": {
       "$ref": "#/$defs/TimeZone"
+    },
+    "print": {
+      "$ref": "#/$defs/PagePrint"
     }
   },
   "required": [
@@ -7069,6 +7072,30 @@
             "message"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "do": {
+              "type": "string",
+              "const": "print"
+            },
+            "when": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "required": [
+            "do"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -7096,7 +7123,8 @@
             "archive",
             "unarchive",
             "duplicate",
-            "delete"
+            "delete",
+            "print"
           ]
         },
         "group": {
@@ -8926,6 +8954,9 @@
               }
             }
           ]
+        },
+        "print": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -9379,6 +9410,26 @@
             "international",
             "national"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PagePrint": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "footer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "logo": {
+          "type": "string",
+          "pattern": "^(https?:\\/\\/|data:image\\/|\\/|\\.{0,2}\\/?[^:\\s]+$)"
         }
       },
       "additionalProperties": false

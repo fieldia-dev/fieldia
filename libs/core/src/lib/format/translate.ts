@@ -1,12 +1,12 @@
 import type { Page } from './page';
 
 /**
- * Keys whose text a person reads: titles, labels, help, prompts, messages, why a field is locked and why an answer
- * does not fit its pattern.
+ * Keys whose text a person reads: titles, labels, help, prompts, messages, a printout's header and footer, why a
+ * field is locked and why an answer does not fit its pattern.
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint']);
+const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint']);
 
 /** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link. */
 const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink']);

@@ -74,7 +74,30 @@ export interface ActionResult {
   record?: RecordId | null;
   /** Post words in the record's conversation, as a `post` step does: a note unless it is a `message`. */
   post?: string | { message: string; kind?: 'note' | 'message' };
+  /**
+   * A file the app made for the record — its own PDF of an invoice, a report under Print — shown over the record in
+   * the browser's own viewer, with Download, or saved at once (`show: 'download'`), as the viewer's host does it.
+   */
+  file?: ActionFile;
   stop?: boolean | string;
+}
+
+/**
+ * A file the app hands back from an action: its name and kind, and where it is — its address on the app's server, its
+ * bytes as base64 (`data`, as a file field holds them), or the bytes themselves (`bytes`, a fetch's blob). A PDF or a
+ * picture is shown (`view`, the default); any other kind, or `download`, is saved.
+ */
+export interface ActionFile {
+  /** Its name, as it is saved: "INV_2026_0042.pdf". */
+  name: string;
+  /** Its kind, as a MIME type: "application/pdf". From its name when left out. */
+  type?: string;
+  url?: string;
+  data?: string;
+  /** A Blob (a fetch's `blob()`), or an ArrayBuffer or Uint8Array of them. */
+  bytes?: ArrayBuffer | Uint8Array | { readonly size: number; readonly type: string; arrayBuffer(): Promise<ArrayBuffer> };
+  /** Shown over the record (`view`), or saved (`download`). */
+  show?: 'view' | 'download';
 }
 
 /** Words posted in a record's conversation by a `post` step or the app's answer. */
@@ -135,6 +158,10 @@ export interface ActionHost {
   show?(target: string): void;
   /** Open a web address: in a new tab, or in this one. */
   openUrl?(url: string, newTab: boolean): void;
+  /** Print the page as it prints, to paper or a PDF (a `print` step, a gear menu's built-in Print): settled once the browser's printing is done. */
+  print?(): void | Promise<void>;
+  /** Show the app's file over the form, or save it (`ActionResult.file`). */
+  file?(file: ActionFile): void | Promise<void>;
   /**
    * Post words in a record's conversation. Left out, the form tells its own
    * listeners (`post`): the chatter beside it. A page opened over a record
@@ -558,6 +585,11 @@ export function createRunner(form: RunForm) {
       const moved = await ownMove(scope, () => form.showRecord(answer.record as RecordId | null, scope.chain));
       if (moved) return moved;
     }
+    if (answer.file) {
+      const host = form.host;
+      if (!host?.file) return cannot(`Nothing can show the file "${answer.file.name}" here: the form has no host that shows files`);
+      await host.file(answer.file);
+    }
     if (answer.open) {
       const opened = await open(answer.open, scope);
       if (opened) return opened;
@@ -742,6 +774,12 @@ export function createRunner(form: RunForm) {
         return recordStep(step.do, scope);
       case 'post':
         return post(step.message, step.kind ?? 'note', true);
+      case 'print': {
+        const host = form.host;
+        if (!host?.print) return cannot('Nothing can print here: the form has no host that prints');
+        await host.print();
+        return null;
+      }
     }
   }
 
@@ -806,7 +844,7 @@ export function createRunner(form: RunForm) {
 /**
  * Whether a step reads the form's values or hands them on — what is typed is read before it, for a run the person or
  * the app set off: a `when`; `set` and `addLine`, which work values out; a `call`, handing them to the app; an `open`
- * with values, a record or a filter from them; `post`, `openUrl`. A save, a check and a step forward read on their own;
+ * with values, a record or a filter from them; `post`, `openUrl`; `print`, which prints them as words. A save, a check and a step forward read on their own;
  * the ways out (`reload`, `close`, `reset`, another record) ask about what is typed instead; `archive`, `duplicate`
  * and `delete` act on the record as stored.
  */
@@ -818,6 +856,7 @@ function readsForm(step: ActionStep): boolean {
     case 'call':
     case 'post':
     case 'openUrl':
+    case 'print':
       return true;
     case 'open':
       return step.values !== undefined || step.record !== undefined || step.filter !== undefined;
