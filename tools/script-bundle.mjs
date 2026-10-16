@@ -596,7 +596,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
 // The six joined (0.23 size pass: the list screen, the looks, a table of lines, the business widgets, files, the survey
 // kinds), each measured above against 0.22.0 alone; together, 629.78 measured before, 474.25 after — 155.5 less, to 474.3.
-const BUDGET_KB = 474.3;
+// Wave 2's autofill and bot check (0.24): what the browser fills each box in with and a phone's keyboard, the page's
+// over the kind's own (kind-parts.ts, the boxes), a value the browser fills in read as typed (the guard's write in a box
+// the person is not in, a number's, a date's and a long list's box read as left, the viewer's read of a box filled from
+// a pick in another), and a public page's bot check (its hidden box, the time the answers took, the captcha's token on
+// the send, their checks and words). The purposes the standard lists stay out, with the format's check
+// (validatePage): the quick check keeps only that a box names what it holds and an address whose it is
+// (autofill-group.ts). The bot check is in this script, not a part: 1.2 of it, 0.5 gzipped, on the very pages — a
+// public sign-up — that are drawn the moment they are opened. 474.25 measured before, 477.88 after, to 477.9.
+const BUDGET_KB = 477.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -716,7 +724,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
-const GZIP_BUDGET_KB = 153.7;
+// Wave 2's autofill and bot check (listed with the raw budget above): 153.62 measured before, 154.78 after — 1.2 more,
+// what every box and every public page draws at mount — to 154.8.
+const GZIP_BUDGET_KB = 154.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -799,7 +809,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 7.15, 15.86, 16.27).
 // The input rules' words and Wave 1's joined for 0.22, as measured: Arabic's 45.0 and 8.2, German's 19.2 and 7.1,
 // French's 19.8 and 7.1 — each to 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [45.1, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
+// A public page's hidden box (0.24, Wave 2's bot check): "Leave this box empty", one in each, read by no person but one
+// whose page has lost its look — measured 45.11 and 8.25 in Arabic, 19.22 in German, 19.84 in French: Arabic's to 45.2.
+const ADD_ON_BUDGET_KB = { ar: [45.2, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -897,7 +909,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
 // from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
+// What the browser fills a box in with (0.24, Wave 2): a date's box takes the page's purpose and keyboard, and one
+// filled from a pick in another box is read as left (date 19.5, 7.3, as measured 19.45 and 7.23); an address's parts
+// each take whose address it is (survey 35.1, as measured 35.06 and 12.13); hours and a per cent the page's purpose and
+// keyboard, and read as left when filled from elsewhere (business as it was, measured 25.99 and 9.58).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.5, 7.3], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.1, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

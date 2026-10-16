@@ -61,9 +61,42 @@ interface DataSource {
   <li>${c('definitions({ list, values })')} — the definitions of a properties field's ${c('definitionsFrom.list')}: those the record its link points to keeps (Flectra's ${c('definition_record')}), read from ${c('values')}. ${c('saveDefinitions({ list, values, definitions })')} keeps them all again, one added in place among them.</li>
   <li>${c('create({ model, name })')} — make a record from just its name (a backend's ${c('name_create')}). Return ${c('{ id, label }')}.</li>
   <li id="related">What a link shows of its record besides its name, a found or loaded link may carry: ${c('avatar')} (a picture's address or a ${c('data:')} URI), ${c('color')} (1 to 11, Flectra's colours), ${c('details')} (lines under its name, such as an address, joined by new lines) and, for a stage, ${c('folded')}. The page asks for them with its nodes' ${c('avatar')}, ${c('colors')} and ${c('details')} options and a statusbar's ${c('fold')}; a source gives them where its model has them. A record of a tree — an area, an iteration — may carry its ${c('path')}, its names from the top down (${c('["Portal", "Sprint 14"]')}), and an ${c('aside')}, words a path picker shows at the end of its row (an iteration's dates). ${c('createMemoryDataSource')} takes ${c('shows')}: by model, the fields each comes from — ${c('{ "res.users": { avatar: "image_128" }, tag: { color: "color" }, stage: { folded: "fold" }, partner: { details: ["street", "city"] }, iteration: { path: "path", aside: "dates" } }')}; a ${c('path')} field holds a list of names, or names joined by a backslash, and a search finds such a record by its whole path too.</li>
-  <li>${c('submit({ pageId, values })')} — the answers to the questions that were shown; skipped steps are left out.</li>
+  <li>${c('submit({ pageId, values, bot })')} — the answers to the questions that were shown; skipped steps are left out. ${c('bot')} comes on a page with a bot check, below.</li>
 </ul>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>
+
+<h2 id="bots">A public form's bot check</h2>
+<p>A page of responses anyone may send — a sign-up, a contact form — can check that a person sent it: ${c('botCheck')} draws a box no person sees, reaches with Tab or hears read out, which a bot filling every box fills (${c('honeypot')}, on unless ${c('false')}); times the answers from the page shown to its send, against the fewest seconds a person takes (${c('minSeconds')}, 3 unless said; 0 tells none); and holds the place for your app's own captcha — Turnstile, reCAPTCHA, hCaptcha — in a slot of the page (${c('captcha')}, the slot's name).</p>
+${code(
+  'json',
+  `
+"layout": { "type": "sections", "id": "signup", "children": [
+  …,
+  { "type": "slot", "id": "s-captcha", "name": "captcha" }
+] },
+"botCheck": { "minSeconds": 3, "captcha": "captcha" }`
+)}
+<p>Nothing is refused on the page for what it saw: ${c('submit')} gets it beside the answers, and so does the ${c('send')} event, and your app decides — keep the response aside, check the token with the captcha's service, or refuse it with ${c('saveRefused')}. A person whose browser filled every box in at once can be quick, which is why it is yours to judge.</p>
+${code(
+  'ts',
+  `
+async submit({ pageId, values, bot }) {
+  // bot: { honeypot: false, tooFast: false, seconds: 41.2, captcha: '0.Zx…' }
+  if (bot?.honeypot) return { id: await keepAside(pageId, values) };
+  if (bot && !(await verifyTurnstile(bot.captcha))) throw saveRefused({ kind: 'rule', message: 'Please tick the check box first.' });
+  return { id: await store(pageId, values) };
+}
+
+// The captcha's widget, in the page's slot: its token handed to the form, a new one after each send.
+slots: {
+  captcha: (element, { form }) => {
+    const id = turnstile.render(element, { sitekey, callback: (token) => form.botCheck({ captcha: token }) });
+    const spent = form.on('send', () => turnstile.reset(id));
+    return () => (spent(), turnstile.remove(id));
+  },
+}`
+)}
+<p>A page without ${c('botCheck')} sends what it always did. In the designer, a page of responses has <em>Bot check</em> on its Rules tab. The <a href="/demos/plain/?page=signup&amp;skin=outlined">sign-up demo</a> has one, with a stand-in for a captcha, and shows under the form what the app was told.</p>
 
 <h2 id="upload">Files stored as they are picked</h2>
 <p>A phone's photo is 3 to 12 MB. Twenty of them inside one save fail on mobile data, and one in a draft fills the browser's store. Give your data source ${c('upload')}, and a file or picture field sends each file to your store <em>as soon as it is picked</em>: photos are made smaller first, each shows on its way with a bar, × to cancel it and Retry when it failed, and the field keeps only what ${c('upload')} returns — ${c('{ url, name, size, type, fileId }')}, never the bytes. Three go at once, the rest wait their turn; a field of several keeps them in the order they were picked.</p>

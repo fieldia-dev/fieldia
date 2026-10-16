@@ -143,6 +143,7 @@ refused one, with the same words, however the text arrives:
 | Delete on the text chosen (the keys were typed over it) | lands, and the held keys go with it: the box is emptied as asked | `letGoHeld()` |
 | Moving the caret | lets them go | `holding()` |
 | Enter in a one-line box | never judged, held or stopped | `insertLineBreak` / `insertParagraph` |
+| The browser's autofill, a password manager (no beforeinput; Firefox's cannot be stopped) | in a box the person is not in: cleaned as a paste, kept whole, never put back; read at once as a box left (the viewer's change), its problem said. In the box they are in: judged as keys, all of it held when refused, said, taken as the box is left | `onInput` (`autofilled`), viewer.ts |
 
 Every guard holds: numbers, money, hours, per cents, shares, tax amounts, dates, times, ranges, every text kind, the
 colour code, a place's coordinates, the designer's number and date settings, and the filter's number. The guard of
