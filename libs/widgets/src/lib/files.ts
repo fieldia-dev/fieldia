@@ -8,6 +8,7 @@ export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { formBehind } from './handed';
+import { stillShown } from './shown';
 import { installFilesStyles } from './styles-files';
 
 /**
@@ -168,6 +169,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
 
     const take = async (chosen: File[]) => {
       if (readonly || !chosen.length) return;
+      // Picked on the record shown now: read once another is shown, the files are laid on no record.
+      const shown = stillShown(form);
       const storing = form.canUpload();
       // A photo made smaller is checked for its size once it is: a 12 MB photo may well fit.
       const shrink = shrinkFor(field, storing);
@@ -213,6 +216,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       if (!ready.length) return;
       warnInline(form, ready);
       const added = await Promise.all(ready.map(readFile));
+      if (!shown()) return;
       form.setValue(name, several ? [...files, ...added] : added[0]);
     };
 

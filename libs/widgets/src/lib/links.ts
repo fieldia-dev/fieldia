@@ -3,6 +3,7 @@ import { drawIcon } from './icons';
 import { fillIn, maker, setAttr, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { linkedWords } from './linked-words';
+import { whileShown } from './shown';
 import { textMenu } from './text-menu';
 import { chevron } from './text-tools';
 import { installEditorStyles } from './styles-editor';
@@ -55,13 +56,16 @@ export const linksWidget: WidgetFactory = ({ form, name, field, node, id, docume
     form.setValue(name, [...linked(), { id: record.id, label: record.label }]);
   };
 
+  // A record picked or made in a dialog is linked to the record shown as it was asked for: never another's.
   async function existing() {
     if (!dialogs || readonly) return;
-    link(await dialogs.searchMore({ title: def.label, search: (query, limit) => form.search(name, query, limit) }));
+    const later = whileShown(form, link);
+    later(await dialogs.searchMore({ title: def.label, search: (query, limit) => form.search(name, query, limit) }));
   }
   async function created() {
     if (!dialogs || readonly) return;
-    link(await dialogs.openRecord(def.relation, { title: def.label }));
+    const later = whileShown(form, link);
+    later(await dialogs.openRecord(def.relation, { title: def.label }));
   }
 
   add.addEventListener('click', () => {
@@ -82,8 +86,9 @@ export const linksWidget: WidgetFactory = ({ form, name, field, node, id, docume
   emptyButton?.addEventListener('click', () => void existing());
 
   async function open(record: RelatedRecord) {
+    const rename = whileShown(form, (label: string) => form.setValue(name, linked().map((r) => (r.id === record.id ? { id: r.id, label } : r))));
     const saved = await dialogs?.openRecord(def.relation, { recordId: record.id, title: record.label });
-    if (saved && saved.label !== record.label) form.setValue(name, linked().map((r) => (r.id === record.id ? { id: r.id, label: saved.label } : r)));
+    if (saved && saved.label !== record.label) rename(saved.label);
   }
 
   function row(record: RelatedRecord): HTMLLIElement {

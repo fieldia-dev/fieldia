@@ -1,5 +1,6 @@
 import type { FilterItem, Locale, RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
+import { whileShown } from './shown';
 import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
 
@@ -72,8 +73,9 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   /** Move the record to a step; and, when told to, save it at once. */
   const pick = (step: Step) => {
     form.setValue(name, step.value as never);
-    // Saved once what the server works out from the step is back, as Flectra saves after its onchange.
-    if (saves) void form.settled().then(() => form.save());
+    // Saved once what the server works out from the step is back, as Flectra saves after its onchange — the record it
+    // was moved on, only while that one is shown: never another the form shows by then.
+    if (saves) void form.settled().then(whileShown(form, () => void form.save()));
   };
 
   function draw() {

@@ -2,6 +2,7 @@ import type { Field, LineField, RelatedRecord, Values } from '@fieldia/core';
 import { displayValue } from './display';
 import { fillIn, maker, setAttr } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
+import { stillShown } from './shown';
 import { installLinesStyles } from './styles-lines';
 import type { WidgetFactory } from './widgets';
 
@@ -60,14 +61,17 @@ export const linksTableWidget: WidgetFactory = ({ form, name, field, node, id, d
 
   add.addEventListener('click', async () => {
     if (!dialogs || readonly) return;
+    // Linked to the record shown as it was asked for: never another's.
+    const shown = stillShown(form);
     const found = await dialogs.searchMore({ title: def.label, search: (query, limit) => form.search(name, query, limit) });
-    if (!found || linked().some((r) => r.id === found.id)) return;
+    if (!found || !shown() || linked().some((r) => r.id === found.id)) return;
     form.setValue(name, [...linked(), { id: found.id, label: found.label }]);
   });
 
   async function open(record: RelatedRecord) {
+    const shown = stillShown(form);
     const saved = await dialogs?.openRecord(def.relation, { recordId: record.id, title: record.label });
-    if (!saved) return;
+    if (!saved || !shown()) return;
     // What its page saved: read again, and its name kept if it changed.
     if (saved.label !== record.label) form.setValue(name, linked().map((r) => (r.id === record.id ? { id: r.id, label: saved.label } : r)));
     read([record], true);

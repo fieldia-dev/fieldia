@@ -226,10 +226,14 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   const picker = make('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', hidden: '', tabindex: '-1', 'aria-hidden': 'true' });
   element.append(picker);
   const MAX_PICTURE = 2 * 1024 * 1024;
+  /** Counted each time the box is given other text from outside (another record's): a picture read meanwhile goes nowhere. */
+  let given = 0;
   function insertPicture(file: File) {
     if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type) || file.size > MAX_PICTURE) return;
     const reader = new FileReader();
+    const asked = given;
     reader.addEventListener('load', () => {
+      if (asked !== given) return;
       const src = String(reader.result);
       if (editor === 'rich') {
         restore();
@@ -801,6 +805,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
       const value = clean && !isEmpty(clean) ? clean : null;
       const typing = element.contains(doc.activeElement);
       if (value === last && typing) return;
+      if (value !== last) given++;
       last = value;
       show(value);
     },

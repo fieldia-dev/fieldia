@@ -4,6 +4,7 @@ import { floatUnder } from './float';
 import { guard, quoted, refusalHint } from './input-rules';
 import { setAttr, setHidden } from './kind-parts';
 import { drawIcon } from './icons';
+import { stillShown, whileShown } from './shown';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -52,7 +53,7 @@ interface TypedRules {
    * check and step forward (`form.settling`) — the record they name taken, waited for by a save — and kept unread
    * with why meanwhile, or when nothing is called so, so nothing is saved over them.
    */
-  form?: Pick<Form, 'getState' | 'setUnread'> & Partial<Pick<Form, 'settling'>>;
+  form?: Pick<Form, 'getState' | 'setUnread'> & Partial<Pick<Form, 'settling' | 'recordShown'>>;
   name?: string;
 }
 
@@ -182,13 +183,15 @@ function combobox(options: {
     typedSeq++;
     pending = null;
     letGo();
+    // A record made, or picked in a dialog, is for the record the form showed as it was asked for: never another's.
+    const pick = whileShown(options.typed?.form, options.pick);
     if (record === creating && options.create) {
-      void options.create(typed).then(options.pick, () => undefined);
+      void options.create(typed).then(pick, () => undefined);
       return;
     }
     const act = extras.get(record);
     if (act) {
-      void act(typed).then((picked) => picked && options.pick(picked), () => undefined);
+      void act(typed).then((picked) => picked && pick(picked), () => undefined);
       return;
     }
     options.pick(record);
@@ -273,8 +276,15 @@ function combobox(options: {
   function readWords(text: string, enter: boolean, awaited: boolean): Reading {
     const mine = ++typedSeq;
     const reading: Reading = { text, enter, awaited, done: Promise.resolve() };
+    const asked = stillShown(form);
     reading.done = named(text, enter).then(async (record) => {
       if (pending === reading) pending = null;
+      // Typed on a record no longer shown — another opened, it loaded again, the person's Discard: nothing is taken, and
+      // the box shows what the record shown holds.
+      if (!asked()) {
+        if (!editing && input.value === text) input.value = unreadNow()?.text ?? shown;
+        return;
+      }
       // Typed in again, or read again, since: the latest acts; a save waiting for these reads what the box holds now.
       if (mine !== typedSeq) {
         if (reading.awaited) await readForSave();
@@ -620,8 +630,9 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     open.addEventListener('click', async () => {
       const current = form.getState().values[name] as RelatedRecord | null;
       if (!current || !dialogs) return;
+      const rename = whileShown(form, (saved: RelatedRecord) => form.setValue(name, saved));
       const saved = await dialogs.openRecord(relation, { recordId: current.id, title: current.label });
-      if (saved && saved.label !== current.label) form.setValue(name, saved);
+      if (saved && saved.label !== current.label) rename(saved);
     });
   }
   const clear = document.createElement('button');
@@ -721,10 +732,13 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       name,
       unmatched: (text) => {
         if (node.options?.['adder'] !== 'button' || !createTag) return false;
-        return createTag(text).then((record) => {
-          if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
-          adder?.added();
-        }, () => undefined);
+        return createTag(text).then(
+          whileShown(form, (record: RelatedRecord) => {
+            if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
+            adder?.added();
+          }),
+          () => undefined
+        );
       },
     },
     // With dialogs: pick from a full list when the short one has no room.
@@ -734,8 +748,9 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const open =
     own.opens && dialogs && dialogs.canOpen(relation)
       ? async (record: RelatedRecord) => {
+          const rename = whileShown(form, (saved: RelatedRecord) => form.setValue(name, current().map((r) => (r.id === record.id ? saved : r))));
           const saved = await dialogs.openRecord(relation, { recordId: record.id, title: record.label });
-          if (saved && saved.label !== record.label) form.setValue(name, current().map((r) => (r.id === record.id ? saved : r)));
+          if (saved && saved.label !== record.label) rename(saved);
         }
       : undefined;
   // Added from a button, "Add Tag": Enter adds the tag typed, an existing one by its name or a new one (`typed` above).

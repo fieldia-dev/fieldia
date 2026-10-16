@@ -1,5 +1,6 @@
 import type { Field, FieldNode, Form, FormState, Line, LineField, RecordId, Value, Values } from '@fieldia/core';
 import { currencyOf } from './display';
+import { stillShown, whileShown } from './shown';
 import type { WidgetDialogs } from './widgets';
 
 /**
@@ -90,7 +91,10 @@ export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField
 export async function openLineDialog(form: Form, name: string, node: FieldNode, line: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
   const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
-  const write = (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
+  // Its answer is for the record it was opened on: written back only while that one is still shown, never on a line of
+  // another (two records' lines may have the same key).
+  const write = whileShown(form, (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l))));
+  const shown = stillShown(form);
   if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
     const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: def.label, withValues: true });
     const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
@@ -110,7 +114,8 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
     fields,
     values: line.values,
     readonly,
-    recompute: (edited) => form.previewLine(name, line.key, edited),
+    // Worked out on its own line while its record is shown; after, as it is.
+    recompute: (edited) => (shown() ? form.previewLine(name, line.key, edited) : Promise.resolve(edited)),
     parent: { values: state.values, fields: form.page.fields, id: state.recordId },
     ...(node.lineForm ? { layout: node.lineForm.children } : {}),
   });

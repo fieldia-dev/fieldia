@@ -4,6 +4,7 @@ import { drawIcon } from './icons';
 import { quoted, refusalHint } from './input-rules';
 import { fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
 import { scrollToRow } from './pick-list';
+import { stillShown } from './shown';
 import { installPathStyles } from './styles-path';
 import type { PreferenceStore } from './preferences';
 import type { Widget, WidgetFactory } from './widgets';
@@ -405,6 +406,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     let finish: () => void = () => undefined;
     const reading = { text, awaited, done: new Promise<void>((resolve) => (finish = resolve)) };
     pending = reading;
+    // Typed on the record shown now: found once another is shown, nothing is taken, and the box shows what that one holds.
+    const asked = stillShown(form);
     candidates(text, (found) => {
       if (pending === reading) pending = null;
       const after = act(found);
@@ -414,6 +417,10 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     return reading.done;
 
     function act(found: readonly RelatedRecord[]): Promise<void> | void {
+      if (!asked()) {
+        if (!editing && input.value.trim() === text.trim()) restore();
+        return;
+      }
       // Typed in again, or another leaving since: that one acts — and a save waiting for these reads the box again.
       if (mine !== typedSeq) return reading.awaited ? readNow() : undefined;
       // Back in the box before they were found: the words are still the person's, and the next leaving acts on them.

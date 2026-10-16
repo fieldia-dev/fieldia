@@ -3,6 +3,7 @@ export * from './lib/styles';
 export * from './lib/labels';
 export * from './lib/relations';
 export * from './lib/lines';
+export { stillShown, whileShown } from './lib/shown';
 // File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
 // the first time a page shows one: `(await filesPart.load()).goingItem(…)`. Their types are here; their code is not. A
 // file shown as its dialog shows it (a sheet's attachment preview) is here, and so is shrinkPhoto, which asks for the part.

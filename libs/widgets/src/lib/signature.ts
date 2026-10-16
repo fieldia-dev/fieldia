@@ -1,5 +1,6 @@
 import { fileProblem, MESSAGES, type FileValue } from '@fieldia/core';
 import { readFile } from './files';
+import { whileShown } from './shown';
 import { goingList } from './files-going';
 import { shrinkFor, shrinkPhoto } from './shrink';
 import { describeState, maker, setHidden, setText, wordsFor } from './kind-parts';
@@ -202,7 +203,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     setText(refused, '');
     setText(refused, problem ?? '');
     setHidden(refused, !problem);
-    if (!problem) void readFile(chosen).then((value) => form.setValue(name, value));
+    // Read once another record is shown: laid on no record.
+    if (!problem) void readFile(chosen).then(whileShown(form, (value: FileValue) => form.setValue(name, value)));
   });
 
   clear.addEventListener('click', () => {
