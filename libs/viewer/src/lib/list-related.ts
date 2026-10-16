@@ -1,11 +1,11 @@
-import type { DataSource, Form, FormState, ListNode, Locale, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, Tone, Values } from '@fieldia/core';
-import { formatNumber, whileShown, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import type { DataSource, Form, FormState, ListNode, Locale, OpenRequest, OpenResult, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, Tone, Values } from '@fieldia/core';
+import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { listView, type ListContext, type ListView } from './list';
 import { installListStyles } from './list-styles';
 
-/** What a related list is drawn with: the viewer's, and its ways to open a record, make one and show them all. */
+/** What a related list is drawn with: the viewer's, its dialogs of the app's pages and its host's way to open a page. */
 export interface RelatedContext {
   /** The record's page as it is shown (its language, the app's translator): its time zone, phones and look are the list's. */
   page: Page;
@@ -22,18 +22,19 @@ export interface RelatedContext {
   press: (button: HTMLElement, run: () => Promise<RunResult>) => Promise<void>;
   withIcon: (icon: string | undefined, text: string) => (Node | string)[];
   uid: (id: string) => string;
-  icons?: IconSet;
+  icons?: IconSet | undefined;
   preferences: PreferenceStore;
-  now?: () => Date;
-  say?: (message: string, tone: Tone) => void;
+  now?: (() => Date) | undefined;
+  say: (message: string, tone: Tone) => void;
   /** The record shown, by its name: what a new record's link to it is labelled. */
   name(): string;
-  /** One of its records opened, by its row (its name, for the dialog's title): settled once it is closed. Rows do not open without it. */
-  openRecord?: (id: RecordId, name?: string) => Promise<unknown>;
-  /** A new one made with these values (its link to this record), settled true once it was saved. No New without it. */
-  newRecord?: (values: Values) => Promise<boolean>;
-  /** Every one of them, in the app's list of them, with these conditions: settled once it is closed. No View all without it. */
-  viewAll?: (filter: ResolvedFilter[]) => Promise<unknown>;
+  /**
+   * A record in a dialog of the page the app gives for its model: a row's record, and New's. Where it gives none for
+   * the related model, rows do not open and there is no New.
+   */
+  dialogs: Pick<WidgetDialogs, 'canOpen' | 'openRecord'>;
+  /** A page opened as an `open` step opens one — the app's own way (`onOpen`) first: View all's. */
+  open: (request: OpenRequest) => Promise<OpenResult>;
 }
 
 /** A related list drawn: told each state of the form, as a part of the page is. */
@@ -83,15 +84,24 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
  * same loaded again, the person's Discard — the answer is drawn in none, and the records are asked for again.
  */
 export function relatedList(context: RelatedContext): RelatedPart {
-  const { node, form, el, labels, fill, box, doc, locale } = context;
+  const { node, form, el, labels, fill, box, doc, locale, dialogs } = context;
   installListStyles(doc);
+  // Its records open, and New makes one, in a dialog of the page the app gives for their model; View all opens its page.
+  const opens = dialogs.canOpen(node.model);
+  const openRecord = opens ? (id: RecordId, name?: string) => dialogs.openRecord(node.model, { recordId: id, title: name || node.title || node.model }) : undefined;
+  const newRecord =
+    opens && node.create !== false
+      ? async (values: Values) => (await dialogs.openRecord(node.model, { values, title: node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null
+      : undefined;
+  const { viewAll } = node;
+  const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
   const page = relatedListPage(context.page, node);
   // Its count in a pill after the title, read out with it as the group's name: "Invoices, 12".
   const count = el('span', { class: 'fd-related-count', 'aria-hidden': 'true', hidden: '' });
   const title = node.title ? el('span', { class: 'fd-related-title' }, ...context.withIcon(node.icon, node.title), count) : null;
   const named = (template: string, plain: string) => (node.title ? fill(template, { title: node.title }) : plain);
-  const all = context.viewAll ? el('button', { type: 'button', class: 'fd-button fd-button-link fd-related-all', hidden: '', 'aria-label': node.title ? named(labels.relatedAllOf, labels.relatedAll) : undefined }, labels.relatedAll) : null;
-  const add = context.newRecord ? el('button', { type: 'button', class: 'fd-button fd-button-secondary fd-related-new', hidden: '', 'aria-label': node.title ? named(labels.relatedNewOf, labels.relatedNew) : undefined }, labels.relatedNew) : null;
+  const all = showAll ? el('button', { type: 'button', class: 'fd-button fd-button-link fd-related-all', hidden: '', 'aria-label': node.title ? named(labels.relatedAllOf, labels.relatedAll) : undefined }, labels.relatedAll) : null;
+  const add = newRecord ? el('button', { type: 'button', class: 'fd-button fd-button-secondary fd-related-new', hidden: '', 'aria-label': node.title ? named(labels.relatedNewOf, labels.relatedNew) : undefined }, labels.relatedNew) : null;
   const tools = el('span', { class: 'fd-related-tools' }, ...(all ? [all] : []), ...(add ? [add] : []));
   const head = el('div', { class: 'fd-related-head' }, ...(title ? [title] : []), tools);
   head.hidden = !title && !all && !add;
@@ -141,10 +151,10 @@ export function relatedList(context: RelatedContext): RelatedPart {
       count.hidden = false;
       nameAs(total);
     },
+    say: context.say,
     ...(context.icons ? { icons: context.icons } : {}),
     ...(context.now ? { now: context.now } : {}),
-    ...(context.say ? { say: context.say } : {}),
-    ...(context.openRecord ? { onOpenRecord: context.openRecord } : {}),
+    ...(openRecord ? { onOpenRecord: openRecord } : {}),
   };
 
   /** The list for the record shown now: a new one for a record it was not listing, else its records asked again. */
@@ -181,6 +191,8 @@ export function relatedList(context: RelatedContext): RelatedPart {
       holder.replaceChildren();
       return;
     }
+    // Hidden by its own condition, or from a person outside its roles: asked for once it shows.
+    if (form.node(node.id).invisible) return;
     // Asked already for this record as it is: nothing new. Another shown, loaded again, its Discard: asked again.
     const key = JSON.stringify(filter);
     if (asked && asked.key === key && asked.shown()) return;
@@ -193,25 +205,25 @@ export function relatedList(context: RelatedContext): RelatedPart {
 
   add?.addEventListener('click', async () => {
     const id = form.getState().recordId;
-    if (id == null || !context.newRecord || add.hasAttribute('aria-busy')) return;
+    if (id == null || !newRecord || add.hasAttribute('aria-busy')) return;
     const back = again();
     add.setAttribute('aria-busy', 'true');
     try {
-      if (await context.newRecord({ [node.field]: { id, label: context.name() } })) back();
+      if (await newRecord({ [node.field]: { id, label: context.name() } })) back();
     } finally {
       add.removeAttribute('aria-busy');
     }
   });
   all?.addEventListener('click', async () => {
     const filter = form.relatedFilter(node.id);
-    if (!filter || !context.viewAll || all.hasAttribute('aria-busy')) return;
+    if (!filter || !showAll || all.hasAttribute('aria-busy')) return;
     const back = again();
     all.setAttribute('aria-busy', 'true');
     try {
-      await context.viewAll(filter);
+      await showAll(filter);
     } catch (error) {
       // A page the app does not have: said, as an `open` step says it.
-      context.say?.((error as Error).message, 'danger');
+      context.say((error as Error).message, 'danger');
     } finally {
       all.removeAttribute('aria-busy');
     }

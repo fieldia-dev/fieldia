@@ -52,7 +52,7 @@ import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler
 import { upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
-import type { RelatedContext, RelatedPart } from './list-related';
+import type { RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -1320,64 +1320,34 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     /**
      * Another model's records that point at this record, listed inside it: drawn by the list part (list-related.ts),
-     * which the page waited for, in a box of the row's width; their records opened and made in dialogs of the page the
-     * app gives for their model, all of them in the app's list page (`viewAll`) as an `open` step opens one. Not shown
-     * where the data source cannot list records.
+     * which the page waited for, in a box of the row's width, with the dialogs of the app's pages and the host's way to
+     * open a page. Not shown where the data source cannot list records.
      */
     function relatedItem(node: RelatedNode): HTMLElement {
-      const box = el('div', { 'data-node': node.id, class: 'fd-related' });
+      const box = el('div', { 'data-node': node.id });
       spans(box, node.colspan ?? 12);
       if (!options.dataSource?.list) {
         box.hidden = true;
         return box;
       }
-      const { model, viewAll } = node;
-      const opens = !!(options.pages || options.relatedPages) && dialogs.canOpen(model);
-      const context: RelatedContext = {
-        page,
-        node,
-        form,
-        dataSource: options.dataSource,
-        box,
-        doc,
-        el,
-        labels,
-        locale,
-        fill,
-        press,
-        withIcon,
-        uid,
-        preferences,
-        say: (message, tone) => actionHost.say(message, tone),
-        name: () => recordName(),
-        ...(options.icons ? { icons: options.icons } : {}),
-        ...(options.now ? { now: options.now } : {}),
-        ...(opens ? { openRecord: (id: RecordId, name?: string) => dialogs.openRecord(model, { recordId: id, title: name || node.title || model }) } : {}),
-        ...(opens && node.create !== false
-          ? { newRecord: async (values: Values) => (await dialogs.openRecord(model, { values, title: node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null }
-          : {}),
-        ...(viewAll ? { viewAll: (filter: ResolvedFilter[]) => actionHost.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) } : {}),
-      };
-      // The part has come (the page waited for it); where it could not, it is asked for again, "Loading…" meanwhile.
       let part: RelatedPart | null = null;
       const take = (module: NonNullable<typeof listPart.loaded>) => {
-        part = module.relatedList(context);
+        part = module.relatedList({
+          page, node, form, box, doc, el, labels, locale, fill, press, withIcon, uid, preferences, dialogs,
+          dataSource: options.dataSource,
+          icons: options.icons,
+          now: options.now,
+          open: (request) => actionHost.open(request),
+          say: (message, tone) => actionHost.say(message, tone),
+          name: recordName,
+        });
         part.update(form.getState());
       };
       watch((state) => part?.update(state));
       cleanups.push(() => part?.destroy());
+      // The part has come; where it could not, it is asked for again.
       if (listPart.loaded) take(listPart.loaded);
-      else {
-        const words = el('p', { class: 'fd-list-waiting', role: 'status' }, labels.loading);
-        box.append(words);
-        void listPart.load().then(
-          (module) => {
-            words.remove();
-            if (!gone) take(module);
-          },
-          () => (words.textContent = labels.loadFailed)
-        );
-      }
+      else void listPart.load().then((module) => gone || take(module), () => undefined);
       hideWhen(box, node.id);
       return box;
     }

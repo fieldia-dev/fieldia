@@ -195,6 +195,34 @@ describe('a related list inside a record', () => {
     await until(() => missing.host.querySelector('.fd-say')?.textContent?.includes('nowhere'));
   });
 
+  it('View all in this page’s place: the app’s list of them kept to this record’s, and Back to the record', async () => {
+    const list = {
+      fieldia: '0.3',
+      id: 'invoices',
+      title: 'All invoices',
+      data: { kind: 'record', model: 'invoice' },
+      fields: invoices.fields,
+      layout: { type: 'list', id: 'all', columns: ['name', 'partner_id'], sort: [{ field: 'name' }] },
+    } as unknown as Page;
+    const { host } = await mount({ page: customer({ viewAll: { page: 'invoices', as: 'page' } }), pages: { invoices: list } });
+    await until(() => rows(host).length === 2);
+    named(host, 'View all')?.click();
+    await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 3);
+    expect([...host.querySelectorAll('[data-node="all"] .fd-list-row td:nth-child(2)')].map((td) => td.textContent)).toEqual(['INV/1', 'INV/2', 'INV/4']);
+    (host.querySelector('.fd-back') as HTMLButtonElement).click();
+    await until(() => !host.querySelector('[data-node="all"]') && rows(host).length === 2);
+  });
+
+  it('asks nothing while hidden by its rule, and asks once it shows', async () => {
+    const dataSource = createMemoryDataSource({ records: records() });
+    const { host, handle } = await mount({ dataSource, page: customer({ invisible: "name == 'Acme'" }) });
+    expect(part(host).hidden).toBe(true);
+    expect(dataSource.calls.filter((call) => call.method === 'list')).toEqual([]);
+    handle.form.setValue('name', 'Acme Ltd');
+    await until(() => rows(host).length === 2);
+    expect(part(host).hidden).toBe(false);
+  });
+
   it('offers no New, no View all and no row to open where the app gives no page for them', async () => {
     const { host } = await mount();
     await until(() => rows(host).length === 2);

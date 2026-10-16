@@ -500,9 +500,7 @@ export class ReferenceCheck {
 
   private walkList(list: ListNode, path: string) {
     if (this.page.data.kind !== 'record') this.report('data', 'a list shows records: its data needs kind "record" and a model');
-    list.columns.forEach((name, i) => this.need(name, `${path}.columns[${i}]`));
-    list.sort?.forEach((order, i) => this.need(order.field, `${path}.sort[${i}].field`));
-    list.searchFields?.forEach((name, i) => this.need(name, `${path}.searchFields[${i}]`));
+    this.checkListed(list, this.page.fields, path);
     list.groupBy?.forEach((name, i) => this.need(name, `${path}.groupBy[${i}]`));
     // A list's filters are about its own records: their fields are the page's, and there is no record to take a value from.
     const walk = (item: FilterItem, at: string): void => {
@@ -570,23 +568,6 @@ export class ReferenceCheck {
    * the rows chosen need a box to choose one.
    */
   private checkListCells(list: ListNode, path: string) {
-    for (const [column, cell] of Object.entries(list.cells ?? {})) {
-      const at = `${path}.cells.${column}`;
-      if (!list.columns.includes(column)) {
-        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
-        continue;
-      }
-      // A sum, an average, the lowest and the highest are a number column's; any column has a count.
-      const kind = this.page.fields[column]?.type;
-      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
-        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
-      }
-      if (!cell.lead) continue;
-      const def = this.need(cell.lead.field, `${at}.lead.field`);
-      if (def?.type !== 'selection') continue;
-      const values = new Set(def.options.map((option) => String(option.value)));
-      for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
-    }
     if (list.filterFields && list.search !== 'fields') this.report(`${path}.filterFields`, 'the filter fields are for the "fields" search: add "search": "fields"');
     list.filterFields?.forEach((name, i) => {
       const def = this.need(name, `${path}.filterFields[${i}]`);
@@ -605,6 +586,33 @@ export class ReferenceCheck {
     }
     if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
     this.checkBulkEdit(list, path);
+  }
+
+  /**
+   * What a list shows of its records — a list page's, or a related list's of its own records' fields: its columns, its
+   * order and the fields its search looks in, each a field; each column's cells for a column of it, a sum, an average,
+   * the lowest and the highest of a number column (any column's count), a lead's icon by a field's values.
+   */
+  private checkListed(list: Pick<ListNode, 'columns' | 'sort' | 'searchFields' | 'cells'>, fields: Record<string, Field | LineField>, path: string) {
+    list.columns.forEach((name, i) => this.need(name, `${path}.columns[${i}]`, fields));
+    list.sort?.forEach((order, i) => this.need(order.field, `${path}.sort[${i}].field`, fields));
+    list.searchFields?.forEach((name, i) => this.need(name, `${path}.searchFields[${i}]`, fields));
+    for (const [column, cell] of Object.entries(list.cells ?? {})) {
+      const at = `${path}.cells.${column}`;
+      if (!list.columns.includes(column)) {
+        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
+        continue;
+      }
+      const kind = has(fields, column) ? fields[column].type : undefined;
+      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
+        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
+      }
+      if (!cell.lead) continue;
+      const def = this.need(cell.lead.field, `${at}.lead.field`, fields);
+      if (def?.type !== 'selection') continue;
+      const values = new Set(def.options.map((option) => String(option.value)));
+      for (const value of Object.keys(cell.lead.looks)) if (!values.has(value)) this.report(`${at}.lead.looks.${value}`, `"${value}" is no value of "${cell.lead.field}"`);
+    }
   }
 
   /** A list's Edit: each field it names one value can set in many records, and rows to choose to set it on. */
@@ -820,10 +828,7 @@ export class ReferenceCheck {
     const model = this.page.data.kind === 'record' ? this.page.data.model : null;
     if (!model || this.line) this.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
     const fields = node.fields as Record<string, Field | LineField>;
-    const own = (name: string, at: string) => this.need(name, at, fields);
-    node.columns.forEach((name, i) => own(name, `${path}.columns[${i}]`));
-    node.sort?.forEach((order, i) => own(order.field, `${path}.sort[${i}].field`));
-    node.searchFields?.forEach((name, i) => own(name, `${path}.searchFields[${i}]`));
+    this.checkListed(node, fields, path);
     const link = has(fields, node.field) ? fields[node.field] : undefined;
     if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
       this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);
@@ -834,18 +839,6 @@ export class ReferenceCheck {
     }
     // Its filter is about its records, by their fields; what it compares with may be read from this record.
     node.filter?.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, this.here()));
-    for (const [column, cell] of Object.entries(node.cells ?? {})) {
-      const at = `${path}.cells.${column}`;
-      if (!node.columns.includes(column)) {
-        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
-        continue;
-      }
-      const kind = has(fields, column) ? fields[column].type : undefined;
-      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
-        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
-      }
-      if (cell.lead) own(cell.lead.field, `${at}.lead.field`);
-    }
     if (node.viewAll && node.viewAll.page === this.page.id) this.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
   }
 
