@@ -8,6 +8,7 @@ import type {
   Line,
   LineField,
   Locale,
+  Page,
   RecordId,
   ReferenceValue,
   RelatedRecord,
@@ -38,7 +39,8 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, phonePart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { phoneSettings } from './phone-settings';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTotal } from './business-plain';
 import { plainAddress, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
 import type { Part } from './parts';
@@ -204,10 +206,11 @@ export function createWidget(given: WidgetContext, registry: Record<string, Widg
 /**
  * The part a field's widget comes in (parts.ts) — a work item's text editor, its links box, a path picker — when
  * its code is loaded the first time a page shows one; undefined for a widget that is always there. The viewer
- * asks for these before it draws a page, so its widgets are drawn whole at once.
+ * asks for these before it draws a page, so its widgets are drawn whole at once. `page`, the page the field is on,
+ * for a widget its page's settings choose (a phone read the world over).
  */
-export function widgetPart(field: Field, node: FieldNode, registry: Record<string, WidgetFactory> = {}): Part | undefined {
-  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node);
+export function widgetPart(field: Field, node: FieldNode, registry: Record<string, WidgetFactory> = {}, page?: Page): Part | undefined {
+  return (factoryFor(field, node, registry) as Partial<PartFactory> | undefined)?.partOf?.(node, page);
 }
 
 /** The factory for a field: the app's or the built-in one for `type.widget`, then for the type alone. */
@@ -879,13 +882,16 @@ export function summary(value: Value | undefined, field: Field): string {
  */
 const later = (factory: () => WidgetFactory): WidgetFactory =>
   Object.assign((context: WidgetContext) => factory()(context), {
-    partOf: (node: FieldNode) => (factory() as Partial<PartFactory>).partOf?.(node),
+    partOf: (node: FieldNode, page?: Page) => (factory() as Partial<PartFactory>).partOf?.(node, page),
   });
 
 export const builtInWidgets: Record<string, WidgetFactory> = {
   char: textWidget('text'),
   'char.email': textWidget('email'),
-  'char.phone': textWidget('tel'),
+  // A phone read the world over where its page or its own options say so (phone-box.ts, in the phone part): its
+  // country picked or typed, checked, kept as E.164, shown at rest with its links. Else, and before the part comes, the
+  // text box it was.
+  'char.phone': partFactory(phonePart, (part) => part.phoneWidget, textWidget('tel'), (node, page) => phoneSettings(page, node.options) !== null),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
   'char.time': dateBoxOf('time'),

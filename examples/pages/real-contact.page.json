@@ -5,6 +5,7 @@
   "description": "Sherkety ERP's contact form (res.partner, base.view_partner_form) as a user with Sales, Purchase, Invoicing, CRM and the Egyptian e-invoicing module sees it.",
   "data": { "kind": "record", "model": "res.partner" },
   "maxWidth": "full",
+  "phone": { "country": "EG", "shown": "national" },
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true },
     "image_1920": { "type": "image", "label": "Image", "maxSize": 2097152 },
@@ -475,6 +476,7 @@
                 "widget": "cards",
                 "labels": "hidden",
                 "columns": ["type", "name", "function", "email", "phone", "mobile", "street", "city", "country_id"],
+                "cells": { "phone": { "widget": "phone" }, "mobile": { "widget": "phone" } },
                 "options": { "itemLabel": "Contact", "addLabel": "Add" },
                 "lineForm": {
                   "children": [

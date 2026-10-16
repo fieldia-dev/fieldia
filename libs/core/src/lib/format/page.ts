@@ -3,6 +3,7 @@ import { PageEventsSchema, type PageEvents } from './actions';
 import { FieldsSchema, type Fields } from './field';
 import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
+import { PagePhoneSchema, type PagePhone } from './phone';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -128,6 +129,13 @@ export interface Page {
   on?: PageEvents;
   /** A page of responses open to anyone: a check that a person sends it, told to the app with the answers. */
   botCheck?: BotCheck;
+  /**
+   * Its phone fields (`"widget": "phone"`) read and kept as one number the world over: typed at home or with their +,
+   * checked by their country, kept as E.164 ("+201012345678"), shown at rest as `shown` says, with a call and a
+   * WhatsApp link. `country` is the one a number typed without its + is read in — never assumed when left out. A field
+   * says otherwise in its `options`. Without it (and without those options), a phone field is a text box, as before.
+   */
+  phone?: PagePhone;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -195,6 +203,7 @@ export const PageSchema = z
       })
       .meta({ id: 'BotCheck' })
       .optional(),
+    phone: PagePhoneSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

@@ -1,5 +1,5 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
-import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pathPart, quietPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pathPart, phonePart, phoneSettings, quietPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -38,7 +38,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, themesPart, quietPart, phonePart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -67,14 +67,17 @@ const markdownAlone = (node: SectionNode) => {
  * a progress bar), so their columns' parts are the page's too; a sheet's title draws the fields it names (its avatar:
  * a picture field); and a properties field, itself in the survey part, may hold a date — one added in place, or worked
  * out from its value — whatever the page names, so it asks for the date part too (never a file: a property holds none).
+ *
+ * A phone field is read the world over where its page's `phone` or its own options say so, and a list's phone column
+ * then writes its numbers as people read them: both ask for the phone part.
  */
 export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}, slots: Record<string, { readonly parts?: readonly Part[] }> = {}): Part[] {
   const found = new Set<Part>();
   const fieldParts = (field: Field, node: FieldNode): void => {
-    const part = widgetPart(field, node, widgets);
+    const part = widgetPart(field, node, widgets, page);
     if (part) found.add(part);
     // Its rows are drawn with each kind's widget: a date's, unless the app draws dates.
-    const dated = field.type === 'properties' ? widgetPart({ type: 'date', label: field.label }, { type: 'field', id: node.id, field: node.field }, widgets) : undefined;
+    const dated = field.type === 'properties' ? widgetPart({ type: 'date', label: field.label }, { type: 'field', id: node.id, field: node.field }, widgets, page) : undefined;
     if (dated) found.add(dated);
     if (field.type !== 'one2many' || !field.fields) return;
     for (const [column, sub] of Object.entries(field.fields)) {
@@ -106,6 +109,7 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     else if (node.type === 'list') {
       found.add(listPart);
       if (node['search'] === 'fields') found.add(filtersPart);
+      if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
     else if (node.type === 'slot' && typeof node['name'] === 'string') for (const part of slots[node['name']]?.parts ?? []) found.add(part);
     else if (node.type === 'field' && typeof node['field'] === 'string') {
@@ -121,6 +125,13 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
   if (page.look?.theme) found.add(themesPart);
   if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
+}
+
+/** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
+export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unknown }): string[] {
+  const cells = (list.cells ?? {}) as Record<string, { widget?: string; options?: Record<string, unknown> } | undefined>;
+  const columns = Array.isArray(list.columns) ? (list.columns as unknown[]).filter((name): name is string => typeof name === 'string') : [];
+  return columns.filter((name) => cells[name]?.widget === 'phone' && page.fields[name]?.type === 'char' && phoneSettings(page, cells[name]?.options) !== null);
 }
 
 /**

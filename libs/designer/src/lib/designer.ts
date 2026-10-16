@@ -364,6 +364,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPageInfo(info: { title?: string; description?: string }): boolean;
   /** A public page's bot check (`botCheck`): a hidden box, the fewest seconds, the slot its captcha is drawn in; null takes it off. A page of responses only. */
   setBotCheck(check: BotCheck | null): boolean;
+  /**
+   * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
+   * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
+   * home's — `null` takes either away.
+   */
+  setPhone(patch: { on?: boolean; country?: string | null; shown?: 'international' | 'national' | null }): boolean;
   /** The records a link, links or a table of lines point to, by their model's name. */
   setRelation(id: string, model: string): boolean;
   /** An amount's currency, such as USD. */
@@ -1345,6 +1351,28 @@ export function createDesigner(options: {
           ...others,
         ];
       });
+    },
+
+    setPhone(patch) {
+      return apply(
+        (draft) => {
+          if (patch.on === false) {
+            delete draft.phone;
+            return;
+          }
+          const phone = { ...(draft.phone ?? {}) };
+          if (patch.country !== undefined) {
+            if (patch.country) phone.country = patch.country;
+            else delete phone.country;
+          }
+          if (patch.shown !== undefined) {
+            if (patch.shown) phone.shown = patch.shown;
+            else delete phone.shown;
+          }
+          draft.phone = phone;
+        },
+        `phone:${Object.keys(patch).join(',')}`
+      );
     },
 
     setPageInfo(info) {

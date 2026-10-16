@@ -52,4 +52,21 @@ value the browser fills in is the person's own, read as typed: cleaned as a
 paste is, never put back where nobody may be looking, read at once in a box the
 person is not in, and saved as any change of theirs.
 
+A phone field (`"widget": "phone"`) is read the world over where its page says
+`"phone": { "country": "EG", "shown": "national" }` — or the field itself, with
+`"options": { "country": "AE" }` or `"shown"`. Its country is picked before the
+number (its flag and dialling code, every country by its name in the page's
+language) or typed with it: "010 1234 5678" is read in the country picked,
+"+20 10 1234 5678" or "0020…" in Egypt whatever was picked. The number is
+checked by its country — how long it is by how it starts, and whether any number
+there starts so — kept as E.164 (`"+201012345678"`), and shown at rest abroad's
+way (`"+20 10 1234 5678"`, the default) or at home's (`"010 1234 5678"`), a call
+and a WhatsApp link beside it. A letter is refused and said why; a number that
+does not read stays as typed with why ("too short for a +20 number (Egypt)"),
+and the save refuses it. No country is ever assumed: without one, a number is
+written with its +. A page that says neither keeps its phone fields as text
+boxes. The country table (`phoneCountries`, `readPhone`, `writePhone`,
+`shownPhone`) comes in the phone part with the widget,
+`(await phonePart.load()).readPhone('010 1234 5678', 'EG')`.
+
 MIT licensed.

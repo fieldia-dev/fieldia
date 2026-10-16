@@ -81,7 +81,9 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const fields = names.map((column) => {
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;
-      const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
+      // Each with its column's widget, as the table's cells say (a phone read the world over), as a table draws it.
+      const cell = node.cells?.[column];
+      const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...(cell?.widget ? { widget: cell.widget } : {}), ...(cell?.options ? { options: cell.options } : {}) };
       const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
       const label = make('label', { class: 'fd-repeat-label', for: cellId }, sub.label);
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());

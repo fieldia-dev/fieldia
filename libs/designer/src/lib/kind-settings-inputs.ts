@@ -1,4 +1,5 @@
 import type { Field, FieldNode, Page } from '@fieldia/core';
+import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { CODE_LANGUAGE_CHOICES } from './code-languages';
@@ -17,7 +18,7 @@ import { settingNumber, type SettingNumberOptions } from './number-box';
  * fixed or counted from today, its weekends and its start; a date and
  * time's and a time's step of minutes, and a time's earliest and latest;
  * keywords' suggestions, separator and most; a progress bar's most, colour
- * and percent.
+ * and percent; a phone's country to start on and how it is shown.
  */
 
 export interface InputSettings {
@@ -425,8 +426,26 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** A phone's own country to start on and how it is shown, else the page's: either read the field the world over. */
+  function phone(): Part {
+    const country = select(w.phoneCountry, [['', w.thePages]]);
+    country.addEventListener('change', () => designer.setWidgetOptions(id, { country: country.value || null }));
+    const shown = select(w.phoneShown, [['', w.thePages], ['international', w.phoneShownAs.international], ['national', w.phoneShownAs.national]]);
+    shown.addEventListener('change', () => designer.setWidgetOptions(id, { shown: shown.value || null }));
+    return {
+      element: row(word(w.phoneCountry, country), word(w.phoneShown, shown)),
+      refresh(_page, node) {
+        // The countries, by their names in the designer's language, listed once the setting is first drawn.
+        if (country.options.length === 1) country.append(...countriesIn(designer.locale ?? 'en').map(([code, name]) => el('option', { value: code }, name)));
+        show(country, node.options?.['country']);
+        show(shown, node.options?.['shown']);
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
+  if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'number' || kind === 'amount') parts.push(range());

@@ -213,6 +213,11 @@ export const questions = {
   partsFilled: 'Parts that must be filled',
   startsOn: 'Starts on',
   noCountry: 'No country',
+  // ---- a phone read the world over: its own country and how it is shown, else the page's
+  phoneCountry: 'Country to start on',
+  phoneShown: 'Shown',
+  thePages: 'The page’s',
+  phoneShownAs: { international: 'Abroad’s way: +20 10 1234 5678', national: 'At home’s way: 010 1234 5678' },
   addALine: 'Add a line',
   whenEmpty: 'When empty',
   noLines: 'No lines yet',

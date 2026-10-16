@@ -54,7 +54,11 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // The survey kinds — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a
 // progress bar — come in the survey part, loaded the first time a page shows one; `progressbarWidget` and
 // `propertiesWidget` draw from it, each value shown plainly until it comes.
-export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PartFactory } from './lib/widget-parts';
+// A phone read the world over (a page's `phone`, a field's `country` or `shown`) comes in the phone part, with every
+// country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
+export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
+export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type PartFactory } from './lib/widget-parts';
+export { phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

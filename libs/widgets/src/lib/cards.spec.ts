@@ -147,3 +147,17 @@ describe('a repeating group’s cards moved and copied', () => {
     expect(shown(el).every((card) => [...card.querySelectorAll<HTMLButtonElement>('.fd-repeat-head button')].every((b) => b.hidden))).toBe(true);
   });
 });
+
+describe('a card’s fields', () => {
+  it('are each drawn with its column’s widget, as the table’s cells say: a phone read the world over', () => {
+    const { el, form } = mountKind({ ...GUESTS, fields: { ...GUESTS.fields, mobile: { type: 'char', label: 'Mobile' } } }, { widget: 'cards', cells: { mobile: { widget: 'phone', options: { country: 'AE' } } } });
+    add(el).click();
+    const card = shown(el)[0];
+    expect(card.querySelector('.fd-phone .fd-phone-country')?.textContent).toContain('+971');
+    const key = lines(form.getState().values['x'])[0].key;
+    form.updateLine('x', key, 'mobile', '+971501234567');
+    expect((card.querySelector('.fd-phone-input') as HTMLInputElement).value).toBe('+971 50 123 4567');
+    // The other columns, as they were.
+    expect(card.querySelector('input:not(.fd-phone-input)')?.getAttribute('type')).toBe('text');
+  });
+});

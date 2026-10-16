@@ -1,4 +1,5 @@
-import { foldDigits, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { foldDigits, stripMarks, webAddress, type Field, type FieldNode, type LineField, type Locale, type Page, type RelatedRecord, type Value, type Values } from '@fieldia/core';
+import { phoneSettings } from './phone-settings';
 import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetDialogs } from './widgets';
@@ -12,11 +13,15 @@ import { detailLines, linkAvatar } from './relations';
  * words wrapped rather than cut at a box's edge. Empty, it is empty.
  */
 
-/** Whether a field drawn this way is shown as words while it is read-only: kinds whose box holds a value, not a table, tags or a file. */
-export function readsAsText(field: Field, node: FieldNode): boolean {
+/**
+ * Whether a field drawn this way is shown as words while it is read-only: kinds whose box holds a value, not a table,
+ * tags or a file. A phone its `page` reads the world over shows itself so, with its links (the phone part).
+ */
+export function readsAsText(field: Field, node: FieldNode, page?: Pick<Page, 'phone'>): boolean {
   const widget = node.widget;
   switch (field.type) {
     case 'char':
+      if (widget === 'phone' && phoneSettings(page, node.options)) return false;
       return !widget || widget === 'email' || widget === 'phone' || widget === 'url';
     case 'selection':
       return !widget && !field.multiple && !field.optionsFrom;

@@ -193,6 +193,7 @@ ${code('json', `{ "type": "section", "id": "header", "columns": { "wide": 2, "me
 
 <h3 id="page-width">Page width, and where Save sits</h3>
 <p>The page itself takes ${c('maxWidth')} — ${c('narrow')} (640px), ${c('medium')} (900px), ${c('wide')} (1180px, a sheet's own) or ${c('full')} — and ${c('actionsPosition')}: ${c('top')} or ${c('bottom')}. A page of responses anyone may send takes ${c('botCheck')}: a hidden box, the fewest seconds, a captcha's slot (<a href="/data/#bots">a public form's bot check</a>). A sheet keeps Save and Discard at the top unless told otherwise, a sections page at the bottom; a wizard keeps its own buttons.</p>
+<p>And ${c('phone')}: how its phone fields read and show numbers the world over — ${c('{ "country": "EG", "shown": "national" }')}, the country a number typed without its + is read in, and whether one is shown at home's way or abroad's. Left out, a phone field is a text box. See <a href="/fields/#phone">phone numbers the world over</a>.</p>
 <p>A sheet or a sections page may give its own buttons at its ${c('footer')}, as a Flectra wizard does — ${c('Mark as Lost')} and ${c('Cancel')}. They stand in place of Save and Discard, and in a dialog or panel in place of Save &amp; Close and Discard. Each is a button like any other: once its steps saved, the dialog closes with the answers; a ${c('close')} step closes it without them; Ctrl+Enter presses the primary one.</p>
 
 <h3 id="icons">Icons</h3>

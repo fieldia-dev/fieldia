@@ -352,6 +352,9 @@
     },
     "botCheck": {
       "$ref": "#/$defs/BotCheck"
+    },
+    "phone": {
+      "$ref": "#/$defs/PagePhone"
     }
   },
   "required": [
@@ -9332,6 +9335,23 @@
         "captcha": {
           "type": "string",
           "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "PagePhone": {
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "shown": {
+          "type": "string",
+          "enum": [
+            "international",
+            "national"
+          ]
         }
       },
       "additionalProperties": false

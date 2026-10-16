@@ -75,6 +75,7 @@ export type {
 } from './lib/format/layout';
 export type { AddressSearchOptions } from './lib/format/address-search';
 export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-options';
+export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export { wideColumns } from './lib/format/columns';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
 export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';

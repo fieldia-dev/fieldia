@@ -429,16 +429,16 @@ export function sampleDataSource() {
           (
             [
               ['Amira Clinics', 'info@amiraclinics.example', '+20 2 2735 1100', 1, 'active', 1, 50000, 4],
-              ['Bayt Interiors', 'hello@baytinteriors.example', '+962 6 461 2200', 2, 'active', 2, 18000, 7],
+              ['Bayt Interiors', 'hello@baytinteriors.example', '+96264612200', 2, 'active', 2, 18000, 7],
               ['Cairo Coworking', 'desk@cairocowork.example', '+20 2 2794 3300', 1, 'draft', 1, 30000, 0],
-              ['Delta Foods', 'orders@deltafoods.example', '+20 40 333 4400', 1, 'active', 1, 420000, 26],
+              ['Delta Foods', 'orders@deltafoods.example', '+20403334400', 1, 'active', 1, 420000, 26],
               ['Giza Plaza', 'leasing@gizaplaza.example', '+20 2 3572 5500', 1, 'blocked', 1, 120000, 9],
               ['Heliopolis Dental Care', 'front@heliodental.example', '+20 2 2418 6600', 1, 'active', 1, 65000, 5],
               ['Maadi Labs', 'team@maadilabs.example', null, 1, 'draft', 1, null, 0],
-              ['Nour Pharmacies', 'buying@nourpharma.example', '+966 11 464 7700', 3, 'active', 3, 90000, 14],
+              ['Nour Pharmacies', 'buying@nourpharma.example', '+966114647700', 3, 'active', 3, 90000, 14],
               ['Sahel Resorts', 'stay@sahelresorts.example', '+20 46 419 8800', 1, 'active', 1, 310000, 11],
               ['Tahrir Books', 'shop@tahrirbooks.example', '+20 2 2392 9900', 1, 'blocked', 1, 15000, 3],
-              ['Zamalek Studio', 'studio@zamalek.example', '+20 2 2736 1010', 1, 'active', 1, 40000, 2],
+              ['Zamalek Studio', 'studio@zamalek.example', '+201001234567', 1, 'active', 1, 40000, 2],
             ] as const
           ).map(([name, email, phone, country, state, currency, credit_limit, sale_order_count], i) => [
             20 + i,
