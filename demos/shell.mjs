@@ -9,7 +9,7 @@
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
-import { backlogSnippets, listMapSnippets, saveSafetySnippets, snippets, uploadsSnippets } from './snippets.mjs';
+import { backlogSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
 const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
@@ -193,7 +193,15 @@ function drawCode() {
   const uploads = demo?.code === 'uploads';
   // One record in two tabs: the page, the demo's own script, and a data source of your own that tells versions and rights.
   const safety = demo?.code === 'save-safety';
-  const tabs = uploads
+  // A test drive booked from the times free: the page, the demo's script with its schedule, and the slots() an app gives.
+  const slots = demo?.code === 'slots';
+  const tabs = slots
+    ? [
+        ['json', 'Page JSON', 'The test drive this demo books: plain JSON, its time zone and its slots, the same the browser tests drive.'],
+        ['js', 'JavaScript', 'The demo’s script: the memory source answering from the showroom’s schedule.'],
+        ['source', 'Your source', 'slots() for your own server: the free times of the days asked.'],
+      ]
+    : uploads
     ? [
         ['json', 'Page JSON', 'The listing this demo shows: plain JSON, the same the browser tests drive.'],
         ['js', 'JavaScript', 'The demo’s script: the memory source as a slow store, one photo failing once.'],
@@ -245,8 +253,8 @@ function drawCode() {
     current = tab;
     const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page ?? null;
     // Coloured as its language reads: the page's JSON, the frameworks' own code.
-    const written = uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
-    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', server: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
+    const written = slots ? slotsSnippets(page, params) : uploads ? uploadsSnippets(page, params) : safety ? saveSafetySnippets(page, params) : backlog ? backlogSnippets(page, window.fieldiaDemo?.bugPage ?? null) : ownPage ? listMapSnippets(page) : snippets(page, params);
+    code.innerHTML = highlight({ json: 'json', bug: 'json', js: 'ts', store: 'ts', server: 'ts', source: 'ts', react: 'tsx', vue: 'vue', angular: 'ts' }[tab], written[tab]);
     note.textContent = tabs.find(([id]) => id === tab)[2];
     for (const button of drawer.querySelectorAll('[role="tab"]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   };

@@ -17,9 +17,10 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * meets first — forms drawn and filled, their behaviour and layout, lists, dialogs, the quiet look, a place on a map,
  * right to left, and a part that fails kept to itself — in the plain demo alone, as the frameworks' bindings draw the
  * same DOM — and where the keyboard lands after save safety's buttons hide themselves, which each engine moves its own
- * way. Chromium runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
+ * way — and booking slots and a date and time on a zone's clock, which each engine's Intl writes and each engine's keys
+ * move. Chromium runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'slots'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

@@ -456,6 +456,21 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'test-drive',
+    name: 'A test drive, booked from the times free',
+    category: 'fields',
+    query: 'page=test-drive&skin=outlined&record=new',
+    code: 'slots',
+    blurb: 'A showroom in Berlin takes test drives: pick a car, then a day on the month — shaded by how it is booked, full days hatched, closed days faint, a staff day marked — and one of its free times. Every time is on Berlin’s clock, named beside it, wherever you book from; a time someone booked meanwhile is said, never booked over.',
+    howTo: [
+      'Pick a car, then a day: its free times show beside the month. Another car has times of its own.',
+      'Without a mouse: Tab to the month, move with the arrows (Page Up and Page Down by month), and its times follow; Enter goes to them, the arrows move among them, Enter books one.',
+      'The next Wednesday is fully booked for the hatchback: hatched, with no times.',
+      'Type a time in Call back at: it is on Berlin’s clock, CEST or CET beside it. Try 25/10/2026 02:30: it comes twice that night, and the box asks which.',
+      'Open the Code drawer: the demo’s schedule, and the slots() your server gives.',
+    ],
+  },
+  {
     id: 'map-kitchen',
     name: 'A kitchen’s map',
     category: 'records',
