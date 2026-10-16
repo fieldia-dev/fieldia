@@ -142,3 +142,36 @@ describe('a change’s answer (onchange) that comes after its record was replace
     expect(form.getState()).toMatchObject({ recordId: 1, dirty: [], values: { name: 'Villa in Sheikh Zayed', stage: 'new', probability: 10 } });
   });
 });
+
+describe('a record step whose call answers after the record it ran on was replaced', () => {
+  it('Duplicate: the copy made for lead 1 does not take the form from lead 2, nor what was typed in it', async () => {
+    const ds = source();
+    const form = await opened(ds, { host: host().host });
+    ds.hold('copy');
+    const run = form.run([{ do: 'duplicate' }]);
+    await tick();
+    expect(await form.openRecord(2)).toBe(true);
+    form.setValue('phone', '+201110000000');
+    ds.release('copy');
+    const result = await run;
+    await form.settled();
+    expect(ds.records[5]).toMatchObject({ name: 'Villa in Sheikh Zayed (copy)' });
+    expect(form.getState()).toMatchObject({ recordId: 2, dirty: ['phone'], values: { phone: '+201110000000' } });
+    expect(result.done).toBe(false);
+  });
+
+  it('Archive: lead 1 archived does not load lead 2 again over what was typed in it', async () => {
+    const ds = source();
+    const form = await opened(ds, { host: host().host });
+    ds.hold('archive');
+    const run = form.run([{ do: 'archive' }]);
+    await tick();
+    expect(await form.openRecord(2)).toBe(true);
+    form.setValue('phone', '+201110000000');
+    ds.release('archive');
+    await run;
+    await form.settled();
+    expect(ds.records[1]).toMatchObject({ active: false });
+    expect(form.getState()).toMatchObject({ recordId: 2, dirty: ['phone'], values: { phone: '+201110000000' } });
+  });
+});
