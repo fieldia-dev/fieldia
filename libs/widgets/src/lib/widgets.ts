@@ -24,7 +24,6 @@ import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
-import { statusbarWidget } from './statusbar';
 import { plainDateWidget, type DateKind } from './date-text';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
@@ -47,18 +46,14 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
-import { durationWidget, percentageWidget } from './duration';
-import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
-import { choicePart, datePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import { businessPart, choicePart, datePart, partFactory, pathPart, textPart, type BusinessPart, type PartFactory } from './widget-parts';
+import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTotal } from './business-plain';
 import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { timerWidget } from './timer';
 import { embedWidget, pdfWidget } from './embed';
-import { distributionWidget } from './distribution';
-import { taxTotalsWidget } from './tax-totals';
-import { paymentsWidget } from './payments';
 import { containWidget, type ErrorHandler } from './contain';
 
 /**
@@ -719,6 +714,14 @@ const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateB
 /** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
 const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
+// Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
+// totals, payments — come in the business part (business-part.ts): their value plainly meanwhile (business-plain.ts).
+// A state's dot stays in the main script: a work item's State is one, and its list is drawn as the choice part's and the
+// path picker's (pick-list.ts).
+const business = (widget: (part: BusinessPart) => WidgetFactory, plain: WidgetFactory) => partFactory(businessPart, widget, plain);
+const statusbarOf = business((part) => part.statusbarWidget, plainState);
+const priorityOf = business((part) => part.priorityWidget, plainStars);
+
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
   const span = make(document, 'span', { id, class: 'fd-pending', 'data-fd-pending': field.type });
@@ -775,16 +778,16 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'monetary.label': labelWidget,
   'float.progressbar': progressbarWidget,
   // Hours as HH:MM (Flectra's float_time), a fraction as a per cent (its percentage).
-  'float.duration': durationWidget,
-  'float.percentage': percentageWidget,
+  'float.duration': business((part) => part.durationWidget, plainNumber),
+  'float.percentage': business((part) => part.percentageWidget, plainNumber),
   'monetary.progressbar': progressbarWidget,
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),
   'boolean.tick': checkboxWidget('tick'),
   'boolean.buttons': yesNoWidget,
   // Stars over a selection, the first option none, or one over a yes or no: Flectra's priority.
-  'boolean.priority': priorityWidget,
-  'selection.priority': priorityWidget,
+  'boolean.priority': priorityOf,
+  'selection.priority': priorityOf,
   // A grey, red or green dot with a menu of the states: Flectra's state_selection.
   'selection.dot': stateDotWidget,
   // A tag colour from Flectra's twelve (0 none … 11), or a colour as #rrggbb.
@@ -803,11 +806,11 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'binary.pdf': pdfWidget,
   'char.embed': embedWidget,
   // Shares of accounts, {accountId: percent}, as lines adding up to 100 %: Flectra's analytic_distribution.
-  'json.distribution': distributionWidget,
+  'json.distribution': business((part) => part.distributionWidget, plainShares),
   // Untaxed amount, a line per tax group, the total, from a value the app works out: Flectra's tax_totals.
-  'json.tax-totals': taxTotalsWidget,
+  'json.tax-totals': business((part) => part.taxTotalsWidget, plainTotal),
   // Each payment's date and amount, its details in a popover: Flectra's invoice_payments_widget.
-  'json.payments': paymentsWidget,
+  'json.payments': business((part) => part.paymentsWidget, plainPayments),
   // Fieldia's own list in place of the browser's, a tick by the option picked (own-list.ts, in the choice part).
   selection: partFactory(choicePart, (part) => part.ownListWidget, (context) => selectWidget(context), (node) => node.options?.['list'] === 'own'),
   'selection.radio': choiceGroup('radio'),
@@ -815,11 +818,11 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.tags': choiceTagsWidget,
   'selection.image-choice': imageChoiceWidget,
   'selection.ranking': rankingWidget,
-  'selection.statusbar': statusbarWidget,
+  'selection.statusbar': statusbarOf,
   date: dateBoxOf('date'),
   datetime: dateBoxOf('datetime'),
   many2one: many2oneWidget,
-  'many2one.statusbar': statusbarWidget,
+  'many2one.statusbar': statusbarOf,
   // A record of a tree as its path, "Portal\\Sprint 14": suggestions, then the tree (path-picker.ts).
   'many2one.path': partFactory(pathPart, (part) => part.pathPickerWidget, (context) => many2oneWidget(context)),
   many2many: tagsWidget,

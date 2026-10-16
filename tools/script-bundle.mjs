@@ -550,7 +550,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
-const BUDGET_KB = 629.8;
+// Flectra's business widgets loaded on first use (0.23): a record's statusbar, priority stars, the boxes hours and a per
+// cent are typed in, an analytic distribution's lines, tax totals and payments, with their stylesheet, out of this
+// script into fieldia.business.js (statusbar, priority, duration-box, distribution-lines, tax-totals, payments and their
+// sheet: 24.1 of code). This script keeps how hours, a per cent and a distribution are written and read (a cell's, a
+// total's, a pasted cell's), a state's dot (a work item's State, its list drawn as the pickers draw theirs), and each
+// kind drawn plainly until its part comes (2.5) — 19.9 less, to 609.9 (629.78 measured before, 609.84 after).
+const BUDGET_KB = 609.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -650,7 +656,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.3;
+// Flectra's business widgets loaded on first use, in fieldia.business.js (9.6 gzipped), their words in a cell and a
+// state's dot kept, each kind drawn plainly until it comes (listed with the raw budget above): 197.23 measured before,
+// 191.42 after, to 191.5.
+const GZIP_BUDGET_KB = 191.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -814,7 +823,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
 // save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// Flectra's business widgets (0.23) — a record's statusbar, priority stars, the boxes hours and a per cent are typed in,
+// an analytic distribution's lines, tax totals and payments, with their sheet — cut out of the main script (business
+// 26.0, 9.6, as measured 25.91 and 9.55).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], business: [26.0, 9.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -823,9 +835,10 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', business: 'businessPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -874,7 +887,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
  * part, and for each part the first time a page uses one, from beside itself — a work item's head, text and path
- * picker for its bug, the filter bar for its backlog — and the page is drawn whole once they have come.
+ * picker for its bug, the filter bar for its backlog, the business widgets for a customer's statusbar — and the page is
+ * drawn whole once they have come.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -894,8 +908,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const loaded = () => PARTS.filter((part) => inPage[PART_OF[part]].loaded).join(', ');
   const host = doc.getElementById('app');
   const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
-  // A page of plain parts: drawn at once, nothing asked for.
-  const plain = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  // A page of plain parts — a contact's sheet, no statusbar — drawn at once, nothing asked for.
+  const plain = inPage.mountViewer(host, { page: read('real-contact.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
@@ -919,7 +933,15 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await signup.drawn;
   if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
+  // A customer's sheet: its statusbar's part, the business widgets', the page drawn once it came — nothing of it before —
+  // and their stylesheet first of the parts', where its rules stood in Fieldia's.
+  const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a sheet with a statusbar drew before its business part came');
+  await customer.drawn;
+  if (loaded() !== 'business, choice, date, filters, head, path, text' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
+  if (doc.getElementById('fieldia-business-styles')?.previousElementSibling?.id !== 'fieldia-styles') throw new Error('in a page, the business widgets\' stylesheet is not first of the parts\'');
+  customer.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, a form's date box, and a customer's statusbar, each as first used");
 }

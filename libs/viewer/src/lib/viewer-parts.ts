@@ -1,5 +1,5 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode } from '@fieldia/core';
-import { choicePart, datePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -16,7 +16,7 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart];
+const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart, businessPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -29,8 +29,12 @@ const markdownAlone = (node: SectionNode) => {
  * a record's head, a button split, toggled or shown by its icon alone, or a
  * group's work heading; the filters part for a list's filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
- * a path picker, a choice in Fieldia's own list, a date's box and calendar) — unless the app's `widgets` draw those
- * fields; and those the app's `slots` name for the slots the page has (a Discussion's).
+ * a path picker, a choice in Fieldia's own list, a date's box and calendar, a business widget) — unless the app's
+ * `widgets` draw those fields; and those the app's `slots` name for the slots the page has (a Discussion's).
+ *
+ * A sheet's statusbar is drawn as a field with `"widget": "statusbar"` is (viewer.ts), so it asks for that widget's
+ * part — the business part — as such a field would, unless the app's `widgets` draw it, or the sheet has a head,
+ * which draws no statusbar.
  *
  * A table's lines draw each cell with its column's widget (as its cells say: a time of day, a path picker), so their
  * columns' parts are the page's too; and a properties field may hold a date — one added in place, or worked out from
@@ -57,6 +61,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     }
     if (!value || typeof value !== 'object') return;
     const node = value as { type?: unknown; [key: string]: unknown };
+    // A sheet's statusbar, drawn unless its head is (which shows the state its own way).
+    const bar = node.type === 'sheet' && !node['head'] ? (node['statusbar'] as { field?: unknown } | undefined) : undefined;
+    if (bar && typeof bar.field === 'string' && page.fields[bar.field]) fieldParts(page.fields[bar.field], { type: 'field', id: '#statusbar', field: bar.field, widget: 'statusbar' });
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);

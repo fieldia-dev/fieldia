@@ -1,5 +1,6 @@
 import type { Value } from '@fieldia/core';
 import { describeState, maker, rightToLeft, setAttr } from './kind-parts';
+import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -8,9 +9,11 @@ import type { WidgetFactory } from './widgets';
  * first option meaning none; over a yes or no, one star. The star picked,
  * clicked again, takes the stars back to none, so no "Clear selection" is
  * needed. A group of radios, each named by its option; the arrow keys move
- * one star at a time, mirrored right to left.
+ * one star at a time, mirrored right to left. In the business part
+ * (business-part.ts).
  */
 export const priorityWidget: WidgetFactory = ({ form, name, field, id, document }) => {
+  installBusinessStyles(document);
   const make = maker(document);
   // The levels in order, the first being none: a selection's options, or no and yes.
   const levels: { value: Value; label: string }[] =

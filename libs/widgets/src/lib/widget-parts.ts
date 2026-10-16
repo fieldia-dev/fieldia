@@ -4,6 +4,7 @@ import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
 import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
+import type * as BusinessModule from './business-part';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -14,6 +15,8 @@ export type PathPart = typeof PathModule;
 export type ChoicePart = typeof ChoiceModule;
 /** The date part: Fieldia's own box for a date, a date and time and a time of day, a date's calendar, a range of dates. */
 export type DatePart = typeof DateModule;
+/** The business part: a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax totals, payments. */
+export type BusinessPart = typeof BusinessModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -23,6 +26,8 @@ export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-pa
 export const choicePart: Part<ChoicePart> = lazyPart('choice', () => import('./choice-part'));
 /** Fieldia's own date box and its calendar, loaded the first time a page shows a date, a date and time, a time of day or a range. */
 export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-part'));
+/** Flectra's business widgets — a statusbar, priority stars, hours, a per cent, a distribution, tax totals, payments — loaded the first time a page shows one. */
+export const businessPart: Part<BusinessPart> = lazyPart('business', () => import('./business-part'));
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

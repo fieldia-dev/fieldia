@@ -18,7 +18,6 @@ export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
 export * from './lib/progress';
 export * from './lib/label';
-export * from './lib/statusbar';
 export * from './lib/properties';
 export * from './lib/icons';
 export * from './lib/focus-trap';
@@ -38,4 +37,7 @@ export { lazyPart, settleParts, type Part } from './lib/parts';
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';
 export type { DateBox, DateBoxOptions } from './lib/date-box';
-export { textPart, pathPart, choicePart, datePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type PartFactory } from './lib/widget-parts';
+// Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
+// totals, payments — come in the business part, loaded the first time a page shows one:
+// `(await businessPart.load()).statusbarWidget`. Their words in a cell (cellText, distributionWords) are here.
+export { textPart, pathPart, choicePart, datePart, businessPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type BusinessPart, type PartFactory } from './lib/widget-parts';
