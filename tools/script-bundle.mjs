@@ -667,7 +667,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.24's lanes joined, measured in the merged build: 474.29 at 0.23.0, 512.82 now — 38.5 more (the lanes' growths
 // above add to 40.8: merged, two lanes' ways of one thing are one — one set of time zone functions, one press rule),
 // to 512.9.
-const BUDGET_KB = 512.9;
+// On paper (0.25, Wave 3's print lane): the page's rules for paper, in every page's sheet (4.3 of it: a part loaded
+// as printing begins comes too late — Chromium lays the page out for paper as its beforeprint is told, a sheet put in
+// then is taken, one a task later is not, and Playwright's WebKit tells no beforeprint at all), what is done as
+// printing begins and undone after (each tab not drawn yet drawn, each box's words beside it, the printout's head:
+// print.ts), the page's `print` setting, a list's `print`, the built-in Print and the `print` step checked and run, an
+// action's file handed to the host, and their English words — 512.84 measured before, 521.06 after: 8.2 more, to 521.1.
+// A list's printout and an action's file shown are the list's and the files part's (listed with the part budgets below).
+const BUDGET_KB = 521.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -807,7 +814,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
-const GZIP_BUDGET_KB = 167.2;
+// On paper (0.25, Wave 3's print lane; listed with the raw budget above), the rules for paper 0.9 of it: 167.12
+// measured before, 169.29 after — 2.2 more, to 169.3.
+const GZIP_BUDGET_KB = 169.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -912,7 +921,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 0.24's lanes joined, measured in the merged build: Arabic's 54.23 and 9.70 (44.99 and 8.23 at 0.23.0), German's
 // 23.15 and 8.30 (19.18 and 7.08), French's 23.97 and 8.34 (19.81 and 7.09) — each to the next 0.1 over, German's
 // gzipped to 8.4, its 8.30 a fifth of a byte under 8.3.
-const ADD_ON_BUDGET_KB = { ar: [54.3, 9.8], de: [23.2, 8.4], fr: [24.0, 8.4] };
+// On paper (0.25): a list's Print, how far it has got and how it ended, a printout's filters, groups and count, the day
+// it was printed, and the gear's This record — ten in each, as measured: Arabic's 55.07 and 9.82, German's 23.53 and
+// 8.39, French's 24.42 and 8.46 (54.23 and 9.70, 23.15 and 8.30, 23.97 and 8.34 before) — each to the next 0.1 over.
+const ADD_ON_BUDGET_KB = { ar: [55.1, 9.9], de: [23.6, 8.4], fr: [24.5, 8.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1066,7 +1078,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 12.29 (35.00, 12.10), and the new phone 34.77 and 15.21 and slots 14.63 and 5.57 — each to the next 0.1 over
 // (business's raw to 26.7, 4 bytes under 26.6 being no room; date's gzipped to 8.4, its 8.30 at the line); head,
 // choice, filters, themes and the quiet look as at 0.23.0, unchanged.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [72.5, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
+// On paper (0.25, Wave 3's print lane), measured (before in brackets): a list's Print — every record that matches asked
+// a page at a time, under its groups with their sums, the totals, the search in words, its printout's sheet and its
+// list's rules for paper — list 78.49 and 25.51 (72.41, 23.71); an action's file shown over the record, or saved, by
+// the dialog a file field's file opens in (viewFiles, showAppFile) — files 32.37 and 11.92 (30.89, 11.26); and each
+// part's own rules for paper in its own sheet: business 26.94 and 9.89 (26.60, 9.82), head 34.24 and 9.93 (34.00,
+// 9.89), lines 23.97 and 8.31 (23.88, 8.28), phone 34.83 and 15.24 (34.77, 15.21), survey 35.61 and 12.33 (35.50,
+// 12.29), text 55.87 and 18.59 (55.60, 18.52) — each to the next 0.1 over where it passed its own.
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [78.5, 25.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [24.0, 8.4], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1080,7 +1099,7 @@ const PART_GIVES = {
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],

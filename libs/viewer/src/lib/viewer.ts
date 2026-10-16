@@ -68,8 +68,10 @@ import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
+import { printLook } from './print';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
@@ -270,6 +272,12 @@ export interface ViewerHandle {
   /** Run steps on the form, as a button would. */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /**
+   * The page on paper, as a `print` step prints it: this form alone, every tab one after another under its name,
+   * every step and folded part open, the values as words, the record's title and the day at the top. Settled once the
+   * browser's printing is done. Ctrl+P prints it so too, with whatever else the page round it holds.
+   */
+  print(): Promise<void>;
+  /**
    * Settled once the page is drawn: at once, unless it draws from a part not loaded yet (a record's head, a filter bar, a
    * work item's text, a path picker, its own look's theme: parts.ts), which it waits for — its element empty and busy
    * meanwhile. A theme or the quiet skin given by the app is worn as its part comes, the page drawn at once: settled
@@ -398,6 +406,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
     // A new tab opened apart from this page, or this one sent there.
     openUrl: (url, newTab) => (newTab ? doc.defaultView?.open(url, '_blank', 'noopener,noreferrer') : doc.defaultView?.location.assign(url)),
+    // This form on paper, alone; the app's file shown over it, or saved — by the files part, which shows a file field's.
+    print: () => paper.print(),
+    file: (file) => filesPart.load().then((part) => part.showAppFile({ doc, labels: widgetLabels, home: root, file })),
     ...options.host,
   };
   const form = options.form ?? createForm({ ...options, page, host: actionHost, messages: options.messages ?? MESSAGES[locale] });
@@ -520,6 +531,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const faces: (() => void)[] = [];
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
+  /** What draws the parts not shown yet for paper: each tabs' own, drawing every tab shown. */
+  const printers: (() => void)[] = [];
   /** Every part drawn again from the state of the page shown. */
   const renderNow = () => render(form.getState());
   /** The record's head being drawn: tabs placed in it go to its band. */
@@ -1168,7 +1181,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           button.setAttribute('aria-label', tab.label);
           button.title = tab.label;
         }
-        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId });
+        // On paper every tab shows, one after another, under its name.
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label });
         /**
          * A tab's parts are drawn when it is first shown, and kept up to date
          * only while it is shown: a page of many tabs costs one tab's work.
@@ -1229,6 +1243,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           setAttr(p.button, 'aria-label', fill(labels.countOf, { label: p.tab.label, count: n }));
         });
       }
+      // On paper, every tab shown: drawn, and brought up to date.
+      printers.push(() => {
+        if (form.node(node.id).invisible) return;
+        const state = form.getState();
+        for (const p of parts) {
+          if (form.node(p.tab.id).invisible) continue;
+          p.build();
+          for (const update of p.own) update(state);
+        }
+      });
       let shownKey = '';
       let revealed = '';
       watch((state) => {
@@ -1248,6 +1272,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           if (p.button.tabIndex !== (selected ? 0 : -1)) p.button.tabIndex = selected ? 0 : -1;
           setAttr(p.button, 'data-problem', p.fields.some((name) => errors[name]) ? '' : null);
           setHidden(p.panel, !selected);
+          // A tab hidden by its condition is left off the paper too.
+          setAttr(p.panel, 'data-off', shown.includes(p) ? null : '');
           // The tab shown: drawn if it is new, and brought up to date — it was left alone while out of sight.
           if (selected && !tabsHidden) {
             p.build();
@@ -1815,7 +1841,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const index = Math.max(0, steps.indexOf(state.step ?? ''));
       progressText.textContent = fill(labels.stepOf, { n: index + 1, total: steps.length });
       bar.style.width = `${((index + 1) / Math.max(1, steps.length)) * 100}%`;
-      for (const { step, panel } of panels) panel.hidden = step.id !== state.step;
+      for (const { step, panel } of panels) {
+        panel.hidden = step.id !== state.step;
+        // A step its answers pass over is left off the paper too.
+        setAttr(panel, 'data-off', steps.includes(step.id) ? null : '');
+      }
       const last = index === steps.length - 1;
       back.hidden = index === 0;
       skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
@@ -2189,7 +2219,25 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
-  root.append(content, done, announcer);
+  // On paper, the app's logo and words, the record's title and the day over the page, its footer under it (print.ts).
+  const paper = printLook({
+    doc,
+    el,
+    root,
+    page,
+    labels,
+    locale,
+    fill,
+    now: options.now ?? (() => new Date()),
+    name: recordName,
+    values: () => form.getState().values,
+    drawAll: () => {
+      // Each tabs' own drawing may draw tabs inside its own, which join the list as they come.
+      for (const draw of printers) draw();
+    },
+  });
+  cleanups.push(() => paper.destroy());
+  root.append(paper.head, content, ...(paper.foot ? [paper.foot] : []), done, announcer);
   // A public page's bot check (`botCheck`): a box no person sees, reaches with Tab or hears read out — inert, so no
   // browser fills it in either — which a bot filling every box fills. Told to the form as it is filled, and read again
   // as the answers go; the send carries it, and the app decides.
@@ -2543,6 +2591,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
     setValues: (values) => form.setValues(values),
     run: (steps, context) => form.run(steps, context),
+    print: () => afterDrawing(() => paper.print()),
     drawn: dressed,
     destroy() {
       gone = true;

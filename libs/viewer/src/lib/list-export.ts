@@ -129,8 +129,8 @@ export function csvCell(list: ExportList, name: string, values: Values): string 
   return plainWords(list.words(name, values));
 }
 
-/** The records that go, asked of the source a page at a time (or by their ids), in the list's order: at most EXPORT_MOST. */
-async function gather(list: ExportList, which: ExportWhich, progress: (done: number, total: number) => void, most: number): Promise<{ records: ListedRecord[]; total: number }> {
+/** The records that go, asked of the source a page at a time (or by their ids), in the list's order: at most `most` (Print's too). */
+export async function gather(list: Pick<ExportList, 'dataSource' | 'model' | 'reads'>, which: ExportWhich, progress: (done: number, total: number) => void, most: number): Promise<{ records: ListedRecord[]; total: number }> {
   const source = list.dataSource;
   if (!source?.list) throw new Error('This list’s data source cannot list its records');
   const records: ListedRecord[] = [];

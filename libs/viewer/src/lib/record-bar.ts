@@ -145,7 +145,8 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   if (look === 'gear') gear.append(el('span', { class: 'fd-record-gear-words' }, labels.actions));
   const menu = el('div', { class: 'fd-record-menu', role: 'menu', id, 'aria-labelledby': gear.id, hidden: '' });
   const drawn = items.map((item) => {
-    const words = item.label ?? (item.builtin ? labels[item.builtin] : item.id);
+    // The built-in Print is under its Print heading: "This record".
+    const words = item.label ?? (item.builtin === 'print' ? labels.printRecord : item.builtin ? labels[item.builtin] : item.id);
     const button = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-node': item.id }, ...context.withIcon(item.icon, words));
     if (item.builtin === 'delete') button.classList.add('fd-record-menu-danger');
     button.addEventListener('click', () => {
@@ -154,8 +155,10 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     });
     return { item, button };
   });
-  const printed = drawn.filter((d) => d.item.group === 'print');
-  const acted = drawn.filter((d) => d.item.group !== 'print');
+  // Under Print: the app's reports, and the built-in Print unless it says otherwise.
+  const underPrint = (item: MenuItem) => (item.group ?? (item.builtin === 'print' ? 'print' : 'actions')) === 'print';
+  const printed = drawn.filter((d) => underPrint(d.item));
+  const acted = drawn.filter((d) => !underPrint(d.item));
   const heading = el('div', { class: 'fd-record-menu-heading', role: 'presentation' }, labels.print);
   const printGroup = el('div', { role: 'group', 'aria-label': labels.print }, heading, ...printed.map((d) => d.button));
   const rule = el('div', { class: 'fd-record-menu-rule', role: 'separator' });

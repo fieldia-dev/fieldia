@@ -309,6 +309,12 @@ button.fd-head-updated:hover { text-decoration: underline; }
   .fd-head-updated { align-self: flex-start; white-space: normal; text-align: start; }
   .fd-head-tabs { align-self: flex-start; }
 }
+/* On paper: the work item's head and band without their buttons, the body under them, the side panel left out. */
+@media print {
+  .fd-form .fd-head-actions { display: none !important; }
+  .fd-form .fd-head-layout { display: block !important; }
+  .fd-form :is(.fd-head-band, .fd-head-body) { background: none !important; }
+}
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

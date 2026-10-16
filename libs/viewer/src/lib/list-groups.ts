@@ -57,7 +57,7 @@ function weekNumber(start: string): { week: number; year: number } {
 }
 
 /** A span in words, in the page's language and Latin digits: "14 October 2026", "Week 42, 2026", "October 2026", "Q4 2026", "2026". */
-function spanWords(context: GroupContext, start: string, interval: DateInterval): string {
+function spanWords(context: Pick<GroupContext, 'labels' | 'locale'>, start: string, interval: DateInterval): string {
   const [year, month] = start.split('-').map(Number);
   const write = (options: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat(context.locale === 'en' ? 'en-GB' : context.locale, { ...options, timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.parse(`${start}T00:00:00Z`));
@@ -76,7 +76,7 @@ function spanWords(context: GroupContext, start: string, interval: DateInterval)
 }
 
 /** A group's name as a person reads it: a span of time in words, the choice's label, yes or no, the linked record's name, or None. */
-function groupName(context: GroupContext, key: GroupKey, group: Group): string {
+export function groupName(context: Pick<GroupContext, 'page' | 'labels' | 'locale' | 'count'>, key: GroupKey, group: Group): string {
   const def = context.page.fields[key.field];
   if (group.value === null) return context.labels.none;
   if (key.interval && startsSpan(group.value, key, context.count)) return spanWords(context, group.value as string, key.interval);
@@ -86,7 +86,7 @@ function groupName(context: GroupContext, key: GroupKey, group: Group): string {
 }
 
 /** The records of one group: those holding its value, those with none, or those whose date falls in its span. */
-function groupFilter(context: GroupContext, key: GroupKey, group: Group): ResolvedFilter[] {
+export function groupFilter(context: Pick<GroupContext, 'page' | 'count'>, key: GroupKey, group: Group): ResolvedFilter[] {
   const { field } = key;
   if (group.value === null) return [{ field, op: 'notset', value: null }];
   if (!key.interval || !startsSpan(group.value, key, context.count)) return [{ field, op: '=', value: group.value }];
