@@ -760,10 +760,10 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
     // Its own problem — text that does not read, min, max — is said as the cell is left, unless Escape put the line back.
-    // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
+    // Left for a press elsewhere, once that press has ended: nothing moves under it (press.ts).
     if (!cell.finish(data.key) && !this.kind) {
       const path = `${cell.field}.${data.key}.${this.column}`;
-      afterPress(this.box.ownerDocument, () => cell.form.boxLeft(path));
+      afterPress(this.box.ownerDocument, this.box, () => cell.form.boxLeft(path));
     }
     // The line closed: it gives back the height its tags box took.
     if (this.grows && !api.isDestroyed()) {

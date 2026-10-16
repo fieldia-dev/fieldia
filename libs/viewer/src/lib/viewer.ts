@@ -766,8 +766,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       wrapper.addEventListener('focusout', (event) => {
         if (wrapper.contains(event.relatedTarget as Node | null)) return;
         // Left for a press elsewhere (a tap on Submit), what leaving shows waits till that press has ended: shown as the
-        // finger comes down, a message would move Submit from under it, and the tap would be lost (press-end.ts).
-        afterPress(doc, () => {
+        // finger comes down, a message would move Submit from under it, and the tap would be lost (press.ts).
+        afterPress(doc, wrapper, () => {
           // Back in the box meanwhile: still being typed in.
           if (wrapper.contains(doc.activeElement)) return;
           typing = false;
@@ -2455,7 +2455,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   host.append(root);
   // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
   cleanups.push(steadyPresses(root));
-  // And a box left for a press shows its problem once the press has ended (press-end.ts): watched from the first press.
+  // And a box left for a press shows its problem once the press has ended (press.ts): watched from the first press.
   watchPresses(doc);
   const unsubscribe = form.subscribe(render);
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.

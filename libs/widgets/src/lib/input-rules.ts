@@ -16,7 +16,7 @@ import {
 import { fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { formatNumber } from './numbers';
-import { afterPress, pressesOf } from './press';
+import { afterPress, watchPresses } from './press';
 
 /**
  * The box's side of Fieldia's input rules: what a box refuses as it is typed
@@ -82,7 +82,7 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
   };
   box.addEventListener('focus', place);
   // Shown or hidden as a press leaves the box, the words wait for the press to end: nothing under the pointer moves.
-  pressesOf(document);
+  watchPresses(document);
   let words = '';
   const describe = () => {
     const tokens = (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((token) => token && token !== id);

@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Form, FormState, JsonValue, PropertyDefinition, Value } from '@fieldia/core';
 import { maker, wordsFor } from './kind-parts';
-import { afterPress } from './press-end';
+import { afterPress } from './press';
 import { installSurveyStyles } from './styles-survey';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -168,8 +168,8 @@ export const propertiesWidget = (widgetFor: (context: WidgetContext) => Widget):
         row.addEventListener('focusin', () => error.removeAttribute('aria-live'));
         row.addEventListener('focusout', (event) => {
           if (row.contains(event.relatedTarget as Node | null)) return;
-          // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
-          afterPress(row.ownerDocument, () => {
+          // Left for a press elsewhere, once that press has ended: nothing moves under it (press.ts).
+          afterPress(row.ownerDocument, row, () => {
             if (row.contains(row.ownerDocument.activeElement)) return;
             leaving = definition.name;
             try {

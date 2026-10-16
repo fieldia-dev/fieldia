@@ -659,11 +659,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: 501.66 + 8.00, to
 // 509.7 until the release measures it.
 // The business owner's walk of 0.23 mended, in what every page carries: a press kept to the button that was under the
-// pointer (steady-press.ts), a box's message shown once the press that left it has ended (press-end.ts), a record's
-// button that saves first and puts back what its steps wrote when its save is refused (core's runner), a record's
-// title that wraps on a phone, lines named by their number among the items and a worked-out number that waits for
-// its line, one message for a paste past a field's most, the currency sign where the language puts it — 474.25
-// measured before, 479.71 after: 5.5 more, to 479.8.
+// pointer (steady-press.ts), a box's message shown once the press that left it has ended (press.ts, the one mechanism
+// the boxes' hints use too), a record's button that saves first and puts back what its steps wrote when its save is
+// refused (core's runner), a record's title that wraps on a phone, lines named by their number among the items and a
+// worked-out number that waits for its line, one message for a paste past a field's most, the currency sign where the
+// language puts it — 474.25 measured before, 479.71 after: 5.5 more, to 479.8.
 // Every lane of 0.24 joined, the walk's fixes last: 509.66 + 5.46, to 515.2 until the release measures it.
 const BUDGET_KB = 515.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
