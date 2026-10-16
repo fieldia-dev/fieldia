@@ -23,7 +23,7 @@ export const CATEGORIES = [
   { id: 'behaviour', label: 'Keys, feedback and languages', colour: '#be185d' },
   { id: 'script', label: 'No build step', colour: '#475569' },
   { id: 'templates', label: 'Templates to start from', colour: '#4f46e5' },
-  { id: 'real', label: 'Real pages from Sherkety ERP', colour: '#9a3412' },
+  { id: 'real', label: 'Real screens from a working ERP', colour: '#9a3412' },
 ];
 
 /** The flagships, first in the gallery and in the menu. */
@@ -394,7 +394,7 @@ export const DEMOS = [
     name: 'Orders by district',
     category: 'lists',
     query: 'page=map-zones&skin=outlined',
-    blurb: 'The week’s orders beside a map of Cairo’s districts, each shaded by how many orders it has, with a legend. The borders are the app’s own: rough ones drawn for this demo.',
+    blurb: 'The week’s orders beside a map of Cairo’s districts, each district shaded by how many orders it has, with a legend that says how many each shade means; a numbered bubble counts the orders close together, whichever district they are in. The borders are the app’s own: rough ones drawn for this demo.',
     howTo: [
       'Point at a district: it lights up and says its name and its orders.',
       'Click Zamalek: the list keeps its orders alone, and “In Zamalek” joins the search bar. Take the chip away to see them all again.',
@@ -473,10 +473,11 @@ export const DEMOS = [
     name: 'Your own parts',
     category: 'fields',
     query: 'page=custom&skin=outlined',
-    blurb: 'A field drawn by a widget of your own and a slot your app fills: in each framework, written as one of that framework’s own components.',
+    blurb: 'A conference badge: the name goes into a field your app draws itself, which shows the badge as it will be printed, and the printing desk under it is a panel your app fills, with a count of its own. In each framework, each is written as one of that framework’s own components.',
     howTo: [
-      'Type a nickname: the field is drawn by the demo’s own widget, and shows it shouted back.',
-      'Press the button in the slot below: its count is the slot’s own state, kept across the form’s changes.',
+      'Type a name: the app’s own widget shows the badge as it will be printed, as you type.',
+      'Press Print the badge in the desk below: its count is the desk’s own, and it keeps it as the form changes; its words follow the name.',
+      'Clear the name and press Submit: the app’s own field is checked like any other, and says what it needs.',
       'Switch framework at the top: the same parts are written as React, Vue and Angular components.',
     ],
   },
@@ -492,7 +493,7 @@ export const DEMOS = [
       'Look under Quote: the delivery planner failed as it loaded, and a box says so in its place.',
       'Type 1200 in Price: the price tag fails, and a box naming Price takes its place.',
       'Change the customer and the notes, then press Save: the rest of the form works, and the quote is saved.',
-      'Read the list under the form: what the viewer’s onError was told, and where.',
+      'Read the log under the form: what your app was told of each failure, through the viewer’s onError, in words; open What onError was handed for what a developer would log.',
       'Switch framework at the top: the same two parts are React, Vue and Angular components, each kept to its place.',
     ],
   },
@@ -559,7 +560,7 @@ export const DEMOS = [
   },
   {
     id: 'reading',
-    name: 'A sheet that reads like Flectra',
+    name: 'A dense record that reads at a glance',
     category: 'records',
     query: 'page=reading&skin=underline&editSwitch=1',
     blurb: 'A dense invoice as an ERP draws it: read-only values as words, stat buttons with money, hours and two values, a customer with the address under it, coloured tags, parts on one line, alerts holding a date, keys on buttons and ribbons by condition.',
@@ -653,7 +654,7 @@ export const DEMOS = [
   },
   // The template library, each in its theme: templates.mjs.
   ...TEMPLATE_DEMOS,
-  // Sherkety ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
+  // A working ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
   ...REAL_DEMOS,
 ];
 
@@ -663,14 +664,34 @@ export function demoHref(demo, framework = 'plain') {
   return `${folder}/${demo.query ? `?${demo.query}` : ''}`;
 }
 
-/** The demo a page shows: the one whose query the address holds, the most specific first. */
-/** What a reader may change about a demo without it becoming another: how it looks. */
-const LOOK = new Set(['skin', 'theme']);
+/**
+ * The pages a demo opens that are no demo of their own — a record opened from its list's row, a map's pin or a
+ * calendar's booking — each with its own name, for the frame's heading and the browser's tab, and the demo it is
+ * opened from. A page opened this way is never named after the framework that draws it.
+ */
+export const OPENED = [
+  { page: 'map-home', name: 'A home for sale', from: 'map-homes' },
+  { page: 'map-courier', name: 'A courier', from: 'map-couriers' },
+  { page: 'map-week-order', name: 'An order of the week', from: 'map-zones' },
+  { page: 'clinic-appointment', name: 'An appointment', from: 'clinic-calendar' },
+  { page: 'booking', name: 'A booking', from: 'booking-week' },
+];
 
+/** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */
+const SAME = new Set(['skin', 'theme', 'record', 'now']);
+
+/** The demo a page shows: the one whose query the address holds, the most specific first. */
 export function demoAt(app, params) {
   const candidates = DEMOS.filter((demo) => (demo.app ? demo.app === app : FRAMEWORKS.some((f) => f.id === app)));
-  // The look (skin, theme) is the reader's to change: in another look it is the same demo.
-  const holds = (demo) => [...new URLSearchParams(demo.query)].every(([key, value]) => LOOK.has(key) || params.get(key) === value);
+  // The look (skin, theme) is the reader's to change, and so is the record shown: it is the same demo.
+  const holds = (demo) => [...new URLSearchParams(demo.query)].every(([key, value]) => SAME.has(key) || params.get(key) === value);
   const size = (demo) => [...new URLSearchParams(demo.query)].length;
   return candidates.filter(holds).sort((a, b) => size(b) - size(a))[0] ?? null;
+}
+
+/** A page a demo opened (OPENED), in a framework's demo: its name, and the demo it came from. */
+export function openedAt(app, params) {
+  if (!FRAMEWORKS.some((f) => f.id === app)) return null;
+  const found = OPENED.find((opened) => opened.page === params.get('page'));
+  return found ? { ...found, from: DEMOS.find((demo) => demo.id === found.from) ?? null } : null;
 }
