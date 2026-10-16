@@ -86,7 +86,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
  * viewer and its dialogs wait for a page's parts themselves before they draw
  * it; this is for an app that wants them in before it mounts, so the page is
  * drawn whole the moment it is mounted. Rejects when one could not come (the
- * viewer then draws plainly what it would have drawn from it).
+ * viewer then draws plainly what it would have drawn from it). A theme or the
+ * quiet skin the app itself gives the viewer is not the page's: its part is
+ * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   await Promise.all((page ? partsFor(page, widgets, slots) : EVERY_PART).map((part) => part.load()));
