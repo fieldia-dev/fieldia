@@ -91,8 +91,15 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * does), a save waiting for a place still being found, and a coordinate that
  * reads kept as typed beside one still to come: 361 bytes more for a place
  * and an area (26,739: 25.8 goes to 26.2), 353 more for all (46,835: 45.8).
+ * 0.24's lanes joined: a place, a route or an area found late laid on no
+ * other record (save safety), the Enter an IME takes its word with left to it
+ * (the input rules for names), typed coordinates keeping their places and a
+ * pasted pair filling both boxes (the input rules for boxes) — 334 bytes more
+ * for a place and an area (27,073: 26.2 goes to 26.5), 363 more for all
+ * (47,198: 46.2); a list's map in a page of its own stays within its 31.1
+ * (31,608).
  */
-const BUDGET = { fields: 26.2, all: 45.8, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.5, all: 46.2, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
