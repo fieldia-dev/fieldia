@@ -155,14 +155,23 @@ export function unsavedWork(state: FormState): boolean {
 /**
  * Whether a way out would lose the person's work without their knowing: a
  * change of theirs the last save did not send (`unsent`), files still on
- * their way, changes Reload set aside — and, `how.changes`, any change not
- * saved. What `form.leave()` — the one check every way out goes through —
- * asks about, once the save on its way and the files on theirs settled.
- * Before a record's first save, a change not saved is not at risk: as in
- * 0.20, each way out decides.
+ * their way, changes Reload set aside, the changes of a save refused for a
+ * conflict, waiting for Reload or Keep mine (only a source that keeps
+ * versions has one) — and, `how.changes`, any change not saved. What
+ * `form.leave()` — the one check every way out goes through — asks about,
+ * once the save on its way and the files on theirs settled. Before a
+ * record's first save, a change not saved is not at risk: as in 0.20, each
+ * way out decides.
  */
 export function workAtRisk(state: FormState, how: LeaveHow = {}): boolean {
-  return (state.unsent ?? []).length > 0 || state.setAside != null || (state.uploads ?? []).some(uploadGoing) || (how.changes === true && (state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0));
+  return (
+    (state.unsent ?? []).length > 0 ||
+    state.setAside != null ||
+    (state.uploads ?? []).some(uploadGoing) ||
+    // The person asked for these to be saved, and someone else's save came first: still theirs, and not saved.
+    (state.conflict != null && state.dirty.length > 0) ||
+    (how.changes === true && (state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0))
+  );
 }
 
 /**
@@ -218,7 +227,7 @@ export type ChangeBy = 'person' | 'step' | 'app';
 export interface FormEvents {
   /** A field was written: by a person, a step or the app. Values worked out from it are not told. */
   change: { field: string; value: Value; values: Readonly<Values>; by: ChangeBy };
-  /** A record was saved. */
+  /** A record was saved: its values as the save left it — what it sent and what came back; a change made meanwhile is not among them. */
   save: { recordId: RecordId | null; values: Readonly<Values> };
   /** A page of responses sent its answers: those sent. */
   send: { values: Values };
@@ -400,6 +409,17 @@ export interface Form {
    * first, so a way out with nothing to wait for is not put off.
    */
   leaveNow(how?: LeaveHow): boolean;
+  /**
+   * The record shown now, for an answer asked for it that comes later: the
+   * function returned is true while that record is still the one shown, as it
+   * was — no other opened, it not loaded again, no new one started, the
+   * person's Discard not pressed, the form not closed. What writes on the
+   * form, or acts on its record, once a wait ends — a name looked up, a
+   * record made from a link, a line's dialog, a step's call to the source —
+   * asks it first, so an answer is laid only on the record it was asked for
+   * (docs/plans/wave1-contract.md, section 10, part 2).
+   */
+  recordShown(): () => boolean;
   /**
    * Post words in the record's conversation, as a `post` step does: through
    * the form's host when it has a way to, else told to the form's own
@@ -626,6 +646,15 @@ interface Place {
 
 type Sync = 'start' | 'edit' | 'fresh';
 
+/** What of the person's a write touches: the one line of a table they changed (`line`), or nothing of theirs it takes over (`keep`). */
+interface Claim {
+  line?: string;
+  keep?: boolean;
+}
+
+/** Whether a run works a person's change out: a page's `change` steps, set off by it, or a run they set off. */
+const worksOut = (chain: readonly string[]) => chain.some((key) => key.startsWith('on.change.'));
+
 /** A line's cell whose line is no longer there. */
 const gone: unique symbol = Symbol('gone');
 
@@ -638,6 +667,8 @@ interface Outer {
   letGo(how?: LeaveHow, chain?: readonly string[]): true | Promise<boolean>;
   leaveNow(how: LeaveHow): boolean;
   close(chain?: readonly string[]): Stopped | null | Promise<Stopped | null>;
+  /** Its own test of the record shown: another record shown round it, nothing asked for inside is laid either. */
+  recordShown(): () => boolean;
 }
 
 /**
@@ -857,16 +888,41 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let generation = 0;
   /** Closed (`dispose`): a run still going stops quietly, as its dialog or page is gone — no other record replaced it. */
   let disposed = false;
-  /** The fields whose last write was the person's: a step's, a rule's or the app's write takes one over. */
+  /** Counted at each reset (the person's Discard): a save on its way then lands as the record it stored. */
+  let resets = 0;
+  /**
+   * THE test every late answer passes (`recordShown`): taken as it is asked for, true while the record it was asked
+   * for is still the one shown, as it was. A save's answer, a call's, an onchange's, a name looked up, a line's
+   * dialog, a record step's — none is laid on another record, nor over the values the person's Discard let go.
+   */
+  function shownNow(): () => boolean {
+    const at = generation;
+    const reset = resets;
+    // A saved form placed in a record is the record's: another shown round it, its answers are laid nowhere either.
+    const round = outer?.recordShown();
+    return () => !disposed && at === generation && reset === resets && (!round || round());
+  }
+  /**
+   * The person's claims on the record: the fields whose last write was theirs. A step's, a rule's or the app's
+   * write of the whole field takes one over; a write that works the person's change out (the source's onchange, the
+   * page's `change` steps it sets off) keeps it.
+   */
   const personal = new Set<string>();
+  /**
+   * Of a table the person did not write whole: the keys of the lines they changed, added or took away. A line a
+   * step adds is none of theirs, and leaves theirs as they are.
+   */
+  const personalLines = new Map<string, Set<string>>();
   /** Fields where a file the person picked landed from the store: at risk until a save sends it, a first save or not. */
   const filed = new Set<string>();
   /** The record as the last finished save left it — what it sent and what came back; a page of answers: what it sent. Null before one. */
   let sentAs: Readonly<Values> | null = null;
-  /** Counted at each reset (the person's Discard): a save on its way then lands as the record it stored. */
-  let resets = 0;
-  /** Above 0 while a delete the person chose goes on: a way out it takes lets their work go, unasked. */
-  let deletes = 0;
+  /**
+   * The records being deleted, by the person's choice, each by its generation: a way out of one of them lets their
+   * work in it go, unasked. Another record shown meanwhile is asked about as any.
+   */
+  const deleting = new Map<number, number>();
+  const deletingShown = () => (deleting.get(generation) ?? 0) > 0;
   /** Each field's last comparison with what was sent, so a value that did not move is not compared again. */
   const compared = new Map<string, { value: unknown; sent: unknown; differs: boolean }>();
 
@@ -1025,21 +1081,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (heard) for (const listener of [...heard]) (listener as (event: FormEvents[E]) => void)(payload);
   }
 
-  /** A field written: told to the app, and — a person's change — the page's `change` steps for it run. */
-  function changed(field: string, by: ChangeBy) {
-    noteOrigin(field, by);
+  /**
+   * A field written: told to the app, and — a person's change — the page's `change` steps for it run. `claim` says
+   * what of the person's it touches: `line`, the key of the one line of a table the person changed; `keep`, a write
+   * that leaves the person's claims as they are (a line a step adds, a write working their change out).
+   */
+  function changed(field: string, by: ChangeBy, claim: Claim = {}) {
+    noteOrigin(field, by, claim);
     emit('change', { field, value: state.values[field], values: state.values, by });
     const list = page.on?.change?.[field];
     if (by === 'person' && list) void track(moment(`on.change.${field}`, list, [], true));
   }
 
-  /** Another record is shown: nothing of the last one's is the person's work any more. */
+  /** Another record is shown: nothing of the last one's is the person's work any more, and its files on their way stop. */
   function newGeneration() {
     generation++;
     personal.clear();
+    personalLines.clear();
     filed.clear();
     compared.clear();
     sentAs = null;
+    clearFiles();
   }
 
   /** Whether a field holds a file the store holds that no save sent: its own, or one in a saved form placed here under its name. */
@@ -1048,15 +1110,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /**
    * The person's work no save took, by field, in the page's order: each of
    * their changes that differs from the record as the last save left it —
-   * before a first save, only a file the store holds.
+   * a field they wrote, or a line of a table they changed — and before a
+   * first save, only a file the store holds.
    */
   function unsentNow(): string[] {
-    if (!personal.size) return [];
+    if (!personal.size && !personalLines.size) return [];
     const out: string[] = [];
     for (const name of Object.keys(fields)) {
-      if (!personal.has(name)) continue;
+      const lines = personalLines.get(name);
+      if (!personal.has(name) && !lines) continue;
       const from = sentAs ?? (filedIn(name) ? baseline : null);
-      if (from && differs(name, state.values[name], from[name])) out.push(name);
+      if (!from) continue;
+      if (lines ? linesDiffer(name, lines, state.values[name], from[name]) : differs(name, state.values[name], from[name])) out.push(name);
     }
     return out;
   }
@@ -1069,16 +1134,48 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return verdict;
   }
 
+  /** Whether any of these lines of a table differs from the table as sent: changed, added, or taken away. */
+  function linesDiffer(name: string, keys: ReadonlySet<string>, value: unknown, sent: unknown): boolean {
+    const def = fields[name] as Extract<Field, { type: 'one2many' }>;
+    const find = (lines: unknown, key: string) => ((lines as Line[] | null) ?? []).find((line) => line.key === key);
+    for (const key of keys) {
+      const now = find(value, key);
+      const was = find(sent, key);
+      if (!now && !was) continue;
+      if (!now || !was) return true;
+      if (now.values === was.values) continue;
+      for (const sub of new Set([...Object.keys(now.values), ...Object.keys(was.values)])) {
+        if (!sameValue(def.fields[sub] as Field | undefined, now.values[sub], was.values[sub])) return true;
+      }
+    }
+    return false;
+  }
+
   /** `unsent` as it is now, told when it changed. */
   function refreshUnsent() {
     const unsent = unsentNow();
     if (!sameList(unsent, state.unsent)) set({ unsent });
   }
 
-  /** A field written, and by whom: the person's change is theirs until a step, a rule or the app writes the field in its place. */
-  function noteOrigin(field: string, by: ChangeBy) {
-    if (by === 'person') personal.add(field);
-    else personal.delete(field);
+  /**
+   * A field written, and by whom: the person's change is theirs — the field, or the line of a table they changed —
+   * until a step, a rule or the app writes the whole field in its place. A write that leaves their change where it
+   * is (`keep`: a line a step adds, a `change` step working out what they typed) leaves it theirs.
+   */
+  function noteOrigin(field: string, by: ChangeBy, claim: Claim) {
+    if (by === 'person') {
+      if (claim.line === undefined) {
+        personal.add(field);
+        personalLines.delete(field);
+      } else if (!personal.has(field)) {
+        const keys = personalLines.get(field) ?? new Set<string>();
+        keys.add(claim.line);
+        personalLines.set(field, keys);
+      }
+    } else if (!claim.keep) {
+      personal.delete(field);
+      personalLines.delete(field);
+    }
     refreshUnsent();
   }
 
@@ -1566,10 +1663,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (unreadIn(page.fields[changed], state.values[changed])) return;
     const seq = ++onchangeSeq;
     const request = { model: page.data.model, id: state.recordId, changed, values: structuredCopy(state.values as Values) };
+    const shown = shownNow();
     void track(
       source.onchange(request).then(
         (result) => {
-          if (seq !== onchangeSeq) return;
+          // A newer change asked since; or the record it was asked for is gone, or its values let go: none of it is laid.
+          if (seq !== onchangeSeq || !shown()) return;
           const values = { ...(state.values as Values), ...(result.values ?? {}) };
           writeValues(values, { warning: result.warning ?? null, warningField: result.warning ? changed : null });
         },
@@ -1676,17 +1775,24 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
       return { reason: 'save', message: problem.message };
     }
+    // Asked for the record shown now: another shown while it waits below, it saves nothing of that one, nor says anything there.
+    const asked = generation;
+    const elsewhere = (): Stopped => ({ reason: 'save', message: messages.recordReplaced });
     // What is still typed in a box is read first: it is what is saved, or why nothing is. A name still being looked
     // up is waited for, so the record it names is what is saved — or, named by none, why nothing is.
     const waiting = readTyped();
     if (waiting) await waiting;
+    if (asked !== generation) return elsewhere();
     // Files still on their way are waited for first — a saved form's placed here too: the state says how many, so the page can say why it waits.
     if (filesGoing()) {
       set({ status: 'saving', error: null, saveProblem: null });
       await filesSettled();
+      if (asked !== generation) return elsewhere();
       set({ status: 'ready' });
     }
     if (page.on?.beforeSave) {
+      // Its run stops of itself on a record shown by anything but its own steps (a `call`'s `{ record }`, a reload):
+      // those move the save on with it.
       const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
       if (!before.done) {
         // A check's problems, or an inner save's, are shown already; any other stop is this save's problem.
@@ -1711,6 +1817,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     try {
       // Bytes still in the record — a signature drawn, a value the app set, in a saved form placed here too — go to the store first, where it keeps files.
       await storeBytes(page.data.kind === 'responses' || state.recordId == null ? Object.keys(fields) : state.dirty);
+      if (at !== generation) return elsewhere();
       const failed = fileProblems();
       if (Object.keys(failed).length) {
         set({ errors: failed, ...unstored(failed) });
@@ -1762,7 +1869,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         scheduleDraft();
         scheduleAutosave();
       }
-      emit('save', { recordId: state.recordId, values: state.values });
+      // The record as this save left it: a change made while it was on its way is no value of it.
+      emit('save', { recordId: state.recordId, values: baseline });
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
       return null;
     } catch (error) {
@@ -1815,8 +1923,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** The form has its values: told to the app, its `open` steps run, then the wizard step it shows is told. */
   async function opening() {
+    const at = generation;
     emit('open', { recordId: state.recordId, values: state.values });
     await moment('on.open', page.on?.open, [], true);
+    // Another record shown while its open steps ran: that one's opening tells its own steps.
+    if (at !== generation) return;
     showing = true;
     tellStep([]);
   }
@@ -1837,16 +1948,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     for (const name of names) changed(name, 'app');
   }
 
-  /** Write fields — a step's or the app's — worked out once, and tell each. */
-  function write(written: Values, by: ChangeBy) {
+  /** Write fields — a step's or the app's — worked out once, and tell each; `keep`, a write working the person's change out. */
+  function write(written: Values, by: ChangeBy, keep = false) {
     const names = Object.keys(written);
     names.forEach(fieldDef);
     if (!names.length) return;
     writeValues({ ...(state.values as Values), ...structuredCopy(written) });
     for (const name of names) afterEdit(name);
-    for (const name of names) changed(name, by);
+    for (const name of names) changed(name, by, { keep });
   }
 
+  /** A line added: the person's, theirs; a step's, none of theirs, and the lines they changed stay theirs. */
   function addLine(field: string, values: Values, by: ChangeBy): string {
     const def = lineField(field);
     const current = (state.values[field] as Line[] | null) ?? [];
@@ -1867,7 +1979,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const lines = [...current, line];
     writeValues({ ...(state.values as Values), [field]: lines });
     afterEdit(field);
-    changed(field, by);
+    changed(field, by, by === 'person' ? { line: key } : { keep: true });
     return key;
   }
 
@@ -1877,8 +1989,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   async function check(names: readonly string[] | undefined): Promise<Stopped | null> {
     names?.forEach(fieldDef);
+    const at = generation;
     const waiting = readTyped();
     if (waiting) await waiting;
+    // Another record shown while it waited: nothing found is shown on that one.
+    if (at !== generation) return replaced();
     const all = collectErrors();
     const found = names ? Object.fromEntries(Object.entries(all).filter(([key]) => names.some((name) => key === name || key.startsWith(`${name}.`)))) : all;
     set({ errors: found });
@@ -1891,8 +2006,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (!steps.includes(target)) return undefined;
     if (!form.steps().includes(target)) return { reason: 'cannot', message: `The step "${target}" does not apply now` };
     // A name still being looked up in a box on the way is waited for, as a save waits for it.
+    const at = generation;
     const waiting = readTyped();
     if (waiting) await waiting;
+    if (at !== generation) return replaced();
     let went = false;
     inRun(chain, () => (went = form.goTo(target)));
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
@@ -1900,7 +2017,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended: on the record shown as it starts (`generation`). */
   async function runTop(list: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
-    scope.generation = generation;
+    scope.generation ??= generation;
     const result = await runner.runSteps(list, scope);
     emit('run', { id: scope.id, steps: list, result });
     return result;
@@ -2040,7 +2157,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   /** Whether a way out goes at once: nothing to wait for, no check going, nothing at risk — as in 0.20. */
-  const atOnce = (how: LeaveHow, own = false) => !deletes && !checking && !busy(own) && (how.discard === true || !workAtRisk(state, how));
+  const atOnce = (how: LeaveHow, own = false) => !deletingShown() && !checking && !busy(own) && (how.discard === true || !workAtRisk(state, how));
 
   /** The saves on their way, settled: what a load that is not a way out (a conflict's Reload) waits for. */
   async function savesSettled(): Promise<void> {
@@ -2066,10 +2183,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   function letGo(how: LeaveHow = {}, chain: readonly string[] = []): true | Promise<boolean> {
     if (outer) return outer.letGo(how, chain);
     // A delete the person chose: their work goes with the record, unasked.
-    if (deletes) {
+    if (deletingShown()) {
       forget();
       return true;
     }
+    // The person's own Discard stops the files on their way, never waits for them.
+    if (how.discard) clearFiles();
     const own = chain.includes('on.beforeSave');
     if (atOnce(how, own)) {
       if (how.discard) forget();
@@ -2109,12 +2228,42 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return yes;
   }
 
-  /** Let go of the person's work at risk: files on their way stop, changes set aside go, changes no save took are asked about no more. */
+  /**
+   * Let go of the person's work at risk: files on their way stop, changes set aside go, a conflict's changes are
+   * asked about no more, and the changes no save took go back to the record as the last save left it — so what a
+   * dialog or a page in place hands back once it saved is the record as saved, never the change let go.
+   */
   function forget() {
+    const back = unsentLetGo();
     clearFiles();
     personal.clear();
+    personalLines.clear();
     filed.clear();
-    if (state.setAside !== null || state.unsent.length) set({ setAside: null, unsent: [] });
+    if (back) writeValues({ ...(state.values as Values), ...back });
+    if (state.setAside !== null || state.unsent.length || state.conflict !== null) set({ setAside: null, unsent: [], conflict: null });
+  }
+
+  /** The fields holding the person's changes no save took, as the record as last saved holds them: their lines alone, for a table. */
+  function unsentLetGo(): Values | null {
+    if (!state.unsent.length) return null;
+    const out: Values = {};
+    for (const name of state.unsent) {
+      const from = sentAs ?? baseline;
+      const keys = personalLines.get(name);
+      out[name] = keys && !personal.has(name) ? linesAsSent(state.values[name], from[name], keys) : (structuredCopy(from[name]) as Value);
+    }
+    return out;
+  }
+
+  /** A table with these lines as sent: changed ones as they were, added ones gone, ones taken away back in their place. */
+  function linesAsSent(value: unknown, sent: unknown, keys: ReadonlySet<string>): Value {
+    const was = (sent as Line[] | null) ?? [];
+    const of = (key: string) => was.find((line) => line.key === key);
+    const out = ((value as Line[] | null) ?? []).filter((line) => !keys.has(line.key) || of(line.key)).map((line) => (keys.has(line.key) ? structuredCopy(of(line.key) as Line) : line));
+    was.forEach((line, at) => {
+      if (keys.has(line.key) && !out.some((other) => other.key === line.key)) out.splice(Math.min(at, out.length), 0, structuredCopy(line));
+    });
+    return out as unknown as Value;
   }
 
   /** The check as a step meets it: null to go on — at once when nothing is at risk — else why the run stops. */
@@ -2125,11 +2274,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   const kept = (): Stopped => ({ reason: 'no', message: messages.discardChanges });
 
-  /** Load the record again, once the check let what is shown go. */
-  function loadAgain(again: boolean, chain: readonly string[] = []): Promise<boolean> {
+  /**
+   * A step's own move — the record loaded again, or another shown — once the check let what is shown go: kept, the
+   * person kept their work; replaced, another record was shown before it ended (the run's steps are not for that one).
+   */
+  async function ownMove(chain: readonly string[], move: () => Promise<unknown>): Promise<Stopped | null> {
     const go = letGo({}, chain);
-    if (go === true) return load(again).then(() => true);
-    return go.then((yes) => (yes ? load(again).then(() => true) : false));
+    if (go !== true && !(await go)) return kept();
+    // The record it shows is a generation of its own, made as it starts: another made before it ends replaced it.
+    const moving = move();
+    const mine = generation;
+    await moving;
+    return mine === generation ? null : replaced();
   }
 
   /**
@@ -2149,6 +2305,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     };
     const go = letGo({}, chain);
     return go === true ? shut() : go.then((yes) => (yes ? shut() : kept()));
+  }
+
+  /** Why a run stops whose record was replaced while it went on — quietly, when the form was closed. */
+  function replaced(): Stopped {
+    return disposed ? { reason: 'closed' } : { reason: 'cannot', message: messages.recordReplaced };
   }
 
   /** The record a record step asks the data source about. */
@@ -2173,16 +2334,19 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     recordId: () => state.recordId,
     reading,
     today,
-    write: (values) => write(values, 'step'),
+    // A step's write of a field takes the person's change in it over — unless the step works that change out: the
+    // page's `change` steps, set off by it, as the source's onchange does.
+    write: (values, chain) => write(values, 'step', worksOut(chain)),
     store: (values) => store(values),
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
     save: saving,
     generation: () => generation,
-    gone: () => (disposed ? { reason: 'closed' } : { reason: 'cannot', message: messages.recordReplaced }),
+    gone: replaced,
     async reload(chain) {
       if (state.recordId == null) return { reason: 'cannot', message: 'The record is not saved yet: there is nothing to load again' };
-      if (!(await loadAgain(true, chain))) return kept();
+      const stopped = await ownMove(chain, () => load(true));
+      if (stopped) return stopped;
       return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded again' } : null;
     },
     reset(chain) {
@@ -2203,21 +2367,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     changed: () => state.dirty.length > 0 || state.uploads.some(uploadGoing),
     letGo: letGoStep,
     async deleting(remove, done) {
-      deletes++;
+      const of = generation;
+      const shown = shownNow();
+      deleting.set(of, (deleting.get(of) ?? 0) + 1);
       try {
         const out = await remove();
-        // Deleted: what the person had not saved in it goes with it. Refused, it stays theirs.
-        if (done(out)) forget();
+        // Deleted: what the person had not saved in it goes with it. Refused, it stays theirs. Another record shown
+        // meanwhile keeps what was typed in it.
+        if (done(out) && shown()) forget();
         return out;
       } finally {
-        deletes--;
+        const left = (deleting.get(of) ?? 1) - 1;
+        if (left) deleting.set(of, left);
+        else deleting.delete(of);
       }
     },
     ...(options.dataSource?.archive && page.data.kind === 'record' ? { archive: (archive: boolean) => track((options.dataSource?.archive as NonNullable<DataSource['archive']>)({ ...record(), archive })) } : {}),
     ...(options.dataSource?.copy && page.data.kind === 'record' ? { copy: async () => (await track((options.dataSource?.copy as NonNullable<DataSource['copy']>)(record()))).id } : {}),
     ...(options.dataSource?.delete && page.data.kind === 'record' ? { remove: () => track((options.dataSource?.delete as NonNullable<DataSource['delete']>)(record())) } : {}),
     async showRecord(id, chain) {
-      if (!(await openRecord(id, chain))) return kept();
+      const stopped = await ownMove(chain, () => showNow(id));
+      if (stopped) return stopped;
       return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded' } : null;
     },
     told(event, id) {
@@ -2233,7 +2403,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
     barred: (right) => (state.can?.[right] === false ? state.can.reason ?? messages[MAY_NOT[right]] : null),
   });
-  const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
+  // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
+  // go when another record is shown by then (its steps were for that one).
+  const moment = createMoments((key, list, chain, on) => runTop(list, { id: key, chain, generation: on }), () => generation);
 
   /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
   function press(source: ButtonNode | StatButton | MenuItem, scope: RunScope): Promise<RunResult> {
@@ -2244,6 +2416,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (builtin) list.push({ do: builtin });
     const asked = builtin === 'archive' ? messages.archiveConfirm : builtin === 'delete' ? messages.deleteConfirm : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
+    scope.generation ??= generation;
     return track(
       (async (): Promise<RunResult> => {
         if (confirm && !(await runner.ask(confirm))) {
@@ -2286,6 +2460,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     leave: (how) => Promise.resolve(letGo(how)),
 
     leaveNow: (how = {}) => (outer ? outer.leaveNow(how) : atOnce(how)),
+
+    recordShown: shownNow,
 
     post,
 
@@ -2391,6 +2567,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // The person's own Discard: nothing of theirs is left at risk, and a save on its way lands as the record it stored.
       resets++;
       personal.clear();
+      personalLines.clear();
       filed.clear();
       sentAs = null;
       const values = syncParts(structuredCopy(baseline), 'start');
@@ -2409,7 +2586,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       );
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);
-      changed(field, 'person');
+      changed(field, 'person', { line: key });
     },
 
     moveLine(field, key, to) {
@@ -2452,7 +2629,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const lines = ((state.values[field] as Line[] | null) ?? []).filter((line) => line.key !== key);
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);
-      changed(field, 'person');
+      changed(field, 'person', { line: key });
     },
 
     async search(field, query, limit = 8, options = {}) {
@@ -2656,12 +2833,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     async reloadTheirs() {
       // A save on its way first: its answer is not dropped by the load.
+      const asked = shownNow();
       await savesSettled();
+      if (!asked()) return false;
       // The person's changes, kept before theirs are loaded over them.
       const mine: Values = {};
       for (const name of state.dirty) mine[name] = structuredCopy(state.values[name]) as Value;
-      await track(load(true));
-      if (state.status !== 'ready') return false;
+      // The record loaded again is a record shown anew: what is set aside is laid on it alone.
+      const loading = load(true);
+      const loaded = generation;
+      await track(loading);
+      if (loaded !== generation || state.status !== 'ready') return false;
       // Set aside where theirs differ from mine: a change they made the same way is no loss.
       const aside: Values = { ...(state.setAside ?? {}) };
       for (const [name, value] of Object.entries(mine)) if (!sameValue(fields[name], value, state.values[name])) aside[name] = value;
@@ -2677,6 +2859,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const source = options.dataSource;
       if (conflict && !told) {
         if (source?.load && state.recordId != null && page.data.kind === 'record') {
+          const shown = shownNow();
           try {
             const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
             told = now.values;
@@ -2684,6 +2867,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           } catch {
             // Unread: said below.
           }
+          // Read, or not, once another record is shown or the values let go: nothing is laid, nothing saved.
+          if (!shown()) return false;
         }
         // Still unread: saving now would go over work this person never saw. Nothing is saved; they are told, and choose again.
         if (!told) {
@@ -2751,7 +2936,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         // Its files are the record's: stored for it, under the part's name.
         { model: where.model, recordId: where.recordId, under: `${where.under}${part.name}.` },
         // Its ways out are the record's: through this form's check.
-        { letGo, close, leaveNow: (how) => atOnce(how) }
+        { letGo, close, leaveNow: (how) => atOnce(how), recordShown: shownNow }
       );
       attached.set(id, { name: part.name, inner: made });
       // A change inside it is told as a change of its answers here, whoever made it.

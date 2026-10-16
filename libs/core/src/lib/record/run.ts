@@ -213,8 +213,11 @@ export interface RunForm {
   /** The values as expressions read them, and what else they read. */
   reading(): { context: Record<string, unknown>; env: ExpressionEnv };
   today(): string;
-  /** Write fields as a step does: worked out once, no person's change. Throws for a field the page lacks. */
-  write(values: Values): void;
+  /**
+   * Write fields as a step does: worked out once, no person's change. Throws for a field the page lacks. `chain`, the
+   * run's: a page's `change` steps work out the person's change, and a write of theirs leaves it the person's.
+   */
+  write(values: Values, chain: readonly string[]): void;
   /** Write values the record holds where it is kept: no change to save. */
   store(values: Values): void;
   addLine(field: string, values: Values): void;
@@ -275,8 +278,8 @@ export interface RunForm {
   post(message: PostedMessage): Promise<boolean>;
   /** A field's value as words in a posted message: a link's name, a choice's label. */
   wordsOf(field: string): string;
-  /** Why the person may not archive, copy or delete the record, as its source told: their words to say; null when they may. */
-  barred?(right: 'archive' | 'duplicate' | 'delete'): string | null;
+  /** Why the person may not change, archive, copy or delete the record, as its source told: their words to say; null when they may. */
+  barred?(right: 'edit' | 'archive' | 'duplicate' | 'delete'): string | null;
 }
 
 export const DONE: RunResult = Object.freeze({ done: true });
@@ -366,6 +369,13 @@ export function createRunner(form: RunForm) {
     return { reason: 'cannot', message };
   }
 
+  /**
+   * THE rule for every wait a step makes — a page opened, the app's call, the source archiving, copying, deleting:
+   * what follows it is for the record the run is on, and is done only while that one is still shown. Another shown
+   * meanwhile — by the pager, the app, anything but the run's own steps — the answer is laid on no record.
+   */
+  const replaced = (scope: RunScope) => form.generation() !== scope.generation;
+
   /** Open a page through the host, take its answers back, and run its `then`. */
   async function open(step: Omit<OpenStep, 'do' | 'when'>, scope: RunScope): Promise<Stopped | null> {
     const host = form.host;
@@ -381,7 +391,6 @@ export function createRunner(form: RunForm) {
       ...(step.values ? { values: readMap(step.values) } : {}),
       ...(step.filter ? { filter: resolveFilter(step.filter, form.reading().context) } : {}),
     };
-    const on = form.generation();
     let result: OpenResult;
     try {
       result = await host.open(request);
@@ -390,8 +399,8 @@ export function createRunner(form: RunForm) {
     }
     if (!result.saved) return { reason: 'closed' };
     // Its answers are for the record that opened it: another shown meanwhile takes none of them.
-    if (form.generation() !== on) return form.gone();
-    if (step.into) form.write(into(step.into, result));
+    if (replaced(scope)) return form.gone();
+    if (step.into) form.write(into(step.into, result), scope.chain);
     if (!step.then) return null;
     const then = await runSteps(step.then, scope);
     return then.done ? null : { reason: then.reason as RunStop, message: then.message, step: then.step, error: then.error };
@@ -438,7 +447,6 @@ export function createRunner(form: RunForm) {
       ...(scope.lines ? { lines: structuredCopy(scope.lines) } : {}),
     };
     if (!form.onAction) return null;
-    const on = form.generation();
     let answer: ActionResult | undefined;
     try {
       answer = (await form.onAction(request)) ?? undefined;
@@ -449,7 +457,7 @@ export function createRunner(form: RunForm) {
     if (!answer) return null;
     // Answered for a record no longer shown: nothing of it is laid over the one shown now. Its words to the person are
     // laid over no record, and are said still — a dialog's "Payment … posted", answered as it closed, as before.
-    if (form.generation() !== on) {
+    if (replaced(scope)) {
       if (answer.say !== undefined) {
         const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
         form.host?.say(said.message, said.tone ?? 'info');
@@ -469,7 +477,7 @@ export function createRunner(form: RunForm) {
     if (answer.values) {
       const known: Values = {};
       for (const [name, value] of Object.entries(answer.values)) if (name in form.fields) known[name] = fit(form.fields[name], value);
-      form.write(known);
+      form.write(known, scope.chain);
     }
     if (answer.say !== undefined) {
       const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
@@ -479,6 +487,8 @@ export function createRunner(form: RunForm) {
       const posted = typeof answer.post === 'string' ? { message: answer.post } : answer.post;
       const stopped = await post(posted.message, posted.kind ?? 'note', false);
       if (stopped) return stopped;
+      // Posted while another record was shown: the rest of the answer is not for that one.
+      if (replaced(scope)) return form.gone();
     }
     if (answer.record !== undefined) {
       const moved = await ownMove(scope, () => form.showRecord(answer.record as RecordId | null, scope.chain));
@@ -527,13 +537,16 @@ export function createRunner(form: RunForm) {
       if (kept) return kept;
       await form.archive(name === 'archive');
       form.told({ archived: name === 'archive' }, id);
+      // Archived once another record is shown: that one is not loaded again over what is typed in it.
+      if (replaced(scope)) return form.gone();
       return ownMove(scope, () => form.reload(scope.chain));
     }
     if (name === 'duplicate') {
       // What was changed goes with the copy: it is saved first. What that save could not take — changes Reload set
       // aside, a change made while it ran — goes only when the person says so, before any copy is made; and a change
       // made while the copy is made, before the copy shows.
-      if (form.changed()) {
+      // A record the person may not change has nothing to save: what is changed in it is asked about instead.
+      if (form.changed() && !form.barred?.('edit')) {
         const saved = await form.save(scope.chain);
         if (saved) return saved;
       }
@@ -546,6 +559,11 @@ export function createRunner(form: RunForm) {
         return stopped;
       }
       const copied = await form.copy();
+      // Copied once another record is shown: the copy is made, and told; the form stays on the one shown, with what is typed in it.
+      if (replaced(scope)) {
+        form.told({ copied }, id);
+        return form.gone();
+      }
       const moved = await ownMove(scope, () => form.showRecord(copied, scope.chain));
       if (moved) return moved;
       form.told({ copied }, id);
@@ -554,19 +572,23 @@ export function createRunner(form: RunForm) {
     // Deleted: what the person had not saved in it goes with it, unasked — they chose to delete it. Refused, it stays.
     if (!form.remove) {
       const stopped = await form.deleting(() => instead(name, 'delete', scope), (out) => !out);
-      if (!stopped) told(scope, { deleted: true }, id);
-      return stopped;
+      return stopped ?? told(scope, { deleted: true }, id);
     }
     const remove = form.remove;
     await form.deleting(() => remove(), () => true);
-    told(scope, { deleted: true }, id);
-    return null;
+    return told(scope, { deleted: true }, id);
   }
 
-  /** The record deleted, told: a pager moves on at once, and that move is this run's own. */
-  function told(scope: RunScope, event: { deleted: true }, id: RecordId) {
+  /**
+   * The record deleted, told: a pager showing it moves on at once, and that move is this run's own. Deleted once
+   * another record is shown, the run stops there: that one is not left, nor its steps run on it.
+   */
+  function told(scope: RunScope, event: { deleted: true }, id: RecordId): Stopped | null {
+    const late = replaced(scope);
     form.told(event, id);
+    if (late) return form.gone();
     scope.generation = form.generation();
+    return null;
   }
 
   /** A step of this run showing another record (or this one loaded again): the run goes on, on that one. */
@@ -580,11 +602,11 @@ export function createRunner(form: RunForm) {
     switch (step.do) {
       case 'set': {
         const def = fieldOf(step.field);
-        form.write({ [step.field]: fit(def, read(step.value, !EXPRESSIBLE.has(def.type))) });
+        form.write({ [step.field]: fit(def, read(step.value, !EXPRESSIBLE.has(def.type))) }, scope.chain);
         return null;
       }
       case 'clear':
-        form.write({ [step.field]: emptyValue(fieldOf(step.field)) });
+        form.write({ [step.field]: emptyValue(fieldOf(step.field)) }, scope.chain);
         return null;
       case 'addLine': {
         const def = fieldOf(step.field);
@@ -703,23 +725,26 @@ function asRead(values: Values): Record<string, unknown> {
  * meanwhile; the others (beforeSave, afterSave) do not run — a save made
  * meanwhile goes ahead without them, so nothing waits on itself.
  */
-export function createMoments(run: (key: string, steps: readonly ActionStep[], chain: readonly string[]) => Promise<RunResult>) {
+export function createMoments(run: (key: string, steps: readonly ActionStep[], chain: readonly string[], on?: number) => Promise<RunResult>, now?: () => number) {
   interface Slot {
     running: Promise<RunResult>;
     queued?: Promise<RunResult>;
+    /** The record (`now`) it was last set off on, for the run queued after the one going. */
+    on?: number;
   }
   const slots = new Map<string, Slot>();
 
   return function moment(key: string, steps: readonly ActionStep[] | undefined, chain: readonly string[], again: boolean): Promise<RunResult> {
     if (!steps?.length || chain.includes(key)) return Promise.resolve(DONE);
     /** A run of it, known as running before its first step does: a step that sets it off again finds it busy. */
-    const go = (slot: Slot): Promise<RunResult> => {
+    const go = (slot: Slot, on = now?.()): Promise<RunResult> => {
       let settle!: (result: Promise<RunResult>) => void;
       const running: Promise<RunResult> = new Promise<RunResult>((resolve) => (settle = resolve)).finally(() => {
         if (slot.running === running && !slot.queued) slots.delete(key);
       });
       slot.running = running;
-      settle(run(key, steps, [...chain, key]));
+      // Set off on a record no longer shown: its steps were for that one, and are let go.
+      settle(on !== undefined && now && on !== now() ? Promise.resolve(DONE) : run(key, steps, [...chain, key], on));
       return running;
     };
     const busy = slots.get(key);
@@ -729,10 +754,11 @@ export function createMoments(run: (key: string, steps: readonly ActionStep[], c
       return go(slot);
     }
     if (!again) return Promise.resolve(DONE);
+    busy.on = now?.();
     if (!busy.queued) {
       const next = () => {
         busy.queued = undefined;
-        return go(busy);
+        return go(busy, busy.on);
       };
       busy.queued = busy.running.then(next, next);
     }
