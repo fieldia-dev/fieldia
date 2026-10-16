@@ -222,13 +222,22 @@ describe('a dropdown that searches its list', () => {
     expect(value()).toBeNull();
   });
 
-  it('closes on Escape without choosing', () => {
-    const { el, value } = mountKind({ type: 'selection', options: MANY });
+  it('closes on Escape without choosing, the words typed let go: the box shows the choice it holds', () => {
+    const { el, value, form } = mountKind({ type: 'selection', options: MANY });
     const input = box(el);
     typeInto(input, '2');
     press(input, 'Escape');
     expect(list(el).hidden).toBe(true);
     expect(value()).toBeNull();
+    expect(input.value).toBe('');
+    typeInto(input, 'Floor 3');
+    press(input, 'Enter');
+    // Half typed, then Escape: the words go before the box is left, never kept unread as it is.
+    typeInto(input, 'Gr');
+    press(input, 'Escape');
+    expect(input.value).toBe('Floor 3');
+    input.dispatchEvent(new Event('blur'));
+    expect([value(), form.getState().unread['x']]).toEqual(['f3', undefined]);
   });
 });
 

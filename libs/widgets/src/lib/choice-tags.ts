@@ -245,15 +245,18 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
         else if (!(single && text === labelOf(current()))) noMatch(text);
         return;
       }
-      case 'Escape':
+      case 'Escape': {
         if (!list.hidden) event.preventDefault();
         close();
-        // Words a save kept unread are let go: the box shows the choice it holds.
-        if (unreadNow()) {
+        // Words typed, or kept unread by a save, are let go: the box shows the choice it holds, as a link's Escape puts
+        // back what it held — never words of none left to be kept unread as the box is left.
+        const held = single ? labelOf(current()) : '';
+        if (unreadNow() || input.value !== held) {
           letGo();
-          input.value = single ? labelOf(current()) : '';
+          input.value = held;
         }
         return;
+      }
       case 'Backspace':
         if (!single && input.value === '' && chosen().length) write(chosen().slice(0, -1));
         return;
