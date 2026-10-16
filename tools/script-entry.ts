@@ -3,8 +3,9 @@
  * no build step needs to show a form and handle what people enter. Its own
  * words are English; Arabic, German and French come as add-on scripts
  * (tools/script-language.ts). What a page uses only now and then — a work
- * item's head, its text editor, a path picker, a filter bar — comes in parts
- * loaded the first time a page uses them (tools/script-parts.ts).
+ * item's head, its text editor, a path picker, a filter bar, a date's box, a
+ * theme, the quiet look — comes in parts loaded the first time a page uses
+ * them (tools/script-parts.ts).
  */
 import { addLanguage } from '@fieldia/viewer';
 import type { LanguageHost } from './script-language';

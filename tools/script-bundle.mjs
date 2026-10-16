@@ -550,7 +550,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
-const BUDGET_KB = 629.8;
+// The looks loaded on first use (0.23 size pass): the eight themes — their tokens, light and dark, and their own
+// shapes (themes.ts) — out of this script, into fieldia.themes.js, and the quiet look's sheet (styles-quiet.ts) into
+// fieldia.quiet.js. This script keeps the page's look's tokens (look-styles.ts, cut from the layout's sheet, which the
+// themes' sheet carries again after its own), a state's words and a field's lock (styles-lock.ts), a theme worn as its
+// part comes with none meanwhile and the quiet look's sheet asked for as a quiet field is drawn (look-parts.ts), and the
+// two parts a page's look names (viewer-parts.ts) — 629.78 measured before, 612.05 after: 17.7 less, to 612.1.
+const BUDGET_KB = 612.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -650,7 +656,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.3;
+// The themes and the quiet look loaded on first use, in fieldia.themes.js (3.8 gzipped) and fieldia.quiet.js (2.2),
+// two parts rather than one: a themed page loads 3.8, not the 5.3 of both together, a quiet one 2.2; a page with both,
+// a work item's, 0.7 more and one more file (listed with the raw budget above): 197.23 measured before, 193.42 after —
+// 3.8 less, to 193.5.
+const GZIP_BUDGET_KB = 193.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -814,7 +824,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
 // save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// The eight themes, cut out of the main script (0.23): their tokens, light and dark, the page's look's tokens again
+// after them, and their own shapes, as one sheet (themes 12.3, 3.9, as measured 12.23 and 3.83). The quiet look's sheet,
+// cut out with them, its state's words and lock left in the main script (quiet 8.5, 2.2, as measured 8.46 and 2.19).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], themes: [12.3, 3.9], quiet: [8.5, 2.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -823,9 +836,11 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  themes: ['installThemeStyles'],
+  quiet: ['installQuietStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', themes: 'themesPart', quiet: 'quietPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -900,26 +915,37 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await plain.drawn;
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
   plain.destroy();
-  // A work item's bug: its parts asked for, the page drawn once they came — nothing of it before.
+  // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
+  const themed = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
+  if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
+  await themed.drawn;
+  if (loaded() !== 'themes' || themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error(`in a page, a theme the app gives is not worn from its part (${loaded()})`);
+  themed.setTheme('odoo');
+  if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
+  themed.destroy();
+  // A work item's bug: its parts asked for — its quiet skin's among them — the page drawn once they came, nothing of it before.
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
   await bug.drawn;
-  if (loaded() !== 'choice, head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, head, path and text`);
-  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
-  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
+  if (loaded() !== 'choice, head, path, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, head, path, quiet look and text`);
+  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
+  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
+  // The themes' sheet, then the quiet look's, before every other part's: where their rules stood in Fieldia's own.
+  const sheets = [...doc.querySelectorAll('style[id]')].map((style) => style.id);
+  if (!(sheets.indexOf('fieldia-theme-styles') < sheets.indexOf('fieldia-quiet-styles') && sheets.indexOf('fieldia-quiet-styles') < sheets.indexOf('fieldia-path-styles'))) throw new Error(`in a page, the themes' and the quiet look's sheets are out of their place: ${sheets.join(', ')}`);
   bug.destroy();
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  if (loaded() !== 'choice, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'choice, filters, head, path, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
   // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
   await signup.drawn;
-  if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'choice, date, filters, head, path, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a theme the app gives, worn as it came; a bug's head, text, path picker, own lists and quiet look, a backlog's filter bar, and a form's date box, each as first used");
 }

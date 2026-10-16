@@ -2,7 +2,7 @@
  * The script bundle's parts (libs/widgets/src/lib/parts.ts): code a page loads
  * the first time it uses it, each part a script of its own beside fieldia.js —
  * `fieldia.head.js`, `fieldia.text.js`, `fieldia.path.js`, `fieldia.choice.js`,
- * `fieldia.filters.js`
+ * `fieldia.filters.js`, `fieldia.date.js`, `fieldia.themes.js`, `fieldia.quiet.js`
  * (tools/script-bundle.mjs). The first time a page asks for a part, the main
  * script adds the part's tag, from the folder it came from itself; the part
  * runs, hands over its code, and the page draws from it.
