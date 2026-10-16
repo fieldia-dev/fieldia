@@ -318,6 +318,24 @@ const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'res
 const typedBox = (box: Element) => box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type));
 
 /**
+ * A box's text put back as the person would type it back (the quiet look's Escape): all of it chosen and written over,
+ * as typing — the box, its guard and its undo hear it as keys — or, where the browser cannot, written and told.
+ */
+function typeBack(box: HTMLInputElement | HTMLTextAreaElement, text: string) {
+  const doc = box.ownerDocument;
+  box.select();
+  let typed: boolean;
+  try {
+    typed = typeof doc.execCommand === 'function' && doc.execCommand('insertText', false, text);
+  } catch {
+    typed = false;
+  }
+  if (typed && box.value === text) return;
+  box.value = text;
+  box.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
  * React, Angular and Vue bindings are thin shells around this function.
  * Throws when the page does not validate, listing every problem.
@@ -764,19 +782,38 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Quiet, Escape puts back the value the field had as it was entered — once its own list or calendar, if open, has
       // taken the key — and only then is it left for the dialog round it. Leaving keeps the change, for Save.
       let entered: unknown;
+      /** The box entered, the text it showed then (once its own focus has written it), and whether it was typed in since. */
+      let enteredBox: { box: HTMLInputElement | HTMLTextAreaElement; text: string; typed: boolean } | null = null;
       wrapper.addEventListener('focusin', (event) => {
         if (!wrapper.contains(event.relatedTarget as Node | null)) entered = form.getState().values[node.field];
+        const box = event.target as HTMLInputElement | HTMLTextAreaElement;
+        if (typedBox(box)) queueMicrotask(() => (enteredBox = { box, text: box.value, typed: false }));
+      });
+      wrapper.addEventListener('input', (event) => {
+        if (enteredBox && event.target === enteredBox.box) enteredBox.typed = true;
       });
       // Entered before the record came (a dialog takes the focus at once): what it held is what the record brought.
       cleanups.push(form.on('open', ({ values }) => {
-        if (wrapper.contains(doc.activeElement)) entered = values[node.field];
+        if (!wrapper.contains(doc.activeElement)) return;
+        entered = values[node.field];
+        // What the box shows of the record come is what it was entered with.
+        queueMicrotask(() => {
+          if (enteredBox && enteredBox.box === doc.activeElement && !enteredBox.typed) enteredBox.text = enteredBox.box.value;
+        });
       }));
       wrapper.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape' || event.defaultPrevented || !wrapper.hasAttribute('data-quiet')) return;
-        if (JSON.stringify(form.getState().values[node.field] ?? null) === JSON.stringify(entered ?? null)) return;
+        // Text typed that never changed the value — a date that does not read, "31/02/2026" — is put back too, as typed
+        // back by the person: the box shows what it showed as it was entered, and nothing is left unread as it is left.
+        const typedBack = enteredBox && enteredBox.typed && enteredBox.box === doc.activeElement && enteredBox.box.value !== enteredBox.text ? enteredBox : null;
+        if (!typedBack && JSON.stringify(form.getState().values[node.field] ?? null) === JSON.stringify(entered ?? null)) return;
         event.preventDefault();
         event.stopPropagation();
         form.setValue(node.field, (entered ?? null) as Values[string]);
+        if (typedBack) {
+          typeBack(typedBack.box, typedBack.text);
+          typedBack.typed = false;
+        }
       });
 
       const toned = node.tones !== undefined || node.bold !== undefined;

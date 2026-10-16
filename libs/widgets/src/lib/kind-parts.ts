@@ -1,6 +1,6 @@
 import type { FieldNode, Locale } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
-import type { WidgetState } from './widgets';
+import type { TypedText, WidgetState } from './widgets';
 
 /**
  * Small parts the question kinds share: making elements, their words, saying
@@ -69,6 +69,25 @@ export function setHidden(element: HTMLElement, hidden: boolean): void {
 /** Words written only when they change: written again, they would be new words to lay out. */
 export function setText(element: Node, text: string): void {
   if (element.textContent !== text) element.textContent = text;
+}
+
+/**
+ * Text typed in a stand-in's box put in `box` as the person left it (`Widget.takeTyped`): the box focused, the text in
+ * it, the caret where it was. `taken` runs once the text is in: where the box notes what the field held as it was
+ * entered (`typed.entered`, which text that does not read puts back) and its guard takes the text as it stands — whole,
+ * never put back, read as the box is left. Then an input says it was typed, as a key would: the box reads it as it
+ * reads keys, and the viewer holds it as typed in, so autosave waits.
+ */
+export function typeInto(box: HTMLInputElement | HTMLTextAreaElement, typed: TypedText, taken: () => void = () => undefined): void {
+  box.focus();
+  box.value = typed.text;
+  try {
+    box.setSelectionRange(typed.start, typed.end);
+  } catch {
+    // A box that takes no selection (never one of ours).
+  }
+  taken();
+  box.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 /** Whether the answer is wrong, and the help and error that describe it, on the element assistive technology reads. */

@@ -1,4 +1,4 @@
-import { readNumber, stripMarks, type JsonValue } from '@fieldia/core';
+import { foldTyped, readNumber, stripMarks, type JsonValue } from '@fieldia/core';
 
 /**
  * Places and areas as a form keeps them: GeoJSON (RFC 7946), longitude
@@ -54,9 +54,9 @@ export const isLatLng = (lat: unknown, lng: unknown): boolean =>
 type Json = { [key: string]: unknown };
 const isObject = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** A place's value: a GeoJSON Point. */
-export function writePoint(point: LatLng): PointGeometry {
-  return { type: 'Point', coordinates: [round6(point.lng), round6(point.lat)] };
+/** A place's value: a GeoJSON Point, to six decimals — or, `exact`, as its coordinates are (typed, they keep their places). */
+export function writePoint(point: LatLng, exact = false): PointGeometry {
+  return { type: 'Point', coordinates: exact ? [point.lng, point.lat] : [round6(point.lng), round6(point.lat)] };
 }
 
 function geometryOf(value: unknown): Json | null {
@@ -129,6 +129,18 @@ export function readArea(value: unknown): Area | null {
 export function parseCoordinate(text: string, locale = 'en'): number | null {
   const read = readNumber(stripMarks(text).trim().replace(/^\u2013/, '-'), locale, { ungrouped: true });
   return read.ok ? read.value : null;
+}
+
+/**
+ * A place written as its pair of coordinates, latitude first — as a map's "copy coordinates", a phone's share or a
+ * spreadsheet writes it: "30.0444, 31.2357", "30.0444 31.2357", "30,0444; 31,2357" — or null for anything else. Each
+ * is read as one box reads it, and kept to its range.
+ */
+export function parseCoordinatePair(text: string, locale = 'en'): { lat: string; lng: string } | null {
+  const pair = /^\s*([-\u2212\u2013]?\d+(?:[.,\u066b]\d+)?)\s*(?:[,;\u060c\t]\s*|\s+)([-\u2212\u2013]?\d+(?:[.,\u066b]\d+)?)\s*$/.exec(foldTyped(text));
+  if (!pair) return null;
+  const [lat, lng] = [parseCoordinate(pair[1], locale), parseCoordinate(pair[2], locale)];
+  return lat !== null && lng !== null && isLatLng(lat, lng) ? { lat: pair[1], lng: pair[2] } : null;
 }
 
 /** Metres between two places on the ground (the haversine formula). */

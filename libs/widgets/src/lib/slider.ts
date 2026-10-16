@@ -1,3 +1,4 @@
+import { foldTyped, readNumber } from '@fieldia/core';
 import { clearSelection, describeState, maker, wordsFor } from './kind-parts';
 import { formatNumber } from './numbers';
 import { installSurveyStyles } from './styles-survey';
@@ -34,11 +35,25 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
   }, node);
   const element = make('div', { class: 'fd-slider' }, make('div', { class: 'fd-slider-track' }, input, output), ends, clear.button);
   if (endWords.some(Boolean)) input.setAttribute('aria-description', endWords.filter(Boolean).join(' … '));
-  input.addEventListener('input', () => form.setValue(name, Number(input.value)));
+  // Text the number box drawn before the slider came kept unread ("1.5" in whole days): the slider says so, and a value
+  // slid to replaces it.
+  const unread = () => form.getState().unread?.[name];
+  input.addEventListener('input', () => {
+    form.setValue(name, Number(input.value));
+    if (unread()) form.setUnread(name, null);
+  });
 
   return {
     element,
     focus: () => input.focus(),
+    // Typed in the number box drawn before the slider came: a number it holds as typed ("4") is the slider's, focused;
+    // one on its way ("2." of 2.5) it cannot show, so that box stays until it is left.
+    takeTyped(typed) {
+      const reading = readNumber(typed.text, locale);
+      if (!reading.ok || reading.value !== (form.getState().values[name] ?? null) || reading.plain !== foldTyped(typed.text).trim()) return false;
+      input.focus();
+      return true;
+    },
     update(state) {
       const value = typeof state.value === 'number' ? state.value : null;
       element.classList.toggle('fd-slider-empty', value === null);
@@ -50,7 +65,7 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
       input.disabled = state.readonly;
       clear.allow(state);
       clear.show(value !== null);
-      describeState(input, state);
+      describeState(input, { ...state, invalid: state.invalid || !!unread() });
     },
   };
 };

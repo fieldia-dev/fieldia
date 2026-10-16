@@ -191,7 +191,9 @@ const SKINS_CSS = /* css */ `
 /* In a table's cell or a grid's editor it floats just under the box, over the line below, never making the row taller. */
 :is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint { position: absolute; inset-block-start: calc(100% + 2px); inset-inline-start: 0; z-index: 6; margin: 0; width: max-content; max-width: 320px; flex: none; box-shadow: 0 2px 8px rgb(0 0 0 / 0.14); }
 :is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint[data-above] { inset-block-start: auto; inset-block-end: calc(100% + 2px); }
-.fd-lines-table td:has(.fd-refusal-hint:not([hidden])), .fd-grid-editor { position: relative; }
+/* The cell is placed for its hint from the moment its box is entered, never as the hint comes: a cell whose position
+   changes mid-edit is built again by Firefox, and its box loses the key being refused and all it held ("1x5" empty). */
+.fd-lines-table td:is(:focus-within, :has(.fd-refusal-hint:not([hidden]))), .fd-grid-editor { position: relative; }
 .ag-cell-inline-editing:has(.fd-refusal-hint:not([hidden])), .ag-row:has(.fd-refusal-hint:not([hidden])) { overflow: visible; z-index: 6; }
 
 

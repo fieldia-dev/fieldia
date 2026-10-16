@@ -1,4 +1,4 @@
-import { readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Form, type Locale, type Value } from '@fieldia/core';
+import { momentsOf, readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Form, type Locale, type Value } from '@fieldia/core';
 import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
 import { boxPurpose, fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
@@ -104,22 +104,26 @@ export function dateShape(kind: DateKind, order: DateOrder, words: WidgetLabels)
  * Text typed in a box, read: its value (null for nothing) — with `timeLeftOut`, the time a date and time had where a
  * day alone is kept (HH:MM, here) — or why it does not read, in words, and the reader's name for why.
  */
-export type DateReading = { ok: true; value: string | null; timeLeftOut?: string } | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' | 'minuteDigits' };
+export type DateReading =
+  | { ok: true; value: string | null; timeLeftOut?: string }
+  | { ok: false; words: string; problem: DateProblem | 'noSuchDay' | 'shortYear' | 'minuteDigits' | 'skippedTime' | 'repeatedTime' };
 
-/** What a box reads text with: its kind, its page's order and language, its label and words. */
+/**
+ * What a box reads text with: its kind, its page's order and language, its label and words — and the time zone a date
+ * and time is typed in (`zone`, a time zone's name, "Africa/Cairo"), where the computer is when left out. A date and
+ * time the clocks skip or pass twice there is said by the reader, whatever zone it is given.
+ */
 export interface DateReader {
   kind: DateKind;
   order: DateOrder;
   locale: Locale;
   label: string;
   labels?: WidgetLabels;
+  zone?: string;
 }
 
-/** A local date and time read ("2026-10-13T14:30") as the instant a date and time field keeps. */
-const instantOf = (local: string) => {
-  const [, y, mo, d, h, mi] = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(local) as RegExpExecArray;
-  return new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)).toISOString();
-};
+/** A date and time read ("2026-10-13T14:30", one moment where it is read) as the instant a date and time field keeps. */
+const instantOf = (local: string, zone: string | undefined, at?: number) => new Date(at ?? momentsOf(local, zone)[0]).toISOString();
 
 /**
  * Typed text as a date, a date and time or a time, in the page's order: the value its field keeps (a day,
@@ -137,9 +141,19 @@ export function readDateText(text: string, reader: DateReader): DateReading {
     if (time.problem === 'minuteDigits') return { ok: false, words: minuteDigitsWords(label, t, time.times, words, reader.locale), problem: 'minuteDigits' };
     return { ok: false, words: fillIn(words.timeUnfinished, { label, text: quoted(t) }), problem: time.problem === 'unfinished' ? 'unfinished' : 'time' };
   }
-  const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale });
+  const read = readDate(t, { order: reader.order, time: kind === 'datetime', locale: reader.locale, zone: reader.zone });
   if (!read.ok) {
     switch (read.problem) {
+      case 'skippedTime':
+      case 'repeatedTime': {
+        const day = typedDay(new Date(Number(read.date.slice(0, 4)), Number(read.date.slice(5, 7)) - 1, Number(read.date.slice(8, 10))), reader.order, reader.locale);
+        const shown = { label, date: day, time: read.time };
+        return read.problem === 'skippedTime'
+          ? { ok: false, words: fillIn(words.skippedTime, { ...shown, from: read.from, to: read.to }), problem: 'skippedTime' }
+          : { ok: false, words: fillIn(words.repeatedTime, { ...shown, first: `${day} ${read.time} ${read.offsets[0]}`, second: `${day} ${read.time} ${read.offsets[1]}` }), problem: 'repeatedTime' };
+      }
+      case 'order':
+        return { ok: false, words: fillIn(words.dateOrder, { label, text: quoted(t), example: dateExample(reader) }), problem: 'order' };
       case 'minuteDigits':
         return { ok: false, words: minuteDigitsWords(label, t, read.times, words, reader.locale), problem: 'minuteDigits' };
       case 'noSuchDay': {
@@ -159,7 +173,7 @@ export function readDateText(text: string, reader: DateReader): DateReading {
     }
   }
   if (read.value === null) return { ok: true, value: null };
-  if (kind !== 'date') return { ok: true, value: instantOf(read.value) };
+  if (kind !== 'date') return { ok: true, value: instantOf(read.value, reader.zone, read.at) };
   return read.timeLeftOut ? { ok: true, value: read.value, timeLeftOut: read.timeLeftOut } : { ok: true, value: read.value };
 }
 

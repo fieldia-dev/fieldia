@@ -268,6 +268,11 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   return {
     element,
     focus: () => from.focus(),
+    // The plain box before this range came held its first day: what was typed there is its first box's.
+    takeTyped: (typed) => {
+      fromBox.take(typed);
+      return true;
+    },
     destroy: () => {
       document.removeEventListener('mousedown', outside);
       fromBox.destroy();

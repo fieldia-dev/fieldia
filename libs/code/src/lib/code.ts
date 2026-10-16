@@ -4,7 +4,7 @@ import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/
 import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from '@codemirror/view';
 import type { JsonValue, Value } from '@fieldia/core';
-import { jsonProblem, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
+import { jsonProblem, readJson, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
 import { codeHighlightStyle } from './palette';
 import { installCodeStyles } from './styles';
 import { textCodeWidget } from './text-code';
@@ -26,12 +26,8 @@ const show = (value: Value | undefined) => (value === null || value === undefine
 
 /** The text as JSON, `null` for nothing, or `undefined` when it is not valid. */
 function read(text: string): JsonValue | undefined {
-  if (text.trim() === '') return null;
-  try {
-    return JSON.parse(text) as JsonValue;
-  } catch {
-    return undefined;
-  }
+  // A number JSON.parse would change (an id of 20 digits, 1e400) is not JSON as written: kept unread, never changed.
+  return readJson(text) as JsonValue | undefined;
 }
 
 /** Where the JSON went wrong, marked: its line shaded, the character that cannot be there underlined. Null takes the marks away. */
@@ -89,6 +85,7 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   /** Where the text stops being JSON, in words. */
   const problemWords = (text: string) => {
     const problem = jsonProblem(text);
+    if (problem?.reason === 'number') return labels.jsonNumber.replace('{number}', problem.char ?? '').replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
     return problem ? labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column)) : labels.invalidJson;
   };
 

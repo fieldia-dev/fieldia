@@ -1,4 +1,4 @@
-import { readDuration, readNumber, type Field, type Locale, type Value } from '@fieldia/core';
+import { foldTyped, readDuration, readNumber, type Field, type Locale, type Value } from '@fieldia/core';
 
 /**
  * Two numbers written as people read them rather than as they are kept: hours
@@ -28,6 +28,26 @@ export function formatDuration(hours: number): string {
 export function parseDuration(raw: string, locale: Locale = 'en'): number | null | undefined {
   const read = readDuration(raw, locale);
   return read.ok ? read.value : undefined;
+}
+
+/**
+ * Hours typed, kept to the places the field keeps when it has them, as Flectra stores them: "6:20" in a field of two
+ * places is 6.33 — still 06:20 to the minute — never refused for the places of a third of an hour. Only what is typed
+ * is kept so; a value from outside is left as it came.
+ */
+export function hoursKept(hours: number | null | undefined, field: Field): number | null | undefined {
+  if (typeof hours !== 'number' || field.type !== 'float' || !field.digits) return hours;
+  const scale = 10 ** field.digits[1];
+  return Math.round(hours * scale) / scale;
+}
+
+/**
+ * Whether hours were typed with a decimal mark and two digits after it, which a clock's minutes could be: "6.45",
+ * "6,30". They are hours with a decimal, as Flectra reads them (6.45 is 06:27), and the box says so.
+ */
+export function decimalHours(text: string): boolean {
+  const m = /^[-\u2212]?\d+[.,\u066b](\d{2})$/.exec(foldTyped(text).trim());
+  return !!m && m[1] !== '00' && Number(m[1]) <= 59;
 }
 
 const percents = new Map<string, Intl.NumberFormat>();

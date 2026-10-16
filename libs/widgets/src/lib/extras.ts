@@ -2,7 +2,7 @@ import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { JsonValue } from '@fieldia/core';
 import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
-import { jsonProblem } from './json-problem';
+import { jsonProblem, readJson } from './json-problem';
 import { linkAddress, sanitizeHtml } from './sanitize';
 import { partFactory, textPart } from './widget-parts';
 
@@ -281,6 +281,7 @@ export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels, lo
     if (!problem) return null;
     const where = { line: problem.line, column: problem.column };
     if (problem.reason === 'end') return fillIn(words.invalidJsonAt, where);
+    if (problem.reason === 'number') return fillIn(words.jsonNumber, { number: problem.char ?? '', ...where });
     const reason = problem.reason === 'char' ? fillIn(words.jsonChar, { char: problem.char ?? '' }) : words[problem.reason === 'comma' ? 'jsonComma' : problem.reason === 'quotes' ? 'jsonQuotes' : 'jsonDigits'];
     return fillIn(words.json, { reason, ...where });
   };
@@ -307,7 +308,7 @@ export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels, lo
       const message = said(area.value);
       if (message) form.setUnread(name, { text: area.value, message });
       else {
-        form.setValue(name, JSON.parse(area.value) as JsonValue);
+        form.setValue(name, readJson(area.value) as JsonValue);
         form.setUnread(name, null);
       }
     }

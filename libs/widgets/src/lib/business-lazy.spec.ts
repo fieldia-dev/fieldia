@@ -1,6 +1,7 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
 import { businessPart, type PartFactory } from './widget-parts';
+import { plainNumber } from './business-plain';
 import { builtInWidgets, createWidget, widgetPart, type Widget } from './widgets';
 
 /**
@@ -76,6 +77,38 @@ describe('the business widgets’ part', () => {
   });
 });
 
+describe('hours and a per cent drawn plainly', () => {
+  // The stand-in itself: drawn through createWidget it would ask for its part, which the test below needs not come yet.
+  const drawPlain = (name: 'hours' | 'share', value: number) => {
+    const form = createForm({ page: { ...page, fields: { ...fields, share: { type: 'float', label: 'Share', digits: [5, 2] } } } as Page, values: { [name]: value } as never });
+    const node = NODES.find((one) => one.field === name) as FieldNode;
+    const widget = plainNumber({ form, name, field: form.page.fields[name], node, id: `w-${name}`, document });
+    document.body.append(widget.element);
+    form.subscribe(() => widget.update({ value: form.getState().values[name], values: form.getState().values, readonly: false, required: false, invalid: false }));
+    widget.update({ value: value, values: form.getState().values, readonly: false, required: false, invalid: false });
+    return { form, input: widget.element as HTMLInputElement };
+  };
+
+  it('a per cent read as its part’s box reads it: "12.345" in one of two places is kept unread with why, never 0.12345', () => {
+    const { form, input } = drawPlain('share', 0.1);
+    input.focus();
+    input.value = '12.345';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.blur();
+    expect({ value: form.getState().values['share'], unread: form.getState().unread['share'] }).toEqual({ value: 0.1, unread: { text: '12.345', message: 'Share takes at most 2 decimal places' } });
+    expect(input.value).toBe('12.345');
+  });
+
+  it('passed through, nothing typed, hours keep the value they came with: 6.51 shown as 06:31 is never 6.5167', () => {
+    const { form, input } = drawPlain('hours', 6.51);
+    expect(input.value).toBe('06:31');
+    input.focus();
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.blur();
+    expect(form.getState().values['hours']).toBe(6.51);
+  });
+});
+
 describe('a business widget made before its part came', () => {
   it('shows its value plainly, keeps what is typed, then is the part’s own in the same place, with the last value and the focus', async () => {
     expect(businessPart.loaded).toBeUndefined();
@@ -113,12 +146,12 @@ describe('a business widget made before its part came', () => {
     share.blur();
     expect(form.getState().values['share']).toBe(0.35);
     expect(share.value).toBe('35%');
-    // Hours half typed as the part comes: kept as the field's unread text, never a value made of it.
+    // Hours half typed as the part comes: kept in the box as typed, never a value made of it, never read under the keys.
     hours.focus();
     hours.value = '7:';
     hours.dispatchEvent(new Event('input', { bubbles: true }));
     expect(form.getState().values['hours']).toBe(6.5);
-    expect(form.getState().unread['hours']?.text).toBe('7:');
+    expect(form.getState().unread['hours']).toBeUndefined();
     await businessPart.load();
     await Promise.resolve();
     // Each the part's own, in its place (a box's hint beside it), with the value it was given.

@@ -88,6 +88,54 @@ are new: a line's dialog asks before Escape drops a change, and the `save`
 event's `values` are the record as that save left it — a change typed while it
 was on its way is no longer among them.
 
+**Every box reads what was typed, and never rewrites what was not** (0.21's
+input rules checked again on 0.23).
+
+- **Typing while a box's part comes** (an app that draws without
+  `loadParts`): the part's box takes the text as typed, its caret and the
+  focus, in every engine — a per cent's "2." stays "2.", never 25 % a key
+  later; hours' "1." is never 01:00. A links box reads the words typed before
+  it came; a slider leaves the box being typed in beside it until it is left.
+  `Widget.takeTyped`, for a part widget of an app's own.
+- Hours and a per cent entered and left with nothing typed keep their value:
+  0.123456 is never 0.1235, 6.51 hours never 6.5167. Hours typed are kept to
+  the field's places ("6:20" with digits [16, 2] is 6.33, still 06:20), and a
+  per cent's `digits` count the per cent shown (12.5 % with [5, 2]).
+  Hours with a point, "6.45", stay Flectra's decimal hours, 06:27 — and the
+  box now says so. A per cent drawn plainly keeps to its places too.
+- **Money is read again when its currency changes**: 12.345 typed in dinars is
+  refused in pounds, with why; "12.345" refused in pounds is taken in dinars.
+  An amount with its own currency as people write it is read ("LE 1,500",
+  "JD 12.345", "12 usd"), and a box's own unit ("12 kg").
+- A number's digits [precision, scale] are counted as its check counts them:
+  Floor area [10, 1] takes nine digits before the point, and says so.
+- **Dates**: an instant on a day its month lacks (2026-02-31T10:00Z) is
+  refused, never 3 March. A date and time the clocks skip or pass twice for
+  summer time is refused, saying what the clocks do; one passed twice can be
+  written with its offset ("25/10/2026 02:30 +01:00"). The reader takes a time
+  zone (`DateReader.zone`, `readDate(text, { zone })`), the computer's when
+  left out. Full-width marks read ("１５／１０／２０２６ １４：３０", hours
+  "６：３０"). A pasted date that does not read says why; one pasted after a
+  refused key joins the keys held. A day-first date on a year-first page
+  points to the page's order. Escape in the quiet look puts back a date typed
+  that did not read.
+- An email's domain has no ";", ",", ":" or ">": "ali@example.com;" no
+  longer passes, and those marks are refused as typed after the @.
+- JSON numbers JSON.parse would change (an id of 20 digits, 1e400) are kept
+  unread with where they are, in the JSON box and both code editors
+  (`readJson`, `keptExactly`).
+- A place's coordinates typed keep their places (30.0444567 is never rounded
+  to six), and a pair pasted into either box ("30.0444, 31.2357") fills both.
+- A colour code written by autofill without the focus keeps the colour; Ctrl+Z
+  after the guard puts back an IME's or a phone keyboard's edit still takes
+  back the keys typed before it. In Firefox, a key refused in a table's cell no
+  longer empties the box ("1x5" is held, as everywhere else).
+
+**Upgrading:** an app that gives the form a whole `messages` object of its own
+adds `wholeDigits`; one that gives the widgets a whole `labels` object adds
+`emailDomainChar`, `dateOrder`, `skippedTime`, `repeatedTime`, `hoursDecimal`
+and `jsonNumber` (`addLanguage` fills any left out from English).
+
 ## 0.23.0 — 2026-10-16
 
 **A smaller main script: what a page uses now and then comes the first time it

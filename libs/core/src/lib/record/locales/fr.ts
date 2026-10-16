@@ -15,6 +15,7 @@ export const fr: Messages = {
   decimalsTwo: '{label} accepte au plus {digits} décimales',
   decimalsMany: '{label} accepte au plus {digits} décimales',
   digits: '{label} accepte au plus {n} chiffres',
+  wholeDigits: '{label} accepte au plus {n} chiffres avant la virgule',
   boolean: '{label} doit être oui ou non',
   dateFormat: 'Format de date invalide (attendu AAAA-MM-JJ)',
   dateInvalid: 'Date invalide (vérifiez le mois et le jour)',

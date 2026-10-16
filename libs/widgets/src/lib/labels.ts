@@ -294,6 +294,8 @@ export interface WidgetLabels {
   emailNoSpaces: string;
   /** An email address's box, refusing a `{char}` no address has before its @ (a pasted link's "mailto:"). */
   emailChar: string;
+  /** A mark typed after an email's @ that no domain has (`{char}`): "ali@example.com;" reaches no one. */
+  emailDomainChar: string;
   /** The box that adds a tag. */
   addTag: string;
   /** A tag added twice: `{tag}`. */
@@ -306,6 +308,8 @@ export interface WidgetLabels {
   jsonQuotes: string;
   jsonDigits: string;
   jsonChar: string;
+  /** A number JSON.parse would not keep as written (`{number}`), and where it is. */
+  jsonNumber: string;
   /** A colour's code box: what it takes, its name, and an empty colour. */
   colourCode: string;
   colourCodeBox: string;
@@ -323,12 +327,20 @@ export interface WidgetLabels {
   /** A year of two digits, `{short}`, which could be `{early}` or `{late}`: never given a century in silence. */
   yearInFull: string;
   /** A date or time not whole when left: `{text}` as typed, `{example}` a date in the page's order. */
+  /** A date written in another order than the page's (`{text}`): `{example}` in its order. */
+  dateOrder: string;
   dateUnfinished: string;
   timeUnfinished: string;
   /** A paste that is no date, quoted. */
   notPastedDate: string;
   /** A date and time pasted where a day alone is kept: the day is taken, and its `{time}` (HH:MM, here) was left out. */
   timeLeftOut: string;
+  /** A date and time the clocks skip as summer time comes, where it is read: `{date}` `{time}` as typed, the clocks going from `{from}` to `{to}`. */
+  skippedTime: string;
+  /** A date and time the clocks pass twice as summer time goes: written with each offset (`{first}`, `{second}`) it is one. */
+  repeatedTime: string;
+  /** Hours typed with a decimal mark and two digits (`{text}`), read as hours with a decimal: `{time}` in hours and minutes. */
+  hoursDecimal: string;
   /** Typed words no choice is called (`{text}`), with a way to create one where the field can. */
   noMatch: string;
   noMatchCreate: string;
@@ -570,6 +582,7 @@ const en: WidgetLabels = {
   phoneChars: 'A phone number takes digits, spaces and + ( ) . - only',
   emailNoSpaces: 'An email address has no spaces',
   emailChar: 'An email address has no “{char}” before its @',
+  emailDomainChar: 'An email address has no “{char}” after its @',
   addTag: 'Add a tag',
   tagThere: '“{tag}” is already there',
   tagsAtMost: '{label} takes at most {max}. Not added: {tags}',
@@ -578,6 +591,7 @@ const en: WidgetLabels = {
   jsonQuotes: 'use straight quotes " instead of “ ”',
   jsonDigits: 'numbers in JSON are written 0-9',
   jsonChar: '“{char}” can’t be here',
+  jsonNumber: 'Not saved: the number {number} can’t be kept as written (line {line}, column {column}); put it in quotes to keep it as text',
   colourCode: 'Enter a colour code, like #1f2937',
   colourCodeBox: 'Colour code',
   noColour: 'No colour',
@@ -591,9 +605,13 @@ const en: WidgetLabels = {
   yearDigits: '{label}: the year has 4 digits, like 2026',
   yearInFull: '{label}: “{short}” could be {early} or {late}; write the year in full',
   dateUnfinished: '{label}: “{text}” is not a whole date yet; write it like {example}',
+  dateOrder: '{label}: “{text}” is not in this page’s order; write it like {example}',
   timeUnfinished: '{label}: “{text}” is not a time; write it like 14:30',
   notPastedDate: '“{text}” is not a date, so it was not pasted',
   timeLeftOut: '{label} takes a day only: the time {time} was left out',
+  skippedTime: '{label}: {date} {time} does not happen here: the clocks go from {from} to {to} that night',
+  repeatedTime: '{label}: {date} {time} happens twice here as the clocks go back; write {first} or {second}',
+  hoursDecimal: '{label}: “{text}” is hours with a decimal: {time}',
   noMatch: '{label}: nothing is called “{text}”; pick one from the list',
   noMatchCreate: '{label}: nothing is called “{text}” yet; pick one or create it',
   severalCalled: '{label}: more than one is called “{text}”; pick one from the list',

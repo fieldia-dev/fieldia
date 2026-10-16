@@ -53,10 +53,15 @@ export function phoneStrays(text: string): number {
 const spaces = (text: string) => text.match(/\s/g)?.length ?? 0;
 /** Before an address's @ (all of it while there is none): its own part, where a ":" can never be. */
 const localPart = (text: string) => text.split('@')[0];
-/** A mark no address has before its @ that `next` has more of than `before`: the one an edit brought. */
-function emailStray(next: string, before: string): string | null {
-  const count = (text: string, mark: string) => localPart(text).split(mark).length - 1;
-  for (const mark of new Set(localPart(next).match(EMAIL_LOCAL_STRAYS) ?? [])) if (count(next, mark) > count(before, mark)) return mark;
+/** After an address's @: its domain, where none of those marks can be either ("ali@example.com;" reaches no one). */
+const domainPart = (text: string) => (text.includes('@') ? text.slice(text.indexOf('@') + 1) : '');
+/** A mark no address has in `part` of it that `next` has more of than `before`: the one an edit brought. */
+function emailStray(next: string, before: string, part: (text: string) => string = localPart): string | null {
+  const count = (text: string, mark: string) => part(text).split(mark).length - 1;
+  // An address in [ ] after its @ keeps its brackets.
+  const strays = new Set(part(next).match(EMAIL_LOCAL_STRAYS) ?? []);
+  if (part === domainPart) for (const bracket of ['[', ']']) strays.delete(bracket);
+  for (const mark of strays) if (count(next, mark) > count(before, mark)) return mark;
   return null;
 }
 /** A link to an address ("mailto:name@example.com?subject=…"): the address it links to; any other text as it is. */
@@ -87,6 +92,8 @@ export function textRules(kind: TextKind, context: Pick<WidgetContext, 'field' |
       if (kind === 'email' && spaces(next) > spaces(before)) return words.emailNoSpaces;
       const stray = kind === 'email' ? emailStray(next, before) : null;
       if (stray) return fill(words.emailChar, { char: stray });
+      const domainStray = kind === 'email' ? emailStray(next, before, domainPart) : null;
+      if (domainStray) return fill(words.emailDomainChar, { char: domainStray });
       if (size !== undefined && !pasting) {
         const n = charCount(next);
         if (n > size && n > charCount(before)) return fill(messages.maxLength, { label, max: size });

@@ -2,7 +2,7 @@ import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
 import { formatNumber, guard, numberRules, refusalHint, stillShown, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { addressLine } from './address-line';
-import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
+import { asJson, isLatLng, parseCoordinate, parseCoordinatePair, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox, mapTools, warnOnce } from './map-core';
@@ -154,9 +154,24 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       letGo();
       say(null);
       if (empty) return set(null);
-      set({ lat: parseCoordinate(texts[0], locale)!, lng: parseCoordinate(texts[1], locale)! }, { fly: true, name: true });
+      // Typed, the coordinates keep their places — "30.0444567" as a phone's GPS gives it — never rounded in silence.
+      set({ lat: parseCoordinate(texts[0], locale)!, lng: parseCoordinate(texts[1], locale)! }, { fly: true, name: true, exact: true });
     };
     [lat, lng].forEach((input, i) => {
+      // A place pasted as its pair, into either box ("30.0444, 31.2357"): each box takes its own, and the place is read.
+      // Heard before the box's guard, which would refuse the pair as one number.
+      input.addEventListener('paste', (event) => {
+        const pair = parseCoordinatePair((event as ClipboardEvent).clipboardData?.getData('text/plain') ?? '', locale);
+        if (!pair || input.readOnly) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        [lat.value, lng.value] = [pair.lat, pair.lng];
+        checks.forEach((guarded, n) => {
+          guarded.accept();
+          hints[n].hide();
+        });
+        typed();
+      }, true);
       input.addEventListener('change', typed);
       input.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), typed()));
       // Keys held change nothing the box shows, so no change is said for them: leaving reads them.
@@ -169,10 +184,11 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     function write(next: LatLng | null) {
       writing = true;
       try {
+        // As set() has it: to six decimals, or as typed.
         if (inFields) {
-          form.setValue(name, next ? round6(next.lat) : null);
-          form.setValue(longitudeField!, next ? round6(next.lng) : null);
-        } else form.setValue(name, next ? asJson(writePoint(next)) : null);
+          form.setValue(name, next ? next.lat : null);
+          form.setValue(longitudeField!, next ? next.lng : null);
+        } else form.setValue(name, next ? asJson(writePoint(next, true)) : null);
       } finally {
         writing = false;
       }
@@ -199,13 +215,14 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         .catch((error: Error) => error.name !== 'AbortError' && warnOnce(`Naming the place failed: ${error.message}`));
     }
 
-    function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string; within?: number } = {}) {
+    function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string; within?: number; exact?: boolean } = {}) {
       if (readonly) return;
       // A place set — typed, clicked, dragged, found — is the boxes' now: text left in them unread goes.
       if (left[0] !== null || left[1] !== null) letGo();
       // How sure "My location" was: a circle while the place is the one it gave.
       showAccuracy(next && how.within !== undefined ? { at: next, metres: how.within } : null);
-      if (next) next = { lat: round6(next.lat), lng: round6(next.lng) };
+      // Clicked, dragged or found: six decimals, about 11 cm. Typed (`exact`): as typed.
+      if (next && !how.exact) next = { lat: round6(next.lat), lng: round6(next.lng) };
       point = next;
       show(how.fly);
       write(next);

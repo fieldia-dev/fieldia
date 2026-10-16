@@ -75,9 +75,22 @@ describe('checkValue — numbers', () => {
     expect(checkValue(F({ type: 'integer' }), 1e30, false)).toBe('Name takes at most 15 digits');
     expect(checkValue(F({ type: 'float' }), 1e16, false)).toBe('Name takes at most 15 digits');
     expect(checkValue(F({ type: 'float', digits: [10, 1] }), 1e30, false)).toBe('Name takes at most 15 digits');
-    expect(checkValue(F({ type: 'float', digits: [10, 1] }), 1234567890, false)).toBe('Name takes at most 10 digits');
+    // Past the whole part a field of [10, 1] keeps, nine digits: said as such, never "at most 10" of a number of 10 (df827a7).
+    expect(checkValue(F({ type: 'float', digits: [10, 1] }), 1234567890, false)).toBe('Name takes at most 9 digits before the decimal point');
+    expect(checkValue(F({ type: 'float', digits: [10, 0] }), 12345678901, false)).toBe('Name takes at most 10 digits');
     expect(checkValue(F({ type: 'float', digits: [10, 1] }), 123456789.5, false)).toBeUndefined();
     expect(checkValue(F({ type: 'integer' }), 999999999999999, false)).toBeUndefined();
+  });
+
+  it('counts a per cent’s places as its box shows them: digits [5, 2] keep 12.50 %, the fraction 0.1250', () => {
+    const cut = F({ type: 'float', digits: [5, 2] });
+    const asPercent = (value: number) => checkValue(cut, value, false, undefined, undefined, 'percentage');
+    expect(asPercent(0.125)).toBeUndefined();
+    expect(asPercent(0.12345)).toBe('Name takes at most 2 decimal places');
+    expect(asPercent(9.9999)).toBeUndefined();
+    expect(asPercent(10)).toBe('Name takes at most 3 digits before the decimal point');
+    // Shown as a number, the same field keeps the fraction to two places.
+    expect(checkValue(cut, 0.125, false)).toBe('Name takes at most 2 decimal places');
   });
 
   it('refuses infinity and NaN', () => {

@@ -141,6 +141,9 @@ const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, label
   // Text left unread put the colour back as it was left: entered again, that is still the one held.
   code.addEventListener('focus', () => (entered = held()));
   code.addEventListener('input', () => {
+    // Written while the person is elsewhere — the browser's autofill, a password manager: the colour held as the write
+    // came is the one text that does not read leaves, never none.
+    if (document.activeElement !== code) entered = held();
     // A whole code is taken as it is typed; one on its way, or past what a code is, leaves the colour as it was.
     const colour = readColour(code.value);
     if (colour) take(colour);

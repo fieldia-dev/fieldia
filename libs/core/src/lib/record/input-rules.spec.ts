@@ -461,10 +461,12 @@ describe('readDate and readTime', () => {
     // An instant: the local day and time it is, here.
     const at = new Date('2026-10-15T14:30:00Z');
     const local = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}T${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
-    expect(readDate('2026-10-15T14:30:00Z', { time: true })).toEqual({ ok: true, value: local });
-    expect(readDate('2026-10-15T14:30:00.000Z', { time: true })).toEqual({ ok: true, value: local });
-    expect(readDate('2026-10-15T16:30:00+02:00', { time: true })).toEqual({ ok: true, value: local });
-    expect(readDate('2026-10-15T14:30Z', { time: true })).toEqual({ ok: true, value: local });
+    // Its moment comes with it (`at`): the same wall time can be two moments as the clocks go back.
+    const moment = at.getTime();
+    expect(readDate('2026-10-15T14:30:00Z', { time: true })).toEqual({ ok: true, value: local, at: moment });
+    expect(readDate('2026-10-15T14:30:00.000Z', { time: true })).toEqual({ ok: true, value: local, at: moment });
+    expect(readDate('2026-10-15T16:30:00+02:00', { time: true })).toEqual({ ok: true, value: local, at: moment });
+    expect(readDate('2026-10-15T14:30Z', { time: true })).toEqual({ ok: true, value: local, at: moment });
     // Its seconds are never dropped in silence: a time is kept to the minute.
     expect(readDate('2026-10-15T14:30:45Z', { time: true })).toEqual({ ok: false, problem: 'time' });
     expect(readDate('2026-10-15T14:30:00.250Z', { time: true })).toEqual({ ok: false, problem: 'time' });

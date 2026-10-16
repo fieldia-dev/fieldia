@@ -154,11 +154,18 @@ const IS_MINUS = new RegExp(`[${MINUS}]`);
 const LINE_BREAKS = /[\t\n\r\v\f\u2028\u2029]/;
 const GROUP_SPACE = /[ \u00a0\u2007\u2009\u202f]/;
 
-/** Fullwidth marks a Japanese or Chinese keyboard types, as their plain kind. */
-const fullwidth = (text: string) => text.replace(/[\uff0b\uff0c\uff0e\uff05]/g, (c) => ({ '\uff0b': '+', '\uff0c': ',', '\uff0e': '.', '\uff05': '%' })[c] as string);
+/** Fullwidth marks a Japanese or Chinese keyboard types, as their plain kind: a number's + , . %, a date's /, a time's :, its space. */
+const FULLWIDTH: Record<string, string> = { '\uff0b': '+', '\uff0c': ',', '\uff0e': '.', '\uff05': '%', '\uff0f': '/', '\uff1a': ':', '\u3000': ' ' };
+const fullwidth = (text: string) => text.replace(/[\uff0b\uff0c\uff0e\uff05\uff0f\uff1a\u3000]/g, (c) => FULLWIDTH[c]);
 
 /** Text as the readers see it: no direction marks, digits and fullwidth marks folded. */
 const folded = (text: string) => fullwidth(foldDigits(stripMarks(text)));
+
+/**
+ * Text as every reader sees it: no direction marks, digits in any script as 0-9, and the marks a full-width keyboard
+ * types — "１５／１０／２０２６ １４：３０" — as their plain kind. For a box that judges keys as the readers read them.
+ */
+export const foldTyped = folded;
 
 type MarkKind = 'dot' | 'comma' | 'arcomma' | 'ardecimal' | 'argroup' | 'space';
 interface Mark {
@@ -352,10 +359,15 @@ export type NumberRefusal =
   | { problem: 'numbersOnly' | 'minusFirst' | 'oneDecimalMark' | 'groupsOfThree' | 'severalValues' | 'integer' }
   | { problem: 'min'; min: number }
   | { problem: 'decimals'; places: number }
-  | { problem: 'digits'; n: number };
+  | { problem: 'digits'; n: number }
+  /** More digits before the decimal mark than a field of `digits` [precision, scale] keeps there: `n`, precision less scale. */
+  | { problem: 'wholeDigits'; n: number };
 
 /** The most significant digits a number keeps exactly. */
 export const MOST_DIGITS = 15;
+
+/** The most digits a field keeps before its decimal mark, where its limits say its places and its digits (precision less scale). */
+const wholeDigits = (limits: NumberLimits) => (limits.digits !== undefined && limits.places !== undefined && !limits.percent ? Math.max(1, limits.digits - limits.places) : undefined);
 
 /**
  * Whether the decimal mark a text reads with may still turn out to group as
@@ -414,6 +426,10 @@ export function couldBeNumber(text: string, locale: string, limits: NumberLimits
   if (certain && limits.places !== undefined && places.length > limits.places) return { problem: 'decimals', places: limits.places };
   const all = [...sign.body].filter((c) => c >= '0' && c <= '9').join('');
   const whole = body.decimal === -1 ? all : all.slice(0, all.length - fraction.length);
+  // A field's precision keeps its scale's places after the mark: before it, the rest (Floor area [10, 1]: 9), as its
+  // check counts them — never a digit taken here that the check then refuses.
+  const wholeMost = wholeDigits(limits);
+  if (wholeMost !== undefined && whole.replace(/^0+/, '').length > wholeMost) return { problem: 'wholeDigits', n: wholeMost };
   const significant = (whole + places).replace(/^0+/, '').length;
   const digits = whole.replace(/^0+/, '').length + places.length;
   const most = Math.min(MOST_DIGITS, limits.digits ?? MOST_DIGITS);
@@ -435,6 +451,8 @@ export function numberMisfit(value: number, limits: NumberLimits): NumberRefusal
   if (limits.places !== undefined && places > limits.places) return { problem: 'decimals', places: limits.places };
   const integerPart = Math.trunc(Math.abs(value));
   const whole = integerPart === 0 ? 0 : integerPart < 1e21 ? String(integerPart).length : 22;
+  const wholeMost = wholeDigits(limits);
+  if (wholeMost !== undefined && whole <= MOST_DIGITS && whole > wholeMost) return { problem: 'wholeDigits', n: wholeMost };
   const most = Math.min(MOST_DIGITS, limits.digits ?? MOST_DIGITS);
   if (whole > MOST_DIGITS || whole + places > most) return { problem: 'digits', n: most };
   return null;
@@ -478,17 +496,40 @@ function formsOf(currency: string, locale: string): string[] {
 }
 
 /**
+ * How people in the region write their own currency beside an amount, where Intl's symbols are not how they write it:
+ * Egypt's LE, L.E. and ج.م, Jordan's JD, the Gulf's KD, BD, RO, QR, SR and Dhs. (Arabic letters made from their code
+ * points: the one-tag script carries no Arabic words.)
+ */
+const WRITTEN: Record<string, string[]> = {
+  EGP: ['LE', `${letter(0x62c)}.${letter(0x645)}`],
+  JOD: ['JD'],
+  KWD: ['KD'],
+  BHD: ['BD'],
+  OMR: ['RO'],
+  QAR: ['QR'],
+  SAR: ['SR'],
+  AED: ['Dhs', 'Dh'],
+};
+/** A currency's or a unit's form as it is matched: its case, its Arabic letters' forms, its dots and spaces let go. */
+const formKey = (form: string) => foldForSearch(form).replace(/[.\s]/g, '');
+
+/**
  * Pasted (or dropped) text as the plain number a box takes, in the page's
  * way: direction marks, the box's own currency (its symbol, narrow symbol,
- * code or Arabic symbol), grouping, % and spaces taken out, and an
- * accounting negative read — (1,200.00) and 1,200- are -1200. Another
- * currency is named; a tab or a line break inside is several values; a
- * single line break at the end, as a copied cell brings, is let go.
+ * code or Arabic symbol, in any case, as Intl writes it or as people write it
+ * — "LE 1,500", "JD 12.345", "12 usd"), the box's own unit ("12 kg" where
+ * its box says kg), grouping, % and spaces taken out, and an accounting
+ * negative read — (1,200.00) and 1,200- are -1200. Another currency is
+ * named; a tab or a line break inside is several values; a single line break
+ * at the end, as a copied cell brings, is let go.
  */
-export function cleanPastedNumber(text: string, locale: string, options: { currency?: string | null; percent?: boolean; ungrouped?: boolean } = {}): PastedNumber {
+export function cleanPastedNumber(text: string, locale: string, options: { currency?: string | null; percent?: boolean; ungrouped?: boolean; units?: readonly string[] } = {}): PastedNumber {
   let t = folded(text).replace(/(\r\n|[\r\n])$/, '');
   if (LINE_BREAKS.test(t.trim())) return { ok: false, problem: 'severalValues' };
   t = t.trim();
+  // The box's own currency and unit, however they are written: a word or a sign taken out whole where it is one of them.
+  const own = new Set([...(options.currency ? [...formsOf(options.currency, locale), ...(WRITTEN[options.currency] ?? [])] : []), ...(options.units ?? [])].map(formKey).filter(Boolean));
+  if (own.size) t = t.replace(/[\p{L}\p{Sc}][\p{L}\p{Sc}\p{M}.]*/gu, (token) => (own.has(formKey(token)) ? ' ' : token));
   if (options.currency) for (const form of formsOf(options.currency, locale)) t = t.split(form).join(' ');
   t = t.replace(/[%\u066a]/g, ' ').trim();
   const other = /[\p{Sc}]|[A-Za-z]{3}|[\u0600-\u06ff]+\.[\u0600-\u06ff.]*/u.exec(t.replace(/[\u0660-\u0669]/g, ''));
@@ -564,9 +605,11 @@ export function readDuration(text: string, locale: string): DurationRead {
     if (s !== undefined && Number(s) !== 0) return { ok: false, problem: 'duration' };
     return { ok: true, value: signed(Number(h) + Number(m) / 60) };
   }
-  if (/[:hH]/.test(body)) return { ok: false, problem: 'duration' };
+  // Hours with a decimal and their h after them, as "6h" may have one: "6.5h" is six and a half.
+  const decimal = /^(\d+[.,\u060c\u066b]\d+)\s*[hH]$/.exec(body);
+  if (/[:hH]/.test(body) && !decimal) return { ok: false, problem: 'duration' };
   // Hours as a number, in the page's way: "6.5", "6,5".
-  const read = readNumber(body, locale);
+  const read = readNumber(decimal ? decimal[1] : body, locale);
   if (read.ok) return { ok: true, value: read.value === null ? null : signed(read.value) };
   if (read.problem === 'unfinished') return { ok: false, problem: 'unfinished' };
   return { ok: false, problem: read.problem === 'numbersOnly' ? 'numbersOnly' : 'duration' };
@@ -578,10 +621,18 @@ export function readDuration(text: string, locale: string): DurationRead {
 /** The order a page types a date's day, month and year in. */
 export type DateOrder = 'dmy' | 'mdy' | 'ymd';
 
-export type DateProblem = 'unfinished' | 'noSuchMonth' | 'yearDigits' | 'time';
+/** Why a date does not read; 'order', written in another order than the page's ("15/10/2026" where dates go year first). */
+export type DateProblem = 'unfinished' | 'noSuchMonth' | 'yearDigits' | 'time' | 'order';
 export type DateRead =
-  /** Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in silence. */
-  | { ok: true; value: string | null; timeLeftOut?: string }
+  /**
+   * Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in
+   * silence. `at`, the moment a date and time written with its offset from UTC is (an instant), in milliseconds.
+   */
+  | { ok: true; value: string | null; timeLeftOut?: string; at?: number }
+  /** A date and time the clocks skip where it is read (going forward for summer time): they go from `from` to `to`. */
+  | { ok: false; problem: 'skippedTime'; date: string; time: string; from: string; to: string }
+  /** A date and time the clocks pass twice where it is read (going back): the offsets from UTC it could have, earliest first. */
+  | { ok: false; problem: 'repeatedTime'; date: string; time: string; offsets: [string, string] }
   | { ok: false; problem: DateProblem }
   /** A time whose minutes have one digit that could be more than one time ("14:3"): each named. */
   | { ok: false; problem: 'minuteDigits'; times: string[] }
@@ -593,6 +644,66 @@ const daysIn = (year: number, month: number) => [31, year % 4 === 0 && (year % 1
 const pad2 = (n: number) => String(n).padStart(2, '0');
 /** A moment as the local day and time it is, as the readers give a date and time: yyyy-mm-ddTHH:MM. */
 const localOf = (d: Date) => `${String(d.getFullYear()).padStart(4, '0')}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+// ---------------------------------------------------------------------------
+// Wall clocks and their zones
+
+const MINUTE = 60000;
+const DAY = 86400000;
+const wallFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * A moment as the wall clock reads it in `zone` — a time zone's name, "Africa/Cairo" — or where the computer is when
+ * left out: yyyy-mm-ddTHH:MM.
+ */
+export function wallClock(at: number, zone?: string): string {
+  if (!zone) return localOf(new Date(at));
+  let format = wallFormats.get(zone);
+  if (!format) {
+    format = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', numberingSystem: 'latn' });
+    wallFormats.set(zone, format);
+  }
+  const part = (type: string, parts: Intl.DateTimeFormatPart[]) => parts.find((p) => p.type === type)?.value ?? '00';
+  const parts = format.formatToParts(new Date(at));
+  return `${part('year', parts).padStart(4, '0')}-${part('month', parts)}-${part('day', parts)}T${part('hour', parts)}:${part('minute', parts)}`;
+}
+
+/** A wall clock's reading (yyyy-mm-ddTHH:MM) as if it were UTC, in milliseconds. */
+const asUtc = (local: string) => Date.UTC(Number(local.slice(0, 4)), Number(local.slice(5, 7)) - 1, Number(local.slice(8, 10)), Number(local.slice(11, 13)), Number(local.slice(14, 16)));
+/** How many minutes a wall clock in `zone` is ahead of UTC at a moment. */
+const offsetAt = (at: number, zone?: string) => (asUtc(wallClock(at, zone)) - Math.floor(at / MINUTE) * MINUTE) / MINUTE;
+/** An offset from UTC as people write it after a time: +02:00, -05:00. */
+const offsetText = (minutes: number) => `${minutes < 0 ? '-' : '+'}${pad2(Math.floor(Math.abs(minutes) / 60))}:${pad2(Math.abs(minutes) % 60)}`;
+
+/**
+ * The moments a wall clock reads `local` (yyyy-mm-ddTHH:MM) in `zone` (where the computer is when left out), earliest
+ * first: one; none where the clocks skip it, going forward for summer time; two where they pass it twice, going back.
+ */
+export function momentsOf(local: string, zone?: string): number[] {
+  const base = asUtc(local);
+  // Every offset the zone has a day round it: no change of its clocks is further from a time it moves.
+  const offsets = new Set([offsetAt(base - DAY, zone), offsetAt(base, zone), offsetAt(base + DAY, zone)]);
+  return [...offsets].map((offset) => base - offset * MINUTE).filter((at) => wallClock(at, zone) === local).sort((a, b) => a - b);
+}
+
+/** Why a date and time typed (yyyy-mm-ddTHH:MM) is not one moment in `zone`, or null when it is: skipped or passed twice. */
+function clocksMove(local: string, zone?: string): DateRead | null {
+  const moments = momentsOf(local, zone);
+  const [date, time] = [local.slice(0, 10), local.slice(11)];
+  if (moments.length === 2) return { ok: false, problem: 'repeatedTime', date, time, offsets: [offsetText(offsetAt(moments[0], zone)), offsetText(offsetAt(moments[1], zone))] };
+  if (moments.length) return null;
+  // Skipped: the clocks moved forward across it. The moment they moved, found to the minute; they read `from` just
+  // before it on the old offset, and `to` from it on.
+  const base = asUtc(local);
+  const before = offsetAt(base - DAY, zone);
+  let [low, high] = [base - DAY, base + DAY];
+  while (high - low > MINUTE) {
+    const mid = Math.floor((low + high) / 2 / MINUTE) * MINUTE;
+    if (offsetAt(mid, zone) === before) low = mid;
+    else high = mid;
+  }
+  return { ok: false, problem: 'skippedTime', date, time, from: new Date(high + before * MINUTE).toISOString().slice(11, 16), to: wallClock(high, zone).slice(11) };
+}
 
 /** An instant as a server or a spreadsheet writes one, with its zone: 2026-10-15T14:30:00Z, 2026-10-15T16:30:00.000+02:00. */
 const INSTANT = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)$/i;
@@ -655,26 +766,59 @@ export function couldBeMonth(word: string, locale?: string): boolean {
  * numbers beside a month in words are its day and its year of four digits,
  * in either order. With `time`, a time may follow ("13/10/2026 14:30", "…,
  * 2:30 pm", "… ٢:٣٠ م"), and the value is yyyy-mm-ddTHH:MM. An instant with
- * its zone (2026-10-15T14:30:00Z) is the local day and time it is — with
- * `time`, its seconds :00, never dropped. Unfinished or impossible dates say
- * why (31/02 → 'noSuchDay' with the days that month has).
+ * its zone (2026-10-15T14:30:00Z), or a date and time typed with its offset
+ * ("… 02:30 +01:00"), is the day and time it is where it is read (`zone`, a
+ * time zone's name; the computer's own when left out) — with `time`, its
+ * seconds :00, never dropped — and gives its moment (`at`). Unfinished or
+ * impossible dates say why (31/02 → 'noSuchDay' with the days that month
+ * has, as an instant's 2026-02-31 does). A date and time is one moment where
+ * it is read: one the clocks skip ('skippedTime') or pass twice
+ * ('repeatedTime') as summer time comes or goes is said, never moved.
  */
-export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string } = {}): DateRead {
-  let t = folded(text).trim();
+export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string; zone?: string } = {}): DateRead {
+  const t = folded(text).trim();
   if (!t) return { ok: true, value: null };
   const instant = INSTANT.exec(t);
   if (instant) {
     const [, y, mo, d, h, mi, seconds = '0', fraction = '0', zone] = instant;
+    // A day its month does not have is refused as typed, never rolled into the next month (31 February, 3 March).
+    if (Number(mo) < 1 || Number(mo) > 12) return { ok: false, problem: 'noSuchMonth' };
+    const days = daysIn(Number(y), Number(mo));
+    if (Number(d) < 1 || Number(d) > days) return { ok: false, problem: 'noSuchDay', year: Number(y), month: Number(mo), days };
     // A time is kept to the minute: seconds are never dropped in silence. A date's box takes the instant's day alone.
     if (options.time && (Number(seconds) !== 0 || Number(fraction) !== 0)) return { ok: false, problem: 'time' };
     const offset = /^z$/i.test(zone) ? 'Z' : zone.length === 3 ? `${zone}:00` : `${zone.slice(0, 3)}:${zone.slice(-2)}`;
-    const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:00${offset}`);
-    if (Number.isNaN(at.getTime())) return { ok: false, problem: 'unfinished' };
-    const local = localOf(at);
-    return options.time ? { ok: true, value: local } : { ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) };
+    const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:00${offset}`).getTime();
+    if (Number.isNaN(at)) return { ok: false, problem: 'unfinished' };
+    const local = wallClock(at, options.zone);
+    return options.time ? { ok: true, value: local, at } : { ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) };
   }
+  if (options.time) {
+    // A date and time typed with its offset from UTC ("25/10/2026 02:30 +01:00"): the moment it names, the wall clock it
+    // is where it is read — the way to write a time the clocks pass twice.
+    const zoned = OFFSET_AFTER_TIME.exec(t);
+    if (zoned) {
+      const [, written, sign, hours, minutes = '00'] = zoned;
+      const read = readWritten(written, options);
+      if (!read.ok || read.value === null) return read;
+      const offset = (Number(hours) * 60 + Number(minutes)) * (sign === '+' ? 1 : -1);
+      if (Number(hours) > 14 || Number(minutes) > 59) return { ok: false, problem: 'time' };
+      const at = asUtc(read.value) - offset * MINUTE;
+      return { ok: true, value: wallClock(at, options.zone), at };
+    }
+  }
+  const read = readWritten(t, options);
+  // A wall clock's time is one moment where it is read: one the clocks skip or pass twice is said, never moved.
+  return read.ok && read.value !== null && options.time ? (clocksMove(read.value, options.zone) ?? read) : read;
+}
+
+/** A time after a date, and an offset from UTC after it: "… 02:30 +01:00", "… 2:30 pm UTC-5". */
+const OFFSET_AFTER_TIME = new RegExp(`^(.*\\d{1,2}\\s*[:hH.]\\s*\\d{2}(?:\\s*(?:${HALF}))?)\\s*(?:UTC|GMT)?\\s*([+\\-\\u2212])(\\d{1,2})(?::?(\\d{2}))?$`, 'i');
+
+/** A date, and with `time` its time, as written — in words or numbers, in the page's order — as a wall clock reads it. */
+function readWritten(text: string, options: { order?: DateOrder; time?: boolean; locale?: string }): DateRead {
   // A comma before a space sets a date's parts apart ("Oct 15, 2026") or its time ("15 Oct 2026, 14:30"): no part of either.
-  t = t.replace(/\s*[,\u060c](?=\s)/g, '');
+  const t = text.replace(/\s*[,\u060c](?=\s)/g, '');
   let datePart = t;
   let timePart = '';
   if (options.time) {
@@ -701,6 +845,8 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
   } else {
     // ISO, whatever the page's order: a four-digit year first.
     const order = pieces[0].length === 4 ? 'ymd' : (options.order ?? 'dmy');
+    // Its year in full last where the page writes it first: written another way than the page's, never read as year 15.
+    if (order === 'ymd' && pieces[2].length === 4 && pieces[0].length <= 2) return { ok: false, problem: 'order' };
     [yearText, monthText, dayText] = [pieces[order.indexOf('y')], pieces[order.indexOf('m')], pieces[order.indexOf('d')]];
     month = Number(monthText);
   }

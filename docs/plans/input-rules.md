@@ -73,9 +73,10 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Box | Widget (file) | Reads into the value | Text that does not read | Hold | Enter | Ctrl+Enter | Save | Auto | Leave | Next | Steps | App |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Whole number, decimal | `integer`, `float` (widgets.ts `numberWidget`) | `read()` on change / blur; on the way, only what reads and fits | unread, the value as the box was entered | yes | R | R | L | P | R | R | R | R |
-| Money | `monetary`, its currency picker (widgets.ts) | as numbers, in its currency's places | unread | yes | R | R | L | P | R | R | R | R |
-| Hours, per cent | `float.duration`, `float.percentage` (duration.ts) | `read()` on change / blur | unread ("6:3" names 6:03 and 6:30) | yes | R | R | L | P | R | R | R | R |
-| Date, date and time | `date`, `datetime` (date-box.ts, date part) | `settle()` on Enter keydown, change, blur | unread, the value as entered; a time left out is said | yes | R | R | L | P | R | R | R | R |
+| Money | `monetary`, its currency picker (widgets.ts) | as numbers, in its currency's places; what was typed is read again when the currency changes (`readAgain`); its own currency and unit as people write them ("LE 1,500", "12 usd", "12 kg") | unread | yes | R | R | L | P | R | R | R | R |
+| Hours, per cent | `float.duration`, `float.percentage` (duration-box.ts) | `read()` on change / blur; passed through with nothing typed, the value stays as it came (its rounded picture never read back); hours typed are kept to the field's places; "6.45" is decimal hours, said under the box | unread ("6:3" names 6:03 and 6:30) | yes | R | R | L | P | R | R | R | R |
+| Hours, per cent drawn plainly (before the business part comes) | business-plain.ts `plainNumber` | as the part's box: its limits, its places; change / blur | unread, the value as entered | no guard (by design) | R | R | L | P | R | R | R | R |
+| Date, date and time | `date`, `datetime` (date-box.ts, date part) | `settle()` on Enter keydown, change, blur; read in the reader's zone (`DateReader.zone`, the computer's when left out): a time the clocks skip or pass twice is said, never moved; typed back to what it showed, the value as it came | unread, the value as entered; a time left out is said | yes | R | R | L | P | R | R | R | R |
 | Time of day | `char.time` (date-box.ts) | as dates | unread ("14.5" names each time) | yes | R | R | L | P | R | R | R | R |
 | Range of dates | `date.daterange`, `datetime.daterange` (date-range.ts) | two date boxes | unread, by each box's field | yes | R | R | L | P | R | R | R | R |
 | Plain date box (before the date part comes) | date-text.ts `plainDateWidget` | change | unread; a time left out is said under the box | no guard (by design) | R | R | L | P | R | R | R | R |
@@ -94,10 +95,10 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Tax totals | `json.tax-totals` (tax-totals.ts) | change / blur | unread on the field | yes | R | R | L | P | R | R | R | R |
 | Address | `json.address` (address.ts) | T; trim and the postcode's digits on change / blur | the field's check | no | R | R | L | P | R | R | R | R |
 | Map address search | `@fieldia/map` address-suggest.ts | T; typed over, the place picked lets go (change / blur); a place picked is found, W | the field's check | no | own: picks a suggestion | R, then W | L, then W | P | R, then W | R, then W | R, then W | R, then W |
-| Place's coordinates | `@fieldia/map` place.ts | change and Enter: `typed()` | unread on the place's field (the latitude's, for two fields): never a place saved half new | yes | own: reads the place | R | L | P | R | R | R | R |
+| Place's coordinates | `@fieldia/map` place.ts | change and Enter: `typed()`, as typed (never rounded to six places); a pair pasted into either box fills both | unread on the place's field (the latitude's, for two fields): never a place saved half new | yes | own: reads the place | R | L | P | R | R | R | R |
 | Place's search | place.ts (`search`) | a place picked is found, W | said in the map's note | no | own: picks | W | W | P | W | W | W | W |
 | Properties | `properties` (properties.ts) | each row is the box of its kind, on the field | as its kind | as its kind | as its kind | as its kind | L | P | as its kind | as its kind | as its kind | as its kind |
-| JSON | `json` (extras.ts) | T | unread with where it breaks | no | own: a new line | R | L | P | R | R | R | R |
+| JSON | `json` (extras.ts) | T (`readJson`: a number JSON.parse would change — 20 digits, 1e400 — is not taken) | unread with where it breaks | no | own: a new line | R | L | P | R | R | R | R |
 | Code editors | `@fieldia/code`, `@fieldia/monaco` | T | unread with where it breaks (JSON) | no | own: a new line (one line: as text) | T | L | T (CodeMirror), P (Monaco's box) | T | T | T | T |
 | Formatted text | `html`, the text part's rich and Markdown editors | T | — | no | own: a new line; the link row: applies | T (from the link row: applies, then saves) | L | T (rich), P (Markdown) | T | T | T | T |
 | Web page, copy | `char.embed`, `char.copy`, `text.copy` | T | the field's check | no | R | R | L | P | R | R | R | R |
@@ -108,6 +109,15 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 
 In the **Next** column for a wizard, Next reads like a check: it refuses while a name is still being looked up. The
 viewer then waits (`settle()`) and asks again.
+
+**A part's box taking its plain stand-in's place** (widget-parts.ts `partWidget`, for an app that draws without
+`loadParts`). Text typed in the stand-in's box and not yet read is never read as the box goes (Chromium sends it a
+change and a blur; Firefox and Safari none — the stand-in hears neither, in every engine), nor dropped: the part's
+widget takes it as typed (`Widget.takeTyped`): its own box, focused, the caret where it was, and what the field held as
+the box was entered — "2." stays "2.", never 2 shown as "2" under the next key. A links box, with no box to type in,
+reads the words then (the record so called linked, or kept unread with why; a save waits). A widget that cannot take the
+text as it stands (a slider, "2." on its way to 2.5) leaves the stand-in's box beside it, focused, until it is left;
+it reads what it holds then and goes. Text the stand-in left unread is the form's, and the part's widget shows it marked.
 
 ### The designer's settings
 
@@ -186,6 +196,8 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
 | Lines: a cell's name of none said in the grid, a dialog waiting, `confirmDelete` over typed text, tags waiting for room | widgets `lines-typed.spec.ts`, `rules-char-tags-waiting-when-room-made.spec.ts` | `e2e/rules-grid-link-cell-name-of-none-said.spec.ts`, `rules-grid-line-dialog-keeps-name-found.spec.ts`, `rules-lines-confirm-delete-typed-text.spec.ts` |
 | A grid paste: quoted cells, another currency, past a column's most | grid `cell-paste.spec.ts`, `rules-paste-*.spec.ts` | — |
 | A press is the button's | widgets `press.spec.ts` | `e2e/rules-custom-filter-apply-after-refused-paste.spec.ts` |
+| A part's box takes what was typed in its stand-in | widgets `part-swap-lazy.spec.ts`, `business-lazy.spec.ts` | `e2e/rules-part-swap-keeps-typing.spec.ts` (Chromium, Firefox, WebKit) |
+| Read, never rewritten: hours and a per cent passed through, money's currency changed, JSON numbers, a zone's clocks | widgets `read-not-rewrite.spec.ts`, core `clock-changes.spec.ts` | `e2e/rules-hours-percent-*.spec.ts`, `rules-money-*`, `rules-datetime-clock-change-time-said.spec.ts` |
 
 ## 5. Known limits
 

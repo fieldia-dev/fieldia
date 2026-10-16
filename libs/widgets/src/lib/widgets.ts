@@ -138,11 +138,37 @@ export interface WidgetState {
   describedBy?: string;
 }
 
+/**
+ * Text typed in a box and not yet read, as the person left it: its text — keys a guard holds after a refused one among
+ * it — the caret or the selection, and what the field held as the box was entered (what text that does not read puts
+ * back). Handed by a plain stand-in to the part's widget that takes its place (`partWidget`).
+ */
+export interface TypedText {
+  text: string;
+  start: number;
+  end: number;
+  entered: Value | undefined;
+}
+
 export interface Widget {
   element: HTMLElement;
   update(state: WidgetState): void;
   focus(): void;
   destroy?(): void;
+  /**
+   * A part's widget taking its plain stand-in's place while the stand-in's box holds text typed and not yet read
+   * (`partWidget`): it takes that text as typed — into its own box, focused, the caret where it was, read as that box
+   * is read — never the value the stand-in made of it on the way; a widget with no box to type in reads it now (a
+   * links box: the record its words name, or why none is). True when it took it. False, or left out, when it cannot
+   * take the text as it stands (a slider, "2." on its way to 2.5): the stand-in's box stays beside it, focused, until
+   * it is left, and reads what it holds then.
+   */
+  takeTyped?(typed: TypedText): boolean;
+  /**
+   * A plain stand-in's box's text as typed, the keys its guard holds after a refused one among it ("1x" where the box
+   * shows "1"): what the part's widget taking its place is handed. Its box's text when left out.
+   */
+  typedText?(): string;
   /**
    * Buttons that act on the whole field, such as a Markdown text's Edit and
    * Done. The widget draws them in its own element; where a group holds this
@@ -357,7 +383,7 @@ const numberWidget: WidgetFactory = (context) => {
       : input;
 
   // The input rules: refused keystrokes and pastes are said under the box (after the units round it).
-  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow };
+  const box: NumberBox = { label: node.label ?? field.label, locale, labels, limits, currency: () => currencyNow, units: () => [prefix, suffix].map((u) => u?.textContent ?? '').filter(Boolean) };
   const hint = refusalHint(input, element);
   const checks = guard(input, numberRules(box), hint);
   /** Unread text the form keeps for this box, and what the field held as the box was entered. */
@@ -413,12 +439,39 @@ const numberWidget: WidgetFactory = (context) => {
       // What reads and fits is the field's, as typed: "-3" held after its refused minus, or text left marked before
       // and left again. Its least and most are check's to say, as the box is left.
       if (reading.ok && reading.value !== (form.getState().values[name] ?? null)) form.setValue(name, reading.value);
+      // Typed and taken: read again should its currency change.
+      typed = reading.ok && reading.value !== (entered ?? null) ? { text, value: reading.value } : typed;
       return true;
     }
     // What does not read stays in the box, marked; the field keeps what it held as the box was entered.
     if (form.getState().values[name] !== entered) form.setValue(name, (entered ?? null) as Value);
     form.setUnread(name, { text, message: words });
     return false;
+  };
+  /**
+   * What the person typed that the field took, while it holds it: an amount is read again when its currency changes,
+   * as its places are its currency's — "12.345" typed in dinars is three places too many in pounds.
+   */
+  let typed: { text: string; value: number | null } | null = null;
+  /**
+   * Its currency changed: what was typed is read again in the new one's places — taken if it fits them, else kept
+   * unread with why, which a save refuses — and text kept unread for the old one's places reads if the new one takes it.
+   * Never a value saved with places its currency has not, nor words left for a reason gone.
+   */
+  const readAgain = () => {
+    if (document.activeElement === input || input.readOnly) return;
+    const kept = unreadNow();
+    const now = form.getState().values[name] ?? null;
+    const text = kept?.text ?? (typed && typed.value === now ? typed.text : undefined);
+    if (text === undefined) return;
+    const reading = readNumber(text, locale);
+    const words = leftWords(text, box);
+    if (words === null && reading.ok) {
+      if (kept) form.setUnread(name, null);
+      if (reading.value !== now) form.setValue(name, reading.value);
+      return;
+    }
+    if (words && words !== kept?.message) form.setUnread(name, { text, message: words });
   };
   input.addEventListener('change', () => !input.readOnly && read());
   input.addEventListener('blur', () => {
@@ -429,14 +482,23 @@ const numberWidget: WidgetFactory = (context) => {
   return {
     element,
     focus: () => input.focus(),
+    // As typed, keys held after a refused one with it: what a slider taking this box's place is handed.
+    typedText: () => checks.held()?.text ?? input.value,
     // Its hint stands beside it, outside its element: it goes with it (a slider's number box, swapped for the slider).
     destroy: () => {
       checks.destroy();
       hint.element.remove();
     },
     update(state) {
-      if (field.type === 'monetary') currencyNow = currencyOf(field, state.values, state.parent);
       const typing = document.activeElement === input;
+      if (field.type === 'monetary') {
+        const now = currencyOf(field, state.values, state.parent);
+        // Read again once this redraw is over: what it sets draws again.
+        if (now !== currencyNow && !typing) queueMicrotask(readAgain);
+        currencyNow = now;
+      }
+      // Changed from outside: no longer what was typed.
+      if (typed && (state.value ?? null) !== typed.value) typed = null;
       const unread = unreadNow();
       if (typing) {
         const reading = readNumber(input.value, locale);

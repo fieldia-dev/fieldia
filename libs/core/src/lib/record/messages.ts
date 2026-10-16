@@ -24,6 +24,8 @@ export interface Messages {
   decimalsMany: string;
   /** More digits than a field keeps, or than a number keeps exactly (15): `{n}`. */
   digits: string;
+  /** More digits before the decimal mark than a field keeps there: `{n}`, its precision less its scale. */
+  wholeDigits: string;
   boolean: string;
   dateFormat: string;
   dateInvalid: string;
@@ -137,6 +139,7 @@ const en: Messages = {
   decimalsTwo: '{label} takes at most {digits} decimal places',
   decimalsMany: '{label} takes at most {digits} decimal places',
   digits: '{label} takes at most {n} digits',
+  wholeDigits: '{label} takes at most {n} digits before the decimal point',
   boolean: '{label} must be yes or no',
   dateFormat: 'Invalid date format (expected YYYY-MM-DD)',
   dateInvalid: 'Invalid date (check month/day values)',

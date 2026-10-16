@@ -386,8 +386,9 @@ describe('a date pasted', () => {
     expect(input.value).toBe('11/10/2026');
     expect(value()).toBe('2026-10-11');
     expect(hintSays()).toBe('“⁨next Tuesday⁩” is not a date, so it was not pasted');
+    // A whole date that cannot be says why, as its reader does (7ed2b4f).
     paste(input, '31/02/2026');
-    expect(hintSays()).toBe('“⁨31/02/2026⁩” is not a date, so it was not pasted');
+    expect(hintSays()).toBe('Start date: February 2026 has 28 days');
   });
 });
 
@@ -463,8 +464,9 @@ describe('a time of day', () => {
     expect(value()).toBe('08:00');
     expect(form.getState().unread['x']?.message).toBe('Arrival: “⁨25:00⁩” is not a time; write it like 14:30');
     enter(input);
+    // A time's box never calls what it refused a date (7ed2b4f).
     paste(input, 'noon');
-    expect(hintSays()).toBe('“⁨noon⁩” is not a date, so it was not pasted');
+    expect(hintSays()).toBe('Arrival: “⁨noon⁩” is not a time; write it like 14:30');
     paste(input, '٠٩:٣٠');
     input.blur();
     expect(value()).toBe('09:30');

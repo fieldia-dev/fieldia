@@ -1,4 +1,4 @@
-import type { Field, RelatedRecord } from '@fieldia/core';
+import { foldForSearch, type Field, type RelatedRecord } from '@fieldia/core';
 import { drawIcon } from './icons';
 import { fillIn, maker, setAttr, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
@@ -7,7 +7,8 @@ import { whileShown } from './shown';
 import { textMenu } from './text-menu';
 import { chevron } from './text-tools';
 import { installEditorStyles } from './styles-editor';
-import type { WidgetFactory } from './widgets';
+import { quoted } from './input-rules';
+import type { TypedText, WidgetFactory } from './widgets';
 
 /**
  * A many2many as a work item's links (`many2many.links`): "Add link" — a
@@ -111,9 +112,33 @@ export const linksWidget: WidgetFactory = ({ form, name, field, node, id, docume
     return item;
   }
 
+  /**
+   * Words typed in the tags box drawn before this one came: it has no box to type them in, so they are read now, as
+   * leaving that box reads them — the record of that exact name linked; none so called kept unread, with why. A save
+   * meanwhile waits for them.
+   */
+  function takeTyped(typed: TypedText): boolean {
+    add.focus();
+    const words = typed.text.trim();
+    if (!words || readonly) return true;
+    const keep = (template: string) => form.setUnread(name, { text: typed.text, message: fillIn(template, { label: def.label, text: quoted(words) }) });
+    keep(labels.lookingUp);
+    const found = whileShown(form, (records: RelatedRecord[]) => {
+      const record = records.find((r) => foldForSearch(r.label).trim() === foldForSearch(words).trim());
+      if (!record) return keep(labels.noMatch);
+      form.setUnread(name, null);
+      link(record);
+    });
+    const done = form.search(name, words, 10).then(found, () => found([]));
+    const stop = typeof form.settling === 'function' ? form.settling(() => done) : null;
+    void done.then(() => stop?.());
+    return true;
+  }
+
   return {
     element,
     focus: () => add.focus(),
+    takeTyped,
     destroy: () => menu?.close(false),
     update(state) {
       const now = (state.value as RelatedRecord[] | null) ?? [];
@@ -125,7 +150,8 @@ export const linksWidget: WidgetFactory = ({ form, name, field, node, id, docume
       if (empty) setHidden(empty, now.length > 0 || readonly || !dialogs);
       setHidden(list, !now.length);
       if (changed) list.replaceChildren(...now.map(row));
-      setAttr(element, 'aria-invalid', String(state.invalid));
+      // Words the form keeps unread for it (typed before it came) mark it, as they stop a save.
+      setAttr(element, 'aria-invalid', String(state.invalid || !!form.getState().unread?.[name]));
       setAttr(element, 'aria-describedby', state.describedBy || null);
     },
   };

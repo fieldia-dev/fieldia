@@ -145,9 +145,10 @@ export interface InputRules {
   judge(next: string, before: string): string | null;
   /**
    * Pasted or dropped text: what goes into the box in its place — with `say`, what is said of it, when what is taken
-   * leaves out part of what was pasted — or why nothing does. Left out, it is judged as typed.
+   * leaves out part of what was pasted; with `whole`, a whole value written the box's way, which takes the place of all
+   * the box holds — or why nothing does. Left out, it is judged as typed.
    */
-  paste?(text: string): { text: string; say?: string } | { refuse: string };
+  paste?(text: string): { text: string; say?: string; whole?: boolean } | { refuse: string };
   /** Keys typed after a refused one, at the same place, are held with it: a number's "1.5" never becomes 15. */
   hold?: boolean;
 }
@@ -211,9 +212,27 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     taken = { value: box.value, start: box.selectionStart ?? box.value.length, end: box.selectionEnd ?? box.value.length };
     held = null;
   };
+  /**
+   * The last text taken comes back. By the browser's own undo where it takes back just the edit that landed — an IME's
+   * word, a phone keyboard's key, a correction — so what was typed before it can still be undone with Ctrl+Z; writing
+   * the box's text instead, where it cannot, empties the browser's undo.
+   */
   const putBack = () => {
     const at = before.value === taken.value ? before : taken;
-    box.value = taken.value;
+    if (box.value !== taken.value && document.activeElement === box && typeof document.execCommand === 'function') {
+      // The undo's own input is the guard's (taken as it lands): the keys held after a refused one still wait.
+      const waiting = held;
+      inserting = true;
+      try {
+        document.execCommand('undo');
+      } catch {
+        // No undo here: the text is written below.
+      } finally {
+        inserting = false;
+        held = waiting;
+      }
+    }
+    if (box.value !== taken.value) box.value = taken.value;
     try {
       box.setSelectionRange(at.start, at.end);
     } catch {
@@ -328,21 +347,26 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   };
   const take = (event: Event, text: string) => {
     if (box.readOnly) return;
+    // Whether keys wait after a refused one, as the paste comes: asked before the rules look at it.
+    const waiting = held && holding() ? held : null;
     const cleaned: ReturnType<NonNullable<InputRules['paste']>> = rules.paste ? rules.paste(text) : { text };
     if ('refuse' in cleaned) {
       event.preventDefault();
       hint.show(cleaned.refuse);
       return;
     }
-    if (held && holding()) {
+    if (waiting) {
       // Pasted or dropped where keys wait after a refused one: it joins them, the words said again — never landing
-      // beside the text typed before the refused key, as though that key had never been typed.
+      // beside the text typed before the refused key, as though that key had never been typed, nor taking the box's
+      // place as a whole value would: "1x" then "5/10/2026" is "1x5/10/2026", never 5 October.
       event.preventDefault();
       if (event.type === 'drop') box.focus();
-      held.typed += oneLine ? cleaned.text.replace(/\r\n|[\r\n]/g, ' ') : cleaned.text;
-      hint.show(held.words);
+      const joined = cleaned.whole ? stripMarks(text).trim() : cleaned.text;
+      waiting.typed += oneLine ? joined.replace(/\r\n|[\r\n]/g, ' ') : joined;
+      hint.show(waiting.words);
       return;
     }
+    if (cleaned.whole) box.setSelectionRange(0, box.value.length);
     const words = rules.judge(spliced(box, cleaned.text), box.value);
     if (words) {
       event.preventDefault();
@@ -384,7 +408,8 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     }
     // The box as it was taken, keys held there (a composition's last word, after its text was put back): they wait on.
     if (box.value === taken.value && held && holding() && !type.startsWith('delete') && !type.startsWith('history')) return;
-    if (type.startsWith('delete') || type.startsWith('history') || box.value === taken.value) {
+    // Redo bringing back an edit that was put back is judged as that edit was; any other deletion or undo is taken.
+    if (type.startsWith('delete') || (type.startsWith('history') && (type !== 'historyRedo' || !rules.judge(box.value, taken.value))) || box.value === taken.value) {
       hint.hide();
       return accept();
     }
@@ -462,6 +487,8 @@ export interface NumberBox {
   limits(): NumberLimits;
   /** The box's own currency code, which a pasted amount may carry. */
   currency?(): string | null;
+  /** The box's own units, the words beside its value ("kg"), which a pasted value may carry. */
+  units?(): readonly string[];
   /** Hours typed as hours and minutes (6:30) or hours (6.5). */
   duration?: boolean;
 }
@@ -516,6 +543,8 @@ export function refusalWords(refusal: NumberRefusal, box: Pick<NumberBox, 'label
       return decimalsWords(label, refusal.places, messages);
     case 'digits':
       return fill(messages.digits, { label, n: refusal.n });
+    case 'wholeDigits':
+      return fill(messages.wholeDigits, { label, n: refusal.n });
   }
 }
 
@@ -596,7 +625,7 @@ export function numberRules(box: NumberBox): InputRules {
       }
       const currency = box.currency?.() ?? null;
       const limits = box.limits();
-      const cleaned = cleanPastedNumber(text, box.locale, { currency, percent: limits.percent, ungrouped: limits.ungrouped });
+      const cleaned = cleanPastedNumber(text, box.locale, { currency, percent: limits.percent, ungrouped: limits.ungrouped, units: box.units?.() });
       // Pasted whole, the number is what it reads as: one the field cannot hold is refused whole, saying why.
       const misfit = cleaned.ok ? numberMisfit(cleaned.value, limits) : null;
       if (misfit) return { refuse: refusalWords(misfit, box) };

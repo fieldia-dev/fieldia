@@ -1,4 +1,4 @@
-import type { FieldNode } from '@fieldia/core';
+import type { FieldNode, Value } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
@@ -9,7 +9,7 @@ import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
-import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
+import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
@@ -64,28 +64,103 @@ export function partFactory<M>(part: Part<M>, real: (module: M) => WidgetFactory
   return Object.assign(factory, { partOf: (node: FieldNode) => (when(node) ? part : undefined) });
 }
 
+/** The inputs nothing is typed in: a tick, a choice, a file, a colour picker, a slider. */
+const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
+type TypedBox = HTMLInputElement | HTMLTextAreaElement;
+const typedBox = (box: EventTarget | null): box is TypedBox =>
+  box instanceof Element && (box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type)));
+
+/**
+ * A box taken out of the page while it has the focus reads nothing as it goes: Chromium sends it a change and a blur
+ * (Firefox and Safari send none), which would read what it held as left — under the person's keys. What it held is
+ * the part's widget's now (`takeTyped`), in every engine alike.
+ */
+function goQuietly(box: Element): () => void {
+  const stop = (event: Event) => event.stopImmediatePropagation();
+  const types = ['change', 'blur', 'focusout'];
+  // At the box itself, a listener that captures comes before those that do not: the stand-in's own never hear it.
+  for (const type of types) box.addEventListener(type, stop, true);
+  return () => types.forEach((type) => box.removeEventListener(type, stop, true));
+}
+
 /**
  * A widget whose code comes in a part. With the part in, it is the part's own, at once. Otherwise — a widget made
  * before its part came, by something that did not wait for it as the viewer does — it is drawn by `plain` and asks for
  * the part; when that comes, the part's widget takes the plain one's place in the page, with the last state the plain
- * one was given, and the focus if the plain one had it. A part that cannot come leaves the plain widget, which works.
+ * one was given (the form's unread text with it), and the focus if the plain one had it. A part that cannot come leaves
+ * the plain widget, which works.
+ *
+ * Text typed in the plain one's box and not yet read is never read as it goes, nor dropped: the part's widget takes it
+ * as typed (`takeTyped`) — "2." stays "2.", never 2 made "2" under the next key — or, where it cannot take it as it
+ * stands, the plain one's box stays beside it, focused, until it is left, and reads what it holds then.
  */
 export function partWidget<M>(part: Part<M>, context: WidgetContext, real: (module: M) => Widget, plain: WidgetFactory): Widget {
   const loaded = part.loaded;
   if (loaded) return real(loaded);
+  const { form, name, document: doc } = context;
   let current = plain(context);
+  /** The plain one, kept beside the part's widget while its box holds what was typed, until it is left. */
+  let lingering: Widget | null = null;
   let last: WidgetState | undefined;
   let gone = false;
+  // The plain one's box typed in since it was entered or last read (a change, the box left), and what the field held as
+  // it was entered.
+  let entered: Value | undefined;
+  let typedIn: TypedBox | null = null;
+  const standIn = current.element;
+  standIn.addEventListener('focusin', () => {
+    entered = form.getState().values[name];
+    typedIn = null;
+  }, true);
+  standIn.addEventListener('input', (event) => {
+    if (typedBox(event.target)) typedIn = event.target;
+  }, true);
+  const read = (event: Event) => {
+    if (event.target === typedIn) typedIn = null;
+  };
+  standIn.addEventListener('change', read, true);
+  standIn.addEventListener('focusout', read, true);
+
   part.load().then(
     (module) => {
       if (gone) return;
       const was = current;
       const next = real(module);
-      const doc = context.document;
-      const focused = !!doc.activeElement && was.element.contains(doc.activeElement);
+      const active = doc.activeElement;
+      const focused = !!active && was.element.contains(active);
+      const box = focused && active === typedIn ? typedIn : null;
+      // As typed: keys the plain one's guard holds after a refused one are part of it ("1x" where the box shows "1"), the
+      // caret after them.
+      const text = box ? (was.typedText?.() ?? box.value) : '';
+      const [start, end] = box && text === box.value ? [box.selectionStart ?? text.length, box.selectionEnd ?? text.length] : [text.length, text.length];
+      const typed: TypedText | null = box ? { text, start, end, entered } : null;
+      current = next;
+      if (typed && box) {
+        // The part's widget beside the plain one, then asked to take what was typed: the plain one's box, losing the focus
+        // to it, reads nothing as it goes.
+        was.element.before(next.element);
+        if (last) next.update(last);
+        const loud = goQuietly(box);
+        if (next.takeTyped?.(typed)) {
+          was.element.remove();
+          was.destroy?.();
+          return;
+        }
+        // Not as it stands: the plain one's box stays where the person types, after the part's widget, until it is left —
+        // it reads what it holds then, as it would have, and goes.
+        loud();
+        lingering = was;
+        box.addEventListener('focusout', () => queueMicrotask(() => {
+          if (lingering !== was) return;
+          lingering = null;
+          was.element.remove();
+          was.destroy?.();
+        }), { once: true });
+        return;
+      }
+      if (focused && active) goQuietly(active);
       was.element.replaceWith(next.element);
       was.destroy?.();
-      current = next;
       if (last) next.update(last);
       if (focused) next.focus();
     },
@@ -101,11 +176,15 @@ export function partWidget<M>(part: Part<M>, context: WidgetContext, real: (modu
     update(state) {
       last = state;
       current.update(state);
+      lingering?.update(state);
     },
     focus: () => current.focus(),
     destroy() {
       gone = true;
       current.destroy?.();
+      lingering?.element.remove();
+      lingering?.destroy?.();
+      lingering = null;
     },
   };
 }

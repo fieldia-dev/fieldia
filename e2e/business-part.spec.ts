@@ -143,7 +143,8 @@ test.describe('the business widgets in a part of their own', () => {
     await plain.click();
     await plain.press('Control+A');
     await page.keyboard.type('7:');
-    expect(await page.evaluate(() => (window as any).ownForm.getState().unread.hours?.text)).toBe('7:');
+    // Still typed in: never read under the keys (no value, no words), held by the box as typed (e7d349e).
+    expect(await page.evaluate(() => (window as any).ownForm.getState().unread.hours ?? null)).toBeNull();
     // The part comes: the work tracker's box in the plain one's place, the text as it stood, the focus in it.
     release();
     await expect(page.locator('#own .fd-priority .fd-priority-star.fd-on')).toHaveCount(2);
