@@ -1,6 +1,7 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pathPart, phonePart, phoneSettings, quietPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
+import type * as DuplicatesModule from './duplicates-part';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
 import type * as ListModule from './list-part';
@@ -12,6 +13,8 @@ export type HeadPart = typeof HeadModule;
 export type FiltersPart = typeof FiltersModule;
 /** The list part: a list screen, its search bar and its stylesheet. */
 export type ListPart = typeof ListModule;
+/** The duplicates part: possible duplicates said under the fields they matched on, and the merge's screen. */
+export type DuplicatesPart = typeof DuplicatesModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -19,6 +22,11 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 /** A list screen — its table, search bar, pager and switcher — loaded the first time a page draws a list. */
 export const listPart: Part<ListPart> = lazyPart('list', () => import('./list-part'));
+/**
+ * Possible duplicates and the merge's screen, loaded the first time a page naming fields in `duplicates` is shown with
+ * a source that has `duplicates` — never waited for: what it says comes with the source's answer.
+ */
+export const duplicatesPart: Part<DuplicatesPart> = lazyPart('duplicates', () => import('./duplicates-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -38,7 +46,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, duplicatesPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {

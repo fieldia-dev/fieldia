@@ -67,7 +67,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
+import { duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
 import { waitWords } from './waiting';
@@ -1582,6 +1582,21 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
   const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked() });
   updaters.push(safety.update);
+  // Possible duplicates (`duplicates`): records like this one, asked of the source as it is typed and saved, said under
+  // the fields they matched on — in a part of their own, asked for where the page names fields and its source can
+  // answer; the page is drawn meanwhile, and nothing is said before an answer comes.
+  if (page.duplicates && form.canFindDuplicates()) {
+    let watching: { destroy(): void } | null = null;
+    duplicatesPart.load().then(
+      (part) => {
+        if (gone) return;
+        watching = part.watchDuplicates({ form, page, root, doc, el, labels, locale, tag, icons: options.icons, preferences, fill, say: (message, tone) => actionHost.say(message, tone), editable: () => !locked });
+      },
+      // A part that could not come: nothing is said, as without the source's duplicates.
+      () => undefined
+    );
+    cleanups.push(() => watching?.destroy());
+  }
 
   const draft = el('div', { class: 'fd-draft', hidden: '' });
   const draftText = el('span');
