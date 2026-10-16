@@ -1,5 +1,5 @@
 import type { JsonValue, Value } from '@fieldia/core';
-import { jsonProblem, WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { jsonProblem, readJson as readJsonText, WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { MONACO_SERVICES, serviceOf, type MonacoService } from './languages';
 import { defaultLoader } from './loader';
 import { installMonacoStyles } from './styles';
@@ -127,12 +127,8 @@ function giveWorkers(getWorker: NonNullable<MonacoWidgetsOptions['getWorker']>) 
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 /** The text as JSON, `null` for nothing, or `undefined` when it is not valid. */
 function readJson(text: string): JsonValue | undefined {
-  if (text.trim() === '') return null;
-  try {
-    return JSON.parse(text) as JsonValue;
-  } catch {
-    return undefined;
-  }
+  // A number JSON.parse would change (an id of 20 digits, 1e400) is not JSON as written: kept unread, never changed.
+  return readJsonText(text) as JsonValue | undefined;
 }
 
 function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoader, { getWorker, services: named = MONACO_SERVICES }: MonacoWidgetsOptions) {
@@ -208,7 +204,8 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     valid = parsed !== undefined;
     // Where it goes wrong, as the CodeMirror editor and the plain JSON box say it.
     const problem = valid ? null : jsonProblem(text);
-    const words = problem ? labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column)) : labels.invalidJson;
+    const at = (template: string) => template.replace('{number}', problem?.char ?? '').replace('{line}', String(problem?.line)).replace('{column}', String(problem?.column));
+    const words = problem ? at(problem.reason === 'number' ? labels.jsonNumber : labels.invalidJsonAt) : labels.invalidJson;
     if (error) {
       error.hidden = valid;
       if (problem) error.textContent = words;
