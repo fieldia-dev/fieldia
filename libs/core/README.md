@@ -150,7 +150,14 @@ out behaves as it did in 0.20: a change not saved goes where a step leaves the
 record. `form.leaveNow()` says whether a way out can go at once. Call
 `form.leave()` before your app's own ways out — a route change, an unmount —
 and `unsavedWork(state)` (any change, file or change set aside) for a browser's
-`beforeunload`. What `can` does
+`beforeunload`, or let the viewer keep it (`warnOnLeave`). A save refused for a
+conflict, waiting for Reload or Keep mine, is at risk too: the person asked for
+it to be saved. Discard lets the changes no save took go back to the record as
+the last save left it. Every answer that comes late — an onchange, a step's
+Archive, Duplicate or Delete, Keep mine's read, a name a box looks up — is laid
+only on the record it was asked for: anything of your own that waits and then
+writes on the form asks `form.recordShown()` first (taken as it asks, true
+while that record is still shown, as it was). What `can` does
 not allow is kept to before any source is asked: fields locked or hidden (and
 left out of what a save sends), a save refused with the source's `reason`, the
 gear menu's Archive, Duplicate and Delete and the buttons whose steps would do

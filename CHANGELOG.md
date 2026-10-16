@@ -15,6 +15,31 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## Unreleased
+
+**Save safety: every late answer kept to its record.** An answer that comes
+once the record it was asked for is gone — an onchange, a name a box looks up, a
+record made from a link, a line's dialog, Archive, Duplicate or Delete, Keep
+mine's read — is laid on no other record, as a save's already was
+(`form.recordShown()`; `whileShown` for a part of your own).
+
+- A line edited after a save stays at risk when a step adds another line; a
+  value the page's `change` steps tidy as it is typed stays the person's.
+- A save refused for a conflict, waiting for Reload or Keep mine, is asked
+  about before a way out lets it go (only a source with versions has one).
+- A dialog that saved, then let a later change go, hands back the record as
+  saved: Discard puts the person's changes no save took back as last saved.
+- The pager on a record its own save locked asks to let what was typed go,
+  instead of trying the save again; a dialog's Discard stops a file on its way.
+- A line's own dialog asks before Escape or × let a change in it go.
+- `warnOnLeave` (viewer, React, Vue, Angular): the browser's Back, Reload or a
+  closed tab ask first while a change is not saved. Off unless set.
+
+**Upgrading:** for an app with none of 0.22's data source members, two things
+are new: a line's dialog asks before Escape drops a change, and the `save`
+event's `values` are the record as that save left it — a change typed while it
+was on its way is no longer among them.
+
 ## 0.23.0 — 2026-10-16
 
 **A smaller main script: what a page uses now and then comes the first time it

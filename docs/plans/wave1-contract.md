@@ -392,24 +392,24 @@ row has a unit test that fails without the check (core
 | 10 | `reset` step | the check, then `form.reset()` |
 | 11 | `close` step: the host's `close` — the viewer's dialog, panel or page in place, or **the app's own** (`host.close`) | the form takes the host's close once, where it is made: the check first |
 | 12 | `openUrl` step in this tab (`newTab: false`) | the check first; a new tab leaves the form as it is |
-| 13 | `archive` / `unarchive` step, gear Archive | the check before archiving, then `reload` (9) |
-| 14 | `duplicate` step / gear Duplicate, copied by the source | saves the changes first (0.20), the check before the copy, then `openRecord` (1): a change typed during the copy is asked about |
+| 13 | `archive` / `unarchive` step, gear Archive | the check before archiving, then `reload` (9); archived once another record is shown, that one is not loaded again: the run stops |
+| 14 | `duplicate` step / gear Duplicate, copied by the source | saves the changes first (0.20) — not on a record the person may only read: asked instead — the check before the copy, then `openRecord` (1): a change typed during the copy is asked about; copied once another record is shown, the copy is told and not shown |
 | 15 | the same through the app's action (no `copy`) | saves first, the check, then its answer's `{ record }` (17) |
-| 16 | `delete` step / gear Delete | the person chose it: once deleted, their work goes with the record, unasked; refused, it stays. Then `openRecord(null)` or the pager's next |
+| 16 | `delete` step / gear Delete | the person chose it: once deleted, their work goes with the record, unasked; refused, it stays. Then `openRecord(null)` or the pager's next. Another record shown while it is deleted is asked about as any, keeps what is typed in it, and stays: the pager counts one fewer |
 | 17 | an action's answer `{ record }`: a `call` step, a button's `action`, the gear's app action | `openRecord` (1) |
 | 18 | an action's answer `{ reload: true }` | (9) |
 | 19 | `open` step (`as` page, dialog or panel) | this form's values stay; the opened page's ways out are rows 27–33; its `into` and `then` only on the record that opened it |
 | 20 | a wizard's Next, Back, Skip, `goTo` | the values stay: nothing to check |
 | | **viewer** | |
-| 21 | the pager: Previous, Next, Alt+P, Alt+N | the next id looked up, then its save of the changes and files (0.20), then the check, then `openRecord` |
+| 21 | the pager: Previous, Next, Alt+P, Alt+N | the next id looked up, then its save of the changes and files (0.20) — none on a record the person may only read — then the check, then `openRecord` |
 | 22 | the pager after a delete | (16) |
 | 23 | breadcrumbs: `open`, or an `href` clicked plainly | the check, then the app's way |
 | 24 | the app's breadcrumbs inside a page opened in place | that page's check, then the opener's (each page in place adds its own) |
 | 25 | `handle.reload()` on a record | (9) |
 | 26 | `handle.destroy()` | the app's: as (7) |
 | 27 | a dialog (`openFormDialog`): Save & Close, Ctrl+Enter, a footer button whose run saved | the check, then it closes, saved |
-| 28 | a dialog's Escape and × | the check; a panel, or a dialog round a page with a head: `{ changes: true }` |
-| 29 | a dialog's Discard | `{ discard: true }`: waits for a save on its way, asks nothing; a save that went through closes saved |
+| 28 | a dialog's Escape and × | the check; a panel, a dialog round a page with a head, or a dialog of values (a line's own form, which nothing else saves): `{ changes: true }` |
+| 29 | a dialog's Discard | `{ discard: true }`: stops the files on their way, waits for a save on its way, asks nothing; a save that went through closes saved |
 | 30 | a dialog's `close` step | (11) |
 | 31 | a side panel (`openFormPanel`) | as a dialog (27–30) |
 | 32 | a page opened in this one's place: its save or send (once its afterSave ran), Back, its own crumb, its `close` step | the check, then back; saved once a save went through |
@@ -422,7 +422,45 @@ row has a unit test that fails without the check (core
 
 A save that went through is reported as saved by every later exit of the
 dialog, panel or page in place it was made in — Discard, Escape, ×, Back, a
-`close` step: `{ saved: true }`, with the record's id.
+`close` step: `{ saved: true }`, with the record's id, and its values as saved:
+Discard lets the person's changes no save took go back to the record as the
+last save left it (what steps and the app wrote since stays).
+
+**Round 6 (after 0.23.0): the rule held for every answer.** An adversarial check
+of 0.22's save safety found the generation rule kept for a save, a `call` and an
+`open`, and not for the other answers that write on a form or act on its
+record. Now it is one test, `form.recordShown()` — taken as an answer is asked
+for, true while that record is still shown as it was (no other opened, it not
+loaded again, no new one, the person's Discard not pressed, the form not
+closed) — and every such answer passes it or the runner's own generation check:
+an onchange's; Keep mine's read and Reload's; Archive's, Duplicate's and
+Delete's (`recordStep`); a button's question; a change's steps run again after
+their run; a check or a step forward waiting for a name; a save's own waits
+before it is sent; a step's own reload or record (`showRecord`), replaced
+before it ended; the files of a record replaced (stopped with its
+generation). In the parts: a name a box looks up (`readWords`, the path
+picker's), a record made from a link or picked in a dialog, a line's dialog, a
+link's record opened and renamed, a file read inline, a signature's picture, a
+picture read into formatted text, a statusbar's save, the pager's next id, a
+wizard's step, a map's address from its point, a place found, a route and a
+reachable area (`whileShown`, `stillShown` in `@fieldia/widgets`). And:
+
+- **The person's claim, at the grain steps write.** A table is claimed by the
+  lines the person changed, added or took away: a step's `addLine` leaves
+  their lines theirs, and a line changed back is no longer at risk. A write
+  that works the person's change out — the source's onchange, the page's
+  `change` steps it sets off — keeps their claim and makes nothing else
+  theirs; any other step's, rule's or app's write of the whole field takes it
+  over, as before. (Keeping every claim against every step would ask about
+  values an afterSave run wrote; claiming by the whole field lost a line's edit
+  to a line a step added.)
+- **A conflict waiting is at risk** (`workAtRisk`): the person asked for those
+  changes to be saved. Only a source with versions has one.
+- **A record its own save locked** (`can.edit: false`) is never saved again by
+  the pager or Duplicate: what was typed in it is asked about.
+- **The browser's own ways out**: `warnOnLeave` (viewer and wrappers, off by
+  default) asks through `beforeunload` while `workAtRisk(state, { changes:
+  true })`, listened for only then.
 
 Removed with round 5: `taking`, the runs set and each run's `saved` flag, and
 the `lastSent` of a page of answers. `state.unsent` is worked out on every

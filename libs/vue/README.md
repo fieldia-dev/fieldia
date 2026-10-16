@@ -52,7 +52,9 @@ handle.form.leave()` in a router's `beforeRouteLeave`, before removing
 `form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
 `labels`). Vue unmounts at once, so nothing else can keep the person there. It
 waits for a save on its way, then asks "Discard your changes?" only when their
-work is at risk, and answers false when they choose to stay.
+work is at risk, and answers false when they choose to stay. `warn-on-leave` has
+the browser's own Back, Reload or a closed tab ask first while there is a change
+not saved.
 
 A field's component or a slot's content that throws as it renders is kept to its
 place: it shows a small box that names it, `@error="(error, where) => …"` is

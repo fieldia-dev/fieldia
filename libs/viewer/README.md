@@ -160,7 +160,17 @@ a moment does”). The viewer is their host: it draws what they ask for.
   for where “Saving…” would be (at a dialog's foot), then asks “Discard your
   changes?”, the focus on Cancel, only when the person's work is at risk: a
   change of theirs the last save did not send, a file on its way or not saved
-  yet, changes set aside. A dialog's Discard waits too, and asks nothing.
+  yet, changes set aside, a save refused for a conflict still waiting for
+  Reload or Keep mine. A dialog's Discard waits for a save on its way too, and
+  asks nothing; it stops a file on its way at once. A dialog of values — a
+  line's own form — asks before Escape or × let a change in it go, as a panel
+  does: nothing else saves what it holds. An answer that comes once the record
+  it was asked for is gone — a name looked up, a record made from a link, a
+  line's dialog closed, an onchange, a step's Archive, Duplicate or Delete —
+  is laid on no other record (`form.recordShown()`).
+- **The browser's own ways out** — Back, Reload, a tab closed — ask first
+  ("Leave site?") while the person's work is at risk, every change not saved
+  counting, with `warnOnLeave: true`. Off unless set, as in 0.20.
 - **Words said** are toasts at the foot of the screen, in their tone: one over
   another, read out by a polite live region, going after a few seconds (not
   while pointed at or focused), or with their ×. Your app's `stop` words come

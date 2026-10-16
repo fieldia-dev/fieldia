@@ -60,7 +60,8 @@ handle.form.leave()` in a route's `canDeactivate`, before removing
 `labels`, `fieldTypes`). Angular destroys it at once, so nothing else can keep
 the person there. It waits for a save on its way, then asks "Discard your
 changes?" only when their work is at risk, and answers false when they choose to
-stay.
+stay. `[warnOnLeave]="true"` has the browser's own Back, Reload or a closed tab
+ask first while there is a change not saved.
 
 A part that throws as it is drawn or brought up to date — a field's component, a
 slot's content, the app's widget, a map — shows a small box that names it, and

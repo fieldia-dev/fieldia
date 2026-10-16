@@ -49,7 +49,8 @@ and before changing a prop that mounts it again (`page`, `form`, `dataSource`,
 `recordId`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`). React
 unmounts at once, so nothing else can keep the person there. It waits for a save
 on its way, then asks "Discard your changes?" only when their work is at risk,
-and answers false when they choose to stay.
+and answers false when they choose to stay. `warnOnLeave` has the browser's own
+Back, Reload or a closed tab ask first while there is a change not saved.
 
 A field's or a slot's component that throws as it renders is kept to its place:
 it shows a small box that names it, `onError={(error, where) => …}` is told, and
