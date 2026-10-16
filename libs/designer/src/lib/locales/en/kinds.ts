@@ -43,6 +43,7 @@ export const kinds = {
     percentage: 'Percentage',
     timer: 'Timer',
     'date-range': 'Range of dates',
+    'booking-slots': 'Booking slots',
     colour: 'Colour',
     copy: 'Text to copy',
     pdf: 'PDF shown inline',

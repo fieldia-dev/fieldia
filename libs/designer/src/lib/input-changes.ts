@@ -49,6 +49,8 @@ const FIELD_WORDS: Record<string, Words> = {
   digits: (v, _now, _kind, w) => (v === undefined ? w.usualDecimals : w.decimals((v as number[])[1])),
   days: (v, _now, _kind, w) => (Array.isArray(v) ? w.notOn(w.dayNames.filter((_, i) => !v.includes(i + 1))) : w.anyWeekday),
   default: (v, now, _kind, w) => (now.field.type !== 'date' ? null : v === 'today' ? w.startsToday : w.startsEmpty),
+  // A date and time on a zone's clock: its own, or the page's.
+  timeZone: (v, now, _kind, w) => (now.field.type !== 'datetime' ? null : v ? w.onZone(String(v)) : w.onPageZone),
   // An amount's money look, by an example in its own currency: "written as 1,610,000 EGP".
   money: (v, now, _kind, w) => {
     if (!v || now.field.type !== 'monetary') return v ? null : w.writtenAsUsual;
@@ -77,7 +79,12 @@ const OPTION_WORDS: Record<string, Words> = {
   separator: (v, _now, kind, w) => (kind === 'keywords' ? w.apart(String(v ?? ',')) : null),
   suggestions: (v, _now, kind, w) => (kind !== 'keywords' ? null : Array.isArray(v) ? w.suggests(v as string[]) : w.suggestsNothing),
   // The business kinds' own.
-  endField: (v, _now, kind, w) => (kind !== 'date-range' ? null : v ? w.endsOn(String(v)) : w.oneDate),
+  endField: (v, _now, kind, w) => (kind === 'booking-slots' ? (v ? w.endsIn(String(v)) : w.noEndWritten) : kind !== 'date-range' ? null : v ? w.endsOn(String(v)) : w.oneDate),
+  // Booking slots' own.
+  schedule: (v, _now, kind, w) => (kind !== 'booking-slots' ? null : v ? w.scheduleOf(String(v)) : w.ownSchedule),
+  length: (v, _now, kind, w) => (kind !== 'booking-slots' ? null : typeof v === 'number' ? w.lasts(v) : w.lastsAsSaid),
+  between: (v, _now, kind, w) => (kind !== 'booking-slots' ? null : typeof v === 'number' && v > 0 ? w.keptFree(v) : w.noneKeptFree),
+  dependsOn: (v, _now, kind, w) => (kind !== 'booking-slots' ? null : Array.isArray(v) && v.length ? w.askedAgain(v.map(String)) : w.askedOnce),
   startField: (v, _now, kind, w) => (kind !== 'timer' ? null : v ? w.runsFrom(String(v)) : w.runsFromNothing),
   unit: (v, _now, kind, w) => (kind !== 'timer' ? null : v === 'minutes' ? w.keptInMinutes : w.keptInHours),
   label: (v, _now, kind, w) => (kind !== 'state-dot' ? null : v ? w.wordsBeside : w.noWordsBeside),

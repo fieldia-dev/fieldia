@@ -2,6 +2,7 @@ import type { DesignerWords } from '../../designer-words';
 import { listOf, plural, quoteAr } from '../speak';
 
 const q = quoteAr;
+const minutes = (n: number) => plural('ar', n, { zero: '# دقيقة', one: 'دقيقة واحدة', two: 'دقيقتان', few: '# دقائق', many: '# دقيقة', other: '# دقيقة' });
 const days = (n: number) => plural('ar', n, { zero: '# يوم', one: 'يوم واحد', two: 'يومان', few: '# أيام', many: '# يومًا', other: '# يوم' });
 
 export const settingsChanges: DesignerWords['settingsChanges'] = {
@@ -60,6 +61,18 @@ export const settingsChanges: DesignerWords['settingsChanges'] = {
   endsOn: (field) => `ينتهي في ${q(field)}`,
   oneDate: 'تاريخ واحد بلا نهاية',
   runsFrom: (field) => `يعمل منذ ${q(field)}`,
+  onZone: (zone) => `حسب ساعة ${zone}`,
+  onPageZone: 'حسب ساعة الصفحة',
+  scheduleOf: (name) => `يسأل عن الأوقات المتاحة في ${q(name)}`,
+  ownSchedule: 'يسأل عن الأوقات المتاحة باسمه هو',
+  lasts: (n) => `يدوم الحجز ${minutes(n)}`,
+  lastsAsSaid: 'يدوم الحجز كما يقول التطبيق',
+  keptFree: (n) => `تُترك ${minutes(n)} بعد كل حجز`,
+  noneKeptFree: 'لا دقائق تُترك بين حجزين',
+  endsIn: (field) => `تُكتب نهايته في ${q(field)}`,
+  noEndWritten: 'لا تُكتب نهاية',
+  askedAgain: (fields) => `يُسأل من جديد حين يتغيّر ${fields.map(q).join(' أو ')}`,
+  askedOnce: 'لا يُسأل من جديد إلا لشهر آخر',
   runsFromNothing: 'يعرض الوقت المسجّل فقط',
   keptInMinutes: 'يُحفظ بالدقائق',
   keptInHours: 'يُحفظ بالساعات',

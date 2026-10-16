@@ -105,6 +105,8 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'percentage', label: 'Percentage', group: 'more', field: (label) => ({ type: 'float', label }), widget: 'percentage' },
   { id: 'timer', label: 'Timer', group: 'more', field: (label) => ({ type: 'float', label, readonly: true }), widget: 'timer' },
   { id: 'date-range', label: 'Range of dates', group: 'more', field: (label) => ({ type: 'date', label }), widget: 'daterange' },
+  // A booking's time picked from the times the app has free (its data source's slots): the date and time box without them.
+  { id: 'booking-slots', label: 'Booking slots', group: 'more', field: (label) => ({ type: 'datetime', label }), widget: 'slots' },
   { id: 'colour', label: 'Colour', group: 'more', field: (label) => ({ type: 'integer', label }), widget: 'color' },
   { id: 'copy', label: 'Text to copy', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'copy' },
   { id: 'pdf', label: 'PDF shown inline', group: 'more', field: (label) => ({ type: 'binary', label, accept: ['application/pdf'] }), widget: 'pdf' },
@@ -116,7 +118,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
 ];
 
 /** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
-export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'booking-slots', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -155,7 +157,7 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'date':
       return node.widget === 'daterange' ? 'date-range' : 'date';
     case 'datetime':
-      return node.widget === 'daterange' ? 'date-range' : node.widget === 'timer' ? 'timer' : 'date-time';
+      return node.widget === 'daterange' ? 'date-range' : node.widget === 'timer' ? 'timer' : node.widget === 'slots' ? 'booking-slots' : 'date-time';
     case 'boolean':
       return node.widget === 'priority' ? 'priority' : node.widget === 'tick' ? 'tick' : 'yes-no';
     case 'binary':
@@ -263,6 +265,7 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   percentage: (field) => field.type === 'float',
   timer: (field) => field.type === 'float' || field.type === 'datetime',
   'date-range': (field) => field.type === 'date' || field.type === 'datetime',
+  'booking-slots': (field) => field.type === 'datetime',
   colour: (field) => field.type === 'integer' || field.type === 'char',
   copy: (field) => field.type === 'char' || field.type === 'text',
   pdf: (field) => field.type === 'binary' && !field.multiple,

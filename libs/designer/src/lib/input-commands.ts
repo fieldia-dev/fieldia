@@ -1,4 +1,4 @@
-import { dayOf, type Field, type FieldNode, type MoneyLook, type Page } from '@fieldia/core';
+import { dayOf, isTimeZone, type Field, type FieldNode, type MoneyLook, type Page } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
@@ -116,6 +116,25 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
         },
         // Typing in one of a field's limits is one undo step.
         `limits:${id}:${Object.keys(limits).join(',')}`
+      );
+    },
+
+    /**
+     * The time zone a page's dates and times are on the clock of (`id` null), or a date and time field's own, by its
+     * IANA name ("Europe/Berlin"); null for the browser's, or the page's. A setting of how times show, so a field from
+     * the model may have one too.
+     */
+    setTimeZone(id: string | null, zone: string | null): boolean {
+      return apply(
+        (draft) => {
+          const named = zone?.trim() || null;
+          if (named !== null && !isTimeZone(named)) throw new Refusal((w) => w.refusals.zoneUnknown(named));
+          const owner = id === null ? (draft as Page & { timeZone?: string }) : (question(draft, id).field as Field & { timeZone?: string });
+          if (id !== null && (owner as Field).type !== 'datetime') throw new Refusal((w) => w.refusals.onlyDateTimeZone);
+          if (named === null) delete owner.timeZone;
+          else owner.timeZone = named;
+        },
+        `zone:${id ?? 'page'}`
       );
     },
 

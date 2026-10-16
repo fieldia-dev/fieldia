@@ -289,6 +289,14 @@ export const questions = {
   amountDueFrom: 'Amount due from',
   propertyColumns: 'Columns',
   canAddProperty: 'People may add a property',
+  // ---- a date and time's clock, booking slots
+  timeZone: 'Time zone',
+  pageZone: 'The page’s',
+  schedule: 'Schedule',
+  slotLength: 'Minutes a booking lasts',
+  slotsBetween: 'Minutes kept free after one',
+  bookingEndsIn: 'Its end in',
+  askedAgainWhen: 'Asked again when',
   // ---- code
   codeLanguage: 'Language',
   plainText: 'Plain text',

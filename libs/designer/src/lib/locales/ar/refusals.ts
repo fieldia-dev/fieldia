@@ -128,6 +128,8 @@ export const refusals: DesignerWords['refusals'] = {
   onlyDecimals: 'الرقم والمبلغ وحدهما لهما منازل عشرية',
   decimalsRange: 'المنازل العشرية من 0 إلى 6',
   onlyDateDays: 'التاريخ وحده يقع في أيام الأسبوع',
+  onlyDateTimeZone: 'التاريخ والوقت وحده يتبع ساعة منطقة زمنية',
+  zoneUnknown: (zone) => `${q(zone)} ليست منطقة زمنية: اختر واحدة من القائمة`,
   daysRange: 'أيام الأسبوع من 1 (الاثنين) إلى 7 (الأحد)',
   oneDay: 'يقع التاريخ في يوم واحد من الأسبوع على الأقل',
   onlyDateToday: 'التاريخ وحده يبدأ باليوم الحالي',

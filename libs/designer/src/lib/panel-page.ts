@@ -7,6 +7,7 @@ import { pageLookSettings } from './panel-look';
 import type { PropertiesView } from './screen-properties';
 import { formMoments } from './steps-panel';
 import { headSettings } from './head-properties';
+import { zoneBox } from './zone-setting';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -42,6 +43,10 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const beside = el('select', { class: 'fd-input fd-select', 'aria-label': w.sideBeside }, el('option', { value: 'wide' }, w.sideBesides.wide), el('option', { value: 'always' }, w.sideBesides.always)) as HTMLSelectElement;
   beside.addEventListener('change', () => designer.setSidePanelBeside(beside.value as 'wide' | 'always'));
   const besideRow = setting(el, 'layout', 'Side panel beside the sheet', beside, { words: w.sideBeside });
+  // The zone every date and time on the page is on the clock of: empty, the browser's own.
+  const zone = zoneBox(el, w.pageTimeZone, w.browserZone);
+  zone.addEventListener('change', () => designer.setTimeZone(null, zone.value.trim() || null));
+  const zoneRow = setting(el, 'content', 'Time zone', zone, { hint: w.pageTimeZoneHint, words: w.pageTimeZone });
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -51,6 +56,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     'div',
     { class: 'fd-props' },
     setting(el, 'content', 'Description', description, { words: w.description }),
+    zoneRow,
     titleRow,
     titleLabelRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
@@ -67,6 +73,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     element,
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
+      if (!focused(zone)) zone.value = page.timeZone ?? '';
       look.update(page);
       moments.update(page);
       head.update(page);
