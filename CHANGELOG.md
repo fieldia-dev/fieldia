@@ -15,6 +15,52 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.23.0 — 2026-10-16
+
+**A smaller main script: what a page uses now and then comes the first time it
+is used.** `fieldia.js` is 153.6 KB gzipped, from 197.2 at 0.22 (and 157.9 at
+0.20). Six groups moved out of it into parts beside it, each loaded the first
+time a page uses one and waited for before the page is drawn, as the date box
+and the work item's head already were:
+
+- the list screen (`fieldia.list.js`, 12.7 KB gzipped);
+- a table of lines and a many2many's table of records (`fieldia.lines.js`, 7.9);
+- the business widgets: a statusbar, priority stars, hours and per cent boxes,
+  an analytic distribution, tax totals, payments (`fieldia.business.js`, 9.5);
+- file, picture, signature and PDF fields (`fieldia.files.js`, 11.2);
+- the survey kinds: a ranking, a matrix, a slider, pictures to choose from, a
+  colour, properties, an address, a progress bar (`fieldia.survey.js`, 12.1);
+- the eight themes (`fieldia.themes.js`, 3.8) and the quiet look
+  (`fieldia.quiet.js`, 2.2).
+
+A plain form downloads 154 KB; a page that uses every group about what it did
+in 0.22. An app's bundler splits the same parts into chunks of their own.
+
+- Each part's stylesheet goes in where its rules stood in Fieldia's own, so
+  nothing looks different.
+- An app that draws a page without waiting for its parts (`loadParts`) sees
+  each such field's value plainly — in words, or in a plain box that reads and
+  writes the same value — until its part comes and takes its place, keeping
+  the value, what was typed and the focus.
+- A sheet's avatar asks for its picture's part, as a placed field does.
+- A page that waits for its parts keeps its save status where the page put it
+  (`saveStatus` "bar" or "toast").
+
+**Upgrading:**
+
+- An app that serves `fieldia.js` itself serves the `fieldia.*.js` files beside
+  it: the package's `bundle` folder has them all. A CDN already does.
+- `@fieldia/widgets` no longer exports `goingItem`, `goingWords`, `shrinkFor`
+  and `shrinkable`, helpers of the file widgets: they are the files part's,
+  `(await filesPart.load()).shrinkFor`. `binaryWidget`, `imageWidget`,
+  `statusbarWidget`, `progressbarWidget`, `propertiesWidget` and `linesWidget`
+  stay, each loading its part the first time it draws.
+- A theme the app gives (`theme`, `setTheme`) is worn once its part has come:
+  the page is drawn at once, in its skin's own look, and wears the theme a
+  moment later. A theme the page itself names is waited for, as before.
+
+**Size:** `fieldia.js` 153.6 KB gzipped (0.22: 197.2); its parts 2.2 to 18.2.
+
 ## 0.22.0 — 2026-10-15
 
 **Files, conflicts, permissions and a calendar: what an app with real users

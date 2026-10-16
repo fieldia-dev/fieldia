@@ -1014,9 +1014,10 @@ makes a chunk; in the script bundle it is a script beside fieldia.js, which fiel
   moves as they arrive; `openFormDialog` opens its box once they are in. `handle.drawn` settles when it is drawn;
   `loadParts(page)` loads them ahead. A part that cannot come leaves what it would draw drawn plainly.
 - A widget made before its part came, outside the viewer, is drawn plainly and replaced in place by the part's.
-- A part's sheet goes between Fieldia's two (`installPartStyles`, `PART_RANK`): after the quiet look and the pickers',
-  before the page's own looks, as its rules stood in FIELDIA_CSS.
+- A part's sheet goes between Fieldia's two (`installPartStyles`, `PART_RANK`), in the order its rules stood in
+  FIELDIA_CSS (0.23 added the lines, business, survey, files, themes and quiet parts' sheets before the pickers').
 - What stays in every page: the page's checks of heads, buttons, groups and list cells (checkPage is synchronous), a
-  list's backlog cells, nested rows and Fluent's list look, a state's dot and the rows of the lists it opens, the work item's icons
-  (any page may name them), the access key and a lock at a value, help boxes and a group's tracks.
+  state's dot and the rows of the lists it opens, the work item's icons (any page may name them), the access key and a
+  lock at a value, help boxes and a group's tracks. Since 0.23 a list's backlog cells, nested rows and Fluent's list
+  look come with the list screen's part (`fieldia.list.js`).
 
