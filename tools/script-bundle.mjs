@@ -596,7 +596,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
 // The six joined (0.23 size pass: the list screen, the looks, a table of lines, the business widgets, files, the survey
 // kinds), each measured above against 0.22.0 alone; together, 629.78 measured before, 474.25 after — 155.5 less, to 474.3.
-const BUDGET_KB = 474.3;
+// A phone read the world over (0.24): its words (a number's country, Call and WhatsApp, five reasons a number does not
+// read), whether a page or a field reads its phones so (phone-settings.ts), the phone part asked for by such a field, a
+// list's phone column and a line's dialog, a card's cells drawn with their column's widget, and a text box's hint taken
+// away with it — the box, its country table and its sheet in fieldia.phone.js — 474.29 measured before, 475.70 after:
+// 1.4 more, to 475.8.
+const BUDGET_KB = 475.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -716,7 +721,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
-const GZIP_BUDGET_KB = 153.7;
+// A phone read the world over (0.24), its words and what asks for its part (listed with the raw budget above): 153.62
+// measured before, 154.13 after — 0.5 more, to 154.2.
+const GZIP_BUDGET_KB = 154.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -799,7 +806,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 7.15, 15.86, 16.27).
 // The input rules' words and Wave 1's joined for 0.22, as measured: Arabic's 45.0 and 8.2, German's 19.2 and 7.1,
 // French's 19.8 and 7.1 — each to 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [45.1, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
+// A phone read the world over (0.24) — a number's country, Call and WhatsApp, and five reasons a number does not read,
+// eleven in each — as measured 46.14 and 8.44 in Arabic, 19.75 and 7.25 in German, 20.42 and 7.27 in French: Arabic's
+// to 46.2 and 8.5, German's to 19.8 and 7.3, French's to 20.5 and 7.3.
+const ADD_ON_BUDGET_KB = { ar: [46.2, 8.5], de: [19.8, 7.3], fr: [20.5, 7.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -897,7 +907,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
 // from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
+// A list's phone column written as people read it (0.24): list 42.9, 12.9, as measured 42.85 and 12.82.
+// A phone read the world over (0.24) — its box, its country picked or typed, the number checked by it and kept as
+// E.164, its call and WhatsApp links, its sheet, and every country's numbers in a table made from libphonenumber's
+// metadata (phone-table.ts, 23.1 of it, 9.6 gzipped: libphonenumber-js's own smallest build is 147.4 and 34.1) — new,
+// in fieldia.phone.js (phone 34.6, 15.1, as measured 34.55 and 15.08).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.9, 12.9], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2], phone: [34.6, 15.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -913,9 +928,10 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
+  phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -996,18 +1012,27 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
   plain.destroy();
   gone('plain');
-  // A list with its search bar: the list part alone, the page drawn once it came — nothing of it before.
+  // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came —
+  // nothing of it before — its phone's country before the number, its sheet in.
+  const contact = inPage.mountViewer(host, { page: { ...read('new-customer.page.json'), phone: { country: 'EG' } }, dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || contact.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a phone read the world over drew before its phone part came');
+  await contact.drawn;
+  if (loaded() !== 'phone' || !host.querySelector('.fd-phone .fd-phone-country select') || !doc.getElementById('fieldia-phone-styles')) throw new Error(`in a page, a phone is not drawn from its part (${loaded() || 'no part'})`);
+  contact.destroy();
+  gone('contact');
+  // A list with its search bar: the list part, the page drawn once it came — nothing of it before; its phone column's
+  // numbers written by the phone part, in already.
   const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-list') || customers.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a list drew before its part came');
   await customers.drawn;
-  if (loaded() !== 'list' || !host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error(`in a page, a list is not drawn from its part (${loaded() || 'no part'})`);
+  if (loaded() !== 'list, phone' || !host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error(`in a page, a list is not drawn from its part (${loaded() || 'no part'})`);
   customers.destroy();
   gone('customers');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
   await themed.drawn;
-  if (loaded() !== 'list, themes' || themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error(`in a page, a theme the app gives is not worn from its part (${loaded()})`);
+  if (loaded() !== 'list, phone, themes' || themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error(`in a page, a theme the app gives is not worn from its part (${loaded()})`);
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
   themed.destroy();
@@ -1017,7 +1042,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || order.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a table of lines drew before its lines part came');
   await order.drawn;
-  if (loaded() !== 'lines, list, themes' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'lines, list, phone, themes' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
   order.destroy();
   gone('order');
   // A customer's sheet: its statusbar's part, the business widgets', its photo's, the files part, and its table of
@@ -1025,7 +1050,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a sheet with a statusbar and a photo drew before its parts came');
   await customer.drawn;
-  if (loaded() !== 'business, files, lines, list, themes' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'business, files, lines, list, phone, themes' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
   if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
   customer.destroy();
   gone('customer');
@@ -1033,7 +1058,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
   await bug.drawn;
-  if (loaded() !== 'business, choice, files, head, lines, list, path, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path, quiet look and text`);
+  if (loaded() !== 'business, choice, files, head, lines, list, path, phone, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path, quiet look and text`);
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
@@ -1041,21 +1066,21 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  if (loaded() !== 'business, choice, files, filters, head, lines, list, path, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'business, choice, files, filters, head, lines, list, path, phone, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
   gone('backlog');
   // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
   await signup.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
   gone('signup');
   // A survey with a matrix: the survey kinds' part, the page drawn once it came — nothing of it before.
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || survey.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a survey drew before its survey part came');
   await survey.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, survey, text, themes' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, survey, text, themes' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
   survey.destroy();
   gone('survey');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
@@ -1067,8 +1092,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const ranks = ranked.map((style) => Number(style.getAttribute('data-fd-rank')));
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-phone-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a list's screen; a theme the app gives, worn as it came; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a form's date box; an order's table of lines; a survey's matrix — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen and its phones; a theme the app gives, worn as it came; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a form's date box; an order's table of lines; a survey's matrix — each as first used, each sheet in its place");
 }
