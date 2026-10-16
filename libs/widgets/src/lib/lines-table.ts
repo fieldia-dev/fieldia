@@ -5,6 +5,7 @@ import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
+import { afterPress } from './press-end';
 import { installLinesStyles } from './styles-lines';
 import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -339,12 +340,16 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     td.addEventListener('focusout', (event) => {
       if (td.contains(event.relatedTarget as Node | null)) return;
       // The cell's own problem — text that does not read, min, max, a whole number — is said now; required waits for Save.
-      leaving = path;
-      try {
-        form.boxLeft(path);
-      } finally {
-        leaving = null;
-      }
+      // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
+      afterPress(td.ownerDocument, () => {
+        if (td.contains(td.ownerDocument.activeElement)) return;
+        leaving = path;
+        try {
+          form.boxLeft(path);
+        } finally {
+          leaving = null;
+        }
+      });
     });
     return { name: column, def: sub, widget, error, td };
   }

@@ -5,6 +5,7 @@ import { keepTabIn } from './focus-trap';
 import { stayed } from './discard';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
+import { steadyPresses } from './steady-press';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 import { headPart, partsFor } from './viewer-parts';
 import { waitWords } from './waiting';
@@ -195,6 +196,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   const under = panel ? [...doc.querySelectorAll('.fd-form-panel')].pop() : undefined;
   under?.setAttribute('data-behind', '');
   container.append(backdrop);
+  // Its own buttons — Save & Close, Discard, × — take only presses aimed at them, as the form's do.
+  const steady = steadyPresses(box);
 
   // A host of its own, so its steps run here too. Its form takes this close once, and puts its one check before it:
   // a `close` step closes it once nothing of the person's is at risk, or they let it go — saved, when a save went through.
@@ -259,6 +262,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       // The form never changes its values in place, so these are safe to hand back.
       const result: FormDialogResult = { saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values };
       handle.destroy();
+      steady();
       backdrop.remove();
       under?.removeAttribute('data-behind');
       opener?.focus();

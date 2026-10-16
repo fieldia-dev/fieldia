@@ -5,6 +5,7 @@ import { maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kin
 import { bounds } from './limits';
 import type { WidgetFactory } from './widgets';
 import { openOnClick } from './quiet';
+import { afterPress } from './press-end';
 
 /**
  * A range of dates in one box, from → to: Flectra's widget="daterange". The
@@ -78,12 +79,15 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     // The end is said as either box is left, once and politely: its own problems, and that it is not before the start.
     made.input.addEventListener('blur', () => {
       if (!endName) return;
-      leaving = true;
-      try {
-        form.boxLeft(endName);
-      } finally {
-        leaving = false;
-      }
+      // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
+      afterPress(document, () => {
+        leaving = true;
+        try {
+          form.boxLeft(endName);
+        } finally {
+          leaving = false;
+        }
+      });
     });
     return made;
   };

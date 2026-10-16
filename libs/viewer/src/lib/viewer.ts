@@ -46,7 +46,7 @@ import {
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { upgradePage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -69,6 +69,7 @@ import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
+import { steadyPresses } from './steady-press';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
@@ -452,7 +453,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, safe: true, ended: () => (discarding = null) }));
+  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -731,17 +732,23 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       });
       wrapper.addEventListener('focusout', (event) => {
         if (wrapper.contains(event.relatedTarget as Node | null)) return;
-        typing = false;
-        // The field's own problem is said now, as its box is left; that it is required waits for Save.
-        leaving = true;
-        try {
-          form.boxLeft(node.field);
-        } finally {
-          leaving = false;
-        }
-        // Not at once: focus also leaves when a redraw removes the focused part
-        // (a deleted line's button), and that redraw must finish first.
-        queueMicrotask(() => update(form.getState()));
+        // Left for a press elsewhere (a tap on Submit), what leaving shows waits till that press has ended: shown as the
+        // finger comes down, a message would move Submit from under it, and the tap would be lost (press-end.ts).
+        afterPress(doc, () => {
+          // Back in the box meanwhile: still being typed in.
+          if (wrapper.contains(doc.activeElement)) return;
+          typing = false;
+          // The field's own problem is said now, as its box is left; that it is required waits for Save.
+          leaving = true;
+          try {
+            form.boxLeft(node.field);
+          } finally {
+            leaving = false;
+          }
+          // Not at once: focus also leaves when a redraw removes the focused part
+          // (a deleted line's button), and that redraw must finish first.
+          queueMicrotask(() => update(form.getState()));
+        });
       });
       // Quiet, Escape puts back the value the field had as it was entered — once its own list or calendar, if open, has
       // taken the key — and only then is it left for the dialog round it. Leaving keeps the change, for Save.
@@ -2269,11 +2276,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /**
    * A question with Cancel and OK, or with `withCancel` false a notice with OK
-   * alone. `how.yes` words OK as what it does (Discard); `how.safe` puts the
-   * focus on Cancel, so Enter loses nothing; `how.ended` is told the moment it
-   * is answered, before the promise settles.
+   * alone. A question opens with the focus on Cancel — a button's `confirm`,
+   * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
+   * Enter meant for the form, or a second press of the key that asked, never
+   * answers Yes by itself; a notice, on OK. `how.yes` words OK as what it does
+   * (Discard); `how.ended` is told the moment it is answered, before the
+   * promise settles.
    */
-  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; safe?: boolean; ended?: () => void } = {}): Promise<boolean> {
+  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; ended?: () => void } = {}): Promise<boolean> {
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
@@ -2304,7 +2314,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Asked where it is seen: over a page opened in this one's place (its breadcrumb leaving this record), in that one.
       const over = root.hidden ? [...(root.parentElement?.children ?? [])].reverse().find((child): child is HTMLElement => child !== root && child.matches('form.fd-form') && !(child as HTMLElement).hidden) : undefined;
       (over ?? root).append(backdrop);
-      (how.safe && withCancel ? cancel : ok).focus();
+      (withCancel ? cancel : ok).focus();
     });
   }
 
@@ -2325,6 +2335,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
 
   host.append(root);
+  // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
+  cleanups.push(steadyPresses(root));
+  // And a box left for a press shows its problem once the press has ended (press-end.ts): watched from the first press.
+  watchPresses(doc);
   const unsubscribe = form.subscribe(render);
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.
   cleanups.push(

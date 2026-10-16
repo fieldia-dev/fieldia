@@ -18,6 +18,7 @@ import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale
 import { installGridStyles } from './styles';
 import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 import {
+  afterPress,
   cellText,
   columnTotal,
   currencyOf,
@@ -754,7 +755,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
     // Its own problem — text that does not read, min, max — is said as the cell is left, unless Escape put the line back.
-    if (!cell.finish(data.key) && !this.kind) cell.form.boxLeft(`${cell.field}.${data.key}.${this.column}`);
+    // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
+    if (!cell.finish(data.key) && !this.kind) {
+      const path = `${cell.field}.${data.key}.${this.column}`;
+      afterPress(this.box.ownerDocument, () => cell.form.boxLeft(path));
+    }
     // The line closed: it gives back the height its tags box took.
     if (this.grows && !api.isDestroyed()) {
       node.setRowHeight(null);

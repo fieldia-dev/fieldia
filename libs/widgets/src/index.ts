@@ -23,6 +23,7 @@ export * from './lib/label';
 
 export * from './lib/icons';
 export * from './lib/focus-trap';
+export { afterPress, watchPresses } from './lib/press-end';
 export { countriesIn } from './lib/countries';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
