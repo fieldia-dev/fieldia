@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { type Browser, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { node, open } from './support';
@@ -70,6 +71,8 @@ test.describe('hours and a per cent entered and left with nothing typed', () => 
 
   for (const engine of ['firefox', 'webkit'] as const) {
     test(`${engine}: a per cent of 0.123456 and 6.51 hours stay as they are`, async ({ playwright, baseURL }) => {
+      // Each engine where it is installed: CI's Chromium jobs have Chromium alone; its engine job runs this file too.
+      test.skip(!existsSync(playwright[engine].executablePath()), `${engine} is not installed here`);
       const browser: Browser = await playwright[engine].launch();
       try {
         const page = await browser.newPage({ baseURL });

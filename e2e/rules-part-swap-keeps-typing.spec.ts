@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
@@ -164,6 +165,8 @@ for (const browserName of ['firefox', 'webkit'] as const) {
       ['datetime', '15/10/2026 14:30', null],
     ] as const) {
       test(`a ${kind} typed over its value before the date part came is the value once the box is left — never the old one`, async ({ playwright, baseURL }) => {
+        // Each engine where it is installed: CI's Chromium jobs have Chromium alone; its browserName job runs this file too.
+        test.skip(!existsSync(playwright[browserName].executablePath()), `${browserName} is not installed here`);
         const browser = await playwright[browserName].launch();
         try {
           const page = await browser.newPage({ baseURL });
@@ -188,6 +191,8 @@ for (const browserName of ['firefox', 'webkit'] as const) {
     }
 
     test('words typed in a links field before its part came are read or kept unread, never dropped in silence', async ({ playwright, baseURL }) => {
+      // Each engine where it is installed: CI's Chromium jobs have Chromium alone; its browserName job runs this file too.
+      test.skip(!existsSync(playwright[browserName].executablePath()), `${browserName} is not installed here`);
       const browser = await playwright[browserName].launch();
       try {
         const page = await browser.newPage({ baseURL });

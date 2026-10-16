@@ -24,7 +24,7 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * (phone-frame), and what a phone's finger meets — a press that lands where it began, a title that wraps. Chromium
  * runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

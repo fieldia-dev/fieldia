@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { type Browser, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { node, open } from './support';
@@ -40,6 +41,8 @@ test.describe('a refused key in a table’s cell', () => {
 
   for (const engine of ['firefox', 'webkit'] as const) {
     test(`${engine}: is held, never empties the box`, async ({ playwright, baseURL }) => {
+      // Each engine where it is installed: CI's Chromium jobs have Chromium alone; its engine job runs this file too.
+      test.skip(!existsSync(playwright[engine].executablePath()), `${engine} is not installed here`);
       const browser: Browser = await playwright[engine].launch();
       try {
         await holdInACell(await browser.newPage({ baseURL }));

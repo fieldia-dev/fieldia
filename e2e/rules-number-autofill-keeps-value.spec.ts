@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { type Browser, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { node, open } from './support';
@@ -47,6 +48,8 @@ test.describe('a number box written by autofill', () => {
 
   for (const engine of ['firefox', 'webkit'] as const) {
     test(`${engine}: text that does not read, autofilled into a box never entered, leaves the field its value`, async ({ playwright, baseURL }) => {
+      // Each engine where it is installed: CI's Chromium jobs have Chromium alone; its engine job runs this file too.
+      test.skip(!existsSync(playwright[engine].executablePath()), `${engine} is not installed here`);
       const browser: Browser = await playwright[engine].launch();
       try {
         const page = await browser.newPage({ baseURL });
