@@ -635,7 +635,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // viewer's clock handed to a list: 474.29 measured before, 477.70 after — 3.4 more, to 477.8. Where a span ends, a
 // period's days and their conditions, the totals row, a heading's sums and the menu's spans are the list part's.
 // The input rules and the lists' totals joined: 493.73 + 3.41, to 497.2 until the release measures it.
-const BUDGET_KB = 497.2;
+// Lists people take away and change in bulk (0.24): the words of "Select all 1,284 that match", Export and Edit in the
+// viewer's labels (29 of them), the page check of a list's bulkEdit and the fields it may offer (bulk-edit.ts), the
+// memory source's writeMany, the viewer handing a list its toasts, its questions and its dialog of values, and the
+// names the list part takes from this script — the list, the workbook and the zip themselves in the list part (listed
+// with the part budgets below): 474.29 measured before, 477.31 after — 3.0 more, to 477.4.
+// The input rules, the lists' totals and their bulk work joined: 497.14 + 3.02, to 500.2 until the release measures it.
+const BUDGET_KB = 500.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -769,7 +775,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 154.91 after — 1.3 more, to 155.0.
 // The input rules and the lists' totals joined (listed with the raw budget above): 160.40 + 1.29, to 161.7 until the
 // release measures it.
-const GZIP_BUDGET_KB = 161.7;
+// Lists people take away and change in bulk (listed with the raw budget above): 153.62 measured before, 154.57 after —
+// 1.0 more, to 154.6.
+// The input rules, the lists' totals and their bulk work joined (listed with the raw budget above): 161.69 + 0.95, to
+// 162.7 until the release measures it.
+const GZIP_BUDGET_KB = 162.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -863,7 +873,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 19.83 and 7.33, to 19.9 and 7.4; French's 19.81 and 7.09 to 20.49 and 7.34, to 20.5 and 7.4.
 // The input rules' sentences and the lists' totals' words joined: Arabic's 46.93 + 1.48 and 8.51 + 0.27, German's
 // 19.99 + 0.65 and 7.31 + 0.25, French's 20.62 + 0.68 and 7.31 + 0.25, until the release measures them.
-const ADD_ON_BUDGET_KB = { ar: [48.5, 8.8], de: [20.7, 7.6], fr: [21.4, 7.6] };
+// Lists people take away and change in bulk (0.24): "Select all 1,284 that match", Export's menu, its progress and how
+// it ended, and Edit's dialog, question, progress and report, 29 in each, as measured: Arabic's 47.74 and 8.63, German's
+// 20.36 and 7.39, French's 21.08 and 7.43 — Arabic's to 47.8 and 8.7, German's to 20.4 and 7.4, French's to 21.1 and 7.5.
+// The input rules' sentences, the lists' totals' and their bulk work's words joined: Arabic's 48.41 + 2.75 and
+// 8.78 + 0.40, German's 20.64 + 1.18 and 7.56 + 0.31, French's 21.30 + 1.27 and 7.56 + 0.34, until the release measures them.
+const ADD_ON_BUDGET_KB = { ar: [51.2, 9.2], de: [21.9, 7.9], fr: [22.6, 7.9] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -995,7 +1010,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // after, to 50.9 and 15.9.
 // The input rules and the lists' totals joined: the list part 42.99 + 8.18 and 12.85 + 3.05, to 51.2 and 16.0, the
 // others as the input rules left them, until the release measures it.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [51.2, 16.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3] };
+// Lists people take away and change in bulk (0.24), in the list part: every record that matches chosen and its ids
+// paged through where a source gives none (list-every), Export's menu and an export as CSV or as an Excel workbook
+// written with no library (list-export; xlsx and zip: 6.5 raw, 2.8 gzipped of the whole), and Edit's dialog, question,
+// writes and report (list-bulk) — list 42.62 and 12.75 measured before, 63.58 and 20.54 after (list 63.6, 20.6).
+// The input rules, the lists' totals and their bulk work joined: the list part 51.17 + 20.96 and 15.90 + 7.79, to
+// 72.2 and 23.7, the others as the input rules left them, until the release measures it.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [72.2, 23.7], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

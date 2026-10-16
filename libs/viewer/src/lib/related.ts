@@ -125,6 +125,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
         // A line's own form is laid out as a page is: the room of a record's dialog.
         ...(request.layout ? { size: 'large' as const } : {}),
         mode: 'values',
+        ...(request.buttons ? { labels: { ...options.labels, ...(request.buttons.done ? { saveClose: request.buttons.done } : {}), ...(request.buttons.cancel ? { discard: request.buttons.cancel } : {}) } } : {}),
         ...(request.recompute ? { recompute: request.recompute } : {}),
         ...(say ? { host: { say } } : {}),
       });

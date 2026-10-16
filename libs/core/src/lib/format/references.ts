@@ -11,6 +11,7 @@ import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
+import { BULK_KINDS, bulkSettable } from './bulk-edit';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
 
@@ -591,6 +592,26 @@ export class ReferenceCheck {
       }
     }
     if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
+    this.checkBulkEdit(list, path);
+  }
+
+  /** A list's Edit: each field it names one value can set in many records, and rows to choose to set it on. */
+  private checkBulkEdit(list: ListNode, path: string) {
+    if (!list.bulkEdit) return;
+    if (list.choose === false) this.report(`${path}.bulkEdit`, 'Edit changes the rows chosen: with "choose": false there is no way to choose one');
+    if (list.bulkEdit === true) {
+      if (!list.columns.some((name) => bulkSettable(this.page.fields[name]))) this.report(`${path}.bulkEdit`, 'Edit offers the columns one value can set, and none of these can: name the fields it offers');
+      return;
+    }
+    const named = list.bulkEdit;
+    named.forEach((name, i) => {
+      const at = `${path}.bulkEdit[${i}]`;
+      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
+      const def = this.need(name, at);
+      if (!def) return;
+      if (!BULK_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; one value set in many records is words, a number, money, a yes or no, a date, a choice or a link`);
+      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Edit sets a field people can change`);
+    });
   }
 
   /** A list's map: where each record is, and the fields its pin and its card show, each of a type that can. */

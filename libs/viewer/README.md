@@ -297,6 +297,19 @@ plain conditions. A date in `groupBy` groups by its year, quarter, month,
 week or day, asked of `groups` with `interval`. See
 [lists that add up](https://fieldia.dev/lists/#totals).
 
+### Taking records away, changing many
+
+A list takes its records away and changes them in bulk. With every row on
+show ticked it offers **Select all 1,284 that match** (the source's `allIds`,
+or its pages read through); its buttons then get every id. **Export**, in its
+bar, writes the rows ticked — or, none ticked, every record the search finds —
+as an Excel workbook or a CSV file, in the browser (no library: the workbook is
+written in the list's part) or on your server (`exportRecords`); `"export":
+false` hides it. With `"bulkEdit": true` (or the fields) **Edit** sets one field
+to one value on the records chosen, after a question, by `writeMany` or a save
+per record, each record's `can` kept, and names what it could not change and
+why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`

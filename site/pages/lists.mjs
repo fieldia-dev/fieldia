@@ -58,6 +58,8 @@ ${code(
     <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
+    <tr><td>${c('export')}</td><td>${c('false')}: no Export in the list's bar. On unless said: see <a href="#bulk">taking records away</a>.</td></tr>
+    <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
   </tbody>
 </table>
 <p>A list shows records, so its page's ${c('data')} is a record's: the page check refuses a list of responses, and a column, a sort, a search field or a group that names no field.</p>
@@ -154,6 +156,21 @@ mountViewer(host, {
 });`
 )}
 <p>In React it is the ${c('onOpenRecord')} prop, in Vue the ${c('@open-record')} event, in Angular the ${c('(openRecord)')} output. After a button, the list asks for its records again.</p>
+
+<h2 id="bulk">Taking records away, changing many at once</h2>
+<p><strong>Every record that matches.</strong> With every row on show ticked, the bar offers <em>Select all 1,284 that match</em>. The list asks your source once for their ids (${c('list({ …, allIds: true, limit: 0 })')}), and its buttons, Export and Edit then get every one; turning a page keeps them ticked, a new search, Clear or the header's box lets them go. A source that answers with fewer ids than match is never called “all”: the bar says <em>1,000 of 1,284 could be selected</em>. A source that ignores ${c('allIds')} is read through a page at a time, its own page size kept, up to 10,000 ids, and says how many of how many past that.</p>
+<p><strong>Export</strong>, in the list's bar, writes the rows ticked — or, none ticked, every record the search finds — as an Excel workbook or a CSV file named after the list and the day (<em>Contacts 2026-10-16.xlsx</em>): the columns the list shows, in its order, under a header row, each value as a person reads it there — a choice by its label, a link by its record's name, yes or no in words. In the workbook a number, an amount and a day stay numbers, in the format the list reads them in (an amount with its currency, <em>E£ 250,000.00</em>, a dinar's three places), so they still add up and sort; its header row stays in view and filters; a page read right to left gives a sheet that runs right to left. The workbook is written in the browser, in the list's part, with no library. A CSV file is marked as UTF-8, its values parted by a comma, or by a semicolon where the page's language writes a decimal comma, as a spreadsheet there reads it. The browser writes at most 50,000 records and says how many it left out; your source's ${c('exportRecords')} writes a bigger one on the server (see <a href="/data/#many">many records at once</a>). ${c('"export": false')} hides it.</p>
+<p><strong>Edit</strong>, with ${c('bulkEdit')}, sets one field to one value in each record chosen. A dialog asks the field, then the value in that field's own box, with its rules: a required field cannot be emptied, a number keeps its least and most. Then the question — <em>Update 24 records? Status becomes “Customer”.</em> — and the records are written: by your source's ${c('writeMany')}, a thousand at a time, or by ${c('save')} per record, four at once, each with the version it was listed at, so a record changed since is refused rather than written over. A record its row says this person may not change (${c('can.edit')}, ${c('can.readonlyFields')}) is never sent; what the source refuses is named with its reason; the rest stays done. What was not changed stays chosen, and the list says, record by record, why: <em>Giza Plaza: A blocked contact's status is changed by the credit team.</em></p>
+${code(
+  'json',
+  `
+{
+  "type": "list", "id": "contacts", "columns": ["name", "company", "state", "owner_id", "newsletter"],
+  "bulkEdit": ["state", "owner_id", "newsletter"],
+  "export": true
+}`
+)}
+<p>A field one value cannot set — links of many, a table of lines, files, a read-only or worked-out field — is never offered, and the page check refuses one named. The fields a ${c('bulkEdit')} of ${c('true')} offers are ${c('bulkEditFields(page, list)')} from ${c('@fieldia/core')}. <a href="/demos/plain/?page=contacts&skin=underline">Try it on 1,284 contacts</a>.</p>
 
 <h2 id="map">On a map</h2>
 <p>With ${c('map')}, a list shows its records on a map as well, drawn by ${c('@fieldia/map')} on the provider the app chooses. The map and the table share one search and one choice: a pin lights its row and a row its pin, a home chosen on its card is ticked in the table, and the list's buttons act on it. A pin opens a card with the record's picture, a few of its fields, a box to choose it and a button to open it; pins that crowd become a bubble with their count. Once the map is moved, <em>Search this area</em> puts the area into the search bar as a search of its own; the map's own tools draw one instead — a polygon, a box or a circle, by mouse, finger or keys — searched as <em>In the area drawn</em>.</p>

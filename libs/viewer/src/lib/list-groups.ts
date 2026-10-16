@@ -1,9 +1,10 @@
-import { addDays, fill, spanStart, DATE_INTERVALS, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
+import { addDays, fill, spanStart, DATE_INTERVALS, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
 import type { El } from './dom';
 import { daysFilter, spanEnd } from './list-days';
 import type { ViewerLabels } from './labels';
 
-export type Row = { id: RecordId; values: Record<string, Value> };
+/** A record's row: its values, and the version it was listed at and what the person may do with it, where the source told. */
+export type Row = { id: RecordId; values: Record<string, Value>; version?: RecordVersion; can?: RecordPermissions };
 
 /** What a list is grouped by: a field, and for a date the span it is grouped in — the Group By facet's `field:interval`. */
 export interface GroupKey {

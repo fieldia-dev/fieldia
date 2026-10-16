@@ -8878,6 +8878,24 @@
         "parentField": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "export": {
+          "type": "boolean"
+        },
+        "bulkEdit": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              }
+            }
+          ]
         }
       },
       "required": [

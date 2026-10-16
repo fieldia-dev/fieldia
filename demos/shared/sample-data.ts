@@ -22,6 +22,7 @@ import layout from '../../examples/pages/layout.page.json';
 import lists from '../../examples/pages/lists.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import invoices from '../../examples/pages/invoices.page.json';
+import contacts from '../../examples/pages/contacts.page.json';
 import order from '../../examples/pages/order.page.json';
 import quickOrder from '../../examples/pages/quick-order.page.json';
 import newCustomer from '../../examples/pages/new-customer.page.json';
@@ -50,6 +51,7 @@ import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
 import { calendarDemo, demoNow } from './calendar';
 import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
+import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -59,6 +61,9 @@ export const pages: Record<string, Page> = {
   customers: customers as Page,
   // Invoices that add up and filter by time: a total under the list and on each heading, periods, Group By month (shared/invoices.ts).
   invoices: invoices as Page,
+  // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
+  contacts: contacts as Page,
+  contact: contactPage,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -162,7 +167,7 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
 }
 
 /** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
-const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages };
+const RECORD_PAGES: Record<string, string> = { contacts: 'contact', 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages };
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
@@ -355,6 +360,8 @@ export function sampleDataSource() {
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
     attachments: billAttachments(),
+    // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
+    can: { 'crm.contact': contactPermissions },
     // What links show of their records besides their names: an address, a picture, a colour.
     shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' }, ...wiPicker.shows },
     records: {
@@ -372,6 +379,9 @@ export function sampleDataSource() {
       ...CONTAINED_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
       listing: { 1: LISTING },
+      // The contacts, and the people who own them (shared/contacts.ts).
+      'crm.contact': sampleContacts(),
+      'res.users': Object.fromEntries(Object.entries(OWNERS).map(([id, name]) => [id, { name }])),
       // The calendars' appointments and bookings, made round now (shared/calendar.ts).
       ...calendarDemo.records(),
       // Fifteen months of invoices up to now (shared/invoices.ts).
@@ -587,6 +597,8 @@ export function sampleDataSource() {
   if (upload) source.upload = upload;
   // `?store=none`: no store at all, as an app before 0.21 — files go inside the record as base64.
   if (params.get('store') === 'none') delete (source as { upload?: unknown }).upload;
+  // The contacts' source as the address asks: ids cut short or none, no bulk writing, an export on the server.
+  contactsAsAsked(params, source);
   return source;
 }
 

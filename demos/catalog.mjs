@@ -89,6 +89,20 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'contacts',
+    name: 'Contacts to take away and change in bulk',
+    category: 'lists',
+    query: 'page=contacts&skin=underline',
+    blurb: 'A list of 1,284 contacts: select every one that matches, export the rows ticked or all of them to Excel or CSV, and set one field on many at once — each record’s permissions kept, and what could not be changed named with why.',
+    howTo: [
+      'Tick the box in the header, then press “Select all 1,284 that match”: turn a page, and its rows are ticked too.',
+      'Press Export and pick Excel: the workbook has the columns as the list shows them, money with its currency and days as days.',
+      'Search for a company, tick a few rows, press Edit, pick Owner and a person, then Update: say Yes to the question.',
+      'Choose Status for contacts that include one of Karim Nasser’s: the list says which it could not change, and why.',
+      'Add &allIds=1000 to the address: “1,000 of 1,284 could be selected”, never “all”.',
+    ],
+  },
+  {
     id: 'backlog',
     name: 'Work item in a popup',
     category: 'records',

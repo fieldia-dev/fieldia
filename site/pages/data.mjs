@@ -28,6 +28,8 @@ interface DataSource {
   delete?(request: RecordRequest): Promise<void>;            // delete it
   attachments?(request: RecordRequest): Promise<FileValue[]>; // its files, the main one first
   upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>; // store one file as it is picked
+  writeMany?(request: WriteManyRequest): Promise<WriteManyResult>; // one value in many records: a list's Edit
+  exportRecords?(request: ExportRequest): Promise<ExportedFile | { message } | false>; // a list's export, on the server
 }`
 )}
 
@@ -48,6 +50,8 @@ interface DataSource {
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
     <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
+    <tr><td>${c('writeMany')}</td><td>Someone presses Edit for many records of a list, and says Yes</td><td>Changing many at once in one call — without it, the list saves each in turn. See <a href="#many">many records at once</a></td></tr>
+    <tr><td>${c('exportRecords')}</td><td>Someone exports a list</td><td>An export written on your server — without it, the browser writes it</td></tr>
     <tr><td>${c('upload')}</td><td>Someone picks or drops a file in a file or picture field, uploads a picture of a signature, or saves one drawn</td><td>Files kept in your store, the record holding only their links — see <a href="#upload">files stored as they are picked</a></td></tr>
   </tbody>
 </table>
@@ -230,6 +234,29 @@ return loadedRecord(row.values, {
 )}
 <p>What is not allowed is hidden, never shown greyed out, and the reason is said: over the record when it is only to be read, by a locked field's lock, and at the foot of the gear menu for an action it leaves out — the source's ${c('reason')}, or Fieldia's own words in English, Arabic, French or German. A save can change it (a stage that locks the record): return ${c('can')} with the ${c('SaveResult')}. Each row of a list may carry ${c('can')} and ${c('version')} too. See it as a <a href="/demos/save-safety/?role=viewer">viewer who may only read</a>.</p>
 
+<h2 id="many">Many records at once: every match, export and bulk edit</h2>
+<p>A list's <em>Select all 1,284 that match</em>, its Export and its Edit (see <a href="/lists/#bulk">lists</a>) read three optional members. Without them each still works: the list reads ${c('list')} a page at a time, writes the file in the browser, and saves each record in turn.</p>
+${code(
+  'ts',
+  `
+// Every matching id, in the list's order, beside one page (limit 0 for the ids alone).
+list({ model, fields, filter, sort, offset, limit, allIds: true }): Promise<{ records, total, allIds?: RecordId[] }>;
+
+// One value in a field of each record. Refuse a record as its save would be refused:
+// one this person may not change, or one changed since the version it was listed at.
+writeMany?({ model, ids, values: { state: 'customer' }, fields, versions?: { [id]: RecordVersion } }):
+  Promise<{ failed: { id, message, problem?: SaveProblem }[] }>;
+
+// A list's export written on the server.
+exportRecords?({ model, format: 'xlsx' | 'csv', columns: [{ field, label }], ids?, filter, sort, count, name, locale }):
+  Promise<{ name, data?: Blob | ArrayBuffer | string, type?, url? } | { message: string } | false>;`
+)}
+<ul>
+  <li>${c('allIds')} shorter than ${c('total')} means you stopped early: the list says <em>1,000 of 1,284 could be selected</em> rather than claim all. Each row's ${c('version')} and ${c('can')} are what an Edit sends and keeps to.</li>
+  <li>${c('writeMany')} is asked a thousand ids at a time. Every id not in ${c('failed')} is taken as changed; a failure's ${c('message')} is said beside the record's name, and its ${c('problem')} (a ${c('ConflictError')}'s, say) lets the list name who changed it. A call that throws counts each of its records as not changed, with its words. Without ${c('writeMany')}, each record is a ${c('save')} with ${c('partial: true')}: ${c('values')} and ${c('changes')} hold the one field.</li>
+  <li>${c('exportRecords')} gets the list's columns and words, the ticked ${c('ids')} (none: every record ${c('filter')} finds), the order and the file's name. Answer with the file and the browser saves it; with ${c('{ message }')} — <em>it will be emailed to you</em> — and the list says it; or with ${c('false')} to let the browser write this one after all, as for a small export.</li>
+</ul>
+
 <h2 id="rest">An adapter for a REST API</h2>
 ${code(
   'ts',
@@ -279,7 +306,7 @@ dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
 <p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
-<p>Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
+<p>Its ${c('list')} gives ${c('allIds')} when asked, and its ${c('writeMany')} refuses each record as its ${c('save')} would (the person's ${c('can')}, a version older than the record's); it has no ${c('exportRecords')}, so the browser writes an export, as without a server. Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(
   'ts',
   `

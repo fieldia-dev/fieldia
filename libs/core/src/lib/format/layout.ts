@@ -1090,6 +1090,20 @@ export interface ListNode {
   filterLabels?: { [field: string]: string };
   /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
   parentField?: string;
+  /**
+   * Export, in the list's bar: the rows ticked — or, none ticked, every
+   * record the search finds — as an Excel workbook or a CSV file, the
+   * columns as the list shows them. On unless false.
+   */
+  export?: boolean;
+  /**
+   * Edit, for the rows ticked (or every one that matches): one field set to
+   * one value in each, after a question, each record's permissions kept.
+   * Off unless given: true offers the columns that can be changed — not
+   * read-only, not worked out, of a kind one value can set — and a list of
+   * fields offers those, in its order.
+   */
+  bulkEdit?: boolean | string[];
 }
 
 /** How a list's column draws its cells. */
@@ -1923,6 +1937,8 @@ export const ListNodeSchema = z.strictObject({
   filterFields: z.array(fieldName).min(1).optional(),
   filterLabels: z.record(fieldName, z.string().min(1)).optional(),
   parentField: fieldName.optional(),
+  export: z.boolean().optional(),
+  bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

@@ -1,0 +1,44 @@
+{
+  "fieldia": "0.2",
+  "id": "contacts",
+  "title": "Contacts",
+  "data": { "kind": "record", "model": "crm.contact" },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "required": true },
+    "company": { "type": "char", "label": "Company" },
+    "email": { "type": "char", "label": "Email" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "country" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "required": true,
+      "options": [
+        { "value": "lead", "label": "Lead" },
+        { "value": "customer", "label": "Customer" },
+        { "value": "inactive", "label": "Inactive" },
+        { "value": "blocked", "label": "Blocked" }
+      ]
+    },
+    "owner_id": { "type": "many2one", "label": "Owner", "relation": "res.users" },
+    "last_order": { "type": "date", "label": "Last order" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "lifetime_value": { "type": "monetary", "label": "Lifetime value", "currencyField": "currency_id", "readonly": true },
+    "newsletter": { "type": "boolean", "label": "Newsletter" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "contacts-list",
+    "columns": ["name", "company", "country_id", "state", "owner_id", "last_order", "lifetime_value", "newsletter"],
+    "sort": [{ "field": "name" }],
+    "pageSize": 10,
+    "searchFields": ["name", "company", "email", "country_id", "owner_id"],
+    "filters": [
+      { "id": "customers", "label": "Customers", "filter": [{ "field": "state", "op": "=", "value": "customer" }] },
+      { "id": "leads", "label": "Leads", "filter": [{ "field": "state", "op": "=", "value": "lead" }] },
+      { "id": "newsletter", "label": "On the newsletter", "filter": [{ "field": "newsletter", "op": "=", "value": true }] }
+    ],
+    "groupBy": ["state", "country_id", "owner_id"],
+    "bulkEdit": ["state", "owner_id", "newsletter", "country_id"],
+    "actions": [{ "type": "button", "id": "send-newsletter", "label": "Send newsletter", "action": "send_newsletter", "confirm": "Send the newsletter to the chosen contacts?" }]
+  }
+}

@@ -1,5 +1,5 @@
 import { placesOfCurrency, type DataSource, type GroupInterval, type LineField, type ListNode, type Locale, type Page, type RecordId, type ResolvedFilter, type TotalKind, type TotalsRequest, type TotalsResult, type Value } from '@fieldia/core';
-import { currencyOf, displayValue } from '@fieldia/widgets';
+import { currencyOf, displayValue, formatNumber } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { GroupKey } from './list-groups';
 import type { ViewerLabels } from './labels';
@@ -157,8 +157,10 @@ export function listTotals(context: TotalsContext): ListTotals | null {
         (result) => {
           if (mine !== tickedAsked) return;
           chosen.draw(result);
-          chosen.head.textContent = fill(labels.selected, { n: ids.length });
-          if (!chosen.row.contains(chosen.head)) chosen.row.setAttribute('aria-label', fill(labels.selected, { n: ids.length }));
+          // As the page writes numbers, as the count of those chosen over the table is: "1,284 selected".
+          const said = fill(labels.selected, { n: formatNumber(ids.length, 0, locale) });
+          chosen.head.textContent = said;
+          if (!chosen.row.contains(chosen.head)) chosen.row.setAttribute('aria-label', said);
           chosen.row.hidden = false;
         },
         () => {
