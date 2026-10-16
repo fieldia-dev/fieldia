@@ -111,3 +111,24 @@ describe('why a cell did not take what was pasted', () => {
     expect(whyNotPasted({ type: 'many2one', label: 'Client', relation: 'partner' } as LineField, 'Acme', reading)).toBeNull();
   });
 });
+
+describe('a spreadsheet’s quoting, and a cell’s most', () => {
+  it('reads a quoted cell whole — a tab, a line break, a quote inside — and takes quotes that are no quoting as they are', () => {
+    expect(blockOf('"a\tb"\tc\n"x\n""y"""\t2')).toEqual([['a\tb', 'c'], ['x\n"y"', '2']]);
+    expect(blockOf('5" screen\t3')).toEqual([['5" screen', '3']]);
+    expect(blockOf('"Hello" world\tx')).toEqual([['"Hello" world', 'x']]);
+    expect(blockOf('"never closed\t1')).toEqual([['"never closed', '1']]);
+    expect(blockOf('a\n\n')).toEqual([['a'], ['']]);
+    expect(blockOf('')).toEqual([['']]);
+  });
+
+  it('leaves words past their column’s most, and says by how much, one as one', () => {
+    const code = { type: 'char', label: 'Code', size: 5 } as LineField;
+    const reading = { locale: 'en' as const, labels: WIDGET_LABELS.en };
+    expect(readPastedCell(code, 'ABCDE', reading)).toEqual({ value: 'ABCDE' });
+    expect(readPastedCell(code, 'ABCDEF', reading)).toBeNull();
+    expect(whyNotPasted(code, 'ABCDEF', reading)).toBe('1 character too many');
+    expect(whyNotPasted(code, 'ABCDEFGH', reading)).toBe('3 characters too many');
+    expect(whyNotPasted(code, 'ABC', reading)).toBeNull();
+  });
+});

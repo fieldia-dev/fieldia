@@ -1,5 +1,5 @@
-import { cleanPastedNumber, couldBeNumber, fill, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
-import { leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
+import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { inPlural, leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * Pasting a block on the grid's cells: the grid's own, so a page with no grid
@@ -36,12 +36,60 @@ function perCent(def: LineField, text: string, locale: Locale): number | null | 
 
 /**
  * A block copied from a spreadsheet, as a table's cells take it: its rows (by
- * line breaks) and, in each, its cells (by tabs). The line break a copied
- * block ends with is no row of its own.
+ * line breaks) and, in each, its cells (by tabs). A cell a spreadsheet wrote in
+ * double quotes — Excel, Google Sheets, LibreOffice and Numbers quote one
+ * holding a line break, a tab or a quote, its own quotes doubled — is one cell,
+ * read without its quoting: `"Oak top⏎black frame"⇥7` is one row of two cells.
+ * A cell whose quotes are not such quoting (`5" screen`, `"Hello" world`) is
+ * taken as it is. The line break a copied block ends with is no row of its own.
  */
 export function blockOf(text: string): string[][] {
-  const rows = text.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n');
-  return rows.map((row) => row.split('\t'));
+  const t = text.replace(/\r\n?/g, '\n');
+  const rows: string[][] = [];
+  let row: string[] = [];
+  for (let at = 0; ; ) {
+    const quoted = t[at] === '"' ? quotedCell(t, at) : null;
+    const end = quoted ? quoted.end : nextBreak(t, at);
+    row.push(quoted ? quoted.cell : t.slice(at, end));
+    if (end >= t.length) break;
+    at = end + 1;
+    if (t[end] === '\t') continue;
+    rows.push(row);
+    row = [];
+    // The line break a block ends with ends its last row; no row follows it.
+    if (at >= t.length) return rows;
+  }
+  rows.push(row);
+  return rows;
+}
+
+/** Where the cell starting at `at` ends: its tab or line break, or the end. */
+function nextBreak(text: string, at: number): number {
+  const found = text.slice(at).search(/[\t\n]/);
+  return found < 0 ? text.length : at + found;
+}
+
+/**
+ * A cell in a spreadsheet's double quotes, from its opening quote: what it holds, its doubled quotes as one, and where
+ * it ends — at the tab or line break after its closing quote. Null when what follows that quote is neither: no
+ * quoting, but a cell that starts with a quote.
+ */
+function quotedCell(text: string, at: number): { cell: string; end: number } | null {
+  let cell = '';
+  for (let i = at + 1; i < text.length; i++) {
+    if (text[i] !== '"') {
+      cell += text[i];
+      continue;
+    }
+    if (text[i + 1] === '"') {
+      cell += '"';
+      i++;
+      continue;
+    }
+    const after = i + 1;
+    return after >= text.length || text[after] === '\t' || text[after] === '\n' ? { cell, end: after } : null;
+  }
+  return null;
 }
 
 /** How a cell's column reads what is pasted into it: the page's language and date order, the widget it is typed with, its currency now. */
@@ -67,9 +115,15 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
   const text = stripMarks(pasted).trim();
   if (!text) return def.type === 'boolean' ? null : { value: null };
   switch (def.type) {
-    case 'char':
-      return { value: oneLine(stripMarks(pasted, 'ends')).trim() };
-    case 'text':
+    case 'char': {
+      // Past the column's most it is not taken: the cell keeps what it holds, and says by how much (`whyNotPasted`).
+      const value = oneLine(stripMarks(pasted, 'ends')).trim();
+      return overBy(def, value) > 0 ? null : { value };
+    }
+    case 'text': {
+      const value = stripMarks(pasted, 'ends');
+      return overBy(def, value) > 0 ? null : { value };
+    }
     case 'html':
       return { value: stripMarks(pasted, 'ends') };
     case 'integer':
@@ -110,6 +164,12 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
   }
 }
 
+/** How many characters words are past their column's most (`size`), counted as a server counts them: 0 within it. */
+function overBy(def: LineField, words: string): number {
+  const size = def.type === 'char' || def.type === 'text' ? def.size : undefined;
+  return size ? Math.max(0, charCount(words) - size) : 0;
+}
+
 /** A number column's limits, as its box keeps them: whole or its places, its digits, its least. */
 function limitsOf(def: LineField, currency: string | null): NumberLimits {
   const digits = def.type === 'float' || def.type === 'monetary' ? def.digits : undefined;
@@ -123,8 +183,9 @@ function limitsOf(def: LineField, currency: string | null): NumberLimits {
 
 /**
  * Why a cell did not take what was pasted into it (`readPastedCell` gave null), in the words its box says as it is
- * left: a number that does not read or does not fit, hours whose minute could be two, a date that does not read or
- * whose time a day leaves out, a choice nothing is called. Null when there are no words for it (a link, a file).
+ * left: a number that does not read or does not fit, an amount in another currency, hours whose minute could be
+ * two, a date that does not read or whose time a day leaves out, a choice nothing is called, words past the column's
+ * most. Null when there are no words for it (a link, a file).
  */
 export function whyNotPasted(def: LineField, pasted: string, reading: CellReading & { labels: WidgetLabels }): string | null {
   const text = stripMarks(pasted).trim();
@@ -149,7 +210,14 @@ export function whyNotPasted(def: LineField, pasted: string, reading: CellReadin
       }
       const currency = def.type === 'monetary' ? (reading.currency ?? null) : null;
       const cleaned = cleanPastedNumber(text, locale, { currency });
+      // An amount in another currency is named as its box names it: "Unit price is in EGP, and this amount is in $".
+      if (!cleaned.ok && cleaned.problem === 'otherCurrency' && currency) return fill(labels.otherCurrency, { label, currency, pasted: cleaned.currency });
       return leftWords(cleaned.ok ? cleaned.text : text, { label, locale, labels, limits: () => limitsOf(def, currency) });
+    }
+    case 'char':
+    case 'text': {
+      const over = overBy(def, def.type === 'char' ? oneLine(stripMarks(pasted, 'ends')).trim() : stripMarks(pasted, 'ends'));
+      return over > 0 ? inPlural(labels.charactersOver, labels.charactersOverOne, over, locale) : null;
     }
     case 'date':
     case 'datetime': {
