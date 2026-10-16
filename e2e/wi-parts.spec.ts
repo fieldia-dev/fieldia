@@ -6,19 +6,20 @@ import { expect, test } from './fixtures';
 /**
  * The work item's parts loaded the first time a page uses them (parts.ts in
  * @fieldia/widgets): a work item's head with its window, its text editors, its
- * path pickers, a list's filter bar, the Discussion and the History.
+ * path pickers, its attachments' file box, a list's filter bar, the Discussion
+ * and the History.
  *
  * In the backlog demo, built as an app's bundler builds it (each part a chunk
  * of its own): the backlog asks for its filter bar's chunk alone; the bug's
  * popup asks for its head's, its text's, its pickers', its own lists', its
- * Discussion's as it first opens and its History's as that tab first does — and opens drawn whole, so nothing in it moves
+ * attachments', its Discussion's as it first opens and its History's as that tab first does — and opens drawn whole, so nothing in it moves
  * as they arrive: no layout shift, every part where it first stood, and the
  * focus in the popup, then back on its row.
  *
  * In the script demo, from one <script> tag: a page using no part asks for no
  * file but fieldia.js; a work item's bug asks for fieldia.head.js,
- * fieldia.text.js, fieldia.path.js and fieldia.choice.js, from beside
- * fieldia.js, and no other.
+ * fieldia.text.js, fieldia.path.js, fieldia.choice.js and fieldia.files.js,
+ * from beside fieldia.js, and no other.
  */
 
 /** What only each part's code holds: a class name of its own, in its stylesheet. */
@@ -28,6 +29,7 @@ const MARKS: Record<string, string> = {
   path: 'fd-path-callout',
   choice: 'fd-own-words',
   filters: 'fd-filter-option',
+  files: 'fd-file-progress',
   discussion: 'fd-comment-card',
   history: 'fd-history-graph',
 };
@@ -114,9 +116,9 @@ test.describe('the backlog demo, its parts as chunks', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('BUG 4127')).toBeVisible();
-    // Its own parts asked for as it opened: its head, text, pickers, own lists and Discussion — its History once its tab is.
+    // Its own parts asked for as it opened: its head, text, pickers, own lists, attachments and Discussion — its History once its tab is.
     await page.waitForLoadState('networkidle');
-    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'path', 'text']);
+    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'files', 'filters', 'head', 'path', 'text']);
     // Drawn whole the moment it was in the page: each part there at once, and where it first stood once all have come.
     await expect(dialog.locator('.fd-comment-card, .fd-discussion').first()).toBeVisible();
     await page.waitForTimeout(300);
@@ -142,7 +144,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
     const historyTab = dialog.getByRole('tab', { name: /History/ });
     await historyTab.click();
     await expect(dialog.locator('.fd-history')).toBeVisible();
-    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'history', 'path', 'text']);
+    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'files', 'filters', 'head', 'history', 'path', 'text']);
     await expect(historyTab).toBeFocused();
     expect(await page.evaluate(() => (window as unknown as { shifts: number[] }).shifts.reduce((sum, value) => sum + value, 0))).toBe(0);
     // Closed, the focus is back on the bug's row.
@@ -162,7 +164,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
 test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
   const bug = JSON.parse(readFileSync(join(__dirname, '..', 'examples', 'pages', 'work-item-bug.page.json'), 'utf8'));
 
-  test('a work item’s bug asks for its head, text, path picker and own lists from beside fieldia.js, drawn whole once they came', async ({ page }) => {
+  test('a work item’s bug asks for its head, text, path picker, own lists and attachments from beside fieldia.js, drawn whole once they came', async ({ page }) => {
     const problems = watch(page);
     const requested: string[] = [];
     page.on('request', (request) => requested.push(new URL(request.url()).pathname));
@@ -191,6 +193,7 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     expect(await page.locator('#app .fd-md-field').count()).toBeGreaterThan(0);
     expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path)).sort()).toEqual([
       '/script/fieldia.choice.js',
+      '/script/fieldia.files.js',
       '/script/fieldia.head.js',
       '/script/fieldia.js',
       '/script/fieldia.path.js',
