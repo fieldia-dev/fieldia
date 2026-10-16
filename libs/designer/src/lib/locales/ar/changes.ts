@@ -118,6 +118,7 @@ export const changes: DesignerWords['changes'] = {
   filledIn: (name) => `${name}: تغيّر ما يملؤه به المتصفح`,
   keyboard: (name) => `${name}: تغيّرت لوحة مفاتيحه على الهاتف`,
   botCheck: (now) => ({ on: 'تشغيل التحقق من الروبوتات', off: 'إيقاف التحقق من الروبوتات', changed: 'تغيير التحقق من الروبوتات' })[now],
+  printout: 'تغيّر رأس النسخة المطبوعة أو تذييلها أو شعارها',
   thePage: 'الصفحة',
   look: {
     accent: 'لون التمييز',

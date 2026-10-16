@@ -88,6 +88,18 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const zone = zoneBox(el, w.pageTimeZone, w.browserZone);
   zone.addEventListener('change', () => designer.setTimeZone(null, zone.value.trim() || null));
   const zoneRow = setting(el, 'content', 'Time zone', zone, { hint: w.pageTimeZoneHint, words: w.pageTimeZone });
+  // On paper: the words over and under every printout of the page, and the app's logo over it.
+  const printHeader = el('textarea', { class: 'fd-input fd-insp-area', 'aria-label': w.printHeader, rows: '2', placeholder: w.optional });
+  printHeader.addEventListener('input', () => designer.setPrint({ header: printHeader.value }));
+  const printFooter = el('textarea', { class: 'fd-input fd-insp-area', 'aria-label': w.printFooter, rows: '2', placeholder: w.optional });
+  printFooter.addEventListener('input', () => designer.setPrint({ footer: printFooter.value }));
+  const printLogo = el('input', { class: 'fd-input', 'aria-label': w.printLogo, placeholder: 'https://…/logo.svg' }) as HTMLInputElement;
+  printLogo.addEventListener('change', () => designer.setPrint({ logo: printLogo.value }));
+  const printRows = [
+    setting(el, 'content', 'Printout’s header', printHeader, { hint: w.printHeaderHint, words: w.printHeader }),
+    setting(el, 'content', 'Printout’s footer', printFooter, { hint: w.printFooterHint, words: w.printFooter }),
+    setting(el, 'content', 'Logo’s address', printLogo, { hint: w.printLogoHint, words: w.printLogo }),
+  ];
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -103,6 +115,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     phonesRow,
     phoneCountryRow,
     phoneShownRow,
+    ...printRows,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
     setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
     pagerRow,
@@ -129,6 +142,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       phoneCountry.value = page.phone?.country ?? '';
       phoneShown.value = page.phone?.shown ?? 'international';
       if (!focused(zone)) zone.value = page.timeZone ?? '';
+      if (!focused(printHeader)) printHeader.value = page.print?.header ?? '';
+      if (!focused(printFooter)) printFooter.value = page.print?.footer ?? '';
+      if (!focused(printLogo)) printLogo.value = page.print?.logo ?? '';
       look.update(page);
       moments.update(page);
       head.update(page);

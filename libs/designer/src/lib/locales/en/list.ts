@@ -41,6 +41,8 @@ export const list = {
   exportHint: 'People take the rows they tick, or every one the search finds, away as a file: the columns as the list shows them.',
   bulkEdit: 'Edit many rows at once',
   bulkEditHint: 'With rows ticked, Edit sets one field to one value in each, after a question: any column that can be changed.',
+  printRows: 'Print every row found',
+  printHint: 'Print, in the list’s bar: every record the search finds on paper, under its groups with their sums, the totals under them, the filters said over them.',
   searchWay: 'Search',
   searchWays: { bar: 'The search bar', fields: 'A keyword and each field’s values' },
   filterFields: 'Fields with their values to tick',

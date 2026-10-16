@@ -2,7 +2,7 @@ import type { Alert, Badge, ButtonNode, FieldNode, Form, MenuItem, Page, Ribbon,
 import { createWidget, type Widget } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer, HeaderPartKind } from './designer';
-import { wordsOf, type HeaderPart, type MenuItemKind } from './header-commands';
+import { builtinKind, wordsOf, type HeaderPart, type MenuItemKind } from './header-commands';
 import { designerIcon } from './icons';
 import { openMenu } from './menu';
 import { setHidden } from './writes';
@@ -45,7 +45,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     return button;
   };
   /** An item of the gear menu's words: its own, or the built-in's in the designer's language. */
-  const itemWords = (part: HeaderPart) => wordsOf(part) || ((part as MenuItem).builtin ? w.menuKinds[(part as MenuItem).builtin as NonNullable<MenuItem['builtin']>] : '');
+  const itemWords = (part: HeaderPart) => wordsOf(part) || ((part as MenuItem).builtin ? w.menuKinds[builtinKind((part as MenuItem).builtin as NonNullable<MenuItem['builtin']>)] : '');
   const actions = el('div', { class: 'fd-actions fd-canvas-header-actions' });
   const steps = el('div', { class: 'fd-canvas-header-steps' });
   // The gear menu over the record, its items in a row after its gear.
@@ -67,7 +67,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     if (created) focus(created);
   }
   function pickMenuItem(anchor: HTMLElement) {
-    const kinds: MenuItemKind[] = ['archive', 'unarchive', 'duplicate', 'delete', 'action', 'print'];
+    const kinds: MenuItemKind[] = ['archive', 'unarchive', 'duplicate', 'delete', 'printPage', 'action', 'print'];
     openMenu({
       el,
       anchor,
@@ -113,7 +113,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     if (kind === 'stat') return 'fd-stat';
     if (kind === 'ribbon') return `fd-badge fd-canvas-ribbon fd-tone-${(part as Ribbon).tone ?? 'muted'}`;
     if (kind === 'alert') return `fd-alert fd-tone-${(part as Alert).tone ?? 'info'}`;
-    if (kind === 'menu') return `fd-badge fd-canvas-menu-item${(part as MenuItem).group === 'print' ? ' fd-canvas-menu-print' : ''}`;
+    if (kind === 'menu') return `fd-badge fd-canvas-menu-item${((part as MenuItem).group ?? ((part as MenuItem).builtin === 'print' ? 'print' : 'actions')) === 'print' ? ' fd-canvas-menu-print' : ''}`;
     return `fd-badge fd-tone-${(part as Badge).tone ?? 'muted'}`;
   }
 

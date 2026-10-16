@@ -76,6 +76,7 @@ describe('When clicked, on a body button', () => {
       '# Open and close',
       'Open a page',
       'Open a web address',
+      'Print the page',
       'Close the dialog or panel',
       '# Values',
       'Set a field',

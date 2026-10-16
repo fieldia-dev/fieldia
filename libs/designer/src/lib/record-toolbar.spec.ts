@@ -133,7 +133,7 @@ describe('on the canvas and the panel', () => {
     const { host } = mount(designer, { mode: 'advanced' });
     (host.querySelector('[data-add-part="menu"]') as HTMLButtonElement).click();
     const items = [...document.querySelectorAll<HTMLButtonElement>('.fd-menu [role="menuitem"]')].map((b) => b.textContent);
-    expect(items).toEqual(['Archive', 'Unarchive', 'Duplicate', 'Delete', 'One of the app’s actions', 'A report under Print']);
+    expect(items).toEqual(['Archive', 'Unarchive', 'Duplicate', 'Delete', 'This record, printed', 'One of the app’s actions', 'A report under Print']);
     (document.querySelector('.fd-menu [data-item="delete"]') as HTMLButtonElement).click();
     const [item] = sheet(designer).toolbar?.menu ?? [];
     expect(item).toEqual({ id: item.id, builtin: 'delete' });

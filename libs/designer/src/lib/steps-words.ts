@@ -7,6 +7,7 @@ import { formulaInWords } from './rules-formula';
 import { setValueInWords } from './rules-words';
 import { locate } from './layout-tree';
 import { eachStep, everyPlace, fenceOf, fieldsNamed, fieldsRead, pressOf, showTargets, type StepsPlace } from './steps-places';
+import { builtinKind } from './header-commands';
 
 /**
  * Steps as a person reads them: "Open Customer in a panel from the left, then
@@ -92,6 +93,9 @@ export function stepSentence(page: Page, step: ActionStep, words: DesignerWords 
     case 'post':
       said = w.post(step.message, step.kind ?? 'note');
       break;
+    case 'print':
+      said = w.print;
+      break;
   }
   return whenOf(page, said, step.when, words);
 }
@@ -118,7 +122,7 @@ export function placeName(page: Page, place: StepsPlace, words: DesignerWords = 
   if ('press' in place) {
     const press = pressOf(page, place.press);
     const builtin = press && 'builtin' in press ? press.builtin : undefined;
-    return press?.label ?? (builtin ? words.canvas.menuKinds[builtin] : place.press);
+    return press?.label ?? (builtin ? words.canvas.menuKinds[builtinKind(builtin)] : place.press);
   }
   if ('change' in place) return labelOf(page, place.change);
   if ('moment' in place) return w.momentNames[place.moment];

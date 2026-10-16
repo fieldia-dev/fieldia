@@ -33,7 +33,7 @@ type Kind = ActionStep['do'];
 
 /** "Add a step"'s groups, in order, and the kinds in each. */
 const GROUPS: { group: 'open' | 'values' | 'check' | 'talk' | 'record' | 'app'; kinds: Kind[] }[] = [
-  { group: 'open', kinds: ['open', 'openUrl', 'goTo', 'close'] },
+  { group: 'open', kinds: ['open', 'openUrl', 'print', 'goTo', 'close'] },
   { group: 'values', kinds: ['set', 'clear', 'addLine'] },
   { group: 'check', kinds: ['check', 'save', 'reset'] },
   { group: 'talk', kinds: ['say', 'ask', 'post'] },
