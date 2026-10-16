@@ -41,7 +41,8 @@ const contacts: Page = {
 const records = () => ({
   contact: { 1: { name: 'Sara Haddad', company: 'Petra Tours', state: 'customer' } },
   country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' }, 3: { name: 'Saudi Arabia' } },
-  'res.users': { 9001: { name: 'Mona Adel' }, 9002: { name: 'Omar Said' }, 9003: { name: 'Sara Haddad' }, 9004: { name: 'Karim Nasser' }, 9005: { name: 'Lina Khalil' } },
+  // Two users of one name, as the demo has: a row naming that owner is refused, never given the first.
+  'res.users': { 9001: { name: 'Mona Adel' }, 9002: { name: 'Omar Said' }, 9003: { name: 'Sara Haddad' }, 9004: { name: 'Karim Nasser' }, 9005: { name: 'Lina Khalil' }, 4104: { name: 'Omar Said' } },
 });
 const SAMPLES = join(__dirname, '../../../../demos/samples');
 
@@ -171,9 +172,10 @@ describe('Import, a workbook as Excel writes one', () => {
     pick('Full name', 'name');
     await checkRows();
     const body = dialog() as HTMLElement;
-    expect(body.querySelector('.fd-import-ready')?.textContent).toBe('11 rows can be imported.');
-    expect(body.querySelector('.fd-import-refused > p')?.textContent).toBe('6 rows cannot be imported:');
+    expect(body.querySelector('.fd-import-ready')?.textContent).toBe('10 rows can be imported.');
+    expect(body.querySelector('.fd-import-refused > p')?.textContent).toBe('7 rows cannot be imported:');
     expect([...body.querySelectorAll('.fd-import-refused li')].map((li) => li.textContent)).toEqual([
+      'Row 11: Owner: more than one is called “Omar Said”',
       'Row 12: Name is required',
       'Row 13: Status: nothing is called “Prospect”',
       'Row 14: Country: nothing is called “Atlantis”',
@@ -183,7 +185,7 @@ describe('Import, a workbook as Excel writes one', () => {
     ]);
     const preview = body.querySelector('.fd-import-preview') as HTMLTableElement;
     expect([...preview.querySelectorAll('th')].map((th) => th.textContent)).toEqual(['Name', 'Company', 'Email', 'Country', 'Status', 'Owner', 'Last order', 'Newsletter']);
-    expect([...preview.querySelectorAll('tbody tr:first-child td')].map((td) => td.textContent)).toEqual(['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Mona Adel', '14 Sept 2026', 'Yes']);
+    expect([...preview.querySelectorAll('tbody tr:first-child td')].map((td) => td.textContent)).toEqual(['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Sara Haddad', '14 Sept 2026', 'Yes']);
     expect(preview.querySelectorAll('tbody tr')).toHaveLength(5);
     // The rows refused, in a workbook like the one read, why in a last column.
     button('Download the rows to fix').click();
@@ -207,17 +209,17 @@ describe('Import, a workbook as Excel writes one', () => {
       email: 'amira.hassan@deltafoods.example',
       country_id: { id: 1, label: 'Egypt' },
       state: 'customer',
-      owner_id: { id: 9001, label: 'Mona Adel' },
+      owner_id: { id: 9003, label: 'Sara Haddad' },
       last_order: '2026-09-14',
       newsletter: true,
     });
-    expect(Object.keys(source.records['contact'])).toHaveLength(12);
+    expect(Object.keys(source.records['contact'])).toHaveLength(11);
     expect(report(host).hidden).toBe(false);
-    expect(report(host).querySelector('.fd-list-report-words')?.textContent).toBe('11 of 17 records imported. Not imported:');
-    expect(report(host).querySelectorAll('li')).toHaveLength(6);
+    expect(report(host).querySelector('.fd-list-report-words')?.textContent).toBe('10 of 17 records imported. Not imported:');
+    expect(report(host).querySelectorAll('li')).toHaveLength(7);
     expect((report(host).querySelector('.fd-list-report-fix') as HTMLElement).hidden).toBe(false);
     expect((report(host).querySelector('.fd-list-report-undo') as HTMLElement).hidden).toBe(false);
-    await until(() => host.querySelector('.fd-pager-text')?.textContent === '1–5 / 12');
+    await until(() => host.querySelector('.fd-pager-text')?.textContent === '1–5 / 11');
   });
 
   it('undoes the import once asked: the records it made deleted, those that cannot be named with why', async () => {
@@ -232,8 +234,8 @@ describe('Import, a workbook as Excel writes one', () => {
     await importRows(host);
     (report(host).querySelector('.fd-list-report-undo') as HTMLButtonElement).click();
     await until(() => said.length > 0);
-    expect(asked).toEqual(['Delete the 11 records this import made?']);
-    expect(said).toEqual(['Import undone: 11 records deleted.']);
+    expect(asked).toEqual(['Delete the 10 records this import made?']);
+    expect(said).toEqual(['Import undone: 10 records deleted.']);
     expect(Object.keys(source.records['contact'])).toEqual(['1']);
     expect(report(host).hidden).toBe(true);
   });

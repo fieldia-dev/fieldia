@@ -9,6 +9,7 @@ import { installPartStyles, PART_RANK } from '@fieldia/widgets';
  * first time Import is pressed (installPartStyles, PART_RANK.import).
  */
 const IMPORT_CSS = /* css */ `
+.fd-import [hidden] { display: none !important; }
 .fd-import .fd-import-body { display: grid; gap: 14px; align-content: start; background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-import-drop { display: grid; justify-items: center; gap: 10px; padding: 36px 20px; border: 2px dashed var(--fd-border-strong); border-radius: var(--fd-radius); text-align: center; color: var(--fd-text); }
 .fd-import-drop[data-over] { border-color: var(--fd-accent); background: var(--fd-accent-soft); }

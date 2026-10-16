@@ -5,7 +5,8 @@
  * second sheet of notes, every file squeezed with deflate — and a CSV file as
  * Excel saves one where a decimal comma is written: semicolons between its
  * values, UTF-8 with its mark, days day first. Each holds a few rows a person
- * gets wrong, which the import names with why. Written by
+ * gets wrong, which the import names with why — among them an owner two of
+ * the demo's users are called, as two people of one name are. Written by
  * `node tools/import-samples.mjs`; the demo serves what it wrote.
  */
 import { Buffer } from 'node:buffer';
@@ -20,23 +21,23 @@ const OUT = join(WORKSPACE, 'demos/samples');
 
 /** Full name, company, e-mail, country, status, owner, last order (a day, or words as typed), newsletter, notes. */
 const WORKBOOK_ROWS = [
-  ['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Mona Adel', '2026-09-14', true, 'Orders every month'],
-  ['Omar Farouk', 'Nile Traders', 'omar.farouk@niletraders.example', 'Egypt', 'Lead', 'Omar Said', null, false, ''],
+  ['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Sara Haddad', '2026-09-14', true, 'Orders every month'],
+  ['Omar Farouk', 'Nile Traders', 'omar.farouk@niletraders.example', 'Egypt', 'Lead', 'Lina Khalil', null, false, ''],
   ['Leila Mansour', 'Petra Tours', 'leila.mansour@petratours.example', 'Jordan', 'Customer', 'Sara Haddad', '2026-07-02', true, ''],
   ['Faisal Al-Harbi', 'Red Sea Divers', 'faisal.alharbi@redseadivers.example', 'Saudi Arabia', 'Customer', 'Lina Khalil', '2026-05-20', false, 'Prefers WhatsApp'],
-  ['Hannah Becker', 'Cedar Logistics', 'hannah.becker@cedarlogistics.example', 'Egypt', 'Lead', 'Mona Adel', null, true, ''],
-  ['Lucas Moreau', 'Atlas Builders', 'lucas.moreau@atlasbuilders.example', 'Jordan', 'Inactive', 'Omar Said', '2025-11-03', false, ''],
+  ['Hannah Becker', 'Cedar Logistics', 'hannah.becker@cedarlogistics.example', 'Egypt', 'Lead', 'Sara Haddad', null, true, ''],
+  ['Lucas Moreau', 'Atlas Builders', 'lucas.moreau@atlasbuilders.example', 'Jordan', 'Inactive', 'Karim Nasser', '2025-11-03', false, ''],
   ['Priya Raman', 'Lotus Spa', 'priya.raman@lotusspa.example', 'Saudi Arabia', 'Lead', 'Sara Haddad', null, true, 'Met at the Riyadh fair'],
   ['Kenji Watanabe', 'Harbour Freight', 'kenji.watanabe@harbourfreight.example', 'Egypt', 'Customer', 'Lina Khalil', '2026-08-29', false, ''],
-  ['Sofia Rossi', 'Saffron Kitchens', 'sofia.rossi@saffronkitchens.example', 'Jordan', 'Customer', 'Mona Adel', '2026-06-11', true, ''],
+  ['Sofia Rossi', 'Saffron Kitchens', 'sofia.rossi@saffronkitchens.example', 'Jordan', 'Customer', 'Omar Said', '2026-06-11', true, 'Two users are called Omar Said'],
   ['', 'Oasis Water', 'info@oasiswater.example', 'Egypt', 'Lead', 'Sara Haddad', null, false, 'Name to ask for'],
-  ['Youssef Nabil', 'Giza Plaza', 'youssef.nabil@gizaplaza.example', 'Egypt', 'Prospect', 'Omar Said', null, true, ''],
+  ['Youssef Nabil', 'Giza Plaza', 'youssef.nabil@gizaplaza.example', 'Egypt', 'Prospect', 'Karim Nasser', null, true, ''],
   ['Daniel Okafor', 'Falcon Air Cargo', 'daniel.okafor@falconair.example', 'Atlantis', 'Lead', 'Lina Khalil', null, false, ''],
   ['Nour El-Sayed', 'Zamalek Studio', 'nour.elsayed@zamalekstudio.example', 'Egypt', 'Customer', 'Mona', '2026-04-18', true, ''],
   ['Mariam Khoury', 'Bayt Interiors', 'mariam.khoury@baytinteriors.example', 'Jordan', 'Customer', 'Sara Haddad', '31/02/2026', true, 'Date as typed'],
-  ['Tomás García', 'Sphinx Security', 'tomas.garcia@sphinxsecurity.example', 'Egypt', 'Lead', 'Omar Said', null, 'maybe', ''],
+  ['Tomás García', 'Sphinx Security', 'tomas.garcia@sphinxsecurity.example', 'Egypt', 'Lead', 'Karim Nasser', null, 'maybe', ''],
   ['Aisha Bello', 'Indigo Print', 'aisha.bello@indigoprint.example', 'Saudi Arabia', 'Customer', 'Lina Khalil', '2026-03-07', false, ''],
-  ['Elena Petrova', 'Jasmine Florists', 'elena.petrova@jasmineflorists.example', 'Egypt', 'Lead', 'Mona Adel', null, true, ''],
+  ['Elena Petrova', 'Jasmine Florists', 'elena.petrova@jasmineflorists.example', 'Egypt', 'Lead', 'Sara Haddad', null, true, ''],
 ];
 const HEADERS = ['Full name', 'Company', 'E-mail', 'Country', 'Status', 'Owner', 'Last order', 'Newsletter', 'Notes'];
 
@@ -44,14 +45,14 @@ const HEADERS = ['Full name', 'Company', 'E-mail', 'Country', 'Status', 'Owner',
 const CSV_ROWS = [
   ['Salma Al-Otaibi', 'Desert Rose Hotels', 'salma.alotaibi@desertrose.example', 'Saudi Arabia', 'Customer', 'Lina Khalil', '22/09/2026', 'Yes'],
   ['سلمى العتيبي', 'فنادق وردة الصحراء', 'salma.ar@desertrose.example', 'Saudi Arabia', 'Lead', 'Lina Khalil', '', 'نعم'],
-  ['Jonas Weber', 'Maadi Labs', 'jonas.weber@maadilabs.example', 'Egypt', 'Lead', 'Omar Said', '', 'No'],
-  ['Chloé Martin', 'Tahrir Books', 'chloe.martin@tahrirbooks.example', 'Egypt', 'Customer', 'Mona Adel', '05/10/2026', 'Yes'],
+  ['Jonas Weber', 'Maadi Labs', 'jonas.weber@maadilabs.example', 'Egypt', 'Lead', 'Karim Nasser', '', 'No'],
+  ['Chloé Martin', 'Tahrir Books', 'chloe.martin@tahrirbooks.example', 'Egypt', 'Customer', 'Sara Haddad', '05/10/2026', 'Yes'],
   ['Ravi Sharma', 'Palm Court Dental', 'ravi.sharma@palmcourt.example', 'Jordan', 'Customer', 'Sara Haddad', '17/08/2026', 'No'],
   ['Inès Haddad', 'Olive Grove Farms', 'ines.haddad@olivegrove.example', 'Jordan', 'Inactive', 'Sara Haddad', '30/12/2025', 'No'],
-  ['Ahmed Saleh', 'Sahel Resorts', 'ahmed.saleh@sahelresorts.example', 'Egypt', 'Customr', 'Mona Adel', '', 'Yes'],
-  ['Anna Novak', 'Amira Clinics', 'anna.novak@amiraclinics.example', 'Egypte', 'Lead', 'Omar Said', '', 'No'],
+  ['Ahmed Saleh', 'Sahel Resorts', 'ahmed.saleh@sahelresorts.example', 'Egypt', 'Customr', 'Lina Khalil', '', 'Yes'],
+  ['Anna Novak', 'Amira Clinics', 'anna.novak@amiraclinics.example', 'Egypte', 'Lead', 'Karim Nasser', '', 'No'],
   ['Marco Bianchi', 'Nour Pharmacies', 'marco.bianchi@nourpharmacies.example', 'Egypt', 'Customer', 'Lina Khalil', '09/31/2026', 'Yes'],
-  ['Wei Chen', 'Cedar Logistics', 'wei.chen@cedarlogistics.example', 'Egypt', 'Lead', 'Mona Adel', '', 'sometimes'],
+  ['Wei Chen', 'Cedar Logistics', 'wei.chen@cedarlogistics.example', 'Egypt', 'Lead', 'Sara Haddad', '', 'sometimes'],
 ];
 const CSV_HEADERS = ['Name', 'Company', 'Email', 'Country', 'Status', 'Owner', 'Last order', 'Newsletter'];
 

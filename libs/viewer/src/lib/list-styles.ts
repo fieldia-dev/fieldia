@@ -80,6 +80,11 @@ export const LIST_STYLES = `
 .fd-list-every { font-weight: 600; }
 /* Export and the list's views at the bar's end, before its pager; how far a long task has got, before them. */
 .fd-list-export { margin-inline-start: auto; }
+/* Import beside Export, at the bar's end, before the pager. */
+.fd-list-import-button { margin-inline-start: auto; }
+.fd-list-import-button:not([hidden]) + .fd-list-export, .fd-list-progress:not(:empty) + .fd-list-import-button { margin-inline-start: 0; }
+.fd-list-import-button:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
+.fd-list-import-button svg { width: 16px; height: 16px; flex: none; }
 .fd-list-export:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
 .fd-list-export svg { width: 16px; height: 16px; flex: none; }
 .fd-list-export-what { text-transform: none; letter-spacing: 0; font-size: 12.5px; }

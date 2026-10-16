@@ -92,7 +92,7 @@ function yesAndNo(): { yes: string[]; no: string[] } {
 /** An encoding's name as people know it: "Windows-1256", "Shift_JIS". */
 const encodingName = (encoding: string) => ({ 'utf-8': 'UTF-8', 'utf-16le': 'UTF-16 LE', 'utf-16be': 'UTF-16 BE', shift_jis: 'Shift_JIS', gbk: 'GBK', big5: 'Big5', 'euc-kr': 'EUC-KR' })[encoding] ?? encoding.replace(/^windows/, 'Windows');
 
-/** A cell's words, as its first value shows it. */
+/** A cell's words, as a file to fix holds them: a day as written ("2026-09-14"), a number as JavaScript writes it. */
 const cellWords = (cell: FileCell) => (cell === null ? '' : typeof cell === 'object' ? cell.at.replace('T', ' ') : String(cell));
 
 /** The import, in its dialog: settled once it has ended — null when the person closed it before writing anything. */
@@ -161,8 +161,9 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   close.addEventListener('click', () => !writing && finish(null));
 
   /** The foot's buttons and words for a step. */
-  function steps(step: { back?: () => void; primary?: { words: string; act: () => void }; said?: string }) {
+  function steps(step: { back?: () => void; backWords?: string; primary?: { words: string; act: () => void }; said?: string }) {
     back.hidden = !step.back;
+    back.textContent = step.backWords ?? labels.back;
     back.onclick = step.back ?? null;
     primary.hidden = !step.primary;
     primary.textContent = step.primary?.words ?? '';
@@ -214,7 +215,8 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   function showPick() {
     turn++;
     body.replaceChildren(drop, problem);
-    steps({});
+    // Nothing chosen yet: Cancel, as × and Escape.
+    steps({ back: () => finish(null), backWords: labels.cancel });
     choose.focus();
   }
 
@@ -294,7 +296,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     const table = make(
       'table',
       { class: 'fd-import-columns' },
-      make('thead', {}, make('tr', {}, make('th', { scope: 'col' }, labels.importColumn), make('th', { scope: 'col' }, labels.importExample), make('th', { scope: 'col' }, labels.importField))),
+      make('thead', {}, make('tr', {}, make('th', { scope: 'col' }, labels.importColumn), make('th', { scope: 'col', class: 'fd-import-example' }, labels.importExample), make('th', { scope: 'col' }, labels.importField))),
       make(
         'tbody',
         {},
@@ -314,7 +316,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
               sayMatch(fill(labels.importMoved, { field: page.fields[field as string].label, column: header, other: now.headers[other] }));
             } else sayMatch();
           });
-          return make('tr', {}, make('th', { scope: 'row' }, make('bdi', {}, header)), make('td', { class: 'fd-import-example' }, make('bdi', {}, cellWords(first))), make('td', {}, select));
+          return make('tr', {}, make('th', { scope: 'row' }, make('bdi', {}, header)), make('td', { class: 'fd-import-example' }, make('bdi', {}, shownWords(first))), make('td', {}, select));
         })
       )
     );
@@ -470,6 +472,17 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     body.replaceChildren(...parts);
     steps({ back: () => showMatch(), ...(ready.length ? { primary: { words: plural(ready.length, labels.importStart, labels.importStartOne), act: () => void write(ready, refused) } } : {}) });
     (ready.length ? primary : back).focus();
+  }
+
+  /** A cell's first value as the page writes such a value: a day as its days are written, yes or no in words; a number as it is (a phone kept as one is no amount). */
+  function shownWords(cell: FileCell): string {
+    if (typeof cell === 'boolean') return cell ? labels.yes : labels.no;
+    if (cell !== null && typeof cell === 'object') {
+      const [day, time] = cell.at.split('T');
+      const written = displayValue({ type: 'date', label: '' } as LineField, day, {}, locale);
+      return time ? `${written} ${time.slice(0, 5)}` : written;
+    }
+    return cellWords(cell);
   }
 
   /** A value as the page writes it: yes or no in words. */

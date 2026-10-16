@@ -1083,13 +1083,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // — a workbook's zip opened with the browser's DecompressionStream and its XML read with no library, a CSV file's
 // encoding and separator guessed (import-file, unzip) — its columns matched (import-match), its rows read and checked
 // (import-check), written with Stop and Undo (import-write), its dialog (import-dialog) and its sheet (import-styles):
-// import 32.9 and 13.2, as measured 32.80 and 13.16. In the list part it would have added the same to every list's
-// page, 24.42 gzipped to some 37; on its own, a list draws its button alone (list 72.41 and 23.71 measured before,
-// 75.08 and 24.42 after: the button, the report's file to fix and Undo — list 75.1 and 24.5). The workbook and CSV
+// import 33.2 and 13.3, as measured 33.15 and 13.29. In the list part it would have added the same to every list's
+// page, 24.45 gzipped to some 37; on its own, a list draws its button alone (list 72.41 and 23.71 measured before,
+// 75.36 and 24.45 after: the button and its place in the bar, the report's file to fix and Undo — list 75.4 and 24.5). The workbook and CSV
 // writers for the file to fix are the list part's own, handed over, never copied. A block pasted on a table of lines
 // (lines-table) and the cells' readers moved there from @fieldia/grid (cell-paste), which the grid and Import load the
 // lines part for: lines 23.88 and 8.28 measured before, 30.83 and 10.64 after, to 30.9 and 10.7.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [75.1, 24.5], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [30.9, 10.7], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6], import: [32.9, 13.2] };
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [75.4, 24.5], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [30.9, 10.7], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6], import: [33.2, 13.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

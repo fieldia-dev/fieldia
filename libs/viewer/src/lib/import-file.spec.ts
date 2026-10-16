@@ -117,7 +117,7 @@ describe('an Excel workbook', () => {
     const sheet = await readFile(picked(bytes, 'contacts-to-import.xlsx'));
     expect(sheet).toMatchObject({ kind: 'xlsx', sheets: ['Contacts', 'Notes'], sheet: 0 });
     expect(sheet.headers).toEqual(['Full name', 'Company', 'E-mail', 'Country', 'Status', 'Owner', 'Last order', 'Newsletter', 'Notes']);
-    expect(sheet.rows[0]).toEqual(['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Mona Adel', { at: '2026-09-14' }, true, 'Orders every month']);
+    expect(sheet.rows[0]).toEqual(['Amira Hassan', 'Delta Foods', 'amira.hassan@deltafoods.example', 'Egypt', 'Customer', 'Sara Haddad', { at: '2026-09-14' }, true, 'Orders every month']);
     expect(sheet.rows[1].slice(0, 2)).toEqual(['Omar Farouk', 'Nile Traders']);
     // The blank row after the eighth contact is skipped; the rows keep their numbers in the sheet.
     expect(sheet.numbers.slice(7, 9)).toEqual([9, 11]);
