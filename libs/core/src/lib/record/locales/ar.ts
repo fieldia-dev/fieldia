@@ -15,6 +15,7 @@ export const ar: Messages = {
   decimalsTwo: '{label}: منزلتان عشريتان على الأكثر',
   decimalsMany: '{label}: {digits} منزلة عشرية على الأكثر',
   digits: '{label}: لا يزيد عدد الأرقام على {n}',
+  wholeDigits: '{label}: لا يزيد عدد الأرقام قبل الفاصلة العشرية على {n}',
   boolean: 'يجب أن يكون {label} نعم أو لا',
   dateFormat: 'صيغة التاريخ غير صحيحة (المتوقع YYYY-MM-DD)',
   dateInvalid: 'التاريخ غير صحيح (تحقق من الشهر واليوم)',

@@ -15,6 +15,7 @@ export const de: Messages = {
   decimalsTwo: '{label} hat höchstens {digits} Nachkommastellen',
   decimalsMany: '{label} hat höchstens {digits} Nachkommastellen',
   digits: '{label} hat höchstens {n} Ziffern',
+  wholeDigits: '{label} hat höchstens {n} Ziffern vor dem Komma',
   boolean: '{label} muss ja oder nein sein',
   dateFormat: 'Ungültiges Datumsformat (erwartet JJJJ-MM-TT)',
   dateInvalid: 'Ungültiges Datum (Monat und Tag prüfen)',

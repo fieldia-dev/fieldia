@@ -19,7 +19,12 @@ export function checkValue(
   required: boolean,
   messages: Messages = MESSAGES.en,
   /** The day it is, for a date's limits counted from today. The computer's own when left out. */
-  today?: string
+  today?: string,
+  /**
+   * The widget it is shown with, where that changes what its `digits` count: a per cent's are those of the per cent
+   * typed and shown (12.50 % of digits [5, 2] is the fraction 0.125), as its box counts them.
+   */
+  widget?: string
 ): string | undefined {
   const label = field.label || 'This field';
   const say = (key: keyof Messages, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
@@ -54,13 +59,16 @@ export function checkValue(
       if (field.min !== undefined && value < field.min) return say('min', { min: field.min });
       if (field.max !== undefined && value > field.max) return say('max', { max: field.max });
       const digits = field.type === 'integer' ? undefined : field.digits;
-      if (digits && placesOf(value) > digits[1]) return digits[1] === 0 ? say('integer') : say(decimalsKey(digits[1], messages.locale), { digits: digits[1] });
+      // Its digits count what is shown: a per cent's, the per cent.
+      const shown = widget === 'percentage' ? Math.round(value * 100 * 1e10) / 1e10 : value;
+      if (digits && placesOf(shown) > digits[1]) return digits[1] === 0 ? say('integer') : say(decimalsKey(digits[1], messages.locale), { digits: digits[1] });
       // Past what a number keeps exactly (15 digits, a safe whole number), or past the field's own digits[0]: a value
       // from outside, as a box never takes one. The whole part counts, and the places the field keeps.
-      const integerPart = Math.trunc(Math.abs(value));
+      const integerPart = Math.trunc(Math.abs(shown));
       const whole = integerPart === 0 ? 0 : integerPart < 1e21 ? String(integerPart).length : 22;
       if (whole > MOST_DIGITS || (field.type === 'integer' && !Number.isSafeInteger(value))) return say('digits', { n: MOST_DIGITS });
-      if (digits && whole > digits[0] - digits[1]) return say('digits', { n: digits[0] });
+      // Before the decimal mark, precision less scale: said as such, never "at most 10 digits" of a number of 10.
+      if (digits && whole > digits[0] - digits[1]) return digits[1] ? say('wholeDigits', { n: digits[0] - digits[1] }) : say('digits', { n: digits[0] });
       return undefined;
     }
     case 'boolean':

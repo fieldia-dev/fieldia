@@ -1377,10 +1377,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return ticks && state.values[name] !== true && nodeState(node.id).required ? messages.tick : undefined;
   }
 
+  /** The widget a field is shown with where it keeps its value its own way (a per cent): the first of its nodes'. */
+  const shownWidget = (shown: IndexedNode[]) => shown.map((node) => (node.source as FieldNode).widget).find((widget) => widget === 'percentage');
+
   /** A field node's error now: its field's own rules first, then its answer rules. */
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
-    return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today()) ?? ruleCheck(node).error;
+    return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today(), (node.source as FieldNode).widget) ?? ruleCheck(node).error;
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
@@ -1457,7 +1460,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
             if (kind && sub !== def.lineKinds?.text) continue;
             const cell = ruled[sub];
             if (cell?.invisible || (tables.has(node.id) && tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env, userRoles))) continue;
-            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true || cell?.required === true, messages, today());
+            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true || cell?.required === true, messages, today(), (node.source as FieldNode).cells?.[sub]?.widget);
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }
         }
@@ -1515,7 +1518,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (isEmpty(fieldDef(field), value)) return undefined;
       return (
         shown.map((node) => checkInput(page.fields[field], node.source as FieldNode, value, messages)).find(Boolean) ??
-        besidesRows(field, checkValue(checked(field), value, false, messages, today())) ??
+        besidesRows(field, checkValue(checked(field), value, false, messages, today(), shownWidget(shown))) ??
         shown.map((node) => ruleCheck(node).error).find(Boolean)
       );
     }
@@ -2512,7 +2515,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const own =
         shown.map(unticked).find(Boolean) ??
         shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
-        checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages, today());
+        checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages, today(), shownWidget(shown));
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
     },
 

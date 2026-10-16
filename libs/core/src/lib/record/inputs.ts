@@ -17,8 +17,10 @@ import type { Value } from './values';
  * answer is `required`'s to judge.
  */
 const FORMATS: Record<string, RegExp> = {
-  // Before its @, none of the marks an address can only have inside quotes: a link's "mailto:" is no part of one.
-  email: /^[^@\s()<>[\]:;\\,"]+@[^@\s]+\.[^@\s]+$/u,
+  // Before its @, none of the marks an address can only have inside quotes: a link's "mailto:" is no part of one. After
+  // it, a domain — none of them either: "ali@example.com;" as an address book copies it reaches no one — or an address
+  // in [ ].
+  email: /^[^@\s()<>[\]:;\\,"]+@(?:[^@\s()<>[\]:;\\,"]+\.[^@\s()<>[\]:;\\,"]+|\[[^@\s[\]]+\])$/u,
   phone: /^\+?[\p{Nd}\s.()-]+$/u,
   time: /^([01]\d|2[0-3]):[0-5]\d$/,
 };
