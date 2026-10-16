@@ -6,6 +6,8 @@ import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
 import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
+import type * as FilesModule from './files-part';
+import type { ShrinkOptions } from './shrink';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -20,6 +22,8 @@ export type DatePart = typeof DateModule;
 export type LinesPart = typeof LinesModule;
 /** The business part: a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax totals, payments. */
 export type BusinessPart = typeof BusinessModule;
+/** The files part: a file field, a picture field, files on their way to the store, photos made smaller, a signature's pad, a PDF under its file box. */
+export type FilesPart = typeof FilesModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -33,6 +37,15 @@ export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-pa
 export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
 /** Flectra's business widgets — a statusbar, priority stars, hours, a per cent, a distribution, tax totals, payments — loaded the first time a page shows one. */
 export const businessPart: Part<BusinessPart> = lazyPart('business', () => import('./business-part'));
+/** A file field, a picture field, a signature's pad and a PDF under its file box, loaded the first time a page shows one. */
+export const filesPart: Part<FilesPart> = lazyPart('files', () => import('./files-part'));
+
+/**
+ * A photo made smaller, as `ShrinkOptions` say, or the file itself when it is small already, cannot be read, or would
+ * not get smaller (shrink.ts): for an app's own code, as a picture field makes its photos smaller. Its code is the files
+ * part's, asked for first.
+ */
+export const shrinkPhoto = (file: File, options?: ShrinkOptions, doc?: Document): Promise<File> => filesPart.load().then((part) => part.shrinkPhoto(file, options, doc));
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

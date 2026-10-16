@@ -3,9 +3,12 @@ export * from './lib/styles';
 export * from './lib/labels';
 export * from './lib/relations';
 export * from './lib/lines';
-export * from './lib/files';
-export { goingItem, goingWords, type Going, type GoingItem } from './lib/files-going';
-export { shrinkPhoto, shrinkFor, shrinkable, SHRINK_DEFAULTS, type ShrinkOptions } from './lib/shrink';
+// File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
+// the first time a page shows one: `(await filesPart.load()).goingItem(…)`. Their types are here; their code is not. A
+// file shown as its dialog shows it (a sheet's attachment preview) is here, and so is shrinkPhoto, which asks for the part.
+export { fileShown } from './lib/file-shown';
+export type { Going, GoingItem } from './lib/files-going';
+export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
 export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
@@ -43,7 +46,9 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
 // totals, payments — come in the business part, loaded the first time a page shows one:
 // `(await businessPart.load()).statusbarWidget`. Their words in a cell (cellText, distributionWords) are here.
-export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type PartFactory } from './lib/widget-parts';
+// File, picture, signature and PDF fields come in the files part, loaded the first time a page shows one; `shrinkPhoto`
+// asks for it first.
+export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type PartFactory } from './lib/widget-parts';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

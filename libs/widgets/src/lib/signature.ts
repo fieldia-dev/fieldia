@@ -4,6 +4,7 @@ import { goingList } from './files-going';
 import { shrinkFor, shrinkPhoto } from './shrink';
 import { describeState, maker, setHidden, setText, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
+import { installFilesStyles } from './styles-files';
 
 /**
  * A signature on a file field (`binary.signature`): drawn on a pad with a
@@ -18,6 +19,8 @@ import type { WidgetFactory } from './widgets';
  * uploaded as a third way — checked as a file field checks one: a picture
  * (or the kinds the field takes), no larger than its `maxSize`. A file
  * refused keeps the signature there was, and says which and why.
+ *
+ * It comes in the files part (files-part.ts), with a file field's uploads.
  */
 
 /** The pad's own size, in the picture's pixels; it is drawn at whatever width its box has. */
@@ -33,6 +36,7 @@ const keyOf = (file: FileValue) => file.data ?? file.url ?? '';
 type Point = { x: number; y: number };
 
 export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
+  installFilesStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const options = node.options ?? {};

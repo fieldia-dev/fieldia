@@ -3,9 +3,11 @@ import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
+import { bytesOf, extension, kindOf, source } from './file-shown';
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { formBehind } from './handed';
+import { installFilesStyles } from './styles-files';
 
 /**
  * File and image fields. A chosen or dropped file is read into the value as
@@ -25,6 +27,9 @@ import { formBehind } from './handed';
  * `shrink`) — and shows on its way with a bar, × to cancel it and Retry once
  * it failed; the field then holds its link alone. Without it, a file larger
  * than a megabyte warns once in the console: it travels inside the record.
+ *
+ * They come in the files part (files-part.ts), loaded the first time a page
+ * shows one; the names of the files a value holds meanwhile.
  */
 
 type FileField = Extract<Field, { type: 'binary' | 'image' }>;
@@ -40,18 +45,7 @@ export const readFile = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const extension = (name: string) => (/\.(\w{1,5})$/.exec(name)?.[1] ?? '').toUpperCase();
-/** What a file is, for its icon and its preview: by its media type, else its extension. */
-function kindOf(file: FileValue): string {
-  const of = `${file.type} ${extension(file.name)}`.toLowerCase();
-  return /^image\//.test(of) ? 'image' : /pdf/.test(of) ? 'pdf' : /sheet|excel|csv|xlsx?$|ods$/.test(of) ? 'sheet' : /zip|rar|7z|tar|gz/.test(of) ? 'zip' : /word|opendocument|^text|docx?$|odt$|rtf$/.test(of) ? 'doc' : 'file';
-}
 const asText = (file: FileValue) => /^text\/|json|xml|csv/.test(file.type);
-/** Where a file's picture is: its data, or where it is stored. */
-const source = (file: FileValue) => (file.data ? `data:${file.type};base64,${file.data}` : (file.url ?? ''));
-const bytes = (data: string) => Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
-/** A file's bytes where it holds them: as its data, or in a `data:` link a store gave (the memory source's) — shown from a blob, as a browser shows a PDF. */
-const bytesOf = (file: FileValue) => (file.data ? bytes(file.data) : /^data:[^,]*;base64,/.test(file.url ?? '') ? bytes((file.url as string).slice((file.url as string).indexOf(',') + 1)) : null);
 /** A file held inside the record warns, once a form, from this size: it travels in every save. */
 export const INLINE_FILE_WARNING = 1024 * 1024;
 const warned = new WeakSet<object>();
@@ -101,6 +95,7 @@ function namedOnCard(make: Make, name: string) {
 
 function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
   return ({ form, name, field: def, node, id, document: doc, labels, locale = 'en', preferences }) => {
+    installFilesStyles(doc);
     const field = def as FileField;
     const words = wordsFor(labels, locale);
     const messages = MESSAGES[locale] ?? MESSAGES.en;
@@ -446,21 +441,3 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
 export const binaryWidget = fileWidget('binary');
 export const imageWidget = fileWidget('image');
 
-/**
- * A file as a file opened in its dialog shows it: a picture, or a PDF in the
- * browser's own viewer — what a sheet's attachment preview shows beside it.
- * Null for any other kind. `free` lets go of the address made for a file
- * held as data.
- */
-export function fileShown(doc: Document, file: FileValue): { element: HTMLElement; url: string; free(): void } | null {
-  const kind = kindOf(file);
-  if (kind !== 'image' && kind !== 'pdf') return null;
-  const data = bytesOf(file);
-  const url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : source(file);
-  const element = doc.createElement(kind === 'image' ? 'img' : 'iframe');
-  // A PDF fills the width, without the viewer's page list beside it: there is room for the page alone.
-  element.setAttribute('src', kind === 'pdf' ? `${url}#view=FitH&navpanes=0` : url);
-  element.setAttribute(kind === 'image' ? 'alt' : 'title', file.name);
-  element.setAttribute('data-kind', kind);
-  return { element, url, free: () => void (url.startsWith('blob:') && URL.revokeObjectURL(url)) };
-}

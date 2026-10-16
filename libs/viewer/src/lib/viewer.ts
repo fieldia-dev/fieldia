@@ -2087,6 +2087,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     drawn = settleParts(awaited).then(() => {
       if (gone) return;
       drawPage();
+      // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
+      placeStatus();
       root.removeAttribute('aria-busy');
       render(form.getState());
       // A record that opened meanwhile: its focused field takes the focus now, as it would have then.
@@ -2098,14 +2100,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
   root.append(content, done, announcer);
-  // The status leaves its place beside Save when the page wants it in a corner or across the top.
-  if (options.saveStatus === 'toast') {
-    status.classList.add('fd-toast');
-    root.append(status);
-  } else if (options.saveStatus === 'bar') {
-    status.classList.add('fd-status-bar');
-    content.prepend(status);
+  // The status leaves its place beside Save when the page wants it in a corner or across the top: now, and again once a
+  // page that waited for its parts is drawn, its Save having put the status beside itself.
+  function placeStatus() {
+    if (options.saveStatus === 'toast') {
+      status.classList.add('fd-toast');
+      root.append(status);
+    } else if (options.saveStatus === 'bar') {
+      status.classList.add('fd-status-bar');
+      content.prepend(status);
+    }
   }
+  placeStatus();
 
   // A value too long for its box ends in an ellipsis; the pointer over it shows all of it.
   // Set as the pointer comes, when the box's width is known, and never over a title of the box's own.

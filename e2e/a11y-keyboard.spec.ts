@@ -151,6 +151,8 @@ test.describe('dialogs keep focus, close on Escape and give it back', () => {
     });
     // A business rule refusing the save: an alert dialog, closed by Escape, focus back on Save.
     await page.goto('/plain/?page=customer&skin=underline');
+    // The demo is there once its page is drawn: its photo's part in first.
+    await expect(page.locator('.fd-form')).toBeVisible();
     await page.evaluate(() => {
       const source = (window as any).fieldiaDemo.dataSource;
       source.save = async () => {
@@ -193,6 +195,8 @@ const timesSaid = (page: Page, words: string) => page.evaluate((w) => (window as
 test.describe('live regions say a move or an error once', () => {
   test('a refused save, in the viewer', async ({ page }) => {
     await page.goto('/plain/?page=customer&skin=underline');
+    // The demo is there once its page is drawn: its photo's part in first.
+    await expect(page.locator('.fd-form')).toBeVisible();
     await page.evaluate(() => {
       const source = (window as any).fieldiaDemo.dataSource;
       source.save = async () => {

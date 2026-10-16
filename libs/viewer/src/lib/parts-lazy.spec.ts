@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, datePart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -48,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -178,6 +178,76 @@ describe('the parts a page draws from', () => {
     const sheets = [...document.head.querySelectorAll('style')].map((style) => style.id);
     expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
     expect(sheets.indexOf('fieldia-business-styles')).toBeLessThan(sheets.indexOf('fieldia-styles-looks'));
+  });
+
+  it('the files part for a file, a picture, a signature or a PDF, wherever its box is drawn: a field, a table’s lines, a record’s avatar — never a property', () => {
+    const fields = {
+      photo: { type: 'image', label: 'Photo' },
+      docs: { type: 'binary', label: 'Documents', multiple: true },
+      sign: { type: 'binary', label: 'Signed by' },
+      name: { type: 'char', label: 'Name' },
+      lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, photo: { type: 'image', label: 'Photo' } } },
+      plain: { type: 'one2many', label: 'Plain lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' } } },
+      props: { type: 'properties', label: 'Properties', definitions: [{ name: 'note', label: 'Note', type: 'char' }] },
+    };
+    const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
+    expect(partsFor(page(sections(field('photo')), fields))).toEqual([filesPart]);
+    expect(partsFor(page(sections(field('docs')), fields))).toEqual([filesPart]);
+    expect(partsFor(page(sections(field('sign', { widget: 'signature' })), fields))).toEqual([filesPart]);
+    expect(partsFor(page(sections(field('docs', { widget: 'pdf' })), fields))).toEqual([filesPart]);
+    // A table's lines draw each cell with its column's widget: a photo in a line's cell.
+    expect(partsFor(page(sections(field('lines')), fields))).toEqual([filesPart]);
+    expect(partsFor(page(sections(field('plain')), fields))).toEqual([]);
+    // A record's avatar beside its title: a picture field the sheet names, rather than places.
+    expect(partsFor(page({ type: 'sheet', id: 'r', title: { field: 'name', avatarField: 'photo' }, children: [] }, fields))).toEqual([filesPart]);
+    expect(partsFor(page({ type: 'sheet', id: 'r', title: { field: 'name' }, children: [] }, fields))).toEqual([]);
+    // A property holds no file: its rows ask for a date's part alone.
+    expect(partsFor(page(sections(field('props')), fields))).toEqual([datePart]);
+    expect(partsFor(page(sections(field('name')), fields))).toEqual([]);
+    // The app's own file box: none.
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(page(sections(field('photo'), field('lines')), fields), { image: own })).toEqual([]);
+  });
+
+  it('a page with a photo: nothing of it drawn until the files part has come, then its file box, the photo and the record’s files in it', async () => {
+    const fields = { photo: { type: 'image', label: 'Photo' }, docs: { type: 'binary', label: 'Documents', multiple: true } };
+    const photo = { name: 'Face.png', type: 'image/png', size: 3, url: 'https://files.example/face.png' };
+    const docs = [{ name: 'Lease.pdf', type: 'application/pdf', size: 4, url: 'https://files.example/lease.pdf' }];
+    const dataSource = createMemoryDataSource({ records: { x: { 1: { photo, docs } } } });
+    expect(filesPart.loaded).toBeUndefined();
+    const { host, handle } = mount(page(sections({ type: 'field', id: 'f-photo', field: 'photo' }, { type: 'field', id: 'f-docs', field: 'docs' }), fields), { dataSource, recordId: 1 });
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('[data-node]')).toBeNull();
+    await handle.drawn;
+    await handle.form.settled();
+    expect(filesPart.loaded).toBeDefined();
+    expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+    expect(host.querySelector('[data-fd-plain]')).toBeNull();
+    expect(host.querySelector('[data-node="f-photo"] .fd-file.fd-file-image img.fd-file-thumb')?.getAttribute('src')).toBe('https://files.example/face.png');
+    expect(host.querySelector('[data-node="f-docs"] .fd-file .fd-file-name')?.getAttribute('title')).toBe('Lease.pdf');
+    expect(document.getElementById('fieldia-files-styles')).not.toBeNull();
+  });
+
+  it('a sheet drawn once its part came keeps its save’s status where the page put it: across the top, or in a corner', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountViewer: fresh } = await import('./viewer');
+      const { filesPart: freshFiles } = await import('@fieldia/widgets');
+      const sheet = page({ type: 'sheet', id: 'r', children: [{ type: 'field', id: 'f-photo', field: 'photo' }] }, { photo: { type: 'image', label: 'Photo' } });
+      expect(freshFiles.loaded).toBeUndefined();
+      for (const saveStatus of ['bar', 'toast'] as const) {
+        const host = document.createElement('div');
+        document.body.append(host);
+        const handle = fresh(host, { page: sheet, saveStatus });
+        handles.push(handle);
+        await handle.drawn;
+        const status = host.querySelector('.fd-status-box') as HTMLElement;
+        expect(host.querySelector('.fd-file')).not.toBeNull();
+        // Never beside Save in the sheet's header, where the page drawn after it would have put it.
+        expect(status.closest('.fd-actions')).toBeNull();
+        if (saveStatus === 'bar') expect(host.querySelector('.fd-content')?.firstElementChild).toBe(status);
+        else expect(status.parentElement).toBe(handle.element);
+      }
+    });
   });
 
   it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {

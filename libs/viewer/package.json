@@ -25,6 +25,7 @@
     "./bundle/fieldia.de.js": "./bundle/fieldia.de.js",
     "./bundle/fieldia.fr.js": "./bundle/fieldia.fr.js",
     "./bundle/fieldia.filters.js": "./bundle/fieldia.filters.js",
+    "./bundle/fieldia.files.js": "./bundle/fieldia.files.js",
     "./bundle/fieldia.head.js": "./bundle/fieldia.head.js",
     "./bundle/fieldia.list.js": "./bundle/fieldia.list.js",
     "./bundle/fieldia.path.js": "./bundle/fieldia.path.js",
