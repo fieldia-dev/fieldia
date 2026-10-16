@@ -284,7 +284,7 @@ in turn (`save` with `partial: true` and the version it was listed at).
 (`{ name, data }`, data a Blob, bytes or text, or `{ name, url }`), with
 `{ message }` when it is handed over another way, or with `false` to let the
 browser write it. A page offers Edit with its list's `bulkEdit` (`true`, or the
-fields), and hides Export with `"export": false`; `bulkEditFields(page, list)`
+fields), and Export with `"export": true` — each off unless asked; `bulkEditFields(page, list)`
 says which fields Edit offers. `createMemoryDataSource` gives `allIds` and
 `writeMany` (each record refused as its save would be), and no `exportRecords`.
 See [many records at once](https://fieldia.dev/data/#many).

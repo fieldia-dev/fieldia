@@ -29,7 +29,7 @@ const contacts: Page = {
     news: { type: 'boolean', label: 'Newsletter' },
     orders: { type: 'integer', label: 'Orders' },
   },
-  layout: { type: 'list', id: 'list', columns: ['name', 'state', 'since', 'seen', 'credit', 'news', 'orders'], sort: [{ field: 'name' }], pageSize: 2 },
+  layout: { type: 'list', id: 'list', columns: ['name', 'state', 'since', 'seen', 'credit', 'news', 'orders'], sort: [{ field: 'name' }], pageSize: 2, export: true },
 };
 const people = () =>
   createMemoryDataSource({
@@ -272,9 +272,13 @@ describe('a list’s export', () => {
     expect(csv.split('\r\n')).toHaveLength(5);
   });
 
-  it('is hidden by the page (export: false), and where the source can neither list nor export', async () => {
-    const host = await mount({}, { ...contacts, layout: { ...contacts.layout, export: false } as Page['layout'] });
+  it('is off unless the page asks for it (export: true), as Edit is, and where the source can neither list nor export', async () => {
+    const { export: _, ...plain } = contacts.layout as Page['layout'] & { export?: boolean };
+    const host = await mount({}, { ...contacts, layout: plain as Page['layout'] });
     expect(exportButton(host).closest('.fd-list-export')?.hasAttribute('hidden')).toBe(true);
+    handle?.destroy();
+    const off = await mount({}, { ...contacts, layout: { ...contacts.layout, export: false } as Page['layout'] });
+    expect(exportButton(off).closest('.fd-list-export')?.hasAttribute('hidden')).toBe(true);
   });
 
   it('opens its menu from the keys, goes through it with the arrows, and gives the focus back on Escape', async () => {

@@ -38,6 +38,7 @@
       { "id": "newsletter", "label": "On the newsletter", "filter": [{ "field": "newsletter", "op": "=", "value": true }] }
     ],
     "groupBy": ["state", "country_id", "owner_id"],
+    "export": true,
     "bulkEdit": ["state", "owner_id", "newsletter", "country_id"],
     "actions": [{ "type": "button", "id": "send-newsletter", "label": "Send newsletter", "action": "send_newsletter", "confirm": "Send the newsletter to the chosen contacts?" }]
   }

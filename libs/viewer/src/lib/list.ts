@@ -920,7 +920,8 @@ export function listView(context: ListContext): ListView {
   };
 
   // Export, in the list's bar: what goes — the rows chosen, or every one that matches — and as which file.
-  const exportOn = node.export !== false && !!(context.dataSource?.list || context.dataSource?.exportRecords);
+  // Asked for by the page (`export: true`), as Edit is: an app that asks for neither shows no new button.
+  const exportOn = node.export === true && !!(context.dataSource?.list || context.dataSource?.exportRecords);
   const exportId = context.uid(`${node.id}-export`);
   // A tray with an arrow into it, unless the app's icons have their own "download".
   const exportIcon = drawIcon(doc, 'download', { download: '<path d="M12 4v10M7.5 9.5L12 14l4.5-4.5"/><path d="M4 15v4.5h16V15"/>', ...context.icons });

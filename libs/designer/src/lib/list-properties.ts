@@ -588,10 +588,10 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ sortable: sorts.checked })) sorts.checked = pageList().sortable !== false;
   });
   const sortsRow = el('div', { class: 'fd-prop', 'data-part': 'sortable' }, el('label', { class: 'fd-q-required' }, sorts, el('span', {}, w.sortable)), el('p', { class: 'fd-properties-hint' }, w.sortableHint));
-  // Export, on unless taken away; Edit of many rows at once, off unless asked.
+  // Export and Edit of many rows at once, each off unless asked.
   const exports = el('input', { type: 'checkbox', 'aria-label': w.exportRows }) as HTMLInputElement;
   exports.addEventListener('change', () => {
-    if (!designer.setListOptions({ export: exports.checked })) exports.checked = pageList().export !== false;
+    if (!designer.setListOptions({ export: exports.checked })) exports.checked = pageList().export === true;
   });
   const exportRow = el('div', { class: 'fd-prop', 'data-part': 'export' }, el('label', { class: 'fd-q-required' }, exports, el('span', {}, w.exportRows)), el('p', { class: 'fd-properties-hint' }, w.exportHint));
   const bulk = el('input', { type: 'checkbox', 'aria-label': w.bulkEdit }) as HTMLInputElement;
@@ -683,7 +683,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
 
       choose.checked = list.choose !== false;
       sorts.checked = list.sortable !== false;
-      exports.checked = list.export !== false;
+      exports.checked = list.export === true;
       bulk.checked = !!list.bulkEdit;
       searchWay.value = list.search ?? 'bar';
       // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.

@@ -34,7 +34,8 @@ const offered = (list: Record<string, unknown>) => {
 };
 
 describe('a list’s Export and Edit, as the page says them', () => {
-  it('takes export: false, and Edit as true or a list of fields', () => {
+  it('takes Export as true (off unless asked) or false, and Edit as true or a list of fields', () => {
+    expect(problems(page({ export: true }))).toEqual([]);
     expect(problems(page({ export: false }))).toEqual([]);
     expect(problems(page({ bulkEdit: true }))).toEqual([]);
     expect(problems(page({ bulkEdit: ['state', 'owner_id', 'since'] }))).toEqual([]);

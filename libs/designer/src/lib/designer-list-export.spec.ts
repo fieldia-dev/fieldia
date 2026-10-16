@@ -26,13 +26,13 @@ const contacts = () => {
 };
 
 describe('a list’s Export and Edit, by the designer', () => {
-  it('takes Export away and puts it back, leaving the page as it was', () => {
+  it('offers Export when asked and takes it away, leaving the page as it was: off unless asked, as Edit is', () => {
     const designer = contacts();
     expect(list(designer).export).toBeUndefined();
-    expect(designer.setListOptions({ export: false })).toBe(true);
-    expect(list(designer).export).toBe(false);
-    expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(designer.setListOptions({ export: true })).toBe(true);
+    expect(list(designer).export).toBe(true);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ export: false })).toBe(true);
     expect(list(designer).export).toBeUndefined();
   });
 
@@ -79,14 +79,14 @@ describe('a list’s Export and Edit, by the designer', () => {
     };
     const exports = control('Export to Excel and CSV');
     const bulk = control('Edit many rows at once');
-    expect([exports.checked, bulk.checked]).toEqual([true, false]);
+    expect([exports.checked, bulk.checked]).toEqual([false, false]);
     // In order: choose, sort, export, edit.
     expect([...panel.element.querySelectorAll('[data-part]')].map((part) => part.getAttribute('data-part')).slice(0, 4)).toEqual(['choose', 'sortable', 'export', 'bulk-edit']);
     toggle(exports);
-    expect(list(designer).export).toBe(false);
+    expect(list(designer).export).toBe(true);
     toggle(bulk);
     expect(list(designer).bulkEdit).toBe(true);
-    expect([exports.checked, bulk.checked]).toEqual([false, true]);
+    expect([exports.checked, bulk.checked]).toEqual([true, true]);
     toggle(bulk);
     expect(list(designer).bulkEdit).toBeUndefined();
     // Refused, a box goes back to what the page says: the box to choose a row, while Edit needs it.

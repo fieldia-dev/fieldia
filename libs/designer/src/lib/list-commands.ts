@@ -34,7 +34,7 @@ export interface ListOptionsPatch {
   parentField?: string | null;
   /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
   calendar?: ListCalendar | null;
-  /** Export of the rows chosen, or every one the search finds, as Excel or CSV; false takes it away. */
+  /** Export of the rows chosen, or every one the search finds, as Excel or CSV: true offers it, false takes it away. */
   export?: boolean;
   /** Edit of many rows at once: true for the columns one value can set (keeping the fields named, if it names them), the fields it offers, or false for none. */
   bulkEdit?: boolean | string[];
@@ -206,8 +206,8 @@ export function listCommands(context: {
         }
         if (options.sortable === true) delete list.sortable;
         else if (options.sortable === false) list.sortable = false;
-        if (options.export === true) delete list.export;
-        else if (options.export === false) list.export = false;
+        if (options.export === true) list.export = true;
+        else if (options.export === false) delete list.export;
         if (options.bulkEdit === false) delete list.bulkEdit;
         else if (options.bulkEdit === true) {
           if (!Array.isArray(list.bulkEdit)) list.bulkEdit = true;

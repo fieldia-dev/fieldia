@@ -1095,7 +1095,8 @@ export interface ListNode {
   /**
    * Export, in the list's bar: the rows ticked — or, none ticked, every
    * record the search finds — as an Excel workbook or a CSV file, the
-   * columns as the list shows them. On unless false.
+   * columns as the list shows them. Off unless true, as Edit is: an app
+   * that asks for neither shows no new button.
    */
   export?: boolean;
   /**
