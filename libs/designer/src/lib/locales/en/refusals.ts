@@ -193,4 +193,5 @@ export const refusals = {
   notFilterable: (label: string) => `The filter bar cannot list the values of ${label}`,
   chooseHasButtons: 'The list has buttons for the rows chosen: take them away before the box to choose a row',
   notBulkSettable: (label: string) => `Edit cannot set ${label} in many rows at once: it is read-only, worked out, or not a value one word, number, date, choice or link can give`,
+  notImportable: (label: string) => `Import cannot fill ${label} from a file: it is read-only, worked out, or not a value a cell’s words, number, date, choice or link can give`,
 };

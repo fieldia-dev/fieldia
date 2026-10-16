@@ -139,6 +139,8 @@ export function shownFields(page: Page): Set<string> {
     for (const name of [...Object.values(root.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : [])), ...(root.filterFields ?? []), ...(root.parentField ? [root.parentField] : [])]) shown.add(name);
     // And in the fields its Edit offers.
     if (Array.isArray(root.bulkEdit)) for (const name of root.bulkEdit) shown.add(name);
+    // And in the fields its Import offers.
+    if (Array.isArray(root.import)) for (const name of root.import) shown.add(name);
   }
   return shown;
 }

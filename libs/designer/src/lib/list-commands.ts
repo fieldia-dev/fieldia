@@ -1,4 +1,4 @@
-import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCell, type ListMap, type ListNode, type Page } from '@fieldia/core';
+import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCell, type ListMap, type ListNode, type Page } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -38,6 +38,8 @@ export interface ListOptionsPatch {
   export?: boolean;
   /** Edit of many rows at once: true for the columns one value can set (keeping the fields named, if it names them), the fields it offers, or false for none. */
   bulkEdit?: boolean | string[];
+  /** Import of a file's rows as new records: true for every field a cell can fill (keeping the fields named, if it names them), the fields it offers, or false for none. */
+  import?: boolean | string[];
 }
 
 export interface ListActionPatch {
@@ -218,6 +220,17 @@ export function listCommands(context: {
           }
           if (options.bulkEdit.length) list.bulkEdit = [...new Set(options.bulkEdit)];
           else delete list.bulkEdit;
+        }
+        if (options.import === false) delete list.import;
+        else if (options.import === true) {
+          if (!Array.isArray(list.import)) list.import = true;
+        } else if (options.import !== undefined) {
+          for (const name of options.import) {
+            const def = fieldFor(draft, name);
+            if (!importable(def)) throw new Refusal((w) => w.refusals.notImportable(def.label));
+          }
+          if (options.import.length) list.import = [...new Set(options.import)];
+          else delete list.import;
         }
         if (options.search === 'fields') list.search = 'fields';
         else if (options.search === 'bar') {
