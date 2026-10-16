@@ -6,10 +6,10 @@ import { expect, test } from './fixtures';
 /**
  * The work item's parts loaded the first time a page uses them (parts.ts in
  * @fieldia/widgets): a work item's head with its window, its text editors, its
- * path pickers, a list's filter bar, the Discussion and the History.
+ * path pickers, a list screen and its filter bar, the Discussion and the History.
  *
  * In the backlog demo, built as an app's bundler builds it (each part a chunk
- * of its own): the backlog asks for its filter bar's chunk alone; the bug's
+ * of its own): the backlog asks for its list's and its filter bar's chunks alone; the bug's
  * popup asks for its head's, its text's, its pickers', its own lists', its
  * Discussion's as it first opens and its History's as that tab first does — and opens drawn whole, so nothing in it moves
  * as they arrive: no layout shift, every part where it first stood, and the
@@ -28,6 +28,7 @@ const MARKS: Record<string, string> = {
   path: 'fd-path-callout',
   choice: 'fd-own-words',
   filters: 'fd-filter-option',
+  list: 'fd-favourite-list',
   discussion: 'fd-comment-card',
   history: 'fd-history-graph',
 };
@@ -62,15 +63,15 @@ function watch(page: Page) {
 test.describe('the backlog demo, its parts as chunks', () => {
   test.use({ viewport: { width: 1920, height: 983 } });
 
-  test('the backlog asks for its filter bar alone; the popup for its own parts as it opens, drawn whole: nothing moves, the focus kept', async ({ page }) => {
+  test('the backlog asks for its list and filter bar alone; the popup for its own parts as it opens, drawn whole: nothing moves, the focus kept', async ({ page }) => {
     const problems = watch(page);
     const loaded = chunks(page);
     await page.goto('/backlog/');
     await expect(page.locator('.fd-list-row:visible').first()).toBeVisible();
     await expect(page.locator('.fd-filter-bar')).toBeVisible();
     await page.waitForLoadState('networkidle');
-    // The filter bar's chunk, and no part of the work item's popup.
-    expect(loaded.parts()).toEqual(['filters']);
+    // The list's chunk and the filter bar's, and no part of the work item's popup.
+    expect(loaded.parts()).toEqual(['filters', 'list']);
     // Every layout shift from now on, and where each part of the popup stands the moment it is first in the page.
     await page.evaluate(() => {
       const w = window as unknown as {
@@ -116,7 +117,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
     await expect(dialog.getByText('BUG 4127')).toBeVisible();
     // Its own parts asked for as it opened: its head, text, pickers, own lists and Discussion — its History once its tab is.
     await page.waitForLoadState('networkidle');
-    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'path', 'text']);
+    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'list', 'path', 'text']);
     // Drawn whole the moment it was in the page: each part there at once, and where it first stood once all have come.
     await expect(dialog.locator('.fd-comment-card, .fd-discussion').first()).toBeVisible();
     await page.waitForTimeout(300);
@@ -142,7 +143,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
     const historyTab = dialog.getByRole('tab', { name: /History/ });
     await historyTab.click();
     await expect(dialog.locator('.fd-history')).toBeVisible();
-    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'history', 'path', 'text']);
+    await expect.poll(() => loaded.parts()).toEqual(['choice', 'discussion', 'filters', 'head', 'history', 'list', 'path', 'text']);
     await expect(historyTab).toBeFocused();
     expect(await page.evaluate(() => (window as unknown as { shifts: number[] }).shifts.reduce((sum, value) => sum + value, 0))).toBe(0);
     // Closed, the focus is back on the bug's row.
