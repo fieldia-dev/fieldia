@@ -11,6 +11,7 @@ export {
   MoneyLookSchema,
   ShrinkSchema,
   PERIODS,
+  TimeZoneSchema,
 } from './lib/format/field';
 export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
@@ -18,4 +19,5 @@ export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { validatePage } from './lib/format/validate';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
+export { SlotsOptionsSchema } from './lib/format/slots-options';
 export { pageJsonSchema } from './lib/format/json-schema';

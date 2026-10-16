@@ -349,6 +349,9 @@
     },
     "on": {
       "$ref": "#/$defs/PageEvents"
+    },
+    "timeZone": {
+      "$ref": "#/$defs/TimeZone"
     }
   },
   "required": [
@@ -868,6 +871,9 @@
                 "minimum": 1,
                 "maximum": 7
               }
+            },
+            "timeZone": {
+              "$ref": "#/$defs/TimeZone"
             }
           },
           "required": [
@@ -1695,6 +1701,17 @@
       },
       "additionalProperties": false
     },
+    "TimeZone": {
+      "type": "string",
+      "pattern": "^[A-Za-z][\\w+-]*(\\/[\\w+-]+)*$",
+      "description": "A time zone by its IANA name: its dates and times are shown and typed on that zone's clock.",
+      "examples": [
+        "Africa/Cairo",
+        "Europe/Berlin",
+        "America/New_York",
+        "UTC"
+      ]
+    },
     "Option": {
       "type": "object",
       "properties": {
@@ -2327,6 +2344,9 @@
                 "minimum": 1,
                 "maximum": 7
               }
+            },
+            "timeZone": {
+              "$ref": "#/$defs/TimeZone"
             }
           },
           "required": [
@@ -2973,6 +2993,9 @@
                 "minimum": 1,
                 "maximum": 7
               }
+            },
+            "timeZone": {
+              "$ref": "#/$defs/TimeZone"
             }
           },
           "required": [
@@ -4157,6 +4180,9 @@
                 "minimum": 1,
                 "maximum": 7
               }
+            },
+            "timeZone": {
+              "$ref": "#/$defs/TimeZone"
             }
           },
           "required": [

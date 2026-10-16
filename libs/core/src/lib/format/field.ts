@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { JsonValueSchema } from './json';
+import { isTimeZone } from '../record/zones';
 
 /**
  * Field definitions: what a page knows about each value it shows or collects.
@@ -231,7 +232,20 @@ const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict(
 const dayLimit = z.string().regex(/^(\d{4}-\d{2}-\d{2}|today([+-]\d{1,4})?)$/).optional();
 const days = { min: dayLimit, max: dayLimit, days: z.array(z.int().min(1).max(7)).min(1).optional() };
 const DateField = z.object({ type: z.literal('date'), ...common, ...days }).strict();
-const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days }).strict();
+/**
+ * A time zone by its IANA name: "Africa/Cairo", "Europe/Berlin", "UTC". A page's (`timeZone`) is the zone its dates
+ * and times are in; a date and time field may name its own — a flight's departure, in its airport's zone.
+ */
+export const TimeZoneSchema = z
+  .string()
+  .regex(/^[A-Za-z][\w+-]*(\/[\w+-]+)*$/, { error: 'a time zone is named as the IANA names it: "Africa/Cairo", "Europe/Berlin", "UTC"', abort: true })
+  .refine(isTimeZone, { message: 'not a time zone the IANA names: "Africa/Cairo", "Europe/Berlin", "UTC"' })
+  .meta({ id: 'TimeZone', description: 'A time zone by its IANA name: its dates and times are shown and typed on that zone\'s clock.', examples: ['Africa/Cairo', 'Europe/Berlin', 'America/New_York', 'UTC'] });
+/**
+ * A date and time, kept as an instant. With `timeZone`, it is shown and typed on that zone's clock, and its limits
+ * kept by the day it falls on there; else on the page's zone's (`timeZone`), else on the browser's.
+ */
+const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days, timeZone: TimeZoneSchema.optional() }).strict();
 /**
  * Choices the app gives rather than the page: its list by name, loaded through
  * the data source's `options` when the form shows the field, and again when a

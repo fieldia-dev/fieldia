@@ -55,7 +55,7 @@ export function checkRules(
   for (const compiled of rules) {
     const level = compiled.rule.level ?? 'error';
     if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
-    const broken = brokenAsk(compiled, field, value as Value, at.now) ?? brokenAcross(compiled, at);
+    const broken = brokenAsk(compiled, field, value as Value, at.now, at.env.today?.()) ?? brokenAcross(compiled, at);
     if (broken) found[level] = compiled.rule.message ?? fill(at.messages[broken.say], { label, ...broken.values });
   }
   return found;
@@ -64,7 +64,7 @@ export function checkRules(
 type Broken = { say: keyof Messages; values?: Record<string, string | number> };
 
 /** The first thing a rule asks that the answer does not keep, in the order a rule lists them. */
-function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, now: Date): Broken | undefined {
+function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, now: Date, today?: string): Broken | undefined {
   const text = typeof value === 'string' ? value : null;
   if (text !== null && rule.minLength !== undefined && text.length < rule.minLength) return { say: 'minLength', values: { min: rule.minLength } };
   if (text !== null && rule.maxLength !== undefined && text.length > rule.maxLength) return { say: 'maxLength', values: { max: rule.maxLength } };
@@ -83,7 +83,7 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
     if (twice !== null) return { say: 'distinct', values: { column: field.fields[rule.distinct]?.label ?? rule.distinct, value: twice } };
   }
   if (text !== null && rule.date !== undefined) {
-    const side = whenIs(field, text, now);
+    const side = whenIs(field, text, now, today);
     if (rule.date === 'past' && side >= 0) return { say: 'datePast' };
     if (rule.date === 'future' && side <= 0) return { say: 'dateFuture' };
   }
@@ -123,11 +123,10 @@ function brokenAcross({ holds }: CompiledRule, at: RuleContext): Broken | undefi
 
 /**
  * Whether an answer is before (-1) or after (1) now, or is now (0): a day
- * against today, a date and time against the clock itself. A date and time
+ * against today (the form's: in its page's time zone), a date and time against the clock itself. A date and time
  * that cannot be read is neither (NaN): the field's own rules name it.
  */
-function whenIs(field: Field, text: string, now: Date): number {
+function whenIs(field: Field, text: string, now: Date, today = localDay(now)): number {
   if (field.type === 'datetime') return Math.sign(Date.parse(text) - now.getTime());
-  const today = localDay(now);
   return text < today ? -1 : text > today ? 1 : 0;
 }

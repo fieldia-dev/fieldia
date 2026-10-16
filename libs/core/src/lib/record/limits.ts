@@ -1,5 +1,6 @@
 import type { Field, LineField } from '../format/field';
 import { localDay } from '../expression/functions';
+import { dayIn } from './zones';
 import { fill, type Messages } from './messages';
 
 /**
@@ -7,7 +8,7 @@ import { fill, type Messages } from './messages';
  * ("2026-03-02") or one counted from the day the form is opened ("today",
  * "today+30", "today-7"), and the days of the week it may fall on (`days`,
  * ISO numbers: 1 Monday … 7 Sunday). A date and time keeps them by the day
- * it falls on, where the person is.
+ * it falls on in its time zone — its own or its page's — else where the person is.
  */
 
 /** The day a limit names, today being `today`: the day itself, or today with days added or taken away. */
@@ -25,7 +26,8 @@ const written = (options: Intl.DateTimeFormatOptions, messages: Messages, at: nu
 /** What a day breaks of its field's limits, or undefined: before its earliest, after its latest, on a day of the week it may not fall on. */
 export function checkDay(field: Field | LineField, value: string, today: string | undefined, messages: Messages): string | undefined {
   if (field.type !== 'date' && field.type !== 'datetime') return undefined;
-  const day = field.type === 'date' ? value : localDay(new Date(value));
+  // A date and time by the day it falls on in its zone (the page's, written into it), else where the person is.
+  const day = field.type === 'date' ? value : dayIn(Date.parse(value), field.timeZone);
   const say = (key: 'before' | 'after' | 'weekday', limit: string) => fill(messages[key], { label: field.label, min: limit, max: limit, days: limit });
   const words = (limit: string) => written({ day: 'numeric', month: 'long', year: 'numeric' }, messages, Date.parse(limit));
   const min = field.min && dayOf(field.min, today);
