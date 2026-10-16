@@ -4,6 +4,7 @@ import { FieldsSchema, TimeZoneSchema, type Fields } from './field';
 import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
+import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -144,6 +145,14 @@ export interface Page {
    * (`timeZone`). Left out, the browser's own zone, as before.
    */
   timeZone?: string;
+  /**
+   * Possible duplicates, on a record's page: the fields records like this one are found by — the same phone, email or
+   * id, a name close enough — asked of the data source's `duplicates` while a person types in them (`on: "type"`, the
+   * default; and as a saved record is opened) and again as the record is saved, or only then (`on: "save"`). Each match
+   * is said under the field it matched on, with Open it, "It's someone new" and, where the source has `merge`, Merge.
+   * Never in the way of a save. Without the source's `duplicates`, nothing is asked and nothing shows.
+   */
+  duplicates?: PageDuplicates;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -213,6 +222,7 @@ export const PageSchema = z
       .optional(),
     phone: PagePhoneSchema.optional(),
     timeZone: TimeZoneSchema.optional(),
+    duplicates: PageDuplicatesSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

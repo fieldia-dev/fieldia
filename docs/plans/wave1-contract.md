@@ -518,3 +518,56 @@ a file landing late counted. The one line no test notices is a saved form's
 own `close` handing to the record's: the form placed in a record is made with
 the record's host, and its check is the record's already (row 8), so either
 way it closes through the same check.
+
+## 11. Possible duplicates and Merge (Wave 3)
+
+Two more members, each optional as everything here: without `duplicates` nothing
+is asked and nothing shows; without `merge` no Merge is offered.
+
+```ts
+duplicates?(request: DuplicatesRequest): Promise<DuplicatesResult>;
+merge?(request: MergeRequest): Promise<MergeResult | void>;
+
+interface DuplicatesRequest {
+  model: string;
+  recordId: RecordId | null;   // the record typed — never its own duplicate; null while new
+  values: Values;              // every value of the form, a phone as E.164 where the page reads phones so
+  fields: string[];            // those the page names (`duplicates.fields`) that hold a value now
+}
+interface DuplicateMatch { id: RecordId; name: string; why: string[]; score?: number }   // why: the fields it matched on
+interface DuplicatesResult { matches: DuplicateMatch[] }
+interface MergeRequest {
+  model: string;
+  keepId: RecordId;            // the record kept
+  mergeIds: RecordId[];        // merged into it, then gone
+  values: Values;              // the value picked for each field the records held apart
+  fields: Fields;              // the page's fields, as a save gets them
+}
+interface MergeResult { message?: string }   // the source's own words, said once merged
+```
+
+In plain words:
+
+- The page asks for them (`"duplicates": { "fields": [...], "on": "type" | "save" }`,
+  page format 0.3's shape grown by one setting). `on: "type"` (the default) asks a
+  moment after typing stops in a field named, as a saved record opens, and as the
+  record is saved; `"save"` only as it is saved. The form's
+  `findDuplicates()` asks with the fields named that hold a value — none, and
+  nothing is asked — and drops a match naming the record itself.
+- **An answer is for the record it was asked for** (`form.recordShown()`), and for
+  the values as they were: typing on in a field named leaves it unheard. Nothing is
+  in the way of a save: a duplicate is said, and Save saves — a source that refuses
+  duplicates refuses the save itself (`saveRefused`).
+- **Merge** saves what is typed first (as Duplicate does), reads the record found
+  (`load`, through `form.readRecord`), and shows the two side by side, a value
+  picked for each field they hold apart. `merge` keeps `keepId` with `values` and
+  takes `mergeIds` away; moving what was theirs — messages, activities, links — is
+  the source's work, and the page says it will happen. Refused with
+  `saveRefused({ kind: 'rule', message })`, nothing changes and the screen says why.
+- The memory source: `duplicates` answers through its `duplicates` option —
+  `alikeRecords()` (full `@fieldia/core`, outside the one-tag script, as
+  `scheduleSlots` is) finds the same value as people write them apart, or a name
+  close enough — else none; `merge` writes the values picked, takes the others
+  away, and moves every link to them (by id and name) to the one kept, refusing as
+  a backend would where the person may not change the kept one or take one away.
+  Tests: `libs/core/src/lib/record/duplicates.spec.ts`.

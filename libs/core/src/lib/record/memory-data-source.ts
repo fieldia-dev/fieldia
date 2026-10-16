@@ -37,6 +37,9 @@ import type {
   WriteManyResult,
   SlotsRequest,
   SlotsResult,
+  DuplicatesRequest,
+  DuplicatesResult,
+  MergeRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -111,6 +114,12 @@ export interface MemoryDataSourceOptions {
    * schedule would.
    */
   slots?: (request: SlotsRequest, records: Readonly<Record<string, Record<string, Values>>>) => SlotsResult | Promise<SlotsResult>;
+  /**
+   * How `duplicates` answers: the records like the one typed, from those the source keeps — `alikeRecords()` finds the
+   * same phone, email or id as people write them apart and a name close enough. Without it, `duplicates` finds none.
+   * `merge` keeps one record with the values picked and takes the others away, links to them moved to it, either way.
+   */
+  duplicates?: (request: DuplicatesRequest, records: Readonly<Record<string, Record<string, Values>>>) => DuplicatesResult | Promise<DuplicatesResult>;
 }
 
 /**
@@ -392,6 +401,43 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return options.slots(request, records);
     },
 
+    async duplicates(request: DuplicatesRequest): Promise<DuplicatesResult> {
+      calls.push({ method: 'duplicates', request });
+      await pause();
+      return options.duplicates ? options.duplicates(request, records) : { matches: [] };
+    },
+
+    async merge(request: MergeRequest): Promise<void> {
+      calls.push({ method: 'merge', request });
+      await pause();
+      const rows = table(request.model);
+      const kept = rows[String(request.keepId)];
+      if (!kept) throw new Error(`No ${request.model} record with id ${request.keepId}`);
+      allowed(permissions(request.model, request.keepId), 'edit');
+      for (const id of request.mergeIds) {
+        if (!rows[String(id)]) throw new Error(`No ${request.model} record with id ${id}`);
+        allowed(permissions(request.model, id), 'delete');
+      }
+      // Each link to a record merged is a link to the one kept: a link known by its id and its name, which no other model's record of that id shares.
+      const gone = new Map(request.mergeIds.map((id) => [String(id), labelOf(request.model, id)]));
+      Object.assign(kept, structuredCopy(request.values));
+      for (const id of request.mergeIds) delete rows[String(id)];
+      if (options.versions) moveOn(request.model, request.keepId, me);
+      const to: RelatedRecord = { id: request.keepId, label: labelOf(request.model, request.keepId) };
+      const moved = (value: unknown): unknown => {
+        if (Array.isArray(value)) {
+          const out = value.map(moved);
+          // Links to both the kept and a merged record are one link.
+          return out.filter((item, at) => !isLink(item) || out.findIndex((other) => isLink(other) && String(other.id) === String(item.id)) === at);
+        }
+        if (isLink(value)) return gone.get(String(value.id)) === value.label ? { ...value, ...to } : value;
+        if (value && typeof value === 'object' && 'values' in value && 'key' in value) return { ...value, values: movedIn((value as Line).values) };
+        return value;
+      };
+      const movedIn = (values: Values): Values => Object.fromEntries(Object.entries(values).map(([field, value]) => [field, moved(value) as Value]));
+      for (const each of Object.values(records)) for (const [key, values] of Object.entries(each)) each[key] = movedIn(values);
+    },
+
     async totals(request: TotalsRequest): Promise<TotalsResult> {
       calls.push({ method: 'totals', request });
       await pause();
@@ -520,6 +566,9 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     },
   };
 }
+
+/** A link: a record's id and its name. */
+const isLink = (value: unknown): value is RelatedRecord => !!value && typeof value === 'object' && !Array.isArray(value) && 'id' in value && 'label' in value && !('values' in value);
 
 /** Words as a search finds them: folded (foldForSearch), and a path's separators — \\ or /, with spaces round them or not — as one. */
 const findable = (text: string) => foldForSearch(text).replace(/\s*[\\/]\s*/g, '\\');

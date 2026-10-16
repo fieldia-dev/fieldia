@@ -96,6 +96,68 @@ export interface DataSource {
    * does without this (a small export, say).
    */
   exportRecords?(request: ExportRequest): Promise<ExportedFile | { message: string } | false>;
+  /**
+   * Records like the one typed, for a page's possible duplicates (`duplicates`): asked a moment after a person stops
+   * typing in a field it names, as a saved record is opened, and as a record is saved — with the fields it names that
+   * hold a value. Answer with the records that have the same phone, email or id, or a name close enough, each with
+   * the fields it matched on; never the record itself. Without it, nothing is asked and nothing shows.
+   */
+  duplicates?(request: DuplicatesRequest): Promise<DuplicatesResult>;
+  /**
+   * Merge records into one, as a person chose on a possible duplicate's Merge: `keepId` kept, holding the values
+   * picked for each field, and `mergeIds` gone. Moving what was theirs — messages, activities, the records that link
+   * to them — to the one kept is the source's work; the page says it will happen. Refuse with `saveRefused` (a `rule`,
+   * with why) and nothing changes. Without it, possible duplicates offer no Merge.
+   */
+  merge?(request: MergeRequest): Promise<MergeResult | void>;
+}
+
+/** Records like the one typed: what `duplicates` is asked. */
+export interface DuplicatesRequest {
+  model: string;
+  /** The record typed, never its own duplicate; null while it is new. */
+  recordId: RecordId | null;
+  /** Every value of the form, as typed: a phone kept as E.164 where the page reads phones the world over. */
+  values: Values;
+  /** The fields to compare it by, by name: those the page names (`duplicates.fields`) that hold a value now. */
+  fields: string[];
+}
+
+/** A record like the one typed. */
+export interface DuplicateMatch {
+  id: RecordId;
+  /** Its name, as people know it: "Nile Traders". */
+  name: string;
+  /**
+   * What it matched on: the names of the fields asked that it holds the same (`phone`, `email`), or a name close to
+   * the one typed (the name's field). Each is said under that field's box; words of the source's own ("the same
+   * address") are said as they are.
+   */
+  why: string[];
+  /** How alike, from 0 to 1, where the source tells: the likest first. */
+  score?: number;
+}
+
+export interface DuplicatesResult {
+  matches: DuplicateMatch[];
+}
+
+/** Records merged into one: what `merge` is asked. */
+export interface MergeRequest {
+  model: string;
+  /** The record kept. */
+  keepId: RecordId;
+  /** The records merged into it, then gone. */
+  mergeIds: RecordId[];
+  /** The kept record's values, as picked on the merge's screen for each field the records held apart. */
+  values: Values;
+  /** The page's fields, so the source knows each link's model, as a save does. */
+  fields: Fields;
+}
+
+/** What a merge may tell: words of the source's own about it, said once it is done ("4 messages moved"). */
+export interface MergeResult {
+  message?: string;
 }
 
 /** The same value written in a field of each record: a list's bulk edit. */

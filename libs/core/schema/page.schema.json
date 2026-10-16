@@ -359,6 +359,9 @@
     },
     "timeZone": {
       "$ref": "#/$defs/TimeZone"
+    },
+    "duplicates": {
+      "$ref": "#/$defs/PageDuplicates"
     }
   },
   "required": [
@@ -9381,6 +9384,30 @@
           ]
         }
       },
+      "additionalProperties": false
+    },
+    "PageDuplicates": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "on": {
+          "type": "string",
+          "enum": [
+            "type",
+            "save"
+          ]
+        }
+      },
+      "required": [
+        "fields"
+      ],
       "additionalProperties": false
     }
   }
