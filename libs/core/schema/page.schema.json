@@ -349,6 +349,9 @@
     },
     "on": {
       "$ref": "#/$defs/PageEvents"
+    },
+    "phone": {
+      "$ref": "#/$defs/PagePhone"
     }
   },
   "required": [
@@ -9224,6 +9227,23 @@
               "$ref": "#/$defs/ActionStep"
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PagePhone": {
+      "type": "object",
+      "properties": {
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "shown": {
+          "type": "string",
+          "enum": [
+            "international",
+            "national"
+          ]
         }
       },
       "additionalProperties": false
