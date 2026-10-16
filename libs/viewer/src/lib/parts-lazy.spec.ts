@@ -147,18 +147,19 @@ describe('the parts a page draws from', () => {
       expect(partsFor(page(sections(field(name, { widget })), fields))).toEqual([businessPart]);
     }
     // A table's lines draw each cell with its column's widget: hours in a column.
-    expect(partsFor(page(sections(field('lines', { cells: { hours: { widget: 'duration' } } })), fields))).toEqual([businessPart]);
+    // A table's own part first (the lines part), then its cells'.
+    expect(partsFor(page(sections(field('lines', { cells: { hours: { widget: 'duration' } } })), fields))).toEqual([linesPart, businessPart]);
     // A sheet's statusbar is drawn as a field's with the statusbar widget.
     const sheet = (more: Record<string, unknown> = {}) => page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state' }, children: [], ...more }, { ...fields, name: { type: 'char', label: 'Name' } });
     expect(partsFor(sheet())).toEqual([businessPart]);
     expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart]);
     // None: the same fields plainly, a state's dot (the main script's), a sheet with no statusbar, the app's own statusbar,
     // a headed sheet (its state is its head's).
-    expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([]);
+    expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([linesPart]);
     expect(partsFor(sheet({ statusbar: undefined }))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([]);
-    expect(partsFor(BUG)).toEqual([headPart]);
+    expect(partsFor(BUG)).toEqual([headPart, quietPart]);
   });
 
   it('a sheet with a statusbar: nothing of it drawn until the business part has come, then its statusbar, the record’s state current', async () => {
@@ -197,17 +198,17 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections(field('sign', { widget: 'signature' })), fields))).toEqual([filesPart]);
     expect(partsFor(page(sections(field('docs', { widget: 'pdf' })), fields))).toEqual([filesPart]);
     // A table's lines draw each cell with its column's widget: a photo in a line's cell.
-    expect(partsFor(page(sections(field('lines')), fields))).toEqual([filesPart]);
-    expect(partsFor(page(sections(field('plain')), fields))).toEqual([]);
+    expect(partsFor(page(sections(field('lines')), fields))).toEqual([linesPart, filesPart]);
+    expect(partsFor(page(sections(field('plain')), fields))).toEqual([linesPart]);
     // A record's avatar beside its title: a picture field the sheet names, rather than places.
     expect(partsFor(page({ type: 'sheet', id: 'r', title: { field: 'name', avatarField: 'photo' }, children: [] }, fields))).toEqual([filesPart]);
     expect(partsFor(page({ type: 'sheet', id: 'r', title: { field: 'name' }, children: [] }, fields))).toEqual([]);
-    // A property holds no file: its rows ask for a date's part alone.
-    expect(partsFor(page(sections(field('props')), fields))).toEqual([datePart]);
+    // A property holds no file: a properties field asks for its own part (the survey kinds') and a date's.
+    expect(partsFor(page(sections(field('props')), fields))).toEqual([surveyPart, datePart]);
     expect(partsFor(page(sections(field('name')), fields))).toEqual([]);
     // The app's own file box: none.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
-    expect(partsFor(page(sections(field('photo'), field('lines')), fields), { image: own })).toEqual([]);
+    expect(partsFor(page(sections(field('photo'), field('lines')), fields), { image: own })).toEqual([linesPart]);
   });
 
   it('a page with a photo: nothing of it drawn until the files part has come, then its file box, the photo and the record’s files in it', async () => {
@@ -275,10 +276,10 @@ describe('the parts a page draws from', () => {
       field('lines', { cells: { done: { widget: 'progressbar' } } }),
       field('lines', { cells: { tag: { widget: 'color' } } }),
     ])
-      expect(partsFor(page(sections(shown), fields))).toEqual([surveyPart]);
+      expect(partsFor(page(sections(shown), fields))).toEqual(shown.field === 'lines' ? [linesPart, surveyPart] : [surveyPart]);
     expect(partsFor(page(sections(field('extra')), fields))).toEqual([surveyPart, datePart]);
     // Their neighbours in the main script, and a page of them all asking once.
-    expect(partsFor(page(sections(field('order'), field('desk'), field('days'), field('days', { widget: 'rating' }), field('tag'), field('home'), field('lines')), fields))).toEqual([]);
+    expect(partsFor(page(sections(field('order'), field('desk'), field('days'), field('days', { widget: 'rating' }), field('tag'), field('home'), field('lines')), fields))).toEqual([linesPart]);
     expect(partsFor(page(sections(field('order', { widget: 'ranking' }), field('rooms'), field('home', { widget: 'address' })), fields))).toEqual([surveyPart]);
     // The app's own widget for the kind: none.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
