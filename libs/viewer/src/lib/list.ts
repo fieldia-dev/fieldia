@@ -18,7 +18,7 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { displayValue, drawIcon, moneyReads, phonePart, phoneSettings, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -193,7 +193,15 @@ export function listView(context: ListContext): ListView {
   // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent);
   // the fields the cells' icons come from, and each row's parent.
   const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : [])])];
-  const show = (name: string, values: Record<string, Value>) => displayValue(page.fields[name] as LineField, values[name], values, locale);
+  /** A phone column's numbers as people read them, where its page or its cell says so (by the phone part, which the page waited for). */
+  const phones = new Map(node.columns.map((name) => [name, cellOf(name)?.widget === 'phone' && page.fields[name]?.type === 'char' ? phoneSettings(page, cellOf(name)?.options) : null]));
+  const show = (name: string, values: Record<string, Value>) => {
+    const phone = phones.get(name);
+    const value = values[name];
+    const part = phonePart.loaded;
+    if (phone && part && typeof value === 'string') return part.shownPhone(value, phone.shown, phone.country);
+    return displayValue(page.fields[name] as LineField, value, values, locale);
+  };
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
   /** A column of a given width, its words cut with "…" past it: in characters of its words, or in pixels for the whole column. */

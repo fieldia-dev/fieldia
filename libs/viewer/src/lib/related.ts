@@ -13,7 +13,7 @@ export function nameFieldOf(page: Page): string | null {
 
 
 /** A form made of fields, for values edited in a dialog (a line, for one): laid out as asked (a line's own form), else every field in two columns. */
-function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[]): Page {
+function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone']): Page {
   const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
   return {
     fieldia: '0.1',
@@ -21,6 +21,8 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
     title,
     data: { kind: 'record', model: 'values' },
     fields: shown,
+    // A line's phone numbers read as the record's page reads its own.
+    ...(phone ? { phone } : {}),
     layout: {
       type: 'sections',
       id: 'values',
@@ -117,7 +119,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,
-        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout),
+        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout, options.page.phone),
         ...(request.parent ? { parent: request.parent } : {}),
         dataSource: lookupsOf(options.dataSource),
         values: request.values,
