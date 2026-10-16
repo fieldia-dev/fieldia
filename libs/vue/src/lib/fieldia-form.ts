@@ -146,6 +146,8 @@ export const FieldiaForm = defineComponent({
     saveStatus: { type: String as PropType<ViewerOptions['saveStatus']>, default: undefined },
     readonly: { type: Boolean, default: false },
     editSwitch: { type: Boolean, default: false },
+    /** The browser's Back, Reload or a closed tab ask first while the person's work is at risk (`warnOnLeave`). */
+    warnOnLeave: { type: Boolean, default: false },
     translate: { type: Function as PropType<ViewerOptions['translate']>, default: undefined },
     /**
      * A button's app action, or a `call` step: `@action="…"` as before, and what
@@ -279,6 +281,7 @@ export const FieldiaForm = defineComponent({
         saveStatus: props.saveStatus,
         readonly: props.readonly,
         editSwitch: props.editSwitch,
+        warnOnLeave: props.warnOnLeave,
         translate: props.translate,
         onAction: (request) => props.onAction?.(request),
         onError: (error, where) => props.onError?.(error, where),
