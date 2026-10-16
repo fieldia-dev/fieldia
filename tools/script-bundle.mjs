@@ -827,7 +827,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
 // File and picture fields with their list, thumbnails, cards and dialog, files on their way, photos made smaller, a
 // signature's pad and a PDF under its file box, with their sheet, cut out of the main script (files, files-going,
-// shrink, signature, pdf, styles-files: 30.9, 11.3, as measured 30.88 and 11.29).
+// shrink, signature, pdf, styles-files: 30.9, 11.3, as measured 30.82 and 11.28).
 const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], files: [30.9, 11.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
