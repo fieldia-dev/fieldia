@@ -146,7 +146,8 @@ const yours = tab('you', viewer ? WORDS.omar : WORDS.you, viewer ? WORDS.omarWho
 const tabs = el('div', { class: 'ss-tabs' }, yours.box);
 app.append(bar, tabs);
 // Sara's tab has her leads round this one, with the pager over it.
-const handle: ViewerHandle = mountViewer(yours.place, { ...shared, dataSource, records: [1, 2] });
+// The browser's Back or Reload asks too while her work is at risk (`warnOnLeave`).
+const handle: ViewerHandle = mountViewer(yours.place, { ...shared, dataSource, records: [1, 2], warnOnLeave: true });
 
 let monaHandle: ViewerHandle | null = null;
 if (!viewer) {

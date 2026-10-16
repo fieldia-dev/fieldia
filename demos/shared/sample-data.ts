@@ -186,6 +186,7 @@ export function optionsFromQuery(params: URLSearchParams): {
   saveStatus?: 'inline' | 'toast' | 'bar';
   readonly?: boolean;
   editSwitch?: boolean;
+  warnOnLeave?: boolean;
   translate?: (text: string) => string;
   user?: FormUser;
 } {
@@ -198,6 +199,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
     ...(params.get('readonly') === '1' ? { readonly: true } : {}),
     ...(params.get('editSwitch') === '1' ? { editSwitch: true } : {}),
+    // The browser's Back or Reload asks before a change not saved goes, as an app with real users wants; `warnOnLeave=0` turns it off.
+    ...(params.get('warnOnLeave') === '0' ? {} : { warnOnLeave: true }),
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),

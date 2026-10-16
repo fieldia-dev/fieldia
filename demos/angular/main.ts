@@ -147,6 +147,7 @@ class NoteComponent implements OnInit {
     [saveStatus]="options.saveStatus ?? 'inline'"
     [readonly]="options.readonly ?? false"
     [editSwitch]="options.editSwitch ?? false"
+    [warnOnLeave]="options.warnOnLeave ?? false"
     [translator]="options.translate"
     [user]="options.user"
     [records]="options.records"
