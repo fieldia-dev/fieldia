@@ -193,10 +193,10 @@
     dots.forEach(function (d, i) { d.setAttribute('aria-current', i === step ? 'step' : 'false'); });
   }
 
-  // ---- the stage fits its column: drawn at 900px, scaled down on a narrower screen ----
+  // ---- the stage fits its column: drawn at 900px (a phone's at 440, story.css), scaled down to the room it has ----
   function fit() {
     var room = stage.clientWidth;
-    stage.style.setProperty('--fit', String(Math.min(1, room / 900)));
+    stage.style.setProperty('--fit', String(Math.min(1, room / (screen.offsetWidth || 900))));
     requestAnimationFrame(placeRule);
   }
 
