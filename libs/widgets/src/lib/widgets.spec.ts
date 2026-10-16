@@ -94,10 +94,13 @@ describe('text widgets', () => {
 describe('money', () => {
   const cur = { cur: { type: 'selection', label: 'Currency', options: [{ value: 'EGP', label: 'EGP' }, { value: 'USD', label: 'USD' }] } as Field };
 
-  it('puts the currency before the amount, or after it when asked', () => {
+  it('puts the currency where the language writes it, as every cell and total does; after it where the field’s look says', () => {
     const before = setup({ type: 'monetary', currency: 'EGP' });
     expect([...before.el.children].map((c) => c.tagName)).toEqual(['SPAN', 'INPUT']);
-    const after = setup({ type: 'monetary', currency: 'EGP' }, { options: { symbol: 'after' } });
+    // A box's own `symbol` moved it in this box alone ("E£ 64,656.00 … 73,069.44 E£"): it no longer does.
+    const asked = setup({ type: 'monetary', currency: 'EGP' }, { options: { symbol: 'after' } });
+    expect([...asked.el.children].map((c) => c.tagName)).toEqual(['SPAN', 'INPUT']);
+    const after = setup({ type: 'monetary', currency: 'EGP', money: { at: 'after' } });
     expect([...after.el.children].map((c) => c.tagName)).toEqual(['INPUT', 'SPAN']);
     expect(after.el.classList.contains('fd-currency-after')).toBe(true);
   });

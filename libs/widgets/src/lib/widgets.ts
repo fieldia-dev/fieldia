@@ -395,8 +395,7 @@ const numberWidget: WidgetFactory = (context) => {
   input.inputMode = numberKeyboard(limits());
   if (node.placeholder) input.placeholder = node.placeholder;
 
-  // Money shows its currency beside the amount (options.symbol "after" puts it
-  // after), or with options.pickCurrency the currency field's own widget, to change it.
+  // Money shows its currency beside the amount, or with options.pickCurrency the currency field's own widget, to change it.
   const options = node.options ?? {};
   const currencyField = field.type === 'monetary' ? field.currencyField : undefined;
   const currencyDef = currencyField ? form.page.fields[currencyField] : undefined;
@@ -406,9 +405,11 @@ const numberWidget: WidgetFactory = (context) => {
       : null;
   if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
   if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
-  // Inside the box: the currency where the page's language writes it, unless the page says before or after (here, or in the field's money look); a number's unit (options.prefix, options.suffix).
+  // Inside the box: the currency where the page's language writes it for that currency — as every total, cell and value
+  // of the page writes it, so the sign never moves between them — unless the field's money look says before or after,
+  // everywhere it is written; a number's unit (options.prefix, options.suffix).
   const look = field.type === 'monetary' ? field.money : undefined;
-  const after = options['symbol'] ? options['symbol'] === 'after' : look?.at ? look.at === 'after' : field.type === 'monetary' && currencySymbol(field.currency ?? 'USD', locale).after;
+  const after = look?.at ? look.at === 'after' : field.type === 'monetary' && currencySymbol(currencyNow && /^[A-Z]{3}$/.test(currencyNow) ? currencyNow : (field.currency ?? 'USD'), locale).after;
   const unit = (text: string, n: number) => make(document, 'span', { class: `fd-unit${field.type === 'monetary' ? ' fd-currency' : ''}`, id: `${id}-unit${n}` }, text);
   const currency = field.type === 'monetary' && !picker ? unit('', 0) : null;
   const [prefix, suffix] = ['prefix', 'suffix'].map((key, n) => (typeof options[key] === 'string' && options[key] ? unit(options[key] as string, n + 1) : null));
