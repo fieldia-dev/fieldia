@@ -550,7 +550,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
-const BUDGET_KB = 629.8;
+// A table of lines and a many2many's table of records loaded on first use (0.23): the table with its cells, grips, moves,
+// sections, totals and ticks (lines-table, 12.6 of code), the records' table (links-table, 2.8) and their own rules — the
+// grips and drags, columns sized to their kind, a line's tone and bold, sections and notes, cards on a phone (6.2 of
+// CSS, minified) — out of this script, into fieldia.lines.js. This script keeps what a line is edited through, which a
+// grid and cards draw with too (lines.ts: the form a cell sees, its unread text and its uploads as its line's, a
+// column's total, a line's dialog: 2.4), the rules a grid's lines and a distribution's table share with a table's (the
+// table, its heads and cells, ×, a line's buttons, the totals, the add buttons, the bar for lines chosen), the lines as
+// plain words for a table drawn before its part came (lines-plain, 1.0), and the registry reading the widgets that
+// import it back as a field is drawn — 20.1 less (629.78 measured before, 609.68 after), to 609.7.
+const BUDGET_KB = 609.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -650,7 +659,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.3;
+// A table of lines and a many2many's table of records loaded on first use, in fieldia.lines.js (7.9 gzipped), what a
+// line is edited through kept for the grid and the cards, and the lines as plain words before their part came (listed
+// with the raw budget above): 197.23 measured before, 191.76 after — 5.5 less, to 191.8.
+const GZIP_BUDGET_KB = 191.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -814,7 +826,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
 // save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// A table of lines and a many2many's table of records with their own rules (0.23), cut out of the main script
+// (lines-table, links-table, styles-lines: 23.0, 8.0, as measured 22.92 and 7.92).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], lines: [23.0, 8.0] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -823,9 +837,10 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  lines: ['linesWidget', 'linksTableWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', lines: 'linesPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -895,7 +910,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const host = doc.getElementById('app');
   const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
   // A page of plain parts: drawn at once, nothing asked for.
-  const plain = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  const plain = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
@@ -919,7 +934,17 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await signup.drawn;
   if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
+  // An order with a table of its items: the lines part, its sheet before the page's own looks, the page drawn once it
+  // came — nothing of it before.
+  const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || order.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a table of lines drew before its lines part came');
+  await order.drawn;
+  if (loaded() !== 'choice, date, filters, head, lines, path, text' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
+  // Where its rules stood among Fieldia's: right after the main sheet, before every other part's.
+  const linesSheet = doc.getElementById('fieldia-lines-styles');
+  if (linesSheet?.previousElementSibling?.id !== 'fieldia-styles' || !linesSheet.nextElementSibling?.hasAttribute('data-fd-rank')) throw new Error('in a page, the lines part\'s sheet is not right after Fieldia\'s own, before the other parts\'');
+  order.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, a form's date box, and an order's table of lines, each as first used");
 }

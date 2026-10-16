@@ -20,7 +20,7 @@ import { guard, leftWords, numberFits, numberKeyboard, numberRules, refusalHint,
 import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
-import { linesWidget } from './lines';
+import { plainLinesWidget, plainLinksWidget } from './lines-plain';
 import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
@@ -45,12 +45,11 @@ import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
-import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
-import { choicePart, datePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import { choicePart, datePart, linesPart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
 import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
@@ -719,6 +718,12 @@ const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateB
 /** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
 const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
+/**
+ * A one2many as a table of its lines (lines-table.ts), in the lines part: its lines as plain words meanwhile, read
+ * only, the value kept (lines-plain.ts). What its cells edit a line through stays here (lines.ts).
+ */
+export const linesWidget: PartFactory = partFactory(linesPart, (part) => part.linesWidget, plainLinesWidget);
+
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
   const span = make(document, 'span', { id, class: 'fd-pending', 'data-fd-pending': field.type });
@@ -753,6 +758,17 @@ export function summary(value: Value | undefined, field: Field): string {
   }
 }
 
+/**
+ * A widget the registry reads as a field is drawn, never as this module starts. The widgets that draw with this module
+ * — a bar's box, cards' fields and a property's value through `createWidget`, a label's words through `summary` —
+ * import it back; an app's bundler that splits its code into chunks may start them after this one (esbuild orders a
+ * chunk's modules by how near each is to an entry point, and a new part moves them), when they would not be there yet.
+ */
+const later =
+  (factory: () => WidgetFactory): WidgetFactory =>
+  (context) =>
+    factory()(context);
+
 export const builtInWidgets: Record<string, WidgetFactory> = {
   char: textWidget('text'),
   'char.email': textWidget('email'),
@@ -769,15 +785,15 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'integer.scale': pointsWidget('scale'),
   'integer.slider': sliderWidget,
   'float.slider': sliderWidget,
-  'integer.progressbar': progressbarWidget,
-  'integer.label': labelWidget,
-  'float.label': labelWidget,
-  'monetary.label': labelWidget,
-  'float.progressbar': progressbarWidget,
+  'integer.progressbar': later(() => progressbarWidget),
+  'integer.label': later(() => labelWidget),
+  'float.label': later(() => labelWidget),
+  'monetary.label': later(() => labelWidget),
+  'float.progressbar': later(() => progressbarWidget),
   // Hours as HH:MM (Flectra's float_time), a fraction as a per cent (its percentage).
   'float.duration': durationWidget,
   'float.percentage': percentageWidget,
-  'monetary.progressbar': progressbarWidget,
+  'monetary.progressbar': later(() => progressbarWidget),
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),
   'boolean.tick': checkboxWidget('tick'),
@@ -825,19 +841,20 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
-  'many2many.table': linksTableWidget,
+  // A table of the records it links to, in the lines part: their names as plain words meanwhile.
+  'many2many.table': partFactory(linesPart, (part) => part.linksTableWidget, plainLinksWidget),
   // The links box comes with the text part, whose menus and words it shares; the tags meanwhile.
   'many2many.links': partFactory(textPart, (part) => part.linksWidget, (context) => tagsWidget(context)),
   reference: referenceWidget,
   one2many: linesWidget,
-  'one2many.cards': cardsWidget,
+  'one2many.cards': later(() => cardsWidget),
   binary: binaryWidget,
   'binary.signature': signatureWidget,
   image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
   'json.address': addressWidget,
-  properties: propertiesWidget,
+  properties: later(() => propertiesWidget),
   matrix: matrixWidget,
   // A value as a pill in its tone: Flectra's widget="badge".
   'char.badge': badgeWidget,

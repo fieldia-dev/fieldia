@@ -2,6 +2,7 @@ import type { Field, LineField, RelatedRecord, Values } from '@fieldia/core';
 import { displayValue } from './display';
 import { fillIn, maker, setAttr } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
+import { installLinesStyles } from './styles-lines';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -12,8 +13,13 @@ import type { WidgetFactory } from './widgets';
  * record away, never deleting it; ↗ opens a record's own page, when the app
  * gives one for the model. The node's `options.addLabel` and
  * `options.emptyLabel` word its button and its sentence while empty.
+ *
+ * It comes in the lines part (parts.ts), with a table of lines' stylesheet,
+ * whose rows and buttons it wears; the records' names as plain words meanwhile
+ * (lines-plain.ts).
  */
 export const linksTableWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs }) => {
+  installLinesStyles(document);
   const def = field as Extract<Field, { type: 'many2many' }>;
   const make = maker(document);
   const fields = (def.fields ?? {}) as Record<string, LineField>;
