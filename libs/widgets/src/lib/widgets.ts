@@ -27,7 +27,7 @@ import { htmlWidget, jsonWidget } from './extras';
 
 import { choiceTagsWidget, searchWidget } from './choice-tags';
 import { cardsWidget } from './cards';
-import { clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
+import { boxPurpose, clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { counted, grower } from './limits';
 import { currencySymbol } from './units';
@@ -223,6 +223,12 @@ const textOf = (value: Value | undefined) => (value === null || value === undefi
 
 /** The text box each input type is: a line of words, a password, a phone number, an email, a web address. A time is a date box's (date-box.ts). */
 const TEXT_KINDS: Record<string, TextKind | undefined> = { text: 'line', password: 'password', tel: 'phone', email: 'email', url: 'url' };
+/**
+ * What the browser fills each kind in with unless the page says (`autocomplete`): a person's own email, phone or web
+ * address, a password being set — never the one they sign in with, filled into a field of the record — and nothing
+ * for a line of words, whose purpose only the page knows.
+ */
+const TEXT_PURPOSES: Record<string, string> = { text: 'off', password: 'new-password', tel: 'tel', email: 'email', url: 'url' };
 
 function textWidget(inputType: string): WidgetFactory {
   return (context) => {
@@ -230,13 +236,12 @@ function textWidget(inputType: string): WidgetFactory {
     // An email or a web address in a text box: the browser's own would keep an international domain as punycode
     // (ali@xn--mgbh0fb.xn--wgbh1c) and trim as it is typed. A phone still shows its keyboard for them.
     const written = inputType === 'email' || inputType === 'url';
-    // A person's own email, phone or web address, the browser may offer.
+    // What the browser fills it in with and the keyboard a phone shows: the page's, else the kind's.
     const input = make(document, 'input', {
       id,
       type: written ? 'text' : inputType,
       class: 'fd-input',
-      autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off',
-      ...(written ? { inputmode: inputType } : {}),
+      ...boxPurpose(node, { autocomplete: TEXT_PURPOSES[inputType], inputmode: written ? inputType : undefined }),
     });
     if (node.placeholder) input.placeholder = node.placeholder;
     // No maxlength: the browser would cut a paste without a word. The box refuses a key at the most, and says so.
@@ -262,7 +267,7 @@ function textWidget(inputType: string): WidgetFactory {
 
 const textareaWidget: WidgetFactory = (context) => {
   const { form, name, node, id, document } = context;
-  const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3' });
+  const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3', ...boxPurpose(node) });
   if (node.placeholder) area.placeholder = node.placeholder;
   const grow = grower(area, node);
   const box = textBox(area, context, 'paragraph');
@@ -322,8 +327,8 @@ const numberWidget: WidgetFactory = (context) => {
     ...(digits ? { digits: digits[0] } : {}),
     ...(min !== undefined ? { min } : {}),
   });
-  const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', autocomplete: 'off' });
-  input.inputMode = numberKeyboard(limits());
+  // Digits, a decimal mark where the field has places, a minus where it may be below 0 — or the page's own keyboard.
+  const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', ...boxPurpose(node, { autocomplete: 'off', inputmode: numberKeyboard(limits()) }) });
   if (node.placeholder) input.placeholder = node.placeholder;
 
   // Money shows its currency beside the amount (options.symbol "after" puts it
@@ -375,6 +380,9 @@ const numberWidget: WidgetFactory = (context) => {
     });
   });
   input.addEventListener('input', () => {
+    // Written while the person is elsewhere — the browser's autofill, from a pick in another box: the field held this as
+    // the write came, and keeps it should the text not read.
+    if (document.activeElement !== input) entered = form.getState().values[name];
     const reading = readNumber(input.value, locale);
     // On its way to a number ("-", "1,", "12.345" on its way to "12.345,6"), or text that does not read: nothing is
     // set; leaving the box says why.
@@ -488,7 +496,8 @@ const selectWidget: WidgetFactory = (context) => {
   if (search === true || (search !== false && options(field).length > 15)) return searchWidget(context);
   const choices = shownOptions(options(field), form, name, node);
   const blank = make(document, 'option', { value: '' });
-  const select = make(document, 'select', { id, class: 'fd-input fd-select' }, blank);
+  // A country, a card's month: what the browser fills it in with, when the page says.
+  const select = make(document, 'select', { id, class: 'fd-input fd-select', autocomplete: node.autocomplete }, blank);
   choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {

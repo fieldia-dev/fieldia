@@ -242,9 +242,31 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     held = null;
     hint.hide();
   };
+  /**
+   * Whether the edit landing now was announced by a beforeinput, and whether that one wrote over text and could not be
+   * stopped: Firefox's autofill says so; Chrome's and Safari's say nothing before they write.
+   */
+  let announced = false;
+  let written = false;
+  /**
+   * Written whole for the person while they are in another box — the browser's autofill filling the form from one pick,
+   * a password manager: read as a paste of all the box holds, cleaned as one is and kept whole past the most characters.
+   * What the rules would refuse lands all the same, never put back where nobody is looking, and the field's own check
+   * says why as the box is read (its change). In the box the person is in, it is judged as their keys are, and all of it
+   * held when refused, said at once and taken as the box is left.
+   */
+  const autofilled = () => {
+    const cleaned: ReturnType<NonNullable<InputRules['paste']>> = rules.paste ? rules.paste(box.value) : { text: box.value };
+    if ('text' in cleaned && cleaned.text !== box.value) box.value = cleaned.text;
+    rebase = null;
+    accept();
+    hint.hide();
+  };
   const onBeforeInput = (event: Event) => {
     const edit = event as InputEvent;
     const type = edit.inputType ?? '';
+    announced = true;
+    written = type === 'insertReplacementText' && !edit.cancelable;
     // Enter in one line: never judged, never held, never stopped — the form hears it as it did before the rules came.
     if (oneLine && (type === 'insertLineBreak' || type === 'insertParagraph')) return;
     // Where the selection was as the edit began: not the steps of a composition, whose text the box holds on the way.
@@ -336,9 +358,15 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   };
   const onInput = (event: Event) => {
     const edit = event as InputEvent;
+    const unannounced = !announced || written;
+    announced = written = false;
     if (inserting) return accept();
     if (composing || edit.isComposing) return;
     const type = edit.inputType ?? '';
+    const whole = unannounced && (type === '' || type === 'insertReplacementText') && box.value !== taken.value && !box.readOnly;
+    if (whole && document.activeElement !== box) return autofilled();
+    // Written whole in the box the person is in: all it held was replaced, whatever caret the last key left.
+    if (whole) before = { value: taken.value, start: 0, end: taken.value.length };
     const kept = rebase;
     rebase = null;
     if (kept && kept === held && type.startsWith('delete') && box.selectionStart === box.selectionEnd) {
@@ -363,7 +391,7 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     // An edit that could not be stopped: the last text taken comes back, and the widget never hears of it.
     event.stopImmediatePropagation();
     // A correction's place is not said: put back, and said, but nothing of it held.
-    const typed = before.value === taken.value && type !== 'insertReplacementText' ? insertedSince(before) : '';
+    const typed = before.value === taken.value && (type !== 'insertReplacementText' || whole) ? insertedSince(before) : '';
     putBack();
     hint.show(words);
     if (after) after.typed += typed;

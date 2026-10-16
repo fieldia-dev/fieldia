@@ -47,7 +47,8 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     'aria-autocomplete': 'list',
     'aria-expanded': 'false',
     'aria-controls': listId,
-    autocomplete: 'off',
+    // A long list's one choice — a country among two hundred — the browser may fill in by name, where the page says.
+    autocomplete: (single && node.autocomplete) || 'off',
     placeholder: node.placeholder || words.search,
   });
   const list = make('ul', { id: listId, class: 'fd-listbox', role: 'listbox', hidden: '' });
@@ -166,9 +167,13 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   input.addEventListener('click', () => !readonly && list.hidden && open());
   input.addEventListener('input', () => {
     hint.hide();
-    if (!readonly) open();
+    if (readonly) return;
+    // Written while the person is elsewhere — the browser's autofill, from a pick in another box: read as it is left.
+    if (document.activeElement !== input) return left();
+    open();
   });
-  input.addEventListener('blur', () => {
+  input.addEventListener('blur', () => left());
+  function left() {
     close();
     if (readonly) return;
     const text = input.value.trim();
@@ -191,7 +196,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     if (chosen().some((value) => fold(labelOf(value)) === fold(text))) return;
     if (own) return write([...chosen(), text]);
     noMatch(text);
-  });
+  }
   input.addEventListener('keydown', (event) => {
     if (readonly) return;
     switch (event.key) {

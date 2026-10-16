@@ -35,4 +35,21 @@ thumbnails, right to left and dark. Photos are made smaller first by the field's
 `shrink` (`{ maxSide, quality }`, or `false`), their EXIF turn kept;
 `shrinkPhoto(file, { maxSide, quality })` does the same for your own code.
 
+Every box says what the browser may fill it in with and which keyboard a phone
+shows for it: the field node's `autocomplete` (a purpose from the HTML
+standard's list, such as `given-name`, `work email` or `shipping postal-code`,
+or `off`) and `inputmode` (`numeric`, `decimal`, `tel`, `email`, `url`,
+`search`, `text`) over its kind's own — an email box `email`, a phone `tel`, a
+web address `url`, a password `new-password`, a whole number's digits, an
+address's parts each its own after whose it is (`"autocomplete": "shipping"`):
+
+```json
+{ "type": "field", "id": "f-code", "field": "code", "autocomplete": "one-time-code" }
+```
+
+`boxPurpose(node, own)` gives the same attributes to a widget of your own. A
+value the browser fills in is the person's own, read as typed: cleaned as a
+paste is, never put back where nobody may be looking, read at once in a box the
+person is not in, and saved as any change of theirs.
+
 MIT licensed.

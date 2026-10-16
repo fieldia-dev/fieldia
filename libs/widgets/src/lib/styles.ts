@@ -725,6 +725,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-status-box .fd-retry { font-size: 13px; }
 /* Said to screen readers only. */
 .fd-announce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* A public page's hidden box (botCheck): drawn for a bot that fills every box, seen, reached and heard by no person. */
+.fd-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 0; pointer-events: none; }
 /* The server out of reach: a banner over the page, with Retry. */
 .fd-banner {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; margin-block-end: 16px;

@@ -17,6 +17,8 @@ export * from './lib/numbers';
 // The input rules' side of a box — its guard on keystrokes, pastes and drops, and its hint — for every box an app or another
 // package draws: a cell's editor, a filter, a designer's setting.
 export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, leftWords, numberFits, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
+// What the browser fills a box in with and the keyboard a phone shows, the page's over the kind's own: for an app's own widget.
+export { boxPurpose } from './lib/kind-parts';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
 export * from './lib/label';

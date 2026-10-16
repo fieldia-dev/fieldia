@@ -19,6 +19,29 @@ export function maker(document: Document): Make {
   };
 }
 
+/** The keyboard a phone shows for a line of words filled in for a purpose: a phone's keypad, an email's @, digits for a code. */
+function purposeKeyboard(purpose: string): string | undefined {
+  if (purpose.startsWith('tel')) return 'tel';
+  if (purpose === 'email') return 'email';
+  if (purpose === 'url' || purpose === 'photo' || purpose === 'impp') return 'url';
+  if (purpose === 'transaction-amount') return 'decimal';
+  return /^(one-time-code|cc-number|cc-csc|cc-exp-(month|year)|bday-(day|month|year))$/.test(purpose) ? 'numeric' : undefined;
+}
+
+/**
+ * What a box is filled in with by the browser (`autocomplete`) and the keyboard a phone shows for it (`inputmode`), as
+ * the box's attributes: the page's, on the field's node, over its kind's own (`own`: an email box's `email`); a box with
+ * no keyboard of its own shows its purpose's (a phone's keypad for `tel`, digits for `one-time-code`). Left out where
+ * neither says.
+ */
+export function boxPurpose(node: FieldNode, own: { autocomplete?: string; inputmode?: string } = {}): { autocomplete?: string; inputmode?: string } {
+  const autocomplete = node.autocomplete ?? own.autocomplete;
+  // The purpose itself: its last word, but webauthn ("work tel" is a phone).
+  const purpose = node.autocomplete?.split(' ').filter((word) => word !== 'webauthn').pop();
+  const inputmode = node.inputmode ?? own.inputmode ?? (purpose ? purposeKeyboard(purpose) : undefined);
+  return { ...(autocomplete ? { autocomplete } : {}), ...(inputmode ? { inputmode } : {}) };
+}
+
 /** The words a widget shows: the page's, its language's, or English (a language the one-tag script was not given). */
 export const wordsFor = (labels: WidgetLabels | undefined, locale: Locale | undefined): WidgetLabels => labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
 

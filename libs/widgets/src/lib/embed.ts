@@ -1,4 +1,4 @@
-import { maker, wordsFor } from './kind-parts';
+import { boxPurpose, maker, wordsFor } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -17,7 +17,7 @@ const isWeb = (text: string) => /^https?:\/\//i.test(text);
 export const embedWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const make = maker(document);
   const words = wordsFor(labels, locale);
-  const input = make('input', { id, type: 'url', class: 'fd-input', autocomplete: 'url' });
+  const input = make('input', { id, type: 'url', class: 'fd-input', ...boxPurpose(node, { autocomplete: 'url' }) });
   if (node.placeholder) input.placeholder = node.placeholder;
   input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
   // Its own scripts run, as an embedded deck's must; it cannot reach the form, nor leave the frame but for a new tab.
