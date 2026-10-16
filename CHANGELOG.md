@@ -15,6 +15,77 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.24.0 — not released yet
+
+**A business owner's walk of 0.23, mended**, for every page of the shape they
+met it in:
+
+- **A record's button that moves its status saves the record first**, as
+  Flectra's does. Confirm on an invoice with no customer says "Customer is
+  required" and stays Draft, the customer still open to fill; Register payment
+  never makes an unsaved invoice Paid. Steps that act and then save (a `set`, a
+  `call` … then `save`) save a new or changed record before they run; refused,
+  none of them runs. And a run that saves is one piece of work: when its save,
+  or a check before it, is refused, what its own steps wrote since its last
+  save is put back. A change made meanwhile by anyone else stays.
+- **A double-click on Save saves, and only saves.** Save hides as it saves and
+  the next button slides under the pointer: a press on a button that came
+  under a pointer that has not moved is not taken for it — it goes nowhere,
+  and the focus stays where it was. Presses there stay refused for half a
+  second; one after that, or once the pointer moves, is taken. Nothing is
+  disabled, and a key or an app's `click()` is never refused. A form dialog's
+  own buttons the same.
+- **A question opens on Cancel**: a button's `confirm`, an `ask` step,
+  Archive and Delete, as "Discard your changes?" did. Enter never answers Yes
+  by itself.
+- **The first tap on Submit counts.** A box left for a press elsewhere shows
+  its problem once that press has ended, its click handled first: nothing
+  moves under the finger, and the press lands where it began. Left with Tab,
+  at once, as before. The same in a table's cell, a grid's, a property's row
+  and a range's end.
+- **Block on the customer page blocks**: asked first, then the customer is
+  Blocked and saved, and it says so; Activate brings them back. Its statusbar
+  shows where the customer stands, and Block, which asks, is the way there.
+- **Lines are numbered as people count them**: the first product under a
+  heading is line 1. Sections and notes are no lines — in a table's messages,
+  its waiting totals, a line's tick and copy button, a pasted block's notes.
+  A pasted cell on a heading's row is named by the heading.
+- **A number a line works out waits with its line**: while the line's
+  Quantity does not read, its Subtotal is a dash said in words ("Fix Quantity
+  to see this line’s Subtotal"), and the totals that add it wait too — never
+  an amount for a quantity the line no longer shows.
+- **The currency sign has one place**: where the page's language writes it
+  for that currency, in every box, cell and total. A box's own `symbol` no
+  longer moves it in that box alone; a field's money look (`money.at`) still
+  moves it everywhere the field is written.
+- **Dark, Apple, Ant and shadcn sit on the page** in their systems' raised
+  greys (#1c1c1e, #141414, #121214), never a black slab in a grey page; their
+  cards stand off them, lighter.
+- **A record's title wraps on a phone**, read from its start: a long name runs
+  onto a second line, never "Patien…" or only its end. It is one line all the
+  same: Enter saves, a line break pasted into it is a space, and it says it is
+  one line (`aria-multiline="false"`). Its subtitle the same.
+- **A paste past a field's most is one message, said once**: the count stays
+  a count ("2401 / 500", in the error colour), and the field says at once,
+  under its box, "… is 1901 characters too long: shorten it to 500", in Arabic,
+  German and French too. Nothing beside the count says it again.
+
+**Upgrading:**
+
+- A sheet's title and subtitle box is a `textarea` that wraps, no longer an
+  `input`: a test that finds it as `[data-node="#title"] input` finds it as
+  `textarea`, or by its role (textbox) and its name.
+- A field box's `options.symbol` is no longer read: a field's `money.at` puts
+  the sign after the amount everywhere the field is written.
+- `WidgetLabels` loses `charactersOver` and `charactersOverOne`, and gains
+  `cellWaits` and `cellOfHeading`; the messages `overBy` and `overByOne` say
+  "{label} is {over} characters too long: shorten it to {max}".
+- A button whose steps act and then save saves a new or changed record before
+  them: its data source sees that save, then the steps' own, as Flectra's
+  server sees a record saved before its button's method runs.
+
+**Size:** `fieldia.js` 479.4 KB, 155.3 gzipped (0.23: 474.3, 153.6).
+
 ## 0.23.0 — 2026-10-16
 
 **A smaller main script: what a page uses now and then comes the first time it
