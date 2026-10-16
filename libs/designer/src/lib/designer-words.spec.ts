@@ -65,6 +65,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.filesShownAs': ['list', 'thumbnails', 'cards'].map((as) => ['س', as]),
   'changes.filesSwitch': [['س', true], ['س', false]],
   'changes.botCheck': ['on', 'off', 'changed'].map((now) => [now]),
+  'changes.duplicates': ['on', 'off', 'changed'].map((now) => [now]),
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],
   'outline.atEdgeOfSurvey': [[true, 'top'], [false, 'bottom']],

@@ -27,7 +27,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { FORMAT_VERSION, upgradePage } from '@fieldia/core';
+import { comparable, FORMAT_VERSION, upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
@@ -364,6 +364,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPageInfo(info: { title?: string; description?: string }): boolean;
   /** A public page's bot check (`botCheck`): a hidden box, the fewest seconds, the slot its captcha is drawn in; null takes it off. A page of responses only. */
   setBotCheck(check: BotCheck | null): boolean;
+  /**
+   * A record page's possible duplicates (`duplicates`): the fields records like the one typed are found by — `null`
+   * or none takes the setting away — and when they are asked for, as typed (`type`, the default: `null`) or only as
+   * the record is saved (`save`).
+   */
+  setDuplicates(patch: { fields?: string[] | null; on?: 'type' | 'save' | null }): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -740,6 +746,8 @@ export function createDesigner(options: {
     keepWhatRulesRead(page, draft);
     // steps lane: a tab or step taken away takes the steps that go to it, and its own, with it.
     forgetGoneTargets(draft);
+    // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
+    forgetGoneDuplicates(draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
       // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.
@@ -1388,6 +1396,20 @@ export function createDesigner(options: {
       );
     },
 
+    setDuplicates(patch) {
+      return apply(
+        (draft) => {
+          if (patch.fields !== undefined && !patch.fields?.length) return void delete draft.duplicates;
+          if (draft.data.kind !== 'record' || draft.layout.type === 'list') throw new Refusal((w) => w.refusals.duplicatesForRecords);
+          const fields = patch.fields ?? draft.duplicates?.fields ?? [];
+          if (!fields.length) return;
+          const on = patch.on === undefined ? draft.duplicates?.on : (patch.on ?? undefined);
+          draft.duplicates = { fields: [...new Set(fields)], ...(on === 'save' ? { on } : {}) };
+        },
+        null
+      );
+    },
+
     setBotCheck(check) {
       return apply(
         (draft) => {
@@ -1779,4 +1801,12 @@ createDesigner.open = async (
 /** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
 function statusbarOf(page: Page, id: string): { invisible?: string; roles?: string[] } | undefined {
   return id === '#statusbar' && page.layout.type === 'sheet' ? (page.layout.statusbar as { invisible?: string; roles?: string[] } | undefined) : undefined;
+}
+
+/** The fields possible duplicates are found by (`duplicates`) that are still on the page and of a kind to compare: none left, the setting goes. */
+function forgetGoneDuplicates(page: Page): void {
+  if (!page.duplicates) return;
+  const fields = page.duplicates.fields.filter((name) => comparable(page.fields[name]));
+  if (!fields.length) delete page.duplicates;
+  else if (fields.length !== page.duplicates.fields.length) page.duplicates = { ...page.duplicates, fields };
 }

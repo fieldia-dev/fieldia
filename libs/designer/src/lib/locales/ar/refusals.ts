@@ -26,6 +26,7 @@ export const refusals: DesignerWords['refusals'] = {
   cannotPublish: 'في هذه الصفحة مشكلات تمنع نشرها',
   surveyHasNoRecords: 'لا سجلات في الاستبيان للربط بها أو عرضها: هذا النوع لشاشات التطبيق',
   botCheckForResponses: 'التحقق من الروبوتات لنموذج يرسله أي شخص ويجمع الإجابات: شاشة التطبيق خلف تسجيل الدخول',
+  duplicatesForRecords: 'يُبحث عن السجلات المكررة المحتملة بين سجلات نموذج، أثناء كتابة أحدها في صفحته: نموذج الإجابات أو القائمة لا يحفظ ما يُقارن به',
   onThePageAlready: (label) => `${q(label)} موجود في الصفحة بالفعل`,
   optionsFromModel: (label) => `خيارات ${q(label)} تأتي من نموذج البيانات`,
   cannotMoveFurther: 'لا يمكن نقله أبعد من ذلك',
