@@ -98,17 +98,20 @@ for (const variant of VARIANTS) {
       await node(page, 'f-quantity').locator('input').fill('3');
       await expect.poll(() => value(page, 'total')).toBe(5670);
 
-      // Sent: the question first. Cancel keeps it here, unsent; OK sends it, and says so.
+      // Sent: the question first, on Cancel, so Enter never sends it by itself. Cancel keeps it here, unsent; OK sends it,
+      // and says so.
       await page.getByRole('button', { name: 'Submit' }).click();
       const question = page.getByRole('alertdialog');
       await expect(question).toContainText('Send the order?');
-      await expect(question.getByRole('button', { name: 'OK' })).toBeFocused();
+      await expect(question.getByRole('button', { name: 'Cancel' })).toBeFocused();
       if (variant === 'plain') await screen(page, 'actions-send-question', { viewport: true });
       await question.getByRole('button', { name: 'Cancel' }).click();
       await expect(question).toBeHidden();
       expect(await sent(page)).toEqual([]);
       await page.getByRole('button', { name: 'Submit' }).click();
       await expect(question).toBeVisible();
+      // OK, by the keys: Tab from Cancel, then Enter.
+      await page.keyboard.press('Tab');
       await page.keyboard.press('Enter');
       await expect(toast(page, 'Order sent')).toBeVisible();
       await expect(page.locator('.fd-done-title')).toBeVisible();
@@ -129,7 +132,7 @@ for (const variant of VARIANTS) {
       await expect(back).toBeVisible();
       const order = page.locator('form.fd-form').first();
       await expect(order).toBeHidden();
-      const title = page.locator('[data-node="#title"] input');
+      const title = page.locator('[data-node="#title"] textarea');
       await expect(title).toHaveValue('Nile Traders');
       if (variant === 'plain') await screen(page, 'actions-customer-in-place');
       await back.click();
@@ -163,6 +166,8 @@ for (const variant of VARIANTS) {
       await page.getByRole('button', { name: 'إرسال' }).click();
       await expect(page.getByRole('alertdialog')).toContainText('إرسال الطلب؟');
       if (variant === 'plain') await screen(page, 'actions-arabic-question', { viewport: true });
+      // On Cancel as it opens: Tab to OK, then Enter.
+      await page.keyboard.press('Tab');
       await page.keyboard.press('Enter');
       await expect(toast(page, 'أُرسل الطلب')).toBeVisible();
       if (variant === 'plain') await screen(page, 'actions-arabic-sent', { viewport: true });

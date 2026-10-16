@@ -154,8 +154,9 @@ test.describe('the order grid', () => {
   });
 
   for (const [locale, query, waits] of [
-    ['en', '', 'Fix line 2 to see this total'],
-    ['ar', '&locale=ar&dir=rtl', 'صحّح السطر 2 ليظهر هذا الإجمالي'],
+    // The Office chair, the first line under the Workstations heading: line 1, as people count lines.
+    ['en', '', 'Fix line 1 to see this total'],
+    ['ar', '&locale=ar&dir=rtl', 'صحّح السطر 1 ليظهر هذا الإجمالي'],
   ] as const) {
     test(`${locale}: a cell left with what does not read shows it, marked, and its total waits in words — never NaN`, async ({ page }) => {
       ({ problems } = await open(page, 'plain', `page=order&skin=outlined${query}`));
@@ -197,7 +198,7 @@ test.describe('the order grid', () => {
       await choose(page, 5, 'qty');
       await paste(page, locale === 'ar' ? '٧\tabc\n٨\t٩' : '7\tabc\n8\t9');
       await expect.poll(async () => (await pairs(page))[5]).toEqual([7, 380]);
-      await expect(note).toContainText(locale === 'ar' ? 'لم يُلصق في' : locale === 'fr' ? 'Non collé' : 'Not pasted: Unit price, line 6');
+      await expect(note).toContainText(locale === 'ar' ? 'لم يُلصق في' : locale === 'fr' ? 'Non collé' : 'Not pasted: Unit price, line 3');
       await screen(page, `input-tables-paste-${locale}`, { viewport: true });
     });
   }

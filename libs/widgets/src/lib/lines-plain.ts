@@ -1,6 +1,7 @@
 import { lineKind, type Field, type Line, type RelatedRecord, type Value } from '@fieldia/core';
 import { cellText } from './display';
 import { describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { itemNumber } from './lines';
 import type { Widget, WidgetFactory, WidgetState } from './widgets';
 
 /**
@@ -46,10 +47,11 @@ export const plainLinesWidget: WidgetFactory = ({ field, node, id, document, lab
   );
   const said = (value: Value | undefined) => (typeof value === 'string' ? value.trim() : '');
   return plainList(document, id, (state) =>
-    ((state.value as Line[] | null) ?? []).map((line, index) => {
+    ((state.value as Line[] | null) ?? []).map((line, _index, all) => {
       const kind = lineKind(def, line.values);
       const shown = kind && kinds ? [said(line.values[kinds.text])] : columns.map((column) => cellText(def.fields[column], line.values[column], line.values, locale, state.values, node.cells?.[column]));
-      return shown.filter(Boolean).join(' · ') || fillIn(words.lineN, { n: index + 1 });
+      // Named by its number as people count lines: a section or a note before it is not one.
+      return shown.filter(Boolean).join(' · ') || (kind ? '' : fillIn(words.lineN, { n: itemNumber(all, line.key, (one) => !lineKind(def, one.values)) }));
     })
   );
 };

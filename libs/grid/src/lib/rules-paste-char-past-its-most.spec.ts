@@ -50,5 +50,6 @@ it('a word cell pasted past its most says how many characters are too many, neve
   Object.defineProperty(event, 'clipboardData', { value: { getData: (type: string) => (type === 'text/plain' ? 'ABCDEFGHIJKLMNO' : '') } });
   (document.activeElement ?? document.body).dispatchEvent(event);
   const note = box.querySelector('.fd-grid-paste-note')?.textContent ?? '';
-  expect(note).toMatch(/5 characters too many/);
+  // In the words Save uses, as the field's own box says it (limits.ts `counted`): one message.
+  expect(note).toMatch(/5 characters too long/);
 });

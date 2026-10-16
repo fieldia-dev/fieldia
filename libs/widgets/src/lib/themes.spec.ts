@@ -67,6 +67,19 @@ describe('the themes', () => {
     expect(low).toEqual([]);
   });
 
+  // A themed form paints its own ground. Dark, it sits on an app's dark page — GitHub's #0d1117, VS Code's #1e1e1e, the
+  // demos' #111418 — as the plain dark scheme's (#16191e) does: a shade apart at most, never a black slab in a grey
+  // page (Apple's and Ant's black bases were). Its lightness (CIELAB L*) between 5 and 15, as those pages' are.
+  it.each(THEMES.map((theme) => [theme] as const))('%s, dark: its ground sits on a dark page, never a black slab', (theme) => {
+    const ground = { ...THEME_TOKENS[theme].light, ...THEME_TOKENS[theme].dark }.page as string;
+    const y = luminance(over(ground, '#ffffff'));
+    const lightness = y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y;
+    expect(Math.round(lightness * 10) / 10).toBeGreaterThanOrEqual(5);
+    expect(lightness).toBeLessThanOrEqual(15);
+    // Its cards stand off it, lighter, as cards on a dark page do.
+    expect(luminance(over(THEME_TOKENS[theme].dark.surface as string, '#ffffff'))).toBeGreaterThan(y);
+  });
+
   // In a sheet of their own, a part loaded the first time a form wears a theme (themes-part.ts), put in after Fieldia's
   // own and before the quiet look's, every other part's and the page's own looks (PART_RANK.themes).
   it('come after the skins and before the page’s own look, their shapes before the page’s looks for each kind of part', () => {

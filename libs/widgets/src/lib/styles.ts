@@ -279,6 +279,11 @@ const SKINS_CSS = /* css */ `
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
 .fd-textarea { resize: vertical; min-height: 64px; }
+/* One line that wraps (a record's title): as tall as its words, never a grip to resize, read from its start; a word
+   broken only when it is longer than the line, at a hyphen where the page's language has one. */
+.fd-line-wraps { display: block; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; hyphens: auto; line-height: 1.25; }
+/* On a phone, a record's name a size smaller, so a long word fits a line beside its photo. */
+@container (max-width: 520px) { .fd-form .fd-title .fd-field .fd-line-wraps { font-size: 20px; } }
 .fd-select { appearance: auto; }
 .fd-number { display: flex; align-items: baseline; gap: 6px; }
 .fd-number-input { font-variant-numeric: tabular-nums; }

@@ -27,7 +27,7 @@ async function openDemo(page: Page, path = DEMO) {
   page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(path);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa/);
   return problems;
 }
 
@@ -140,7 +140,7 @@ test('the app opening the next lead while Ctrl+Enter’s save is on its way, Sar
   await page.keyboard.press('Enter');
   expect(await going).toBe(false);
   await expect(page.getByRole('alertdialog')).toBeHidden();
-  await expect(form.locator('.fd-title input')).toHaveValue('Villa in Sheikh Zayed');
+  await expect(form.locator('.fd-title textarea')).toHaveValue('Villa in Sheikh Zayed');
   expect(await state(page)).toMatchObject({ recordId: 1, dirty: ['budget'], leaving: false });
   expect(await stored(page)).toMatchObject({ phone: '+20 100 999 8887', budget: 4000000 });
   // Saved again, only lead 1 takes it: lead 2 keeps its own values.
@@ -194,7 +194,7 @@ test('Duplicate from the gear after Reload: asked; Enter keeps the changes set a
   await duplicate();
   await asked(page);
   await discard(page);
-  await expect(form.locator('.fd-title input')).toHaveValue(/\(copy\)/);
+  await expect(form.locator('.fd-title textarea')).toHaveValue(/\(copy\)/);
   expect((await state(page)).setAside).toBeNull();
   expect(problems).toEqual([]);
 });
@@ -312,7 +312,7 @@ test('a customer’s page opened in the order’s place gives way back on its sa
   await customer.fill('nile');
   await node(page, 'f-customer').getByRole('option', { name: 'Nile Traders', exact: true }).click();
   await pressWithKeys(page, page.getByRole('button', { name: 'Customer’s page' }));
-  const title = page.locator('[data-node="#title"] input');
+  const title = page.locator('[data-node="#title"] textarea');
   await expect(title).toHaveValue('Nile Traders');
   const order = page.locator('form.fd-form').first();
   await title.fill('Nile Traders Co.');

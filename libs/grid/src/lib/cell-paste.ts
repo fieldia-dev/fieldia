@@ -1,5 +1,5 @@
-import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
-import { inPlural, leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
+import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * Pasting a block on the grid's cells: the grid's own, so a page with no grid
@@ -219,7 +219,9 @@ export function whyNotPasted(def: LineField, pasted: string, reading: CellReadin
     case 'char':
     case 'text': {
       const over = overBy(def, def.type === 'char' ? oneLine(stripMarks(pasted, 'ends')).trim() : stripMarks(pasted, 'ends'));
-      return over > 0 ? inPlural(labels.charactersOver, labels.charactersOverOne, over, locale) : null;
+      // In the words Save would use, as the field's own box says it: the one message for a text past its most.
+      const messages = MESSAGES[locale] ?? MESSAGES.en;
+      return over > 0 ? fill(over === 1 ? messages.overByOne : messages.overBy, { label, over, max: (def as { size?: number }).size ?? 0 }) : null;
     }
     case 'date':
     case 'datetime': {

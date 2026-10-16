@@ -65,8 +65,8 @@ describe('a text box’s most characters', () => {
     expect(input.hasAttribute('maxlength')).toBe(false);
   });
 
-  it('keeps a paste that goes over whole: the count in the error colour says how many are too many', async () => {
-    const { input, value, el } = textBox({ size: 80 });
+  it('keeps a paste that goes over whole: the count stays a count, in the error colour, and the field says why once', async () => {
+    const { input, value, el, form } = textBox({ size: 80 });
     const pasted = 'x'.repeat(85);
     paste(input, pasted);
     expect(input.value).toBe(pasted);
@@ -74,9 +74,17 @@ describe('a text box’s most characters', () => {
     const count = el.querySelector('.fd-count') as HTMLElement;
     expect(count.textContent).toBe('85 / 80');
     expect(count.classList.contains('fd-count-past')).toBe(true);
-    const over = el.querySelector('.fd-count-over') as HTMLElement;
-    expect([over.hidden, over.textContent]).toEqual([false, '5 characters too many']);
-    expect(input.getAttribute('aria-describedby')).toContain(over.id);
+    // One message, the field's own, said at once under its box in Save's words; nothing beside the count.
+    expect(el.querySelector('.fd-count-over')).toBeNull();
+    expect(form.getState().errors).toEqual({ x: 'Full name is 5 characters too long: shorten it to 80' });
+    // Shortened, the words follow the count; within its most, they go.
+    input.setRangeText('', 80, 83, 'end');
+    input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+    expect(form.getState().errors).toEqual({ x: 'Full name is 2 characters too long: shorten it to 80' });
+    input.setRangeText('', 80, 82, 'end');
+    input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+    expect(form.getState().errors).toEqual({});
+    input.value = pasted;
     // Typing more is refused; taking some away is not.
     await pasteTaken();
     keys(input, 'y');
@@ -89,7 +97,7 @@ describe('a text box’s most characters', () => {
       const { input, el } = textBox({ size: 10 }, {}, 'ar');
       paste(input, 'نص طويل جدًا هنا');
       jest.advanceTimersByTime(1000);
-      expect(el.querySelector('.fd-sr-only[aria-live="polite"]')?.textContent).toBe('Full name: أطول من الحد (10) بـ6 من الأحرف؛ اختصره للحفظ');
+      expect(el.querySelector('.fd-sr-only[aria-live="polite"]')?.textContent).toBe('Full name: أطول بـ6 من الأحرف؛ اختصره إلى 10');
     } finally {
       jest.useRealTimers();
     }

@@ -1,6 +1,5 @@
 import { charCount, dayOf, fill, MESSAGES, type Field, type FieldNode } from '@fieldia/core';
 import { fillIn, maker, setHidden, setText, wordsFor } from './kind-parts';
-import { inPlural } from './labels';
 import type { Widget, WidgetContext } from './widgets';
 
 /**
@@ -9,9 +8,10 @@ import type { Widget, WidgetContext } from './widgets';
  * them (an emoji is one), in the warning colour from nine tenths on, and how
  * many are left said to a screen reader once typing pauses — for a page's own
  * field, not a table's cell. A paste that goes over is kept whole: the count
- * turns to the error colour ("85 / 80"), says beside it how many are too
- * many, and once typing pauses tells a screen reader how far over it is and
- * that it must be shortened to be saved. Also a paragraph's rows, growing as
+ * stays a count, in the error colour ("85 / 80"), and the field says the one
+ * problem at once, under its box, in the words Save would use ("Notes is 5
+ * characters too long: shorten it to 80"), said to a screen reader once typing
+ * pauses; shortened, the words follow, and go. Also a paragraph's rows, growing as
  * people type unless the page says not to (`autoGrow: false`); a date's, a
  * date and time's or a time's earliest and latest on its input.
  */
@@ -22,14 +22,16 @@ export function counted(widget: Widget, { form, name, field, node, document, lab
   const words = wordsFor(labels, locale);
   const messages = MESSAGES[locale ?? 'en'] ?? MESSAGES.en;
   const label = node.label ?? field.label;
-  const overId = `${box.id || name}-over`;
-  const over = make('div', { class: 'fd-count-over', id: overId, hidden: '' });
   const shown = make('div', { class: 'fd-count', 'aria-hidden': 'true' });
   const said = make('div', { class: 'fd-sr-only', 'aria-live': 'polite' });
   let pause: ReturnType<typeof setTimeout> | undefined;
+  // Gone over its most (a paste: a key at the most is refused): its one problem is said now, under the box, as leaving it would.
+  box.addEventListener('input', () => {
+    if (charCount(box.value) > size) form.boxLeft(name);
+  });
   return {
     ...widget,
-    element: make('div', { class: 'fd-counted' }, widget.element, over, shown, said),
+    element: make('div', { class: 'fd-counted' }, widget.element, shown, said),
     destroy() {
       clearTimeout(pause);
       widget.destroy?.();
@@ -37,13 +39,10 @@ export function counted(widget: Widget, { form, name, field, node, document, lab
     update(state) {
       const n = charCount(typeof state.value === 'string' ? state.value : box.value);
       const past = n - size;
-      // Over its most, the box is described by how far over too.
-      widget.update(past > 0 && !state.readonly ? { ...state, describedBy: [state.describedBy, overId].filter(Boolean).join(' ') } : state);
+      widget.update(state);
       setText(shown, `${n} / ${size}`);
       shown.classList.toggle('fd-count-near', n >= size * 0.9 && past <= 0);
       shown.classList.toggle('fd-count-past', past > 0);
-      setText(over, past > 0 ? inPlural(words.charactersOver, words.charactersOverOne, past, locale) : '');
-      setHidden(over, past <= 0 || state.readonly);
       setHidden(shown, state.readonly);
       if (document.activeElement !== box) return;
       clearTimeout(pause);

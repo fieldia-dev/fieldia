@@ -263,6 +263,8 @@ const TEXT_PURPOSES: Record<string, string> = { text: 'off', password: 'new-pass
 
 function textWidget(inputType: string): WidgetFactory {
   return (context) => {
+    // A record's title (`options.wraps`, set by the viewer): one line that wraps rather than being cut.
+    if (inputType === 'text' && context.node.options?.['wraps'] === true) return wrappingLine(context);
     const { form, name, node, id, document } = context;
     // An email or a web address in a text box: the browser's own would keep an international domain as punycode
     // (ali@xn--mgbh0fb.xn--wgbh1c) and trim as it is typed. A phone still shows its keyboard for them.
@@ -294,6 +296,79 @@ function textWidget(inputType: string): WidgetFactory {
       },
     }, context, input);
   };
+}
+
+/**
+ * One line of words that wraps — a record's title. On a phone a long name runs
+ * onto a second line, read from its start, never cut to "Patien…" or scrolled
+ * to its end. It is one line all the same: it says so (aria-multiline false),
+ * Enter does what it does in any one-line box (the form's, viewer.ts), a line
+ * break pasted or dropped into it is a space, and it grows to the lines its
+ * words take at its width, as the width changes.
+ */
+function wrappingLine(context: WidgetContext): Widget {
+  const { form, name, node, id, document } = context;
+  const area = make(document, 'textarea', { id, class: 'fd-input fd-line-wraps', rows: '1', autocomplete: 'off', 'aria-multiline': 'false' });
+  if (node.placeholder) area.placeholder = node.placeholder;
+  const grow = grower(area, { ...node, options: {} });
+  const box = textBox(area, context, 'line');
+  // A phone keyboard's Enter that comes as an edit, not a key: no line break here.
+  area.addEventListener('beforeinput', (event) => {
+    const type = (event as InputEvent).inputType;
+    if (type === 'insertLineBreak' || type === 'insertParagraph') event.preventDefault();
+  });
+  area.addEventListener('keydown', (event) => {
+    // A plain Enter adds no line; the form hears it as it hears Enter in any one-line box.
+    if (event.key === 'Enter' && !event.isComposing && !event.shiftKey && !event.altKey) event.preventDefault();
+  });
+  area.addEventListener('input', () => {
+    if (/[\r\n]/.test(area.value)) {
+      const at = area.selectionStart;
+      area.value = area.value.replace(/\r\n?|\n/g, ' ');
+      area.setSelectionRange(at, at);
+    }
+    grow();
+    form.setValue(name, area.value === '' ? null : area.value);
+  });
+  // Its lines follow its width: a phone turned, a panel opened beside it, the page drawn. Grown in the next frame, never
+  // inside the observer's own call: a height changed there is a loop the browser reports.
+  const View = document.defaultView as (Window & { ResizeObserver?: typeof ResizeObserver }) | null;
+  let width = 0;
+  let frame = 0;
+  const sized = View?.ResizeObserver
+    ? new View.ResizeObserver(() => {
+        if (area.clientWidth === width) return;
+        width = area.clientWidth;
+        View.cancelAnimationFrame(frame);
+        frame = View.requestAnimationFrame(grow);
+      })
+    : null;
+  sized?.observe(area);
+  return counted(
+    {
+      element: area,
+      focus: () => area.focus(),
+      destroy: () => {
+        sized?.disconnect();
+        View?.cancelAnimationFrame(frame);
+        box.destroy();
+      },
+      update(state) {
+        const text = textOf(state.value).replace(/\r\n?|\n/g, ' ');
+        if (area.value !== text) {
+          area.value = text;
+          box.accept();
+          // Measured once the page is drawn, never in its midst: a measure there would read the page before its parts'
+          // sheets are in, and every box drawn would change its look under a transition.
+          queueMicrotask(grow);
+        }
+        if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
+        describe(area, { ...state, describedBy: box.describedBy(state.describedBy) });
+      },
+    },
+    context,
+    area
+  );
 }
 
 const textareaWidget: WidgetFactory = (context) => {
@@ -362,8 +437,7 @@ const numberWidget: WidgetFactory = (context) => {
   const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', ...boxPurpose(node, { autocomplete: 'off', inputmode: numberKeyboard(limits()) }) });
   if (node.placeholder) input.placeholder = node.placeholder;
 
-  // Money shows its currency beside the amount (options.symbol "after" puts it
-  // after), or with options.pickCurrency the currency field's own widget, to change it.
+  // Money shows its currency beside the amount, or with options.pickCurrency the currency field's own widget, to change it.
   const options = node.options ?? {};
   const currencyField = field.type === 'monetary' ? field.currencyField : undefined;
   const currencyDef = currencyField ? form.page.fields[currencyField] : undefined;
@@ -373,9 +447,11 @@ const numberWidget: WidgetFactory = (context) => {
       : null;
   if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
   if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
-  // Inside the box: the currency where the page's language writes it, unless the page says before or after (here, or in the field's money look); a number's unit (options.prefix, options.suffix).
+  // Inside the box: the currency where the page's language writes it for that currency — as every total, cell and value
+  // of the page writes it, so the sign never moves between them — unless the field's money look says before or after,
+  // everywhere it is written; a number's unit (options.prefix, options.suffix).
   const look = field.type === 'monetary' ? field.money : undefined;
-  const after = options['symbol'] ? options['symbol'] === 'after' : look?.at ? look.at === 'after' : field.type === 'monetary' && currencySymbol(field.currency ?? 'USD', locale).after;
+  const after = look?.at ? look.at === 'after' : field.type === 'monetary' && currencySymbol(currencyNow && /^[A-Z]{3}$/.test(currencyNow) ? currencyNow : (field.currency ?? 'USD'), locale).after;
   const unit = (text: string, n: number) => make(document, 'span', { class: `fd-unit${field.type === 'monetary' ? ' fd-currency' : ''}`, id: `${id}-unit${n}` }, text);
   const currency = field.type === 'monetary' && !picker ? unit('', 0) : null;
   const [prefix, suffix] = ['prefix', 'suffix'].map((key, n) => (typeof options[key] === 'string' && options[key] ? unit(options[key] as string, n + 1) : null));

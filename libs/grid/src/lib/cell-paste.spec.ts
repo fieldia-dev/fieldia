@@ -127,8 +127,8 @@ describe('a spreadsheet’s quoting, and a cell’s most', () => {
     const reading = { locale: 'en' as const, labels: WIDGET_LABELS.en };
     expect(readPastedCell(code, 'ABCDE', reading)).toEqual({ value: 'ABCDE' });
     expect(readPastedCell(code, 'ABCDEF', reading)).toBeNull();
-    expect(whyNotPasted(code, 'ABCDEF', reading)).toBe('1 character too many');
-    expect(whyNotPasted(code, 'ABCDEFGH', reading)).toBe('3 characters too many');
+    expect(whyNotPasted(code, 'ABCDEF', reading)).toBe('Code is 1 character too long: shorten it to 5');
+    expect(whyNotPasted(code, 'ABCDEFGH', reading)).toBe('Code is 3 characters too long: shorten it to 5');
     expect(whyNotPasted(code, 'ABC', reading)).toBeNull();
   });
 });

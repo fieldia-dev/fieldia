@@ -10,9 +10,8 @@ export const INPUTS_CSS = /* css */ `
 /* ---- inputs' details ------------------------------------------------------- */
 .fd-counted { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 2px; min-width: 0; }
 .fd-counted > * { grid-column: 1 / -1; }
-/* "12 / 100" reads so on a right-to-left page too, at the box's end; how many are too many beside it, at its start. */
+/* "12 / 100" reads so on a right-to-left page too, at the box's end: a count, and only a count (a problem is said under the box). */
 .fd-counted > .fd-count { grid-column: 2; justify-self: end; direction: ltr; unicode-bidi: isolate; font-size: 12px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
-.fd-counted > .fd-count-over { grid-column: 1; font-size: 12px; color: var(--fd-error); font-weight: 600; }
 .fd-counted > .fd-count-near { color: var(--fd-warning); font-weight: 600; }
 .fd-counted > .fd-count-past { color: var(--fd-error); font-weight: 600; }
 /* A unit inside the number's box, at its start or end; the box keeps room for it. */

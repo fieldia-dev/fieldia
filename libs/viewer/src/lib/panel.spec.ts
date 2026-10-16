@@ -22,7 +22,7 @@ const button = (name: string, box = panel()) =>
   [...(box?.querySelectorAll('.fd-form-dialog-head button, .fd-form-dialog-foot button') ?? [])].find(
     (b) => (b.getAttribute('aria-label') ?? b.textContent) === name
   ) as HTMLButtonElement;
-const nameBox = (box = panel()) => box?.querySelector('[data-node="#title"] input') as HTMLInputElement;
+const nameBox = (box = panel()) => box?.querySelector('[data-node="#title"] textarea') as HTMLInputElement;
 const question = () => panel()?.querySelector('[role="alertdialog"]') as HTMLElement | null;
 const answer = (name: string) => [...(question()?.querySelectorAll('button') ?? [])].find((b) => b.textContent === name) as HTMLButtonElement;
 const press = (target: Element, key: string, extra: KeyboardEventInit = {}) =>

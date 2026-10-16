@@ -165,9 +165,9 @@ describe('an amount’s currency', () => {
     expect(unit(mountKind({ type: 'monetary', currency: 'EGP' }).el).textContent).toBe('E£');
   });
 
-  it('goes where the page says, when it says', () => {
-    expect(order(mountKind({ type: 'monetary', currency: 'EUR' }, { options: { symbol: 'before' } }, { locale: 'de' }).el)).toEqual(['SPAN', 'INPUT']);
-    expect(order(mountKind({ type: 'monetary', currency: 'USD' }, { options: { symbol: 'after' } }).el)).toEqual(['INPUT', 'SPAN']);
+  it('stays where the language writes it for its currency: a box’s own `symbol` no longer moves it, so totals, cells and boxes agree', () => {
+    expect(order(mountKind({ type: 'monetary', currency: 'EUR' }, { options: { symbol: 'before' } }, { locale: 'de' }).el)).toEqual(['INPUT', 'SPAN']);
+    expect(order(mountKind({ type: 'monetary', currency: 'USD' }, { options: { symbol: 'after' } }).el)).toEqual(['SPAN', 'INPUT']);
   });
 
   it('keeps a name that is no currency code as it is', () => {
@@ -175,11 +175,11 @@ describe('an amount’s currency', () => {
     expect(unit(el).textContent).toBe('');
   });
 
-  it('follows the field’s money look: its code, where the look puts it; the box’s own option still wins', () => {
+  it('follows the field’s money look, wherever the field is written: its code, where the look puts it', () => {
     const code = mountKind({ type: 'monetary', currency: 'EGP', money: { currency: 'code', at: 'after' } }).el;
     expect(unit(code).textContent).toBe('EGP');
     expect(order(code)).toEqual(['INPUT', 'SPAN']);
-    expect(order(mountKind({ type: 'monetary', currency: 'EGP', money: { at: 'after' } }, { options: { symbol: 'before' } }).el)).toEqual(['SPAN', 'INPUT']);
+    expect(order(mountKind({ type: 'monetary', currency: 'EGP', money: { at: 'after' } }, { options: { symbol: 'before' } }).el)).toEqual(['INPUT', 'SPAN']);
     expect(unit(mountKind({ type: 'monetary', currency: 'EGP', money: { short: true } }).el).textContent).toBe('E£');
   });
 });

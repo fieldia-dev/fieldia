@@ -4,7 +4,8 @@ import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
-import { columnTotal, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
+import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
+import { afterPress } from './press-end';
 import { installLinesStyles } from './styles-lines';
 import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -45,7 +46,7 @@ interface Drag {
 interface Row {
   element: HTMLTableRowElement;
   kind: 'section' | 'note' | null;
-  cells: { name: string; def: LineField; widget: Widget; error: HTMLElement; td: HTMLTableCellElement }[];
+  cells: { name: string; def: LineField; widget: Widget; error: HTMLElement; td: HTMLTableCellElement; waiting?: HTMLElement }[];
   /** The line's own buttons, by their id. */
   buttons: Map<string, HTMLButtonElement>;
   remove: HTMLButtonElement;
@@ -74,6 +75,18 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   const kinds = def.lineKinds;
   const make = maker(document);
   const options = node.options ?? {};
+  /** A line of the table's own, not a section or a note: what is numbered, totalled and worked out. */
+  const isItem = (line: Line) => !lineKind(def, line.values);
+  /**
+   * A number worked out on a line (read-only, or computed) while a cell of that line holds text that does not read:
+   * the words it waits with, naming that cell; null when it shows its value.
+   */
+  const waitsOn = (line: Line, column: string, unread: Readonly<Record<string, { text: string }>> | undefined): string | null => {
+    const sub = def.fields[column];
+    if (!sub || !isItem(line) || !['integer', 'float', 'monetary'].includes(sub.type) || (sub.readonly !== true && sub.compute === undefined)) return null;
+    const other = Object.keys(def.fields).find((name2) => name2 !== column && unread?.[`${name}.${line.key}.${name2}`]);
+    return other ? fillIn(labels.cellWaits, { column: def.fields[other].label, own: sub.label }) : null;
+  };
   const min = count(options['min']) ?? 0;
   const max = count(options['max']) ?? Infinity;
   const words = (key: string) => (typeof options[key] === 'string' && (options[key] as string).trim() ? (options[key] as string) : null);
@@ -246,7 +259,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const first = current()[from].values[columns[0]];
     moveLineTo(form, name, def, key, to);
     if (focused && focused !== document.activeElement) focused.focus();
-    voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: from + 1 }), n: to + 1, total: current().length });
+    voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: itemNumber(current(), key, isItem) || from + 1 }), n: to + 1, total: current().length });
   }
   /**
    * A line lifted by its grip: it follows the pointer, the lines it passes
@@ -339,12 +352,16 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     td.addEventListener('focusout', (event) => {
       if (td.contains(event.relatedTarget as Node | null)) return;
       // The cell's own problem — text that does not read, min, max, a whole number — is said now; required waits for Save.
-      leaving = path;
-      try {
-        form.boxLeft(path);
-      } finally {
-        leaving = null;
-      }
+      // Left for a press elsewhere, once that press has ended: nothing moves under it (press-end.ts).
+      afterPress(td.ownerDocument, () => {
+        if (td.contains(td.ownerDocument.activeElement)) return;
+        leaving = path;
+        try {
+          form.boxLeft(path);
+        } finally {
+          leaving = null;
+        }
+      });
     });
     return { name: column, def: sub, widget, error, td };
   }
@@ -401,7 +418,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       const values = current()[at].values;
       const typed = Object.keys(form.getState().unread ?? {}).some((path) => path.startsWith(`${name}.${line.key}.`));
       if (!asking || (!typed && cells.every((cell) => isEmpty(cell.def, values[cell.name]) || values[cell.name] === false))) return form.removeLine(name, line.key);
-      confirm.ask(fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: at + 1 }) }), (gone) => {
+      confirm.ask(fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: itemNumber(current(), line.key, isItem) || at + 1 }) }), (gone) => {
         if (gone) form.removeLine(name, line.key);
         // The line that took its place, or this one kept; else Add.
         const left = current();
@@ -520,8 +537,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
         // A line the table keeps (lineDelete) shows no ×.
         row.remove.hidden = readonly || current.length <= min || now?.deletable === false;
         row.grip.hidden = readonly;
-        // Named by where it is now: it moves.
-        const lineName = fillIn(labels.lineN, { n: index + 1 });
+        // Named by its number now, as people count lines (sections and notes are not lines): it moves.
+        const lineName = fillIn(labels.lineN, { n: itemNumber(current, line.key, isItem) });
         row.pick?.setAttribute('aria-label', fillIn(labels.chooseLine, { name: lineName }));
         if (row.copy) {
           row.copy.setAttribute('aria-label', fillIn(labels.copy, { name: lineName }));
@@ -540,8 +557,16 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
           const message = errors[`${name}.${line.key}.${cell.name}`];
           const rules = row.kind ? undefined : now?.cells[cell.name];
           if (!row.kind) cell.td.hidden = gone.has(cell.name);
+          // A number worked out on a line where a cell holds text that does not read waits for it, as the totals do: a dash
+          // with its words, never the amount worked out before that text was typed.
+          const waits = row.kind ? null : waitsOn(line, cell.name, unread);
+          if (waits) {
+            cell.waiting ??= make('span', { class: 'fd-cell-waits' });
+            if (cell.waiting.title !== waits) waitingTotal(cell.waiting, waits);
+            if (!cell.waiting.isConnected) cell.widget.element.after(cell.waiting);
+          } else cell.waiting?.remove();
           // Hidden by its line, the cell stays, empty, so the column lines up.
-          cell.widget.element.hidden = !!rules?.invisible;
+          cell.widget.element.hidden = !!rules?.invisible || !!waits;
           setData(cell.td, 'tone', rules?.tone);
           cell.td.classList.toggle('fd-cell-bold', !!rules?.bold);
           const path = `${name}.${line.key}.${cell.name}`;
@@ -563,7 +588,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       });
       for (const [column, td] of sums) {
         // Numbers only: a line holding text that does not read, or no number, makes the total wait for it.
-        const total = columnTotal(current, column, (line) => !lineKind(def, line.values), (line) => !!unread?.[`${name}.${line.key}.${column}`]);
+        const total = columnTotal(current, column, isItem, (line) => !!unread?.[`${name}.${line.key}.${column}`] || !!waitsOn(line, column, unread));
         if ('waits' in total) {
           const said = fillIn(labels.totalWaits, { n: total.waits });
           if (td.title !== said) waitingTotal(td, said);

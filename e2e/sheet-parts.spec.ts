@@ -26,7 +26,8 @@ for (const variant of VARIANTS) {
         });
         expect(look, direction).toEqual({ stage: 'rgb(0, 40, 85)', text: 'rgb(255, 255, 255)', wordsBackground: 'rgba(0, 0, 0, 0)', wordsPadding: '0px', wordsClip: 'none' });
         // The other stages: grey, their words muted, with no box of their own either.
-        const other = await bar.getByRole('button', { name: 'Draft' }).evaluate((step) => {
+        // The customer's stages are shown, not clicked: Block, which asks, moves it.
+        const other = await bar.locator('li > *').filter({ hasText: 'Draft' }).evaluate((step) => {
           const words = getComputedStyle(step.firstElementChild as HTMLElement);
           return { stage: getComputedStyle(step).backgroundColor, wordsBackground: words.backgroundColor };
         });

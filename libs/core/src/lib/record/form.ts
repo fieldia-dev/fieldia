@@ -2431,6 +2431,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // page's `change` steps, set off by it, as the source's onchange does.
     write: (values, chain) => write(values, 'step', worksOut(chain)),
     store: (values) => store(values),
+    // The person's own change: the field's, or a line of it (a claim by line): put back, the whole field is theirs
+    // again — at risk, asked about — never less than it was.
+    mine: (field) => personal.has(field) || personalLines.has(field),
+    putBack(values, mine) {
+      write(values, 'step');
+      for (const name of mine) noteOrigin(name, 'person', {});
+    },
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
     typedFirst,
@@ -2501,7 +2508,22 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // go when another record is shown by then (its steps were for that one).
   const moment = createMoments((key, list, chain, on) => runTop(list, { id: key, chain, generation: on }), () => generation);
 
-  /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
+  /**
+   * Whether steps do something before their first save — set a status, call the app, open a page — so a record's
+   * button made of them saves first. Steps that start with the save (Save and close), or only check before it, need
+   * no save before them: theirs is the first.
+   */
+  function actsBeforeSaving(list: readonly ActionStep[]): boolean {
+    const first = list.findIndex((step) => step.do === 'save');
+    return first > 0 && list.slice(0, first).some((step) => step.do !== 'check');
+  }
+
+  /**
+   * A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. A
+   * record's button whose steps act and then save saves the record first when it is new or changed, as Flectra's
+   * button does: refused — a field it requires left empty — none of its steps run, so nothing it does happens to a
+   * record that cannot be saved.
+   */
   function press(source: ButtonNode | StatButton | MenuItem, scope: RunScope): Promise<RunResult> {
     const list: ActionStep[] = [...(source.steps ?? [])];
     if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
@@ -2520,6 +2542,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           const result: RunResult = { done: false, reason: 'no', message: confirm };
           emit('run', { id: scope.id, steps: list, result });
           return result;
+        }
+        const saveFirst = page.data.kind === 'record' && actsBeforeSaving(list);
+        // What is typed is read first, as the run reads it before its first step that reads the form (run.ts): text
+        // that does not read stops it with `check`, said under its box — before the save that comes first, and any step.
+        if (saveFirst && scope.typed === 'first') {
+          const unread = await typedFirst();
+          if (unread) {
+            const at = Math.max(0, list.findIndex((step) => step.do !== 'check'));
+            const result: RunResult = { done: false, stoppedAt: at, step: list[at], reason: unread.reason, ...(unread.message !== undefined ? { message: unread.message } : {}) };
+            emit('run', { id: scope.id, steps: list, result });
+            return result;
+          }
+        }
+        // Then the save first, then the steps.
+        if (saveFirst && (state.recordId == null || state.dirty.length > 0 || Object.keys(state.unread ?? {}).length > 0 || state.uploads.some(uploadGoing))) {
+          const first = await saving(scope.chain);
+          if (first) {
+            const result: RunResult = { done: false, step: { do: 'save' }, reason: first.reason, ...(first.message !== undefined ? { message: first.message } : {}), ...(first.error !== undefined ? { error: first.error } : {}) };
+            emit('run', { id: scope.id, steps: list, result });
+            return result;
+          }
         }
         return runTop(list, scope);
       })()

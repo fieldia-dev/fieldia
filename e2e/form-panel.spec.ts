@@ -140,7 +140,7 @@ test('a link’s Create and edit… inside the panel opens a dialog above it, an
   await customer.fill('Hilton Cairo');
   await panel.locator('[data-node="call-partner"]').getByRole('option', { name: 'Create and edit…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Customer' });
-  await expect(dialog.locator('[data-node="#title"] input')).toHaveValue('Hilton Cairo');
+  await expect(dialog.locator('[data-node="#title"] textarea')).toHaveValue('Hilton Cairo');
   expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
   // Above the panel: what is under the middle of the dialog is the dialog, and the panel lies under the dialog's shade.
   const over = await dialog.evaluate((el) => {

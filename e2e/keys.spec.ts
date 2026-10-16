@@ -58,7 +58,7 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=fields&skin=outlined');
       await node(page, 'f-client').getByRole('button', { name: 'Open Nile Traders' }).click();
       const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
-      await dialog.locator('[data-node="#title"] input').fill('Nile Traders Co');
+      await dialog.locator('[data-node="#title"] textarea').fill('Nile Traders Co');
       await page.keyboard.press('ControlOrMeta+Enter');
       await expect(dialog).toBeHidden();
       await expect(node(page, 'f-client').getByRole('combobox')).toHaveValue('Nile Traders Co');

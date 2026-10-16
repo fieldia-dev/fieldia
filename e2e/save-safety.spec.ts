@@ -28,7 +28,7 @@ function watch(page: Page) {
 async function openDemo(page: Page, query = '') {
   const problems = watch(page);
   await page.goto(`${DEMO}${query}`);
-  await expect(yours(page).locator('.fd-title input')).toHaveValue(/Villa|فيلا/);
+  await expect(yours(page).locator('.fd-title textarea')).toHaveValue(/Villa|فيلا/);
   return problems;
 }
 

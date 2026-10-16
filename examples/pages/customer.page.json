@@ -63,20 +63,26 @@
       "avatarField": "image",
       "above": [{ "type": "field", "id": "f-company-type", "field": "company_type", "widget": "radio" }]
     },
-    "statusbar": { "field": "state", "clickable": true },
+    "statusbar": { "field": "state" },
     "buttons": [
       {
         "type": "button",
         "id": "activate",
         "label": "Activate",
+        "steps": [{ "do": "set", "field": "state", "value": "'active'" }, { "do": "save" }],
         "action": "activate",
         "style": "primary",
-        "invisible": "state != 'draft'"
+        "invisible": "state == 'active'"
       },
       {
         "type": "button",
         "id": "block",
         "label": "Block",
+        "steps": [
+          { "do": "set", "field": "state", "value": "'blocked'" },
+          { "do": "save" },
+          { "do": "say", "message": "Customer blocked: new orders will be refused.", "tone": "success" }
+        ],
         "action": "block",
         "style": "danger",
         "confirm": "Block this customer? New orders will be refused.",

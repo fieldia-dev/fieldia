@@ -219,7 +219,7 @@ describe('a text box holds the keys typed after a refused one', () => {
     expect(input.value).toBe('abc');
     leave(input);
     expect(value()).toBe('abcde');
-    expect(form.problem('x')).toBe('Name is 2 characters over its 3: shorten it to save');
+    expect(form.problem('x')).toBe('Name is 2 characters too long: shorten it to 3');
   });
 });
 

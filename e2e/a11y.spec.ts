@@ -86,7 +86,7 @@ test.describe('axe on what a person reaches', () => {
 
   test('a record that will not save, in Arabic', async ({ page }) => {
     await visit(page, '/plain/?page=customer&skin=underline&locale=ar&dir=rtl');
-    await node(page, '#title').locator('input').fill('');
+    await node(page, '#title').locator('textarea').fill('');
     await page.locator('.fd-form button[type="submit"]:visible').first().click();
     await expect(page.locator('.fd-error:visible').first()).toBeVisible();
     expect(await axeFindings(page, 'customer refused, Arabic')).toEqual([]);

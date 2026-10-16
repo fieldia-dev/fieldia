@@ -46,7 +46,7 @@ import {
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -69,6 +69,7 @@ import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
 import { headPart, listPart, partsFor, type HeadPart } from './viewer-parts';
 import { saveSafety } from './save-safety';
+import { steadyPresses } from './steady-press';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
@@ -481,7 +482,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, safe: true, ended: () => (discarding = null) }));
+  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -754,23 +755,34 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let advice = '';
       /** Leaving the field now: a problem it raises is said by its error, politely. */
       let leaving = false;
+      /** The problem last said politely as the box was left: one shown while typing (a paste past the most) is said as it is left. */
+      let saidLeaving = '';
+      /** The box was just left: the next drawing of it says its problem, though leaving it raised none new. */
+      let justLeft = false;
       wrapper.addEventListener('focusin', () => {
         typing = true;
         setAttr(error, 'aria-live', null);
       });
       wrapper.addEventListener('focusout', (event) => {
         if (wrapper.contains(event.relatedTarget as Node | null)) return;
-        typing = false;
-        // The field's own problem is said now, as its box is left; that it is required waits for Save.
-        leaving = true;
-        try {
-          form.boxLeft(node.field);
-        } finally {
-          leaving = false;
-        }
-        // Not at once: focus also leaves when a redraw removes the focused part
-        // (a deleted line's button), and that redraw must finish first.
-        queueMicrotask(() => update(form.getState()));
+        // Left for a press elsewhere (a tap on Submit), what leaving shows waits till that press has ended: shown as the
+        // finger comes down, a message would move Submit from under it, and the tap would be lost (press-end.ts).
+        afterPress(doc, () => {
+          // Back in the box meanwhile: still being typed in.
+          if (wrapper.contains(doc.activeElement)) return;
+          typing = false;
+          // The field's own problem is said now, as its box is left; that it is required waits for Save.
+          leaving = true;
+          try {
+            form.boxLeft(node.field);
+          } finally {
+            leaving = false;
+          }
+          justLeft = true;
+          // Not at once: focus also leaves when a redraw removes the focused part
+          // (a deleted line's button), and that redraw must finish first.
+          queueMicrotask(() => update(form.getState()));
+        });
       });
       // Written while the person is elsewhere — the browser's autofill filling the form from one pick: each box is read
       // at once, as one typed in and left (its change, which a browser may not send), and its problem said.
@@ -830,8 +842,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         }
         if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
         const message = state.errors[node.field];
-        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once.
-        if (leaving && message && message !== error.textContent) setAttr(error, 'aria-live', 'polite');
+        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once. Shown
+        // already while it was typed in (a paste past its most), it is said now, as the box is left.
+        const left = leaving || justLeft;
+        justLeft = false;
+        if (left && message && message !== saidLeaving) {
+          setAttr(error, 'aria-live', 'polite');
+          if (message === error.textContent) error.textContent = '';
+        }
+        if (left) saidLeaving = message ?? '';
+        else if (!message) saidLeaving = '';
         setHidden(error, !message);
         setText(error, message ?? '');
         const now = state.warnings[node.field] ?? '';
@@ -1923,7 +1943,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
       if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
-      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}) });
+      // The record's name, and its subtitle, wrap on a narrow screen rather than be cut: a long name reads from its start.
+      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}), options: { wraps: true } });
       // Fields on the title's line, before and after it: a priority star, a state's dot (Flectra's <h1>).
       const before = node.title.before ?? [];
       const after = node.title.after ?? [];
@@ -1936,7 +1957,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         };
         title.append(el('div', { class: 'fd-title-line' }, ...before.map(side), name, ...after.map(side)));
       } else title.append(name);
-      if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
+      if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField, options: { wraps: true } }));
       if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map((part) => fieldItem(part))));
       const row = el('div', { class: 'fd-title-row' }, title);
       if (node.title.avatarField) {
@@ -2279,6 +2300,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const from = event.target as HTMLElement;
     // A one-line code editor is a text box to the form: it says it is one line, and keeps Enter only from adding one.
     const oneLine = from.getAttribute('aria-multiline') === 'false';
+    // A line that wraps (a record's title) sends the form with Enter, as an input does by itself.
+    if (oneLine && from.tagName === 'TEXTAREA' && !keys.enterMovesToNext && !event.shiftKey && !event.altKey) {
+      event.preventDefault();
+      root.requestSubmit();
+      return;
+    }
     // A plain Enter a field used itself, such as picking from an open list, is the field's.
     if ((event.defaultPrevented && !oneLine) || !keys.enterMovesToNext || event.shiftKey || event.altKey) return;
     if (from.tagName !== 'INPUT' && from.tagName !== 'SELECT' && !oneLine) return;
@@ -2367,11 +2394,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /**
    * A question with Cancel and OK, or with `withCancel` false a notice with OK
-   * alone. `how.yes` words OK as what it does (Discard); `how.safe` puts the
-   * focus on Cancel, so Enter loses nothing; `how.ended` is told the moment it
-   * is answered, before the promise settles.
+   * alone. A question opens with the focus on Cancel — a button's `confirm`,
+   * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
+   * Enter meant for the form, or a second press of the key that asked, never
+   * answers Yes by itself; a notice, on OK. `how.yes` words OK as what it does
+   * (Discard); `how.ended` is told the moment it is answered, before the
+   * promise settles.
    */
-  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; safe?: boolean; ended?: () => void } = {}): Promise<boolean> {
+  function dialogConfirm(message: string, withCancel = true, how: { yes?: string; ended?: () => void } = {}): Promise<boolean> {
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
@@ -2402,7 +2432,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Asked where it is seen: over a page opened in this one's place (its breadcrumb leaving this record), in that one.
       const over = root.hidden ? [...(root.parentElement?.children ?? [])].reverse().find((child): child is HTMLElement => child !== root && child.matches('form.fd-form') && !(child as HTMLElement).hidden) : undefined;
       (over ?? root).append(backdrop);
-      (how.safe && withCancel ? cancel : ok).focus();
+      (withCancel ? cancel : ok).focus();
     });
   }
 
@@ -2423,6 +2453,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
 
   host.append(root);
+  // A press lands on what the person aimed at: never on a button that slid under a pointer that did not move.
+  cleanups.push(steadyPresses(root));
+  // And a box left for a press shows its problem once the press has ended (press-end.ts): watched from the first press.
+  watchPresses(doc);
   const unsubscribe = form.subscribe(render);
   // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.
   cleanups.push(

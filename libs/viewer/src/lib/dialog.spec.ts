@@ -49,7 +49,7 @@ describe('a form in a dialog', () => {
     const dataSource = customerSource();
     const result = openFormDialog({ page: page('customer'), dataSource, recordId: 1, title: 'Nile Traders' });
     await flush();
-    typeIn(dialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement, 'Nile Traders Ltd');
+    typeIn(dialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement, 'Nile Traders Ltd');
     button('Save & Close').click();
     const done = await result;
     expect(done.saved).toBe(true);
@@ -64,7 +64,7 @@ describe('a form in a dialog', () => {
     const dataSource = customerSource();
     const result = openFormDialog({ page: page('customer'), dataSource, recordId: 1, title: 'Nile Traders' });
     await flush();
-    typeIn(dialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement, 'Changed');
+    typeIn(dialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement, 'Changed');
     if (way === 'Escape') (dialog() as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     else button(way).click();
     expect((await result).saved).toBe(false);
@@ -82,7 +82,7 @@ describe('a form in a dialog', () => {
     await flush();
     expect(dialog()).not.toBeNull();
     expect(settled).toBe(false);
-    expect(document.activeElement).toBe(dialog()?.querySelector('[data-node="#title"] input'));
+    expect(document.activeElement).toBe(dialog()?.querySelector('[data-node="#title"] textarea'));
   });
 
   it('in values mode checks the form and hands back its values, with no data source', async () => {

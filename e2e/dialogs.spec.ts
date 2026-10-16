@@ -18,7 +18,7 @@ for (const variant of VARIANTS) {
       await client.fill('Hilton Cairo');
       await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
       const dialog = page.getByRole('dialog', { name: 'Client' });
-      await expect(dialog.locator('[data-node="#title"] input')).toHaveValue('Hilton Cairo');
+      await expect(dialog.locator('[data-node="#title"] textarea')).toHaveValue('Hilton Cairo');
       expect(await holdsFocus(page)).toBe(true);
       await dialog.locator('[data-node="f-email"] input').fill('events@hiltoncairo.example');
       await screen(page, `${variant}-dialog-create-and-edit`, { viewport: true });
@@ -35,7 +35,7 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=fields&skin=outlined');
       await node(page, 'f-client').getByRole('button', { name: 'Open Nile Traders' }).click();
       const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
-      const name = dialog.locator('[data-node="#title"] input');
+      const name = dialog.locator('[data-node="#title"] textarea');
       await expect(name).toHaveValue('Nile Traders');
       await expect(dialog.locator('[data-node="f-email"] input')).toHaveValue('orders@niletraders.example');
       // Large: most of a wide window, never past it.
@@ -69,7 +69,7 @@ for (const variant of VARIANTS) {
       for (const leave of ['Escape', 'Discard']) {
         await opener.click();
         const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
-        await dialog.locator('[data-node="#title"] input').fill('Someone else');
+        await dialog.locator('[data-node="#title"] textarea').fill('Someone else');
         if (leave === 'Escape') await page.keyboard.press('Escape');
         else await dialog.getByRole('button', { name: 'Discard' }).click();
         await expect(dialog).toBeHidden();
@@ -147,7 +147,7 @@ test('a dialog wears the look of the page that opened it: the dark scheme on its
   await client.fill('Hilton Cairo');
   await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Client' });
-  await expect(dialog.locator('[data-node="#title"] input')).toHaveValue('Hilton Cairo');
+  await expect(dialog.locator('[data-node="#title"] textarea')).toHaveValue('Hilton Cairo');
   const colours = () =>
     dialog.evaluate((el) => {
       const input = el.querySelector('input.fd-input') as HTMLElement;

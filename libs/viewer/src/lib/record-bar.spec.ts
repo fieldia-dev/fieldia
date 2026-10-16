@@ -172,7 +172,7 @@ describe('the pager over a record', () => {
     expect(host.querySelector('.fd-record-pager')?.getAttribute('role')).toBe('group');
     next.click();
     await until(() => pagerText(host) === '2 / 3');
-    expect(host.querySelector<HTMLElement>('.fd-title input')).toBeTruthy();
+    expect(host.querySelector<HTMLElement>('.fd-title textarea')).toBeTruthy();
     expect(handle?.form.getState().values['name']).toBe('Karim Fathy');
     previous.click();
     await until(() => pagerText(host) === '1 / 3');

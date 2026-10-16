@@ -215,6 +215,6 @@ describe('a saved form placed in another', () => {
     await flush();
     (part(host, 'f-client').querySelector('button.fd-combo-open') as HTMLButtonElement).click();
     await flush();
-    expect(document.querySelector('.fd-form-dialog [data-node="#title"] input')).not.toBeNull();
+    expect(document.querySelector('.fd-form-dialog [data-node="#title"] textarea')).not.toBeNull();
   });
 });

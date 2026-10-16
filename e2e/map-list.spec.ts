@@ -246,7 +246,7 @@ test('a pin opens its card: picture, title, fields, a Choose shared with its row
 
   await card(page).getByRole('button', { name: 'Open' }).click();
   await expect(page).toHaveURL(new RegExp(`page=map-home&.*record=${id}|record=${id}.*page=map-home`));
-  await expect(page.locator('.fd-title input')).toHaveValue(name);
+  await expect(page.locator('.fd-title textarea')).toHaveValue(name);
 });
 
 /** A home's pin by its id, and what it says. */
@@ -294,7 +294,7 @@ test('a price on its pin, short: the pound unsaid, dollars named, a rent by the 
   await screen(page, 'map-list-card-link');
   await link.click();
   await expect(page).toHaveURL(/page=map-home&skin=outlined&record=15$/);
-  await expect(page.locator('.fd-title input')).toHaveValue('4-bedroom flat in Zamalek');
+  await expect(page.locator('.fd-title textarea')).toHaveValue('4-bedroom flat in Zamalek');
 });
 
 test('Ctrl-click (⌘-click) chooses a home on the map, a tick on its pin; the close button closes a card', async ({ page }) => {

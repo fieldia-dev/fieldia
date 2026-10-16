@@ -191,21 +191,30 @@ test.describe('survey', () => {
 });
 
 test.describe('customer sheet', () => {
-  test('asks before blocking, moves through states, and saves', async ({ page }) => {
+  test('asks before blocking, then blocks the customer and saves; the statusbar only shows where it stands', async ({ page }) => {
     const { demo } = await open(page, variant, 'page=customer&skin=underline');
-    await expect(page.locator('[data-node="#title"] input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Nile Traders');
     await expect(page.getByRole('button', { name: 'Activate' })).toBeHidden();
+    // The statusbar says where the customer stands; Block, which asks first, is the way to block.
+    await expect(page.locator('.fd-statusbar').getByRole('button')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Block', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toContainText('Block this customer? New orders will be refused.');
+    // Enter never blocks by itself: Cancel has the focus.
+    await expect(page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' })).toBeFocused();
     await screen(page, `${variant}-customer-confirm`);
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     expect(await demo<string[]>('actions')).toEqual([]);
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');
     await page.getByRole('button', { name: 'Block', exact: true }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect.poll(() => demo<string[]>('actions')).toEqual(['block']);
 
-    await page.locator('.fd-statusbar').getByRole('button', { name: 'Blocked' }).click();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Blocked');
+    await expect(page.getByText('Customer blocked: new orders will be refused.')).toBeVisible();
+    await expect(page.locator('.fd-status')).toHaveText('Saved');
+    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Block', exact: true })).toBeHidden();
     await expect(page.locator('.fd-ribbon')).toBeVisible();
     await expect(page.locator('.fd-ribbon')).toHaveText('Blocked');
     // The ribbon sits in the corner without covering any stat button.
@@ -218,12 +227,13 @@ test.describe('customer sheet', () => {
     await page.getByRole('tab', { name: 'Sales and billing' }).click();
     await expect(field(page, 'f-credit-limit')).toHaveJSProperty('readOnly', true);
     await screen(page, `${variant}-customer-blocked`);
+    expect((await demo<Record<string, unknown>>('dataSource.records.partner.1'))['state']).toBe('blocked');
 
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.locator('.fd-status')).toHaveText('Saved');
-    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
-    const stored = await demo<Record<string, unknown>>('dataSource.records.partner.1');
-    expect(stored['state']).toBe('blocked');
+    // Activate brings them back, saved.
+    await page.getByRole('button', { name: 'Activate' }).click();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');
+    await expect(page.locator('.fd-ribbon')).toBeHidden();
+    await expect.poll(async () => (await demo<Record<string, unknown>>('dataSource.records.partner.1'))['state']).toBe('active');
   });
 
   test('stat buttons hand their action to the app', async ({ page }) => {
@@ -245,7 +255,7 @@ test.describe('customer sheet', () => {
 
   test('a warning from the server appears under the field that changed', async ({ page }) => {
     await open(page, variant, 'page=customer&skin=underline');
-    await expect(page.locator('[data-node="#title"] input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Nile Traders');
     await page.getByRole('tab', { name: 'Sales and billing' }).click();
     const limit = field(page, 'f-credit-limit');
     await limit.fill('250000');

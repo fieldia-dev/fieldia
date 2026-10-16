@@ -22,6 +22,12 @@ function mount(name: string, options: Partial<ViewerOptions> = {}) {
 }
 
 const at = (host: Element, node: string) => host.querySelector(`[data-node="${node}"]`) as HTMLElement;
+/** The customer page with its statusbar clickable: a person moves the record by its steps (the page's own moves by Block, which asks). */
+function clickableCustomer(): Page {
+  const customer = page('customer');
+  if (customer.layout.type === 'sheet' && customer.layout.statusbar) customer.layout.statusbar.clickable = true;
+  return customer;
+}
 const input = (host: Element, node: string) => at(host, node).querySelector('input, textarea, select') as HTMLInputElement;
 const visible = (el: Element | null) => !!el && !el.closest('[hidden]');
 const button = (host: Element, text: string) =>
@@ -506,10 +512,10 @@ describe('a page in the app’s own words', () => {
 });
 
 describe('a read-only form', () => {
-  const title = (host: Element) => host.querySelector('[data-node="#title"] input') as HTMLInputElement;
+  const title = (host: Element) => host.querySelector('[data-node="#title"] textarea') as HTMLInputElement;
 
   it('shows every field read-only when asked, with no Save and a statusbar that cannot be clicked, until switched', async () => {
-    const { host, form, handle } = sheet({ readonly: true });
+    const { host, form, handle } = sheet({ page: clickableCustomer(), readonly: true });
     await form.settled();
     expect(input(host, 'f-phone').readOnly).toBe(true);
     expect(title(host).readOnly).toBe(true);
@@ -622,7 +628,7 @@ describe('a sections page', () => {
   });
 
   it('a header statusbar on a read-only field cannot be clicked', () => {
-    const customer = page('customer') as any;
+    const customer = clickableCustomer() as any;
     customer.fields.state.readonly = true;
     const host = document.createElement('div');
     document.body.replaceChildren(host);
@@ -689,7 +695,7 @@ describe('a record sheet', () => {
   it('loads the record and shows its title, statusbar and stat buttons', async () => {
     const { host, form } = sheet();
     await form.settled();
-    expect((host.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe('Nile Traders');
+    expect((host.querySelector('[data-node="#title"] textarea') as HTMLInputElement).value).toBe('Nile Traders');
     const states = [...host.querySelectorAll('.fd-statusbar li')].map((li) => li.textContent);
     expect(states).toEqual(['Draft', 'Active', 'Blocked']);
     expect(host.querySelector('.fd-statusbar [aria-current="step"]')?.textContent).toBe('Active');
@@ -697,14 +703,16 @@ describe('a record sheet', () => {
     expect(stats).toEqual(['4Sales', '2Invoices']);
   });
 
-  it('asks before a button with a confirmation runs', async () => {
+  it('asks before a button with a confirmation runs — Cancel focused — then blocks the customer and saves', async () => {
     const pressed: string[] = [];
-    const { host, form } = sheet({ onAction: (r) => void pressed.push(r.action) });
+    const { host, form, dataSource } = sheet({ onAction: (r) => void pressed.push(r.action) });
     await form.settled();
     expect(button(host, 'Activate')).toBeUndefined(); // already active
     button(host, 'Block').click();
     const dialog = document.querySelector('[role=alertdialog]') as HTMLElement;
     expect(dialog.textContent).toContain('Block this customer? New orders will be refused.');
+    // A question before a step opens on Cancel, as "Discard your changes?" does: Enter never answers Yes by itself.
+    expect(document.activeElement).toBe(button(dialog, 'Cancel'));
     button(dialog, 'Cancel').click();
     await flush();
     expect(pressed).toEqual([]);
@@ -713,10 +721,13 @@ describe('a record sheet', () => {
     await form.settled();
     await flush();
     expect(pressed).toEqual(['block']);
+    expect(form.getState().values['state']).toBe('blocked');
+    expect(dataSource.records['partner'][1]['state']).toBe('blocked');
+    expect(host.querySelector('.fd-statusbar [aria-current="step"]')?.textContent).toBe('Blocked');
   });
 
   it('moves the record when a clickable state is chosen', async () => {
-    const { host, form } = sheet();
+    const { host, form } = sheet({ page: clickableCustomer() });
     await form.settled();
     (host.querySelector('.fd-statusbar li:nth-child(3) button') as HTMLButtonElement).click();
     expect(form.getState().values['state']).toBe('blocked');
@@ -931,7 +942,7 @@ describe('the parts of a sheet', () => {
     expect(company.textContent).toBe('Company');
     expect(company.classList.contains('fd-tone-info')).toBe(true);
     expect(company.querySelector('svg')?.getAttribute('data-icon')).toBe('building');
-    expect(follows(company, host.querySelector('[data-node="#title"] input')!)).toBe(true);
+    expect(follows(company, host.querySelector('[data-node="#title"] textarea')!)).toBe(true);
     expect(visible(company)).toBe(false); // a new record is not a company yet
     form.setValue('is_company', true);
     expect(visible(company)).toBe(true);
@@ -966,7 +977,7 @@ describe('the parts of a sheet', () => {
       layout.title.above = [{ type: 'field', id: 't-company', field: 'is_company' }];
       layout.title.below = [{ type: 'field', id: 't-website', field: 'website' }];
     });
-    const title = host.querySelector('[data-node="#title"] input') as HTMLElement;
+    const title = host.querySelector('[data-node="#title"] textarea') as HTMLElement;
     expect(at(host, 't-company').closest('.fd-title-above')).not.toBeNull();
     expect(at(host, 't-website').closest('.fd-title-below')).not.toBeNull();
     expect(follows(at(host, 't-company'), title)).toBe(true);
@@ -991,7 +1002,7 @@ describe('the parts of a sheet', () => {
     expect(host.querySelector('.fd-header .fd-statusbar')).toBeNull();
     const bar = host.querySelector('.fd-card .fd-statusbar') as HTMLElement;
     expect(bar).not.toBeNull();
-    expect(follows(host.querySelector('[data-node="#title"] input')!, bar)).toBe(true);
+    expect(follows(host.querySelector('[data-node="#title"] textarea')!, bar)).toBe(true);
     expect(button(host, 'Activate').closest('.fd-header')).not.toBeNull();
   });
 });
@@ -1305,7 +1316,7 @@ describe('related records in dialogs', () => {
     await settle();
     ([...at(host, 'f-client').querySelectorAll('[role="option"]')].find((o) => o.textContent === 'Create and edit…') as HTMLElement).click();
     await settle();
-    const title = formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement;
+    const title = formDialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement;
     expect(title.value).toBe('Hilton Cairo');
     ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
     await settle();
@@ -1330,7 +1341,7 @@ describe('related records in dialogs', () => {
     await settle();
     ([...at(host, 'f-client').querySelectorAll('[role="option"]')].find((o) => o.textContent === 'Create and edit…') as HTMLElement).click();
     await settle();
-    expect((formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe('Hilton Cairo');
+    expect((formDialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement).value).toBe('Hilton Cairo');
     expect((formDialog()?.querySelector('[data-node="f-email"] input') as HTMLInputElement).value).toBe('projects@Fit-out.example');
     ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
     await settle();
@@ -1342,7 +1353,7 @@ describe('related records in dialogs', () => {
     const { host, viewer, dataSource } = await mountProject();
     (at(host, 'f-client').querySelector('button[aria-label="Open Nile Traders"]') as HTMLButtonElement).click();
     await settle();
-    const title = formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement;
+    const title = formDialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement;
     expect(title.value).toBe('Nile Traders');
     title.value = 'Nile Traders Ltd';
     title.dispatchEvent(new Event('input', { bubbles: true }));

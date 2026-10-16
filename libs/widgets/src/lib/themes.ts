@@ -59,8 +59,9 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       radius: '12px', 'control-radius': '10px', 'control-height': '40px', 'pad-y': '8px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '500', 'gap-x': '20px', 'gap-y': '16px', fill: '#f2f2f7',
     },
     dark: {
-      text: '#f5f5f7', muted: '#a1a1a6', page: '#000000', surface: '#1c1c1e', border: '#38383a', 'border-strong': '#636366',
-      accent: '#409cff', 'accent-text': '#000000', 'accent-soft': '#0f2b4d', focus: '#409cff', 'focus-ring': '0 0 0 4px rgba(64, 156, 255, 0.3)', error: '#ff6961', 'error-soft': '#3a1412', fill: '#2c2c2e', edge: '#636366',
+      // Apple's elevated dark greys (a sheet over a page), not its black base: a form sits on an app's dark page, never as a black slab in it.
+      text: '#f5f5f7', muted: '#a1a1a6', page: '#1c1c1e', surface: '#2c2c2e', border: '#48484a', 'border-strong': '#636366',
+      accent: '#409cff', 'accent-text': '#000000', 'accent-soft': '#0f2b4d', focus: '#409cff', 'focus-ring': '0 0 0 4px rgba(64, 156, 255, 0.3)', error: '#ff6961', 'error-soft': '#3a1412', fill: '#3a3a3c', edge: '#636366',
     },
   },
   // Bootstrap 5: its blue, a soft blue ring on focus, six-pixel corners.
@@ -83,7 +84,7 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       radius: '10px', 'control-radius': '8px', 'control-height': '36px', 'pad-y': '6px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '500', 'gap-x': '24px', 'gap-y': '16px',
     },
     dark: {
-      text: '#fafafa', muted: '#a1a1aa', page: '#09090b', surface: '#18181b', border: '#3f3f46', 'border-strong': '#71717a',
+      text: '#fafafa', muted: '#a1a1aa', page: '#121214', surface: '#18181b', border: '#3f3f46', 'border-strong': '#71717a',
       accent: '#e4e4e7', 'accent-text': '#18181b', 'accent-soft': '#27272a', focus: '#71717a', 'focus-ring': '0 0 0 3px rgba(113, 113, 122, 0.5)', error: '#f87171', 'error-soft': '#450a0a', edge: '#71717a',
     },
   },
@@ -95,7 +96,8 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
       radius: '8px', 'control-radius': '6px', 'pad-y': '4px', 'pad-x': '11px', 'input-border': '1px', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '18px',
     },
     dark: {
-      text: 'rgba(255, 255, 255, 0.85)', muted: 'rgba(255, 255, 255, 0.6)', page: '#000000', surface: '#141414', border: '#424242', 'border-strong': '#595959',
+      // Ant's container and elevated greys, not its black layout: on an app's dark page, never a black slab in it.
+      text: 'rgba(255, 255, 255, 0.85)', muted: 'rgba(255, 255, 255, 0.6)', page: '#141414', surface: '#1f1f1f', border: '#424242', 'border-strong': '#595959',
       accent: '#3c89e8', 'accent-text': '#000000', 'accent-soft': '#111a2c', focus: '#3c89e8', 'focus-ring': '0 0 0 2px rgba(60, 137, 232, 0.2)', error: '#e86e6b', 'error-soft': '#2c1618', edge: '#595959',
     },
   },

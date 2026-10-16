@@ -658,7 +658,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the clock it was written with, 0.3 less. 474.29 measured before, 482.29 after — 8.0 more, to 482.3.
 // The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: 501.66 + 8.00, to
 // 509.7 until the release measures it.
-const BUDGET_KB = 509.7;
+// The business owner's walk of 0.23 mended, in what every page carries: a press kept to the button that was under the
+// pointer (steady-press.ts), a box's message shown once the press that left it has ended (press-end.ts), a record's
+// button that saves first and puts back what its steps wrote when its save is refused (core's runner), a record's
+// title that wraps on a phone, lines named by their number among the items and a worked-out number that waits for
+// its line, one message for a paste past a field's most, the currency sign where the language puts it — 474.25
+// measured before, 479.71 after: 5.5 more, to 479.8.
+// Every lane of 0.24 joined, the walk's fixes last: 509.66 + 5.46, to 515.2 until the release measures it.
+const BUDGET_KB = 515.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -805,7 +812,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 153.62 measured before, 156.38 after — 2.8 more, to 156.4.
 // The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined (listed with the raw
 // budget above): 163.18 + 2.76, to 166.0 until the release measures it.
-const GZIP_BUDGET_KB = 166.0;
+// The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
+// 1.8 more, to 155.5.
+// Every lane of 0.24 joined, the walk's fixes last (listed with the raw budget above): 165.94 + 1.79, to 167.8 until the
+// release measures it.
+const GZIP_BUDGET_KB = 167.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1072,7 +1083,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: the date part
 // 21.53 + 0.18 and 8.12 + 0.08, to 21.8 and 8.3, the slots part as its lane measured it, the others as left above, until
 // the release measures it.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [21.8, 8.3], list: [72.4, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3], phone: [34.7, 15.2], slots: [14.7, 5.6] };
+// The business owner's walk of 0.23 mended: a cell's, a range's end's and a property's message shown once the press
+// that left it has ended (date 19.4, 7.3, as measured 19.38 and 7.21; survey 35.2, as measured 35.15); and a table of
+// lines naming a line by its number among the items, its worked-out numbers waiting, said in words, for a cell of it
+// that does not read (lines 23.7, 8.2, as measured 23.63 and 8.18).
+// Every lane of 0.24 joined, the walk's fixes last: date 21.8 and 8.3 with 0.1 more, lines 23.11 + 0.64 and 8.01 + 0.22,
+// survey 35.35 + 0.16, the others as left above, until the release measures it.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [21.9, 8.4], list: [72.4, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.8, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.7, 15.2], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
