@@ -7,7 +7,11 @@
  * meanwhile (lines-plain.ts). What a line is edited through (lines.ts) is the
  * main script's: the form a cell sees — its unread text, its uploads stored as
  * its line's — a column's total and a line's dialog, which a grid and cards
- * draw with too.
+ * draw with too. A block pasted on a table's cells — a spreadsheet's rows, each
+ * cell read as its column reads what is typed (cell-paste.ts) — is this part's
+ * too: the table of lines pastes with it, and gives it to the grid and to a
+ * list's Import, which load this part for it.
  */
 export { linesWidget } from './lines-table';
 export { linksTableWidget } from './links-table';
+export { blockOf, readPastedCell, whyNotPasted, type CellReading } from './cell-paste';

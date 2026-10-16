@@ -251,6 +251,8 @@ export const ar: WidgetLabels = {
   notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'في الجدول {n} من الأسطر فقط، فلم يُلصق الباقي',
   pasteBeyondLinesOne: 'في الجدول سطر واحد فقط، فلم يُلصق الباقي',
+  pasteAddedLines: 'أُضيف {n} من الأسطر.',
+  pasteAddedLinesOne: 'أُضيف سطر واحد.',
   enterNumber: 'أدخل رقمًا',
   enterDate: 'أدخل تاريخًا، مثل {example}',
   enterValue: 'أدخل قيمة للتصفية بها',

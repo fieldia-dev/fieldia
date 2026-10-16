@@ -1,8 +1,10 @@
-import { isEmpty, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
-import { cellText } from './display';
+import { isEmpty, isRightToLeft, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
+import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
+import { dateOrderOf } from './date-text';
+import { cellText, currencyOf } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
-import { WIDGET_LABELS } from './labels';
+import { inPlural, WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
 import { afterPress } from './press';
@@ -18,7 +20,9 @@ import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widge
  * its text.
  *
  * A line moves by the grip at its start, or by Alt+↑/↓ from inside it, said
- * aloud. The node's `options`: `min` lines at least — a new table starts with
+ * aloud. A block copied from a spreadsheet and pasted in a cell fills across
+ * and down from it, each cell read as its column reads what is typed, lines
+ * added for the rows past the last, as the grid pastes (cell-paste.ts). The node's `options`: `min` lines at least — a new table starts with
  * them — and `max` at most; `addLabel`, the Add button's words (and
  * `addSectionLabel`, `addNoteLabel`, its section's and note's); `emptyLabel`,
  * a sentence while there is no line; `confirmDelete`, asking before a line
@@ -204,7 +208,9 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   const confirm = askFirst(make, labels);
   // Where a line went, said politely; not the page's own announcer, which a page looks for by its class.
   const voice = make('div', { class: 'fd-sr-only', role: 'status' });
-  element.append(...(bar ? [bar] : []), scroller, ...(empty ? [empty] : []), adds, confirm.element, voice);
+  // What a block pasted on the cells did, said politely: how many cells took it, the lines added, and which did not.
+  const pasteNote = make('div', { class: 'fd-help fd-lines-paste-note', role: 'status', 'aria-live': 'polite', hidden: '' });
+  element.append(...(bar ? [bar] : []), scroller, pasteNote, ...(empty ? [empty] : []), adds, confirm.element, voice);
   /** A press that waits for its run, and is not pressed again meanwhile. */
   async function pressed(button: HTMLButtonElement, run: () => Promise<unknown>) {
     if (button.hasAttribute('aria-busy')) return;
@@ -322,6 +328,98 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     event.preventDefault();
     move(key, current().findIndex((line) => line.key === key) + (event.key === 'ArrowUp' ? -1 : 1));
   });
+  // ---- a block pasted from a spreadsheet ----------------------------------------------------------------------
+
+  /** Whether a line's cell takes what is pasted now, as its box takes typing: an item's, not read-only, worked out or hidden. */
+  const typable = (line: Line, column: string) => {
+    const sub = def.fields[column];
+    const rules = ruled ? form.lineState(node.id, line.key).cells[column] : undefined;
+    return !readonly && isItem(line) && sub.readonly !== true && sub.compute === undefined && !rules?.readonly && !rules?.invisible;
+  };
+  /**
+   * A block pasted on a cell — tabs between its cells, a line break between its rows, as a spreadsheet copies one —
+   * fills across the columns shown and down the lines from there, each cell read as its column reads what is typed
+   * (its places, its currency, the page's date order, a choice by its label); rows past the last line add lines, as
+   * many as the table may have. A cell that cannot take its text keeps what it holds, named with why; so are rows past
+   * the most lines. All of it said in one note under the table.
+   */
+  function pasteBlock(fromKey: string, fromColumn: string, block: string[][]) {
+    const shown = columns.filter((column) => !(ruled && form.columnHidden(node.id, column)));
+    const start = Math.max(0, shown.indexOf(fromColumn));
+    const from = current().findIndex((line) => line.key === fromKey);
+    if (from < 0) return;
+    const dateOrder = dateOrderOf(form);
+    let pasted = 0;
+    let added = 0;
+    let beyond = false;
+    const missed: string[] = [];
+    block.forEach((cells, r) => {
+      let key = current()[from + r]?.key;
+      if (!key) {
+        // A row of nothing adds no line; past the most lines, the rest is said.
+        if (cells.every((text) => !text.trim())) return;
+        if (current().length >= max) return void (beyond = true);
+        key = form.addLine(name);
+        added++;
+      }
+      cells.forEach((text, c) => {
+        const column = shown[start + c];
+        const line = current().find((one) => one.key === key);
+        if (!column || !line) return;
+        const sub = def.fields[column];
+        const takes = typable(line, column);
+        // Nothing pasted on a cell that takes nothing: nothing lost, nothing to say.
+        if (!takes && !text.trim()) return;
+        const reading = { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) };
+        const read = takes ? readPastedCell(sub, text, reading) : null;
+        if (!read) {
+          // By its line's number as people count lines; a section's or a note's by its words.
+          const number = itemNumber(current(), line.key, isItem);
+          const cell = number ? fillIn(labels.cellName, { column: sub.label, n: number }) : fillIn(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
+          const why = takes ? whyNotPasted(sub, text, { ...reading, labels }) : null;
+          return void missed.push(why ? fillIn(labels.notPastedWhy, { cell, why }) : cell);
+        }
+        form.setUnread(`${name}.${line.key}.${column}`, null);
+        form.updateLine(name, line.key, column, read.value);
+        pasted++;
+      });
+    });
+    const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
+    const said = [
+      ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
+      ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
+      ...(missed.length ? [fillIn(labels.notPastedCells, { cells: missed.join(separator) })] : []),
+      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, current().length, locale)] : []),
+    ].join(' ');
+    pasteNote.textContent = said;
+    pasteNote.hidden = !said;
+  }
+  // Heard before the box's own paste: one value is the box's, as is a paragraph's text of several lines with no tabs.
+  body.addEventListener(
+    'paste',
+    (event) => {
+      const box = event.target as HTMLElement;
+      const text = event.clipboardData?.getData('text/plain') ?? '';
+      if (readonly || !text || !(box instanceof HTMLInputElement || box instanceof HTMLTextAreaElement)) return;
+      const block = blockOf(text);
+      if ((block.length < 2 && block[0].length < 2) || (box instanceof HTMLTextAreaElement && !text.includes('\t'))) return;
+      const td = box.closest('td');
+      const key = td?.closest('tr')?.dataset['line'];
+      if (!td || !key || !rows.has(key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      pasteBlock(key, td.dataset['column'] ?? '', block);
+    },
+    true
+  );
+  // The note goes once the person moves on: a key in a cell, or the table left.
+  body.addEventListener('keydown', (event) => {
+    if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
+  });
+  element.addEventListener('focusout', (event) => {
+    if (!element.contains(event.relatedTarget as Node | null)) pasteNote.hidden = true;
+  });
+
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
     // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited, or with a widget of its own.

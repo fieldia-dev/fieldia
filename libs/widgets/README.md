@@ -92,4 +92,13 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
+Rows copied from a spreadsheet and pasted in a cell of a table of lines fill
+across and down from that cell, each read as its column reads what is typed
+(the page's marks and digits in any script, an amount in its line's currency,
+a day in the page's order, a choice by its label), lines added for the rows past
+the last as the table's `max` allows, and what a cell could not take named with
+why under the table. The readers — `blockOf`, `readPastedCell`, `whyNotPasted` —
+come in the lines part (`(await linesPart.load()).readPastedCell(…)`), which the
+grid and a list's Import read cells with too.
+
 MIT licensed.

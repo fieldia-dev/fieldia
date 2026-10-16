@@ -1,5 +1,5 @@
 import type { LineField } from '@fieldia/core';
-import { WIDGET_LABELS } from '@fieldia/widgets';
+import { WIDGET_LABELS } from './labels';
 import { whyNotPasted } from './cell-paste';
 
 /**

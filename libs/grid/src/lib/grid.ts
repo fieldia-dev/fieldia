@@ -16,7 +16,6 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 import {
   afterPress,
   cellText,
@@ -34,6 +33,8 @@ import {
   openLineDialog,
   kindTextField,
   lineForm,
+  linesPart,
+  type LinesPart,
   waitingTotal,
   WIDGET_LABELS,
   type WidgetDialogs,
@@ -933,6 +934,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   pasteNote.setAttribute('role', 'status');
   pasteNote.setAttribute('aria-live', 'polite');
   pasteNote.hidden = true;
+  let destroyed = false;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
   // Lines chosen for the table's buttons for them: a bar of those buttons over the grid while any is.
@@ -1780,7 +1782,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
    * read-only, or cannot read what is pasted, keep what they hold, and so do
    * rows past the last line: all of them named in one note.
    */
-  function pasteBlock(rowIndex: number, startColumn: string, text: string) {
+  function pasteBlock({ blockOf, readPastedCell, whyNotPasted }: LinesPart, rowIndex: number, startColumn: string, text: string) {
     const shownColumns = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
     const from = shownColumns.indexOf(startColumn);
     if (from < 0) return;
@@ -1834,7 +1836,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const text = event.clipboardData?.getData('text/plain');
     if (!focused || focused.rowPinned || !text) return;
     event.preventDefault();
-    pasteBlock(focused.rowIndex, focused.column.getColId(), text);
+    // Each cell read as its column reads what is typed: the lines part's readers, asked for the first time a block is
+    // pasted (a grid nobody pastes on never loads them), then at once.
+    const readers = linesPart.loaded;
+    const row = focused.rowIndex;
+    const column = focused.column.getColId();
+    if (readers) pasteBlock(readers, row, column, text);
+    else void linesPart.load().then((part) => !destroyed && pasteBlock(part, row, column, text), () => undefined);
   };
   document.addEventListener('paste', onPaste);
   // The note goes once the person moves on: a key on a cell, or the grid left.
@@ -1927,6 +1935,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
+      destroyed = true;
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();

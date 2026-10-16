@@ -1,9 +1,13 @@
 import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
-import { leftWords, quoted, readDateText, refusalWords, type WidgetLabels } from '@fieldia/widgets';
+import { readDateText } from './date-text';
+import { leftWords, quoted, refusalWords } from './input-rules';
+import type { WidgetLabels } from './labels';
 
 /**
- * Pasting a block on the grid's cells: the grid's own, so a page with no grid
- * (the one-tag script, the plain table) never carries it.
+ * A block pasted on a table's cells, and a file's cells read for a list's
+ * Import: each cell read as its column reads what is typed. In the lines part
+ * (lines-part.ts), which gives it to the grid and to the list's Import too, so
+ * a page with no table, grid or Import never carries it.
  */
 
 /** A column's least, when its field has one. */
