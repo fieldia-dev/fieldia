@@ -407,6 +407,8 @@ test.describe('cells in Arabic, French and German', () => {
     await hours.pressSequentially('5');
     expect(await cellValue(page, 'milestone_ids', 0, 'hours')).toBe(-5.5);
     await page.goto('/plain/?page=order&skin=outlined&locale=ar&dir=rtl');
+    // Drawn once its table's part has come.
+    await page.waitForFunction(() => (window as unknown as { fieldiaDemo?: { handle?: unknown } }).fieldiaDemo?.handle);
     const keys = await lineKeys(page, 'line_ids');
     await updateLine(page, 'line_ids', keys[5], 'price', -50);
     const grid = node(page, 'f-lines');

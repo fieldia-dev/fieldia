@@ -87,7 +87,8 @@ test.describe('file and picture fields in a part of their own', () => {
     // A photo picked and a paper added, at once: each in the value.
     await photo.locator('input[type=file]').setInputFiles(FILES.photo('Living room.png'));
     await expect(photo.locator('img.fd-file-thumb')).toHaveCount(1);
-    expect((await held(page, 'photo'))?.name).toBe('Living room.png');
+    // In the value once its upload ends, a moment after its picture shows.
+    await expect.poll(async () => (await held(page, 'photo'))?.name).toBe('Living room.png');
     await papers.locator('input[type=file]').setInputFiles(FILES.notes());
     await expect(papers.locator('.fd-file-item')).toHaveCount(3);
     expect(((await held(page, 'papers')) as { name: string }[]).map((file) => file.name)).toEqual(['Contract.pdf', 'Floor plan.txt', 'Snag list.txt']);

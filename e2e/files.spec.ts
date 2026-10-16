@@ -248,8 +248,11 @@ test.describe('several files in a form', () => {
     await page.locator('.fd-avatar input[type=file]').setInputFiles(FILES.photo('Nile Traders.png', 1));
     const avatar = page.locator('.fd-avatar');
     await expect(avatar.locator('img')).toBeVisible();
-    const tile = (await avatar.locator('.fd-file-item').boundingBox())!;
-    expect([Math.round(tile.width), Math.round(tile.height)]).toEqual([88, 88]);
+    // Measured once it holds still: the list is drawn again as the upload ends, within the same frame.
+    await expect.poll(async () => {
+      const tile = await avatar.locator('.fd-file-item').boundingBox();
+      return tile && [Math.round(tile.width), Math.round(tile.height)];
+    }).toEqual([88, 88]);
     await expect(avatar.getByRole('button', { name: 'Replace' })).toBeVisible();
     await page.locator('.fd-title-row').screenshot({ path: 'test-results/screens/files-avatar.png' });
     await avatar.getByRole('button', { name: /^Nile Traders\.png/ }).click();
