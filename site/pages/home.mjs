@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
+import { COUNTS, SIZES, TESTS, Words, figure, words } from '../facts.mjs';
 
 /**
  * The front page tells one story, top to bottom: a page of JSON is written and
  * drawn as it grows (the hero's stage); it starts as a question people answer;
  * then it runs a business record; it is the same in every framework; it already
- * starts from a template in any of eight themes; it already draws nineteen
- * real ERP screens; it is built in an open designer; and it is small and open. Every moving part is the real viewer, driven by home.js.
+ * starts from a template in any of its themes; it already draws real ERP
+ * screens; it is built in an open designer; and it is small and open. Every moving part is the real viewer, driven by home.js.
  */
 
 /** The real pages, by the thumbnails the demos gallery already draws. */
@@ -17,9 +18,9 @@ const REAL = [
   ['real-task', 5201, 'Project task'],
   ['real-employee', 4122, 'Employee'],
   ['real-manufacturing-order', 5401, 'Manufacturing order'],
-  ['real-opportunity', 7701, 'CRM opportunity'],
+  ['real-opportunity', 7701, 'Sales opportunity'],
   ['real-product', 7301, 'Product'],
-  ['real-contact', 7001, 'Contact'],
+  ['real-contact', 7001, 'Customer or supplier'],
   ['real-transfer', 5301, 'Warehouse receipt'],
   ['real-expense', 4101, 'Expense'],
   ['real-tender', 7801, 'Tender'],
@@ -28,7 +29,7 @@ const REAL = [
   ['real-maintenance-request', 4371, 'Maintenance request'],
   ['real-sale-contract', 7601, 'Sales contract'],
   ['real-register-payment', 4101, 'Register payment'],
-  ['real-sale-invoice-wizard', 7701, 'Create invoices'],
+  ['real-sale-invoice-wizard', 7701, 'Invoice an order'],
   ['real-survey', 7, 'Survey'],
 ];
 
@@ -71,7 +72,7 @@ const STORY = [
   ['Lines that add up', 'Quantities change and every subtotal and the total follow, as they would in a spreadsheet.'],
   ['The conversation beside it', 'Messages, notes, @mentions, files and to-dos stay with the record, beside the sheet.'],
   ['In a list, with search', 'The record takes its place among the others: filter them, group them, act on several at once.'],
-  ['In any of eight themes', 'Material, Fluent, Odoo, Google Forms, Apple and more: the same page, dressed to fit your product.'],
+  [`In any of ${words(COUNTS.themes)} themes`, 'Material, Fluent, Odoo, Google Forms, Apple and more: the same page, dressed to fit your product.'],
   ['In Arabic, right to left', 'Every part turns, from the labels to the status bar. English, Arabic, German and French are built in.'],
   ['Saved by your backend', 'One small interface loads and saves. Your server fills in fields as they change, and its refusals land on them.'],
   ['One page. Every framework.', 'All of it from one JSON page, in plain JavaScript, React, Vue or Angular. Open source, MIT.'],
@@ -81,15 +82,15 @@ const storyCaption = ([title, words], i) =>
 
 /** What every page can use: a tile each, with what it holds and where to read or see more. */
 const POWERS = [
-  ['Fields', '19 types, over 35 widgets', 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/features/forms/'],
+  ['Fields', `${COUNTS.fieldTypes} types, over 35 widgets`, 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/features/forms/'],
   ['Rules', 'As people type', 'Show, hide, require or lock a field by a condition; values worked out with sum, count and days; answers checked.', '/features/rules/'],
-  ['Buttons that act', '16 kinds of step', 'Save, ask first, call your server, open a page as a dialog or side panel, post to the chatter, archive.', '/features/rules/#buttons'],
+  ['Buttons that act', `${COUNTS.stepKinds} kinds of step`, 'Save, ask first, call your server, open a page as a dialog or side panel, post to the chatter, archive.', '/features/rules/#buttons'],
   ['Business records', 'Status to totals', 'Status bars, stat buttons, lines that add up in a spreadsheet grid, a PDF beside the sheet, a pager.', '/features/records/'],
   ['The chatter', 'On every record', 'Messages, notes and @mentions, scheduled activities, followers and files, beside the sheet.', '/features/records/#chatter'],
   ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/features/lists/'],
   ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/features/forms/#steps'],
-  ['Looks', '3 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
-  ['Languages and access', '4 languages, AA', 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
+  ['Looks', `${COUNTS.skins} skins, ${COUNTS.themes} themes`, 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
+  ['Languages and access', `${COUNTS.languages} languages, AA`, 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
   ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/features/backend/'],
 ];
 const power = ([name, figure, words, href]) =>
@@ -323,7 +324,7 @@ export class OrderComponent {}`
   <div class="chapter-copy">
     <p class="chapter-no">5 · Ready to start</p>
     <h2 id="templates-h">Start from a template, in the look you know</h2>
-    <p>${TEMPLATES.length} ready pages — contact forms, surveys, bookings, invoices, orders, tasks — each one JSON file. Eight themes dress any of them as Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo or Google Forms, light or dark. This one changes as you watch; pick a theme to keep it.</p>
+    <p>${TEMPLATES.length} ready pages — contact forms, surveys, bookings, invoices, orders, tasks — each one JSON file. ${Words(COUNTS.themes)} themes dress any of them as Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo or Google Forms, light or dark. This one changes as you watch; pick a theme to keep it.</p>
     <div class="theme-picks" role="group" aria-label="Theme">
       ${THEMES.map(([id, name]) => `<button type="button" data-theme="${id}" aria-pressed="false">${name}</button>`).join('\n      ')}
     </div>
@@ -344,10 +345,10 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
 <section class="chapter chapter-wide" id="real" aria-labelledby="real-h">
   <div class="chapter-copy">
     <p class="chapter-no">6 · Proven</p>
-    <h2 id="real-h">Nineteen real ERP screens, already running on it</h2>
-    <p>We rebuilt nineteen screens of a working ERP, from a two-field dialog to a legal case with fifteen tabs and twelve tables, each with its own records, buttons and rules. Open any of them: each works in all four frameworks.</p>
+    <h2 id="real-h">${Words(COUNTS.realScreens)} real ERP screens, already running on it</h2>
+    <p>We rebuilt ${words(COUNTS.realScreens)} screens of a working ERP, from a two-field dialog to a legal case with ${words(COUNTS.legalCase.tabs)} tabs and ${words(COUNTS.legalCase.tables)} tables, each with its own records, buttons and rules. Open any of them: each works in all four frameworks.</p>
   </div>
-  <div class="reel" role="region" aria-label="The nineteen real pages">
+  <div class="reel" role="region" aria-label="The ${words(COUNTS.realScreens)} real pages">
     ${row(REAL.slice(0, half))}
     ${row(REAL.slice(half))}
   </div>
@@ -371,9 +372,9 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
     <h2 id="numbers-h">Tested on every change, and small enough for a script tag</h2>
   </div>
   <ul class="figures">
-    <li><b class="count" data-to="1586">1,586</b><span>browser tests, driving the demos by mouse and keyboard in every framework</span></li>
-    <li><b class="count" data-to="3605">3,605</b><span>unit tests across the ten packages</span></li>
-    <li><b class="count" data-to="135">135</b><span>KB gzipped: the whole engine in one script tag, no build step</span></li>
+    <li><b class="count" data-to="${TESTS.browser}" data-more="+">${figure(TESTS.browser)}+</b><span>browser tests, driving the demos by mouse and keyboard in every framework</span></li>
+    <li><b class="count" data-to="${TESTS.unit}" data-more="+">${figure(TESTS.unit)}+</b><span>unit tests across the ${words(COUNTS.packages)} packages</span></li>
+    <li><b class="count" data-to="${SIZES.script}">${SIZES.script}</b><span>KB gzipped: the engine in one script tag, no build step; its larger parts load as a page first uses them</span></li>
     <li><b>AA</b><span>WCAG 2.2, checked with axe on every demo, light and dark, and in Arabic</span></li>
   </ul>
 </section>

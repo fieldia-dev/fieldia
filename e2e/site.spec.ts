@@ -3,6 +3,8 @@ import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
 import { DEMOS, FEATURED, demoHref } from '../demos/catalog.mjs';
 import { expectNoSidewaysScroll } from './support';
+import { gzipSync } from 'node:zlib';
+import { readFileSync } from 'node:fs';
 
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
@@ -62,6 +64,23 @@ test('the live form on the front page checks, sends, changes skin and language',
   await expect(live.getByRole('button', { name: 'إرسال' })).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/site-home-arabic.png', animations: 'disabled' });
   expect(problems).toEqual([]);
+});
+
+test('the numbers the site states agree: the script’s size is the size of the script it serves, the looks one count everywhere', async ({ page, request }) => {
+  // Gzipped as tools/script-bundle.mjs measures it against its budget, and as site/facts.mjs reads it for the pages.
+  const kb = Math.round(gzipSync(await (await request.get(SITE + '/fieldia.js')).body(), { level: 9 }).length / 1024);
+  await page.goto(SITE + '/');
+  await expect(page.locator('#numbers .count').nth(2)).toHaveAttribute('data-to', String(kb));
+  const [skins, themes] = (/(\d+) skins, (\d+) themes/.exec((await page.locator('.power-figure', { hasText: 'skins' }).textContent()) ?? '') ?? []).slice(1).map(Number);
+  // As the code defines them: core's SKINS and THEMES, as site/facts.mjs counts them for the pages.
+  const listed = (name: string) => (new RegExp(`const ${name}\\b[^=]*= \\[([^\\]]*)\\]`).exec(readFileSync('libs/core/src/lib/format/themes.ts', 'utf8'))?.[1].match(/'[^']+'/g) ?? []).length;
+  expect([skins, themes]).toEqual([listed('SKINS'), listed('THEMES')]);
+  await page.goto(SITE + '/start/');
+  await expect(page.locator('#script ~ p').first()).toContainText(`in ${kb} KB gzipped`);
+  // Said in words on the Features page: the same counts.
+  const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+  await page.goto(SITE + '/features/');
+  await expect(page.locator('.feature-area', { hasText: 'Looks and languages' })).toContainText(new RegExp(`${WORDS[themes]} themes, ${WORDS[skins]} skins`, 'i'));
 });
 
 test('the docs’ code is coloured as it reads, and the words are the sample’s own', async ({ page }) => {

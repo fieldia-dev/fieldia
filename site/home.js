@@ -303,7 +303,7 @@
       var start = performance.now();
       (function tick(now) {
         var t = Math.min(1, (now - start) / 1200);
-        el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3))).toLocaleString('en');
+        el.textContent = Math.round(to * (1 - Math.pow(1 - t, 3))).toLocaleString('en') + (el.dataset.more || '');
         if (t < 1) requestAnimationFrame(tick);
       })(start);
     }, 0.6);

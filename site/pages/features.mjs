@@ -1,10 +1,10 @@
 import { FEATURES } from '../feature-page.mjs';
 
-/** The Features page: the six areas, each a page of its own. */
+/** The Features page: the areas, each a page of its own. */
 export default {
   path: '/features/',
   title: 'Features',
-  description: 'Everything Fieldia does, by area: forms and surveys, business records, rules and actions, lists and search, looks and languages, and your backend.',
+  description: `Everything Fieldia does, by area: ${FEATURES.map((f) => f.name.toLowerCase()).join('; ')}.`,
   body: `
 <header class="gallery-hero">
   <h1>Features</h1>

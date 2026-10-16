@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { DEMOS, demoHref } from '../../demos/catalog.mjs';
+import { words } from '../facts.mjs';
 
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const LIBRARY = new URL('../../examples/templates/', import.meta.url);
@@ -44,15 +45,15 @@ const sections = GROUPS.map((group) => {
 export default {
   path: '/templates/',
   title: 'Templates',
-  description: `${TEMPLATES.length} ready Fieldia pages to start from — contact forms, surveys, bookings, invoices, orders, tasks — each in one of the eight themes, as JSON you can copy.`,
+  description: `${TEMPLATES.length} ready Fieldia pages to start from — contact forms, surveys, bookings, invoices, orders, tasks — each in one of the ${words(Object.keys(THEME_NAMES).length)} themes, as JSON you can copy.`,
   body: `
 <header class="gallery-hero">
   <h1>Templates</h1>
-  <p class="lead"><b>${TEMPLATES.length} ready pages to start from</b>: forms and surveys for the people you serve, and the business records your team works in. Each is one JSON file, in one of the eight themes. Try it, change it in the designer, or take the file and show it with one call.</p>
+  <p class="lead"><b>${TEMPLATES.length} ready pages to start from</b>: forms and surveys for the people you serve, and the business records your team works in. Each is one JSON file, in one of the ${words(Object.keys(THEME_NAMES).length)} themes. Try it, change it in the designer, or take the file and show it with one call.</p>
   <div class="chips">
     <span class="chip"><b>${TEMPLATES.filter((t) => t.group === 'forms').length}</b> forms and surveys</span>
     <span class="chip"><b>${TEMPLATES.filter((t) => t.group === 'records').length}</b> business records</span>
-    <span class="chip"><b>8</b> themes</span>
+    <span class="chip"><b>${Object.keys(THEME_NAMES).length}</b> themes</span>
     <a class="chip chip-link" href="/look/#themes">The themes →</a>
   </div>
 </header>

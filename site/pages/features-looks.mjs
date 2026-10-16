@@ -1,24 +1,25 @@
 import { demoHref as demo, featurePage } from '../feature-page.mjs';
+import { COUNTS, SIZES, Words, words } from '../facts.mjs';
 
 /** A feature page: Looks and languages. How a page dresses to fit a product, and speaks its readers' language. */
 export default featurePage({
   path: '/features/looks/',
   folder: 'looks',
   title: 'Looks and languages',
-  description: 'Looks and languages with Fieldia: eight themes, three skins, light and dark, your own colours, and English, Arabic, German and French right to left, with your app’s own words.',
+  description: `Looks and languages with Fieldia: ${words(COUNTS.themes)} themes, ${words(COUNTS.skins)} skins, light and dark, your own colours, and English, Arabic, German and French right to left, with your app’s own words.`,
   kicker: 'Looks and languages',
   headline: ['Your product’s look.', 'Your readers’ language.'],
-  lede: 'Eight themes in the styles people know, three skins, light and dark, your own colours on top, and four languages built in with Arabic right to left in full. This record is live, in Arabic and dark.',
+  lede: `${Words(COUNTS.themes)} themes in the styles people know, ${words(COUNTS.skins)} skins, light and dark, your own colours on top, and ${words(COUNTS.languages)} languages built in with Arabic right to left in full. This record is live, in Arabic and dark.`,
   opening: { frame: 'page=customer&skin=underline&scheme=dark&locale=ar&dir=rtl', title: 'A live customer record, in Arabic and dark' },
   parts: [
     {
       id: 'themes',
-      no: 'Eight themes',
+      no: `${Words(COUNTS.themes)} themes`,
       title: 'Styles people already know, one line in the page',
       body: 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms: each its own colours, shapes and type, light and dark, every pair of colours checked at WCAG AA.',
       ticks: ['"look": { "theme": "material" }, or a viewer option', 'Each theme light and dark, axe-clean in both', 'Your accent, font, spacing and corners over any theme', 'A theme switched in place, without drawing the form again'],
       shot: 'themes.png', alt: 'The same short form in four themes: Material, Fluent, Apple and Bootstrap', width: 912, height: 940,
-      tryIt: ['See all eight', '/look/#themes'], docs: ['Themes, in the docs', '/look/'],
+      tryIt: [`See all ${words(COUNTS.themes)}`, '/look/#themes'], docs: ['Themes, in the docs', '/look/'],
     },
     {
       id: 'dark',
@@ -55,7 +56,7 @@ export default featurePage({
       ['AA, every theme', 'Every pair of colours a reader reads is checked at WCAG AA, light and dark.'],
       ['Your colours win', 'A host’s own tokens or stylesheet rule win over the skin, the theme and the scheme, whole.'],
       ['Scoped to the form', 'Fieldia’s styles stay inside its forms; your page around them is untouched.'],
-      ['Small', 'Each language is its own add-on of about four kilobytes.'],
+      ['Small', `In the one script tag, each language is an add-on of ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped.`],
     ],
   },
   factLinks: [['Looks and languages, in the docs', '/look/'], ['Accessibility', '/accessibility/']],

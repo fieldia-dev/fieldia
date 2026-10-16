@@ -1,4 +1,5 @@
 import { demoHref as demo, featurePage } from '../feature-page.mjs';
+import { TESTS, figure } from '../facts.mjs';
 
 /** A feature page: Your backend. How Fieldia reaches your server, and how your server's answers come back. */
 const INTERFACE = `
@@ -111,7 +112,7 @@ export default featurePage({
       ['Yours alone', 'Fieldia has no server and sends nothing on its own: every request is one you wrote.'],
       ['Only the changes', 'A save says what changed since the record loaded, and every value too.'],
       ['Pages are data', 'A page is JSON, checked when it loads; it can come from your database or a designer.'],
-      ['Tested both ways', 'The same data source runs the demos and the 1,600 browser tests.'],
+      ['Tested both ways', `The same data source runs the demos and over ${figure(TESTS.browser)} browser tests.`],
     ],
   },
   factLinks: [['Your backend, in the docs', '/data/'], ['Behaviour, in the docs', '/behaviour/']],

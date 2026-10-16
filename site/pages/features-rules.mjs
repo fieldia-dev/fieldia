@@ -1,4 +1,5 @@
 import { demoHref as demo, featurePage } from '../feature-page.mjs';
+import { COUNTS, Words } from '../facts.mjs';
 
 /** A feature page: Rules and actions. What a page decides for itself, and what its buttons do. */
 export default featurePage({
@@ -34,7 +35,7 @@ export default featurePage({
       no: 'Buttons that run steps',
       title: 'A button says what it does, step by step',
       body: 'Buttons run steps written in the page: set a value, save, open another page as a dialog or a side panel and take its answer back, post to the chatter, archive, duplicate.',
-      ticks: ['Sixteen kinds of step: set, save, open, call, ask, check, say, post and more', 'Open a page in a dialog or a side panel, from any side, and bring its answer back', 'A button busy while its steps run, never pressed twice', 'Buttons shown by condition, as a record’s header shows them'],
+      ticks: [`${Words(COUNTS.stepKinds)} kinds of step: set, save, open, call, ask, check, say, post and more`, 'Open a page in a dialog or a side panel, from any side, and bring its answer back', 'A button busy while its steps run, never pressed twice', 'Buttons shown by condition, as a record’s header shows them'],
       shot: 'panel.png', alt: 'Order by phone: a New customer side panel open over the order, its name already filled in with the caller’s', width: 1280, height: 720,
       tryIt: ['Try the phone order', demo('page=quick-order&skin=outlined')], docs: ['Actions, in the docs', '/actions/'],
     },
