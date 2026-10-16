@@ -322,7 +322,9 @@ function wrappingLine(context: WidgetContext): Widget {
         if (area.value !== text) {
           area.value = text;
           box.accept();
-          grow();
+          // Measured once the page is drawn, never in its midst: a measure there would read the page before its parts'
+          // sheets are in, and every box drawn would change its look under a transition.
+          queueMicrotask(grow);
         }
         if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
         describe(area, { ...state, describedBy: box.describedBy(state.describedBy) });
