@@ -20,7 +20,7 @@ describe('checkValue — required', () => {
 describe('checkValue — text', () => {
   it('limits length', () => {
     // A text over its most was pasted whole: how far over it is, to shorten.
-    expect(checkValue(F({ type: 'char', size: 3 }), 'abcdef', false)).toBe('Name is 3 characters over its 3: shorten it to save');
+    expect(checkValue(F({ type: 'char', size: 3 }), 'abcdef', false)).toBe('Name is 3 characters too long: shorten it to 3');
     // Counted as a server counts: an emoji is one character.
     expect(checkValue(F({ type: 'char', size: 3 }), '😀😀😀', false)).toBeUndefined();
     expect(checkValue(F({ type: 'char', size: 3 }), 'abc', false)).toBeUndefined();
@@ -175,7 +175,7 @@ describe('checkValue — other languages', () => {
     const { MESSAGES } = await import('./messages');
     expect(checkValue(name, null, true, MESSAGES.ar)).toBe('الاسم مطلوب');
     expect(checkValue(F({ type: 'integer', label: 'Bewertung', min: 1 }), 0, false, MESSAGES.de)).toBe('Bewertung muss mindestens 1 sein');
-    expect(checkValue(F({ type: 'char', label: 'Nom', size: 3 }), 'abcdef', false, MESSAGES.fr)).toBe('Nom dépasse de 3 caractères la limite de 3 : raccourcissez-le pour enregistrer');
+    expect(checkValue(F({ type: 'char', label: 'Nom', size: 3 }), 'abcdef', false, MESSAGES.fr)).toBe('Nom a 3 caractères de trop : raccourcissez-le à 3');
   });
 
   it('joins choices with the language’s own "or"', async () => {

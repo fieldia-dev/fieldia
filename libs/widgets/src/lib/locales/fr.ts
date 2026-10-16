@@ -203,8 +203,6 @@ export const fr: WidgetLabels = {
   minutes: '{label} : les minutes vont de 0 à 59, par exemple 6:30',
   minuteDigits: '{label} : « {text} » peut être {times} ; écrivez les minutes avec deux chiffres',
   duration: '{label} : écrivez heures et minutes, par exemple 6:30, ou des heures, par exemple {decimal}',
-  charactersOver: '{n} caractères en trop',
-  charactersOverOne: '{n} caractère en trop',
   phoneChars: 'Un numéro de téléphone ne contient que des chiffres, des espaces et + ( ) . -',
   emailNoSpaces: 'Une adresse e-mail ne contient pas d’espaces',
   emailChar: 'Une adresse e-mail n’a pas de « {char} » avant son @',

@@ -203,8 +203,6 @@ export const de: WidgetLabels = {
   minutes: '{label}: Minuten gehen von 0 bis 59, z. B. 6:30',
   minuteDigits: '{label}: „{text}“ kann {times} sein; schreiben Sie die Minuten mit zwei Ziffern',
   duration: '{label}: Stunden und Minuten wie 6:30 oder Stunden wie {decimal}',
-  charactersOver: '{n} Zeichen zu viel',
-  charactersOverOne: '{n} Zeichen zu viel',
   phoneChars: 'Eine Telefonnummer enthält nur Ziffern, Leerzeichen und + ( ) . -',
   emailNoSpaces: 'Eine E-Mail-Adresse enthält keine Leerzeichen',
   emailChar: 'Eine E-Mail-Adresse hat kein „{char}“ vor dem @',

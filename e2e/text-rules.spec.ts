@@ -57,9 +57,9 @@ test.beforeEach(async ({ context }) => {
 
 test.describe('a text’s most characters', () => {
   for (const [locale, query, over] of [
-    ['en', '', '4920 characters too many'],
-    ['ar', '&locale=ar&dir=rtl', 'أحرف زائدة: 4920'],
-    ['fr', '&locale=fr', '4920 caractères en trop'],
+    ['en', '', 'Full name is 4920 characters too long: shorten it to 80'],
+    ['ar', '&locale=ar&dir=rtl', 'أطول بـ4920 من الأحرف؛ اختصره إلى 80'],
+    ['fr', '&locale=fr', '4920 caractères de trop : raccourcissez-le à 80'],
   ] as const) {
     test(`${locale}: a name pasted past its most is kept whole and told; a key at the most is refused, with words`, async ({ page }) => {
       const { problems } = await open(page, 'plain', `page=signup&skin=outlined${query}`);
@@ -70,11 +70,14 @@ test.describe('a text’s most characters', () => {
       await expect(box).toHaveValue('a'.repeat(5000));
       expect(((await valueOf(page, 'full_name')) as string).length).toBe(5000);
       await expect(name.locator('.fd-count')).toHaveText('5000 / 80');
-      await expect(name.locator('.fd-count-over')).toHaveText(over);
       await expect(name.locator('.fd-count')).toHaveClass(/fd-count-past/);
-      // Left, the field says how far over it is and that it must be shortened to save, in its own words.
+      // The count stays a count; the field says how far over it is and what to do, once, under its box, at once.
+      await expect(errorOf(page, 'f-name')).toContainText(over);
+      await expect(name.getByText(/4920/)).toHaveCount(1);
+      // Left, it says it once more to a screen reader, politely: nothing new is shown.
       await box.press('Tab');
-      await expect(errorOf(page, 'f-name')).toContainText('4920');
+      await expect(errorOf(page, 'f-name')).toContainText(over);
+      await expect(name.getByText(/4920/)).toHaveCount(1);
       await expect(errorOf(page, 'f-name')).toHaveAttribute('aria-live', 'polite');
       await expect(box).toHaveAttribute('aria-invalid', 'true');
       await name.scrollIntoViewIfNeeded();

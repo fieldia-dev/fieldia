@@ -286,8 +286,6 @@ export interface WidgetLabels {
   /** Hours that do not read: `{decimal}` is 6.5 or 6,5, as the page writes it. */
   duration: string;
   /** A text over its most, under its counter: `{n}` characters; `…One`, the words for one, in the languages that say it apart. */
-  charactersOver: string;
-  charactersOverOne: string;
   /** A phone number's box, refusing a letter. */
   phoneChars: string;
   /** An email address's box, refusing a space. */
@@ -569,8 +567,6 @@ const en: WidgetLabels = {
   minutes: '{label}: minutes go from 0 to 59, like 6:30',
   minuteDigits: '{label}: “{text}” could be {times}; write the minutes with two digits',
   duration: '{label}: write hours and minutes, like 6:30, or hours, like {decimal}',
-  charactersOver: '{n} characters too many',
-  charactersOverOne: '{n} character too many',
   phoneChars: 'A phone number takes digits, spaces and + ( ) . - only',
   emailNoSpaces: 'An email address has no spaces',
   emailChar: 'An email address has no “{char}” before its @',

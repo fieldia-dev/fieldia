@@ -103,7 +103,7 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
-  /** A text longer than its most, pasted whole: `{over}` characters over its `{max}`; one over (`overByOne`). */
+  /** A text longer than its most, pasted whole: `{over}` characters too long for its `{max}`; one over (`overByOne`). The one message: its count stays a count. */
   overBy: string;
   overByOne: string;
   /** A postcode not of its country's shape: `{country}`, its `{n}` digits, and `{example}`. */
@@ -188,8 +188,8 @@ const en: Messages = {
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
-  overBy: '{label} is {over} characters over its {max}: shorten it to save',
-  overByOne: '{label} is 1 character over its {max}: shorten it to save',
+  overBy: '{label} is {over} characters too long: shorten it to {max}',
+  overByOne: '{label} is 1 character too long: shorten it to {max}',
   postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
   urlScheme: 'Only a web address (http or https) can go here',
   endBeforeStart: '{end} can’t be before {start}',

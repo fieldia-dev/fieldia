@@ -726,6 +726,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let advice = '';
       /** Leaving the field now: a problem it raises is said by its error, politely. */
       let leaving = false;
+      /** The problem last said politely as the box was left: one shown while typing (a paste past the most) is said as it is left. */
+      let saidLeaving = '';
       wrapper.addEventListener('focusin', () => {
         typing = true;
         setAttr(error, 'aria-live', null);
@@ -781,8 +783,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         }
         if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
         const message = state.errors[node.field];
-        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once.
-        if (leaving && message && message !== error.textContent) setAttr(error, 'aria-live', 'polite');
+        // Raised by leaving the box, it is said once, politely; a refused Save's announcer says the rest, once. Shown
+        // already while it was typed in (a paste past its most), it is said now, as the box is left.
+        if (leaving && message && message !== saidLeaving) {
+          setAttr(error, 'aria-live', 'polite');
+          if (message === error.textContent) error.textContent = '';
+        }
+        if (leaving) saidLeaving = message ?? '';
+        else if (!message) saidLeaving = '';
         setHidden(error, !message);
         setText(error, message ?? '');
         const now = state.warnings[node.field] ?? '';

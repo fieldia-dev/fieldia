@@ -203,8 +203,6 @@ export const ar: WidgetLabels = {
   minutes: '{label}: الدقائق من 0 إلى 59، مثل 6:30',
   minuteDigits: '{label}: «{text}» قد تعني {times}؛ اكتب الدقائق برقمين',
   duration: '{label}: اكتب الساعات والدقائق مثل 6:30، أو الساعات مثل {decimal}',
-  charactersOver: 'أحرف زائدة: {n}',
-  charactersOverOne: 'حرف زائد: {n}',
   phoneChars: 'رقم الهاتف أرقام ومسافات و+ ( ) . - فقط',
   emailNoSpaces: 'لا مسافات في البريد الإلكتروني',
   emailChar: 'لا يأتي «{char}» قبل @ في البريد الإلكتروني',

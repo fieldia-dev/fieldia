@@ -35,15 +35,15 @@ describe('a text’s most characters', () => {
   it('counts an emoji as one, as a server counts characters', () => {
     const field = { type: 'char', label: 'Full name', size: 3 } as Field;
     expect(checkValue(field, '😀😀😀', false)).toBeUndefined();
-    expect(checkValue(field, 'a😀😀😀', false)).toBe('Full name is 1 character over its 3: shorten it to save');
+    expect(checkValue(field, 'a😀😀😀', false)).toBe('Full name is 1 character too long: shorten it to 3');
   });
 
   it('says how far over a pasted text is, in each language', () => {
     const field = { type: 'text', label: 'Dietary needs', size: 300 } as Field;
     const text = 'No nuts.\n'.repeat(60);
-    expect(checkValue(field, text, false)).toBe('Dietary needs is 240 characters over its 300: shorten it to save');
-    expect(checkValue(field, text, false, MESSAGES.ar)).toBe('Dietary needs: أطول من الحد (300) بـ240 من الأحرف؛ اختصره للحفظ');
-    expect(checkValue(field, text, false, MESSAGES.de)).toBe('Dietary needs ist 240 Zeichen zu lang (höchstens 300); kürzen Sie es zum Speichern');
+    expect(checkValue(field, text, false)).toBe('Dietary needs is 240 characters too long: shorten it to 300');
+    expect(checkValue(field, text, false, MESSAGES.ar)).toBe('Dietary needs: أطول بـ240 من الأحرف؛ اختصره إلى 300');
+    expect(checkValue(field, text, false, MESSAGES.de)).toBe('Dietary needs ist 240 Zeichen zu lang: kürzen Sie es auf 300');
   });
 });
 
