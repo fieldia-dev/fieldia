@@ -119,6 +119,8 @@ test.describe('2.5.7 every drag has a way without dragging', () => {
     await page.goto('/plain/?page=kinds&skin=outlined');
     const ranking = page.locator('.fd-ranking').first();
     const words = ranking.locator('.fd-rank-words');
+    // Its part drawn first (allTextContents waits for nothing).
+    await expect(words.first()).toBeVisible();
     const start = await words.allTextContents();
     await ranking.getByRole('button', { name: `Move ${start[0]} down` }).focus();
     await page.keyboard.press('Enter');

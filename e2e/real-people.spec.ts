@@ -314,7 +314,7 @@ for (const variant of VARIANTS) {
       await expect(page.locator('.fd-list-row')).toHaveCount(2);
       await expect(page.locator('.fd-list-row').first()).toContainText('DermLite DL5 dermatoscope');
       await page.getByRole('button', { name: 'Back' }).first().click();
-      await expect(page.locator('.fd-title [data-field="name"] input')).toHaveValue('Salma Adel');
+      await expect(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('Salma Adel');
 
       // Archive, as hr_employee_form's: the departure wizard first, then archived.
       await bar(page).locator('.fd-record-gear').click();

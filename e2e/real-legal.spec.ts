@@ -406,9 +406,9 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, SURVEY);
       await expect(node(page, '#title').locator('input, textarea').first()).toHaveValue('Client satisfaction survey, autumn 2026');
       const titles = async () => ((await value(page, 'question_and_page_ids')) as { values: { title: string } }[]).map((l) => l.values.title);
-      // Duplicate Question on the second line: its copy right after it.
+      // Duplicate Question on the second line — the first question, line 1, under the first section's heading: its copy right after it.
       const second = (await titles())[1];
-      await node(page, 'f-questions').getByRole('button', { name: 'Copy line 2' }).click();
+      await node(page, 'f-questions').getByRole('button', { name: 'Copy line 1', exact: true }).click();
       await expect.poll(async () => (await titles())[2]).toBe(second);
       // Ten questions and three sections: the copy makes eleven questions, sections left out of the count.
       await expect.poll(() => value(page, 'question_count')).toBe(11);
