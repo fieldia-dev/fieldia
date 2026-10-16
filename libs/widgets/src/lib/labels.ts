@@ -359,6 +359,38 @@ export interface WidgetLabels {
   enterNumber: string;
   enterDate: string;
   enterValue: string;
+  /**
+   * A date and time typed on a time zone's clock (`{zone}`, its name in words) at a time (`{time}`) the clocks skip on
+   * `{day}` (from `{from}` to `{to}`), or repeat (`{first}` or `{second}`: the time with each of its names); a zone's
+   * name after a time (`{mark}`) that names another zone, the zone's own then being `{right}`.
+   */
+  timeSkipped: string;
+  timeTwice: string;
+  notThisZone: string;
+  /**
+   * Booking slots: the free times being found, or not found, and Try again; a day's state as a person is told of it
+   * (`{n}` free times, `…One` for one; `slotsOpen`, a day with free times, in the legend), the free times on a day
+   * (`{day}`) or none, and a day to pick first; a time as a chip's name (`{from}` to `{to}`), the booking chosen
+   * (`{day}`, `{from}`, `{to}`), a time picked being checked (`{time}`) or taken meanwhile; the zone the times are on
+   * (`{zone}`, its name; `{mark}`, its short name).
+   */
+  slotsFinding: string;
+  slotsFailed: string;
+  slotsRetry: string;
+  slotsFree: string;
+  slotsFreeOne: string;
+  slotsOpen: string;
+  slotsFull: string;
+  slotsClosed: string;
+  slotsHoliday: string;
+  slotsOn: string;
+  slotsNoneOn: string;
+  slotsPickDay: string;
+  slotSpan: string;
+  slotChosen: string;
+  slotChecking: string;
+  slotTaken: string;
+  slotsZone: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -612,6 +644,26 @@ const en: WidgetLabels = {
   enterNumber: 'Enter a number',
   enterDate: 'Enter a date, like {example}',
   enterValue: 'Enter a value to filter by',
+  timeSkipped: '{label}: there is no {time} on {day} in {zone}: the clocks go from {from} to {to}',
+  timeTwice: '{label}: {time} comes twice on {day} in {zone}, as the clocks go back; write {first} or {second}',
+  notThisZone: '{label}: on {day}, {zone} is {right}, not {mark}',
+  slotsFinding: 'Finding free times…',
+  slotsFailed: 'The free times could not be found.',
+  slotsRetry: 'Try again',
+  slotsFree: '{n} free times',
+  slotsFreeOne: '1 free time',
+  slotsOpen: 'Free times',
+  slotsFull: 'Fully booked',
+  slotsClosed: 'Closed',
+  slotsHoliday: 'Holiday',
+  slotsOn: 'Free times on {day}',
+  slotsNoneOn: 'No free times on {day}',
+  slotsPickDay: 'Pick a day to see its free times.',
+  slotSpan: '{from} to {to}',
+  slotChosen: '{day}, {from} to {to}',
+  slotChecking: 'Checking {time}…',
+  slotTaken: '{time} was just booked by someone else. Pick another time.',
+  slotsZone: 'Times are {zone} ({mark})',
 };
 
 /**

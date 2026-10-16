@@ -11,6 +11,8 @@
  * copying brings along, are never part of what is read.
  */
 
+import { wallText, wallTime } from './zones';
+
 /** Invisible direction marks: LRM, RLM, ALM, the embeddings and overrides, the isolates, and a byte-order mark. */
 const MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g;
 const MARKS_AT_ENDS = /^[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]+|[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]+$/g;
@@ -580,8 +582,12 @@ export type DateOrder = 'dmy' | 'mdy' | 'ymd';
 
 export type DateProblem = 'unfinished' | 'noSuchMonth' | 'yearDigits' | 'time';
 export type DateRead =
-  /** Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in silence. */
-  | { ok: true; value: string | null; timeLeftOut?: string }
+  /**
+   * Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in
+   * silence. `at`, read in a zone (`zone`): the instant an instant written with its own zone is, which its time on the
+   * zone's clock may not tell apart (the hour the clocks repeat).
+   */
+  | { ok: true; value: string | null; timeLeftOut?: string; at?: string }
   | { ok: false; problem: DateProblem }
   /** A time whose minutes have one digit that could be more than one time ("14:3"): each named. */
   | { ok: false; problem: 'minuteDigits'; times: string[] }
@@ -656,10 +662,11 @@ export function couldBeMonth(word: string, locale?: string): boolean {
  * in either order. With `time`, a time may follow ("13/10/2026 14:30", "…,
  * 2:30 pm", "… ٢:٣٠ م"), and the value is yyyy-mm-ddTHH:MM. An instant with
  * its zone (2026-10-15T14:30:00Z) is the local day and time it is — with
- * `time`, its seconds :00, never dropped. Unfinished or impossible dates say
+ * `time`, its seconds :00, never dropped — or, read in a `zone`, its day and time
+ * on that zone's clock, with the instant (`at`). Unfinished or impossible dates say
  * why (31/02 → 'noSuchDay' with the days that month has).
  */
-export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string } = {}): DateRead {
+export function readDate(text: string, options: { order?: DateOrder; time?: boolean; locale?: string; zone?: string } = {}): DateRead {
   let t = folded(text).trim();
   if (!t) return { ok: true, value: null };
   const instant = INSTANT.exec(t);
@@ -670,8 +677,10 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
     const offset = /^z$/i.test(zone) ? 'Z' : zone.length === 3 ? `${zone}:00` : `${zone.slice(0, 3)}:${zone.slice(-2)}`;
     const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:00${offset}`);
     if (Number.isNaN(at.getTime())) return { ok: false, problem: 'unfinished' };
-    const local = localOf(at);
-    return options.time ? { ok: true, value: local } : { ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) };
+    // On the clock of the zone it is read in, where one is named: the instant itself said too.
+    const local = options.zone ? wallText(wallTime(at.getTime(), options.zone)) : localOf(at);
+    if (!options.time) return { ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) };
+    return options.zone ? { ok: true, value: local, at: at.toISOString() } : { ok: true, value: local };
   }
   // A comma before a space sets a date's parts apart ("Oct 15, 2026") or its time ("15 Oct 2026, 14:30"): no part of either.
   t = t.replace(/\s*[,\u060c](?=\s)/g, '');

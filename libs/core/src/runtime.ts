@@ -180,7 +180,7 @@ export type {
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
-export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions, type MemorySchedule } from './lib/record/memory-data-source';
+export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
 export { zonedPage } from './lib/format/zoned';

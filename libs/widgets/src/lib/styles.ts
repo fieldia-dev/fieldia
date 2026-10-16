@@ -642,6 +642,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-value-badge[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
+/* A date and time on another clock than the browser's: its zone's short name beside the box, "CEST". */
+.fd-zone { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--fd-muted); white-space: nowrap; cursor: default; }
 .fd-calendar-button {
   flex: 0 0 auto; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; cursor: pointer;
   border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-muted);
@@ -882,7 +884,7 @@ export function installStyles(document: Document): void {
  * editor after those; and last the survey kinds' own looks, which stood among the page's looks for each kind. A sheet
  * of a higher rank goes after one of a lower, all before the page's own looks.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, slots: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

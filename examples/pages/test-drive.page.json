@@ -1,0 +1,119 @@
+{
+  "fieldia": "0.2",
+  "id": "test-drive",
+  "title": "Book a test drive",
+  "description": "At the Berlin showroom: its times are on Berlin's clock, wherever you book from.",
+  "timeZone": "Europe/Berlin",
+  "data": { "kind": "record", "model": "drive.booking" },
+  "fields": {
+    "customer": { "type": "char", "label": "Name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "email": { "type": "char", "label": "Email", "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+" },
+    "car": { "type": "many2one", "label": "Car", "relation": "showroom.car", "required": true },
+    "start": { "type": "datetime", "label": "Test drive", "required": true, "min": "today" },
+    "stop": { "type": "datetime", "label": "Back by", "readonly": true },
+    "licence": { "type": "boolean", "label": "Driving licence seen" },
+    "call_back": { "type": "datetime", "label": "Call back at" },
+    "notes": { "type": "text", "label": "Notes" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "drive",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who drives",
+        "columns": 3,
+        "children": [
+          { "type": "field", "id": "f-customer", "field": "customer", "focus": true },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "when",
+        "title": "Car and time",
+        "children": [
+          { "type": "field", "id": "f-car", "field": "car", "help": "Each car has its own times." },
+          {
+            "type": "field",
+            "id": "f-start",
+            "field": "start",
+            "widget": "slots",
+            "options": { "schedule": "showroom", "endField": "stop", "dependsOn": ["car"] }
+          },
+          { "type": "field", "id": "f-stop", "field": "stop" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "before",
+        "title": "Before the drive",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-licence", "field": "licence" },
+          { "type": "field", "id": "f-call-back", "field": "call_back", "help": "On Berlin's clock, as every time here." },
+          { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Book a test drive": "احجز تجربة قيادة",
+      "At the Berlin showroom: its times are on Berlin's clock, wherever you book from.": "في معرض برلين: أوقاته بتوقيت برلين، أينما حجزت.",
+      "Who drives": "مَن يقود",
+      "Name": "الاسم",
+      "Phone": "الهاتف",
+      "Email": "البريد الإلكتروني",
+      "Car and time": "السيارة والوقت",
+      "Car": "السيارة",
+      "Each car has its own times.": "لكل سيارة أوقاتها.",
+      "Test drive": "تجربة القيادة",
+      "Back by": "العودة قبل",
+      "Before the drive": "قبل القيادة",
+      "Driving licence seen": "اطُّلع على رخصة القيادة",
+      "Call back at": "معاودة الاتصال في",
+      "On Berlin's clock, as every time here.": "بتوقيت برلين، مثل كل الأوقات هنا.",
+      "Notes": "ملاحظات"
+    },
+    "de": {
+      "Book a test drive": "Probefahrt buchen",
+      "At the Berlin showroom: its times are on Berlin's clock, wherever you book from.": "Im Berliner Autohaus: Die Zeiten gelten nach Berliner Uhr, egal von wo Sie buchen.",
+      "Who drives": "Wer fährt",
+      "Name": "Name",
+      "Phone": "Telefon",
+      "Email": "E-Mail",
+      "Car and time": "Auto und Zeit",
+      "Car": "Auto",
+      "Each car has its own times.": "Jedes Auto hat seine eigenen Zeiten.",
+      "Test drive": "Probefahrt",
+      "Back by": "Zurück bis",
+      "Before the drive": "Vor der Fahrt",
+      "Driving licence seen": "Führerschein gesehen",
+      "Call back at": "Rückruf um",
+      "On Berlin's clock, as every time here.": "Nach Berliner Uhr, wie jede Zeit hier.",
+      "Notes": "Notizen"
+    },
+    "fr": {
+      "Book a test drive": "Réserver un essai",
+      "At the Berlin showroom: its times are on Berlin's clock, wherever you book from.": "Au showroom de Berlin : ses horaires sont à l’heure de Berlin, d’où que vous réserviez.",
+      "Who drives": "Qui conduit",
+      "Name": "Nom",
+      "Phone": "Téléphone",
+      "Email": "E-mail",
+      "Car and time": "Voiture et horaire",
+      "Car": "Voiture",
+      "Each car has its own times.": "Chaque voiture a ses propres créneaux.",
+      "Test drive": "Essai",
+      "Back by": "Retour avant",
+      "Before the drive": "Avant l’essai",
+      "Driving licence seen": "Permis de conduire vu",
+      "Call back at": "Rappeler à",
+      "On Berlin's clock, as every time here.": "À l’heure de Berlin, comme tous les horaires ici.",
+      "Notes": "Notes"
+    }
+  }
+}

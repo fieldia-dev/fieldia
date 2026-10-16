@@ -49,9 +49,19 @@ export function ownZone(): string {
   return new Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-/** Whether a zone is the browser's own — by another of its names, too ("Asia/Calcutta", "Asia/Kolkata"). */
+const own = new Map<string, boolean>();
+/**
+ * Whether a zone keeps the browser's own clock: the same time through the year, in winter and summer — the browser's
+ * zone by any of its names ("Asia/Calcutta", "Asia/Kolkata"), or a neighbour on the same clock. Asked once a zone.
+ */
 export function isOwnZone(zone: string): boolean {
-  return clockOf(zone).resolvedOptions().timeZone === new Intl.DateTimeFormat('en-US', { timeZone: ownZone() }).resolvedOptions().timeZone;
+  let same = own.get(zone);
+  if (same === undefined) {
+    const year = new Date().getFullYear();
+    same = [0, 3, 6, 9].every((month) => zoneOffset(Date.UTC(year, month, 15), zone) === zoneOffset(Date.UTC(year, month, 15)));
+    own.set(zone, same);
+  }
+  return same;
 }
 
 /** The clock in `zone` at an instant (in ms), to the minute: the browser's own clock without one. */

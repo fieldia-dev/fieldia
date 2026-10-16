@@ -145,12 +145,14 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
       } else if (date) {
         // As a date box reads it: the day it is, or why it is none ("Since: February 2026 has 28 days"); a date and
         // time as the instant its field keeps.
-        const read = readDateText(text, { kind: date, order: dateOrder, locale, label: current.label, labels: words });
+        // On the clock of the field's zone — its own, or its page's — where one is named.
+        const zone = (current.type === 'datetime' ? current.timeZone : undefined) ?? page.timeZone;
+        const read = readDateText(text, { kind: date, order: dateOrder, locale, label: current.label, labels: words, ...(zone ? { zone } : {}) });
         if (!read.ok) return wait(read.words);
         if (read.value === null) return wait(words.enterDate.split('{example}').join(dateExample({ kind: date, order: dateOrder, locale })));
         // A day and time where a day goes: the day is put in the box and the time it leaves out said; Apply again takes it.
         if (read.timeLeftOut) {
-          value.value = typingText(read.value, date, dateOrder, locale);
+          value.value = typingText(read.value, date, dateOrder, locale, zone);
           return wait(fill(words.timeLeftOut, { label: current.label, time: read.timeLeftOut }));
         }
         wanted = read.value;

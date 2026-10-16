@@ -38,7 +38,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, slotsPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTotal } from './business-plain';
 import { plainAddress, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
 import type { Part } from './parts';
@@ -852,6 +852,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
   'date.daterange': dateRangeOf('date'),
   'datetime.daterange': dateRangeOf('datetime'),
+  // A booking's time picked from those free, asked of the data source's slots: the date and time box without them.
+  'datetime.slots': partFactory(slotsPart, (part) => part.slotsWidget, plainDateWidget('datetime')),
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
   'float.timer': timerWidget,
   'datetime.timer': timerWidget,

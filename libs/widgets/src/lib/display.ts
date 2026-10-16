@@ -3,6 +3,7 @@ import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
 import { shownNumber } from './duration';
 import { distributionWords } from './distribution';
+import { restingText } from './date-text';
 
 
 function localDate(text: string): Date | null {
@@ -71,6 +72,8 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return date ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date) : String(value);
     }
     case 'datetime': {
+      // On its zone's clock, its name beside it where that is not the browser's: as its box shows it at rest.
+      if (def.timeZone) return restingText(String(value), 'datetime', locale, def.timeZone);
       const date = localDate(String(value));
       return date
         ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }).format(date)

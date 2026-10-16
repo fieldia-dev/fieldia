@@ -48,7 +48,7 @@ import {
 } from '@fieldia/core';
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { upgradePage } from '@fieldia/core';
+import { upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
 import { waitingList } from './list-waiting';
@@ -325,11 +325,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
-  const page = options.translate ? translatePage(localized, options.translate) : localized;
+  // Its time zone written into each date and time field naming none, for whatever shows one from its field alone.
+  const page = zonedPage(options.translate ? translatePage(localized, options.translate) : localized);
   /** Another page as this one is shown: in its language, through the app's translator. */
   const shownAs = (other: Page) => {
     const own = tag ? localizePage(other, tag) : other;
-    return options.translate ? translatePage(own, options.translate) : own;
+    return zonedPage(options.translate ? translatePage(own, options.translate) : own);
   };
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();

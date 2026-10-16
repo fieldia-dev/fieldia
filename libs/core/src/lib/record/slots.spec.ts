@@ -3,7 +3,8 @@ import type { Page } from '../format/page';
 import { validatePage } from '../format/validate';
 import type { SlotsRequest } from './data-source';
 import { createForm } from './form';
-import { createMemoryDataSource, type MemorySchedule } from './memory-data-source';
+import { createMemoryDataSource } from './memory-data-source';
+import { scheduleSlots, type MemorySchedule } from './memory-schedules';
 
 /**
  * Booking slots: the data source's `slots` (optional, as every member is),
@@ -40,7 +41,7 @@ describe('the memory source’s free times, from a schedule', () => {
   const now = () => new Date('2026-10-16T08:00:00Z');
 
   it('answers each day asked: its times a booking apart, open, closed or a holiday', async () => {
-    const ds = createMemoryDataSource({ schedules: { showroom: SHOWROOM }, now });
+    const ds = createMemoryDataSource({ slots: scheduleSlots({ showroom: SHOWROOM }, { now }) });
     const { days, length } = await ds.slots(ask({ from: '2026-10-03', to: '2026-10-05' }));
     expect(length).toBe(45);
     // 3 October is a holiday, by its name; Sunday the 4th has no hours.
@@ -59,7 +60,7 @@ describe('the memory source’s free times, from a schedule', () => {
   });
 
   it('keeps to the clock on the day the clocks go back, and after it', async () => {
-    const ds = createMemoryDataSource({ schedules: { showroom: { ...SHOWROOM, hours: { 1: [['09:00', '10:00']], 7: [['01:00', '04:00']] } } }, now });
+    const ds = createMemoryDataSource({ slots: scheduleSlots({ showroom: { ...SHOWROOM, hours: { 1: [['09:00', '10:00']], 7: [['01:00', '04:00']] } } }, { now }) });
     const { days } = await ds.slots(ask({ from: '2026-10-25', to: '2026-10-26', length: 60, between: 0 }));
     // 02:00 comes twice on Sunday the 25th: taken the first time, in summer time.
     expect(days['2026-10-25'].free).toEqual(['2026-10-24T23:00:00.000Z', '2026-10-25T00:00:00.000Z', '2026-10-25T02:00:00.000Z']);
@@ -68,7 +69,7 @@ describe('the memory source’s free times, from a schedule', () => {
   });
 
   it('leaves out a time the clocks skip', async () => {
-    const ds = createMemoryDataSource({ schedules: { night: { timeZone: 'Europe/Berlin', hours: { 7: [['01:00', '04:00']] }, length: 60 } }, now: () => new Date('2026-03-01T00:00:00Z') });
+    const ds = createMemoryDataSource({ slots: scheduleSlots({ night: { timeZone: 'Europe/Berlin', hours: { 7: [['01:00', '04:00']] }, length: 60 } }, { now: () => new Date('2026-03-01T00:00:00Z') }) });
     const { days } = await ds.slots(ask({ schedule: 'night', from: '2026-03-29', to: '2026-03-29' }));
     expect(free(days['2026-03-29'].free)).toEqual(['01:00', '03:00']);
   });
@@ -82,7 +83,7 @@ describe('the memory source’s free times, from a schedule', () => {
         3: { car: { id: 1, label: 'Model 3' }, start: '2026-10-19T12:30:00.000Z', stop: '2026-10-19T14:00:00.000Z' },
       },
     };
-    const ds = createMemoryDataSource({ records, schedules: { showroom: SHOWROOM }, now });
+    const ds = createMemoryDataSource({ records, slots: scheduleSlots({ showroom: SHOWROOM }, { now }) });
     const { days } = await ds.slots(ask({ from: '2026-10-19', to: '2026-10-19' }));
     expect(free(days['2026-10-19'].free)).toEqual(['09:00', '11:00', '13:00']);
     // The other car's day is its own.
@@ -95,16 +96,17 @@ describe('the memory source’s free times, from a schedule', () => {
 
   it('says a day is full when every time is taken, and leaves out times gone by today', async () => {
     const records = { drive: { 1: { car: { id: 1 }, start: '2026-10-24T08:00:00.000Z', stop: '2026-10-24T12:00:00.000Z' } } };
-    const ds = createMemoryDataSource({ records, schedules: { showroom: SHOWROOM }, now: () => new Date('2026-10-19T10:30:00Z') });
+    const ds = createMemoryDataSource({ records, slots: scheduleSlots({ showroom: SHOWROOM }, { now: () => new Date('2026-10-19T10:30:00Z') }) });
     const { days } = await ds.slots(ask());
     expect(days['2026-10-24']).toEqual({ state: 'full' });
     // 12:30 in Berlin on Monday: 13:00 onwards is left.
     expect(free(days['2026-10-19'].free)).toEqual(['13:00', '14:00', '15:00', '16:00']);
   });
 
-  it('refuses a schedule it does not have', async () => {
-    const ds = createMemoryDataSource({ schedules: { showroom: SHOWROOM } });
+  it('refuses a schedule it does not have, and has none without schedules', async () => {
+    const ds = createMemoryDataSource({ slots: scheduleSlots({ showroom: SHOWROOM }) });
     await expect(ds.slots(ask({ schedule: 'garage' }))).rejects.toThrow('No schedule "garage"');
+    await expect(createMemoryDataSource().slots(ask())).rejects.toThrow('No schedule "showroom"');
   });
 });
 
@@ -138,7 +140,7 @@ const BOOKING: Page = {
 
 describe('the form’s findSlots', () => {
   it('asks the source with the record, its values, the field’s zone and the page’s settings', async () => {
-    const ds = createMemoryDataSource({ records: { drive: { 4: { car: { id: 1, label: 'Model 3' }, start: null, stop: null, note: 'Bring a licence' } } }, schedules: { showroom: SHOWROOM }, now: () => new Date('2026-10-16T08:00:00Z') });
+    const ds = createMemoryDataSource({ records: { drive: { 4: { car: { id: 1, label: 'Model 3' }, start: null, stop: null, note: 'Bring a licence' } } }, slots: scheduleSlots({ showroom: SHOWROOM }, { now: () => new Date('2026-10-16T08:00:00Z') }) });
     const form = createForm({ page: BOOKING, dataSource: ds, recordId: 4 });
     await form.load();
     expect(form.canFindSlots()).toBe(true);

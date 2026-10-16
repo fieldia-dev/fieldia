@@ -32,14 +32,12 @@ import type {
   UploadFile,
   UploadRequest,
   UploadedFile,
-  SlotDay,
   SlotsRequest,
   SlotsResult,
 } from './data-source';
 import { ConflictError, loadedRecord, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
-import { instantsAt, wallOf } from './zones';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -104,36 +102,11 @@ export interface MemoryDataSourceOptions {
   delayMs?: number;
   scheduler?: Scheduler;
   /**
-   * Booking schedules, by the name a field drawn as booking slots asks for (`options.schedule`, else the field's
-   * name): what `slots` answers from.
+   * How `slots` answers: the free times of the days asked, worked out from the records the source keeps —
+   * `scheduleSlots(schedules)` answers from booking schedules. Without it, `slots` refuses, as a source with no
+   * schedule would.
    */
-  schedules?: Record<string, MemorySchedule>;
-  /** The clock, for the times already past that `slots` leaves out: the computer's own unless given. */
-  now?: () => Date;
-}
-
-/**
- * A booking schedule, as `slots` answers from it: the hours it opens each day of the week on its zone's clock — the
- * days named as its zone names them, which a page in another zone places by their times — the
- * minutes a booking lasts and those kept free after one, its holidays, and the records its bookings are kept as — a
- * time one of them holds is not free, but to the record itself.
- */
-export interface MemorySchedule {
-  /** The zone its hours are on the clock of, by its IANA name: "Europe/Berlin". */
-  timeZone: string;
-  /** Its hours by the day of the week, ISO-numbered (1 Monday … 7 Sunday): each a from and a to, ["09:00", "13:00"]. A day not named is closed. */
-  hours: { [day: number]: [string, string][] };
-  /** The minutes a booking lasts: the page's (`options.length`), else 30. */
-  length?: number;
-  /** The minutes kept free after each booking: the page's (`options.between`), else none. */
-  between?: number;
-  /** The days it is closed for, by date, with their names: { "2026-12-25": "Christmas Day" }. */
-  holidays?: Record<string, string>;
-  /**
-   * Its bookings: records of `model`, starting at `field` (the field booked unless said) and ending at `endField`
-   * (else lasting `length`); with `same`, only those holding the form's value in each of these fields — a doctor's.
-   */
-  bookings?: { model: string; field?: string; endField?: string; same?: string[] };
+  slots?: (request: SlotsRequest, records: Readonly<Record<string, Record<string, Values>>>) => SlotsResult | Promise<SlotsResult>;
 }
 
 export interface MemoryDataSource extends Required<DataSource> {
@@ -378,9 +351,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async slots(request: SlotsRequest): Promise<SlotsResult> {
       calls.push({ method: 'slots', request });
       await pause();
-      const schedule = options.schedules?.[request.schedule];
-      if (!schedule) throw new Error(`No schedule "${request.schedule}"`);
-      return slotsOf(schedule, request, schedule.bookings ? bookedIn(schedule, request, table(schedule.bookings.model)) : [], (options.now?.() ?? new Date()).getTime());
+      if (!options.slots) throw new Error(`No schedule "${request.schedule}"`);
+      return options.slots(request, records);
     },
 
     async totals(request: TotalsRequest): Promise<TotalsResult> {
@@ -575,62 +547,3 @@ function base64(bytes: Uint8Array): string {
   return (globalThis as unknown as { btoa(text: string): string }).btoa(text);
 }
 
-const MINUTE = 60000;
-/** "09:30" as minutes into its day. */
-const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-const sameValue = (a: unknown, b: unknown) => JSON.stringify(a && typeof a === 'object' && 'id' in a ? (a as RelatedRecord).id : a ?? null) === JSON.stringify(b && typeof b === 'object' && 'id' in b ? (b as RelatedRecord).id : b ?? null);
-
-/** The spans a schedule's bookings hold, as instants from and to: the record booked aside, and only those of the same doctor when it says. */
-function bookedIn(schedule: MemorySchedule, request: SlotsRequest, stored: Record<string, Values>): [number, number][] {
-  const { field = request.field, endField, same = [] } = schedule.bookings ?? {};
-  const length = (request.length ?? schedule.length ?? 30) * MINUTE;
-  const spans: [number, number][] = [];
-  for (const [key, values] of Object.entries(stored)) {
-    if (request.recordId !== null && String(request.recordId) === key) continue;
-    if (!same.every((name) => sameValue(values[name], request.values[name]))) continue;
-    const start = Date.parse(String(values[field] ?? ''));
-    if (Number.isNaN(start)) continue;
-    const end = endField ? Date.parse(String(values[endField] ?? '')) : NaN;
-    spans.push([start, Number.isNaN(end) ? start + length : end]);
-  }
-  return spans;
-}
-
-/**
- * The days asked of a schedule: each day's times from its hours, a booking's length apart (and the minutes kept free
- * after one), on the schedule's clock — a time the clocks skip that day left out, one they repeat taken the first
- * time — less those a booking holds and those past. Open with times left; full with none left; closed where it has
- * no hours, or every time has gone by; a holiday by its name.
- */
-function slotsOf(schedule: MemorySchedule, request: SlotsRequest, booked: [number, number][], now: number): SlotsResult {
-  const length = request.length ?? schedule.length ?? 30;
-  const between = request.between ?? schedule.between ?? 0;
-  const days: Record<string, SlotDay> = {};
-  const first = wallOf(request.from);
-  const last = wallOf(request.to);
-  if (!first || !last) return { days, length };
-  for (let at = Date.UTC(first.year, first.month - 1, first.day); at <= Date.UTC(last.year, last.month - 1, last.day); at += 86400000) {
-    const date = new Date(at);
-    const day = date.toISOString().slice(0, 10);
-    const holiday = schedule.holidays?.[day];
-    if (holiday) {
-      days[day] = { state: 'holiday', note: holiday };
-      continue;
-    }
-    const free: string[] = [];
-    let any = false;
-    for (const [from, to] of schedule.hours[date.getUTCDay() || 7] ?? []) {
-      for (let minutes = minutesOf(from); minutes + length <= minutesOf(to); minutes += length + between) {
-        const start = instantsAt({ year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate(), hour: Math.floor(minutes / 60), minute: minutes % 60 }, schedule.timeZone)[0];
-        if (start === undefined || start <= now) continue;
-        any = true;
-        const end = start + length * MINUTE;
-        // Taken where a booking, and the minutes kept free after it, meet this time and those kept free after it.
-        if (booked.some(([from, until]) => start < until + between * MINUTE && from < end + between * MINUTE)) continue;
-        free.push(new Date(start).toISOString());
-      }
-    }
-    days[day] = free.length ? { state: 'open', free } : { state: any ? 'full' : 'closed' };
-  }
-  return { days, length };
-}

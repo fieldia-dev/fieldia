@@ -1,4 +1,6 @@
 export * from './runtime';
+// A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
+export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
 export {
   FieldSchema,
   FieldsSchema,
