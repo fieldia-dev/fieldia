@@ -29,6 +29,8 @@ const RECORD = {
       { type: 'field', id: 'f-who', field: 'who' },
       // As real-invoice.page.json's Send: the app's action, then a save.
       { type: 'button', id: 'b-send', label: 'Send quote', hotkey: 'k', steps: [{ do: 'call', action: 'send_quote' }, { do: 'save' }] },
+      // A step that works a field out from another: the name from the seats.
+      { type: 'button', id: 'b-name', label: 'Name it', hotkey: 'j', steps: [{ do: 'set', field: 'name', value: "'Seats: ' + seats" }] },
     ],
   },
 };
@@ -92,5 +94,17 @@ test('Send pressed over seats left as "12a" does not run the app’s action on t
   await page.waitForTimeout(300);
   // The save after it refused: the quote was not sent with 3 seats meanwhile.
   expect(await handed(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+test('Alt+J on a button that sets the name from the seats, "1.5" typed in them, never works it out from 1', async ({ page }) => {
+  const problems = await quote(page);
+  const seats = page.locator('[data-node="f-seats"] input');
+  await seats.click();
+  await seats.press('Control+A');
+  await page.keyboard.type('1.5');
+  await page.keyboard.press('Alt+j');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.name)).not.toBe('Seats: 1');
   expect(problems).toEqual([]);
 });
