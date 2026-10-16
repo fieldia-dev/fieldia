@@ -56,7 +56,7 @@ export interface ListContext {
    * A row opened. A promise answered (the record in a dialog, closed): the list asks again once it settles, and its row
    * takes the focus back. Anything else answered is let be, so a handler that returns what it did (a push's count) still fits.
    */
-  onOpenRecord?: (id: RecordId) => unknown;
+  onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
   /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
@@ -74,6 +74,20 @@ export interface ListContext {
   ask?: (message: string) => Promise<boolean>;
   /** Values asked in a dialog of fields, as a line's own form asks them: Edit's field and value. Without it, Edit is not offered. */
   editValues?: WidgetDialogs['editValues'];
+  /**
+   * A list inside a record (a related list: list-related.ts): its search a box alone — no menu of filters, groups and
+   * favourites — and its search and pager shown only once its records run past a page, or while a search is on.
+   */
+  inRecord?: boolean;
+  /**
+   * Taken as each ask goes to the source: its answer is drawn only while what it gives still holds — a related list's
+   * `form.recordShown()`, so the records of a record no longer shown are drawn in none.
+   */
+  shown?: () => () => boolean;
+  /** Told how many records the list holds each time it has asked: with no search on, or under one (`searched`). */
+  onCount?: (total: number, searched: boolean) => void;
+  /** What it says holding no records, with no search on: "No records match." unless given (a related list's "None yet."). */
+  none?: string;
 }
 
 /**
@@ -219,6 +233,8 @@ export function listView(context: ListContext): ListView {
   const choose = node.choose !== false;
   /** A filter bar of fields over the list (search "fields"): the pager goes under the table. */
   const fieldsSearch = node.search === 'fields';
+  /** A list inside a record: a search box alone, it and the pager shown once the records run past a page. */
+  const inRecord = context.inRecord === true;
   const parentField = node.parentField && page.fields[node.parentField] ? node.parentField : null;
   const cellOf = (name: string) => node.cells?.[name];
   const leads = Object.values(node.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : []));
@@ -378,8 +394,8 @@ export function listView(context: ListContext): ListView {
    * Open a record from its row; when the app answers with a promise, its row marked open meanwhile (unless `lit` is false),
    * ask again once it settles and go back to its row.
    */
-  async function openRow(id: RecordId, lit = true) {
-    const answer = context.onOpenRecord?.(id);
+  async function openRow(id: RecordId, lit = true, name?: string) {
+    const answer = context.onOpenRecord?.(id, name);
     if (!isPromise(answer)) return;
     if (lit) openId = id;
     markOpen();
@@ -439,14 +455,14 @@ export function listView(context: ListContext): ListView {
         return;
       }
       if ((event.target as Element).closest('.fd-list-twisty')) return;
-      void openRow(record.id);
+      void openRow(record.id, true, name);
     });
     tr.addEventListener('keydown', (event) => {
       if (event.target !== tr) return;
       const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
       if (event.key === 'Enter') {
         event.preventDefault();
-        void openRow(record.id);
+        void openRow(record.id, true, name);
       } else if (event.key === ' ' && box) {
         event.preventDefault();
         box.click();
@@ -641,8 +657,14 @@ export function listView(context: ListContext): ListView {
   });
 
   function drawPager() {
-    // Under a filter bar, the pager shows only when there is more than one page.
-    pager.hidden = total === 0 || (fieldsSearch && offset === 0 && total <= pageSize);
+    // Under a filter bar, or in a record, the pager shows only when there is more than one page.
+    const fits = offset === 0 && total <= pageSize;
+    pager.hidden = total === 0 || ((fieldsSearch || inRecord) && fits);
+    // In a record, its search too, unless one is on or it is being typed in; and the bar with neither.
+    if (inRecord) {
+      search.element.hidden = fits && !facets.length && !search.element.contains(doc.activeElement);
+      bar.hidden = pager.hidden && search.element.hidden;
+    }
     // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
     range.textContent = fill(labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
     previous.disabled = offset === 0;
@@ -697,6 +719,9 @@ export function listView(context: ListContext): ListView {
 
   async function load(): Promise<void> {
     const mine = ++asking;
+    // What the answer is for (a related list's record shown), taken as it is asked.
+    const shown = context.shown?.();
+    const stale = () => mine !== asking || destroyed || (shown !== undefined && !shown());
     drawSort();
     table.setAttribute('aria-busy', 'true');
     let drawn: HTMLTableRowElement[] = [];
@@ -709,7 +734,7 @@ export function listView(context: ListContext): ListView {
       if (grouping.length && source?.groups && source.list) {
         // Grouped: a row for each value of the first field (or span of a date), each opening into the rest.
         const groups = await headings(source, grouping[0], filter);
-        if (mine !== asking || destroyed) return;
+        if (stale()) return;
         rows = [];
         total = 0;
         groupedNow = true;
@@ -717,7 +742,7 @@ export function listView(context: ListContext): ListView {
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
         const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
-        if (mine !== asking || destroyed) return;
+        if (stale()) return;
         // Past the end, as when the last record of the last page went: back to the page that is left.
         if (!answer.records.length && answer.total > 0 && offset > 0) {
           offset = Math.floor((answer.total - 1) / pageSize) * pageSize;
@@ -731,7 +756,7 @@ export function listView(context: ListContext): ListView {
       }
       failed.hidden = true;
     } catch {
-      if (mine !== asking || destroyed) return;
+      if (stale()) return;
       rows = [];
       total = 0;
       matching = 0;
@@ -739,9 +764,11 @@ export function listView(context: ListContext): ListView {
     }
     body.replaceChildren(...drawn);
     empty.hidden = drawn.length > 0 || !failed.hidden;
+    empty.textContent = context.none && !facets.length ? context.none : labels.noRecords;
     table.removeAttribute('aria-busy');
     drawPager();
     changed();
+    if (failed.hidden) context.onCount?.(matching, facets.length > 0);
   }
 
   const searched = (next: Facet[]) => {
@@ -762,7 +789,7 @@ export function listView(context: ListContext): ListView {
   const search =
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
-      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched });
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}) });
 
   // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
@@ -1078,10 +1105,11 @@ export function listView(context: ListContext): ListView {
     return names;
   }
 
+  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, exportBox, views, ...(fieldsSearch ? [] : [pager]));
   const element = el(
     'div',
-    { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none' },
-    el('div', { class: 'fd-list-bar' }, search.element, progress, exportBox, views, ...(fieldsSearch ? [] : [pager])),
+    { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none', 'data-in-record': inRecord ? '' : undefined },
+    bar,
     // A list with no box to choose a row has nothing to act on.
     ...(choose ? [selection, report] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())

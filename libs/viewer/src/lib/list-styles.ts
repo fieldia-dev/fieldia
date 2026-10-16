@@ -176,6 +176,17 @@ export const LIST_STYLES = `
 .fd-list-twisty[aria-expanded="true"]::before { transform: rotate(135deg); }
 .fd-list-twisty:hover { background: var(--fd-page); color: var(--fd-text); }
 
+/* A related list inside a record: its title, count, View all and New over the table; what it says before a first save. */
+.fd-related { display: grid; gap: 8px; min-width: 0; }
+.fd-related [hidden] { display: none !important; }
+.fd-related-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 32px; }
+.fd-related-title { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 15px; color: var(--fd-text); }
+.fd-related-title svg { width: 16px; height: 16px; flex: none; color: var(--fd-muted); }
+.fd-related-count { min-width: 20px; padding: 1px 7px; box-sizing: border-box; border-radius: 999px; background: var(--fd-page); border: 1px solid var(--fd-border); color: var(--fd-muted); font-size: 12.5px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.fd-related-tools { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-inline-start: auto; }
+.fd-related-note { margin: 0; padding: 14px 12px; border: 1px dashed var(--fd-border); border-radius: var(--fd-radius); color: var(--fd-muted); text-align: center; font-size: 14px; }
+.fd-related-list { min-width: 0; }
+.fd-list[data-in-record] .fd-list-empty { padding-block: 16px; }
 /* A list with the filter bar: its card above the table's, the pager under the table. */
 .fd-list[data-search="fields"] .fd-list-bar { gap: 16px; }
 .fd-list[data-search="fields"] .fd-list-records > .fd-pager { justify-self: end; }

@@ -32,6 +32,7 @@ import {
   type ImageNode,
   type FormNode,
   type MapNode,
+  type RelatedNode,
   type WizardNode,
   type LabelPlace,
   type LineField,
@@ -51,6 +52,7 @@ import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler
 import { upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
+import type { RelatedContext, RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -595,7 +597,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const focused = drawn.contains(doc.activeElement);
         drawn.replaceWith(box);
         if (focused) box.focus();
-      } else spans(box, node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
+      } else spans(box, node.type === 'map' || node.type === 'related' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
       part.box = box;
       return box;
     }
@@ -1311,7 +1313,73 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           return formItem(node, place);
         case 'map':
           return mapItem(node);
+        case 'related':
+          return relatedItem(node);
       }
+    }
+
+    /**
+     * Another model's records that point at this record, listed inside it: drawn by the list part (list-related.ts),
+     * which the page waited for, in a box of the row's width; their records opened and made in dialogs of the page the
+     * app gives for their model, all of them in the app's list page (`viewAll`) as an `open` step opens one. Not shown
+     * where the data source cannot list records.
+     */
+    function relatedItem(node: RelatedNode): HTMLElement {
+      const box = el('div', { 'data-node': node.id, class: 'fd-related' });
+      spans(box, node.colspan ?? 12);
+      if (!options.dataSource?.list) {
+        box.hidden = true;
+        return box;
+      }
+      const { model, viewAll } = node;
+      const opens = !!(options.pages || options.relatedPages) && dialogs.canOpen(model);
+      const context: RelatedContext = {
+        page,
+        node,
+        form,
+        dataSource: options.dataSource,
+        box,
+        doc,
+        el,
+        labels,
+        locale,
+        fill,
+        press,
+        withIcon,
+        uid,
+        preferences,
+        say: (message, tone) => actionHost.say(message, tone),
+        name: () => recordName(),
+        ...(options.icons ? { icons: options.icons } : {}),
+        ...(options.now ? { now: options.now } : {}),
+        ...(opens ? { openRecord: (id: RecordId, name?: string) => dialogs.openRecord(model, { recordId: id, title: name || node.title || model }) } : {}),
+        ...(opens && node.create !== false
+          ? { newRecord: async (values: Values) => (await dialogs.openRecord(model, { values, title: node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null }
+          : {}),
+        ...(viewAll ? { viewAll: (filter: ResolvedFilter[]) => actionHost.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) } : {}),
+      };
+      // The part has come (the page waited for it); where it could not, it is asked for again, "Loading…" meanwhile.
+      let part: RelatedPart | null = null;
+      const take = (module: NonNullable<typeof listPart.loaded>) => {
+        part = module.relatedList(context);
+        part.update(form.getState());
+      };
+      watch((state) => part?.update(state));
+      cleanups.push(() => part?.destroy());
+      if (listPart.loaded) take(listPart.loaded);
+      else {
+        const words = el('p', { class: 'fd-list-waiting', role: 'status' }, labels.loading);
+        box.append(words);
+        void listPart.load().then(
+          (module) => {
+            words.remove();
+            if (!gone) take(module);
+          },
+          () => (words.textContent = labels.loadFailed)
+        );
+      }
+      hideWhen(box, node.id);
+      return box;
     }
 
     /** A map of the record's places, drawn by the app's maps; told of each change to the form. */

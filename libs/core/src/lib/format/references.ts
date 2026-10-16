@@ -1,6 +1,6 @@
 import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListNode, MapCard, MapNode, Pin, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -785,6 +785,8 @@ export class ReferenceCheck {
         return this.checkValuesIn(node.text, `${path}.text`);
       case 'map':
         return this.walkMap(node, path);
+      case 'related':
+        return this.checkRelated(node, path);
       case 'slot':
         this.slots.add(node.name);
         return;
@@ -804,6 +806,47 @@ export class ReferenceCheck {
     } else if (first !== undefined) {
       this.report(`${path}.name`, `the answers of the saved form at ${first} go under "${node.name}" already: give each copy a name of its own`);
     } else this.formNames.set(node.name, path);
+  }
+
+  /**
+   * A related list: on a record's page, its columns, order, search and cells of its own records' fields, its link to
+   * this record a link of theirs to this model where its fields name it, and its filter's `valueFrom` this record's.
+   */
+  private checkRelated(node: RelatedNode, path: string) {
+    // The quick check reads no shapes: a part with nothing to go by is said here.
+    if (typeof node.model !== 'string' || typeof node.field !== 'string' || !Array.isArray(node.columns) || !node.fields || typeof node.fields !== 'object') {
+      return this.report(path, 'a related list needs the model of its records, their link to this record (field), their fields and its columns');
+    }
+    const model = this.page.data.kind === 'record' ? this.page.data.model : null;
+    if (!model || this.line) this.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
+    const fields = node.fields as Record<string, Field | LineField>;
+    const own = (name: string, at: string) => this.need(name, at, fields);
+    node.columns.forEach((name, i) => own(name, `${path}.columns[${i}]`));
+    node.sort?.forEach((order, i) => own(order.field, `${path}.sort[${i}].field`));
+    node.searchFields?.forEach((name, i) => own(name, `${path}.searchFields[${i}]`));
+    const link = has(fields, node.field) ? fields[node.field] : undefined;
+    if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
+      this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);
+    }
+    for (const [name, def] of Object.entries(fields)) {
+      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.fields.${name}.currencyField`, fields, undefined, fields);
+      if (def.type === 'datetime' && def.timeZone !== undefined) this.checkZone(def.timeZone, `${path}.fields.${name}.timeZone`);
+    }
+    // Its filter is about its records, by their fields; what it compares with may be read from this record.
+    node.filter?.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, this.here()));
+    for (const [column, cell] of Object.entries(node.cells ?? {})) {
+      const at = `${path}.cells.${column}`;
+      if (!node.columns.includes(column)) {
+        this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
+        continue;
+      }
+      const kind = has(fields, column) ? fields[column].type : undefined;
+      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
+        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
+      }
+      if (cell.lead) own(cell.lead.field, `${at}.lead.field`);
+    }
+    if (node.viewAll && node.viewAll.page === this.page.id) this.report(`${path}.viewAll.page`, 'View all opens a list of the records related: this page is the record they point at');
   }
 
   private walkTabs(node: TabsNode, path: string) {
