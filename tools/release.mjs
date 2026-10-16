@@ -176,7 +176,7 @@ console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
 // that is there — and each loads, and gives what is asked of it, as an app's bundler would load it.
 const PARTS = {
   widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'], 'choice-part': ['ownListWidget'], 'date-part': ['dateBox', 'dateBoxWidget', 'withCalendar', 'dateRangeWidget'], 'themes-part': ['installThemeStyles'], 'quiet-part': ['installQuietStyles'], 'lines-part': ['linesWidget', 'linksTableWidget'], 'survey-part': ['rankingWidget', 'matrixWidget', 'sliderWidget', 'progressbarWidget'] , 'business-part': ['statusbarWidget'], 'files-part': ['binaryWidget', 'readFile'], 'phone-part': ['phoneWidget', 'readPhone', 'writePhone'], 'slots-part': ['slotsWidget'] },
-  viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'], 'list-part': ['listView'] },
+  viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'], 'list-part': ['listView', 'relatedList'] },
   calendar: { 'calendar-view': ['calendarPart'] },
   chatter: { discussion: ['mountDiscussion'], history: ['mountHistory'] },
 };

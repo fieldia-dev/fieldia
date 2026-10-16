@@ -3,7 +3,7 @@ import { c, code } from '../layout.mjs';
 export default {
   path: '/record/',
   title: 'Around a record',
-  description: 'What sits around one record: the gear menu with Archive, Duplicate, Delete, Print and your server actions; the pager and the breadcrumbs your app gives; the attachment beside the sheet; and the chatter beside it on any screen it fits.',
+  description: 'What sits around one record: the gear menu with Archive, Duplicate, Delete, Print and your server actions; the pager and the breadcrumbs your app gives; the records that point at it, listed inside it; the attachment beside the sheet; and the chatter beside it on any screen it fits.',
   body: `
 <p class="lead">A record sheet sits in more than its card. Over it, Flectra's control panel: the breadcrumbs back to the list, the gear menu, and the pager — “3 / 42”. Beside it, the record's main attachment and its conversation. The page says what the menu holds; your app gives the records round this one and the trail to it.</p>
 
@@ -105,6 +105,41 @@ viewer.on('open', ({ recordId }) => router.replace(\`/bills/\${recordId}\`));`
 <p>The pager says where the record is, “2 / 4”, and goes round from the last to the first. Moving saves what changed first, as Flectra does; a refused save keeps the record. Alt+P and Alt+N press its buttons. A copy joins the records after the one it was made from; a deleted record leaves them. The form shows the other record in place — ${c('form.openRecord(id)')} — and its ${c('open')} event says which: in React ${c('onRecord')}, in Vue ${c('@record')}, in Angular ${c('(record)')}, beside ${c('onArchive')}, ${c('onDuplicate')} and ${c('onDelete')}.</p>
 <p>The breadcrumbs are a ${c('nav')}: each page before the record a link — ${c('href')} or ${c('open')} — and the record last, by its title field, with ${c('aria-current="page"')}. A page a step opens in the record's place adds the record to the trail, as the way back. ${c('"pager": false')} or ${c('"breadcrumbs": false')} keeps them away even when your app gives them.</p>
 <p>In a dialog there is no pager and no trail: they belong to the record under it. The gear menu still shows. On a phone the gear keeps only its picture and the trail folds to the page before this one, an arrow back.</p>
+
+<h2 id="related">Related records inside it</h2>
+<p>A customer's invoices, a property's viewings, an employee's leave requests: another model's records that point at this one, listed inside it — in a group, a tab, or straight in the sheet — a page at a time, searched, sorted and counted.</p>
+${code(
+  'json',
+  `
+{
+  "type": "related", "id": "invoices", "title": "Invoices",
+  "model": "invoice", "field": "partner_id",
+  "fields": {
+    "name": { "type": "char", "label": "Number" },
+    "invoice_date": { "type": "date", "label": "Invoice date" },
+    "state": { "type": "selection", "label": "Status",
+               "options": [{ "value": "sent", "label": "Sent" }, { "value": "paid", "label": "Paid" }] },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "amount": { "type": "monetary", "label": "Amount", "currencyField": "currency_id" }
+  },
+  "columns": ["name", "invoice_date", "state", "amount"],
+  "cells": { "state": { "widget": "dot", "options": { "tones": { "paid": "success" } } }, "amount": { "total": "sum" } },
+  "filter": [{ "field": "company_id", "op": "=", "valueFrom": "company_id" }],
+  "sort": [{ "field": "invoice_date", "desc": true }],
+  "limit": 5,
+  "viewAll": { "page": "invoices", "as": "page" }
+}`
+)}
+<ul>
+  <li><strong>Its records</strong> are those of ${c('model')} whose ${c('field')} — their link to this record — is this record, and that ${c('filter')} lets through, a ${c('valueFrom')} read from this record. Your data source's ${c('list')} answers, with ${c('{ field: "partner_id", op: "=", value: 1 }')} first among its conditions: nothing new to write. Without ${c('list')}, the part is not shown.</li>
+  <li><strong>Its columns</strong> are fields of its own ${c('fields')} — text, numbers, money, yes or no, dates, choices and links — drawn by the list's own table: a state's dot, a phone as people read it, a column's total under it (with your source's ${c('totals')}).</li>
+  <li><strong>A page at a time</strong>: ${c('limit')} rows, 5 unless said. Its title says how many there are; past a page, a pager and a search box show, and its headers put it in order.</li>
+  <li><strong>A row</strong> opens its record in a dialog, with the page your app's ${c('pages')} gives for ${c('model')}; <strong>New</strong> opens a new one there, its ${c('field')} filled in with this record, and lists it once saved. Where your app gives no page for the model, neither is offered; ${c('"create": false')} offers no New.</li>
+  <li><strong>View all</strong> opens the page ${c('viewAll')} names — your app's list of those records — showing this record's alone: in a dialog, a side panel (${c('"as": "panel"')}) or this page's place (${c('"as": "page"')}), or your own way, through ${c('onOpen')}, whose request carries the conditions as ${c('filter')} for your router.</li>
+  <li><strong>Before the record's first save</strong> nothing points at it: the part says so, with no New.</li>
+  <li><strong>Another record shown</strong> — the pager, a reload, Discard — its records are asked again; an answer for the one before is drawn in none.</li>
+</ul>
+<p>In the designer, a <strong>Related list</strong> is among the toolbox's records on a record's page: its panel sets its title, the model and link, its columns, its rows a page, New and View all. <a href="/demos/plain/?page=customer-account&amp;record=1&amp;skin=underline">Try a customer with its invoices and quotations</a>, or <a href="/demos/plain/?page=property&amp;record=1&amp;skin=underline">a property with its viewings</a>.</p>
 
 <h2 id="preview">The attachment beside the sheet</h2>
 ${code(
