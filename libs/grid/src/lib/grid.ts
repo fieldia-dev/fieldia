@@ -30,6 +30,7 @@ import {
   DRAWN_IN_CELLS,
   drawIcon,
   inPlural,
+  itemNumber,
   openLineDialog,
   kindTextField,
   lineForm,
@@ -305,12 +306,15 @@ class DrawnRenderer implements ICellRendererComp<Line> {
   }
 }
 
-/** A column's total under the lines: its sum, or, while it waits for a line, a dash with its words for a screen reader and on pointing at it. */
+/**
+ * A column's total under the lines, or a line's worked-out cell: its value, or, while it waits for a line — a cell
+ * of it holding text that does not read — a dash with its words for a screen reader and on pointing at it.
+ */
 class TotalRenderer implements ICellRendererComp<Line> {
   private box!: HTMLElement;
   init(params: ICellRendererParams<Line> & { waits(): string | null }) {
     this.box = document.createElement('span');
-    this.box.className = 'fd-grid-total';
+    this.box.className = params.node.rowPinned ? 'fd-grid-total' : 'fd-grid-worked';
     this.refresh(params);
   }
   getGui() {
@@ -357,7 +361,8 @@ class DeleteRenderer implements ICellRendererComp<Line> {
 
 /** What a line's tick and the head's tick need from their grid: which lines are chosen, and choosing them. */
 interface Picking {
-  label(index: number): string;
+  /** A line's tick's words, naming it by its number as people count lines. */
+  label(line: Line | undefined): string;
   allLabel: string;
   isChosen(key: string): boolean;
   choose(key: string, on: boolean): void;
@@ -387,7 +392,7 @@ class PickRenderer implements ICellRendererComp<Line> {
     this.params = params;
     this.box.checked = !!params.data && params.picking.isChosen(params.data.key);
     this.box.disabled = params.picking.readonly();
-    this.box.setAttribute('aria-label', params.picking.label((params.node.rowIndex ?? 0) + 1));
+    this.box.setAttribute('aria-label', params.picking.label(params.data));
     return true;
   }
 }
@@ -414,8 +419,8 @@ class PickAllHeader implements IHeaderComp {
 /** The button that puts a copy of a line right after it. */
 class CopyRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
-  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string };
-  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string };
+  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.className = 'fd-line-copy';
@@ -429,9 +434,9 @@ class CopyRenderer implements ICellRendererComp<Line> {
   getGui() {
     return this.button;
   }
-  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
     this.params = params;
-    const label = params.label((params.node.rowIndex ?? 0) + 1);
+    const label = params.label(params.data);
     this.button.setAttribute('aria-label', label);
     this.button.title = label;
     return true;
@@ -803,6 +808,8 @@ const BADGE_PADDING = 20;
 
 /** The kinds of field that hold words: a line is named by the first of them. */
 const WORDS = new Set(['char', 'text', 'html', 'many2one', 'reference']);
+/** The kinds of a number: what a line works out from its others, and what a total adds. */
+const NUMERIC = new Set(['integer', 'float', 'monetary']);
 
 /** The kinds of field whose column is as wide as its values need, in characters, as Flectra's lists size them. */
 /** The widest a link's editor grows to show a long name, in pixels. */
@@ -844,8 +851,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const totals = (node.totals ?? []).filter((column) => columns.includes(column));
   /** Text left in a cell that does not read, kept by the form by the cell's path. */
   const unreadAt = (line: Line | undefined, column: string) => (line && !kindOf(line) ? form.getState().unread?.[`${name}.${line.key}.${column}`] : undefined);
-  /** A column's total: numbers only, or the line it waits for (text that does not read, or no number). */
-  const totalOf = (current: Line[], column: string) => columnTotal(current, column, (line) => !kindOf(line), (line) => !!unreadAt(line, column));
+  /** A line's number as people count lines: items only, from 1 — sections and notes are not counted (0 for one). */
+  const numberOf = (line: Line | undefined) => (line ? itemNumber(lines(), line.key, (one) => !kindOf(one)) : 0);
+  /** A line's name by its number, for a tick, a copy button, a card: "Line 3". */
+  const lineName = (line: Line | undefined) => fill(labels.lineN, { n: numberOf(line) });
+  /**
+   * A number no one types in — read-only, or worked out — on a line where a cell holds text that does not read: it
+   * waits, as the totals do, rather than show what was worked out before that text was typed. Its words name the cell.
+   */
+  const cellWaits = (line: Line | undefined, column: string): string | null => {
+    const sub = def.fields[column];
+    if (!line || kindOf(line) || !sub || !NUMERIC.has(sub.type) || !locked(sub)) return null;
+    const unread = Object.keys(def.fields).find((other) => other !== column && unreadAt(line, other));
+    return unread ? fill(labels.cellWaits, { column: def.fields[unread].label, own: sub.label }) : null;
+  };
+  /** A column's total: numbers only, or the line it waits for (text that does not read, or no number, or a worked-out number that waits). */
+  const totalOf = (current: Line[], column: string) => columnTotal(current, column, (line) => !kindOf(line), (line) => !!unreadAt(line, column) || !!cellWaits(line, column));
   /** The totals that wait for a line, by column: their words. */
   const totalWaits = new Map<string, string>();
   const totalsRow = (current: Line[]): Line => {
@@ -972,11 +993,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   /** Every line problem, in the order the lines and columns are shown. */
   const lineProblems = () => {
     const shown = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
-    const found: { index: number; column: string; message: string }[] = [];
+    const found: { index: number; number: number; column: string; message: string }[] = [];
     lines().forEach((line, index) => {
       for (const column of shown) {
         const message = problemAt(line, column, api);
-        if (message) found.push({ index, column, message });
+        // Its row (to open it), and its number as people count lines: a section above it is no line.
+        if (message) found.push({ index, number: numberOf(line), column, message });
       }
     });
     return found;
@@ -1104,6 +1126,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         // Text left that does not read shows as it was typed, marked, never as a number it is not.
         const unread = p.node?.rowPinned ? undefined : unreadAt(p.data, column);
         if (unread) return unread.text;
+        // A number worked out from it waits for it: a dash, its words said by its renderer.
+        if (!p.node?.rowPinned && cellWaits(p.data, column)) return '—';
         return cellText(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]);
       },
       type: numeric ? 'rightAligned' : undefined,
@@ -1218,9 +1242,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // A total that waits for a line says so to a screen reader too, and on pointing at it: never NaN, never a confident 0.00.
   for (const colDef of columnDefs) {
     const column = colDef.colId as string;
-    if (!totals.includes(column)) continue;
     const own = colDef.cellRendererSelector;
-    colDef.cellRendererSelector = (p) => (p.node.rowPinned ? { component: TotalRenderer, params: { waits: () => totalWaits.get(column) ?? null } } : own?.(p));
+    // A number worked out on a line that waits says why too: its line's cell that does not read.
+    const worked = NUMERIC.has(def.fields[column]?.type) && locked(def.fields[column]) && !own;
+    if (!totals.includes(column) && !worked) continue;
+    colDef.cellRendererSelector = (p) =>
+      p.node.rowPinned
+        ? totals.includes(column)
+          ? { component: TotalRenderer, params: { waits: () => totalWaits.get(column) ?? null } }
+          : own?.(p)
+        : worked && !kindOf(p.data)
+          ? { component: TotalRenderer, params: { waits: () => cellWaits(p.data, column) } }
+          : own?.(p);
   }
   if (sequence) {
     // Lines that keep an order are moved by a handle at their start.
@@ -1243,7 +1276,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   }
   // A tick at the start of each item, choosing it for the table's buttons for chosen lines; the head's chooses every one.
   const picking: Picking = {
-    label: (n) => fill(labels.chooseLine, { name: fill(labels.lineN, { n }) }),
+    label: (line) => fill(labels.chooseLine, { name: lineName(line) }),
     allLabel: labels.chooseAllLines,
     isChosen: (key) => chosen.has(key),
     choose(key, on) {
@@ -1309,7 +1342,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressMovable: true,
       lockPosition: lineEnd,
       pinned: lineEnd,
-      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (n: number) => fill(labels.copy, { name: fill(labels.lineN, { n }) }) } }),
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (line: Line | undefined) => fill(labels.copy, { name: lineName(line) }) } }),
       suppressKeyboardEvent: keys,
     });
   }
@@ -1432,7 +1465,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         const column = titleColumn(columns.filter((c) => api.getColumn(c)?.isVisible() !== false));
         const value = line && (kindOf(line) && kinds ? line.values[kinds.text] : column ? line.values[column] : null);
         const text = value && typeof value === 'object' ? String((value as { label?: string }).label ?? '') : String(value ?? '');
-        return text.trim() || placeName((p.rowNode?.rowIndex ?? 0) + 1);
+        return text.trim() || placeName(numberOf(line) || (p.rowNode?.rowIndex ?? 0) + 1);
       },
       onRowDragEnd: (event) => {
         const key = event.node.data?.key;
@@ -1621,14 +1654,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const text = (column: string) => {
         // A distribution says its accounts by their names, as its cell does, once they are found.
         const shares = distributions.get(column);
-        if (!shares) return unreadAt(line, column)?.text ?? cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
+        if (!shares) return unreadAt(line, column)?.text ?? (cellWaits(line, column) ? '—' : cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]));
         const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
         if (unknown.length) shares.find(line, unknown);
         return distributionWords(line.values[column] as Value, locale, shares.nameOf);
       };
       const title = document.createElement(dialogs ? 'button' : 'div');
       title.className = 'fd-line-card-title';
-      title.textContent = first ? text(first) || placeName(current.indexOf(line) + 1) : '';
+      title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
       if (dialogs && title instanceof HTMLButtonElement) {
         title.type = 'button';
         title.addEventListener('click', () => void openLine(line));
@@ -1768,7 +1801,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         const read = typable(line, column) ? readPastedCell(sub, value, reading) : null;
         if (!read) {
           // Named, and — where its box has words for it — why: "“6:3” could be 6:03 or 6:30", "the time 14:30 was left out".
-          const cell = fill(labels.cellName, { column: sub.label, n: rowIndex + r + 1 });
+          // By its line's number as people count lines; a section's or a note's by its words.
+          const number = numberOf(line);
+          const cell = number ? fill(labels.cellName, { column: sub.label, n: number }) : fill(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
           const why = typable(line, column) ? whyNotPasted(sub, value, { ...reading, labels }) : null;
           return void missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
         }
@@ -1880,7 +1915,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (signature !== problemsShown) {
         problemsShown = signature;
         api.refreshCells({ force: true, suppressFlash: true });
-        const listed = found.slice(0, 3).map((p) => fill(labels.lineProblem, { n: p.index + 1, message: p.message }));
+        const listed = found.slice(0, 3).map((p) => (p.number ? fill(labels.lineProblem, { n: p.number, message: p.message }) : p.message));
         if (found.length > 3) listed.push(fill(labels.moreProblems, { n: found.length - 3 }));
         problems.textContent = listed.join(' · ');
         problems.hidden = !found.length;

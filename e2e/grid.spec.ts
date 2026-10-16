@@ -406,7 +406,8 @@ for (const variant of VARIANTS) {
       await page.getByRole('button', { name: 'Save' }).click();
       const problems = grid(page).locator('.fd-grid-problems');
       await expect(problems).toBeVisible();
-      await expect(problems).toHaveText('Line 7: Product is required');
+      // The fourth line, as people count lines: the Workstations and Lighting headings and the note are none.
+      await expect(problems).toHaveText('Line 4: Product is required');
       await expect(cell(page, NEW, 'product_id')).toHaveClass(/fd-grid-invalid/);
       await expect(cell(page, LAMP, 'product_id')).not.toHaveClass(/fd-grid-invalid/);
       // The focus went straight to the cell to fix, its search open.

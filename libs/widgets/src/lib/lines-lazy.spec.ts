@@ -102,9 +102,10 @@ describe('a table drawn before the lines part came', () => {
     expect(linesPart.loaded).toBeUndefined();
     const { form, widget, box } = mount('line_ids', LINES, (page.layout as { children: FieldNode[] }).children[0]);
     const before = form.getState().values['line_ids'];
-    // Meanwhile its lines as words: a section's text, a line's values as its cells show them at rest, a line with none by its place.
+    // Meanwhile its lines as words: a section's text, a line's values as its cells show them at rest, a line with none by
+    // its number as people count lines (the section is none: the empty line is line 2).
     expect(widget.element.classList.contains('fd-lines-plain')).toBe(true);
-    expect(words(widget.element)).toEqual(['Workstations', 'Desk · 2 · E£ 1,200.00', 'line 3']);
+    expect(words(widget.element)).toEqual(['Workstations', 'Desk · 2 · E£ 1,200.00', 'line 2']);
     expect(widget.element.querySelector('input, select, textarea, button')).toBeNull();
     // Nothing written to the value: the same lines, the record not changed by drawing them.
     expect(form.getState().values['line_ids']).toBe(before);

@@ -14,6 +14,22 @@ import type { WidgetDialogs } from './widgets';
 export type ColumnTotal = { sum: number } | { waits: number };
 
 /**
+ * A line's number as people count lines: its place among the items, from 1. A
+ * section or a note is a heading or words between them, never a line of its
+ * own: it has none (0), and the line after "Workstations" is line 1. Every
+ * message that names a line by its number counts this way.
+ */
+export function itemNumber(lines: readonly Line[], key: string, isItem: (line: Line) => boolean): number {
+  let n = 0;
+  for (const line of lines) {
+    if (!isItem(line)) continue;
+    n++;
+    if (line.key === key) return n;
+  }
+  return 0;
+}
+
+/**
  * A column's total over a table's lines. It adds only numbers: a cell holding
  * text that does not read (`unread`), or a value that is no number (words from
  * a server, an old draft), makes the total wait for that line — never NaN,
@@ -22,10 +38,12 @@ export type ColumnTotal = { sum: number } | { waits: number };
  */
 export function columnTotal(lines: readonly Line[], column: string, isItem: (line: Line) => boolean, unread: (line: Line) => boolean): ColumnTotal {
   let sum = 0;
-  for (const [index, line] of lines.entries()) {
+  let n = 0;
+  for (const line of lines) {
     if (!isItem(line)) continue;
+    n++;
     const value = line.values[column];
-    if (unread(line) || (value !== null && value !== undefined && value !== '' && (typeof value !== 'number' || !Number.isFinite(value)))) return { waits: index + 1 };
+    if (unread(line) || (value !== null && value !== undefined && value !== '' && (typeof value !== 'number' || !Number.isFinite(value)))) return { waits: n };
     if (typeof value === 'number') sum += value;
   }
   return { sum };

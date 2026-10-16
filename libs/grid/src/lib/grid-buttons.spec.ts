@@ -112,7 +112,7 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
   it('puts a copy of a line right after it, never its saved id', async () => {
     const { grid, form } = await mount();
     const copy = grid.querySelector('.ag-row[row-index="1"] button.fd-line-copy') as HTMLButtonElement;
-    expect(copy.getAttribute('aria-label')).toBe('Copy line 2');
+    expect(copy.getAttribute('aria-label')).toBe('Copy line 1'); // Cut, the first line under the Assembly heading
     copy.click();
     await frames();
     const now = form.getState().values['workorder_ids'] as Line[];

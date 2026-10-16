@@ -343,6 +343,8 @@ export interface WidgetLabels {
   rankTop: string;
   /** A total that cannot be added up while line `{n}` holds text that does not read. */
   totalWaits: string;
+  /** A number a line works out (`{own}`, a subtotal) while a cell of that line holds text that does not read: `{column}` is that cell's. */
+  cellWaits: string;
   /**
    * A block pasted on a table: how many cells took it, those that did not (`{cells}`, each a `cellName`), and lines
    * past the last; `…One`, the words for one cell or line, in the languages that say it apart (inPlural).
@@ -351,6 +353,8 @@ export interface WidgetLabels {
   pastedCellsOne: string;
   notPastedCells: string;
   cellName: string;
+  /** A pasted cell on a section's or a note's row, named by its words (`{heading}`). */
+  cellOfHeading: string;
   /** A cell named in a paste's note, with why it did not take what was pasted: its box's own words. */
   notPastedWhy: string;
   pasteBeyondLines: string;
@@ -602,10 +606,12 @@ const en: WidgetLabels = {
   chooseUpTo: 'You can choose {max}; untick one to choose another',
   rankTop: 'Only the top {max} are ranked; take one out to rank another',
   totalWaits: 'Fix line {n} to see this total',
+  cellWaits: 'Fix {column} to see this line’s {own}',
   pastedCells: 'Pasted into {n} cells.',
   pastedCellsOne: 'Pasted into {n} cell.',
   notPastedCells: 'Not pasted: {cells}',
   cellName: '{column}, line {n}',
+  cellOfHeading: '{column}, at “{heading}”',
   notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'Only {n} lines are here, so the rest was not pasted',
   pasteBeyondLinesOne: 'Only {n} line is here, so the rest was not pasted',
