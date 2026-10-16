@@ -1,5 +1,6 @@
 import type { FilterItem, Locale, RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
+import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -14,6 +15,9 @@ import type { WidgetFactory } from './widgets';
  *   fold            stages whose record is folded go under More at the end,
  *                   unless the record stands on one
  *   saves           a click also saves the record at once
+ *
+ * It comes in the business part (business-part.ts): the viewer waits for it
+ * before it draws a sheet with a statusbar, or a form with one.
  */
 
 interface Step {
@@ -34,6 +38,7 @@ function timeSpent(seconds: number, locale: Locale): string {
 }
 
 export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale = 'en' }) => {
+  installBusinessStyles(document);
   const options = node.options ?? {};
   const clickable = options['clickable'] === true;
   const visible = Array.isArray(options['visibleStates']) ? options['visibleStates'] : null;

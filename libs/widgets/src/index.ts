@@ -18,7 +18,6 @@ export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
 export * from './lib/progress';
 export * from './lib/label';
-export * from './lib/statusbar';
 export * from './lib/properties';
 export * from './lib/icons';
 export * from './lib/focus-trap';
@@ -41,7 +40,10 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // A table of lines (a one2many's) and a many2many's table of records come in the lines part, loaded the first time a page
 // shows one: `linesWidget` draws from it, its lines as plain words until it has come. What a line is edited through —
 // `lineForm`, `columnTotal`, `openLineDialog`, which the grid and the cards draw with too — is here (lib/lines).
-export { textPart, pathPart, choicePart, datePart, linesPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type PartFactory } from './lib/widget-parts';
+// Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
+// totals, payments — come in the business part, loaded the first time a page shows one:
+// `(await businessPart.load()).statusbarWidget`. Their words in a cell (cellText, distributionWords) are here.
+export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type PartFactory } from './lib/widget-parts';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

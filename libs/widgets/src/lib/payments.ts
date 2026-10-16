@@ -1,8 +1,10 @@
-import type { LineField, RecordId, RelatedRecord, Value } from '@fieldia/core';
+import type { LineField, RecordId, RelatedRecord } from '@fieldia/core';
+import { paymentsOf } from './business-plain';
 import { displayValue } from './display';
 import { fillIn, maker, wordsFor } from './kind-parts';
 import { formatMoney, formatNumber } from './numbers';
 import { popup } from './popup';
+import { installBusinessStyles } from './styles-business-part';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -13,35 +15,12 @@ import type { WidgetFactory } from './widgets';
  * of its details, with Open where the app gives a page for payments
  * (`options.model`, "account.payment"). `options.dueField` names the amount
  * still due, shown under them; money is in the currency of
- * `options.currencyField`.
+ * `options.currencyField`. In the business part (business-part.ts); its
+ * reader (`paymentsOf`) is the main script's, which its plain words share
+ * (business-plain.ts).
  */
-
-interface Payment {
-  date: string;
-  amount: number;
-  name: string;
-  journal: string;
-  memo: string;
-  id: RecordId | null;
-}
-
-const text = (value: unknown) => (typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '');
-
-function paymentsOf(value: Value | undefined): Payment[] {
-  const list = Array.isArray(value) ? value : value && typeof value === 'object' && Array.isArray((value as { content?: unknown }).content) ? (value as { content: unknown[] }).content : [];
-  return (list as Record<string, unknown>[])
-    .filter((p) => p && typeof p === 'object')
-    .map((p) => ({
-      date: text(p['date']),
-      amount: typeof p['amount'] === 'number' ? p['amount'] : Number(p['amount']) || 0,
-      name: text(p['name']),
-      journal: text(p['journal_name'] ?? p['journal']),
-      memo: text(p['ref'] ?? p['memo']),
-      id: (p['account_payment_id'] ?? p['payment_id'] ?? p['id'] ?? null) as RecordId | null,
-    }));
-}
-
 export const paymentsWidget: WidgetFactory = ({ node, id, document, labels, locale = 'en', dialogs }) => {
+  installBusinessStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const options = node.options ?? {};

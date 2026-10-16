@@ -2,6 +2,7 @@ import { placesOf, placesOfCurrency, readNumber, type JsonValue, type RelatedRec
 import { fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
 import { guard, leftWords, numberRules, refusalHint, type Guard } from './input-rules';
 import { formatMoney, formatNumber } from './numbers';
+import { installBusinessStyles } from './styles-business-part';
 import type { Widget, WidgetFactory, WidgetState } from './widgets';
 
 /**
@@ -12,7 +13,8 @@ import type { Widget, WidgetFactory, WidgetState } from './widgets';
  * groups under it, then the total, in the currency of `options.currencyField`
  * (or `options.currency`). With `options.editable`, a draft's tax amounts are
  * typed in, the total following, for the app to work out again — as Flectra
- * lets a draft bill's taxes be corrected.
+ * lets a draft bill's taxes be corrected. In the business part
+ * (business-part.ts).
  */
 
 interface Group {
@@ -50,6 +52,7 @@ function read(value: Value | undefined, untaxedWords: string): Totals | null {
 }
 
 export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document, labels, locale = 'en' }) => {
+  installBusinessStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const options = node.options ?? {};

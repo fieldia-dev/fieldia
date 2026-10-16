@@ -196,7 +196,6 @@ const SKINS_CSS = /* css */ `
 .ag-cell-inline-editing:has(.fd-refusal-hint:not([hidden])), .ag-row:has(.fd-refusal-hint:not([hidden])) { overflow: visible; z-index: 6; }
 .fd-progressbar-edit:has(> .fd-refusal-hint) { flex-wrap: wrap; }
 .fd-progressbar-edit > .fd-refusal-hint { flex-basis: 100%; }
-.fd-tax-note-row > td { padding: 0; border: 0; }
 
 /* underline: label beside the value, the way a Flectra sheet reads. A field whose page or group
    says where its label goes (data-labels) is laid out by those rules instead, in either skin. */
@@ -618,21 +617,6 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
   background: var(--fd-surface); border-block-end: 1px solid var(--fd-border); padding: 8px 16px;
 }
-.fd-statusbar { display: flex; list-style: none; margin: 0; padding: 0; overflow-x: auto; }
-.fd-statusbar li { display: flex; }
-/* A stage is the li's own child, a button or, when it cannot be clicked, a span; the words inside it take its colour and nothing else. */
-.fd-statusbar li > * {
-  font: inherit; font-size: 13px; border: none; background: var(--fd-page); color: var(--fd-muted);
-  padding: 5px 18px 5px 22px; margin-inline-start: -6px; white-space: nowrap;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 10px 50%);
-}
-.fd-statusbar li:first-child > * { margin-inline-start: 0; padding-inline-start: 14px;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); }
-.fd-statusbar li > button { cursor: pointer; }
-.fd-statusbar li > [aria-current="step"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
-/* Right to left, the arrow is turned round, and its words turned back so they still read. */
-[dir="rtl"] .fd-statusbar li > * { transform: scaleX(-1); }
-[dir="rtl"] .fd-statusbar li > * > * { display: inline-block; transform: scaleX(-1); }
 .fd-sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: var(--fd-page-max, 1180px); margin: 16px auto 0; padding-inline: 16px; }
 /* The sheet keeps its own height: a long side panel beside it must not stretch it. */
 .fd-sheet-layout { align-items: start; }

@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { datePart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, datePart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -48,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -131,6 +131,53 @@ describe('the parts a page draws from', () => {
     // Once, however often it is asked for.
     await installListStyles(other);
     expect(other.querySelectorAll('#fd-list-styles')).toHaveLength(1);
+  });
+
+  it('the business part for a business widget, wherever it is drawn: a field, a table’s lines, a sheet’s statusbar — never a headed sheet’s', () => {
+    const fields = {
+      state: { type: 'selection', label: 'State', options: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] },
+      stage: { type: 'many2one', label: 'Stage', relation: 'stage' },
+      hours: { type: 'float', label: 'Hours' },
+      split: { type: 'json', label: 'Analytic' },
+      lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, hours: { type: 'float', label: 'Hours' } } },
+    };
+    const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
+    for (const [name, widget] of [['state', 'statusbar'], ['stage', 'statusbar'], ['state', 'priority'], ['hours', 'duration'], ['hours', 'percentage'], ['split', 'distribution'], ['split', 'tax-totals'], ['split', 'payments']]) {
+      expect(partsFor(page(sections(field(name, { widget })), fields))).toEqual([businessPart]);
+    }
+    // A table's lines draw each cell with its column's widget: hours in a column.
+    expect(partsFor(page(sections(field('lines', { cells: { hours: { widget: 'duration' } } })), fields))).toEqual([businessPart]);
+    // A sheet's statusbar is drawn as a field's with the statusbar widget.
+    const sheet = (more: Record<string, unknown> = {}) => page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state' }, children: [], ...more }, { ...fields, name: { type: 'char', label: 'Name' } });
+    expect(partsFor(sheet())).toEqual([businessPart]);
+    expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart]);
+    // None: the same fields plainly, a state's dot (the main script's), a sheet with no statusbar, the app's own statusbar,
+    // a headed sheet (its state is its head's).
+    expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([]);
+    expect(partsFor(sheet({ statusbar: undefined }))).toEqual([]);
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([]);
+    expect(partsFor(BUG)).toEqual([headPart]);
+  });
+
+  it('a sheet with a statusbar: nothing of it drawn until the business part has come, then its statusbar, the record’s state current', async () => {
+    const fields = { name: { type: 'char', label: 'Name' }, state: { type: 'selection', label: 'State', options: [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }] } };
+    const dataSource = createMemoryDataSource({ records: { x: { 1: { name: 'Lot 7', state: 'done' } } } });
+    expect(businessPart.loaded).toBeUndefined();
+    const { host, handle } = mount(page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state', clickable: true }, children: [] }, fields), { dataSource, recordId: 1 });
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('.fd-header')).toBeNull();
+    await handle.drawn;
+    await handle.form.settled();
+    expect(businessPart.loaded).toBeDefined();
+    expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+    expect([...host.querySelectorAll('.fd-header .fd-statusbar li')].map((li) => li.textContent)).toEqual(['Draft', 'Done']);
+    expect(host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')?.textContent).toBe('Done');
+    expect(host.querySelector('[data-fd-plain]')).toBeNull();
+    // Its stylesheet among Fieldia's, first of the parts', before the page's own looks.
+    const sheets = [...document.head.querySelectorAll('style')].map((style) => style.id);
+    expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
+    expect(sheets.indexOf('fieldia-business-styles')).toBeLessThan(sheets.indexOf('fieldia-styles-looks'));
   });
 
   it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {
