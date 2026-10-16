@@ -599,9 +599,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A phone read the world over (0.24): its words (a number's country, Call and WhatsApp, five reasons a number does not
 // read), whether a page or a field reads its phones so (phone-settings.ts), the phone part asked for by such a field, a
 // list's phone column and a line's dialog, a card's cells drawn with their column's widget, and a text box's hint taken
-// away with it — the box, its country table and its sheet in fieldia.phone.js — 474.29 measured before, 475.70 after:
-// 1.4 more, to 475.8.
-const BUDGET_KB = 475.8;
+// away with it — the box, its country table and its sheet in fieldia.phone.js — 474.29 measured before, 475.79 after:
+// 1.5 more, to 475.9.
+const BUDGET_KB = 475.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -722,7 +722,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
 // A phone read the world over (0.24), its words and what asks for its part (listed with the raw budget above): 153.62
-// measured before, 154.13 after — 0.5 more, to 154.2.
+// measured before, 154.16 after — 0.5 more, to 154.2.
 const GZIP_BUDGET_KB = 154.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -907,12 +907,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
 // from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
-// A list's phone column written as people read it (0.24): list 42.9, 12.9, as measured 42.85 and 12.82.
+// A list's phone column written as people read it (0.24): list 42.9, 12.9, as measured 42.82 and 12.81.
 // A phone read the world over (0.24) — its box, its country picked or typed, the number checked by it and kept as
 // E.164, its call and WhatsApp links, its sheet, and every country's numbers in a table made from libphonenumber's
 // metadata (phone-table.ts, 23.1 of it, 9.6 gzipped: libphonenumber-js's own smallest build is 147.4 and 34.1) — new,
-// in fieldia.phone.js (phone 34.6, 15.1, as measured 34.55 and 15.08).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.9, 12.9], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2], phone: [34.6, 15.1] };
+// in fieldia.phone.js (phone 34.7, 15.2, as measured 34.63 and 15.11).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.9, 12.9], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2], phone: [34.7, 15.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -965,6 +965,17 @@ for (const part of PARTS) {
   const refused = await host.Fieldia[PART_OF[part]].load().then(() => false, () => true);
   if (!refused || warned.length !== 1 || !warned[0].includes(`${name} is version 0.0.0`)) throw new Error(`${name} of another version is not refused with a warning`);
   partSizes.push(`${part} ${(partBytes / 1024).toFixed(1)} KB, ${(partGzipped / 1024).toFixed(1)} KB gzipped`);
+}
+// Every name the parts take from the main script is set as the main script starts: the table is made then, and a const
+// of a module the main script has not run by that time (one in an import cycle with the table, as the parts' holders
+// are) would be undefined in it — a part takes a function of it instead.
+{
+  const host = { console: { warn: () => undefined } };
+  runInNewContext(readFileSync(OUT, 'utf8'), host);
+  let shared;
+  host.FieldiaParts.push(['shared-names', version, (given) => (shared = given)]);
+  const unset = table.flatMap(([file, names], i) => names.filter((name) => shared?.[i]?.[name] === undefined).map((name) => `${name} (${file.replace(`${WORKSPACE}/`, '')})`));
+  if (unset.length) throw new Error(`the parts take names the main script has not set as it starts: ${unset.join(', ')}`);
 }
 // Asked for with no address to load it from (no document here), a part not on the page fails — and is asked again next time.
 {
@@ -1022,10 +1033,12 @@ console.log(`parts: ${partSizes.join('; ')}`);
   gone('contact');
   // A list with its search bar: the list part, the page drawn once it came — nothing of it before; its phone column's
   // numbers written by the phone part, in already.
-  const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource() });
+  const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
   if (host.querySelector('.fd-list') || customers.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a list drew before its part came');
   await customers.drawn;
   if (loaded() !== 'list, phone' || !host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error(`in a page, a list is not drawn from its part (${loaded() || 'no part'})`);
+  for (let turn = 0; turn < 100 && !host.querySelector('.fd-list-row'); turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!host.querySelector('.fd-list-row')?.textContent.includes('+20 10 1234 5678')) throw new Error(`in a page, a list's phone is not written as people read it: ${host.querySelector('.fd-list-row')?.textContent ?? 'no row'}`);
   customers.destroy();
   gone('customers');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
