@@ -109,9 +109,15 @@ test('typed coordinates move the pin there; a wrong one is said and changes noth
 test('a search suggests places as people type, nearest the map first, each on two lines; Enter takes the first, the arrows another, and Address takes its name', async ({ page }) => {
   const { field, asked, map } = await openPlace(page, QUERY, { search: [TAHRIR, ZAMALEK] });
   // The map moved east first: the search asks near where it now is, not where it opened.
-  await map.focus();
-  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
-  await mapSettled(map);
+  // Moved by its keys until it has moved: WebKit can take the first presses before the map listens for them.
+  const panes = () => map.locator('.leaflet-map-pane').evaluate((el) => (el as HTMLElement).style.transform);
+  const before = await panes();
+  await expect(async () => {
+    await map.focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+    await mapSettled(map);
+    expect(await panes()).not.toBe(before);
+  }).toPass({ timeout: 8000 });
   const search = field.getByRole('combobox');
   await search.pressSequentially('tah', { delay: 60 });
   const options = field.getByRole('option');

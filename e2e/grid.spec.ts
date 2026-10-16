@@ -100,6 +100,16 @@ for (const variant of VARIANTS) {
           const r = range.getBoundingClientRect();
           return [r.left, r.right];
         });
+      // Measured once the grid holds still: its columns settle a few pixels as the page finishes drawing.
+      let last = '';
+      await expect
+        .poll(async () => {
+          const now = JSON.stringify(await textEdges(DESK, 'name'));
+          const still = now === last;
+          last = now;
+          return still;
+        }, { intervals: [100] })
+        .toBe(true);
       for (const col of ['name', 'qty']) {
         const [shownStart, shownEnd] = await textEdges(DESK, col);
         await cell(page, DESK, col).click();
