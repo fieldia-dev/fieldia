@@ -149,7 +149,7 @@ describe('a value the browser fills in is read as the person’s own, typed', ()
     const name = mountKind({ type: 'char', size: 5 }, { autocomplete: 'name' });
     chromeFills(boxOf(name.el), 'Sara Hassan');
     expect(name.form.getState().values['x']).toBe('Sara Hassan');
-    expect(name.form.problem('x')).toBe('X is 6 characters over its 5: shorten it to save');
+    expect(name.form.problem('x')).toBe('X is 6 characters too long: shorten it to 5');
   });
 
   it('a number that reads is taken; one that does not stays in its box, said, the field keeping what it held', () => {

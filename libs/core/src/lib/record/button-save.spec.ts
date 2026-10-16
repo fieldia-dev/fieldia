@@ -144,7 +144,8 @@ describe('a record’s button that saves', () => {
     const form = createForm({ page: invoicePage(), dataSource, recordId: 4 });
     await form.load();
     const pressed = form.runAction('b-confirm');
-    await Promise.resolve();
+    // What is typed is read first (nothing, here), then the steps run to their save, which is held.
+    for (let tick = 0; tick < 20 && form.getState().values['state'] !== 'posted'; tick++) await Promise.resolve();
     expect(form.getState().values['state']).toBe('posted');
     // The app moves it on meanwhile: that is not the button's to undo.
     form.setValues({ state: 'paid' });
