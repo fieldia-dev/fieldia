@@ -6,7 +6,7 @@ export default [
     category: 'real',
     query: 'page=real-invoice&record=4101&skin=underline',
     blurb:
-      'Sherkety ERP’s account.move: one page that is an invoice, a bill, a credit note or a journal entry by its type. Lines with sections and notes, taxes and totals the server works out, journal items, the payment dialog, alerts and the conversation.',
+      'One page that is an invoice, a bill, a credit note or a journal entry, by its type. Lines with sections and notes, taxes and totals the server works out, journal items, the payment dialog, alerts and the conversation.',
     howTo: [
       'Add a line: pick a product and watch its price, taxes, the totals and the Journal Items tab follow.',
       'Press Confirm: the invoice gets its number, INV/2026/00042, and the Register Payment button.',
@@ -20,7 +20,7 @@ export default [
     category: 'real',
     query: 'page=real-register-payment&record=4101&skin=underline',
     blurb:
-      'Sherkety ERP’s Register Payment dialog on its own: journal and method, the amount in any currency, a postdated check’s number and date, and what to do with a payment that is short.',
+      'The dialog an invoice opens to record a payment, here on its own: the bank or cash journal and the method, the amount in any currency, a postdated check’s number and date, and what to do with a payment that is short.',
     howTo: [
       'The amount is less than what is due: the payment difference shows, with Keep open or Mark as fully paid.',
       'Choose Mark as fully paid: the account to post the difference in, and its label, are asked for.',
@@ -34,7 +34,7 @@ export default [
     category: 'real',
     query: 'page=real-expense&record=4101&skin=underline',
     blurb:
-      'Sherkety’s own multi-item expense: a shared header that cascades to every line, prices that include their VAT, and its own approval — submit, approve, post a bill to reimburse, pay it.',
+      'An employee’s expenses of several items: a shared header that cascades to every line, prices that include their VAT, and its own approval — submit, approve, post a bill to reimburse, pay it.',
     howTo: [
       'Type a vendor in Vendor Name: every line takes it.',
       'Add a line with a price: its VAT is taken out of it, and the totals follow.',

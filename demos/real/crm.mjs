@@ -2,11 +2,11 @@
 export default [
   {
     id: 'real-contact',
-    name: 'Contact (res.partner)',
+    name: 'A customer or supplier',
     category: 'real',
     query: 'page=real-contact&record=7001&skin=underline',
     blurb:
-      "Sherkety ERP's contact form as Sales, Purchase, Invoicing and CRM users see it: Individual or Company reshapes the page, contacts and addresses as cards, Sales & Purchase, Invoicing with bank accounts and the credit limit, Egyptian tax numbers, warnings, smart buttons and the chatter.",
+      "A contact, person or company, as sales, purchasing, invoicing and the sales pipeline all see it: Individual or Company reshapes the page, contacts and addresses as cards, Sales & Purchase, Invoicing with bank accounts and the credit limit, Egyptian tax numbers, warnings, smart buttons and the chatter.",
     howTo: [
       'Pick Individual over the name: Job Position, Title and the address type appear, Industry goes, and the address block loses its heading.',
       'Open Contacts & Addresses: the people and addresses of Nile Crest are cards; add one with Add, or press ↗ on a card for its own form — pick Invoice Address there and the address takes the job’s place.',
@@ -17,11 +17,11 @@ export default [
   },
   {
     id: 'real-opportunity',
-    name: 'CRM opportunity (crm.lead)',
+    name: 'A sales opportunity',
     category: 'real',
     query: 'page=real-opportunity&record=7701&skin=underline',
     blurb:
-      "Sherkety ERP's lead and opportunity form: the pipeline's stages with the probability that follows them, expected revenue, priority stars, the customer's details, Won and Lost with the lost-reason dialog, Restore, and the lead's own groups and Convert to Opportunity.",
+      "A lead, then an opportunity in the sales pipeline: its stages with the probability that follows them, expected revenue, priority stars, the customer's details, Won and Lost with the lost-reason dialog, Restore, and the lead's own groups and Convert to Opportunity.",
     howTo: [
       'Click Qualified on the stages at the top: the probability follows the stage, to 30 %.',
       'Press Lost, pick a reason and Mark as Lost: the Lost ribbon, the reason, and Restore appear, and the reason is posted in the conversation.',
@@ -32,11 +32,11 @@ export default [
   },
   {
     id: 'real-tender',
-    name: 'Tender opportunity (crm_tender)',
+    name: 'A tender to bid for',
     category: 'real',
     query: 'page=real-tender&record=7801&skin=underline',
     blurb:
-      "Sherkety's own tender form: a government bid in lots priced by quotations, a compliance checklist whose percentage follows its ticks, the bid team, bond and margin, competitors, results, documents and the timeline, in eight tabs.",
+      "A government tender to bid for: the bid in lots priced by quotations, a compliance checklist whose percentage follows its ticks, the bid team, bond and margin, competitors, results, documents and the timeline, in eight tabs.",
     howTo: [
       'Open Requirements and tick Compliant on “Three similar projects”: the compliance bar follows.',
       'Add a requirement with Add a line: the bar counts it too.',
