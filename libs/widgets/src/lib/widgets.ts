@@ -713,7 +713,7 @@ const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dat
  * A one2many as a table of its lines (lines-table.ts), in the lines part: its lines as plain words meanwhile, read
  * only, the value kept (lines-plain.ts). What its cells edit a line through stays here (lines.ts).
  */
-export const linesWidget: PartFactory = partFactory(linesPart, (part) => part.linesWidget, plainLinesWidget);
+export const linesWidget: PartFactory = partFactory(linesPart, (part) => part.linesWidget(createWidget), plainLinesWidget);
 // Flectra's business widgets — a statusbar, priority stars, hours and a per cent's boxes, an analytic distribution, tax
 // totals, payments — come in the business part (business-part.ts): their value plainly meanwhile (business-plain.ts).
 // A state's dot stays in the main script: a work item's State is one, and its list is drawn as the choice part's and the
@@ -759,7 +759,7 @@ const surveyKind = (real: (part: SurveyPart) => WidgetFactory, plain: WidgetFact
 const sliderKind = surveyKind((part) => part.sliderWidget, numberWidget);
 const colourKind = surveyKind((part) => part.colourWidget, plainColour);
 /** A number shown as a bar that fills towards a maximum (progress.ts, in the survey part). */
-export const progressbarWidget: WidgetFactory = surveyKind((part) => part.progressbarWidget(createWidget), labelWidget);
+export const progressbarWidget: WidgetFactory = surveyKind((part) => part.progressbarWidget(createWidget), (context) => labelWidget(context));
 /** A properties field, a row per property, each edited with the widget for its type (properties.ts, in the survey part). */
 export const propertiesWidget: WidgetFactory = surveyKind((part) => part.propertiesWidget(createWidget), plainProperties);
 
@@ -802,11 +802,12 @@ export function summary(value: Value | undefined, field: Field): string {
  * — a bar's box, cards' fields and a property's value through `createWidget`, a label's words through `summary` —
  * import it back; an app's bundler that splits its code into chunks may start them after this one (esbuild orders a
  * chunk's modules by how near each is to an entry point, and a new part moves them), when they would not be there yet.
+ * The part a widget comes in is told through it all the same (`partOf`), so a page waits for it as for any other.
  */
-const later =
-  (factory: () => WidgetFactory): WidgetFactory =>
-  (context) =>
-    factory()(context);
+const later = (factory: () => WidgetFactory): WidgetFactory =>
+  Object.assign((context: WidgetContext) => factory()(context), {
+    partOf: (node: FieldNode) => (factory() as Partial<PartFactory>).partOf?.(node),
+  });
 
 export const builtInWidgets: Record<string, WidgetFactory> = {
   char: textWidget('text'),

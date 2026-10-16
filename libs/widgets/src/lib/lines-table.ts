@@ -6,7 +6,7 @@ import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
 import { installLinesStyles } from './styles-lines';
-import { createWidget, type Widget, type WidgetFactory } from './widgets';
+import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
  * A one2many as an editable table. Each cell is an ordinary widget; a small
@@ -58,7 +58,17 @@ interface Row {
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
 
-export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs, widgets, onError }) => {
+/**
+ * A table of lines, its cells drawn with the registry's `createWidget` — handed to it rather than imported: a part that
+ * imported the registry would make an app's bundler split the registry off with the part, and run it before the widgets
+ * it holds.
+ */
+export const linesWidget =
+  (create: typeof createWidget): WidgetFactory =>
+  (context) =>
+    linesTable(context, create);
+
+function linesTable({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs, widgets, onError }: WidgetContext, create: typeof createWidget): Widget {
   installLinesStyles(document);
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
@@ -306,7 +316,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     // Its settings reach its widget even without a widget named: a calendar's week numbers.
     const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : rules?.options ? { options: rules.options } : {};
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...look };
-    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
+    const widget = create({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
     const td = document.createElement('td');
     td.colSpan = span;
     td.dataset['column'] = column;
@@ -565,7 +575,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       }
     },
   };
-};
+}
 
 /** A data attribute set, or taken away when there is nothing to say. */
 function setData(element: HTMLElement, key: string, value: string | null | undefined) {
