@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, FilterItem, ListCalendar, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
+import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type ListCalendar, type ListCell, type ListMap, type ListNode, type Page } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -34,6 +34,10 @@ export interface ListOptionsPatch {
   parentField?: string | null;
   /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
   calendar?: ListCalendar | null;
+  /** Export of the rows chosen, or every one the search finds, as Excel or CSV; false takes it away. */
+  export?: boolean;
+  /** Edit of many rows at once: true for the columns one value can set (keeping the fields named, if it names them), the fields it offers, or false for none. */
+  bulkEdit?: boolean | string[];
 }
 
 export interface ListActionPatch {
@@ -202,6 +206,19 @@ export function listCommands(context: {
         }
         if (options.sortable === true) delete list.sortable;
         else if (options.sortable === false) list.sortable = false;
+        if (options.export === true) delete list.export;
+        else if (options.export === false) list.export = false;
+        if (options.bulkEdit === false) delete list.bulkEdit;
+        else if (options.bulkEdit === true) {
+          if (!Array.isArray(list.bulkEdit)) list.bulkEdit = true;
+        } else if (options.bulkEdit !== undefined) {
+          for (const name of options.bulkEdit) {
+            const def = fieldFor(draft, name);
+            if (!bulkSettable(def)) throw new Refusal((w) => w.refusals.notBulkSettable(def.label));
+          }
+          if (options.bulkEdit.length) list.bulkEdit = [...new Set(options.bulkEdit)];
+          else delete list.bulkEdit;
+        }
         if (options.search === 'fields') list.search = 'fields';
         else if (options.search === 'bar') {
           // The fields' values, and their names on the bar, belong to the filter bar alone.

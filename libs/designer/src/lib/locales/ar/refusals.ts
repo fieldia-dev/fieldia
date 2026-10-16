@@ -175,4 +175,5 @@ export const refusals: DesignerWords['refusals'] = {
   parentNotOwnLink: (label) => `تتداخل الصفوف تحت رابط إلى سجلات القائمة نفسها، و${q(label)} ليس كذلك`,
   notFilterable: (label) => `لا يستطيع شريط التصفية عرض قيم ${q(label)}`,
   chooseHasButtons: 'للقائمة أزرار للصفوف المحددة: أزلها قبل مربع تحديد الصف',
+  notBulkSettable: (label) => `لا يستطيع «تعديل» ضبط ${q(label)} في صفوف كثيرة معًا: فهو للقراءة فقط، أو محسوب، أو قيمته ليست كلمة أو رقمًا أو تاريخًا أو اختيارًا أو رابطًا واحدًا`,
 };
