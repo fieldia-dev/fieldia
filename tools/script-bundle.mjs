@@ -620,8 +620,6 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (validatePage): the quick check keeps only that a box names what it holds and an address whose it is
 // (autofill-group.ts). The bot check is in this script, not a part: 1.2 of it, 0.5 gzipped, on the very pages — a
 // public sign-up — that are drawn the moment they are opened. 474.25 measured before, 477.88 after, to 477.9.
-// Save safety round 6 (fix-leave) and autofill (w2-autofill) joined: their growth together, 474.29 + 2.94 + 3.59,
-// to 480.9 until the release measures it.
 // The input rules held for names, tables and ways out (inputs-fix-names): a run of steps reading what is typed before
 // it hands values on, and stopping on text that does not read (run.ts `typedFirst`, form.ts); text unread counted as
 // work at risk and kept through Reload; a search asked for an exact name (core); a link's, its tags', a reference's
@@ -636,27 +634,22 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (0.6), money read again when its currency changes, a date's and the email's words (widgets, 2.5) and their English
 // words (0.6), a table cell placed for its hint as its box is entered: 480.83 measured before, 489.58 after — 8.8
 // more, to 489.6.
-// The two joined (inputs-fix-names, inputs-fix-boxes): 480.83 + 4.15 + 8.75, to 493.8 until the release measures it.
 // Lists that add up and filter by time (Wave 2, lane F): the words of a period, a date's span, a total and its kinds
 // (labels.ts, 25 of them, in English), what both a list and the memory data source count days by — the day an instant
 // falls on and a day's first moment in a time zone, the span a date falls in (core's periods.ts, 1.9) — the memory
 // source's groups by a span and amounts totalled in one currency, a period kept in a facet and counted again, and the
 // viewer's clock handed to a list: 474.29 measured before, 477.70 after — 3.4 more, to 477.8. Where a span ends, a
 // period's days and their conditions, the totals row, a heading's sums and the menu's spans are the list part's.
-// The input rules and the lists' totals joined: 493.73 + 3.41, to 497.2 until the release measures it.
 // Lists people take away and change in bulk (0.24): the words of "Select all 1,284 that match", Export and Edit in the
 // viewer's labels (29 of them), the page check of a list's bulkEdit and the fields it may offer (bulk-edit.ts), the
 // memory source's writeMany, the viewer handing a list its toasts, its questions and its dialog of values, and the
 // names the list part takes from this script — the list, the workbook and the zip themselves in the list part (listed
 // with the part budgets below): 474.29 measured before, 477.31 after — 3.0 more, to 477.4.
-// The input rules, the lists' totals and their bulk work joined: 497.14 + 3.02, to 500.2 until the release measures it.
 // A phone read the world over (0.24): its words (a number's country, Call and WhatsApp, five reasons a number does not
 // read), whether a page or a field reads its phones so (phone-settings.ts), the phone part asked for by such a field, a
 // list's phone column and a line's dialog, a card's cells drawn with their column's widget, and a text box's hint taken
 // away with it — the box, its country table and its sheet in fieldia.phone.js — 474.29 measured before, 475.79 after:
 // 1.5 more, to 475.9.
-// The input rules, the lists' totals and bulk work, and the phone joined: 500.16 + 1.50, to 501.7 until the release
-// measures it.
 // A page's time zone (0.24): its clock read with Intl (zones.ts in core: a zone's time, its day, the instants a time on
 // it is, the change that skips one, 2.0), its zone written into its date and time fields (0.4), today on its clock,
 // its name checked, and every reader and writer of a date and time on it — a box, a cell, a pasted cell, a filter, a
@@ -665,16 +658,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // findSlots, the widget's checks, its part's name and its English words, 2.1 (the memory source's schedules are
 // scheduleSlots, outside this script). A cell's date and time written as the box writes it, the instant it is rather than
 // the clock it was written with, 0.3 less. 474.29 measured before, 482.29 after — 8.0 more, to 482.3.
-// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: 501.66 + 8.00, to
-// 509.7 until the release measures it.
 // The business owner's walk of 0.23 mended, in what every page carries: a press kept to the button that was under the
 // pointer (steady-press.ts), a box's message shown once the press that left it has ended (press.ts, the one mechanism
 // the boxes' hints use too), a record's button that saves first and puts back what its steps wrote when its save is
 // refused (core's runner), a record's title that wraps on a phone, lines named by their number among the items and a
 // worked-out number that waits for its line, one message for a paste past a field's most, the currency sign where the
 // language puts it — 474.25 measured before, 479.71 after: 5.5 more, to 479.8.
-// Every lane of 0.24 joined, the walk's fixes last: 509.66 + 5.46, to 515.2 until the release measures it.
-const BUDGET_KB = 515.2;
+// 0.24's lanes joined, measured in the merged build: 474.29 at 0.23.0, 512.82 now — 38.5 more (the lanes' growths
+// above add to 40.8: merged, two lanes' ways of one thing are one — one set of time zone functions, one press rule),
+// to 512.9.
+const BUDGET_KB = 512.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -798,34 +791,23 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 154.68 after — 1.1 more, to 154.7, under 0.20.0's 157.9 still.
 // Wave 2's autofill and bot check (listed with the raw budget above): 153.62 measured before, 154.78 after — 1.2 more,
 // what every box and every public page draws at mount — to 154.8.
-// The two joined (listed with the raw budget above): 153.62 + 1.06 + 1.16, to 155.9 until the release measures it.
 // The input rules held for names, tables and ways out (listed with the raw budget above): 155.86 measured before,
 // 157.24 after — 1.4 more, to 157.3.
 // The input rules checked again on 0.23 (listed with the raw budget above): 155.86 measured before, 159.02 after —
 // 3.2 more, to 159.1.
-// The two joined (listed with the raw budget above): 155.86 + 1.38 + 3.16, to 160.4 until the release measures it.
 // Lists that add up and filter by time (Wave 2, lane F; listed with the raw budget above): 153.62 measured before,
 // 154.91 after — 1.3 more, to 155.0.
-// The input rules and the lists' totals joined (listed with the raw budget above): 160.40 + 1.29, to 161.7 until the
-// release measures it.
 // Lists people take away and change in bulk (listed with the raw budget above): 153.62 measured before, 154.57 after —
 // 1.0 more, to 154.6.
-// The input rules, the lists' totals and their bulk work joined (listed with the raw budget above): 161.69 + 0.95, to
-// 162.7 until the release measures it.
 // A phone read the world over (0.24), its words and what asks for its part (listed with the raw budget above): 153.62
 // measured before, 154.16 after — 0.5 more, to 154.2.
-// The input rules, the lists' totals and bulk work, and the phone joined (listed with the raw budget above): 162.64 +
-// 0.54, to 163.2 until the release measures it.
 // A page's time zone, its clock read in every box, cell, filter and list of a date and time, a time the clocks skip or
 // repeat said (about 2.1), and booking slots' data source member, form call, checks and words (about 0.7), both 0.24
 // (listed with the raw budget above): 153.62 measured before, 156.38 after — 2.8 more, to 156.4.
-// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined (listed with the raw
-// budget above): 163.18 + 2.76, to 166.0 until the release measures it.
 // The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
 // 1.8 more, to 155.5.
-// Every lane of 0.24 joined, the walk's fixes last (listed with the raw budget above): 165.94 + 1.79, to 167.8 until the
-// release measures it.
-const GZIP_BUDGET_KB = 167.8;
+// 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
+const GZIP_BUDGET_KB = 167.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -917,27 +899,20 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Lists that add up and filter by time (Wave 2, lane F): a period, a date's span, a total and its kinds, 25 words in
 // each — Arabic's 44.99 and 8.23 measured before, 46.47 and 8.50 after, to 46.5 and 8.6; German's 19.18 and 7.08 to
 // 19.83 and 7.33, to 19.9 and 7.4; French's 19.81 and 7.09 to 20.49 and 7.34, to 20.5 and 7.4.
-// The input rules' sentences and the lists' totals' words joined: Arabic's 46.93 + 1.48 and 8.51 + 0.27, German's
-// 19.99 + 0.65 and 7.31 + 0.25, French's 20.62 + 0.68 and 7.31 + 0.25, until the release measures them.
 // Lists people take away and change in bulk (0.24): "Select all 1,284 that match", Export's menu, its progress and how
 // it ended, and Edit's dialog, question, progress and report, 29 in each, as measured: Arabic's 47.74 and 8.63, German's
 // 20.36 and 7.39, French's 21.08 and 7.43 — Arabic's to 47.8 and 8.7, German's to 20.4 and 7.4, French's to 21.1 and 7.5.
-// The input rules' sentences, the lists' totals' and their bulk work's words joined: Arabic's 48.41 + 2.75 and
-// 8.78 + 0.40, German's 20.64 + 1.18 and 7.56 + 0.31, French's 21.30 + 1.27 and 7.56 + 0.34, until the release measures them.
 // A phone read the world over (0.24) — a number's country, Call and WhatsApp, and five reasons a number does not read,
 // eleven in each — as measured 46.14 and 8.44 in Arabic, 19.75 and 7.25 in German, 20.42 and 7.27 in French: Arabic's
 // to 46.2 and 8.5, German's to 19.8 and 7.3, French's to 20.5 and 7.3.
-// The input rules' sentences, the lists' totals' and bulk work's words and the phone's joined: Arabic's 51.16 + 1.15
-// and 9.18 + 0.21, German's 21.82 + 0.57 and 7.87 + 0.17, French's 22.57 + 0.61 and 7.90 + 0.18, until the release measures
-// them.
 // A date and time on its zone's clock and booking slots (0.24) — a time the clocks skip or repeat, a zone's name another
 // day's, and the slots' 19 (finding, failed, Try again, a day's state, its times, a time checked or taken, the zone) —
 // 22 in each: Arabic's to 47.6 and 8.7, German's to 20.2 and 7.5, French's to 20.9 and 7.5 (as measured 47.51 and
 // 8.62, 20.16 and 7.41, 20.86 and 7.43).
-// The input rules' sentences, the lists' totals' and bulk work's words, the phone's, and the time zones' and slots'
-// joined: Arabic's 52.31 + 2.52 and 9.39 + 0.39, German's 22.39 + 0.98 and 8.04 + 0.33, French's 23.18 + 1.05 and 8.08 +
-// 0.34, until the release measures them.
-const ADD_ON_BUDGET_KB = { ar: [54.9, 9.8], de: [23.4, 8.4], fr: [24.3, 8.5] };
+// 0.24's lanes joined, measured in the merged build: Arabic's 54.23 and 9.70 (44.99 and 8.23 at 0.23.0), German's
+// 23.15 and 8.30 (19.18 and 7.08), French's 23.97 and 8.34 (19.81 and 7.09) — each to the next 0.1 over, German's
+// gzipped to 8.4, its 8.30 a fifth of a byte under 8.3.
+const ADD_ON_BUDGET_KB = { ar: [54.3, 9.8], de: [23.2, 8.4], fr: [24.0, 8.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1060,45 +1035,38 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // reader's why (date 19.7, 7.4: 19.63 and 7.31, from 19.45 and 7.23); a path picker's (path 15.6: 15.53, from 15.49);
 // a slider's, which marks text its number box left unread (survey 35.4, 12.3: 35.35 and 12.23, from 35.06 and 12.13);
 // a links box reading the words typed before it came (text 55.6, 18.6: 55.57 and 18.50, from 54.92 and 18.23).
-// The two joined: each part at the larger of the two lanes' budgets until the release measures it.
 // Lists that add up and filter by time (Wave 2, lane F), in the list part: the totals row under a list, the ticked
 // rows' and a Group By heading's sums, each amount in the one currency its source names (list-totals.ts); a date
 // grouped by its year, quarter, month, week or day, its headings in words and each opened to its span (list-groups.ts);
 // where a span ends, a period's days and the plain conditions for them (list-days.ts); the menu's spans and a person's
 // own period (search-bar.ts, custom-filter.ts) and their rules — 42.62 and 12.75 measured before, 50.80 and 15.80
 // after, to 50.9 and 15.9.
-// The input rules and the lists' totals joined: the list part 42.99 + 8.18 and 12.85 + 3.05, to 51.2 and 16.0, the
-// others as the input rules left them, until the release measures it.
 // Lists people take away and change in bulk (0.24), in the list part: every record that matches chosen and its ids
 // paged through where a source gives none (list-every), Export's menu and an export as CSV or as an Excel workbook
 // written with no library (list-export; xlsx and zip: 6.5 raw, 2.8 gzipped of the whole), and Edit's dialog, question,
 // writes and report (list-bulk) — list 42.62 and 12.75 measured before, 63.58 and 20.54 after (list 63.6, 20.6).
-// The input rules, the lists' totals and their bulk work joined: the list part 51.17 + 20.96 and 15.90 + 7.79, to
-// 72.2 and 23.7, the others as the input rules left them, until the release measures it.
 // A list's phone column written as people read it (0.24): list 42.9, 12.9, as measured 42.82 and 12.81.
 // A phone read the world over (0.24) — its box, its country picked or typed, the number checked by it and kept as
 // E.164, its call and WhatsApp links, its sheet, and every country's numbers in a table made from libphonenumber's
 // metadata (phone-table.ts, 23.1 of it, 9.6 gzipped: libphonenumber-js's own smallest build is 147.4 and 34.1) — new,
 // in fieldia.phone.js (phone 34.7, 15.2, as measured 34.63 and 15.11).
-// The input rules, the lists' totals and bulk work, and the phone joined: the list part 72.13 + 0.20 and 23.69 + 0.06,
-// to 72.4 and 23.8, the phone part as its lane measured it, the others as the input rules left them, until the release
-// measures it.
 // A date and time on its zone's clock (0.24): the box's zone beside it and its letters let through, its calendar's and a
 // range's days, today and hours on that clock, and a day whose time the clocks skip said (date 21.6, 8.2, as measured
 // 21.53 and 8.12: 2.2 and 1.0 more). Booking slots (0.24), a part of their own — the month shaded by how it is booked,
 // the day's times as chips, the arrows across both, a time taken meanwhile said, and their sheet (slots 14.7, 5.6, as
 // measured 14.64 and 5.58) — loaded with the date part, whose box they are without the data source's slots. In the
 // date part they would have added 14.6 and 5.6 to every page with a date; on their own, a booking page loads both.
-// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: the date part
-// 21.53 + 0.18 and 8.12 + 0.08, to 21.8 and 8.3, the slots part as its lane measured it, the others as left above, until
-// the release measures it.
 // The business owner's walk of 0.23 mended: a cell's, a range's end's and a property's message shown once the press
 // that left it has ended (date 19.4, 7.3, as measured 19.38 and 7.21; survey 35.2, as measured 35.15); and a table of
 // lines naming a line by its number among the items, its worked-out numbers waiting, said in words, for a cell of it
 // that does not read (lines 23.7, 8.2, as measured 23.63 and 8.18).
-// Every lane of 0.24 joined, the walk's fixes last: date 21.8 and 8.3 with 0.1 more, lines 23.11 + 0.64 and 8.01 + 0.22,
-// survey 35.35 + 0.16, the others as left above, until the release measures it.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [21.9, 8.4], list: [72.4, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.8, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.7, 15.2], slots: [14.7, 5.6] };
+// 0.24's lanes joined, measured in the merged build (0.23.0's in brackets): text 55.60 and 18.52 (54.72, 18.15), path
+// 15.95 and 6.26 (15.34, 6.00), date 21.96 and 8.30 (19.29, 7.17), list 72.41 and 23.71 (42.62, 12.75), lines 23.88
+// and 8.28 (22.86, 7.91), business 26.60 and 9.82 (25.92, 9.55), files 30.89 and 11.26 (30.75, 11.20), survey 35.50
+// and 12.29 (35.00, 12.10), and the new phone 34.77 and 15.21 and slots 14.63 and 5.57 — each to the next 0.1 over
+// (business's raw to 26.7, 4 bytes under 26.6 being no room; date's gzipped to 8.4, its 8.30 at the line); head,
+// choice, filters, themes and the quiet look as at 0.23.0, unchanged.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [72.5, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1181,9 +1149,11 @@ console.log(`parts: ${partSizes.join('; ')}`);
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
- * part, and for each part the first time a page uses one, from beside itself — a list's screen, a theme, a customer's
- * statusbar and photo, a work item's head, text and path picker for its bug, the filter bar for its backlog, a date's
- * box, a table of lines, the survey kinds, a booking's slots — and the page is drawn whole once they have come.
+ * part, and for each part the first time a page uses one, from beside itself — a phone read the world over, a list's
+ * screen (its phones, its totals, its Export and Edit), a theme, a table of lines, a customer's statusbar and photo, a
+ * work item's head, text and path picker for its bug, the filter bar for its backlog, a date's box (on a public page
+ * with its bot check), the survey kinds, a booking's slots — and the page is drawn whole once they have come. Pages
+ * open in an order where each part's first use is clear, the parts in after each step said in full.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -1201,42 +1171,77 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
   const loaded = () => PARTS.filter((part) => inPage[PART_OF[part]].loaded).join(', ');
+  /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
+  const hasIn = (step, want) => {
+    const now = loaded();
+    if (now !== want) throw new Error(`in a page, after ${step} the parts in are ${now || 'none'}, not ${want || 'none'}`);
+  };
   const host = doc.getElementById('app');
   const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
+  const tick = (ms = 10) => new Promise((done) => dom.window.setTimeout(done, ms));
+  /** Wait for what a page draws once its source has answered (a list's rows, its totals). */
+  const until = async (ready) => {
+    for (let turn = 0; turn < 100 && !ready(); turn++) await tick();
+    return ready();
+  };
   // Each page taken away whole: nothing of it left in the app's element for the next.
   const gone = (name) => {
     if (host.childElementCount) throw new Error(`in a page, ${name} left ${host.childElementCount} element(s) behind once destroyed: ${[...host.children].map((e) => e.className).join(', ')}`);
+  };
+  /** A page that waits for a part: nothing of it drawn before the part came, the page busy meanwhile. */
+  const waits = (view, what) => {
+    if (host.querySelector('.fd-field, .fd-list') || view.element.getAttribute('aria-busy') !== 'true') throw new Error(`in a page, ${what} drew before its part came`);
   };
   // A page of plain parts: drawn at once, nothing asked for.
   const plain = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
-  if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
+  hasIn('a page of plain parts', '');
   plain.destroy();
   gone('plain');
-  // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came —
-  // nothing of it before — its phone's country before the number, its sheet in.
+  // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
+  // its phone's country before the number, its sheet in.
   const contact = inPage.mountViewer(host, { page: { ...read('new-customer.page.json'), phone: { country: 'EG' } }, dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || contact.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a phone read the world over drew before its phone part came');
+  waits(contact, 'a page with a phone read the world over');
   await contact.drawn;
-  if (loaded() !== 'phone' || !host.querySelector('.fd-phone .fd-phone-country select') || !doc.getElementById('fieldia-phone-styles')) throw new Error(`in a page, a phone is not drawn from its part (${loaded() || 'no part'})`);
+  hasIn('a phone read the world over', 'phone');
+  if (!host.querySelector('.fd-phone .fd-phone-country select') || !doc.getElementById('fieldia-phone-styles')) throw new Error('in a page, a phone is not drawn from its part');
   contact.destroy();
   gone('contact');
-  // A list with its search bar: the list part, the page drawn once it came — nothing of it before; its phone column's
-  // numbers written by the phone part, in already.
+  // A list with its search bar: the list part, the page drawn once it came; its phone column's numbers written by the
+  // phone part, in already. Export and Edit are asked for by the page: neither is in its bar.
   const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
-  if (host.querySelector('.fd-list') || customers.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a list drew before its part came');
+  waits(customers, 'a list');
   await customers.drawn;
-  if (loaded() !== 'list, phone' || !host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error(`in a page, a list is not drawn from its part (${loaded() || 'no part'})`);
-  for (let turn = 0; turn < 100 && !host.querySelector('.fd-list-row'); turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
-  if (!host.querySelector('.fd-list-row')?.textContent.includes('+20 10 1234 5678')) throw new Error(`in a page, a list's phone is not written as people read it: ${host.querySelector('.fd-list-row')?.textContent ?? 'no row'}`);
+  hasIn("a list's screen", 'list, phone');
+  if (!host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error('in a page, a list is not drawn from its part');
+  if (!(await until(() => host.querySelector('.fd-list-row')))?.textContent.includes('+20 10 1234 5678')) throw new Error(`in a page, a list's phone is not written as people read it: ${host.querySelector('.fd-list-row')?.textContent ?? 'no row'}`);
+  if (!host.querySelector('.fd-list-export')?.hidden || host.querySelector('.fd-list-edit')) throw new Error("in a page, a list that asks for neither shows Export or Edit");
   customers.destroy();
   gone('customers');
+  // Invoices that add up: the list part already in, the totals row under the list from the source's totals.
+  const year = new Date().getFullYear();
+  const egp = { id: 1, label: 'EGP' };
+  const invoiced = { 1: { name: 'INV/1', invoice_date: `${year}-01-15`, due_date: `${year}-02-15`, state: 'paid', currency_id: egp, amount: 100 }, 2: { name: 'INV/2', invoice_date: `${year}-01-20`, due_date: `${year}-02-20`, state: 'sent', currency_id: egp, amount: 250 } };
+  const invoices = inPage.mountViewer(host, { page: read('invoices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { invoice: invoiced, currency: { 1: { name: 'EGP' } } } }) });
+  await invoices.drawn;
+  hasIn('invoices that add up', 'list, phone');
+  if (!(await until(() => host.querySelector('.fd-list-total:not([hidden])')?.textContent.includes('350')))) throw new Error(`in a page, a list's totals row is not drawn: ${host.querySelector('.fd-list-total')?.textContent ?? 'no totals row'}`);
+  invoices.destroy();
+  gone('invoices');
+  // Contacts taken away and changed in bulk: Export and Edit in the list's bar, as the page asks.
+  const contacts = inPage.mountViewer(host, { page: read('contacts.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'crm.contact': { 1: { name: 'Nile Traders', state: 'customer' } } } }) });
+  await contacts.drawn;
+  hasIn('contacts to export and edit in bulk', 'list, phone');
+  if (host.querySelector('.fd-list-export')?.hidden !== false || !host.querySelector('.fd-list-edit')) throw new Error("in a page, a list that asks for Export and Edit does not offer them");
+  contacts.destroy();
+  gone('contacts');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
   await themed.drawn;
-  if (loaded() !== 'list, phone, themes' || themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error(`in a page, a theme the app gives is not worn from its part (${loaded()})`);
+  hasIn('a theme the app gives', 'list, phone, themes');
+  if (themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error('in a page, a theme the app gives is not worn from its part');
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
   themed.destroy();
@@ -1244,25 +1249,27 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // An order with a table of its items: the lines part, its sheet before the page's own looks, the page drawn once it
   // came — nothing of it before.
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || order.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a table of lines drew before its lines part came');
+  waits(order, 'a page with a table of lines');
   await order.drawn;
-  if (loaded() !== 'lines, list, phone, themes' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
+  hasIn('an order with a table of lines', 'lines, list, phone, themes');
+  if (!host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error('in a page, a table of lines is not drawn from its part');
   order.destroy();
   gone('order');
   // A customer's sheet: its statusbar's part, the business widgets', its photo's, the files part, and its table of
   // contacts', the lines part — the page drawn once they came, nothing of it before.
   const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a sheet with a statusbar and a photo drew before its parts came');
+  waits(customer, 'a sheet with a statusbar and a photo');
   await customer.drawn;
-  if (loaded() !== 'business, files, lines, list, phone, themes' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
+  hasIn("a customer's sheet", 'business, files, lines, list, phone, themes');
+  if (!host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error('in a page, a statusbar is not drawn from its part');
   if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
   customer.destroy();
   gone('customer');
   // A work item's bug: its parts asked for — its quiet skin's among them — the page drawn once they came, nothing of it before.
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
+  waits(bug, "a work item's bug");
   await bug.drawn;
-  if (loaded() !== 'business, choice, files, head, lines, list, path, phone, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path, quiet look and text`);
+  hasIn("a work item's bug", 'business, choice, files, head, lines, list, path, phone, quiet, text, themes');
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
@@ -1270,21 +1277,26 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  if (loaded() !== 'business, choice, files, filters, head, lines, list, path, phone, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  hasIn('a backlog', 'business, choice, files, filters, head, lines, list, path, phone, quiet, text, themes');
+  if (!host.querySelector('.fd-filter-bar')) throw new Error("in a page, a backlog's filter bar is not drawn from its part");
   backlog.destroy();
   gone('backlog');
-  // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
+  // A public sign-up with a date: its box and calendar's part, the page drawn once it came — nothing of it before — and
+  // its bot check, which is this script's: the box no person sees, before the answers.
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
+  waits(signup, 'a page with a date');
   await signup.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  hasIn('a sign-up with a date and a bot check', 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, text, themes');
+  if (!host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error('in a page, a date is not drawn from its part');
+  if (!host.querySelector('.fd-trap[inert] input[name="website"]')) throw new Error("in a page, a public page's bot check has no hidden box");
   signup.destroy();
   gone('signup');
   // A survey with a matrix: the survey kinds' part, the page drawn once it came — nothing of it before.
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || survey.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a survey drew before its survey part came');
+  waits(survey, 'a survey');
   await survey.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, survey, text, themes' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
+  hasIn('a survey with a matrix', 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, survey, text, themes');
+  if (!host.querySelector('.fd-matrix-table')) throw new Error('in a page, a matrix is not drawn from its part');
   survey.destroy();
   gone('survey');
   // A test drive booked from the times free: the slots part, with the date part beside it, the page drawn once both
@@ -1292,15 +1304,17 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const asked = [];
   const slots = (request) => (asked.push(request), Promise.resolve({ days: { [request.from]: { state: 'open', free: [] } } }));
   const drive = inPage.mountViewer(host, { page: read('test-drive.page.json'), dataSource: inPage.createMemoryDataSource({ slots }) });
-  if (host.querySelector('.fd-field') || drive.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a test drive drew before its slots part came');
+  waits(drive, 'a test drive');
   await drive.drawn;
-  await new Promise((done) => dom.window.setTimeout(done, 0));
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, slots, survey, text, themes' || !host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error(`in a page, booking slots are not drawn from their part (${loaded()})`);
+  await tick(0);
+  hasIn("a test drive's slots", 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, slots, survey, text, themes');
+  if (!host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error('in a page, booking slots are not drawn from their part');
   drive.destroy();
   gone('drive');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
-  // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', the themes' and the quiet
-  // look's before the pickers', the head's and the text's, the survey kinds' own looks last.
+  // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', then a phone's and booking
+  // slots' (new at 0.24, before the themes so a theme still reshapes them), the themes' and the quiet look's before the
+  // pickers', the head's and the text's, the survey kinds' own looks last.
   const styles = [...doc.head.querySelectorAll('style[id]')];
   const ids = styles.map((style) => style.id);
   const ranked = styles.filter((style) => style.hasAttribute('data-fd-rank'));
@@ -1310,5 +1324,5 @@ console.log(`parts: ${partSizes.join('; ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen and its phones; a theme the app gives, worn as it came; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a form's date box; an order's table of lines; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
 }
