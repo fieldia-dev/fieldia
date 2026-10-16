@@ -44,7 +44,7 @@ export default featurePage({
       title: 'Districts shaded by their numbers',
       body: 'Districts, zones or municipalities shaded by how many records each has, or by a number of their own, with a legend. Point at one for its numbers; press one to search for its records, or to choose it into a field.',
       ticks: ['Borders from your app: a file, a field or a function', 'Shades from the page’s own accent, light and dark', 'A press searches, or chooses the area into a field', 'Every area by keyboard: one stop, the arrows from one to the next'],
-      shot: 'areas.jpg', alt: 'Cairo’s districts shaded by the week’s orders beside the list of orders, a legend from 1–5 to 21–25', width: 1280, height: 700,
+      shot: 'areas.jpg', alt: 'Cairo’s districts shaded by the week’s orders beside the list of orders, a legend from 1–5 to 21–25 titled Orders this week, by district', width: 1280, height: 700,
       tryIt: ['Try the districts', demo('page=map-zones&skin=underline')], docs: ['Areas by colour, in the docs', '/maps/#areas'],
     },
     {
