@@ -42,6 +42,14 @@ export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-pa
 export const choicePart: Part<ChoicePart> = lazyPart('choice', () => import('./choice-part'));
 /** Fieldia's own date box and its calendar, loaded the first time a page shows a date, a date and time, a time of day or a range. */
 export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-part'));
+/**
+ * The date part's code once it has come, for another part (booking slots, whose box it is without the data source's
+ * slots): a function, which a part takes from the main script whenever it starts — a const of this module may be unset
+ * still as the script bundle's table of shared names is made (tools/script-bundle.mjs).
+ */
+export function datePartIn(): DatePart | undefined {
+  return datePart.loaded;
+}
 /** A table of lines and a many2many's table of records, loaded the first time a page shows one. */
 export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
 /** Flectra's business widgets — a statusbar, priority stars, hours, a per cent, a distribution, tax totals, payments — loaded the first time a page shows one. */

@@ -3,7 +3,7 @@ import { markedIn, plainDateWidget, restingText, zoneName, zoneOf } from './date
 import { fillIn, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
 import { installSlotsStyles } from './styles-slots';
-import { datePart } from './widget-parts';
+import { datePartIn } from './widget-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -70,7 +70,10 @@ interface Month {
 export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const { form, name, field, node, id, document: doc, locale = 'en' as Locale } = context;
   // No free times to ask for: the date and time box, as the field would be without the widget.
-  if (!form.canFindSlots()) return datePart.loaded ? datePart.loaded.dateBoxWidget('datetime')(context) : plainDateWidget('datetime')(context);
+  if (!form.canFindSlots()) {
+    const dates = datePartIn();
+    return dates ? dates.dateBoxWidget('datetime')(context) : plainDateWidget('datetime')(context);
+  }
   installSlotsStyles(doc);
   const words = wordsFor(context.labels, locale);
   const make = maker(doc);
