@@ -53,6 +53,15 @@ describe('afterPress', () => {
     expect(shown).toEqual(['box error']);
   });
 
+  it('a press whose lift never came ends with the next key', () => {
+    watchPresses(document);
+    const shown: string[] = [];
+    pointer('pointerdown', document.body);
+    afterPress(document, () => shown.push('box error'));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(shown).toEqual(['box error']);
+  });
+
   it('a press cancelled (a scroll) ends at once', () => {
     watchPresses(document);
     const shown: string[] = [];

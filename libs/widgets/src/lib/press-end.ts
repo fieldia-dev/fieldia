@@ -58,6 +58,8 @@ function pressesOf(doc: Document): Presses {
     true
   );
   doc.addEventListener('pointercancel', () => presses.pressing && ended(), true);
+  // A key pressed — Tab to the next box — is the person's next step: whatever press came before it is over.
+  doc.addEventListener('keydown', () => presses.pressing && ended(), true);
   // Its click handled — Submit's check, a button's steps — first, then what waited.
   doc.addEventListener(
     'click',
