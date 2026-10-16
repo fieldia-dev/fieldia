@@ -204,6 +204,11 @@ export const questions: DesignerWords['questions'] = {
   partsFilled: 'الأجزاء التي يجب تعبئتها',
   startsOn: 'يبدأ بـ',
   noCountry: 'لا بلد',
+  // ---- هاتف يُقرأ في أي بلد: بلده وطريقة عرضه، وإلا فما تقوله الصفحة
+  phoneCountry: 'البلد عند البدء',
+  phoneShown: 'طريقة العرض',
+  thePages: 'كما في الصفحة',
+  phoneShownAs: { international: 'دوليًا: \u2066+20 10 1234 5678\u2069', national: 'محليًا: \u2066010 1234 5678\u2069' },
   addALine: 'إضافة بند',
   whenEmpty: 'عندما يكون فارغًا',
   noLines: 'لا بنود بعد',

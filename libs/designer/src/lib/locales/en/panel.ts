@@ -141,6 +141,14 @@ export const panel = {
   sideBeside: 'Side panel beside the sheet',
   sideBesides: { wide: 'On a wide form', always: 'Always, but on a phone' },
   noTitle: 'No title',
+  // ---- the page's phone numbers
+  phones: 'Phone numbers',
+  phonesAs: { typed: 'As typed', checked: 'Checked by their country' },
+  phonesHint: 'Checked by their country: a phone field has its country picked or typed with +, refuses a number its country has none like, keeps it as +201012345678, and shows it with a call and a WhatsApp link.',
+  phoneCountry: 'Phone country to start on',
+  noPhoneCountry: 'None: written with + and the country code',
+  phoneShown: 'Phone numbers shown',
+  phoneShownAs: { international: 'Abroad’s way: +20 10 1234 5678', national: 'At home’s way: 010 1234 5678' },
   // ---- columns, rows, width, labels
   screens: { wide: 'Desktop', medium: 'Tablet', narrow: 'Phone' },
   columnsOn: { wide: 'Columns on a desktop', medium: 'Columns on a tablet', narrow: 'Columns on a phone' },

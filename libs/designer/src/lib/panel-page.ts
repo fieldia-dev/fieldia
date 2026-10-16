@@ -1,4 +1,5 @@
 import type { FieldNode, SheetNode } from '@fieldia/core';
+import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { allSections } from './page-tree';
@@ -42,6 +43,16 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const beside = el('select', { class: 'fd-input fd-select', 'aria-label': w.sideBeside }, el('option', { value: 'wide' }, w.sideBesides.wide), el('option', { value: 'always' }, w.sideBesides.always)) as HTMLSelectElement;
   beside.addEventListener('change', () => designer.setSidePanelBeside(beside.value as 'wide' | 'always'));
   const besideRow = setting(el, 'layout', 'Side panel beside the sheet', beside, { words: w.sideBeside });
+  // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
+  const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
+  phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
+  const phonesRow = setting(el, 'content', 'Phone numbers', phones, { hint: w.phonesHint, words: w.phones });
+  const phoneCountry = el('select', { class: 'fd-input fd-select', 'aria-label': w.phoneCountry }, el('option', { value: '' }, w.noPhoneCountry)) as HTMLSelectElement;
+  phoneCountry.addEventListener('change', () => designer.setPhone({ country: phoneCountry.value || null }));
+  const phoneCountryRow = setting(el, 'content', 'Phone country to start on', phoneCountry, { words: w.phoneCountry });
+  const phoneShown = el('select', { class: 'fd-input fd-select', 'aria-label': w.phoneShown }, el('option', { value: 'international' }, w.phoneShownAs.international), el('option', { value: 'national' }, w.phoneShownAs.national)) as HTMLSelectElement;
+  phoneShown.addEventListener('change', () => designer.setPhone({ shown: phoneShown.value === 'national' ? 'national' : null }));
+  const phoneShownRow = setting(el, 'content', 'Phone numbers shown', phoneShown, { words: w.phoneShown });
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -53,6 +64,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     setting(el, 'content', 'Description', description, { words: w.description }),
     titleRow,
     titleLabelRow,
+    phonesRow,
+    phoneCountryRow,
+    phoneShownRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
     setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
     pagerRow,
@@ -67,6 +81,12 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     element,
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
+      phones.value = page.phone ? 'checked' : '';
+      phoneCountryRow.hidden = phoneShownRow.hidden = !page.phone;
+      // The countries, by their names in the designer's language, listed once the setting is first shown.
+      if (page.phone && phoneCountry.options.length === 1) phoneCountry.append(...countriesIn(designer.locale ?? 'en').map(([code, name]) => el('option', { value: code }, name)));
+      phoneCountry.value = page.phone?.country ?? '';
+      phoneShown.value = page.phone?.shown ?? 'international';
       look.update(page);
       moments.update(page);
       head.update(page);
