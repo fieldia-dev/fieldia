@@ -46,7 +46,7 @@ import {
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, settleParts, wearsQuiet, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { upgradePage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
@@ -261,7 +261,9 @@ export interface ViewerHandle {
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /**
    * Settled once the page is drawn: at once, unless it draws from a part not loaded yet (a record's head, a filter bar, a
-   * work item's text, a path picker: parts.ts), which it waits for — its element empty and busy meanwhile.
+   * work item's text, a path picker, its own look's theme: parts.ts), which it waits for — its element empty and busy
+   * meanwhile. A theme or the quiet skin given by the app is worn as its part comes, the page drawn at once: settled
+   * once that has come too.
    */
   readonly drawn: Promise<void>;
   destroy(): void;
@@ -622,6 +624,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const face = () => {
         const place = quietPlace();
         const quiet = wears && place;
+        // The quiet look's sheet: in already when the page named it; else boxed until it comes (look-parts.ts).
+        if (place) wearQuiet(doc);
         wrapper.toggleAttribute('data-in-quiet', place);
         wrapper.toggleAttribute('data-quiet', quiet);
         if (textBox && !chosenPlaceholder) setAttr(textBox, 'placeholder', restWords());
@@ -999,7 +1003,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       line.append(row);
       hideWhen(line, node.id);
       // In a quiet place the line's label is quiet, as its fields' are.
-      const face = () => line.toggleAttribute('data-in-quiet', node.quiet ?? place.quiet ?? root.getAttribute('data-fd-skin') === 'quiet');
+      const face = () => {
+        const quiet = node.quiet ?? place.quiet ?? root.getAttribute('data-fd-skin') === 'quiet';
+        if (quiet) wearQuiet(doc);
+        line.toggleAttribute('data-in-quiet', quiet);
+      };
       faces.push(face);
       face();
       return line;
@@ -2082,6 +2090,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (opened) focusAsOpened(true);
     });
   }
+  // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
+  // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
+  const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
+  const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
   root.append(content, done, announcer);
   // The status leaves its place beside Save when the page wants it in a corner or across the top.
   if (options.saveStatus === 'toast') {
@@ -2341,8 +2353,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       refaced();
     },
     setTheme(next) {
-      if (next) root.setAttribute('data-fd-theme', next);
-      else root.removeAttribute('data-fd-theme');
+      // Worn at once when the themes part has come; else none meanwhile, and on as it comes (look-parts.ts).
+      wearTheme(root, next);
       root.setAttribute('data-fd-skin', skinFor(options.skin ?? page.look?.skin, next ?? undefined));
       refaced();
     },
@@ -2383,7 +2395,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
     setValues: (values) => form.setValues(values),
     run: (steps, context) => form.run(steps, context),
-    drawn,
+    drawn: dressed,
     destroy() {
       gone = true;
       unsubscribe();

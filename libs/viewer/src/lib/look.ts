@@ -1,4 +1,5 @@
 import type { PageLook, PartLook, Skin, Theme } from '@fieldia/core';
+import { wearTheme } from '@fieldia/widgets';
 
 /**
  * The page's look, worn by the form: what the page says about its accent,
@@ -165,10 +166,13 @@ export function wearTokens(element: HTMLElement, tokens: Tokens | null | undefin
   }
 }
 
-/** Put the page's look on the form's root. */
+/**
+ * Put the page's look on the form's root. Its theme is worn as the themes part comes, with none meanwhile, unless
+ * another look is put on first (`wearTheme` in @fieldia/widgets); the rest at once.
+ */
 export function applyLook(root: HTMLElement, look: PageLook | undefined): void {
+  wearTheme(root, look?.theme);
   if (!look) return;
-  if (look.theme) root.setAttribute('data-fd-theme', look.theme);
   for (const name of ['font', 'density', 'corners', 'scheme'] as const) {
     const value = look[name];
     if (value) root.setAttribute(`data-${name}`, value);

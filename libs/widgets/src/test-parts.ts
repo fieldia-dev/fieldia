@@ -1,3 +1,4 @@
+import { quietPart, themesPart } from './lib/look-parts';
 import { choicePart, datePart, pathPart, textPart } from './lib/widget-parts';
 
 /**
@@ -5,4 +6,4 @@ import { choicePart, datePart, pathPart, textPart } from './lib/widget-parts';
  * once they have come: their widgets drawn whole at once. A `*-lazy.spec.ts`
  * file starts without them, to test what a page does before they come.
  */
-if (!/-lazy\.spec\.ts$/.test(expect.getState().testPath ?? '')) beforeAll(() => Promise.all([textPart.load(), pathPart.load(), choicePart.load(), datePart.load()]));
+if (!/-lazy\.spec\.ts$/.test(expect.getState().testPath ?? '')) beforeAll(() => Promise.all([textPart.load(), pathPart.load(), choicePart.load(), datePart.load(), themesPart.load(), quietPart.load()]));

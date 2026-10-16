@@ -1,5 +1,6 @@
 import { PART_LOOKS, SKINS, THEMES, type Page, type PageLook, type SectionNode, type Skin, type Theme } from '@fieldia/core';
 import { applyLook, THEME_SKINS } from '@fieldia/viewer';
+import { themesPart } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer, LookPatch } from './designer';
 import { isSection, nodeOf } from './layout-tree';
@@ -86,6 +87,9 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
     ...THEMES.map((theme) => el('option', { value: theme }, THEME_NAMES[theme]))
   ) as HTMLSelectElement;
   themes.addEventListener('change', () => designer.setLook({ theme: (themes.value || null) as Theme | null }));
+  // The themes come in a part of their own (look-parts.ts in @fieldia/widgets): asked for as the list is reached, so the one
+  // picked is on the canvas at once.
+  for (const reached of ['pointerenter', 'focus']) themes.addEventListener(reached, () => void themesPart.load().catch(() => undefined), { once: true });
   const themeRow = setting(el, 'look', 'Theme', themes, { hint: w.themeHint, words: w.theme });
   const presets = lookRow(el, designer);
   // ---- the accent: a swatch, or any colour ----

@@ -1,5 +1,5 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode } from '@fieldia/core';
-import { choicePart, datePart, lazyPart, pathPart, textPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { choicePart, datePart, lazyPart, pathPart, quietPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
@@ -16,7 +16,7 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart];
+const EVERY_PART: readonly Part[] = [headPart, filtersPart, textPart, pathPart, choicePart, datePart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -30,7 +30,9 @@ const markdownAlone = (node: SectionNode) => {
  * group's work heading; the filters part for a list's filter bar; and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar) — unless the app's `widgets` draw those
- * fields; and those the app's `slots` name for the slots the page has (a Discussion's).
+ * fields; and those the app's `slots` name for the slots the page has (a Discussion's). The page's own look's too:
+ * the themes part for the theme it names, and the quiet look's for its quiet skin, or a group or a field it marks quiet.
+ * (A theme or a skin the app gives the viewer is worn as its part comes: look-parts.ts in @fieldia/widgets.)
  *
  * A table's lines draw each cell with its column's widget (as its cells say: a time of day, a path picker), so their
  * columns' parts are the page's too; and a properties field may hold a date — one added in place, or worked out from
@@ -57,6 +59,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     }
     if (!value || typeof value !== 'object') return;
     const node = value as { type?: unknown; [key: string]: unknown };
+    // A group or a field that asks for the quiet look.
+    if (node['quiet'] === true) found.add(quietPart);
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
@@ -72,6 +76,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     }
   };
   visit(page.layout);
+  if (page.look?.theme) found.add(themesPart);
+  if (page.look?.skin === 'quiet') found.add(quietPart);
   return [...found];
 }
 

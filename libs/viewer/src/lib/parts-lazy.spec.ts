@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { datePart, pathPart, textPart, type WidgetFactory } from '@fieldia/widgets';
+import { datePart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { mountViewer, type ViewerHandle } from './viewer';
@@ -47,7 +47,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, filtersPart, textPart, pathPart, datePart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, filtersPart, textPart, pathPart, datePart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -60,8 +60,8 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields))).toEqual([pathPart]);
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'links', widget: 'links' }), fields))).toEqual([textPart]);
     expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([filtersPart]);
-    // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box).
-    expect(partsFor(BUG)).toEqual([headPart]);
+    // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box), and its quiet skin's look.
+    expect(partsFor(BUG)).toEqual([headPart, quietPart]);
     // The classic formatted text, the plain many2one: no part.
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([]);
     // The app's own widget for the field: no part.
@@ -206,6 +206,163 @@ describe('the parts a page draws from', () => {
     (box.querySelector('.fd-dialog-close') as HTMLElement).click();
     await opened;
     expect(document.activeElement).toBe(opener);
+  });
+});
+
+describe('the looks in parts of their own: the themes and the quiet look', () => {
+  const quietGroup = (quiet: boolean) => page(sections({ type: 'section', id: 'g', quiet, children: [{ type: 'field', id: 'f-name', field: 'name' }] }));
+  /** Fresh modules, so no look's part has come yet; their sheets out of the document. */
+  async function fresh() {
+    document.head.replaceChildren();
+    const { mountViewer: mountFresh } = await import('./viewer');
+    const { openFormDialog: openFresh } = await import('./dialog');
+    const widgets = await import('@fieldia/widgets');
+    const mountIn = (shown: Page, more: Partial<Parameters<typeof mountViewer>[1]> = {}) => {
+      const host = document.createElement('div');
+      document.body.append(host);
+      const handle = mountFresh(host, { page: shown, ...more });
+      handles.push(handle);
+      return { host, handle };
+    };
+    /** Fieldia's own sheets and its parts', in their order (the viewer's own sheets after them). */
+    const sheets = () => [...document.head.querySelectorAll('style')].map((style) => style.id).filter((id) => id.startsWith('fieldia-'));
+    return { mountIn, openFresh, themes: widgets.themesPart, quiet: widgets.quietPart, sheets };
+  }
+
+  it('are the page’s when its look names a theme or the quiet skin, or a group or a field asks to be quiet; none for a page without', () => {
+    expect(partsFor({ ...PLAIN, look: { theme: 'material' } })).toEqual([themesPart]);
+    expect(partsFor({ ...PLAIN, look: { skin: 'quiet' } })).toEqual([quietPart]);
+    expect(partsFor({ ...PLAIN, look: { theme: 'fluent', skin: 'quiet' } })).toEqual([themesPart, quietPart]);
+    expect(partsFor(quietGroup(true))).toEqual([quietPart]);
+    expect(partsFor(page(sections({ type: 'field', id: 'f-name', field: 'name', quiet: true })))).toEqual([quietPart]);
+    // None: a plain page, a look with no theme or quiet skin, a group that says it is boxed.
+    expect(partsFor(PLAIN)).toEqual([]);
+    expect(partsFor({ ...PLAIN, look: { skin: 'outlined', accent: '#1677ff', density: 'compact' } })).toEqual([]);
+    expect(partsFor(quietGroup(false))).toEqual([]);
+  });
+
+  it('a page whose look names a theme: nothing of it drawn until the themes part has come, then drawn whole, wearing it', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, themes, sheets } = await fresh();
+      const { host, handle } = mountIn({ ...PLAIN, look: { theme: 'material' } });
+      expect(handle.element.getAttribute('aria-busy')).toBe('true');
+      expect(host.querySelector('[data-node]')).toBeNull();
+      expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+      await handle.drawn;
+      expect(themes.loaded).toBeDefined();
+      expect(handle.element.getAttribute('data-fd-theme')).toBe('material');
+      expect(handle.element.getAttribute('data-fd-skin')).toBe('outlined');
+      expect(host.querySelector('[data-node="f-name"] input')).not.toBeNull();
+      // Its sheet after Fieldia's own, before the page's own looks.
+      expect(sheets()).toEqual(['fieldia-styles', 'fieldia-theme-styles', 'fieldia-styles-looks']);
+    });
+  });
+
+  it('a theme the app gives or switches to before its part came: the page drawn at once in none, the theme last asked for worn as it comes', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, themes, sheets } = await fresh();
+      const { host, handle } = mountIn(PLAIN, { theme: 'material' });
+      // Drawn at once, in the theme's skin, with no theme's name over the skin's own tokens.
+      expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+      expect(host.querySelector('[data-node="f-name"] input')).not.toBeNull();
+      expect(handle.element.getAttribute('data-fd-skin')).toBe('outlined');
+      expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+      // Switched before it came: the skin at once, the theme still none; the last one asked for is worn.
+      handle.setTheme('odoo');
+      expect(handle.element.getAttribute('data-fd-skin')).toBe('underline');
+      expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+      await handle.drawn;
+      expect(themes.loaded).toBeDefined();
+      expect(handle.element.getAttribute('data-fd-theme')).toBe('odoo');
+      expect(sheets()).toContain('fieldia-theme-styles');
+      // In now: another at once, and none at once.
+      handle.setTheme('fluent');
+      expect(handle.element.getAttribute('data-fd-theme')).toBe('fluent');
+      handle.setTheme(null);
+      expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+    });
+  });
+
+  it('a theme taken off before its part came stays off as it comes', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, themes } = await fresh();
+      const { handle } = mountIn(PLAIN);
+      handle.setTheme('apple');
+      handle.setTheme(null);
+      await themes.load();
+      await Promise.resolve();
+      expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+    });
+  });
+
+  it('a dialog in a theme before its part came: open at once in none, wearing the theme as it comes', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { openFresh, themes } = await fresh();
+      const opened = openFresh({ page: PLAIN, title: 'Name', mode: 'values', theme: 'apple' });
+      const box = document.querySelector('.fd-form-dialog') as HTMLElement;
+      expect(box).not.toBeNull();
+      expect(box.hasAttribute('data-fd-theme')).toBe(false);
+      await themes.load();
+      await until(() => box.getAttribute('data-fd-theme') === 'apple');
+      (box.querySelector('.fd-dialog-close') as HTMLElement).click();
+      await opened;
+    });
+  });
+
+  it('a page whose look is the quiet skin: nothing drawn until its part has come, then its fields quiet, its sheet in', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, quiet, sheets } = await fresh();
+      const { host, handle } = mountIn({ ...PLAIN, look: { skin: 'quiet' } });
+      expect(handle.element.getAttribute('aria-busy')).toBe('true');
+      expect(host.querySelector('[data-node]')).toBeNull();
+      await handle.drawn;
+      expect(quiet.loaded).toBeDefined();
+      expect(host.querySelector('[data-node="f-name"]')?.hasAttribute('data-quiet')).toBe(true);
+      expect(sheets()).toEqual(['fieldia-styles', 'fieldia-quiet-styles', 'fieldia-styles-looks']);
+    });
+  });
+
+  it('the quiet skin the app gives before its part came: each field quiet at once, boxed until it comes, its value shown and what is typed kept', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, quiet, sheets } = await fresh();
+      const { host, handle } = mountIn(PLAIN, { skin: 'quiet' });
+      handle.form.setValue('name', 'Sara');
+      const field = host.querySelector('[data-node="f-name"]') as HTMLElement;
+      const input = field.querySelector('input') as HTMLInputElement;
+      // Drawn at once, marked quiet; the quiet look's sheet not in yet: the outlined skin's box, its value in it.
+      expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+      expect(field.hasAttribute('data-quiet')).toBe(true);
+      expect(quiet.loaded).toBeUndefined();
+      expect(sheets()).not.toContain('fieldia-quiet-styles');
+      expect(input.value).toBe('Sara');
+      input.value = 'Sara Ali';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await handle.drawn;
+      // Its sheet in: the same box, what was typed in it kept.
+      expect(sheets()).toEqual(['fieldia-styles', 'fieldia-quiet-styles', 'fieldia-styles-looks']);
+      expect(field.querySelector('input')).toBe(input);
+      expect(input.value).toBe('Sara Ali');
+      expect(handle.form.getState().values['name']).toBe('Sara Ali');
+    });
+  });
+
+  it('a skin switched to quiet asks for its part; a page that never wears it never does', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountIn, quiet, themes } = await fresh();
+      const { host, handle } = mountIn(quietGroup(false), { skin: 'outlined' });
+      await handle.drawn;
+      expect(quiet.loaded).toBeUndefined();
+      expect(themes.loaded).toBeUndefined();
+      handle.setSkin('quiet');
+      // A group that says it is boxed stays boxed: nothing in it wears the look, and its part is not asked for.
+      expect(host.querySelector('[data-node="f-name"]')?.hasAttribute('data-quiet')).toBe(false);
+      expect(quiet.loaded).toBeUndefined();
+      const other = mountIn(PLAIN, { skin: 'outlined' });
+      other.handle.setSkin('quiet');
+      expect(other.host.querySelector('[data-node="f-name"]')?.hasAttribute('data-quiet')).toBe(true);
+      await until(() => quiet.loaded);
+      await until(() => document.getElementById('fieldia-quiet-styles'));
+    });
   });
 });
 

@@ -1,3 +1,5 @@
+import { installPartStyles, PART_RANK } from './styles';
+
 /**
  * The quiet look, as Azure DevOps draws a work item: in a field the viewer
  * marks quiet (`data-quiet`, by the `quiet` skin, or a section or a field that
@@ -13,11 +15,17 @@
  * page's own. After the themes' own shapes and as specific as they are, or
  * more, so it wins over the skins', the themes' and the page's looks where it
  * speaks; written with logical properties as the rest is.
+ *
+ * A part of its own (quiet-part.ts), loaded the first time a page wears the
+ * look: its sheet goes in after the themes' and before the pickers' parts'
+ * (`installQuietStyles`, PART_RANK.quiet), where it stood in Fieldia's own.
+ * Until it comes a quiet field is drawn boxed, as the outlined skin the quiet
+ * one is drawn on: its value always shown. What it styles outside a quiet
+ * place too — a state's words, a field's lock — stays in Fieldia's own
+ * (styles-lock.ts).
  */
 export const QUIET_CSS = /* css */ `
 /* ---- the quiet look --------------------------------------------------------- */
-/* A state's words by its dot, where the page does not ask for them: the quiet look shows them, as the value it reads. */
-.fd-dot-label[data-quiet-words] { display: none; }
 /* In a quiet place labels are quieter than values, which read as words: every field's, whatever its own face. */
 .fd-form .fd-field[data-in-quiet] > .fd-label { color: var(--fd-muted); }
 /* Words set in from a box's edge, though a skin or a theme sets its boxes' words at the edge (Google Forms'). */
@@ -129,11 +137,9 @@ export const QUIET_CSS = /* css */ `
 }
 .fd-form .fd-field[data-quiet] .fd-richtext-box > .fd-richtext-bar { inset-block-start: calc(100% + 4px); }
 .fd-form .fd-field[data-quiet] .fd-richtext-box > .fd-link-row { inset-block-start: calc(100% + 46px); }
-
-/* The lock of a field read-only by a rule, by its label: why, in a bubble, when pointed at or focused. */
-.fd-lock-wrap { position: relative; display: inline-flex; vertical-align: -0.15em; margin-inline-start: 6px; }
-.fd-lock { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--fd-muted); }
-button.fd-lock { cursor: help; }
-.fd-lock .fd-icon { width: 14px; height: 14px; margin: 0; }
-.fd-lock:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 `;
+
+/** The quiet look's sheet in a document, once, in its place among Fieldia's (PART_RANK.quiet). */
+export function installQuietStyles(doc: Document): void {
+  installPartStyles(doc, 'fieldia-quiet-styles', QUIET_CSS, PART_RANK.quiet);
+}

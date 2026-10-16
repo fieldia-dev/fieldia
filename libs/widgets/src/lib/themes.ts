@@ -1,4 +1,6 @@
 import type { Theme } from '@fieldia/core';
+import { LOOK_TOKENS_CSS } from './look-styles';
+import { installPartStyles, PART_RANK } from './styles';
 
 /**
  * (Not a `styles-*.ts`: its rules are written with the selectors they share, so the script bundle's
@@ -12,6 +14,11 @@ import type { Theme } from '@fieldia/core';
  * theme names its typeface and falls back to the system's when the app has
  * not loaded it. Every colour pair a reader reads is checked against WCAG AA
  * (themes.spec.ts), so a few are a shade darker than the original.
+ *
+ * A part of its own (themes-part.ts), loaded the first time a form wears a
+ * theme: its sheet goes in after Fieldia's own and before every other part's
+ * (`installThemeStyles`, PART_RANK.themes), and a form wears its theme once it
+ * has (`wearTheme`, look-parts.ts).
  */
 
 /** The tokens a theme sets, by their names without `--fd-`. */
@@ -198,3 +205,18 @@ ${forms('google-forms')} .fd-input:not([readonly]) { background: transparent; }
 ${forms('google-forms')} .fd-input:focus { box-shadow: inset 0 -1px 0 0 var(--fd-focus); }
 ${forms('google-forms')} .fd-button { border-radius: 4px; font-weight: 500; }
 `;
+
+/**
+ * The themes' sheet: their tokens, then the page's own look's tokens again, then their own shapes. In Fieldia's
+ * tokens' layer a theme's tokens stood after the skins' and before the page's look's (look-styles.ts), whose accent,
+ * room, corners and scheme won over them at the same weight; this sheet comes after Fieldia's own, so the page's
+ * look's tokens come again after the themes' here, and still win. Their shapes stood after the business widgets'
+ * rules and before the quiet look's, the pickers' and the rest of Fieldia's own: none of those speaks at their weight
+ * to a part they reshape, so they win and lose as they did there (themes.spec.ts holds the order).
+ */
+export const THEMES_CSS = THEME_TOKENS_CSS + LOOK_TOKENS_CSS + THEME_RULES_CSS;
+
+/** The themes' sheet in a document, once, in its place among Fieldia's (PART_RANK.themes). */
+export function installThemeStyles(doc: Document): void {
+  installPartStyles(doc, 'fieldia-theme-styles', THEMES_CSS, PART_RANK.themes);
+}

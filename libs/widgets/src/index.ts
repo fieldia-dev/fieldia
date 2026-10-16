@@ -39,3 +39,6 @@ export { lazyPart, settleParts, type Part } from './lib/parts';
 export type { CalendarOptions } from './lib/calendar';
 export type { DateBox, DateBoxOptions } from './lib/date-box';
 export { textPart, pathPart, choicePart, datePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type PartFactory } from './lib/widget-parts';
+// The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
+// puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
+export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';
