@@ -596,7 +596,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
 // The six joined (0.23 size pass: the list screen, the looks, a table of lines, the business widgets, files, the survey
 // kinds), each measured above against 0.22.0 alone; together, 629.78 measured before, 474.25 after — 155.5 less, to 474.3.
-const BUDGET_KB = 474.3;
+// Every late answer laid only on the record it was asked for (after 0.23.0): the form's one test (`recordShown`) and
+// the guards that ask it — an onchange, a record step, a button's question, a change's steps run again, a check or a
+// save waiting for a name, a step's own move, Keep mine — the person's claim told by a table's line, Discard putting
+// their changes back as saved, a conflict waiting counted at risk (core, 2.0 of code); the parts' test (`whileShown`)
+// and a link's, a line dialog's and a name's answers (widgets, 0.4); the pager told of a record deleted elsewhere, a
+// locked record's pager, a dialog of values asking on Escape and `warnOnLeave` (viewer, 0.6): 474.29 measured before,
+// 477.23 after — 2.9 more, to 477.3.
+const BUDGET_KB = 477.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -716,7 +723,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
-const GZIP_BUDGET_KB = 153.7;
+// Every late answer laid only on the record it was asked for (listed with the raw budget above): 153.62 measured
+// before, 154.68 after — 1.1 more, to 154.7, under 0.20.0's 157.9 still.
+const GZIP_BUDGET_KB = 154.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -897,7 +906,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
 // from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
+// Late answers laid only on the record they were asked for (after 0.23.0), each part carrying its own copy of the
+// parts' test (shown.ts): a path picker's name found once the record was replaced (path 15.5, 6.1, as measured 15.34
+// and 6.00 before, 15.49 and 6.06 after); a link's record opened or picked, and a picture read into formatted text
+// (text 55.0, 18.3: 54.72 and 18.15 before, 54.92 and 18.23 after); a statusbar's save (business 26.1, 9.6: 25.92 and
+// 9.55 before, 26.01 and 9.59 after). The files part (a file or a signature read: 30.75 and 11.20 before, 30.89 and
+// 11.26 after) and the lines part (a table's records picked or opened: 22.86 and 7.91 before, 22.99 and 7.96 after)
+// stay within theirs.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.0, 18.3], path: [15.5, 6.1], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.1, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
