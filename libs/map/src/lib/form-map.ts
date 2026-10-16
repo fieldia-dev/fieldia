@@ -1,6 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import { compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values } from '@fieldia/core';
 import type { MapPart, MapPartContext, MapPartFactory } from '@fieldia/viewer';
+import { stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
 import { metresBetween, readPoint, type LatLng } from './geo';
@@ -505,9 +506,15 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
     const abort = new AbortController();
     state.abort = abort;
     const asked = ++state.asking;
+    // Asked for the record shown now: found once another is shown, it is drawn and written on none, and asked again.
+    const shown = stillShown(form);
     (there ? Promise.resolve({ line: [points[0], points[0]], metres: 0, seconds: 0 }) : finder!({ points, mode: state.layer.route?.mode ?? 'car', locale, signal: abort.signal }))
       .then((found) => {
         if (asked !== state.asking || destroyed) return;
+        if (!shown()) {
+          state.ends = '';
+          return;
+        }
         state.found = { ...found, path: routeLine(found.line) };
         say('');
         box.ready((map, L) => {
@@ -699,6 +706,7 @@ function formMap(settings: MapSettings, context: MapPartContext): MapPart {
               finder: settings.reach ?? settings.provider.reach,
               provider: settings.provider.id,
               run: (steps) => void form.run(steps),
+              shown: () => stillShown(form),
               found: (first, places) => {
                 reachPlaces = places;
                 // The first area found comes into view, unless the person has moved the map meanwhile.

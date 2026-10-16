@@ -1,5 +1,5 @@
 import type { Locale, Value } from '@fieldia/core';
-import type { WidgetContext } from '@fieldia/widgets';
+import { stillShown, type WidgetContext } from '@fieldia/widgets';
 import type { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
 import { asJson, isLatLng, writePoint, type LatLng } from './geo';
@@ -226,6 +226,8 @@ export function suggest({ settings, context, search, element, input, searchBox, 
 
   async function pickPlace(place: PlaceFound) {
     const mine = ++picking;
+    // Picked on the record shown now: where it is, found once another is shown, is written on no other.
+    const asked = stillShown(form);
     emptied = false;
     picked = [plain(place.label)];
     tell(null);
@@ -240,7 +242,7 @@ export function suggest({ settings, context, search, element, input, searchBox, 
         warnOnce(`Finding the address picked failed: ${error.message}`);
         return null;
       });
-      if (mine !== picking) return;
+      if (mine !== picking || !asked()) return;
       // Not found where it is: no place written, its parts still are; and the person is told, or told the map did not answer (it may well be on it). Only near it: written, and said.
       tell(!located ? (failed ? words.locateFailed : words.notPlaced) : located.precise === false ? words.placedNear : null);
       if (located) {

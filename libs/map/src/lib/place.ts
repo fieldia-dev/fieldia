@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
-import { formatNumber, guard, numberRules, refusalHint, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { formatNumber, guard, numberRules, refusalHint, stillShown, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { addressLine } from './address-line';
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
@@ -188,9 +188,11 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       if (current !== null && current !== undefined && current !== '' && current !== addressWritten) return;
       naming?.abort();
       naming = new AbortController();
+      // Named for the record shown now: found once another is shown, it names nothing of that one.
+      const asked = stillShown(form);
       reverse({ ...at, locale: context.locale ?? 'en', signal: naming.signal })
         .then((label) => {
-          if (!label) return;
+          if (!label || !asked()) return;
           addressWritten = label;
           form.setValue(addressField, label);
         })
@@ -306,11 +308,14 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
           // A place picked: where it is (looked up now, when the provider's suggestions carry no place), and its whole address
           // for Address. A save made while it is found waits for it (`finding`): the place picked is what is saved.
           pick: (place) => {
+            const asked = stillShown(form);
             const run = (async () => {
               const located =
                 place.lat !== undefined && place.lng !== undefined
                   ? { lat: place.lat, lng: place.lng, address: undefined }
                   : await place.locate?.().catch((error: Error) => (warnOnce(`Finding the place picked failed: ${error.message}`), null));
+              // Picked on a record no longer shown: placed on no other.
+              if (!asked()) return;
               if (!located) return say(labels.searchFailed, 'error');
               set({ lat: located.lat, lng: located.lng }, { fly: true, address: addressLine(located.address ? [located.address] : [place.label, place.detail], context.locale) });
             })();
@@ -336,8 +341,11 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     myLocation.addEventListener('click', () => {
       if (!geolocation) return;
       say(labels.locating);
+      const asked = stillShown(form);
       geolocation.getCurrentPosition(
         (position) => {
+          // Found once another record is shown: placed on no other.
+          if (!asked()) return say(null);
           const metres = Math.round(position.coords.accuracy);
           // Named only when it is sure: an address from a point kilometres off would be someone else's.
           set({ lat: position.coords.latitude, lng: position.coords.longitude }, { name: metres <= 100, within: metres });

@@ -58,6 +58,8 @@ export function formAreas(options: {
   run(steps: ActionStep[]): void;
   /** An area was found: its places, for the map to fit them the first time. */
   found(first: boolean, places: LatLng[]): void;
+  /** The record shown now, as the form tells it (`form.recordShown`): an area found for another is laid on none, and fences start again on each. */
+  shown?(): () => boolean;
 }): FormAreas {
   const { node, map, L } = options;
   const reaches = new Map<string, ReachState>();
@@ -66,6 +68,8 @@ export function formAreas(options: {
   const fenceShapes = new Map<string, { drawn: string; path: Leaflet.Path }>();
   let gone = false;
   let last: Parameters<FormAreas['update']> | null = null;
+  /** The record the fences watch: another shown, nothing seen on the last one is in or out on it. */
+  let record = options.shown?.();
   // Their own pane: over areas by colour, under routes and pins.
   if (!map.getPane('fd-reach')) map.createPane('fd-reach').style.zIndex = '390';
 
@@ -100,9 +104,15 @@ export function formAreas(options: {
     const abort = new AbortController();
     state.abort = abort;
     const asked = ++state.asking;
+    const shown = options.shown?.();
     options.finder({ at, minutes, mode, signal: abort.signal }).then(
       (found) => {
         if (gone || asked !== state.asking) return;
+        // Found round a record no longer shown: asked again for the one shown, at its next look.
+        if (shown && !shown()) {
+          state.at = undefined;
+          return;
+        }
         const first = !state.found;
         state.found = found;
         state.drawn?.remove();
@@ -158,6 +168,10 @@ export function formAreas(options: {
   const areas: FormAreas = {
     update(values, positionOf, hidden) {
       if (gone) return;
+      if (record && !record()) {
+        record = options.shown?.();
+        insideNow.clear();
+      }
       last = [values, positionOf, hidden];
       drawReaches(positionOf, hidden);
       drawFenceAreas(values);
