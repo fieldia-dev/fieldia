@@ -20,7 +20,7 @@ const actions: string[] = [];
 /** Every button press in full, with the records chosen in a list. */
 const requests: ActionRequest[] = [];
 
-/** The "shout" field, as a Vue component. */
+/** The badge field, as a Vue component. */
 const Shout = defineComponent({
   props: {
     value: { type: null as unknown as PropType<Value | undefined>, default: undefined },
@@ -50,7 +50,7 @@ const Note = defineComponent({
     const clicks = ref(0);
     const state = useFormState(props.form);
     return () => [
-      h('p', { class: 'demo-hello' }, greeting(state.value.values['nickname'])),
+      h('p', { class: 'demo-hello' }, greeting(state.value.values['badge_name'])),
       h('button', { type: 'button', class: 'fd-button', onClick: () => clicks.value++ }, clicked(clicks.value)),
     ];
   },
@@ -125,7 +125,7 @@ createApp({
         theme: (params.get('theme') as Theme | null) ?? undefined,
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
-        fieldTypes: { 'char.shout': Shout, 'monetary.tag': PriceTag },
+        fieldTypes: { 'char.name-badge': Shout, 'monetary.tag': PriceTag },
         onError: failures?.onError,
         widgets: { ...gridWidgets, ...codeWidgets, ...demoMapWidgets },
         listViews: demoListViews,

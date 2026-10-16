@@ -104,6 +104,13 @@ export function shownFields(page: Page): Set<string> {
   for (const c of containers(page)) for (const n of c.children) if (n.type === 'text') for (const name of valuesIn(n.text)) shown.add(name);
   // A map names the record's fields: its places, its pins' and cards', a layer's lines, where a route's numbers go.
   for (const c of containers(page)) for (const n of c.children) if (n.type === 'map') for (const name of mapNodeFields(n)) shown.add(name);
+  // A field's widget that shows another of the record's fields beside its own: a date range's end (`endField`).
+  for (const c of containers(page)) {
+    for (const n of c.children) {
+      if (n.type !== 'field') continue;
+      for (const [key, value] of Object.entries(n.options ?? {})) if (key.endsWith('Field') && typeof value === 'string' && page.fields[value]) shown.add(value);
+    }
+  }
   const root = page.layout;
   if (root.type === 'sheet') {
     const title = root.title;

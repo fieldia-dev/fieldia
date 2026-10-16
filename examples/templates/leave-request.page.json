@@ -172,6 +172,7 @@
       {
         "type": "section",
         "id": "leave",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1

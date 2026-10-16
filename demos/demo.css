@@ -29,10 +29,17 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-feed { background: #fff; border: 1px solid #e3e6ea; padding: 14px 16px; border-radius: 6px; }
 .demo-feed h3 { margin: 0 0 8px; font-size: 14px; }
 .demo-feed p { margin: 6px 0; color: #4b5563; }
-.demo-shout { display: grid; gap: 4px; }
-.demo-shout output { font-weight: 700; letter-spacing: 0.04em; color: var(--fd-accent); }
-.demo-note { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
-.demo-hello { margin: 0; }
+/* "Your own parts": the badge field the app draws (its box, then the badge as it will be printed), and the printing desk
+   it fills a slot with. In Fieldia's tokens, so each follows the look and the scheme. */
+.demo-shout { display: grid; gap: 12px; justify-items: start; }
+.demo-shout .fd-input { justify-self: stretch; }
+.demo-shout output { min-width: min(260px, 100%); max-width: 100%; box-sizing: border-box; padding: 12px 22px 16px; border: 2px solid var(--fd-accent); border-block-start-width: 10px; border-radius: 12px; background: var(--fd-surface); color: var(--fd-text); font-size: 24px; font-weight: 800; letter-spacing: 0.05em; text-align: center; overflow-wrap: anywhere; }
+.demo-shout output::before { content: "Hello, my name is"; display: block; margin-block-end: 4px; color: var(--fd-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.demo-shout output:empty { display: none; }
+.fd-slot[data-slot="note"] { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 14px 18px; border: 1px dashed var(--fd-border); border-radius: var(--fd-radius, 8px); color: var(--fd-text); }
+.demo-hello { margin: 0; flex: 1 1 16em; }
+/* Angular's component wraps the desk's words and button in an element of its own: laid out as if it were not there. */
+.fd-slot[data-slot="note"] > :is(demo-note, div:only-child) { display: contents; }
 /* The app's price tag ("A part that fails"): a box for the price, and the price as a tag beside it. */
 .demo-price { display: flex; gap: 8px; align-items: center; }
 .demo-price .fd-input { flex: 1; min-width: 0; }

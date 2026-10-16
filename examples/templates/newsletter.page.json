@@ -69,6 +69,7 @@
       {
         "type": "section",
         "id": "signup",
+        "title": "Sign up",
         "columns": 1,
         "children": [
           {

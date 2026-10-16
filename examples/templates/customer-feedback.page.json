@@ -73,7 +73,8 @@
     "children": [
       {
         "type": "section",
-        "id": "q-overall",
+        "id": "questions",
+        "title": "Your experience",
         "columns": 1,
         "children": [
           {
@@ -81,14 +82,7 @@
             "id": "f-overall",
             "field": "overall",
             "widget": "rating"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-recommend",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-recommend",
@@ -98,39 +92,18 @@
               "startLabel": "Not likely",
               "endLabel": "Very likely"
             }
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-liked",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-liked",
             "field": "liked",
             "widget": "checkboxes"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-better",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-better",
             "field": "better"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-contact",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-follow",

@@ -7,7 +7,7 @@
  * `embed=1`: the demo alone, no frame at all, as fieldia.dev's feature pages
  * show it inside their own.
  */
-import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
+import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref, openedAt } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
 import { backlogSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
@@ -15,6 +15,8 @@ const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
 const params = new URLSearchParams(location.search);
 const demo = demoAt(app, params);
+// A page a demo opened — a record from its list's row, pin or calendar — with a name of its own, and the demo it came from.
+const opened = demo ? null : openedAt(app, params);
 const embedded = params.get('embed') === '1';
 const visitor = !navigator.webdriver && !embedded;
 const framework = FRAMEWORKS.some((f) => f.id === app) ? app : 'plain';
@@ -85,8 +87,9 @@ function drawHeader() {
   head.innerHTML = `
     <div class="dh-row">
       ${visitor ? '<button type="button" class="dh-menu" aria-label="All demos" aria-controls="demo-nav" aria-expanded="false"><span></span></button>' : ''}
-      <a class="dh-brand" href="../"><span class="dh-mark" aria-hidden="true"></span>Fieldia</a>
+      <a class="dh-brand" href="../"><span class="dh-mark" aria-hidden="true"></span><span class="dh-word">Fieldia</span></a>
       <span class="dh-crumb">demos</span>
+      <button type="button" class="dh-options" aria-expanded="false" aria-label="Framework, look and links"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="13" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Options</span></button>
       ${frameworks}
       <nav class="dh-links" aria-label="Links">
         ${visitor ? '<button type="button" class="dh-code" aria-controls="demo-code" aria-expanded="false">‹/› Code</button>' : ''}
@@ -96,7 +99,7 @@ function drawHeader() {
       </nav>
     </div>
     <div class="dh-title-row">
-      <h1 class="dh-title">${esc(demo?.name ?? document.title.replace(/^Fieldia — /, ''))}</h1>
+      <h1 class="dh-title">${esc(demo?.name ?? opened?.name ?? '')}</h1>
       ${skins}
     </div>`;
 }
@@ -105,7 +108,7 @@ function drawHeader() {
 
 function drawMenu() {
   const item = (d) =>
-    `<a class="dn-item" href="../${esc(demoHref(d, framework))}" data-name="${esc(d.name.toLowerCase())}"${d === demo ? ' aria-current="page"' : ''}>${esc(d.name)}</a>`;
+    `<a class="dn-item" href="../${esc(demoHref(d, framework))}" data-name="${esc(d.name.toLowerCase())}"${d === (demo ?? opened?.from) ? ' aria-current="page"' : ''}>${esc(d.name)}</a>`;
   const featured = FEATURED.map((id) => DEMOS.find((d) => d.id === id)).filter(Boolean);
   const groups = [
     `<div class="dn-group"><div class="dn-cat">★ Featured</div>${featured.map(item).join('')}</div>`,
@@ -282,6 +285,19 @@ function drawCode() {
 
 if (embedded) head?.remove();
 else drawHeader();
+// A phone's header is one row — the demo's name and Options — the pickers and links folded under Options (shell.css).
+const options = head?.querySelector('.dh-options');
+const fold = (open) => {
+  head?.classList.toggle('dh-open', open);
+  options?.setAttribute('aria-expanded', String(open));
+};
+options?.addEventListener('click', () => fold(!head.classList.contains('dh-open')));
+// Escape folds them from anywhere: Safari leaves the keys on the page, not on a button pressed.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !head?.classList.contains('dh-open')) return;
+  fold(false);
+  options?.focus();
+});
 // A theme picked: the page again in it, on the theme's own skin.
 document.getElementById('dh-theme')?.addEventListener('change', (event) => {
   const next = new URLSearchParams(params);
@@ -290,10 +306,85 @@ document.getElementById('dh-theme')?.addEventListener('change', (event) => {
   else next.delete('theme');
   location.search = next.toString();
 });
-// The tab names the demo, as a page of the gallery.
-if (demo) document.title = `${demo.name} — Fieldia demos`;
+// The heading and the tab name what is shown: the demo, as a page of the gallery; a page it opened, by its own name;
+// else the page's own title, once the demo has it — never the framework that draws it.
+function named(name) {
+  document.title = `${name} — Fieldia demos`;
+  const title = head?.querySelector('.dh-title');
+  if (title && !title.textContent) title.textContent = name;
+}
+if (demo || opened) named(demo?.name ?? opened.name);
+else {
+  let tries = 0;
+  const look = () => {
+    const page = window.fieldiaDemo?.handle?.form?.page ?? window.fieldiaDemo?.page;
+    if (page?.title) named(page.title);
+    else if (++tries < 100) setTimeout(look, 100);
+    else named('A Fieldia page');
+  };
+  look();
+}
 if (visitor) {
   drawMenu();
   drawHowTo();
   drawCode();
+}
+
+// ---- a dialog's page, shown on its own ------------------------------------------------------------------------------
+/**
+ * A page made to open as a dialog — its own footer of buttons, as "Register a payment" — closes once its button's
+ * steps have saved, handing what it made to the record it was opened from. Shown on its own here, nothing closes it:
+ * a second press would make a second payment. So once its steps have saved, or its Cancel has asked to close, the
+ * page gives way to what was done and a Start over; inside a dialog the page is never touched by this.
+ */
+function standingAlone(handle) {
+  const page = handle?.form?.page;
+  const app = document.getElementById('app');
+  if (!page?.layout?.footer || !app) return;
+  const said = [];
+  let saved = false;
+  let finishing = false;
+  // What the app says as it answers: the payment it posted, the invoice it made.
+  handle.on('action', ({ result }) => {
+    const words = typeof result?.say === 'string' ? result.say : result?.say?.message;
+    if (words) said.push(words);
+  });
+  handle.on('save', () => (saved = true));
+  handle.on('send', () => (saved = true));
+  handle.on('run', ({ steps, result }) => {
+    if (finishing) return;
+    const closes = steps.some((step) => step.do === 'close');
+    if (result.done && saved) {
+      finishing = true;
+      // What runs once it is saved (the page's afterSave: the payment made) is waited for, and what it says kept.
+      void handle.form.settled().then(() => finish(true, said));
+    } else if (closes && !result.done && result.reason === 'cannot') {
+      finishing = true;
+      finish(false, []);
+    } else said.length = 0;
+    saved = false;
+  });
+  function finish(done, words) {
+    const panel = document.createElement('section');
+    panel.className = 'demo-done';
+    panel.setAttribute('aria-labelledby', 'demo-done-h');
+    panel.innerHTML = `
+      <h2 id="demo-done-h" tabindex="-1">${done ? 'Done' : 'Cancelled'}</h2>
+      ${(done ? (words.length ? words : ['Saved.']) : ['Nothing was made.']).map((w) => `<p class="demo-done-said">${esc(w)}</p>`).join('')}
+      <p class="demo-done-note">${esc(page.title ?? 'This page')} opens as a dialog in an app: there it closes here, and the record it was opened from shows what was done. On its own, it stops here, so nothing is made twice.</p>
+      <button type="button" class="demo-done-again">Start over</button>`;
+    app.hidden = true;
+    app.after(panel);
+    panel.querySelector('.demo-done-again').addEventListener('click', () => location.reload());
+    panel.querySelector('h2').focus();
+  }
+}
+{
+  let tries = 0;
+  const look = () => {
+    const handle = window.fieldiaDemo?.handle;
+    if (handle?.form) standingAlone(handle);
+    else if (++tries < 150) setTimeout(look, 100);
+  };
+  if (FRAMEWORKS.some((f) => f.id === app)) look();
 }

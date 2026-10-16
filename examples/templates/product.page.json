@@ -142,6 +142,7 @@
       {
         "type": "section",
         "id": "main",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1
@@ -150,6 +151,7 @@
           {
             "type": "section",
             "id": "prices",
+            "style": "plain",
             "columns": 1,
             "children": [
               {
@@ -186,6 +188,7 @@
           {
             "type": "section",
             "id": "codes",
+            "style": "plain",
             "columns": 1,
             "children": [
               {
@@ -220,6 +223,7 @@
               {
                 "type": "section",
                 "id": "stock",
+                "style": "plain",
                 "columns": {
                   "wide": 2,
                   "medium": 1

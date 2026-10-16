@@ -2,7 +2,7 @@
   "fieldia": "0.2",
   "id": "real-task-list",
   "title": "Tasks",
-  "description": "Sherkety ERP, project: project.task, view_task_tree2 — the task's Sub-tasks smart button opens it, filtered on the task.",
+  "description": "The task's sub-tasks, as its Sub-tasks button opens them.",
   "data": { "kind": "record", "model": "project.task" },
   "fields": {
     "name": { "type": "char", "label": "Title" },

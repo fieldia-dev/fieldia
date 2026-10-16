@@ -2,7 +2,7 @@
   "fieldia": "0.2",
   "id": "real-employee-equipment",
   "title": "Equipment",
-  "description": "Sherkety ERP, maintenance: maintenance.equipment, hr_equipment_view_tree — the employee's Equipment smart button opens it, filtered on the employee.",
+  "description": "The equipment this employee has been given, as the Equipment button opens it.",
   "data": { "kind": "record", "model": "maintenance.equipment" },
   "fields": {
     "name": { "type": "char", "label": "Equipment Name" },

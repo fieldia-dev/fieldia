@@ -120,6 +120,7 @@
       {
         "type": "section",
         "id": "header",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1

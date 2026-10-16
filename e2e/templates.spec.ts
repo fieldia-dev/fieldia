@@ -208,3 +208,33 @@ test.describe('what the templates’ cards say to try', () => {
     await expect(node(page, 'f-progress')).toContainText('33%');
   });
 });
+
+/**
+ * "Change it": each template opened in its designer — a survey's steps in the survey editor, a screen or a record's
+ * sheet in the screen editor, as the Templates page links them — reads as finished before anything is touched: its own
+ * title in the name box and the tab, no part left "Untitled", no name from inside an app (an ERP's, a model's) in what
+ * the designer says, and nothing for the designer's checks to raise.
+ */
+test.describe('each template, opened in its designer untouched', () => {
+  const pageOf = (id: string) => JSON.parse(readFileSync(join(TEMPLATES, `${id}.page.json`), 'utf8'));
+  for (const t of INDEX) {
+    test(`${t.id}: titled, nothing untitled or internal, and the designer’s checks pass`, async ({ page }) => {
+      const problems: string[] = [];
+      page.on('pageerror', (error) => problems.push(error.message));
+      const shown = pageOf(t.id);
+      const editor = shown.layout.type === 'wizard' ? 'designer' : 'screen';
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(`/${editor}/?start=template-${t.id}`);
+      await expect(page.locator('[data-checks]')).toBeVisible();
+      await expect(page.locator('input').first()).toHaveValue(shown.title);
+      await expect(page).toHaveTitle(`${shown.title} — Fieldia designer`);
+      await expect(page.getByText(/untitled/i).filter({ visible: true })).toHaveCount(0);
+      expect(await page.locator('body').innerText()).not.toMatch(/Flectra|Sherkety|res\.partner|account\.move/);
+      expect(await page.evaluate(() => (window as any).fieldiaDesigner.designer.checks())).toEqual([]);
+      // The Checks button says so: a tick, no count.
+      await expect(page.locator('[data-checks] .fd-checks-count')).toHaveText('✓');
+      if (t.id === 'invoice' || t.id === 'customer-feedback') await screen(page, `template-${t.id}-designer`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
+});

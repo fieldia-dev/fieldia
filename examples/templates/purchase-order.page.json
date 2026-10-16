@@ -14,7 +14,7 @@
   "fields": {
     "name": {
       "type": "char",
-      "label": "Reference",
+      "label": "Order reference",
       "readonly": true,
       "default": "New"
     },
@@ -218,6 +218,7 @@
       {
         "type": "section",
         "id": "header",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1
@@ -259,6 +260,7 @@
       {
         "type": "section",
         "id": "foot",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1
@@ -274,6 +276,7 @@
           {
             "type": "section",
             "id": "foot-totals",
+            "style": "plain",
             "columns": 1,
             "labels": "beside",
             "children": [

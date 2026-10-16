@@ -1,11 +1,12 @@
 import { demoHref as demo, featurePage } from '../feature-page.mjs';
+import { COUNTS, Words } from '../facts.mjs';
 
 /** A feature page: Forms and surveys. What a form people fill in has, each part from a real demo. */
 export default featurePage({
   path: '/features/forms/',
   folder: 'forms',
   title: 'Forms and surveys',
-  description: 'Forms and surveys with Fieldia: 19 field types and over 35 widgets, steps that follow the answers, checks as people type, and a Google Forms look, from one JSON page.',
+  description: `Forms and surveys with Fieldia: ${COUNTS.fieldTypes} field types and over 35 widgets, steps that follow the answers, checks as people type, and a Google Forms look, from one JSON page.`,
   kicker: 'Forms and surveys',
   headline: ['Forms people finish.', 'Surveys that listen to the answers.'],
   lede: 'Sign-ups, applications, feedback, intake forms: every field a form needs, steps that skip what does not apply, and checks that say what is missing before anyone presses Send. This survey is live. Answer it.',
@@ -15,7 +16,7 @@ export default featurePage({
       id: 'fields',
       no: 'Every field',
       title: 'The field each answer needs, already built',
-      body: 'Nineteen field types and over thirty-five widgets, each drawn the way its value reads best and each tested by keyboard, in Arabic and in four frameworks.',
+      body: `${Words(COUNTS.fieldTypes)} field types and over thirty-five widgets, each drawn the way its value reads best and each tested by keyboard, in Arabic and in four frameworks.`,
       ticks: ['Text, email, phone, links, passwords, tags and rich text', 'Numbers, money in its currency, percentages, durations, sliders and ratings', 'Dates, times and ranges; choices as lists, buttons, pictures or a ranking', 'Files and pictures, a signature, a matrix of answers, and your own widget'],
       shot: 'fields.png', alt: 'A form of every field: a project name, an email, a phone, a portal link, a password, material tags, a scope of work and a rich-text design brief', width: 1280, height: 860,
       tryIt: ['Try every field', demo('page=fields&skin=outlined')], docs: ['Fields, in the docs', '/fields/'],
@@ -43,7 +44,7 @@ export default featurePage({
       no: 'Looks people know',
       title: 'A survey that looks like Google Forms, or like your product',
       body: 'The same page in the Google Forms look: a title card with a band of colour and a card for each question. Or Material, Fluent, Apple and five more, light or dark.',
-      ticks: ['A title card, and a card for each question', 'Eight themes, each one line in the page', 'Your own accent, font, spacing and corners over any of them', 'Eleven survey templates to start from'],
+      ticks: ['A title card, and a card for each question', `${Words(COUNTS.themes)} themes, each one line in the page`, 'Your own accent, font, spacing and corners over any of them', `${Words(COUNTS.formTemplates)} form and survey templates to start from`],
       shot: 'google.png', alt: 'A customer feedback survey in the Google Forms look: a purple band over the title card, then a card for each question with stars, a 0 to 10 scale and checkboxes', width: 1000, height: 720,
       tryIt: ['See the templates', '/templates/'], docs: ['Themes, in the docs', '/look/'],
     },

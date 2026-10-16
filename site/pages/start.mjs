@@ -1,4 +1,5 @@
 import { c, code } from '../layout.mjs';
+import { COUNTS, SIZES } from '../facts.mjs';
 
 export default {
   path: '/start/',
@@ -17,7 +18,7 @@ npm install @fieldia/react      # React 18 or 19
 npm install @fieldia/vue        # Vue 3
 npm install @fieldia/angular    # Angular 21 or 22`
 )}
-<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>; code in any of 44 languages adds ${c('@fieldia/code')}, or ${c('@fieldia/monaco')} for VS Code's editor — see <a href="/fields/#code">the code editors</a>; a place or an area on a map, a list's records on one, or a map of a record's places, its live courier and its route, adds ${c('@fieldia/map')} — see <a href="/maps/">maps</a>; a record's conversation and to-dos beside it add ${c('@fieldia/chatter')} — see <a href="/chatter/">the chatter</a>.</p>
+<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>; code in any of ${COUNTS.codeLanguages} languages adds ${c('@fieldia/code')}, or ${c('@fieldia/monaco')} for VS Code's editor — see <a href="/fields/#code">the code editors</a>; a place or an area on a map, a list's records on one, or a map of a record's places, its live courier and its route, adds ${c('@fieldia/map')} — see <a href="/maps/">maps</a>; a record's conversation and to-dos beside it add ${c('@fieldia/chatter')} — see <a href="/chatter/">the chatter</a>.</p>
 <p>No bundler? Load the script bundle instead — it sets the global ${c('Fieldia')}. See <a href="#script">a script tag</a> below.</p>
 
 <h2 id="first-page">A first page</h2>
@@ -118,7 +119,7 @@ export class SignupComponent {
 )}
 
 <h2 id="script">A script tag</h2>
-<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in about 90 KB gzipped, with its own words in English. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
+<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in ${SIZES.script} KB gzipped, with its own words in English. Its larger parts — a list's screen, lines, files, a survey's steps, the themes and ${SIZES.parts - 5} more — are scripts of their own beside it, which it fetches the first time a page uses one. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
 ${code(
   'html',
   `
@@ -133,7 +134,7 @@ ${code(
     }));
 </script>`
 )}
-<p>Arabic, German and French come as small scripts of their own, 3 to 4 KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
+<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
 ${code(
   'html',
   `

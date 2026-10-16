@@ -255,6 +255,22 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('Create invoices on its own: once the invoice is made, what was done and Start over, never a second invoice', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, WIZARD);
+      await button(page, 'create_invoices').click();
+      const done = page.locator('.demo-done');
+      await expect(done).toContainText(/Draft invoice INV\/2026\/\d+ created/);
+      await expect(button(page, 'create_invoices')).toBeHidden();
+      if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard-done', { viewport: true });
+      // Cancel on its own: nothing made, said so, and Start over.
+      await done.getByRole('button', { name: 'Start over' }).click();
+      await button(page, 'cancel').click();
+      await expect(page.locator('.demo-done')).toContainText('Nothing was made');
+      await expect(button(page, 'create_invoices')).toBeHidden();
+      expect(problems).toEqual([]);
+    });
+
     test('product: a service loses its stock tabs and buttons, not purchased loses Purchase, a blocking warning needs its message', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, PRODUCT);

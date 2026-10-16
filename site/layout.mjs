@@ -53,7 +53,8 @@ ${head}</head>
 <a class="skip" href="#main">Skip to the content</a>
 <header class="top">
   <a class="brand" href="/"><span class="mark" aria-hidden="true"></span><span class="brand-word">Fieldia</span></a>
-  <nav class="top-nav" aria-label="Site">
+  <button type="button" class="top-menu" aria-expanded="false" aria-controls="top-nav"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Menu</button>
+  <nav class="top-nav" id="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
     <a href="/features/"${path.startsWith('/features/') && path !== '/features/maps/' ? ' aria-current="page"' : ''}>Features</a>
     <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
@@ -79,6 +80,23 @@ ${
   <p>Fieldia is MIT licensed. Its sister project is <a href="https://grafloria.com">Grafloria</a>, the diagram and dashboard engine.</p>
   <p><a href="https://github.com/fieldia-dev/fieldia">Source on GitHub</a> · <a href="https://www.npmjs.com/org/fieldia">npm</a> · <a href="/accessibility/"${path === '/accessibility/' ? ' aria-current="page"' : ''}>Accessibility</a></p>
 </footer>
+<script>
+  // A phone's bar: the links folded under Menu (site.css), open below the bar until Menu or Escape folds them again.
+  (function () {
+    var button = document.querySelector('.top-menu');
+    if (!button) return;
+    function fold(open) {
+      button.setAttribute('aria-expanded', String(open));
+      document.body.classList.toggle('top-open', open);
+    }
+    button.addEventListener('click', function () { fold(button.getAttribute('aria-expanded') !== 'true'); });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || button.getAttribute('aria-expanded') !== 'true') return;
+      fold(false);
+      button.focus();
+    });
+  })();
+</script>
 </body>
 </html>
 `;

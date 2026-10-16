@@ -114,7 +114,8 @@
     "children": [
       {
         "type": "section",
-        "id": "q-course",
+        "id": "questions",
+        "title": "About the course",
         "columns": 1,
         "children": [
           {
@@ -122,64 +123,29 @@
             "id": "f-course",
             "field": "course",
             "widget": "radio"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-parts",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-parts",
             "field": "parts"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-overall",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-overall",
             "field": "overall",
             "widget": "rating"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-recommend",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-recommend",
             "field": "recommend",
             "widget": "radio"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-best",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-best",
             "field": "best"
-          }
-        ]
-      },
-      {
-        "type": "section",
-        "id": "q-change",
-        "columns": 1,
-        "children": [
+          },
           {
             "type": "field",
             "id": "f-change",

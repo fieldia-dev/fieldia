@@ -1,5 +1,5 @@
 /**
- * The real pages in the gallery: Sherkety ERP's own screens rebuilt in
+ * The real pages in the gallery: a working ERP's own screens rebuilt in
  * Fieldia, one file per lane so each is added on its own.
  */
 import accounting from './accounting.mjs';

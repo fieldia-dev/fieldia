@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { DEMOS, FRAMEWORKS, demoHref } from '../demos/catalog.mjs';
+import { DEMOS, FRAMEWORKS, OPENED, demoHref } from '../demos/catalog.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
 
@@ -32,13 +32,53 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   const forTiming = new Set(['big']);
   // A section choosing its own look, for e2e/quiet-look.spec.ts: the work item's demo shows the switch whole.
   const forTests = new Set(['work-item-mixed']);
-  // A home's, a courier's, an order's and a contact's own page: a record opened from its list's row or card, not a demo of its own.
-  const opened = new Set(['map-home', 'map-courier', 'map-week-order', 'contact']);
+  // A home's, a courier's and an order's own page, an appointment's, a booking's and a contact's: a record opened from its list's row,
+  // pin or calendar, not a demo of its own — each named in the catalog (OPENED), as the test below holds it to.
+  const opened = new Set(OPENED.map((o) => o.page));
   // The work item replica's lanes' own pages (shared/wi-*.ts), each a part of the popup tried on its own for its
   // browser gate: the work item's card is the backlog's, which shows it whole.
   const forGates = new Set(['wi-head', 'wi-history', 'wi-text']);
   const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name) && !forTests.has(name) && !opened.has(name) && !forGates.has(name));
   expect(unnamed).toEqual([]);
+});
+
+test('each list’s record page is a demo, or a page the catalog names as one a demo opens', () => {
+  // What a row, a pin or a booking opens, by the list's page: demos/shared/sample-data.ts and the calendars' own.
+  const pairs = [readFileSync('demos/shared/sample-data.ts', 'utf8'), readFileSync('demos/shared/calendar.ts', 'utf8')]
+    .flatMap((source) => [...source.matchAll(/(?:RECORD_PAGES[^{]*\{|recordPages: \{)([^}]*)\}/g)])
+    .flatMap((m) => [...m[1].matchAll(/'([a-z-]+)': '([a-z-]+)'/g)].map((pair) => pair[2]));
+  expect(pairs.length).toBeGreaterThanOrEqual(6);
+  const shown = new Set(DEMOS.map((demo) => new URLSearchParams(demo.query ?? '').get('page')));
+  const named = new Set(OPENED.map((o) => o.page));
+  expect([...new Set(pairs)].filter((page) => !shown.has(page) && !named.has(page))).toEqual([]);
+  // And each one the catalog names comes from a demo that is in it.
+  for (const o of OPENED) expect(DEMOS.some((demo) => demo.id === o.from), o.page).toBe(true);
+});
+
+test('every page the demos open is named for what it shows, in the heading and the tab, never for its framework', async ({ page }) => {
+  const framework = /^(plain )?(JavaScript|React|Vue|Angular)$|Fieldia — (plain JavaScript|React|Vue|Angular)/;
+  await page.goto('/plain/?page=customer&skin=underline');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo?.pageNames?.length ?? 0)).toBeGreaterThan(40);
+  const names: string[] = await page.evaluate(() => (window as any).fieldiaDemo.pageNames);
+  expect(names.length).toBeGreaterThan(40);
+  test.setTimeout((names.length + OPENED.length * FRAMEWORKS.length) * 2500);
+  // A page a demo opens, by its own name, in every framework: a booking pressed on the desk's week is "A booking".
+  for (const o of OPENED) {
+    for (const f of FRAMEWORKS) {
+      await page.goto(`/${f.id}/?page=${o.page}&record=1&skin=outlined`);
+      await expect(page.locator('.dh-title'), `${f.id} ${o.page}`).toHaveText(o.name);
+      await expect(page, `${f.id} ${o.page}`).toHaveTitle(`${o.name} — Fieldia demos`);
+    }
+  }
+  // Any page at all `?page=` opens — a demo's, one a demo opens, one a browser test keeps — is named for what it shows.
+  for (const name of names) {
+    await page.goto(`/plain/?page=${name}`);
+    await expect(page.locator('.dh-title'), name).not.toBeEmpty();
+    expect(await page.locator('.dh-title').textContent(), name).not.toMatch(framework);
+    await expect(page, name).not.toHaveTitle(framework);
+    await expect(page, name).toHaveTitle(/ — Fieldia demos$/);
+  }
 });
 
 test.describe('the demo frame', () => {

@@ -53,6 +53,16 @@ describe('a rule reading a field no longer on the page', () => {
     expect(pageChecks(designer.getPage())).toEqual([]);
   });
 
+  it('counts the field a date range shows as its end as on the page: a rule reading it is fine', () => {
+    const designer = screen((page, nodes) => {
+      page.fields['from'] = { type: 'date', label: 'From' };
+      page.fields['to'] = { type: 'date', label: 'To' };
+      page.fields['days'] = { type: 'float', label: 'Days', compute: 'days(from, to) + 1' };
+      nodes.push({ type: 'field', id: 'f-from', field: 'from', widget: 'daterange', options: { endField: 'to' } }, { type: 'field', id: 'f-days', field: 'days' });
+    });
+    expect(said(designer.getPage())).toEqual([]);
+  });
+
   it('stops a survey, where nothing else fills the field in, and takes only that part of a condition away', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Event') });
     const coming = designer.addQuestion('yes-no') as string;

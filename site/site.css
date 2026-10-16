@@ -85,20 +85,17 @@ pre.code:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .top-nav { display: flex; gap: 20px; margin-inline-start: auto; }
 .top-nav a { color: var(--muted); text-decoration: none; font-size: 15px; }
 .top-nav a:hover, .top-nav a[aria-current] { color: var(--ink); }
-/* A phone's bar keeps every link: closer together, then the brand's word only for screen readers, its mark still home. */
-@media (max-width: 480px) {
-  .top { gap: 14px; }
-  .top-nav { gap: 13px; }
-  .top-nav a { font-size: 14.5px; }
-}
-@media (max-width: 420px) {
-  .brand-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-}
-/* Where even that is too wide, the links scroll on their own, under a fade that says there are more; the page never does. */
-@media (max-width: 560px) {
-  .top-nav { min-width: 0; overflow-x: auto; scrollbar-width: none; padding-block: 8px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-inline-end: 24px; }
-  .top-nav::-webkit-scrollbar { display: none; }
-  .top-nav a { flex: none; }
+/* Where the links do not fit on one line, they fold under a Menu button: every link a full row below the bar, none off
+   the screen and none faded. */
+.top-menu { display: none; }
+@media (max-width: 760px) {
+  .top-menu { display: inline-flex; align-items: center; gap: 8px; margin-inline-start: auto; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .top-menu[aria-expanded="true"] { border-color: var(--ink); }
+  .top-nav { display: none; }
+  .top-open .top-nav { display: grid; position: absolute; inset: 60px 0 auto; margin: 0; gap: 0; padding: 4px max(16px, calc((100% - 1160px) / 2)) 12px; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 18px 32px rgba(16, 25, 43, 0.14); }
+  .top-open .top-nav a { padding: 12px 2px; font-size: 16px; color: var(--ink); border-bottom: 1px solid var(--line); }
+  .top-open .top-nav a:last-child { border-bottom: 0; }
+  .top-open .top-nav a[aria-current] { font-weight: 700; }
 }
 
 /* ---- front page ---- */
@@ -221,6 +218,36 @@ tr:last-child td { border-bottom: none; }
 .demo-card:hover .demo-go, .demo-card:focus-visible .demo-go { opacity: 1; transform: none; }
 .demo-blurb { margin: 5px 15px 8px; font-size: 13px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .demo-where { margin: auto 15px 13px; font-size: 11.5px; letter-spacing: 0.03em; color: var(--muted); }
+/* The gallery's cards in their business area's colour; by feature (gallery.js), in their feature's. */
+.gallery-body .demo-card { --cat: var(--cat-area); }
+.by-feature .gallery-body .demo-card { --cat: var(--cat-feature); }
+/* A display of their own would beat [hidden]: what the search or the switch hides must go. */
+.gallery-body [hidden] { display: none !important; }
+.gallery-about { margin: 8px 0 0; max-width: 80ch; font-size: 14px; color: var(--muted); }
+/* Find a demo, and group them by business area or by feature: one row under the gallery's words. */
+.gallery-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 18px; margin-top: 22px; }
+.gallery-find { display: grid; gap: 6px; flex: 1 1 320px; max-width: 520px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.gallery-find input { font: inherit; font-weight: 400; font-size: 15px; padding: 9px 12px; border: 1px solid var(--edge); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.gallery-find input:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.gallery-by { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--page); }
+.gallery-by button { font: inherit; font-size: 13.5px; font-weight: 600; padding: 6px 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); cursor: pointer; min-height: 32px; }
+.gallery-by button[aria-pressed="true"] { background: var(--fill); color: var(--on-fill); }
+.gallery-by button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.gallery-said { flex-basis: 100%; margin: 0; min-height: 1.2em; font-size: 13.5px; color: var(--muted); }
+.gallery-none { margin-top: 30px; color: var(--muted); }
+.gallery-clear { font: inherit; color: var(--link); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+/* A phone: a compact list, each demo its name and one line, not a screen of picture for every one. */
+@media (max-width: 640px) {
+  .gallery-body .gallery { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 6px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .gallery-body .demo-card { border: 0; border-left: 3px solid var(--cat-ink); border-radius: 0; border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .gallery-body .demo-card:last-child { border-bottom: 0; }
+  .gallery-body .demo-card:hover { transform: none; box-shadow: none; }
+  .gallery-body .demo-thumb, .gallery-body .demo-where { display: none; }
+  .gallery-body .demo-name { padding: 0 14px; font-size: 15px; }
+  .gallery-body .demo-go { opacity: 1; transform: none; margin-inline-start: auto; }
+  .gallery-body .demo-blurb { margin: 2px 14px 0; -webkit-line-clamp: 1; }
+  .gallery-about { font-size: 13.5px; }
+}
 
 /* ---- the template library on /templates/: the gallery's cards, with three ways to use each ---- */
 .template-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--cat-ink); border-radius: 12px; transition: border-color 0.12s, box-shadow 0.12s; }

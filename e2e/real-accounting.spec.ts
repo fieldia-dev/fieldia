@@ -292,8 +292,15 @@ for (const variant of VARIANTS) {
       await node(page, 'f-bill-no').locator('input').fill('CHK-004417');
       await node(page, 'f-check-due-date').locator('input').fill('2026-11-15');
       await page.getByRole('button', { name: 'Create Payment', exact: true }).click();
-      await expect(toast(page, /posted, check CHK-004417 due 2026-11-15/)).toBeVisible();
+      // A dialog's page on its own: once its payment is made, the page gives way to what was done — the app's words —
+      // and Start over, so a second press can never make a second payment. In a dialog it closes (the tests above).
+      const done = page.locator('.demo-done');
+      await expect(done).toContainText(/posted, check CHK-004417 due 2026-11-15/);
+      await expect(page.getByRole('button', { name: 'Create Payment', exact: true })).toBeHidden();
       await expectNoSidewaysScroll(page);
+      await done.getByRole('button', { name: 'Start over' }).click();
+      await expect(page.getByRole('button', { name: 'Create Payment', exact: true })).toBeVisible();
+      await expect(page.locator('.demo-done')).toHaveCount(0);
       expect(problems).toEqual([]);
     });
 

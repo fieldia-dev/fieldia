@@ -149,6 +149,7 @@
       {
         "type": "section",
         "id": "header",
+        "style": "plain",
         "columns": {
           "wide": 2,
           "medium": 1
@@ -157,6 +158,7 @@
           {
             "type": "section",
             "id": "left",
+            "style": "plain",
             "columns": 1,
             "children": [
               {
@@ -184,6 +186,7 @@
           {
             "type": "section",
             "id": "right",
+            "style": "plain",
             "columns": 1,
             "children": [
               {
@@ -239,6 +242,7 @@
               {
                 "type": "section",
                 "id": "terms",
+                "style": "plain",
                 "columns": {
                   "wide": 2,
                   "medium": 1

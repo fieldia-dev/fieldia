@@ -59,7 +59,10 @@ test.describe('orders by district', () => {
     await openMap(page, ZONES);
     await expect(regions(page)).toHaveCount(14);
     await expect(legend(page)).toBeVisible();
-    await expect(legend(page).locator('.fd-map-legend-title')).toHaveText('Orders this week');
+    // The legend says what it counts — the week's orders in each district — and the page what a bubble counts: orders
+    // close together on the map, whichever district they are in. Two measures, each said, never taken for the other.
+    await expect(legend(page).locator('.fd-map-legend-title')).toHaveText('Orders this week, by district');
+    await expect(page.locator('.fd-page-description, .fd-page-head').first()).toContainText('counts the orders close together on the map, whichever district they are in');
     // Counts step by whole numbers, from 1: "1–5", "6–10"…
     const steps = await legend(page).locator('li').allTextContents();
     expect(steps[0]).toMatch(/^1–\d+$/);
@@ -115,7 +118,7 @@ test.describe('orders by district', () => {
     await page.keyboard.press('Tab');
     const focused = page.locator('path.fd-map-region:focus');
     await expect(focused).toHaveCount(1);
-    await expect(focused).toHaveAttribute('aria-label', /^[A-Z][a-z ]+: \d+ · Orders this week$/);
+    await expect(focused).toHaveAttribute('aria-label', /^[A-Z][a-z ]+: \d+ · Orders this week, by district$/);
     // Its words shown as the pointer would show them.
     await expect(page.locator('.leaflet-tooltip.fd-map-tip')).toBeVisible();
     const first = (await focused.getAttribute('aria-label'))!;

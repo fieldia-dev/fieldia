@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { COUNTS, words } from '../facts.mjs';
 import { demoHref as demo, featurePage } from '../feature-page.mjs';
 
 /**
@@ -50,7 +51,7 @@ const PARTS = [
     id: 'layout',
     no: 'A real form’s layout',
     title: 'As much as the record holds, still easy to read',
-    body: 'A legal case, rebuilt from a working ERP: thirteen counters, two columns of groups, labels beside their values, fifteen tabs and twelve tables. The same JSON format that draws a three-question survey.',
+    body: `A legal case, rebuilt from a working ERP: ${words(COUNTS.legalCase.statButtons)} counters, two columns of groups, labels beside their values, ${words(COUNTS.legalCase.tabs)} tabs and ${words(COUNTS.legalCase.tables)} tables. The same JSON format that draws a three-question survey.`,
     ticks: [
       'Groups side by side on a twelve-column grid, stacking on a phone',
       'Labels beside their values, or above, as the page asks',
@@ -58,7 +59,7 @@ const PARTS = [
       'Properties: fields a person adds to one record without changing the page',
     ],
     shot: 'tabs.png',
-    alt: 'A legal case: breadcrumbs, a pager, case buttons, a status bar at Open, thirteen stat buttons, and two columns of case information and parties',
+    alt: `A legal case: breadcrumbs, a pager, case buttons, a status bar at Open, ${words(COUNTS.legalCase.statButtons)} stat buttons, and two columns of case information and parties`,
     width: 1280,
     height: 760,
     tryIt: ['Try the legal case', demo('page=real-legal-case&record=42&skin=underline')],
@@ -126,13 +127,13 @@ export default featurePage({
   start: `<section class="chapter chapter-center" id="start" aria-labelledby="start-h">
   <div class="chapter-copy">
     <p class="chapter-no">Start from one</p>
-    <h2 id="start-h">${RECORD_TEMPLATES.length} record templates, and nineteen real ERP screens</h2>
-    <p>Take a template as JSON and change it, or open one of the nineteen screens rebuilt from a working ERP to see how far a page goes.</p>
+    <h2 id="start-h">${RECORD_TEMPLATES.length} record templates, and ${words(COUNTS.realScreens)} real ERP screens</h2>
+    <p>Take a template as JSON and change it, or open one of the ${words(COUNTS.realScreens)} screens rebuilt from a working ERP to see how far a page goes.</p>
   </div>
   <ul class="feature-templates">
     ${RECORD_TEMPLATES.map((t) => `<li><a href="/demos/plain/?page=template-${t.id}&amp;theme=${t.theme}&amp;record=new">${t.name}</a></li>`).join('\n    ')}
   </ul>
-  <p class="feature-links"><a class="btn btn-solid" href="/templates/">All templates</a><a href="/demos/#real">The nineteen real screens →</a></p>
+  <p class="feature-links"><a class="btn btn-solid" href="/templates/">All templates</a><a href="/demos/#real">The ${words(COUNTS.realScreens)} real screens →</a></p>
 </section>
 `,
   finale: { title: 'Build your first record in an afternoon', words: 'Write the page, give Fieldia a data source for your backend, and mount it in plain JavaScript, React, Vue or Angular.' },

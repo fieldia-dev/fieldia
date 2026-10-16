@@ -151,6 +151,12 @@
    its top is 242px down the app, 17px under it the page's own room. */
 #app.bl .bl-list .fd-list-scroll { min-height: calc(100dvh - var(--bl-above, 0px) - 259px); box-sizing: border-box; }
 
+/* The list's stand-in until its part has come (main.ts): its words, then the rows' shape, in the tracker's own greys. */
+.bl-waiting { display: grid; gap: 14px; padding: 14px 4px 0; }
+.bl-waiting p { margin: 0 0 4px; color: var(--bl-muted); font-size: 14px; }
+.bl-waiting i { display: block; height: 14px; max-width: 760px; border-radius: 3px; background: var(--bl-fill); }
+.bl-waiting i:nth-child(odd) { max-width: 620px; }
+
 /* A press on a part this demo does not have: a note that goes by itself. */
 .bl-note { position: fixed; inset-inline-start: 50%; bottom: 24px; z-index: 50; margin: 0; padding: 10px 16px; border-radius: 4px; background: var(--bl-ink); color: var(--bl-page); box-shadow: var(--bl-shadow); translate: -50% 12px; opacity: 0; pointer-events: none; transition: opacity 0.15s, translate 0.15s; }
 .bl[dir="rtl"] .bl-note { translate: 50% 12px; }

@@ -12,7 +12,8 @@
 
 /* ---- the captions: one shown, the next rising into its place ---- */
 .story-captions { list-style: none; margin: 0; padding: 0; position: relative; min-height: 260px; }
-.story-caption { position: absolute; inset: 0; display: grid; gap: 12px; align-content: center; visibility: hidden; transform: translateY(28px); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.5s; }
+.story-caption { position: absolute; inset: 0; display: grid; gap: 12px; align-content: center; visibility: hidden; transform: translateY(28px); }
+/* The one going goes at once; only the one coming moves, so two captions are never on top of each other. */
 .story-caption.is-on { visibility: visible; transform: none; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
 .story-count { font: 600 13px/1 var(--h-mono); letter-spacing: 0.08em; color: var(--h-navy); }
 .story-caption h3 { margin: 0; font: 700 clamp(26px, 2.6vw, 36px)/1.08 var(--h-display); letter-spacing: -0.02em; color: var(--h-ink); text-wrap: balance; }
@@ -111,6 +112,26 @@
   .story-stage { order: -1; max-height: none; }
   .story-captions { min-height: 190px; }
   .story-rail { display: none; }
+}
+
+/* ---- a phone: the record drawn at a phone's own size, 440 × 600, so it reads at the scale it is shown; as tall as the
+   screen leaves room for under the bar and over the caption; the conversation under the sheet, not beside it ---- */
+@media (max-width: 640px) {
+  .story-sticky { gap: 16px; }
+  .story-stage { aspect-ratio: 440 / 600; width: min(100%, calc((100vh - 60px - 230px) * 440 / 600)); justify-self: center; }
+  .story-screen { width: 440px; height: 600px; }
+  .story-captions { min-height: 180px; }
+  .story-caption h3 { font-size: 24px; }
+  .story-caption p { font-size: 16px; line-height: 1.5; }
+  .story-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 0; transition: grid-template-rows 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .story-stage[data-step="5"] .story-app, .story-stage[data-step="6"] .story-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 236px; }
+  .story-chatter { border-inline-start: 0; border-block-start: 1px solid var(--h-line); padding: 12px 0; }
+  .story-list { inset: 12px auto auto 10px; width: 420px; padding: 12px; font-size: 13px; }
+  .story-list :is(th, td) { padding-inline: 6px; white-space: nowrap; }
+  .story-stage[data-step="6"] .story-window { transform: translate(200px, 290px) scale(0.5); }
+  .story-server { inset: auto 10px 16px auto; width: 300px; }
+  .story-stage[data-step="9"] .story-window { transform: scale(0.62); }
+  .story-stage[data-step="10"] .story-window { transform: translate(66px, 90px) scale(0.7); }
 }
 
 /* ---- reduced motion: the chapters as a list, beside the stage at its sixth ---- */

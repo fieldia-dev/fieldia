@@ -1,8 +1,10 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
-import { DEMOS, FEATURED, demoHref } from '../demos/catalog.mjs';
+import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/catalog.mjs';
 import { expectNoSidewaysScroll } from './support';
+import { gzipSync } from 'node:zlib';
+import { readFileSync } from 'node:fs';
 
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
@@ -64,6 +66,23 @@ test('the live form on the front page checks, sends, changes skin and language',
   expect(problems).toEqual([]);
 });
 
+test('the numbers the site states agree: the script’s size is the size of the script it serves, the looks one count everywhere', async ({ page, request }) => {
+  // Gzipped as tools/script-bundle.mjs measures it against its budget, and as site/facts.mjs reads it for the pages.
+  const kb = Math.round(gzipSync(await (await request.get(SITE + '/fieldia.js')).body(), { level: 9 }).length / 1024);
+  await page.goto(SITE + '/');
+  await expect(page.locator('#numbers .count').nth(2)).toHaveAttribute('data-to', String(kb));
+  const [skins, themes] = (/(\d+) skins, (\d+) themes/.exec((await page.locator('.power-figure', { hasText: 'skins' }).textContent()) ?? '') ?? []).slice(1).map(Number);
+  // As the code defines them: core's SKINS and THEMES, as site/facts.mjs counts them for the pages.
+  const listed = (name: string) => (new RegExp(`const ${name}\\b[^=]*= \\[([^\\]]*)\\]`).exec(readFileSync('libs/core/src/lib/format/themes.ts', 'utf8'))?.[1].match(/'[^']+'/g) ?? []).length;
+  expect([skins, themes]).toEqual([listed('SKINS'), listed('THEMES')]);
+  await page.goto(SITE + '/start/');
+  await expect(page.locator('#script ~ p').first()).toContainText(`in ${kb} KB gzipped`);
+  // Said in words on the Features page: the same counts.
+  const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+  await page.goto(SITE + '/features/');
+  await expect(page.locator('.feature-area', { hasText: 'Looks and languages' })).toContainText(new RegExp(`${WORDS[themes]} themes, ${WORDS[skins]} skins`, 'i'));
+});
+
 test('the docs’ code is coloured as it reads, and the words are the sample’s own', async ({ page }) => {
   await page.goto(SITE + '/maps/');
   const block = page.locator('pre.code[data-lang="json"]').first();
@@ -112,6 +131,89 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
     if (DEMOS.some((demo) => demo.failsOnPurpose && href.endsWith(`/demos/${demoHref(demo)}`))) problems.splice(told);
   }
   expect(problems).toEqual([]);
+});
+
+test('every demo is in exactly one business area: none in two, none left out', () => {
+  const listed = Object.values(AREA_IDS as Record<string, string[]>).flat();
+  expect(listed.filter((id, at) => listed.indexOf(id) !== at)).toEqual([]);
+  expect(DEMOS.filter((demo) => !areaOf(demo.id)).map((demo) => demo.id)).toEqual([]);
+  expect(listed.filter((id) => !DEMOS.some((demo) => demo.id === id))).toEqual([]);
+  expect(Object.keys(AREA_IDS).sort()).toEqual(AREAS.map((area) => area.id).sort());
+});
+
+test('the gallery by business area, found by words as they are typed, and by feature for developers', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  // By business area as it opens: each area its demos, each demo once.
+  for (const area of AREAS) {
+    const section = page.locator(`.gallery-section#${area.id}`);
+    await expect(section, area.id).toBeVisible();
+    await expect(section.locator('a.demo-card'), area.id).toHaveCount(DEMOS.filter((demo) => areaOf(demo.id) === area.id).length);
+  }
+  const shown = page.locator('.gallery-body a.demo-card:visible');
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  // "/" from anywhere finds; a name, a demo's words, an area's name each find; every word typed must hold.
+  await page.locator('body').press('/');
+  await expect(find).toBeFocused();
+  await page.keyboard.type('postdated check');
+  await expect(shown).toHaveCount(1);
+  await expect(shown.first()).toContainText('Register a payment');
+  await expect(page.locator('#gallery-said')).toHaveText('1 demo matches.');
+  await expect(page.locator('#featured')).toBeHidden();
+  await find.fill('timber');
+  await expect(shown).toHaveCount(1);
+  await expect(shown.first()).toContainText('Warehouse receipt');
+  await find.fill('clinic');
+  await expect(page.locator('.gallery-section#clinic a.demo-card:visible')).toHaveCount(DEMOS.filter((demo) => areaOf(demo.id) === 'clinic').length);
+  await expect(page.locator('.gallery-section#people')).toBeHidden();
+  await find.fill('zzzz nothing');
+  await expect(shown).toHaveCount(0);
+  await expect(page.locator('.gallery-none')).toBeVisible();
+  // Escape lets every demo back.
+  await find.press('Escape');
+  await expect(find).toHaveValue('');
+  await expect(shown).toHaveCount(DEMOS.length + FEATURED.length);
+  // By feature: the same demos in the groups developers know, kept in the address; and back.
+  await page.getByRole('button', { name: 'By feature' }).click();
+  await expect(page).toHaveURL(/[?&]by=feature/);
+  await expect(page.locator('.gallery-section#sales')).toBeHidden();
+  await expect(page.locator('.gallery-section#records')).toBeVisible();
+  await expect(page.locator('.gallery-section#records a.demo-card')).toHaveCount(DEMOS.filter((demo) => demo.category === 'records').length);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'By feature' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'By business area' }).click();
+  await expect(page).not.toHaveURL(/by=feature/);
+  await expect(page.locator('.gallery-section#sales')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('the gallery on a phone: a compact list, each demo its name and one line', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(SITE + '/demos/');
+  await expectNoSidewaysScroll(page);
+  const card = page.locator('.gallery-section#sales a.demo-card').first();
+  await expect(card.locator('.demo-thumb')).toBeHidden();
+  await expect(card.locator('.demo-name')).toBeVisible();
+  expect((await card.boundingBox())!.height).toBeLessThan(90);
+});
+
+test('the front page opens with what a business gets, then its business areas, each to its demos', async ({ page }) => {
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(SITE + '/');
+    // The first words after the headline are a business owner's; the developers' come after the areas.
+    const copy = page.locator('.opening-copy > p, .opening-copy > nav');
+    await expect(copy.nth(1)).toHaveClass(/lede-business/);
+    await expect(copy.nth(2)).toHaveClass(/uses/);
+    await expect(copy.nth(3)).toHaveClass(/lede-dev/);
+    const uses = page.getByRole('navigation', { name: 'See it at work' }).getByRole('link');
+    await expect(uses).toHaveCount(AREAS.length - 1);
+    await expect(uses.first()).toBeInViewport();
+  }
+  await page.getByRole('navigation', { name: 'See it at work' }).getByRole('link', { name: /^Clinic/ }).click();
+  await expect(page).toHaveURL(/\/demos\/#clinic$/);
+  await expect(page.locator('.gallery-section#clinic')).toBeInViewport();
 });
 
 test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {
