@@ -25,7 +25,7 @@ const actions: string[] = [];
 /** Every button press in full, with the records chosen in a list. */
 const requests: ActionRequest[] = [];
 
-/** The "shout" field, as an Angular component. */
+/** The badge field, as an Angular component. */
 @Component({
   selector: 'demo-shout',
   template: `<span class="demo-shout">
@@ -119,7 +119,7 @@ class NoteComponent implements OnInit {
     this.state = formState(this.form, this.destroyRef);
   }
   hello() {
-    return greeting(this.state?.().values['nickname']);
+    return greeting(this.state?.().values['badge_name']);
   }
   label() {
     return clicked(this.clicks());
@@ -172,7 +172,7 @@ class DemoComponent {
   readonly theme = (params.get('theme') as Theme | null) ?? undefined;
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
-  readonly fieldTypes = { 'char.shout': ShoutComponent, 'monetary.tag': PriceTagComponent };
+  readonly fieldTypes = { 'char.name-badge': ShoutComponent, 'monetary.tag': PriceTagComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets, ...demoMapWidgets };
   readonly listViews = demoListViews;
   readonly maps = demoMaps;

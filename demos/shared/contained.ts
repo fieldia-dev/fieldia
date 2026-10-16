@@ -99,9 +99,18 @@ export const priceTag: WidgetFactory = ({ form, name, id, document: doc }) => {
 /** The delivery planner, as a plain-DOM slot: it throws before it draws anything. */
 export const plannerSlot: SlotRenderer = () => loadPlanner();
 
+/** A failing part in a reader's words: which part it was, and when it failed. */
+function partWords(where: PartFailure, page: Page = containedPage): string {
+  const label = where.field ? page.fields[where.field]?.label ?? where.field : null;
+  const what = label ? `The ${label} field’s own widget` : where.part === 'slot' ? `The app’s ${where.name ?? 'own'} panel` : `A ${where.part}`;
+  const when = { draw: 'as it was drawn', update: 'as its value changed', focus: 'as it took the focus', remove: 'as it was taken away' }[where.stage];
+  return `${what} failed ${when}`;
+}
+
 /**
- * The list under the form of what onError was told: where, and the error's own words. A plain-DOM box every
- * framework's demo puts after its form, and the `onError` to give the viewer.
+ * Under the form, what the viewer's onError was told — the app's own log of what broke: each failure in words (which
+ * part, when, and the error's own message), with exactly what onError was handed beside it, for the developer. A
+ * plain-DOM box every framework's demo puts after its form, and the `onError` to give the viewer.
  */
 export function errorLog(doc: Document): { element: HTMLElement; onError: (error: unknown, where: PartFailure) => void } {
   const element = doc.createElement('section');
@@ -109,19 +118,28 @@ export function errorLog(doc: Document): { element: HTMLElement; onError: (error
   element.setAttribute('aria-labelledby', 'demo-error-log-title');
   const title = doc.createElement('h2');
   title.id = 'demo-error-log-title';
-  title.textContent = 'What onError was told';
-  const empty = doc.createElement('p');
-  empty.textContent = 'Nothing yet.';
+  title.textContent = 'What your app’s error log was told';
+  const about = doc.createElement('p');
+  about.className = 'demo-error-log-about';
+  about.textContent = 'Each part that fails tells the app, through the viewer’s onError, so it can log it or report it. Nothing has failed yet.';
   const list = doc.createElement('ol');
-  element.append(title, empty, list);
+  element.append(title, about, list);
   return {
     element,
     onError(error, where) {
-      empty.hidden = true;
+      about.textContent = 'Each part that fails tells the app, through the viewer’s onError, so it can log it or report it. The rest of the form goes on working.';
       const item = doc.createElement('li');
-      const said = doc.createElement('code');
-      said.textContent = JSON.stringify(where);
-      item.append(said, ` ${error instanceof Error ? error.message : String(error)}`);
+      const said = doc.createElement('p');
+      const words = doc.createElement('strong');
+      words.textContent = `${partWords(where)}: `;
+      said.append(words, error instanceof Error ? error.message : String(error));
+      const handed = doc.createElement('details');
+      const summary = doc.createElement('summary');
+      summary.textContent = 'What onError was handed';
+      const code = doc.createElement('code');
+      code.textContent = JSON.stringify(where);
+      handed.append(summary, code);
+      item.append(said, handed);
       list.append(item);
     },
   };

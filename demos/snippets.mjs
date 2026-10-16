@@ -19,7 +19,7 @@ export function pageNeeds(page) {
     if (widget === 'code') needs.code = true;
     if (widget === 'monaco') needs.monaco = true;
     if (widget === 'place' || widget === 'area' || widget === 'address-search') needs.mapFields = true;
-    if (widget === 'shout') needs.own = true;
+    if (widget === 'name-badge') needs.own = true;
     // "A part that fails": the app's price tag (demos/shared/contained.ts).
     if (widget === 'tag') needs.priceTag = true;
     if (node.type === 'map') needs.formMap = true;
@@ -96,7 +96,7 @@ function parts(needs) {
     options.push(['pages', `{ '${needs.listCalendar}': recordPage }`]);
   }
   // Your own widget, by its field's type and its name.
-  if (needs.own) widgets.push("'char.shout': yourShoutWidget");
+  if (needs.own) widgets.push("'char.name-badge': yourNameBadgeWidget");
   if (needs.priceTag) widgets.push("'monetary.tag': yourPriceTag");
   if (widgets.length) options.unshift(['widgets', widgets.length === 1 && !widgets[0].startsWith("'") ? widgets[0].slice(3) : `{ ${widgets.join(', ')} }`]);
   if (needs.chatter) imports.push("import { chatterSlot } from '@fieldia/chatter';");

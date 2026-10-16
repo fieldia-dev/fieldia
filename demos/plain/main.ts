@@ -10,7 +10,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
-import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { appPages, openRecord, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
@@ -32,7 +32,7 @@ const actions: string[] = [];
 /** Every button press in full, with the records chosen in a list. */
 const requests: ActionRequest[] = [];
 
-/** The "shout" field, as a plain-DOM widget. */
+/** The badge field, as a plain-DOM widget. */
 const shoutWidget: WidgetFactory = ({ form, name: field, id, document }) => {
   const input = document.createElement('input');
   input.id = id;
@@ -84,7 +84,7 @@ const options: ViewerOptions = {
     // The shop's answers to the pages' steps: the stock checked for "Order by phone".
     return answerAction(request, params.get('locale') ?? undefined);
   },
-  widgets: { 'char.shout': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
+  widgets: { 'char.name-badge': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
   onError: failures?.onError,
   // A list with `map` shows its records on one too.
@@ -109,7 +109,7 @@ const options: ViewerOptions = {
       button.addEventListener('click', () => (button.textContent = clicked(++clicks)));
       const hello = document.createElement('p');
       hello.className = 'demo-hello';
-      const show = () => (hello.textContent = greeting(form.getState().values['nickname']));
+      const show = () => (hello.textContent = greeting(form.getState().values['badge_name']));
       show();
       const leave = form.subscribe(show);
       element.className += ' demo-note';
@@ -188,4 +188,5 @@ if (name === 'fields') {
 // The listing has a bar over it: ten photos as a phone takes them, added at once (shared/listing-photos.ts).
 if (name === 'listing-photos') document.getElementById('app')?.before(photosBar());
 
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults } });
+// `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows.
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages) } });

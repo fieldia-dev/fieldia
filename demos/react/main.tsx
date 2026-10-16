@@ -21,7 +21,7 @@ const actions: string[] = [];
 /** Every button press in full, with the records chosen in a list. */
 const requests: ActionRequest[] = [];
 
-/** The "shout" field, as a React component. */
+/** The badge field, as a React component. */
 function Shout({ id, value, readonly, onChange }: FieldComponentProps) {
   return (
     <span className="demo-shout">
@@ -37,7 +37,7 @@ function Note({ form }: SlotComponentProps) {
   const state = useFormState(form);
   return (
     <>
-      <p className="demo-hello">{greeting(state.values['nickname'])}</p>
+      <p className="demo-hello">{greeting(state.values['badge_name'])}</p>
       <button type="button" className="fd-button" onClick={() => setClicks((n) => n + 1)}>
         {clicked(clicks)}
       </button>
@@ -91,7 +91,7 @@ function Demo() {
         // The shop's answers to the pages' steps: the stock checked for "Order by phone".
         return answerAction(request, params.get('locale') ?? undefined);
       }}
-      fieldTypes={{ 'char.shout': Shout, 'monetary.tag': PriceTag }}
+      fieldTypes={{ 'char.name-badge': Shout, 'monetary.tag': PriceTag }}
       onError={failures?.onError}
       widgets={{ ...gridWidgets, ...codeWidgets, ...demoMapWidgets }}
       listViews={demoListViews}
