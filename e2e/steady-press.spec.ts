@@ -133,6 +133,8 @@ test.describe('a double tap on Save, on a phone', () => {
     await description.tap();
     await page.keyboard.press('End');
     await page.keyboard.type(' x');
+    // Save leads the header, scrolled out of sight as the description was typed in.
+    await save(page).scrollIntoViewIfNeeded();
     const at = await middle(page, save(page));
     await page.touchscreen.tap(at.x, at.y);
     await page.waitForTimeout(80);

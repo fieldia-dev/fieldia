@@ -34,7 +34,7 @@ test.describe('a sales order’s lines', () => {
     await expect(cell(page, CHAIR, 'qty')).toHaveText('abc');
     await expect(cell(page, CHAIR, 'qty')).toHaveClass(/fd-grid-invalid/);
     // Named as people count lines: the Workstations heading above it is no line.
-    await expect(grid(page).locator('.fd-grid-problems')).toHaveText('Line 1: Quantity: “abc” is not a number');
+    await expect(grid(page).locator('.fd-grid-problems')).toHaveText(/^Line 1: Quantity: “\u2068?abc\u2069?” is not a number$/);
     // Its Subtotal is not the amount for a quantity it no longer shows: it waits, and says why.
     const worked = cell(page, CHAIR, 'subtotal').locator('.fd-grid-worked');
     await expect(worked.locator('[aria-hidden="true"]')).toHaveText('—');
