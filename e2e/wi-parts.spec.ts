@@ -162,7 +162,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
 test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
   const bug = JSON.parse(readFileSync(join(__dirname, '..', 'examples', 'pages', 'work-item-bug.page.json'), 'utf8'));
 
-  test('a work item’s bug asks for its head, text, path picker and own lists from beside fieldia.js, drawn whole once they came', async ({ page }) => {
+  test('a work item’s bug asks for its head, text, path picker, own lists and look from beside fieldia.js, drawn whole once they came', async ({ page }) => {
     const problems = watch(page);
     const requested: string[] = [];
     page.on('request', (request) => requested.push(new URL(request.url()).pathname));
@@ -189,16 +189,21 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     // The text part's: the links boxes in sight, the Markdown texts drawn (empty on a new bug, they take no room at rest).
     await expect(page.locator('#app .fd-links-box').first()).toBeVisible();
     expect(await page.locator('#app .fd-md-field').count()).toBeGreaterThan(0);
+    // And its look's: the Fluent theme and the quiet skin its page names.
     expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path)).sort()).toEqual([
       '/script/fieldia.choice.js',
       '/script/fieldia.head.js',
       '/script/fieldia.js',
       '/script/fieldia.path.js',
+      '/script/fieldia.quiet.js',
       '/script/fieldia.text.js',
+      '/script/fieldia.themes.js',
     ]);
-    // Its stylesheets among Fieldia's, before the page's own looks.
+    // Its stylesheets among Fieldia's, before the page's own looks: the theme's and the quiet look's first.
     expect(await page.evaluate(() => [...document.head.querySelectorAll('style[id^="fieldia"]')].map((style) => style.id))).toEqual([
       'fieldia-styles',
+      'fieldia-theme-styles',
+      'fieldia-quiet-styles',
       'fieldia-path-styles',
       'fieldia-choice-styles',
       'fieldia-head-styles',
