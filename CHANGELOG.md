@@ -63,7 +63,8 @@ met it in:
   greys (#1c1c1e, #141414, #121214), never a black slab in a grey page; their
   cards stand off them, lighter.
 - **A record's title wraps on a phone**, read from its start: a long name runs
-  onto a second line, never "Patien…" or only its end. It is one line all the
+  onto a second line, a size smaller on a phone so its words stay whole, never
+  "Patien…" or only its end. It is one line all the
   same: Enter saves, a line break pasted into it is a space, and it says it is
   one line (`aria-multiline="false"`). Its subtitle the same.
 - **A paste past a field's most is one message, said once**: the count stays
@@ -85,7 +86,7 @@ met it in:
   them: its data source sees that save, then the steps' own, as Flectra's
   server sees a record saved before its button's method runs.
 
-**Size:** `fieldia.js` 479.6 KB, 155.4 gzipped (0.23: 474.3, 153.6).
+**Size:** `fieldia.js` 479.7 KB, 155.4 gzipped (0.23: 474.3, 153.6).
 
 ## 0.23.0 — 2026-10-16
 
