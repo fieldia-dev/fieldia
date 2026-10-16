@@ -613,7 +613,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // public sign-up — that are drawn the moment they are opened. 474.25 measured before, 477.88 after, to 477.9.
 // Save safety round 6 (fix-leave) and autofill (w2-autofill) joined: their growth together, 474.29 + 2.94 + 3.59,
 // to 480.9 until the release measures it.
-const BUDGET_KB = 480.9;
+// The input rules checked again on 0.23 (inputs-fix-boxes): a part's box taking what was typed in its stand-in
+// (partWidget's hand-over, 1.1), the plain hours and per cent reading as their part's box does (0.7), a date and time
+// read in a time zone that says a time the clocks skip or pass twice, an instant's impossible day, a full-width keyboard's
+// marks, the whole part's digits and a currency as people write it (core's readers, 2.8), JSON numbers kept as written
+// (0.6), money read again when its currency changes, a date's and the email's words (widgets, 2.5) and their English
+// words (0.6), a table cell placed for its hint as its box is entered: 480.83 measured before, 489.58 after — 8.8
+// more, to 489.6.
+const BUDGET_KB = 489.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -738,7 +745,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Wave 2's autofill and bot check (listed with the raw budget above): 153.62 measured before, 154.78 after — 1.2 more,
 // what every box and every public page draws at mount — to 154.8.
 // The two joined (listed with the raw budget above): 153.62 + 1.06 + 1.16, to 155.9 until the release measures it.
-const GZIP_BUDGET_KB = 155.9;
+// The input rules checked again on 0.23 (listed with the raw budget above): 155.86 measured before, 159.02 after —
+// 3.2 more, to 159.1.
+const GZIP_BUDGET_KB = 159.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -823,7 +832,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // French's 19.8 and 7.1 — each to 0.1 over.
 // A public page's hidden box (0.24, Wave 2's bot check): "Leave this box empty", one in each, read by no person but one
 // whose page has lost its look — measured 45.11 and 8.25 in Arabic, 19.22 in German, 19.84 in French: Arabic's to 45.2.
-const ADD_ON_BUDGET_KB = { ar: [45.2, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
+// The input rules checked again on 0.23: six sentences in each — a domain's mark, a date in another order, a time the
+// clocks skip and one they pass twice, decimal hours, a JSON number not kept as written — and the whole part's digits:
+// measured 46.93 and 8.51 in Arabic, 19.99 and 7.31 in German, 20.62 and 7.31 in French (before: 45.11 and 8.25,
+// 19.22 and 7.09, 19.84 and 7.10), each to 0.1 over.
+const ADD_ON_BUDGET_KB = { ar: [47.0, 8.6], de: [20.1, 7.4], fr: [20.7, 7.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -932,7 +945,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // filled from a pick in another box is read as left (date 19.5, 7.3, as measured 19.45 and 7.23); an address's parts
 // each take whose address it is (survey 35.1, as measured 35.06 and 12.13); hours and a per cent the page's purpose and
 // keyboard, and read as left when filled from elsewhere (business as it was, measured 25.99 and 9.58).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.0, 18.3], path: [15.5, 6.1], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.5, 7.3], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.1, 9.6], files: [30.9, 11.3], survey: [35.1, 12.2] };
+// The input rules checked again on 0.23 (inputs-fix-boxes), each part's box taking what was typed in its stand-in
+// (`takeTyped`) and reading, never rewriting: hours and a per cent passed through, hours kept to the field's places and
+// decimal hours said (business 26.7, 9.9, as measured 26.60 and 9.82; 26.08 and 9.62 before — save safety round 6 and
+// autofill joined had left it at 9.62, over its 9.6); a date's box typed back to what it showed, its paste saying the
+// reader's why (date 19.7, 7.4: 19.63 and 7.31, from 19.45 and 7.23); a path picker's (path 15.6: 15.53, from 15.49);
+// a slider's, which marks text its number box left unread (survey 35.4, 12.3: 35.35 and 12.23, from 35.06 and 12.13);
+// a links box reading the words typed before it came (text 55.6, 18.6: 55.57 and 18.50, from 54.92 and 18.23).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [15.6, 6.1], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
