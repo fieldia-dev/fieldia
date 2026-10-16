@@ -53,7 +53,8 @@ export interface RelatedPart {
 export function relatedListPage(page: Page, node: RelatedNode): Page {
   const layout: ListNode = {
     type: 'list',
-    id: node.id,
+    // Its own id: the part's is its box's, which holds it.
+    id: `${node.id}-list`,
     columns: node.columns,
     choose: false,
     pageSize: node.limit ?? 5,
@@ -104,7 +105,8 @@ export function relatedList(context: RelatedContext): RelatedPart {
   const add = newRecord ? el('button', { type: 'button', class: 'fd-button fd-button-secondary fd-related-new', hidden: '', 'aria-label': node.title ? named(labels.relatedNewOf, labels.relatedNew) : undefined }, labels.relatedNew) : null;
   const tools = el('span', { class: 'fd-related-tools' }, ...(all ? [all] : []), ...(add ? [add] : []));
   const head = el('div', { class: 'fd-related-head' }, ...(title ? [title] : []), tools);
-  head.hidden = !title && !all && !add;
+  // Its buttons show once the record is saved: until then, a heading only for its title.
+  head.hidden = !title;
   const note = el('p', { class: 'fd-related-note', hidden: '' }, labels.relatedUnsaved);
   const holder = el('div', { class: 'fd-related-list' });
   box.classList.add('fd-related');
@@ -181,6 +183,8 @@ export function relatedList(context: RelatedContext): RelatedPart {
     holder.hidden = !saved;
     if (all) all.hidden = !saved;
     if (add) add.hidden = !saved;
+    // A heading with nothing in it shows none: no title, and its buttons hidden before a first save.
+    head.hidden = !title && !(saved && (all || add));
     if (!saved) {
       list?.destroy();
       list = null;

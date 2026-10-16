@@ -826,6 +826,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 /* A page with no sheet of its own sits on the dialog's surface, clear of its edges. */
 .fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
+/* A dialog's own head and foot sit outside the form it holds: a button hidden there (Save & Close, for a record only
+   to read or a list) is hidden, whatever its look's display. */
+.fd-form-dialog [hidden] { display: none !important; }
 /* A page in a side panel: at the inline-end edge unless it names another, the page behind dimmed, sliding in from its edge; on a phone, the whole screen. */
 .fd-form-panel-backdrop { justify-items: end; }
 .fd-form-panel { max-width: 560px; position: relative; }

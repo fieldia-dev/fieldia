@@ -670,9 +670,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A related list inside a record (Wave 3, w3-related): the format's part and its page check — its columns, order,
 // search and cells held to its own records' fields (the list's own checks, shared now), its link to a many2one of
 // theirs to this model, on a record's page — the form's `relatedFilter`, the viewer's box handing the list part its
-// dialogs and its host's `open`, the list part asked for by a page with one, and its six English words. Its heading,
-// count, New, View all and asks are the list part's: 512.84 measured before, 515.24 after — 2.4 more, to 515.3.
-const BUDGET_KB = 515.3;
+// dialogs and its host's `open`, the list part asked for by a page with one, a list in a dialog closed with Close
+// alone (nothing to save) and a dialog's own button hidden when it is (Save & Close showed for a record only to read
+// too), and its six English words. Its heading, count, New, View all and asks are the list part's: 512.84 measured
+// before, 515.32 after — 2.5 more, to 515.4.
+const BUDGET_KB = 515.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1081,7 +1083,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // New, what it says before a first save, each ask kept to the record shown (list-related.ts: 3.6, 1.6 gzipped on its
 // own), its look (1.2), and the list's search as a box alone, its search and pager once a page is full, its count told
 // and an answer for a record no longer shown dropped (list.ts, search-bar.ts) — list 72.41 and 23.71 measured before,
-// 77.34 and 25.25 after (list 77.4, 25.3). A part of its own would have spared a plain list page about 1.2 gzipped and
+// 77.37 and 25.26 after (list 77.4, 25.3). A part of its own would have spared a plain list page about 1.2 gzipped and
 // cost a record page with one a second request: a related list draws with the list part's table, so it loads that.
 const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [77.4, 25.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.

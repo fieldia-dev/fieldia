@@ -88,6 +88,8 @@ describe('a related list inside a record', () => {
     const { host } = await mount();
     await until(() => rows(host).length === 2);
     expect(part(host).getAttribute('role')).toBe('group');
+    // Its id names its box alone: the list inside has one of its own.
+    expect(host.querySelectorAll('[data-node="invoices"]')).toHaveLength(1);
     expect(part(host).querySelector('.fd-related-title')?.textContent).toContain('Invoices');
     expect(rows(host)).toEqual(['INV/1 | 100 | Posted', 'INV/2 | 50 | Draft']);
     // Its cells as the list's: a state's dot in its tone.
@@ -136,6 +138,8 @@ describe('a related list inside a record', () => {
     expect(part(host).querySelector('.fd-related-note')?.textContent).toBe('Nothing here until this record is saved.');
     expect(named(host, 'New')?.hidden).toBe(true);
     expect(part(host).querySelector('.fd-list')).toBeNull();
+    // Its title says what is not there yet; with none, no empty heading over the words.
+    expect((part(host).querySelector('.fd-related-head') as HTMLElement).hidden).toBe(false);
     expect(dataSource.calls.filter((call) => call.method === 'list')).toEqual([]);
     handle.form.setValue('name', 'Initech');
     expect(await handle.save()).toBe(true);
@@ -188,6 +192,15 @@ describe('a related list inside a record', () => {
     all.click();
     await until(() => asked.length === 1);
     expect(asked[0]).toEqual({ page: 'invoices', as: 'page', filter: [{ field: 'partner_id', op: '=', value: 1 }] });
+    // In the viewer's own dialog, a list has nothing to save: Close alone.
+    const own = await mount({ page: customer({ viewAll: { page: 'all' } }), pages: { all: { ...invoicePage, id: 'all', layout: { type: 'list', id: 'all-list', columns: ['name'] } } as unknown as Page } });
+    await until(() => rows(own.host).length === 2);
+    named(own.host, 'View all')?.click();
+    await until(() => dialog()?.querySelector('.fd-list-row'));
+    const foot = [...(dialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].filter((b) => !(b as HTMLElement).hidden).map((b) => b.textContent);
+    expect(foot).toEqual(['Close']);
+    dialogButton('Close').click();
+    await until(() => !dialog());
     // A page the app does not have is said.
     const missing = await mount({ page: customer({ viewAll: { page: 'nowhere' } }), pages: {} });
     await until(() => rows(missing.host).length === 2);

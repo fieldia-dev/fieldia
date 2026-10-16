@@ -223,8 +223,10 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     else box.setAttribute('aria-label', options.title);
   }
   // A record its source lets the person only read has nothing to save: no Save & Close, and Close in place of Discard.
+  // Nor has a list of records (an `open` step's, a related list's View all): its records open on their own.
+  const listing = options.page.layout.type === 'list';
   const mayEdit = () => {
-    const may = options.mode === 'values' || handle.form.getState().can?.edit !== false;
+    const may = !listing && (options.mode === 'values' || handle.form.getState().can?.edit !== false);
     saveClose.hidden = !may;
     discard.textContent = may ? labels.discard : labels.close;
   };
