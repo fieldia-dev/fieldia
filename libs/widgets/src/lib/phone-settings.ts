@@ -1,4 +1,5 @@
 import type { PagePhone } from '@fieldia/core';
+import { phonePart } from './widget-parts';
 
 /**
  * How a phone field's numbers are read and shown, from its page's `phone` and its node's `options` (the field's own
@@ -17,4 +18,13 @@ export function phoneSettings(page: { readonly phone?: PagePhone } | undefined, 
   const shown = own['shown'] === 'national' || own['shown'] === 'international' ? own['shown'] : undefined;
   if (!page?.phone && country === undefined && shown === undefined) return null;
   return { country: country ?? page?.phone?.country ?? null, shown: shown ?? page?.phone?.shown ?? 'international' };
+}
+
+/**
+ * A field's number as people read it, as `settings` show it — by the phone part, once it has come (a page that reads
+ * its phones so waits for it): undefined before. A function, for a part to take from the main script (a list's
+ * column): a part takes the main script's names as they stood when it started, and only a function is there then.
+ */
+export function phoneWritten(value: string, settings: PhoneSettings): string | undefined {
+  return phonePart.loaded?.shownPhone(value, settings.shown, settings.country);
 }

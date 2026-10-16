@@ -18,7 +18,7 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { displayValue, drawIcon, moneyReads, phonePart, phoneSettings, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { displayValue, drawIcon, moneyReads, phoneSettings, phoneWritten, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -198,9 +198,8 @@ export function listView(context: ListContext): ListView {
   const show = (name: string, values: Record<string, Value>) => {
     const phone = phones.get(name);
     const value = values[name];
-    const part = phonePart.loaded;
-    if (phone && part && typeof value === 'string') return part.shownPhone(value, phone.shown, phone.country);
-    return displayValue(page.fields[name] as LineField, value, values, locale);
+    const written = phone && typeof value === 'string' ? phoneWritten(value, phone) : undefined;
+    return written ?? displayValue(page.fields[name] as LineField, value, values, locale);
   };
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
