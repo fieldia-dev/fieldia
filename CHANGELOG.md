@@ -29,12 +29,13 @@ met it in:
   or a check before it, is refused, what its own steps wrote since its last
   save is put back. A change made meanwhile by anyone else stays.
 - **A double-click on Save saves, and only saves.** Save hides as it saves and
-  the next button slides under the pointer: a press on a button that came
-  under a pointer that has not moved is not taken for it — it goes nowhere,
-  and the focus stays where it was. Presses there stay refused for half a
-  second; one after that, or once the pointer moves, is taken. Nothing is
-  disabled, and a key or an app's `click()` is never refused. A form dialog's
-  own buttons the same.
+  the next button slides under the pointer: the second click of a double or a
+  triple click (the browser counts them) is not taken by a bar's button that
+  was not where its first click landed — it goes nowhere, and the focus stays
+  where it was. A finger's double tap the same. A single click is always
+  taken, a key or an app's `click()` is never refused, and nothing is
+  disabled. A form dialog's own buttons the same; a line's × in a table is no
+  bar's, so lines deleted one after another still go.
 - **A question opens on Cancel**: a button's `confirm`, an `ask` step,
   Archive and Delete, as "Discard your changes?" did. Enter never answers Yes
   by itself.
@@ -84,7 +85,7 @@ met it in:
   them: its data source sees that save, then the steps' own, as Flectra's
   server sees a record saved before its button's method runs.
 
-**Size:** `fieldia.js` 479.4 KB, 155.3 gzipped (0.23: 474.3, 153.6).
+**Size:** `fieldia.js` 479.6 KB, 155.4 gzipped (0.23: 474.3, 153.6).
 
 ## 0.23.0 — 2026-10-16
 

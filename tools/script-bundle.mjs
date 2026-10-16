@@ -601,8 +601,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // button that saves first and puts back what its steps wrote when its save is refused (core's runner), a record's
 // title that wraps on a phone, lines named by their number among the items and a worked-out number that waits for
 // its line, one message for a paste past a field's most, the currency sign where the language puts it — 474.25
-// measured before, 479.43 after: 5.2 more, to 479.5.
-const BUDGET_KB = 479.5;
+// measured before, 479.60 after: 5.4 more, to 479.7.
+const BUDGET_KB = 479.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -722,8 +722,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
-// The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.30 after —
-// 1.7 more, to 155.4.
+// The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.36 after —
+// 1.8 more, to 155.4.
 const GZIP_BUDGET_KB = 155.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
