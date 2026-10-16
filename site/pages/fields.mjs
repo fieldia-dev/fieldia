@@ -43,6 +43,31 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
 <p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
 <p>A date's ${c('min')} and ${c('max')} are its earliest and latest day: a day, ${c('"2026-03-02"')}, or one counted from the day the form is opened, ${c('"today"')}, ${c('"today+30"')}, ${c('"today-7"')}; a date and time keeps them by the day it falls on. ${c('days')} are the days of the week it may fall on, ISO numbers from 1, Monday, to 7, Sunday: ${c('[1, 2, 3, 4, 5]')} refuses a weekend of Saturday and Sunday, ${c('[7, 1, 2, 3, 4]')} one of Friday and Saturday. A date's ${c('default')} may be ${c('"today"')}. A field with the widget ${c('email')}, ${c('url')}, ${c('phone')} or ${c('time')} is checked as one, and says what to type.</p>
 
+<h2 id="phone">Phone numbers the world over</h2>
+<p>A phone field is a text box until its page says how phone numbers are read: ${c('"phone"')}, with the ${c('country')} a number typed without its + is read in, and whether a number is ${c('shown')} at rest abroad's way, ${c('"international"')} (the default), or at home's, ${c('"national"')}. A field can say it for itself in its ${c('options')}, which win over the page's.</p>
+${code(
+  'json',
+  `
+{
+  "fieldia": "0.2",
+  "phone": { "country": "EG", "shown": "national" },
+  "fields": { "mobile": { "type": "char", "label": "Mobile" }, "office": { "type": "char", "label": "Dubai office" } },
+  "layout": { "type": "sections", "id": "s", "children": [
+    { "type": "field", "id": "f-mobile", "field": "mobile", "widget": "phone" },
+    { "type": "field", "id": "f-office", "field": "office", "widget": "phone", "options": { "country": "AE" } }
+  ] }
+}`
+)}
+<ul>
+  <li><strong>Its country, picked or typed.</strong> Before the number, its country's flag and dialling code; pressed, every country by its name in the page's language. "010 1234 5678" is read in the country picked, which starts as the field's or the page's; "+20 10 1234 5678", "0020 10 1234 5678" (or a +1 country's 011) in Egypt whatever was picked, the flag following the keys. No country is assumed: with none, a number is written with its +.</li>
+  <li><strong>Checked by its country.</strong> How many digits a number has by how it starts, and whether any number there starts so: "010 1234 567" is too short, "014 1234 5678" no Egyptian number, and each is said in words under the box. The trunk digit typed after the code ("+44 (0)20…", "+20 010…") and the code typed without its + are read too, in any digits.</li>
+  <li><strong>Kept as E.164</strong> — ${c('"+201012345678"')} — and shown at rest as the page says: ${c('+20 10 1234 5678')}, or ${c('010 1234 5678')} at home, a number of another country always abroad's way. A number kept another way (an older record's ${c('"+20 2 2345 6789"')}) is shown the same, and kept until it is changed.</li>
+  <li><strong>Call and WhatsApp</strong> links beside a number that reads (${c('tel:+201012345678')}, ${c('https://wa.me/201012345678')}); none beside one that does not — hidden, never disabled.</li>
+  <li><strong>The input rules kept.</strong> A letter is refused, and said why, the keys after it held; a number that does not read stays as it was typed, marked, with why, the field keeping what it held, and the save refuses it.</li>
+  <li><strong>A list writes them as people read them.</strong> A list's column with ${c('"cells": { "phone": { "widget": "phone" } }')} on a page with ${c('phone')} shows ${c('02 2345 6789')} and ${c('+971 50 123 4567')}; a table's phone cells are the phone box.</li>
+</ul>
+<p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (15 KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
+
 <h2 id="options">Widget options</h2>
 <p>A node's ${c('options')} tune its widget. An option whose name ends in ${c('Field')} names another field of the page, and the format checks that it exists.</p>
 ${code(
