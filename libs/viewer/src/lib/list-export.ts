@@ -148,15 +148,16 @@ async function gather(list: ExportList, which: ExportWhich, progress: (done: num
     // Past the most, the first so many of those ticked; a record gone since it was ticked is simply not there.
     return { records, total: which.ids.length > most ? which.ids.length : records.length };
   }
+  // How many match as the source answers, from its first page on: the list's own count is only where it starts.
   let total = which.count;
-  for (let offset = 0; offset < Math.min(total, most); ) {
+  for (let offset = 0; offset < most; ) {
     const answer = await source.list({ model: list.model, fields: list.reads, filter: which.filter, sort: which.sort, offset, limit: Math.min(PAGE, most - offset) });
     total = answer.total;
-    if (!answer.records.length) break;
     records.push(...answer.records.slice(0, most - offset));
     // As many as the source gave: one that keeps to a smaller page is asked again from there.
     offset += answer.records.length;
     progress(Math.min(offset, total), total);
+    if (!answer.records.length || offset >= total) break;
   }
   return { records, total };
 }

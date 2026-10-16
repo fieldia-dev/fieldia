@@ -197,8 +197,10 @@ export function listView(context: ListContext): ListView {
    * header's box lets them go.
    */
   let wide: { total: number; got: number } | null = null;
-  /** The rows are under their groups: no count of every match is known then. */
+  /** The rows are under their groups: no page of every match, then. */
   let groupedNow = false;
+  /** How many records the search matches: the pager's total, or under groups the groups' counts added up. */
+  let matching = 0;
   /** Each new search counts on: ids asked for under one search are no choice in the next. */
   let searches = 0;
   /** A count as the page writes numbers: "1,284". */
@@ -660,6 +662,7 @@ export function listView(context: ListContext): ListView {
         rows = [];
         total = 0;
         groupedNow = true;
+        matching = groups.reduce((sum, group) => sum + group.count, 0);
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
         const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
@@ -671,6 +674,7 @@ export function listView(context: ListContext): ListView {
         }
         rows = answer.records;
         total = answer.total;
+        matching = total;
         groupedNow = false;
         drawn = nest(rows);
       }
@@ -679,6 +683,7 @@ export function listView(context: ListContext): ListView {
       if (mine !== asking || destroyed) return;
       rows = [];
       total = 0;
+      matching = 0;
       failed.hidden = false;
     }
     body.replaceChildren(...drawn);
@@ -892,7 +897,7 @@ export function listView(context: ListContext): ListView {
     const ids = chosen.size;
     exportWhat.textContent = ids
       ? fill(labels.selected, { n: number(ids) })
-      : fill(new Intl.PluralRules(locale).select(total) === 'one' ? labels.exportAllOne : labels.exportAll, { n: number(total) });
+      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? labels.exportAllOne : labels.exportAll, { n: number(matching) });
     exportMenu.hidden = false;
     // From the button's start, unless that runs past the screen's edge: then from its end.
     exportMenu.removeAttribute('data-end');
@@ -950,7 +955,7 @@ export function listView(context: ListContext): ListView {
       const ids = chosenInOrder();
       // Every record that matches, chosen whole: asked by the search, as the source finds them.
       const all = !ids.length || (wide !== null && wide.got === wide.total && chosen.size === wide.total);
-      const which: ExportWhich = all ? { filter: currentFilter(), sort, count: wide ? wide.total : total } : { ids, filter: context.fixedFilter ?? [], sort, count: ids.length };
+      const which: ExportWhich = all ? { filter: currentFilter(), sort, count: wide ? wide.total : matching } : { ids, filter: context.fixedFilter ?? [], sort, count: ids.length };
       progress.textContent = fill(labels.exporting, { done: number(0), n: number(which.count) });
       try {
         const end = await exportList(exportOf(), which, format, (done, n) => {

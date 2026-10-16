@@ -259,6 +259,19 @@ describe('a list’s export', () => {
     expect(said).toEqual(['Could not export the records.']);
   });
 
+  it('writes every record that matches from a list under groups, whose rows are its groups', async () => {
+    const host = await mount({}, { ...contacts, layout: { ...contacts.layout, groupBy: ['state'] } as Page['layout'] });
+    (host.querySelector('.fd-search-toggle') as HTMLButtonElement).click();
+    const groupBy = [...host.querySelectorAll<HTMLButtonElement>('[data-group-kind="groupBy"] .fd-search-option')].find((option) => option.textContent === 'Status') as HTMLButtonElement;
+    groupBy.click();
+    await until(() => host.querySelector('.fd-list-group'));
+    exportButton(host).click();
+    expect(menu(host).querySelector('.fd-list-export-what')?.textContent).toBe('All 3 that match');
+    exportButton(host).click();
+    const csv = await text((await exportAs(host, 'csv')).blob as Blob);
+    expect(csv.split('\r\n')).toHaveLength(5);
+  });
+
   it('is hidden by the page (export: false), and where the source can neither list nor export', async () => {
     const host = await mount({}, { ...contacts, layout: { ...contacts.layout, export: false } as Page['layout'] });
     expect(exportButton(host).closest('.fd-list-export')?.hasAttribute('hidden')).toBe(true);

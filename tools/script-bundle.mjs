@@ -910,8 +910,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Lists people take away and change in bulk (0.24), in the list part: every record that matches chosen and its ids
 // paged through where a source gives none (list-every), Export's menu and an export as CSV or as an Excel workbook
 // written with no library (list-export; xlsx and zip: 6.5 raw, 2.8 gzipped of the whole), and Edit's dialog, question,
-// writes and report (list-bulk) — list 42.62 and 12.75 measured before, 63.50 and 20.48 after (list 63.6, 20.5).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [63.6, 20.5], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
+// writes and report (list-bulk) — list 42.62 and 12.75 measured before, 63.58 and 20.54 after (list 63.6, 20.6).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [63.6, 20.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
