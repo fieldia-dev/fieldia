@@ -518,3 +518,64 @@ a file landing late counted. The one line no test notices is a saved form's
 own `close` handing to the record's: the form placed in a record is made with
 the record's host, and its check is the record's already (row 8), so either
 way it closes through the same check.
+
+## 11. Many records made at once, and an import the server takes (Wave 3, lane w3-import)
+
+A list's Import (`ListNode.import`) makes records from a file's rows. It needs two
+optional members, proposed here in this contract's style and implemented in
+`createMemoryDataSource` (`createMany`; `importRecords` is left to an app, as
+`exportRecords` is). Without either, Import works as it does: `save` per row.
+
+```ts
+createMany?(request: CreateManyRequest): Promise<CreateManyResult>;
+importRecords?(request: ImportRequest): Promise<{ message: string } | false>;
+
+interface CreateManyRequest {
+  model: string;
+  records: Values[];   // each record's values, in the file's order: what its row fills, the page's defaults for the rest
+  fields: Fields;      // the page's fields, as a save gets them
+}
+interface CreateManyResult {
+  // one answer per record asked for, in the same order: its new id, or why it was not made
+  records: ({ id: RecordId } | { message: string; problem?: SaveProblem })[];
+}
+interface ImportRequest {
+  model: string;
+  file: UploadFile;                                   // the file as picked: a browser's File fits
+  columns: { header: string; field: string | null }[]; // each column, and the field the person matched it to
+  rows: number;                                       // how many rows under the header
+  fields: Fields;
+  locale: string;
+  dateOrder: 'dmy' | 'mdy' | 'ymd';                   // so a server reads the cells as the page would
+}
+
+function newRecordSave(model: string, fields: Fields, values: Values): SaveRequest;   // a new record's save from its values alone
+```
+
+In plain words:
+
+- **`createMany`** is `writeMany`'s create counterpart: many records, each with its
+  own values, a few hundred at a time (the list sends 500 a call). It answers each
+  record in order, so the list can name a refused one by its row, and keep the ids it
+  made for Undo. A record left unanswered is taken as not made. A refused record's
+  `problem` is read as a save's is: a field's own words first (`problem.fields`).
+- **Without `createMany`**, the list saves each row as a new record, four at once:
+  `save(newRecordSave(model, fields, values))` — every value in `values`, a
+  many2many's links as one `set`, the rest as changes, `id: null`. The memory source's
+  `createMany` makes each record the same way, so a source can answer one by calling
+  its own `save`.
+- **Stop** ends the writing between two calls (or two saves): what was made stays
+  made, and the list says how many of how many.
+- **Undo** deletes the records the import made through `delete`, four at once,
+  naming those it could not with why. Without `delete`, no Undo is offered.
+- **`importRecords`** is `exportRecords`'s counterpart: the list asks it once the
+  person has matched the file's columns, before any row is checked. `{ message }`
+  means the server took the file (the list says the words); `false` lets the browser
+  import it after all. A file past the browser's most rows (50,000) is imported only
+  where the source takes it; otherwise the list says so plainly, and nothing is
+  written.
+- **What the browser checks first** (before `createMany` or `save` sees a row): each
+  cell read as its field's box reads what is typed, a link by its name through
+  `search` (`exact` asked where an answer came back full), a choice from an app's list
+  through `options`, then `checkValue` with the field's `required`. A source still
+  checks what it is sent, as it checks a save: its refusals are named by row too.

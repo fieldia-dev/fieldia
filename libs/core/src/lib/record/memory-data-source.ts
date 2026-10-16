@@ -34,11 +34,13 @@ import type {
   UploadRequest,
   UploadedFile,
   WriteManyRequest,
+  CreateManyRequest,
+  CreateManyResult,
   WriteManyResult,
   SlotsRequest,
   SlotsResult,
 } from './data-source';
-import { ConflictError, loadedRecord, saveProblemOf, saveRefused } from './data-source';
+import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
@@ -114,11 +116,12 @@ export interface MemoryDataSourceOptions {
 }
 
 /**
- * Every member of a data source but `exportRecords`: a memory source leaves an
- * export to the browser, as a source without a server of its own does. A test
- * or a demo gives it one by setting it.
+ * Every member of a data source but `exportRecords` and `importRecords`: a
+ * memory source leaves an export and an import to the browser, as a source
+ * without a server of its own does. A test or a demo gives it one by setting
+ * it.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords'>>, Pick<DataSource, 'exportRecords'> {
+export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords'>>, Pick<DataSource, 'exportRecords' | 'importRecords'> {
   readonly records: Record<string, Record<string, Values>>;
   readonly responses: SubmitRequest[];
   readonly calls: { method: keyof DataSource; request: unknown }[];
@@ -320,6 +323,22 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         }
       }
       return { failed };
+    },
+
+    async createMany(request: CreateManyRequest): Promise<CreateManyResult> {
+      calls.push({ method: 'createMany', request });
+      await pause();
+      // Each as a save of a new record would be: made, or refused with why.
+      return {
+        records: request.records.map((values) => {
+          try {
+            return { id: write(newRecordSave(request.model, request.fields, values)).id };
+          } catch (error) {
+            const problem = saveProblemOf(error);
+            return { message: Object.values(problem.fields ?? {})[0] ?? problem.message, problem };
+          }
+        }),
+      };
     },
 
     async onchange(request: OnchangeRequest): Promise<OnchangeResult> {
