@@ -143,6 +143,28 @@ describe('the parts a page draws from', () => {
     expect(document.getElementById('fieldia-files-styles')).not.toBeNull();
   });
 
+  it('a sheet drawn once its part came keeps its save’s status where the page put it: across the top, or in a corner', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { mountViewer: fresh } = await import('./viewer');
+      const { filesPart: freshFiles } = await import('@fieldia/widgets');
+      const sheet = page({ type: 'sheet', id: 'r', children: [{ type: 'field', id: 'f-photo', field: 'photo' }] }, { photo: { type: 'image', label: 'Photo' } });
+      expect(freshFiles.loaded).toBeUndefined();
+      for (const saveStatus of ['bar', 'toast'] as const) {
+        const host = document.createElement('div');
+        document.body.append(host);
+        const handle = fresh(host, { page: sheet, saveStatus });
+        handles.push(handle);
+        await handle.drawn;
+        const status = host.querySelector('.fd-status-box') as HTMLElement;
+        expect(host.querySelector('.fd-file')).not.toBeNull();
+        // Never beside Save in the sheet's header, where the page drawn after it would have put it.
+        expect(status.closest('.fd-actions')).toBeNull();
+        if (saveStatus === 'bar') expect(host.querySelector('.fd-content')?.firstElementChild).toBe(status);
+        else expect(status.parentElement).toBe(handle.element);
+      }
+    });
+  });
+
   it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {
     const fields = { due: { type: 'date', label: 'Due' } };
     const dataSource = createMemoryDataSource({ records: { x: { 1: { due: '2026-10-15' } } } });

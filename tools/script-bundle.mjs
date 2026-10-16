@@ -556,8 +556,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // styles-files: 30.9 of code). This script keeps what the form does with files whatever draws them (core's uploads and
 // a save that waits for them), a file shown as its dialog shows it, for a sheet's attachment preview (file-shown.ts),
 // the names of the files a value holds for a field drawn before its part came, the fields a sheet's title names (its
-// avatar, a picture) among the parts a page draws from, and the part's names in the parts' table — 629.78 measured
-// before, 602.11 after: 27.7 less, to 602.2.
+// avatar, a picture) among the parts a page draws from, a save's status put back in its corner or across the top once
+// a page that waited for its parts is drawn, and the part's names in the parts' table — 629.78 measured before, 602.14
+// after: 27.6 less, to 602.2.
 const BUDGET_KB = 602.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -659,7 +660,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed. File and picture fields, files on their way, photos made smaller and
 // a signature's pad loaded on first use, in fieldia.files.js (11.3 gzipped), the attachment preview's file and a field's
-// files' names drawn before its part came kept (listed with the raw budget above): 197.23 measured before, 188.43
+// files' names drawn before its part came kept (listed with the raw budget above): 197.23 measured before, 188.45
 // after — 8.8 less, to 188.5.
 const GZIP_BUDGET_KB = 188.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
