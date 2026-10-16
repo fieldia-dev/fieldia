@@ -1,6 +1,7 @@
 import type { Field, Value } from '@fieldia/core';
 import { setAttr } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -12,6 +13,7 @@ import type { WidgetFactory } from './widgets';
  * `onePerColumn`, a column picked in one row leaves the row that had it.
  */
 export const matrixWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+  installSurveyStyles(document);
   const def = field as Extract<Field, { type: 'matrix' }>;
   const kind = def.multiple ? 'checkbox' : 'radio';
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: (Node | string)[]) => {

@@ -1,8 +1,10 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
 import { quietPart, themesPart, wearQuiet, wearTheme } from './look-parts';
-import { choicePart, datePart, pathPart, textPart } from './widget-parts';
+import { choicePart, datePart, pathPart, surveyPart, textPart } from './widget-parts';
 import { createWidget, widgetPart, type Widget } from './widgets';
 
 /**
@@ -20,6 +22,17 @@ const fields: Record<string, Field> = {
   due: { type: 'date', label: 'Due' },
   at: { type: 'datetime', label: 'At' },
   slot: { type: 'char', label: 'Slot' },
+  order: { type: 'selection', label: 'Order', multiple: true, options: [{ value: 'kitchen', label: 'Kitchen' }, { value: 'gym', label: 'Gym' }, { value: 'garden', label: 'Garden' }] },
+  desk: { type: 'selection', label: 'Desk', options: [{ value: 'standing', label: 'Standing' }, { value: 'corner', label: 'Corner' }] },
+  days: { type: 'integer', label: 'Days', min: 0, max: 5 },
+  share: { type: 'float', label: 'Share' },
+  rooms: { type: 'matrix', label: 'Rooms', rows: [{ value: 'kitchen', label: 'Kitchen' }, { value: 'quiet', label: 'Quiet room' }], columns: [{ value: 1, label: 'Mornings' }, { value: 2, label: 'Afternoons' }] },
+  tag: { type: 'integer', label: 'Tag' },
+  hex: { type: 'char', label: 'Hex' },
+  home: { type: 'json', label: 'Home' },
+  extra: { type: 'properties', label: 'Extra', definitions: [{ name: 'lift', label: 'Lift', type: 'boolean' }, { name: 'floor', label: 'Floor', type: 'integer' }] },
+  done: { type: 'integer', label: 'Done' },
+  cost: { type: 'monetary', label: 'Cost' },
 };
 const page = { fieldia: '0.1', id: 'p', title: 'P', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 's', children: [] } } as unknown as Page;
 const make = (node: FieldNode, form = createForm({ page, dataSource: createMemoryDataSource() })): Widget =>
@@ -59,6 +72,34 @@ describe('a part', () => {
     expect(widgetPart(fields['slot'], { type: 'field', id: 's', field: 'slot', widget: 'time' })).toBe(datePart);
     expect(widgetPart(fields['due'], { type: 'field', id: 'd', field: 'due', widget: 'daterange' })).toBe(datePart);
     expect(widgetPart(fields['slot'], { type: 'field', id: 's', field: 'slot' })).toBeUndefined();
+    // The survey kinds: a ranking, pictures to choose from, a slider, a matrix, a colour, an address, properties, a progress bar.
+    const survey: [string, string | undefined][] = [
+      ['order', 'ranking'], ['desk', 'image-choice'], ['days', 'slider'], ['share', 'slider'], ['rooms', undefined], ['tag', 'color'], ['hex', 'color'],
+      ['home', 'address'], ['extra', undefined], ['done', 'progressbar'], ['share', 'progressbar'], ['cost', 'progressbar'],
+    ];
+    for (const [name, widget] of survey) expect(widgetPart(fields[name], { type: 'field', id: name, field: name, ...(widget ? { widget } : {}) })).toBe(surveyPart);
+    // Their neighbours stay in the main script: a plain choice, checkboxes, a number box, a rating, JSON as text.
+    for (const [name, widget] of [['desk', undefined], ['order', undefined], ['days', undefined], ['days', 'rating'], ['home', undefined]] as const) {
+      expect(widgetPart(fields[name], { type: 'field', id: name, field: name, ...(widget ? { widget } : {}) })).toBeUndefined();
+    }
+  });
+
+  it('never reaches the registry (widgets.ts) but for its types: a bundler would split the registry off with the part, and run it before the widgets it holds', () => {
+    // The modules a module takes values from, or hands on: its imports and re-exports of this folder, types aside.
+    const takes = (name: string) =>
+      [...readFileSync(join(__dirname, `${name}.ts`), 'utf8').matchAll(/^(?:import|export)\s+(type\s+)?\{[^}]*\}\s+from\s+'\.\/([a-z-]+)'/gm)].filter(([, types]) => !types).map(([, , from]) => from);
+    const parts = readdirSync(__dirname).filter((file) => file.endsWith('-part.ts')).map((file) => file.slice(0, -3));
+    expect(parts).toEqual(expect.arrayContaining(['text-part', 'path-part', 'choice-part', 'date-part', 'survey-part']));
+    for (const part of parts) {
+      const reached = new Set<string>();
+      const visit = (name: string): void => {
+        if (reached.has(name)) return;
+        reached.add(name);
+        for (const next of takes(name)) visit(next);
+      };
+      visit(part);
+      expect([part, reached.has('widgets')]).toEqual([part, false]);
+    }
   });
 
   it('puts its sheet between Fieldia’s two, by its rank, once', () => {
@@ -157,6 +198,81 @@ describe('a widget made before its part came', () => {
     // From now on it is the part's own, at once.
     expect(make({ type: 'field', id: 'e', field: 'at' }).element.classList.contains('fd-date-pick')).toBe(true);
     widget.destroy?.();
+  });
+
+  it('a survey kind: its value shown plainly and kept, a slider typed in its number box and a picture picked from radios, then the part’s own widget with it and the focus', async () => {
+    expect(surveyPart.loaded).toBeUndefined();
+    const form = createForm({ page, dataSource: createMemoryDataSource() });
+    const box = document.createElement('div');
+    document.body.append(box);
+    const drawn = (node: FieldNode) => {
+      const widget = make(node, form);
+      box.append(widget.element);
+      const shown = () => widget.update({ ...state(form.getState().values[node.field] ?? null), values: form.getState().values });
+      form.subscribe(shown);
+      shown();
+      return widget;
+    };
+    const values = {
+      order: ['garden', 'kitchen', 'gym'],
+      rooms: { quiet: 2, kitchen: 1 },
+      tag: 7,
+      hex: '#2c8397',
+      home: { city: 'Cairo', street: '1 Nile Street', country: 'EG' },
+      extra: { lift: true, floor: 3 },
+      done: 45,
+    };
+    for (const [name, value] of Object.entries(values)) form.setValue(name, value as never);
+    const ranking = drawn({ type: 'field', id: 'order', field: 'order', widget: 'ranking' });
+    const matrix = drawn({ type: 'field', id: 'rooms', field: 'rooms' });
+    const tag = drawn({ type: 'field', id: 'tag', field: 'tag', widget: 'color' });
+    const hex = drawn({ type: 'field', id: 'hex', field: 'hex', widget: 'color' });
+    const address = drawn({ type: 'field', id: 'home', field: 'home', widget: 'address' });
+    const extra = drawn({ type: 'field', id: 'extra', field: 'extra' });
+    const done = drawn({ type: 'field', id: 'done', field: 'done', widget: 'progressbar' });
+    const desk = drawn({ type: 'field', id: 'desk', field: 'desk', widget: 'image-choice' });
+    const days = drawn({ type: 'field', id: 'days', field: 'days', widget: 'slider' });
+    // Meanwhile each value plainly, in words, a line each — never changed by being shown.
+    const lines = (widget: Widget) => [...widget.element.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent);
+    expect(lines(ranking)).toEqual(['1. Garden', '2. Kitchen', '3. Gym']);
+    expect(lines(matrix)).toEqual(['Kitchen: Mornings', 'Quiet room: Afternoons']);
+    expect(lines(tag)).toEqual(['Teal']);
+    expect(lines(hex)).toEqual(['#2c8397']);
+    expect(lines(address)).toEqual(['1 Nile Street', 'Cairo', 'Egypt']);
+    expect(lines(extra)).toEqual(['Lift: Yes', 'Floor: 3']);
+    expect(done.element.textContent).toBe('45');
+    for (const [name, value] of Object.entries(values)) expect(form.getState().values[name]).toEqual(value);
+    // Pictures to choose from: the choices' own radios, one picked; a slider: the number box, typed in.
+    const radios = [...desk.element.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(radios.map((radio) => radio.closest('label')?.textContent)).toEqual(['Standing', 'Corner']);
+    radios[1].click();
+    expect(form.getState().values['desk']).toBe('corner');
+    const number = days.element.matches('input') ? (days.element as HTMLInputElement) : (days.element.querySelector('input') as HTMLInputElement);
+    number.focus();
+    number.value = '4';
+    number.dispatchEvent(new Event('input', { bubbles: true }));
+    number.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(form.getState().values['days']).toBe(4);
+    await surveyPart.load();
+    await Promise.resolve();
+    // The part's own widgets in their places, each with the value it was given, the slider with the focus.
+    expect(box.children).toHaveLength(9);
+    expect([...ranking.element.querySelectorAll('.fd-rank-words')].map((words) => words.textContent)).toEqual(['Garden', 'Kitchen', 'Gym']);
+    expect(matrix.element.querySelectorAll('input:checked')).toHaveLength(2);
+    expect(tag.element.querySelector('.fd-colour-button')?.getAttribute('aria-label')).toBe('Tag: Teal');
+    expect((hex.element.querySelector('.fd-colour-code') as HTMLInputElement).value).toBe('#2c8397');
+    expect((address.element.querySelector('[data-part="city"]') as HTMLInputElement).value).toBe('Cairo');
+    expect(extra.element.querySelectorAll('.fd-property')).toHaveLength(2);
+    expect(done.element.getAttribute('aria-valuenow')).toBe('45');
+    expect(desk.element.querySelector('.fd-image-card[aria-checked="true"]')?.textContent).toBe('Corner');
+    expect(days.element.classList.contains('fd-slider')).toBe(true);
+    expect((days.element.querySelector('input[type="range"]') as HTMLInputElement).value).toBe('4');
+    expect(document.activeElement).toBe(days.element.querySelector('input[type="range"]'));
+    for (const [name, value] of Object.entries({ ...values, desk: 'corner', days: 4 })) expect(form.getState().values[name]).toEqual(value);
+    // Their sheets, once each, in their places; from now on the part's own, at once.
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id).filter((sheet) => sheet.startsWith('fieldia-survey'))).toEqual(['fieldia-survey-styles', 'fieldia-survey-looks']);
+    expect(make({ type: 'field', id: 'o2', field: 'order', widget: 'ranking' }).element.classList.contains('fd-ranking')).toBe(true);
+    for (const widget of [ranking, matrix, tag, hex, address, extra, done, desk, days]) widget.destroy?.();
   });
 
   it('destroyed before its part came, is never drawn by it', async () => {

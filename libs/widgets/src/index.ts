@@ -19,12 +19,11 @@ export * from './lib/numbers';
 export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, leftWords, numberFits, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
-export * from './lib/progress';
 export * from './lib/label';
-export * from './lib/properties';
+
 export * from './lib/icons';
 export * from './lib/focus-trap';
-export { countriesIn } from './lib/address';
+export { countriesIn } from './lib/countries';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
 export { wearsQuiet } from './lib/quiet';
@@ -48,7 +47,10 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // `(await businessPart.load()).statusbarWidget`. Their words in a cell (cellText, distributionWords) are here.
 // File, picture, signature and PDF fields come in the files part, loaded the first time a page shows one; `shrinkPhoto`
 // asks for it first.
-export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type PartFactory } from './lib/widget-parts';
+// The survey kinds — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a
+// progress bar — come in the survey part, loaded the first time a page shows one; `progressbarWidget` and
+// `propertiesWidget` draw from it, each value shown plainly until it comes.
+export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PartFactory } from './lib/widget-parts';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

@@ -21,17 +21,11 @@ import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { plainLinesWidget, plainLinksWidget } from './lines-plain';
-import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { plainDateWidget, type DateKind } from './date-text';
-import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
-import { matrixWidget } from './matrix';
-import { sliderWidget } from './slider';
+
 import { choiceTagsWidget, searchWidget } from './choice-tags';
-import { imageChoiceWidget } from './choice-images';
-import { rankingWidget } from './ranking';
-import { addressWidget } from './address';
 import { cardsWidget } from './cards';
 import { clearSelection, fillIn, maker, rightToLeft, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
@@ -44,10 +38,10 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 import { stateDotWidget } from './state-dot';
-import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, textPart, type BusinessPart, type FilesPart, type PartFactory } from './widget-parts';
+import { businessPart, choicePart, datePart, filesPart, linesPart, partFactory, pathPart, surveyPart, textPart, type BusinessPart, type FilesPart, type PartFactory, type SurveyPart } from './widget-parts';
 import { plainNumber, plainPayments, plainShares, plainStars, plainState, plainTotal } from './business-plain';
+import { plainAddress, plainColour, plainMatrix, plainProperties, plainRanking } from './survey-plain';
 import type { Part } from './parts';
-import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { timerWidget } from './timer';
 import { embedWidget } from './embed';
@@ -427,7 +421,11 @@ const numberWidget: WidgetFactory = (context) => {
   return {
     element,
     focus: () => input.focus(),
-    destroy: () => checks.destroy(),
+    // Its hint stands beside it, outside its element: it goes with it (a slider's number box, swapped for the slider).
+    destroy: () => {
+      checks.destroy();
+      hint.element.remove();
+    },
     update(state) {
       if (field.type === 'monetary') currencyNow = currencyOf(field, state.values, state.parent);
       const typing = document.activeElement === input;
@@ -747,6 +745,18 @@ function plainFilesWidget({ field, id, document }: WidgetContext): Widget {
 }
 /** A file field's own widget (files.ts, signature.ts, pdf.ts), in the files part: the files' names meanwhile. */
 const filesOf = (real: (part: FilesPart) => WidgetFactory) => partFactory(filesPart, real, plainFilesWidget);
+// The survey kinds come in the survey part (survey-part.ts), each shown plainly meanwhile (survey-plain.ts): a slider's
+// number in the number box, pictures to choose from as the choices' own radios or boxes, a progress bar's number in words.
+// A property's rows and an editable progress bar's box are drawn by createWidget, handed to the part rather than imported
+// by it: a part that imported this module would make an app's bundler split it off with the part, and run it before
+// the widgets it holds (lines, cards) are there.
+const surveyKind = (real: (part: SurveyPart) => WidgetFactory, plain: WidgetFactory) => partFactory(surveyPart, real, plain);
+const sliderKind = surveyKind((part) => part.sliderWidget, numberWidget);
+const colourKind = surveyKind((part) => part.colourWidget, plainColour);
+/** A number shown as a bar that fills towards a maximum (progress.ts, in the survey part). */
+export const progressbarWidget: WidgetFactory = surveyKind((part) => part.progressbarWidget(createWidget), labelWidget);
+/** A properties field, a row per property, each edited with the widget for its type (properties.ts, in the survey part). */
+export const propertiesWidget: WidgetFactory = surveyKind((part) => part.propertiesWidget(createWidget), plainProperties);
 
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
@@ -807,8 +817,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   monetary: numberWidget,
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
-  'integer.slider': sliderWidget,
-  'float.slider': sliderWidget,
+  'integer.slider': sliderKind,
+  'float.slider': sliderKind,
   'integer.progressbar': later(() => progressbarWidget),
   'integer.label': later(() => labelWidget),
   'float.label': later(() => labelWidget),
@@ -828,8 +838,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // A grey, red or green dot with a menu of the states: Flectra's state_selection.
   'selection.dot': stateDotWidget,
   // A tag colour from Flectra's twelve (0 none … 11), or a colour as #rrggbb.
-  'integer.color': colourWidget,
-  'char.color': colourWidget,
+  'integer.color': colourKind,
+  'char.color': colourKind,
   // A value and a button that copies it: Flectra's CopyClipboardChar and CopyClipboardText.
   'char.copy': copyWidget,
   'text.copy': copyWidget,
@@ -853,8 +863,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
   'selection.tags': choiceTagsWidget,
-  'selection.image-choice': imageChoiceWidget,
-  'selection.ranking': rankingWidget,
+  'selection.image-choice': surveyKind((part) => part.imageChoiceWidget, (context) => choiceGroup(context.field.type === 'selection' && context.field.multiple ? 'checkbox' : 'radio')(context)),
+  'selection.ranking': surveyKind((part) => part.rankingWidget, plainRanking),
   'selection.statusbar': statusbarOf,
   date: dateBoxOf('date'),
   datetime: dateBoxOf('datetime'),
@@ -878,9 +888,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   image: filesOf((part) => part.imageWidget),
   html: htmlWidget,
   json: jsonWidget,
-  'json.address': addressWidget,
+  'json.address': surveyKind((part) => part.addressWidget, plainAddress),
   properties: later(() => propertiesWidget),
-  matrix: matrixWidget,
+  matrix: surveyKind((part) => part.matrixWidget, plainMatrix),
   // A value as a pill in its tone: Flectra's widget="badge".
   'char.badge': badgeWidget,
   'selection.badge': badgeWidget,

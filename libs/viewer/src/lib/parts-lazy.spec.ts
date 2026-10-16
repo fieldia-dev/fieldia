@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -48,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, surveyPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -92,7 +92,8 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections(field('plain')), fields))).toEqual([linesPart]);
     expect(partsFor(page(sections(field('plain', { cells: { slot: { widget: 'time' } } })), fields))).toEqual([linesPart, datePart]);
     // A property may be a date: one added in place, or worked out from its value, may be one whatever the page names.
-    expect(partsFor(page(sections(field('props')), fields))).toEqual([datePart]);
+    // (Properties themselves are drawn by the survey part.)
+    expect(partsFor(page(sections(field('props')), fields))).toEqual([surveyPart, datePart]);
     // A plain char: none. The app's own date box: none.
     expect(partsFor(page(sections(field('slot')), fields))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
@@ -248,6 +249,56 @@ describe('the parts a page draws from', () => {
         else expect(status.parentElement).toBe(handle.element);
       }
     });
+  });
+
+  it('the survey part for a ranking, a matrix, a slider, pictures, a colour, properties, an address or a progress bar, wherever drawn: a field, a table’s cells', () => {
+    const options = [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }];
+    const fields = {
+      order: { type: 'selection', label: 'Order', multiple: true, options },
+      desk: { type: 'selection', label: 'Desk', options },
+      days: { type: 'integer', label: 'Days', min: 0, max: 5 },
+      rooms: { type: 'matrix', label: 'Rooms', rows: options, columns: options },
+      tag: { type: 'integer', label: 'Tag' },
+      home: { type: 'json', label: 'Home' },
+      extra: { type: 'properties', label: 'Extra', definitions: [{ name: 'note', label: 'Note', type: 'char' }] },
+      lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, done: { type: 'integer', label: 'Done' }, tag: { type: 'integer', label: 'Tag' } } },
+    };
+    const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
+    for (const shown of [
+      field('order', { widget: 'ranking' }),
+      field('desk', { widget: 'image-choice' }),
+      field('days', { widget: 'slider' }),
+      field('rooms'),
+      field('tag', { widget: 'color' }),
+      field('home', { widget: 'address' }),
+      field('days', { widget: 'progressbar' }),
+      field('lines', { cells: { done: { widget: 'progressbar' } } }),
+      field('lines', { cells: { tag: { widget: 'color' } } }),
+    ])
+      expect(partsFor(page(sections(shown), fields))).toEqual([surveyPart]);
+    expect(partsFor(page(sections(field('extra')), fields))).toEqual([surveyPart, datePart]);
+    // Their neighbours in the main script, and a page of them all asking once.
+    expect(partsFor(page(sections(field('order'), field('desk'), field('days'), field('days', { widget: 'rating' }), field('tag'), field('home'), field('lines')), fields))).toEqual([]);
+    expect(partsFor(page(sections(field('order', { widget: 'ranking' }), field('rooms'), field('home', { widget: 'address' })), fields))).toEqual([surveyPart]);
+    // The app's own widget for the kind: none.
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(page(sections(field('rooms')), fields), { matrix: own })).toEqual([]);
+  });
+
+  it('a page with a matrix: nothing of it drawn until the survey part has come, then the matrix with its answers', async () => {
+    const options = [{ value: 'a', label: 'Poor' }, { value: 'b', label: 'Good' }];
+    const fields = { name: { type: 'char', label: 'Name' }, rooms: { type: 'matrix', label: 'Rooms', rows: [{ value: 'k', label: 'Kitchen' }], columns: options } };
+    const dataSource = createMemoryDataSource({ records: { x: { 1: { name: 'Sara', rooms: { k: 'b' } } } } });
+    expect(surveyPart.loaded).toBeUndefined();
+    const { host, handle } = mount(page(sections({ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-rooms', field: 'rooms' }), fields), { dataSource, recordId: 1 });
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('[data-node]')).toBeNull();
+    await handle.drawn;
+    await handle.form.settled();
+    expect(surveyPart.loaded).toBeDefined();
+    expect(handle.element.hasAttribute('aria-busy')).toBe(false);
+    expect((host.querySelector('[data-node="f-rooms"] .fd-matrix-table input:checked') as HTMLInputElement).getAttribute('aria-label')).toBe('Kitchen: Good');
+    expect(document.getElementById('fieldia-survey-styles')).not.toBeNull();
   });
 
   it('a page with a date: nothing of it drawn until the date part has come, then Fieldia’s own box with its calendar, the value in words', async () => {

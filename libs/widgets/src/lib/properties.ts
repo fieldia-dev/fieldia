@@ -1,6 +1,7 @@
 import type { Field, FieldNode, Form, FormState, JsonValue, PropertyDefinition, Value } from '@fieldia/core';
 import { maker, wordsFor } from './kind-parts';
-import { createWidget, type Widget, type WidgetFactory } from './widgets';
+import { installSurveyStyles } from './styles-survey';
+import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
  * A properties field, one row per property, each edited with the widget for
@@ -15,6 +16,10 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * Options: `columns` (1 or 2), the properties side by side, as Flectra's
  * columns="2"; `add`, with definitions from a linked record, "Add a property"
  * under them — its name and kind, kept on that record through the app.
+ *
+ * Each row is drawn by `widgetFor`, the main script's createWidget, which the
+ * registry hands over (widgets.ts): this part never imports the registry, so a
+ * bundler that splits the part off keeps the registry whole in the main script.
  */
 
 /** "lift_access" → "Lift access". */
@@ -45,8 +50,9 @@ function guess(name: string, value: Value | undefined): PropertyDefinition {
 /** The kinds a property added in place may be, in the order their words name them. */
 const KINDS = ['char', 'text', 'integer', 'float', 'boolean', 'date'] as const;
 
-export const propertiesWidget: WidgetFactory = (context) => {
+export const propertiesWidget = (widgetFor: (context: WidgetContext) => Widget): WidgetFactory => (context) => {
   const { form, name, field, node, id, document, labels, locale } = context;
+  installSurveyStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const declared = field.type === 'properties' ? field.definitions : undefined;
@@ -144,7 +150,7 @@ export const propertiesWidget: WidgetFactory = (context) => {
       const rowId = `${id}-${definition.name}`;
       const propertyField = { type: definition.type, label: definition.label, ...(definition.options ? { options: definition.options } : {}) } as Field;
       const propertyNode: FieldNode = { type: 'field', id: `${node.id}.${definition.name}`, field: definition.name };
-      const widget = createWidget({ ...context, form: properties, name: definition.name, field: propertyField, node: propertyNode, id: rowId });
+      const widget = widgetFor({ ...context, form: properties, name: definition.name, field: propertyField, node: propertyNode, id: rowId });
       const error = make('div', { class: 'fd-error fd-property-error', id: `${rowId}-error`, hidden: '' });
       return { definition, widget, error };
     });

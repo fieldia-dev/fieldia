@@ -172,10 +172,10 @@ const lazy = run('node', ['lazy.mjs'], SMOKE).trim();
 console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
 
 // The parts the packages load the first time a page uses them (a work item's head, its text, a path picker, Fieldia's
-// own list, a filter bar, Fieldia's own date box and its calendar, a table of lines, the themes, the quiet look, a Discussion, a History): each import('./x') of the ES modules, and each require('./x') of CommonJS, is a file
+// own list, a filter bar, Fieldia's own date box and its calendar, a table of lines, the survey kinds, the themes, the quiet look, a Discussion, a History): each import('./x') of the ES modules, and each require('./x') of CommonJS, is a file
 // that is there — and each loads, and gives what is asked of it, as an app's bundler would load it.
 const PARTS = {
-  widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'], 'choice-part': ['ownListWidget'], 'date-part': ['dateBox', 'dateBoxWidget', 'withCalendar', 'dateRangeWidget'], 'themes-part': ['installThemeStyles'], 'quiet-part': ['installQuietStyles'], 'lines-part': ['linesWidget', 'linksTableWidget'] },
+  widgets: { 'text-part': ['modernHtml', 'formattedText', 'linksWidget', 'markdownToHtml'], 'path-part': ['pathPickerWidget'], 'choice-part': ['ownListWidget'], 'date-part': ['dateBox', 'dateBoxWidget', 'withCalendar', 'dateRangeWidget'], 'themes-part': ['installThemeStyles'], 'quiet-part': ['installQuietStyles'], 'lines-part': ['linesWidget', 'linksTableWidget'], 'survey-part': ['rankingWidget', 'matrixWidget', 'sliderWidget', 'progressbarWidget'] },
   viewer: { 'head-part': ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise'], 'filters-part': ['filterBar'] },
   calendar: { 'calendar-view': ['calendarPart'] },
   chatter: { discussion: ['mountDiscussion'], history: ['mountHistory'] },
@@ -280,7 +280,7 @@ for (const locale of ['ar', 'de', 'fr']) {
   if (page.Fieldia.MESSAGES[locale]?.locale !== locale || !page.Fieldia.VIEWER_LABELS[locale] || !page.Fieldia.WIDGET_LABELS[locale]) fail(`the packed fieldia.${locale}.js does not give the script bundle its words`);
 }
 // Each part beside it: after the main script, Fieldia draws from it (the main script asks for it from beside itself).
-for (const [part, holder, gives] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget'], ['list', 'listPart', 'listView'], ['themes', 'themesPart', 'installThemeStyles'], ['quiet', 'quietPart', 'installQuietStyles'], ['lines', 'linesPart', 'linesWidget'], ['files', 'filesPart', 'binaryWidget']]) {
+for (const [part, holder, gives] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget'], ['list', 'listPart', 'listView'], ['themes', 'themesPart', 'installThemeStyles'], ['quiet', 'quietPart', 'installQuietStyles'], ['lines', 'linesPart', 'linesWidget'], ['files', 'filesPart', 'binaryWidget'], ['survey', 'surveyPart', 'rankingWidget']]) {
   const file = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`);
   if (!existsSync(file)) fail(`@fieldia/viewer has no bundle/fieldia.${part}.js`);
   const page = {};

@@ -1,6 +1,7 @@
 import type { Option } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -32,6 +33,7 @@ interface Item {
 const SLOP = 4;
 
 export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
+  installSurveyStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const options: Option[] = shownOptions(field.type === 'selection' ? field.options : [], form, name, node);

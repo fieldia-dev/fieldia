@@ -8,6 +8,7 @@ import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
 import type { ShrinkOptions } from './shrink';
+import type * as SurveyModule from './survey-part';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -24,6 +25,8 @@ export type LinesPart = typeof LinesModule;
 export type BusinessPart = typeof BusinessModule;
 /** The files part: a file field, a picture field, files on their way to the store, photos made smaller, a signature's pad, a PDF under its file box. */
 export type FilesPart = typeof FilesModule;
+/** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
+export type SurveyPart = typeof SurveyModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -46,6 +49,8 @@ export const filesPart: Part<FilesPart> = lazyPart('files', () => import('./file
  * part's, asked for first.
  */
 export const shrinkPhoto = (file: File, options?: ShrinkOptions, doc?: Document): Promise<File> => filesPart.load().then((part) => part.shrinkPhoto(file, options, doc));
+/** The survey kinds, loaded the first time a page shows a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address or a progress bar. */
+export const surveyPart: Part<SurveyPart> = lazyPart('survey', () => import('./survey-part'));
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

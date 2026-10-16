@@ -207,6 +207,8 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
     return {
       element: input,
       focus: () => input.focus(),
+      // Its hint stands beside it, outside its element: it goes with it, as the date part's box takes its place.
+      destroy: () => hint.element.remove(),
       update(state) {
         const typing = document.activeElement === input;
         if (!typing) input.value = atRest();
