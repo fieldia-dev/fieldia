@@ -3,9 +3,12 @@ export * from './lib/styles';
 export * from './lib/labels';
 export * from './lib/relations';
 export * from './lib/lines';
-export * from './lib/files';
-export { goingItem, goingWords, type Going, type GoingItem } from './lib/files-going';
-export { shrinkPhoto, shrinkFor, shrinkable, SHRINK_DEFAULTS, type ShrinkOptions } from './lib/shrink';
+// File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
+// the first time a page shows one: `(await filesPart.load()).goingItem(…)`. Their types are here; their code is not. A
+// file shown as its dialog shows it (a sheet's attachment preview) is here, and so is shrinkPhoto, which asks for the part.
+export { fileShown } from './lib/file-shown';
+export type { Going, GoingItem } from './lib/files-going';
+export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';
 export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
@@ -38,4 +41,4 @@ export { lazyPart, settleParts, type Part } from './lib/parts';
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';
 export type { DateBox, DateBoxOptions } from './lib/date-box';
-export { textPart, pathPart, choicePart, datePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, filesPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type FilesPart, type PartFactory } from './lib/widget-parts';

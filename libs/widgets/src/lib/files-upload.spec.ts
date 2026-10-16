@@ -1,6 +1,7 @@
 import { createForm, saveRefused, type DataSource, type Field, type FieldNode, type FileValue, type Page, type UploadedFile, type UploadFile, type UploadRequest } from '@fieldia/core';
 import { createWidget } from './widgets';
-import { fileShown, INLINE_FILE_WARNING } from './files';
+import { INLINE_FILE_WARNING } from './files';
+import { fileShown } from './file-shown';
 import { WIDGET_LABELS } from './labels';
 
 /**

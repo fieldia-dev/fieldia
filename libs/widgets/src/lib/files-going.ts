@@ -1,6 +1,7 @@
 import { fill, formatBytes, type FileUpload, type Form } from '@fieldia/core';
 import type { WidgetLabels } from './labels';
 import { setAttr, setHidden, setText, type Make } from './kind-parts';
+import { installFilesStyles } from './styles-files';
 
 /**
  * Files on their way to the app's store, as a file field shows them: each an
@@ -34,6 +35,8 @@ export interface GoingItem {
  * caller's: × cancels one going and removes one that failed or was refused.
  */
 export function goingItem(make: Make, words: WidgetLabels, picture: HTMLElement, named: (name: string) => HTMLElement, on: { cancel(): void; retry(): void }): GoingItem {
+  // Drawn by the files part's sheet, wherever it is drawn: a file field, a composer's files.
+  installFilesStyles(picture.ownerDocument);
   const bar = make('progress', { class: 'fd-file-progress', max: '100' });
   const state = make('span', { class: 'fd-file-state' });
   const size = make('span', { class: 'fd-file-size' });

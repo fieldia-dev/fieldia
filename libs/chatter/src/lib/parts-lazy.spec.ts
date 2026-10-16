@@ -1,15 +1,19 @@
 import { createForm, createMemoryDataSource, type Page } from '@fieldia/core';
-import { textPart } from '@fieldia/widgets';
+import { filesPart, textPart } from '@fieldia/widgets';
+import { mountChatter } from './chatter';
 import { discussionPart, historyPart } from './chatter-parts';
 import { historySlot } from './history-slot';
 import { createMemoryChatter } from './memory';
 import { chatterSlot } from './slot';
+import type { Attachment, ChatterSource, RecordRef } from './source';
 
 /**
  * Before their parts have come (parts.ts in @fieldia/widgets): a Discussion
  * and a History are drawn once their code — and the Discussion's editor — has
  * come, for the record the form shows by then; a chatter of messages and notes
- * needs neither, and is drawn at once. This file starts with no part loaded.
+ * needs neither, and is drawn at once — its composer's files on their way come
+ * with the files part, the first time one is chosen. This file starts with no
+ * part loaded.
  */
 
 const me = { id: 1, name: 'Ramy Fathi' };
@@ -76,5 +80,31 @@ describe('a chatter slot before its parts came', () => {
     expect(now.querySelector('.fd-history')).not.toBeNull();
     again();
     stop();
+  });
+});
+
+describe('a composer’s files before the files part came', () => {
+  it('holds no list of files on their way; a file chosen asks for the part, then goes with its bar, in the part’s sheet', async () => {
+    expect(filesPart.loaded).toBeUndefined();
+    const sent: string[] = [];
+    // A store that keeps each file on its way: the test looks at it going.
+    const upload = (_record: RecordRef, file: File) => new Promise<Attachment>(() => sent.push(file.name));
+    const source = { ...createMemoryChatter({ me, records: { 'sale.order:7': { messages: [] } } }), upload } as ChatterSource;
+    const host = document.createElement('div');
+    document.body.append(host);
+    const handle = mountChatter(host, { source, record: { model: 'sale.order', id: 7 } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    ([...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Send message') as HTMLButtonElement).click();
+    expect(host.querySelector('.fd-composer .fd-files')).toBeNull();
+    expect(filesPart.loaded).toBeUndefined();
+    const input = host.querySelector('.fd-composer input[type=file]') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['%PDF'], 'Quote.pdf', { type: 'application/pdf' })], configurable: true });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await until(() => host.querySelector('.fd-composer .fd-file-going'));
+    expect(filesPart.loaded).toBeDefined();
+    expect(host.querySelector('.fd-composer .fd-files .fd-file-going .fd-file-name')?.textContent).toBe('Quote.pdf');
+    expect(document.getElementById('fieldia-files-styles')).not.toBeNull();
+    expect(sent).toEqual(['Quote.pdf']);
+    handle.destroy();
   });
 });

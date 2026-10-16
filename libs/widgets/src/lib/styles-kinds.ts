@@ -1,29 +1,12 @@
 /**
- * The question kinds' part of the stylesheet: a signature pad, a slider, tags
- * from a list, pictures to choose from, a ranking, an address and a repeating
- * group of cards. Appended to Fieldia's stylesheet, scoped and written with
- * logical properties as the rest of it is.
+ * The question kinds' part of the stylesheet: a slider, tags from a list,
+ * pictures to choose from, a ranking, an address and a repeating group of
+ * cards. Appended to Fieldia's stylesheet, scoped and written with logical
+ * properties as the rest of it is. A signature pad's comes with its widget,
+ * in the files part (styles-files.ts).
  */
 export const KINDS_CSS = /* css */ `
 /* ---- question kinds -------------------------------------------------------- */
-/* A signature: a pad with a line to sign on, a box to type a name in instead, and Clear. */
-.fd-signature { display: grid; gap: 8px; justify-items: start; width: 100%; max-width: 480px; min-width: 0; }
-.fd-signature-box {
-  position: relative; width: 100%; aspect-ratio: 10 / 3; border: 1px dashed var(--fd-border-strong);
-  border-radius: var(--fd-control-radius); background: #fff; overflow: hidden;
-}
-.fd-signature-box:has(.fd-signature-pad:not([hidden]):not(.fd-signature-locked)):hover { border-color: var(--fd-accent); }
-.fd-signature-pad, .fd-signature-image { display: block; width: 100%; height: 100%; }
-.fd-signature-pad { touch-action: none; cursor: crosshair; }
-.fd-signature-pad.fd-signature-locked { cursor: default; }
-.fd-signature-image { object-fit: contain; }
-.fd-signature-hint {
-  position: absolute; inset-inline: 18px; inset-block-end: 16px; padding-block-start: 4px; pointer-events: none;
-  border-block-start: 1px solid var(--fd-border-strong); color: var(--fd-muted); font-size: 12.5px;
-}
-.fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
-.fd-signature-typed { flex: 1 1 200px; min-width: 0; }
-.fd-signature-footer { margin-block-start: -4px; color: var(--fd-muted); font-size: 12.5px; }
 /* A slider: the value beside the track and its ends under it; dimmed until it is slid. */
 .fd-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 0; align-items: center; width: 100%; max-width: 440px; min-width: 0; }
 .fd-slider-track { display: contents; }

@@ -1,5 +1,5 @@
 import { fill, formatBytes } from '@fieldia/core';
-import { drawIcon, goingItem, shrinkable, shrinkPhoto, WIDGET_LABELS, type Going, type GoingItem, type ShrinkOptions } from '@fieldia/widgets';
+import { drawIcon, filesPart, WIDGET_LABELS, type Going, type GoingItem, type ShrinkOptions } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Attachment } from './source';
 
@@ -41,7 +41,9 @@ export function attachmentList(context: ChatterContext, attachments: readonly At
  * stored at once through the source — on its way with a bar, × to cancel it
  * and Retry once it failed — and shown until it is sent or taken away. Send
  * waits for those still going, and says so. Without a source that stores
- * files, there is nothing to show.
+ * files, there is nothing to show. A file on its way is drawn as a file field
+ * draws one, by the files part (@fieldia/widgets), asked for the first time a
+ * file is chosen: its list joins the composer with its first file.
  */
 export function composerFiles(context: ChatterContext, onProblem: (message: string) => void, options: { shrink?: ShrinkOptions; changed?: () => void } = {}) {
   const { el, labels, source, doc, icons, locale } = context;
@@ -65,7 +67,8 @@ export function composerFiles(context: ChatterContext, onProblem: (message: stri
     stop?: () => void;
   }
 
-  const draw = () => chips.replaceChildren(...(files.length ? [attachmentList(context, files, (gone) => ((files = files.filter((f) => f !== gone)), draw()))] : []), onTheirWay);
+  // The files on their way after those in: their list once it has held one, and the files part's sheet with it.
+  const draw = () => chips.replaceChildren(...(files.length ? [attachmentList(context, files, (gone) => ((files = files.filter((f) => f !== gone)), draw()))] : []), ...(made ? [onTheirWay] : []));
   const stillGoing = () => going.filter((p) => p.status !== 'failed');
   const show = (pending: Pending) => pending.item.update(pending, false);
   function settle() {
@@ -109,7 +112,11 @@ export function composerFiles(context: ChatterContext, onProblem: (message: stri
   }
 
   async function take(chosen: readonly File[]) {
-    if (!source.upload || !context.record()) return;
+    if (!source.upload || !context.record() || !chosen.length) return;
+    // A part that cannot come (offline) stores none of them, and says so: they can be chosen again.
+    const part = filesPart.loaded ?? (await filesPart.load().catch(() => null));
+    if (!part) return onProblem(chosen.map((file) => fill(words.notUploadedNamed, { name: file.name })).join(' · '));
+    const { goingItem, shrinkable, shrinkPhoto } = part;
     for (const picked of chosen) {
       const file = options.shrink && shrinkable(picked) ? await shrinkPhoto(picked, options.shrink, doc) : picked;
       const pending = { id: `attachment-${++made}`, name: file.name, size: file.size, type: file.type, status: 'waiting', sent: 0, total: null, file } as Pending;
@@ -117,9 +124,9 @@ export function composerFiles(context: ChatterContext, onProblem: (message: stri
       pending.item = goingItem(el, words, picture, (name) => el('span', { class: 'fd-file-name', dir: 'auto', title: name }, name), { cancel: () => cancel(pending), retry: () => void send(pending) });
       going = [...going, pending];
       onTheirWay.append(pending.item.element);
+      draw();
       void send(pending);
     }
-    draw();
   }
 
   button.addEventListener('click', () => input.click());

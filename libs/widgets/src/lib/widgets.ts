@@ -21,7 +21,6 @@ import { textBox, type TextKind } from './text-box';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
-import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
@@ -29,7 +28,6 @@ import { plainDateWidget, type DateKind } from './date-text';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
-import { signatureWidget } from './signature';
 import { sliderWidget } from './slider';
 import { choiceTagsWidget, searchWidget } from './choice-tags';
 import { imageChoiceWidget } from './choice-images';
@@ -50,12 +48,12 @@ import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
-import { choicePart, datePart, partFactory, pathPart, textPart, type PartFactory } from './widget-parts';
+import { choicePart, datePart, filesPart, partFactory, pathPart, textPart, type FilesPart, type PartFactory } from './widget-parts';
 import type { Part } from './parts';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { timerWidget } from './timer';
-import { embedWidget, pdfWidget } from './embed';
+import { embedWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
 import { paymentsWidget } from './payments';
@@ -719,6 +717,30 @@ const dateBoxOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateB
 /** A range of dates, from → to (date-range.ts), in the date part: its first day in a plain box meanwhile. */
 const dateRangeOf = (kind: DateKind) => partFactory(datePart, (part) => part.dateRangeWidget, plainDateWidget(kind));
 
+/**
+ * A file, a picture, a signature or a PDF field before the files part came (files-part.ts): the names of the files its
+ * value holds, as read-only words. It never writes, so the field keeps every file it holds — and those on their way,
+ * which the form holds — and a file is picked once the part's widget has taken its place, with the last state it was
+ * given. Each kind's own widget comes in the part.
+ */
+function plainFilesWidget({ field, id, document }: WidgetContext): Widget {
+  const output = document.createElement('output');
+  output.id = id;
+  output.className = 'fd-value-text';
+  output.dataset['fdPlain'] = 'files';
+  // Focus asked for meanwhile (a required field left empty, say) lands here, and moves to the part's widget with it.
+  output.tabIndex = -1;
+  return {
+    element: output,
+    focus: () => output.focus(),
+    update(state) {
+      setText(output, summary(state.value, field));
+    },
+  };
+}
+/** A file field's own widget (files.ts, signature.ts, pdf.ts), in the files part: the files' names meanwhile. */
+const filesOf = (real: (part: FilesPart) => WidgetFactory) => partFactory(filesPart, real, plainFilesWidget);
+
 /** Until a type has its own editor (Phase 5), show what it holds. */
 function pendingWidget({ field, id, document }: WidgetContext): Widget {
   const span = make(document, 'span', { id, class: 'fd-pending', 'data-fd-pending': field.type });
@@ -800,7 +822,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'float.timer': timerWidget,
   'datetime.timer': timerWidget,
   // A PDF, or a web page at an address, shown inline: Flectra's pdf_viewer and embed_viewer.
-  'binary.pdf': pdfWidget,
+  'binary.pdf': filesOf((part) => part.pdfWidget),
   'char.embed': embedWidget,
   // Shares of accounts, {accountId: percent}, as lines adding up to 100 %: Flectra's analytic_distribution.
   'json.distribution': distributionWidget,
@@ -831,9 +853,10 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   reference: referenceWidget,
   one2many: linesWidget,
   'one2many.cards': cardsWidget,
-  binary: binaryWidget,
-  'binary.signature': signatureWidget,
-  image: imageWidget,
+  // A file, a signature and a picture, in the files part (files-part.ts): the files' names meanwhile.
+  binary: filesOf((part) => part.binaryWidget),
+  'binary.signature': filesOf((part) => part.signatureWidget),
+  image: filesOf((part) => part.imageWidget),
   html: htmlWidget,
   json: jsonWidget,
   'json.address': addressWidget,

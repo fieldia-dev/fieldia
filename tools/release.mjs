@@ -280,7 +280,7 @@ for (const locale of ['ar', 'de', 'fr']) {
   if (page.Fieldia.MESSAGES[locale]?.locale !== locale || !page.Fieldia.VIEWER_LABELS[locale] || !page.Fieldia.WIDGET_LABELS[locale]) fail(`the packed fieldia.${locale}.js does not give the script bundle its words`);
 }
 // Each part beside it: after the main script, Fieldia draws from it (the main script asks for it from beside itself).
-for (const [part, holder, gives] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget']]) {
+for (const [part, holder, gives] of [['head', 'headPart', 'recordHead'], ['text', 'textPart', 'modernHtml'], ['path', 'pathPart', 'pathPickerWidget'], ['choice', 'choicePart', 'ownListWidget'], ['filters', 'filtersPart', 'filterBar'], ['date', 'datePart', 'dateBoxWidget'], ['files', 'filesPart', 'binaryWidget']]) {
   const file = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${part}.js`);
   if (!existsSync(file)) fail(`@fieldia/viewer has no bundle/fieldia.${part}.js`);
   const page = {};

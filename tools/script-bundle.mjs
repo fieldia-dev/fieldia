@@ -550,7 +550,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
-const BUDGET_KB = 629.8;
+// File and picture fields loaded on first use (0.23): a file field's list, thumbnails and cards with their switch and
+// dialog, files on their way with their bar, × and Retry, photos made smaller, a signature's pad, a PDF under its file
+// box and their stylesheet out of this script, into fieldia.files.js (files, files-going, shrink, signature, pdf,
+// styles-files: 30.9 of code). This script keeps what the form does with files whatever draws them (core's uploads and
+// a save that waits for them), a file shown as its dialog shows it, for a sheet's attachment preview (file-shown.ts),
+// the names of the files a value holds for a field drawn before its part came, the fields a sheet's title names (its
+// avatar, a picture) among the parts a page draws from, and the part's names in the parts' table — 629.78 measured
+// before, 602.11 after: 27.7 less, to 602.2.
+const BUDGET_KB = 602.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -649,8 +657,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the singular; listed with the raw budget above), 0.8 more, to 175.2 (measured 175.11). Every way a value is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
-// 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.3;
+// 39.3 over 0.20.0's 157.9, a size pass still owed. File and picture fields, files on their way, photos made smaller and
+// a signature's pad loaded on first use, in fieldia.files.js (11.3 gzipped), the attachment preview's file and a field's
+// files' names drawn before its part came kept (listed with the raw budget above): 197.23 measured before, 188.43
+// after — 8.8 less, to 188.5.
+const GZIP_BUDGET_KB = 188.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -814,7 +825,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
 // save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// File and picture fields with their list, thumbnails, cards and dialog, files on their way, photos made smaller, a
+// signature's pad and a PDF under its file box, with their sheet, cut out of the main script (files, files-going,
+// shrink, signature, pdf, styles-files: 30.9, 11.3, as measured 30.88 and 11.29).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], files: [30.9, 11.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -823,9 +837,10 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', files: 'filesPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -873,8 +888,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
- * part, and for each part the first time a page uses one, from beside itself — a work item's head, text and path
- * picker for its bug, the filter bar for its backlog — and the page is drawn whole once they have come.
+ * part, and for each part the first time a page uses one, from beside itself — a customer's photo, a work item's head,
+ * text and path picker for its bug, the filter bar for its backlog — and the page is drawn whole once they have come.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -895,31 +910,38 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const host = doc.getElementById('app');
   const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
   // A page of plain parts: drawn at once, nothing asked for.
-  const plain = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  const plain = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
   plain.destroy();
+  // A customer with a photo: the files part, the page drawn once it came — nothing of it before.
+  const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a photo drew before its files part came');
+  await customer.drawn;
+  if (loaded() !== 'files' || !host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error(`in a page, a customer's photo is not drawn from its part (${loaded()})`);
+  if (doc.getElementById('fieldia-files-styles')?.nextElementSibling?.id !== 'fieldia-styles-looks') throw new Error('in a page, fieldia-files-styles is not just before the page\'s own looks');
+  customer.destroy();
   // A work item's bug: its parts asked for, the page drawn once they came — nothing of it before.
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
   await bug.drawn;
-  if (loaded() !== 'choice, head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, head, path and text`);
+  if (loaded() !== 'choice, files, head, path, text') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path and text`);
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  if (loaded() !== 'choice, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'choice, files, filters, head, path, text' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
   backlog.destroy();
   // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
   await signup.drawn;
-  if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'choice, date, files, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a customer's photo, a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
 }
