@@ -17,6 +17,7 @@ export const tryIt: DesignerWords['tryIt'] = {
   drawer: 'البيانات والمشكلات',
   data: 'البيانات',
   problems: 'المشكلات',
+  toAnswer: '{n} بانتظار الإجابة',
   copyData: 'نسخ البيانات',
   answersAsJson: 'الإجابات بصيغة JSON',
   nothingInTheWay: 'لا شيء يمنع إرسال هذا.',

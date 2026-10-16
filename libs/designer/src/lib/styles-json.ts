@@ -68,6 +68,9 @@ export const DESIGNER_JSON_CSS = /* css */ `
 .fd-try-tab:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; border-radius: 4px; }
 .fd-try-count { min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--fd-error-soft); color: var(--fd-error); }
 .fd-try-count[hidden] { display: none; }
+/* Required questions not answered yet: said, not alarmed — the red count is for real problems. */
+.fd-try-to-answer { font-size: 12px; font-weight: 600; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+.fd-try-to-answer[hidden] { display: none; }
 .fd-try-said { font-size: 12.5px; color: var(--fd-muted); }
 .fd-try-said:empty { display: none; }
 .fd-try-copy, .fd-try-fold { min-height: 30px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
@@ -85,6 +88,7 @@ export const DESIGNER_JSON_CSS = /* css */ `
 .fd-try-problem strong { font-weight: 600; }
 .fd-try-problem span { color: var(--fd-error); }
 .fd-try-problem[data-warning] span { color: var(--fd-warning); }
+.fd-try-problem[data-unanswered] span { color: var(--fd-muted); }
 .fd-try-none { margin: 0; color: var(--fd-muted); font-size: 13.5px; }
 .fd-try-none[hidden] { display: none; }
 /* A choice's options written here, or taken from one of the app's lists: which list, and what it changes with. */

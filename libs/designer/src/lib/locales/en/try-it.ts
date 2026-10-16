@@ -18,6 +18,8 @@ export const tryIt = {
   drawer: 'Data and problems',
   data: 'Data',
   problems: 'Problems',
+  /** Required questions not answered yet, said neutrally: no problem until the page is sent. */
+  toAnswer: '{n} to answer',
   copyData: 'Copy data',
   answersAsJson: 'The answers as JSON',
   nothingInTheWay: 'Nothing stands in the way of sending this.',

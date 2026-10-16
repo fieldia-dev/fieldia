@@ -57,7 +57,10 @@ describe('Try it’s drawer of data and problems', () => {
 
   it('lists the problems the answers have now, by question, and a click goes to the question', () => {
     const { tab, problems, fill, fieldOf, drawer } = setup();
-    expect(tab('Problems').textContent).toBe('Problems 2');
+    const count = () => drawer().querySelector('.fd-try-count') as HTMLElement;
+    const toAnswer = () => drawer().querySelector('.fd-try-to-answer') as HTMLElement;
+    // Untouched, its required questions are only not answered yet: said neutrally, never a red count of problems.
+    expect([count().hidden, toAnswer().hidden, toAnswer().textContent]).toEqual([true, false, '2 to answer']);
     // Not tabs: the page tried keeps the only tabs here.
     expect(drawer().querySelector('[role=tab], [role=tablist]')).toBeNull();
     tab('Problems').click();
@@ -68,6 +71,9 @@ describe('Try it’s drawer of data and problems', () => {
     fill('Email', 'not-an-address');
     fill('Name', 'Mona');
     expect(problems()).toEqual(['EmailEnter an email address, like name@example.com', 'CommentsComments is required']);
+    // A real problem in red, counted; the question still to answer said apart, in muted words.
+    expect([count().hidden, count().textContent, toAnswer().textContent]).toEqual([false, '1', '1 to answer']);
+    expect([...drawer().querySelectorAll('.fd-try-problem')].map((row) => row.hasAttribute('data-unanswered'))).toEqual([false, true]);
     (drawer().querySelector('.fd-try-problem') as HTMLButtonElement).click();
     expect(document.activeElement).toBe(fieldOf('Email'));
   });
@@ -87,7 +93,7 @@ describe('Try it’s drawer of data and problems', () => {
     document.body.append(handle.toggle, handle.element);
     (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
     const drawer = handle.element.querySelector('.fd-try-drawer') as HTMLElement;
-    expect(drawer.querySelector('.fd-try-tab:last-child')?.textContent).toBe('Problems ');
+    expect(drawer.querySelector('.fd-try-tab:last-child')?.textContent?.trim()).toBe('Problems');
     expect(drawer.querySelector('.fd-try-none')?.textContent).toBe('Nothing stands in the way of sending this.');
   });
 

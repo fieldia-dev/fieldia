@@ -1,4 +1,4 @@
-import type { FieldNode, FormState, LayoutNode, Page } from '@fieldia/core';
+import { fill, isEmpty, type FieldNode, type FormState, type LayoutNode, type Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
@@ -7,7 +7,10 @@ import { en } from './locales/en';
 /**
  * Under the page being tried, a drawer with what the form holds as it is
  * filled: the answers as JSON, and the problems they have now — each by its
- * question, a click going to it — with the warnings beside them. It opens on
+ * question, a click going to it — with the warnings beside them. A required
+ * question not answered yet is no problem until the page is sent: it is
+ * counted apart and said neutrally ("5 to answer"), the red count kept for
+ * real problems (an answer that does not read or does not fit). It opens on
  * a tab and stays put out of the way otherwise; only an open tab is drawn.
  * What a person tries stays in Try it; the drawer only shows it.
  */
@@ -57,7 +60,8 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const tab = (name: Tab, words: string) => el('button', { type: 'button', class: 'fd-try-tab', id: `${id}-${name}`, 'aria-controls': `${id}-${name}-panel` }, words);
   const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', w.data), problems: tab('problems', w.problems) };
   const count = el('span', { class: 'fd-try-count' });
-  tabs.problems.append(' ', count);
+  const toAnswer = el('span', { class: 'fd-try-to-answer' });
+  tabs.problems.append(' ', count, ' ', toAnswer);
   const said = el('span', { class: 'fd-try-said', role: 'status' });
   const copy = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-copy' }, w.copyData);
   const fold = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-fold', 'aria-controls': `${id}-panels` });
@@ -100,20 +104,25 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   function draw(state: FormState) {
     const open = (tab: Tab) => !mine.folded && mine.tab === tab;
     data.textContent = open('data') ? JSON.stringify(state.values, null, 2) : '';
-    const rows: { name: string; message: string; warning: boolean }[] = [];
+    const rows: { name: string; message: string; warning: boolean; unanswered: boolean }[] = [];
     for (const name of shownFields(page)) {
       const problem = form.problem(name);
-      if (problem) rows.push({ name, message: problem, warning: false });
+      // Not answered yet, nothing typed: only that it is wanted — no problem until the page is sent.
+      const unanswered = !!problem && !!page.fields[name] && isEmpty(page.fields[name], state.values[name]) && !state.unread?.[name];
+      if (problem) rows.push({ name, message: problem, warning: false, unanswered });
       const warning = state.warnings[name] ?? (state.warningField === name ? state.warning : null);
-      if (warning) rows.push({ name, message: warning, warning: true });
+      if (warning) rows.push({ name, message: warning, warning: true, unanswered: false });
     }
-    const problems = rows.filter((row) => !row.warning).length;
+    const problems = rows.filter((row) => !row.warning && !row.unanswered).length;
+    const unanswered = rows.filter((row) => row.unanswered).length;
     count.textContent = problems ? String(problems) : '';
     count.hidden = !problems;
+    toAnswer.textContent = unanswered ? fill(w.toAnswer, { n: unanswered }) : '';
+    toAnswer.hidden = !unanswered;
     none.hidden = rows.length > 0;
     list.replaceChildren(
       ...rows.filter(() => open('problems')).map((row) => {
-        const button = el('button', { type: 'button', class: 'fd-try-problem', 'data-field': row.name, 'data-warning': row.warning ? '' : undefined }, el('strong', {}, labelOf(row.name)), el('span', {}, row.message));
+        const button = el('button', { type: 'button', class: 'fd-try-problem', 'data-field': row.name, 'data-warning': row.warning ? '' : undefined, 'data-unanswered': row.unanswered ? '' : undefined }, el('strong', {}, labelOf(row.name)), el('span', {}, row.message));
         button.addEventListener('click', () => goTo(row.name));
         return el('li', {}, button);
       })

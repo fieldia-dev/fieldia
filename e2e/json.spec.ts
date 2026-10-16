@@ -187,7 +187,9 @@ test.describe('Try it’s drawer', () => {
     await expect(page.locator('.fd-json-state')).toHaveText('Applied. Undo takes it back.');
     await page.getByRole('button', { name: 'Try it' }).click();
     const drawer = page.locator('.fd-try-drawer');
-    await expect(drawer.getByRole('button', { name: 'Problems' })).toContainText('1');
+    // A required question not answered yet is said neutrally, not counted as a problem in red.
+    await expect(drawer.getByRole('button', { name: 'Problems' }).locator('.fd-try-to-answer')).toHaveText('1 to answer');
+    await expect(drawer.getByRole('button', { name: 'Problems' }).locator('.fd-try-count')).toBeHidden();
     await drawer.getByRole('button', { name: 'Data', exact: true }).click();
     await page.locator('.fd-try-frame').getByLabel('Notes').fill('Bring the plans');
     await expect(drawer.locator('.fd-try-data')).toContainText('"Bring the plans"');
