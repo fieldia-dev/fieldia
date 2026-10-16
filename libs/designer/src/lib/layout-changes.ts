@@ -256,6 +256,9 @@ export function layoutChanges(before: Page, after: Page, words: DesignerWords = 
     if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(w.itsLabel(name, node.labels ?? ''));
     // The words in its empty box, which the panel sets.
     if (node.type === 'field' && old.type === 'field' && (old.placeholder ?? '') !== (node.placeholder ?? '')) lines.push(w.placeholder(name));
+    // What the browser fills its box in with, and a phone's keyboard.
+    if (node.type === 'field' && old.type === 'field' && (old.autocomplete ?? '') !== (node.autocomplete ?? '')) lines.push(w.filledIn(name));
+    if (node.type === 'field' && old.type === 'field' && (old.inputmode ?? '') !== (node.inputmode ?? '')) lines.push(w.keyboard(name));
   }
 
   return { lines, said, placed, before: was, after: now };

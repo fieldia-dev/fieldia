@@ -1,4 +1,4 @@
-import type { FieldNode } from '@fieldia/core';
+import type { FieldNode, InputMode } from '@fieldia/core';
 import { appKindPanel } from './app-kinds-ui';
 import { optionsEditor, type ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
@@ -27,6 +27,9 @@ import { placeholderWhenList } from './placeholder-when';
 
 /** The kinds whose empty box shows words of their own. */
 const TAKES_PLACEHOLDER = new Set(['char', 'text', 'integer', 'float', 'monetary']);
+/** The kinds typed into a box, as their type draws them or as a line's email, phone, web address or password. */
+const TYPED = new Set(['char', 'text', 'integer', 'float', 'monetary', 'date', 'datetime']);
+const TYPED_WIDGETS = new Set(['email', 'phone', 'url', 'password']);
 
 export function fieldProperties(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
@@ -46,6 +49,13 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   focusBox.addEventListener('change', () => designer.updateQuestion(id, { focus: focusBox.checked }));
   const focusRow = setting(el, 'content', 'Focused as the record opens', focusBox, { words: w.focusOnOpen, hint: w.focusOnOpenHint });
   const placeholderRow = setting(el, 'content', 'Placeholder', [placeholder, el('span', { class: 'fd-answer-rule-word' }, w.placeholderWhen), placeholderWhen.element], { words: w.placeholder });
+  // What the browser fills its box in with, from what the person saved, and the keyboard a phone shows for it.
+  const purpose = el('select', { class: 'fd-input fd-select', 'aria-label': w.filledInAs }) as HTMLSelectElement;
+  purpose.addEventListener('change', () => designer.updateQuestion(id, { autocomplete: purpose.value }));
+  const purposeRow = setting(el, 'content', 'Filled in by the browser as', purpose, { hint: w.filledInHint, words: w.filledInAs });
+  const keyboard = el('select', { class: 'fd-input fd-select', 'aria-label': w.keyboard }, ...Object.entries(w.keyboards).map(([value, words]) => el('option', { value }, words))) as HTMLSelectElement;
+  keyboard.addEventListener('change', () => designer.updateQuestion(id, { inputmode: keyboard.value as InputMode | '' }));
+  const keyboardRow = setting(el, 'content', 'Keyboard on a phone', keyboard, { hint: w.keyboardHint, words: w.keyboard });
   // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.shownAs });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
@@ -123,6 +133,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'content', 'Label', label, { words: w.label }),
     setting(el, 'content', 'Help text', help, { words: w.helpText }),
     placeholderRow,
+    purposeRow,
+    keyboardRow,
     focusRow,
     ...accessKey.rows,
     setting(el, 'content', 'Shown as', kind, { hint: kindNote, words: w.shownAs }),
@@ -157,6 +169,23 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       placeholderRow.hidden = !TAKES_PLACEHOLDER.has(def.type) || !!found.node.widget && !['email', 'phone', 'url'].includes(found.node.widget);
       if (!focused(placeholder)) placeholder.value = found.node.placeholder ?? '';
       if (!placeholderRow.hidden) placeholderWhen.update(page);
+      // A box typed in, a list to choose from, an address in parts (whose it is, before each part's own).
+      const widget = found.node.widget;
+      const address = def.type === 'json' && widget === 'address';
+      const typed = TYPED.has(def.type) && (!widget || TYPED_WIDGETS.has(widget));
+      purposeRow.hidden = !(typed || address || (def.type === 'selection' && !widget && !def.multiple));
+      keyboardRow.hidden = !typed;
+      const filled = found.node.autocomplete ?? '';
+      const purposes = address ? w.addressPurposes : w.purposes;
+      // One the page names that the list does not offer is kept, as it is written.
+      const shown = Object.prototype.hasOwnProperty.call(purposes, filled) ? Object.entries(purposes) : [...Object.entries(purposes), [filled, filled]];
+      const purposeKey = JSON.stringify(shown);
+      if (purpose.dataset['offered'] !== purposeKey) {
+        purpose.dataset['offered'] = purposeKey;
+        purpose.replaceChildren(...shown.map(([value, words]) => el('option', { value }, words)));
+      }
+      purpose.value = filled;
+      keyboard.value = found.node.inputmode ?? '';
       focusBox.checked = found.node.focus === true;
       accessKey.update(page);
       const current = kindOfField(def, found.node);

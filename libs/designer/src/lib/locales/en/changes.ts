@@ -120,6 +120,9 @@ export const changes = {
   columnsWide: (name: string, n: number) => `${name}: ${count(n, 'column')} wide`,
   itsLabel: (name: string, place: string) => `${name}: its label ${({ above: 'above its box', beside: 'beside its box', hidden: 'inside its box' } as Record<string, string>)[place] ?? 'where its group puts it'}`,
   placeholder: (name: string) => `${name}: its placeholder changed`,
+  filledIn: (name: string) => `${name}: what the browser fills it in with changed`,
+  keyboard: (name: string) => `${name}: its keyboard on a phone changed`,
+  botCheck: (now: 'on' | 'off' | 'changed') => ({ on: 'The bot check is on', off: 'The bot check is off', changed: 'The bot check changed' })[now],
   thePage: 'the page',
   // ---- the look
   look: {

@@ -2,6 +2,7 @@ import {
   validatePage,
   wideColumns,
   type AnswerRule,
+  type BotCheck,
   type ColumnCount,
   type ColumnsByWidth,
   type Field,
@@ -13,6 +14,7 @@ import {
   type OptionsFrom,
   type PartLookKind,
   type HelpShown,
+  type InputMode,
   type JsonValue,
   type MapFence,
   type MapLayer,
@@ -268,6 +270,10 @@ export interface QuestionPatch {
   focus?: boolean;
   /** Why it is read-only while its rule holds, in plain words: said by its lock (the node's `readonlyReason`). Empty takes it off. */
   readonlyReason?: string;
+  /** What the browser fills its box in with (the node's `autocomplete`): a purpose of the HTML standard's, `off`, or empty for its kind's own. */
+  autocomplete?: string;
+  /** The keyboard a phone shows for its box (the node's `inputmode`); empty for its kind's own. */
+  inputmode?: InputMode | '';
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -356,6 +362,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
   arrangeSection(sectionId: string, items: { id: string; colspan: number }[]): boolean;
   setPageInfo(info: { title?: string; description?: string }): boolean;
+  /** A public page's bot check (`botCheck`): a hidden box, the fewest seconds, the slot its captcha is drawn in; null takes it off. A page of responses only. */
+  setBotCheck(check: BotCheck | null): boolean;
   /** The records a link, links or a table of lines point to, by their model's name. */
   setRelation(id: string, model: string): boolean;
   /** An amount's currency, such as USD. */
@@ -918,6 +926,15 @@ export function createDesigner(options: {
             if (patch.readonlyReason.trim()) node.readonlyReason = patch.readonlyReason;
             else delete node.readonlyReason;
           }
+          // What the browser fills its box in with, and a phone's keyboard: the place's, whatever the field.
+          if (patch.autocomplete !== undefined) {
+            if (patch.autocomplete.trim()) node.autocomplete = patch.autocomplete.trim();
+            else delete node.autocomplete;
+          }
+          if (patch.inputmode !== undefined) {
+            if (patch.inputmode) node.inputmode = patch.inputmode;
+            else delete node.inputmode;
+          }
           if (fromModel(node.field)) {
             // The backend's definition stays as it is: what this page says goes on the field's place on it.
             if (patch.label !== undefined) node.label = patch.label;
@@ -1340,6 +1357,17 @@ export function createDesigner(options: {
           }
         },
         `page:${Object.keys(info).join(',')}`
+      );
+    },
+
+    setBotCheck(check) {
+      return apply(
+        (draft) => {
+          if (!check) return void delete draft.botCheck;
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.botCheckForResponses);
+          draft.botCheck = check;
+        },
+        null
       );
     },
 
