@@ -44,7 +44,7 @@ async function quote(page: Page) {
   await page.evaluate(async (shown) => {
     const fieldia = (window as any).Fieldia;
     const demo = (window as any).fieldiaDemo;
-    const dataSource = fieldia.createMemoryDataSource({ records: { quote: { 1: { name: 'Fit-out', seats: 3, who: false } }, person: { 1: { name: 'Mona' }, 2: { name: 'Omar' } } } });
+    const dataSource = fieldia.createMemoryDataSource({ records: { quote: { 1: { name: 'Fit-out', seats: 3, who: null } }, person: { 1: { name: 'Mona' }, 2: { name: 'Omar' } } } });
     const handed: Record<string, unknown>[] = [];
     (window as any).handed = handed;
     demo.handle.destroy();
