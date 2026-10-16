@@ -34,13 +34,16 @@ import type { Widget, WidgetFactory } from './widgets';
  * taking the match that typing reached. The focus stays in the box all along;
  * the row reached is its active one. Words typed and left — by Tab, Enter or
  * a click elsewhere, before or after their list came — take the record they
- * name exactly: its whole path, or its own name where only it has that name.
- * Else what the box held comes back, and it says so: that nothing is called
- * so, or that several are. A save, a check or a step forward made while words
- * are still typed, or still being found, reads them as leaving would
- * (`form.settling`) and a save waits for them; words that name none stay then,
- * kept unread with why, so the save is refused rather than made with the
- * record they were replacing.
+ * name exactly: its whole path, or its own name where only it has that name,
+ * whatever row the list has reached. Words that name none, or several, stay
+ * as typed, kept unread with why, and it says so: the field still holds what
+ * it held, and a save is refused rather than made with it; Escape puts it
+ * back. Enter on words that are no record's name takes the row reached;
+ * Ctrl+Enter, a save, takes it only when the arrows reached it — else it
+ * reads the words as leaving does, however soon it is pressed. A save, a
+ * check or a step forward made while words are still typed, or still being
+ * found, reads them as leaving would (`form.settling`) and a save waits for
+ * them.
  *
  * Typed words find a path as a search finds words: in any case, Arabic
  * letters in any of their forms, digits in any script, and its separator
@@ -53,6 +56,8 @@ const TREE_LIMIT = 500;
 /** As many latest picks as are kept for a model. */
 const KEPT = 10;
 const DEBOUNCE_MS = 180;
+/** As many records a search for a typed name is asked for, where the tree is too big to hold. */
+const FOUND = 50;
 
 /** Where the person's latest picks of a model are kept in the viewer's preferences. */
 export const recentPicksKey = (model: string): string => `recent:${model}`;
@@ -119,7 +124,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   const unfolded = new Set<string>();
   let rows: Row[] = [];
   let active = -1;
-  /** Whether the person has moved from the row reached as the list opened. */
+  /** Whether the person has moved with the keys from the row reached as the list opened, or as the words were last typed. */
   let moved = false;
   /** The records the words typed found: null while nothing is typed. */
   let matches: RelatedRecord[] | null = null;
@@ -333,10 +338,23 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       if (made.branch) toggle(made.branch, !unfolded.has(made.branch.key));
       return;
     }
-    const record = made.record;
+    pick(made.record);
+  }
+  /** The record words typed are the very name of, among those here now (the tree, or their matches): none when it would take a wait. */
+  function exactly(text: string): RelatedRecord | null {
+    const known = records && records.length < TREE_LIMIT ? records : matches;
+    const found = known ? named(text, known) : null;
+    if (!found || found === 'several') return null;
+    typedSeq++;
+    pending = null;
+    return found;
+  }
+  /** A record taken: the box shows its path, words kept unread go, and it is among the latest picks. */
+  function pick(record: RelatedRecord) {
     close();
     remember(record);
     editing = false;
+    hint.hide();
     letGo();
     form.setValue(name, record);
     input.value = textOf(record);
@@ -368,7 +386,7 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       const all = records && records.length < TREE_LIMIT ? records : null;
       const found = all
         ? all.filter((record) => findable(textOf(record), separator).includes(wanted) || findable(record.label, separator).includes(wanted))
-        : await form.search(name, foldDigits(stripMarks(query.trim())), 50).catch(() => [] as RelatedRecord[]);
+        : await form.search(name, foldDigits(stripMarks(query.trim())), FOUND).catch(() => [] as RelatedRecord[]);
       show(found);
     }, records ? 0 : DEBOUNCE_MS);
   }
@@ -385,21 +403,28 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   }
   /**
    * The records words typed may name: the tree's own, when it holds them all; else the data source's for their last
-   * name — "Portal\\Sprint 13" asks for "Sprint 13" — as a search finds them. Without a wait when the tree is here.
+   * name — "Portal\\Sprint 13" asks for "Sprint 13" — as a search finds them, and, where that search filled its
+   * limit, the records of that very name asked for exactly. Without a wait when the tree is here.
    */
   function candidates(text: string, then: (found: readonly RelatedRecord[]) => void): void {
     const whole = () => (records && records.length < TREE_LIMIT ? records : null);
     const here = whole();
     if (here) return then(here);
-    const last = text.trim().split(separator).join('\\').split(/\s*[\\/]\s*/).pop() ?? '';
+    const last = foldDigits(stripMarks(text.trim().split(separator).join('\\').split(/\s*[\\/]\s*/).pop() ?? ''));
+    const searched = async (): Promise<readonly RelatedRecord[]> => {
+      const found = await form.search(name, last, FOUND);
+      if (found.length < FOUND) return found;
+      const exact = await form.search(name, last, FOUND, { exact: true }).catch(() => []);
+      return [...found, ...exact];
+    };
     void (withTree ? load() : Promise.resolve())
-      .then(() => whole() ?? form.search(name, foldDigits(stripMarks(last)), 50))
+      .then(() => whole() ?? searched())
       .catch(() => [] as RelatedRecord[])
       .then(then);
   }
   /**
-   * Words typed that are no pick yet, taken now: the record they name exactly; else what the box held comes back
-   * (`leaving`), and it says why — unless a save waits for them (`awaited`), which keeps them, unread, with why.
+   * Words typed that are no pick yet, taken now: the record they name exactly; else it says why — and, left
+   * (`leaving`) or a save waiting for them (`awaited`), they stay, kept unread with why, the field holding what it held.
    */
   function settleTyped(text: string, leaving: boolean, awaited = false): Promise<void> {
     const mine = ++typedSeq;
@@ -426,27 +451,16 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       // Back in the box before they were found: the words are still the person's, and the next leaving acts on them.
       if (leaving && doc.activeElement === input && !reading.awaited) return;
       const record = named(text, found);
-      if (record && record !== 'several') {
-        close();
-        remember(record);
-        editing = false;
-        hint.hide();
-        letGo();
-        form.setValue(name, record);
-        input.value = textOf(record);
-        return;
-      }
+      if (record && record !== 'several') return pick(record);
       const label = node.label ?? field.label;
       const said = fillIn(record === 'several' ? words.severalCalled : words.noMatch, { label, text: quoted(text) });
-      if (reading.awaited) {
-        // A save waits: the words stay as typed, marked, and it is refused with why, never saving what the box held.
+      if (reading.awaited || leaving) {
+        // Left, or a save waits: the words stay as typed, marked, kept unread with why — a save refused over them, never
+        // made with what the box held, which it still holds. Escape puts that back.
         if (input.value.trim() !== text) input.value = text;
-        hint.show(said);
+        editing = false;
+        hint.show(current && !reading.awaited ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
         form.setUnread(name, { text, message: said });
-      } else if (leaving) {
-        restore();
-        letGo();
-        hint.show(current ? `${said}. ${fillIn(words.stillHolds, { label, value: textOf(current) })}` : said);
       } else hint.show(said);
     }
   }
@@ -485,6 +499,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     if (readonly) return;
     editing = true;
     typedSeq++;
+    // Typed: the row reached is the list's, until the arrows move again.
+    moved = false;
     lookUp(input.value);
   });
   input.addEventListener('click', () => {
@@ -500,7 +516,8 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
   // The list never takes the focus from the box: a press on a row or its scroll bar keeps it there.
   callout.addEventListener('mousedown', (event) => event.preventDefault());
   input.addEventListener('keydown', (event) => {
-    if (readonly) return;
+    // A key an IME is composing with — the Enter that takes its word, the arrows through its candidates — is the IME's.
+    if (readonly || event.isComposing || event.keyCode === 229) return;
     const shown = !callout.hidden;
     if (!shown) {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'F4') {
@@ -551,15 +568,23 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         }
         return;
       }
-      case 'Enter':
+      case 'Enter': {
         event.preventDefault();
-        // Words typed whose list has not come yet, or found nothing: the record they name, or why there is none.
-        if (editing && input.value.trim() && !matches?.length) {
-          void settleTyped(input.value.trim(), false);
-          return;
+        const text = input.value.trim();
+        if (editing && text) {
+          // Words that are a record's very name — its path, or a name only it has — take it, whatever row is reached.
+          const exact = exactly(text);
+          if (exact) return pick(exact);
+          // Words whose list has not come yet, or found nothing — or Ctrl+Enter's save on a row the person did not
+          // reach: the record they name, or why there is none, the same however soon it is pressed.
+          if (!matches?.length || ((event.ctrlKey || event.metaKey) && !moved)) {
+            void settleTyped(text, false);
+            return;
+          }
         }
         if (here) choose(here);
         return;
+      }
       case 'Escape':
         event.preventDefault();
         // Only the list closes: not a dialog the field is in.
@@ -570,18 +595,23 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
         restore();
         letGo();
         return;
-      case 'Tab':
-        // A match that typing reached goes with the person; else, left, the box puts back what it held.
+      case 'Tab': {
+        // Words that are a record's very name take it; else the match reached goes with the person; else, left, the
+        // box reads the words.
+        const exact = editing && input.value.trim() ? exactly(input.value.trim()) : null;
+        if (exact) return pick(exact);
         if (matches && here?.record) return choose(here);
         close();
         return;
+      }
     }
   });
-  input.addEventListener('blur', () => {
+  /** The box left — its blur, or the box taken away with the person's words in it (`destroy`). */
+  function leave() {
     close();
     const text = input.value.trim();
     // Emptied and left: no value. Words left: the record they name exactly is taken (the box keeps them until it is
-    // found); else what it held comes back, and it says why.
+    // found); else they stay, unread with why, and it says so.
     const emptied = editing && text === '' && current !== null;
     const unmatched = editing && text !== '' && text !== textOf(current);
     if (!unmatched) editing = false;
@@ -590,12 +620,15 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
       return form.setValue(name, null);
     }
     if (!unmatched) {
+      // Words kept unread, not typed in since (left twice: taken away, then blurred): they stay.
+      if (unreadNow() && input.value.trim() === unreadNow()?.text.trim()) return;
       letGo();
       return restore();
     }
     // Still the person's words while they are looked up: nothing redrawn puts the old value over them.
     if (pending?.text !== text) void settleTyped(text, true);
-  });
+  }
+  input.addEventListener('blur', leave);
   // Come back to words the form keeps unread: they are still the person's own, and leaving reads them again.
   input.addEventListener('focus', () => {
     const kept = unreadNow();
@@ -606,6 +639,9 @@ export const pathPickerWidget: WidgetFactory = ({ form, name, field, node, id, d
     element,
     focus: () => input.focus(),
     destroy: () => {
+      // Taken away with the person's words in it — a cell's editor closed, which a browser may do without a blur:
+      // read as leaving reads them, never dropped.
+      if (editing) leave();
       close();
       // Words still being found are still read for a save: its reader goes once they are.
       if (pending) void pending.done.then(() => stopReading?.());

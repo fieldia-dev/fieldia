@@ -192,10 +192,11 @@ describe('a choice found by its name', () => {
     expect(value()).toBe('f12');
     expect(input.value).toBe('Floor 99');
     expect(form.getState().errors['x']).toBe('Floor: nothing is called “⁨Floor 99⁩”; pick one from the list');
-    // Left with nothing waiting for them, the words put the choice back and say so (the input rules, 7).
+    // Left with nothing waiting for them, the words stay, still unread with why: the choice held, never put back unsaid.
     input.blur();
-    expect(input.value).toBe('Floor 12');
-    expect(form.getState().unread['x']).toBeUndefined();
+    expect(input.value).toBe('Floor 99');
+    expect(form.getState().unread['x']?.text).toBe('Floor 99');
+    expect(form.validate()).toBe(false);
   });
 
   it('one answer emptied and checked at once is no answer', () => {

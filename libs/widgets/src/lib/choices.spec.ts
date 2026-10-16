@@ -202,15 +202,21 @@ describe('a dropdown that searches its list', () => {
     expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('puts back the choice’s words when left half typed, and empties it when the box is emptied', () => {
-    const { el, value } = mountKind({ type: 'selection', options: MANY });
+  it('keeps words left half typed, unread with why, the choice held; Escape puts its words back; emptied, it empties', () => {
+    const { el, value, form } = mountKind({ type: 'selection', options: MANY });
     const input = box(el);
     typeInto(input, 'Floor 3');
     press(input, 'Enter');
     expect(value()).toBe('f3');
     typeInto(input, 'Flo');
     input.dispatchEvent(new Event('blur'));
+    expect(input.value).toBe('Flo');
+    expect(value()).toBe('f3');
+    expect(form.getState().unread['x']?.text).toBe('Flo');
+    input.focus();
+    press(input, 'Escape');
     expect(input.value).toBe('Floor 3');
+    expect(form.getState().unread['x']).toBeUndefined();
     typeInto(input, '');
     input.dispatchEvent(new Event('blur'));
     expect(value()).toBeNull();

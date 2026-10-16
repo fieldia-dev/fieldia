@@ -25,10 +25,10 @@ import type { WidgetContext, WidgetFactory } from './widgets';
  * match, else the option of that exact name, and never sends the form. Left
  * with words typed, the box takes the option of that name (or, with
  * `ownAnswers`, adds them as an answer of one's own); words that name nothing
- * are put back, and the box says so under itself. A save, a check or a step
- * forward made while words are still typed reads them as leaving would
- * (`form.settling`): words that name nothing stay then, kept unread with why,
- * so the save is refused rather than made with the choice they were replacing.
+ * stay as typed, kept unread with why, and the box says so under itself: the
+ * field holds what it held, and a save is refused rather than made with it.
+ * Escape puts it back. A save, a check or a step forward made while words are
+ * still typed reads them as leaving would (`form.settling`).
  */
 export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
 export const searchWidget: WidgetFactory = (context) => combo(context, true);
@@ -121,8 +121,18 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     const taken = new Set(chosen());
     return options.find((o) => !taken.has(o.value) && fold(o.label) === fold(text));
   };
-  /** Nothing is called what was typed: said under the box, which shows the choice it still holds. */
-  const noMatch = (text: string) => hint.show(fillIn(words.noMatch, { label, text: quoted(text) }));
+  /** Nothing is called what was typed: said under the box — left, with the choice the field still holds. */
+  const noMatch = (text: string, left = false) => {
+    const said = fillIn(words.noMatch, { label, text: quoted(text) });
+    const held = left && single ? labelOf(current()) : '';
+    hint.show(held ? `${said}. ${fillIn(words.stillHolds, { label, value: held })}` : said);
+  };
+  /** Words that name nothing, left or read for a save: they stay as typed, kept unread with why, and it is said. */
+  const keepUnread = (typed: string, left = false) => {
+    const text = typed.trim();
+    noMatch(text, left);
+    form.setUnread(name, { text: typed, message: fillIn(words.noMatch, { label, text: quoted(text) }) });
+  };
   const unreadNow = () => form.getState().unread?.[name];
   const letGo = () => unreadNow() && form.setUnread(name, null);
 
@@ -156,8 +166,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
       return;
     }
     close();
-    noMatch(text);
-    form.setUnread(name, { text: typed, message: fillIn(words.noMatch, { label, text: quoted(text) }) });
+    keepUnread(typed);
   }
   // Still typed in (words that are no choice yet): autosave, which nobody pressed, waits until the box is left.
   const typingHere = () => document.activeElement === input && !readonly && input.value.trim() !== (single ? labelOf(current()) : '');
@@ -176,7 +185,10 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   function left() {
     close();
     if (readonly) return;
-    const text = input.value.trim();
+    const typed = input.value;
+    const text = typed.trim();
+    // Words a save kept unread, left again as they were: still unread, with why.
+    if (unreadNow()?.text === typed) return;
     // Left, the words are read as leaving reads them: what a save kept unread goes with them.
     letGo();
     if (single) {
@@ -185,20 +197,28 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
       if (text === labelOf(current())) return;
       const option = named(text);
       if (option) return add(option);
-      input.value = labelOf(current());
-      return noMatch(text);
+      return keepUnread(typed, true);
     }
     if (!text) return;
-    // Tags: the option of that name is added, or the words as an answer of one's own; else they go, and it says so.
-    input.value = '';
+    // Tags: the option of that name is added, or the words as an answer of one's own; a tag there already, they go.
     const option = named(text);
-    if (option) return write(withAlone(options, chosen(), option.value));
-    if (chosen().some((value) => fold(labelOf(value)) === fold(text))) return;
-    if (own) return write([...chosen(), text]);
-    noMatch(text);
+    if (option) {
+      input.value = '';
+      return write(withAlone(options, chosen(), option.value));
+    }
+    if (chosen().some((value) => fold(labelOf(value)) === fold(text))) {
+      input.value = '';
+      return;
+    }
+    if (own) {
+      input.value = '';
+      return write([...chosen(), text]);
+    }
+    keepUnread(typed, true);
   }
   input.addEventListener('keydown', (event) => {
-    if (readonly) return;
+    // A key an IME is composing with — the Enter that takes its word — is the IME's.
+    if (readonly || event.isComposing || event.keyCode === 229) return;
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowUp': {
@@ -244,7 +264,13 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   return {
     element,
     focus: () => input.focus(),
-    destroy: () => stopReading?.(),
+    destroy: () => {
+      // Taken away with words typed in it — a cell's editor closed, which a browser may do without a blur: read as
+      // leaving reads them, never dropped.
+      const typed = input.value.trim();
+      if (typed !== (single ? labelOf(current()) : '') && unreadNow()?.text !== input.value) left();
+      stopReading?.();
+    },
     update(state) {
       readonly = state.readonly;
       if (readonly) close();
@@ -260,6 +286,8 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
       }
       const values = Array.isArray(state.value) ? (state.value as unknown[]) : [];
       input.hidden = readonly;
+      // Words a save or leaving kept unread stay as typed; once the form lets them go (another record, Escape), they go.
+      if (document.activeElement !== input && input.value && !kept) input.value = '';
       const key = JSON.stringify([readonly, values]);
       if (key === drawn) return;
       drawn = key;

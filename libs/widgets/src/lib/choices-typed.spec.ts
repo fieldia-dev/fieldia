@@ -8,8 +8,8 @@ import { createWidget } from './widgets';
 /**
  * Choices and links typed in as a person types (the input rules, 7): Enter
  * takes the match reached, the only match, or the exact name, and never sends
- * the form; leaving takes the exact name, or puts back what the field held
- * and says so; Arabic words are found however their letters are written, and
+ * the form; leaving takes the exact name, or keeps the words typed, unread
+ * with why, the field holding what it held, and says so; Arabic words are found however their letters are written, and
  * digits in any script; own answers are trimmed, and one that names an option
  * ticks it; a limit is said, never a box turned off; arrows follow the
  * screen right to left; an uploaded signature is checked like a file.
@@ -90,7 +90,7 @@ describe('a link typed into', () => {
     expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('takes the exact name typed and left, and puts the held record back for words that name none, saying so', async () => {
+  it('takes the exact name typed and left, and keeps words that name none, unread, the held record kept, saying so', async () => {
     const { form, input, after } = mount('n-country');
     form.setValue('country_id', { id: 1, label: 'Egypt' });
     type(input, 'jordan');
@@ -101,7 +101,8 @@ describe('a link typed into', () => {
     after.focus();
     await settle(20);
     expect(form.getState().values['country_id']).toEqual({ id: 2, label: 'Jordan' });
-    expect(input.value).toBe('Jordan');
+    expect(input.value).toBe('Ja');
+    expect(form.getState().unread['country_id']).toEqual({ text: 'Ja', message: 'Country: nothing is called “⁨Ja⁩”; pick one from the list' });
     expect(hintSays()).toBe('Country: nothing is called “⁨Ja⁩”; pick one from the list. Country still holds Jordan');
   });
 
@@ -138,7 +139,7 @@ describe('a choice’s search box and its tags', () => {
   const floors = Array.from({ length: 20 }, (_, i) => ({ value: `f${i + 1}`, label: `Floor ${i + 1}` }));
   const box = (el: HTMLElement) => el.querySelector('input') as HTMLInputElement;
 
-  it('takes an option’s exact name typed and left; words that name none put the choice back and say so', () => {
+  it('takes an option’s exact name typed and left; words that name none stay, unread, the choice held, and say so', () => {
     const { el, form, value } = mountKind({ type: 'selection', label: 'Floor', options: floors });
     const input = box(el);
     type(input, 'floor 12');
@@ -148,9 +149,9 @@ describe('a choice’s search box and its tags', () => {
     type(input, 'Floor 99');
     input.blur();
     expect(value()).toBe('f12');
-    expect(input.value).toBe('Floor 12');
-    expect(hintSays()).toBe('Floor: nothing is called “⁨Floor 99⁩”; pick one from the list');
-    void form;
+    expect(input.value).toBe('Floor 99');
+    expect(form.getState().unread['x']?.text).toBe('Floor 99');
+    expect(hintSays()).toBe('Floor: nothing is called “⁨Floor 99⁩”; pick one from the list. Floor still holds Floor 12');
   });
 
   it('takes the only match on Enter, Arabic digits too, and never sends the form; no match is said', () => {
@@ -251,13 +252,13 @@ describe('a path picker typed into', () => {
     }
   });
 
-  it('puts the held record back for words that name none, and says so', async () => {
+  it('keeps words that name none, unread, the held record kept, and says so', async () => {
     const { input, value } = mount();
     type(input, 'Sprint 99');
     await settle();
     input.blur();
     expect(value()).toBe('Sprint 14');
-    expect(input.value).toBe('Portal\\Sprint 14');
+    expect(input.value).toBe('Sprint 99');
     expect(hintSays()).toBe('Iteration: nothing is called “⁨Sprint 99⁩”; pick one from the list. Iteration still holds Portal\\Sprint 14');
   });
 });

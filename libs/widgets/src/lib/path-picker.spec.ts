@@ -281,17 +281,18 @@ describe('a path picker', () => {
       }
     });
 
-    it('that name nothing put back what it held, and say so', async () => {
-      const { el, input, value } = mount({ value: 4 });
+    it('that name nothing stay, unread with why, the field holding what it held, and say so', async () => {
+      const { el, form, input, value } = mount({ value: 4 });
       await open(el, input);
       typeAndLeave(input, 'Sprint 99');
       await settle();
       expect(value()?.id).toBe(4);
-      expect(input.value).toBe('Portal\\Sprint 14');
+      expect(input.value).toBe('Sprint 99');
+      expect(form.getState().unread['iteration']?.text).toBe('Sprint 99');
       expect(hintSays(el)).toBe('Iteration: nothing is called “⁨Sprint 99⁩”; pick one from the list. Iteration still holds Portal\\Sprint 14');
     });
 
-    it('that name several put back what it held, and say several are called so: never that nothing is', async () => {
+    it('that name several stay, unread, and say several are called so: never that nothing is', async () => {
       const records = { ...ITERATIONS, 8: { name: 'Night shift', path: ['Portal', 'Night shift'] } };
       const { el, input, value } = mount({ value: 4, records });
       await open(el, input);

@@ -127,13 +127,13 @@ describe.each(['en', 'ar', 'fr'] as const)('%s: a link box’s words and the key
     expect(box.value).toBe('Narnia');
     expect(box.getAttribute('aria-invalid')).toBe('true');
     expect(form.getState().errors['client_id']).toBe(noMatch(locale, form, 'Narnia'));
-    // Left alone again with nothing waiting for it, the box puts back what it held and says so (the input rules, 7).
+    // Left alone again with nothing waiting for it, the words stay, still unread with why: never put back unsaid.
     box.focus();
     leave(box);
     await form.settled();
-    await until(() => box.value === 'Acme');
-    expect(box.value).toBe('Acme');
-    expect(form.getState().unread['client_id']).toBeUndefined();
+    expect(box.value).toBe('Narnia');
+    expect(form.getState().unread['client_id']?.text).toBe('Narnia');
+    expect(await form.save()).toBe(false);
   });
 
   it('a check made while the name is looked up refuses it meanwhile, and passes once it is found', async () => {
