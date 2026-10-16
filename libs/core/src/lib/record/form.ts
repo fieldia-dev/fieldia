@@ -30,6 +30,7 @@ import {
   type ResolvedFilter,
   type SaveConflict,
   type SaveProblem,
+  type BotReport,
   type UploadFile,
 } from './data-source';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -220,8 +221,8 @@ export interface FormEvents {
   change: { field: string; value: Value; values: Readonly<Values>; by: ChangeBy };
   /** A record was saved. */
   save: { recordId: RecordId | null; values: Readonly<Values> };
-  /** A page of responses sent its answers: those sent. */
-  send: { values: Values };
+  /** A page of responses sent its answers: those sent, and on a page with a bot check (`botCheck`) what it saw. */
+  send: { values: Values; bot?: BotReport };
   /** The app answered a call: with nothing (undefined), or an `ActionResult`. */
   action: { request: ActionRequest; result: ActionResult | undefined };
   /** A run of steps ended — a button's, a moment's, `form.run`'s — and how. */
@@ -351,6 +352,12 @@ export interface Form {
    * Resolves once every reading that waits (a name looked up) has ended.
    */
   settle(): Promise<void>;
+  /**
+   * Tell a public page's bot check (`page.botCheck`) what was seen: its hidden box filled (`honeypot`, the viewer's), or
+   * the captcha's token as the app's widget gives it (`captcha`; null once it expires). Each send carries them, with
+   * the time the answers took, as `bot` (`SubmitRequest`); a token goes once it is sent, as a captcha's is spent.
+   */
+  botCheck(seen: { honeypot?: boolean; captcha?: string | null }): void;
   /**
    * Whether a box's reading of what was typed still waits (a name being looked up): a check or a step forward made
    * now refuses its text with "still looking", so a caller that can wait for it (`settle`) checks again after.
@@ -700,6 +707,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   const today = () => localDay(options.now?.() ?? new Date());
+  const clock = () => (options.now?.() ?? new Date()).getTime();
+  /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
+  let bot = { honeypot: false, captcha: null as string | null, since: clock() };
+  /** What the bot check saw as the answers go; none without one. */
+  function botReport(): BotReport | undefined {
+    const check = page.botCheck;
+    if (!check) return undefined;
+    const taken = Math.max(0, clock() - bot.since) / 1000;
+    return { honeypot: check.honeypot !== false && bot.honeypot, tooFast: taken < (check.minSeconds ?? 3), seconds: Math.round(taken * 10) / 10, ...(check.captcha ? { captcha: bot.captcha } : {}) };
+  }
   // The record's id and the person, as worked-out values read them: the id is the one asked for until the form has its state.
   let started = false;
   let editing = options.editing !== false;
@@ -1721,14 +1738,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         const sent = shownValues();
         const before = state.values as Values;
         at = generation;
-        await source.submit({ pageId: page.id, values: sent });
+        const seen = botReport();
+        await source.submit({ pageId: page.id, values: sent, ...(seen ? { bot: seen } : {}) });
+        // The captcha's token is spent once sent: the next send waits for a new one.
+        if (seen?.captcha) bot.captcha = null;
         // Answered for answers no longer shown — the form was started again meanwhile: the source has them, the form lays nothing.
         if (at !== generation) return null;
         forgetDraft();
         // What it sent is what an answer changed since is told against: still to send.
         sentAs = before;
         set({ status: 'saved', unsent: unsentNow() });
-        emit('send', { values: sent });
+        emit('send', { values: sent, ...(seen ? { bot: seen } : {}) });
         void track(moment('on.afterSave', page.on?.afterSave, chain, false));
         return null;
       }
@@ -2357,6 +2377,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     settle: () => readTyped() ?? Promise.resolve(),
+
+    botCheck(seen) {
+      if (seen.honeypot !== undefined) bot.honeypot = seen.honeypot;
+      if (seen.captcha !== undefined) bot.captcha = seen.captcha;
+    },
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate() {
@@ -2393,6 +2418,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       personal.clear();
       filed.clear();
       sentAs = null;
+      // Started again: a new response, timed from now.
+      bot = { ...bot, honeypot: false, since: clock() };
       const values = syncParts(structuredCopy(baseline), 'start');
       set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, conflict: null, unsent: [], unread: {} });
     },

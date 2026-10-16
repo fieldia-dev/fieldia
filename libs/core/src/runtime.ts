@@ -103,7 +103,8 @@ export type {
 } from './lib/format/actions';
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
-export type { Page, PageData, PageLook } from './lib/format/page';
+export type { Page, PageData, PageLook, BotCheck } from './lib/format/page';
+export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
@@ -143,6 +144,7 @@ export type {
   CreateRequest,
   SubmitRequest,
   SubmitResult,
+  BotReport,
   ResolvedFilterCondition,
   ResolvedFilter,
   RecordChanges,

@@ -19,3 +19,5 @@ export { validatePage } from './lib/format/validate';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
 export { pageJsonSchema } from './lib/format/json-schema';
+// The purposes a browser fills a box in with, from the HTML standard, as the format checks them.
+export { AUTOFILL, AUTOFILL_CONTACT, AUTOFILL_NAMES, autofillProblem, autofillPurpose } from './lib/format/autofill';
