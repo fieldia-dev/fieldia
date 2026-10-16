@@ -397,7 +397,7 @@ test.describe('links and choices typed into', () => {
   let problems: string[] = [];
   test.afterEach(() => expect(problems).toEqual([]));
 
-  test('a link: Enter takes the only match and never saves the record; no match is said; leaving puts back what it held', async ({ page }) => {
+  test('a link: Enter takes the only match and never saves the record; no match is said; leaving keeps the words, the field what it held', async ({ page }) => {
     ({ problems } = await open(page, 'plain', 'page=customer&skin=underline'));
     const country = boxOf(page, 'f-country');
     const before = await valueOf(page, 'country_id');
@@ -414,8 +414,11 @@ test.describe('links and choices typed into', () => {
     await expect(hintOf(page, 'f-country')).toContainText('nothing is called “⁨Narnia⁩”');
     expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().status)).not.toBe('saved');
     await page.keyboard.press('Tab');
-    await expect(country).toHaveValue('Jordan');
+    // The words stay as typed, kept unread with why; the field still holds Jordan, and a save is refused over them.
+    await expect(country).toHaveValue('Narnia');
     await expect(hintOf(page, 'f-country')).toContainText('still holds Jordan');
+    expect(await valueOf(page, 'country_id')).toMatchObject({ label: 'Jordan' });
+    expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().unread['country_id']?.text)).toBe('Narnia');
     await node(page, 'f-country').scrollIntoViewIfNeeded();
     await screen(page, 'input-dates-link', { viewport: true });
     void before;
@@ -473,13 +476,14 @@ test.describe('links and choices typed into', () => {
       await expect(iteration).toHaveValue(`Portal\\${label}`);
       await expect(hintOf(page, 'f-iteration')).toBeHidden();
     }
-    // Words naming nothing: what it held comes back, and it says so.
+    // Words naming nothing: they stay, the field holds what it held, and it says so.
     await enter(iteration);
     await iteration.press('Delete');
     await iteration.pressSequentially('Sprint 99');
     await page.locator('body').click({ position: { x: 2, y: 2 } });
-    await expect(iteration).toHaveValue('Portal\\Sprint 13');
+    await expect(iteration).toHaveValue('Sprint 99');
     await expect(hintOf(page, 'f-iteration')).toContainText('nothing is called “⁨Sprint 99⁩”');
+    expect(((await valueOf(page, 'iteration')) as { label: string }).label).toBe('Sprint 13');
   });
 
   test('ar: stars and a scale move with the screen right to left; a full Top 3 says why it ranks no more', async ({ page }) => {
