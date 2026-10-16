@@ -94,7 +94,7 @@ export const rulesUi = {
   shownOnlyTo: 'Shown only to',
   shownWhile: 'Shown while',
   shownWhileWays: { always: 'Always', editing: 'Editing', reading: 'Reading' },
-  shownWhileHint: 'A part for editing only — a button beside the name, a warning — or for reading only, as Flectra’s oe_edit_only and oe_read_only. A form always being edited shows its editing parts.',
+  shownWhileHint: 'A part for editing only — a button beside the name, a warning — or for reading only. A form always being edited shows its editing parts.',
   startsWith: 'Starts with',
   startsWithPlaceholder: 'user — the person using it — or a formula',
   startsWithHint: 'A new record’s first value, worked out once; people may change it. user is the person using the form.',
