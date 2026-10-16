@@ -57,7 +57,9 @@ async function typedWebsite(page: Page) {
   return problems;
 }
 
-test('the browser’s Reload with a website typed and not saved: the browser asks first', async ({ page }) => {
+test('the browser’s Reload with a website typed and not saved: the browser asks first', async ({ page, browserName }) => {
+  // Playwright's Firefox reloads past the page's beforeunload (closing its tab, below, asks there as the others do).
+  test.skip(browserName === 'firefox', 'Playwright reloads Firefox without its beforeunload');
   const problems = await typedWebsite(page);
   const asked = new Promise<Dialog>((resolve) => page.once('dialog', resolve));
   const reloading = page.reload();
@@ -66,6 +68,18 @@ test('the browser’s Reload with a website typed and not saved: the browser ask
   await dialog.accept();
   await reloading;
   await expect(node(page, 'f-website').locator('input')).toHaveValue('');
+  expect(problems).toEqual([]);
+});
+
+test('the tab closed with a website typed and not saved: the browser asks first', async ({ page }) => {
+  const problems = await typedWebsite(page);
+  const asked: string[] = [];
+  page.on('dialog', (dialog) => {
+    asked.push(dialog.type());
+    void dialog.accept();
+  });
+  await page.close({ runBeforeUnload: true });
+  await expect.poll(() => asked).toEqual(['beforeunload']);
   expect(problems).toEqual([]);
 });
 
