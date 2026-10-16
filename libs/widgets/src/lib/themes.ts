@@ -211,8 +211,9 @@ ${forms('google-forms')} .fd-button { border-radius: 4px; font-weight: 500; }
  * tokens' layer a theme's tokens stood after the skins' and before the page's look's (look-styles.ts), whose accent,
  * room, corners and scheme won over them at the same weight; this sheet comes after Fieldia's own, so the page's
  * look's tokens come again after the themes' here, and still win. Their shapes stood after the business widgets'
- * rules and before the quiet look's, the pickers' and the rest of Fieldia's own: none of those speaks at their weight
- * to a part they reshape, so they win and lose as they did there (themes.spec.ts holds the order).
+ * rules and before the quiet look's, which still comes after them (PART_RANK.quiet); what else of Fieldia's own stood
+ * after them — the pickers', the head's, the text's, the uploads' and a broken part's rules — never speaks at their
+ * weight to what they reshape, so they win and lose as they did there (themes.spec.ts holds the order).
  */
 export const THEMES_CSS = THEME_TOKENS_CSS + LOOK_TOKENS_CSS + THEME_RULES_CSS;
 
