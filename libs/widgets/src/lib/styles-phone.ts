@@ -30,6 +30,8 @@ export const PHONE_CSS = /* css */ `
 .fd-phone[data-readonly] .fd-phone-country { display: none; }
 /* Why a key was refused: under the number, across the row. */
 .fd-phone > .fd-refusal-hint { flex-basis: 100%; order: 3; }
+/* On paper: the number as it is written, not its Call and WhatsApp links. */
+@media print { .fd-form .fd-phone-links { display: none !important; } }
 `;
 
 /** The phone part's sheet in a document, once, in its place among Fieldia's. */

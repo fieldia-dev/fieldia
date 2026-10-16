@@ -228,6 +228,12 @@ span.fd-links-name { color: var(--fd-text); cursor: default; }
 .fd-links-help[hidden], .fd-links-empty[hidden] { display: none; }
 .fd-links-empty { justify-self: stretch; padding: 10px; background: var(--fd-text-help); line-height: 17px; }
 .fd-links-empty-link { padding: 0; border: 0; background: none; color: var(--fd-text-link); font: 14px/17px var(--fd-font); text-align: start; text-decoration: underline; cursor: pointer; }
+/* On paper: a text's words, not its tools, and nothing where it is empty. */
+@media print {
+  .fd-form :is(.fd-field-tools, .fd-links-remove, .fd-links-add, .fd-text-bar) { display: none !important; }
+  .fd-form .fd-blank:is(.fd-text-area, .fd-md-view)::before { content: none !important; }
+  .fd-form .fd-text-area { border-color: transparent !important; padding-inline: 0 !important; }
+}
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

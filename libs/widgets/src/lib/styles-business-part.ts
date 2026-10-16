@@ -78,6 +78,12 @@ export const BUSINESS_PART_CSS = /* css */ `
 .fd-payment-details dd { margin: 0; }
 .fd-payment-open { justify-self: start; }
 .fd-payment-due { display: flex; justify-content: space-between; gap: 16px; padding-top: 6px; border-top: 1px solid var(--fd-border); font-weight: 600; }
+/* On paper: the stage the record is in, as words in the accent's ring — no arrows, no ground, the rest left out. */
+@media print {
+  .fd-form .fd-statusbar li:not(:has(> [aria-current="step"])) { display: none; }
+  .fd-form .fd-statusbar li > [aria-current="step"], .fd-form .fd-statusbar li > [aria-current="step"] > * { transform: none; }
+  .fd-form .fd-statusbar li > [aria-current="step"] { clip-path: none; margin: 0; padding: 2px 10px; background: none; color: var(--fd-accent); border: 1px solid; border-radius: 999px; }
+}
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

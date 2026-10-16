@@ -36,6 +36,18 @@ export const GRID_CSS = /* css */ `
 .fd-grid-drawn { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; }
 .fd-grid-drawn > .fd-progressbar, .fd-grid-drawn > .fd-progressbar-edit { flex: 1 1 auto; min-width: 0; }
 .fd-grid-row-buttons { display: inline-flex; gap: 2px; }
+/* On paper, every line in a plain table as wide as the sheet, in the grid's place (and its cards'). */
+.fd-grid-lines > .fd-print-table { display: none; }
+@media print {
+  .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
+  .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .fd-print-table :is(th, td) { padding: 5px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }
+  .fd-print-table th { font-weight: 600; border-block-end-color: var(--fd-border-strong); }
+  .fd-print-table .fd-num { text-align: end; white-space: nowrap; }
+  .fd-print-table .fd-line-section td { font-weight: 600; }
+  .fd-print-table .fd-line-note td { font-style: italic; }
+  .fd-print-table tfoot td { font-weight: 600; border-block-end: 0; }
+}
 /* Lines as cards (cards: narrow on a phone, or always), in the grid's place. */
 .fd-grid-lines[data-cards] { container: fd-grid / inline-size; }
 .fd-line-cards { display: none; gap: 8px; }

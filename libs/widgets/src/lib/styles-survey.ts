@@ -68,6 +68,8 @@ export const SURVEY_CSS = /* css */ `
 .fd-property-add { justify-self: start; }
 .fd-property-new { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .fd-property-new > .fd-input { flex: 1 1 10em; width: auto; }
+/* On paper: a matrix whole, a colour without its Clear. */
+@media print { .fd-form .fd-matrix { overflow: visible !important; } .fd-form .fd-colour-clear { display: none !important; } }
 `;
 
 /** The part's sheets in a document, once each, in their places among Fieldia's. */

@@ -92,6 +92,8 @@ export const LINES_CSS = /* css */ `
 .fd-line-section td { background: var(--fd-page); }
 .fd-line-section .fd-input { font-weight: 600; }
 .fd-line-note .fd-input { font-style: italic; }
+/* On paper: the lines, not the ticks to choose them nor the arrow that opens one. */
+@media print { .fd-form :is(.fd-line-pick, .fd-line-open, .fd-line-lead) { display: none !important; } }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */
