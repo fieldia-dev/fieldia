@@ -47,11 +47,11 @@ export const AREAS = [
 const AREA_OF = {
   sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
-  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts'],
+  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment'],
-  'real-estate': ['map-homes', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry'],
+  'real-estate': ['map-homes', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property'],
   surveys: ['survey', 'signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -135,6 +135,36 @@ export const DEMOS = [
       'Search for a company, tick a few rows, press Edit, pick Owner and a person, then Update: say Yes to the question.',
       'Choose Status for contacts that include one of Karim Nasser’s: the list says which it could not change, and why.',
       'Add &allIds=1000 to the address: “1,000 of 1,284 could be selected”, never “all”.',
+    ],
+  },
+  {
+    id: 'customer-account',
+    name: 'A customer with its invoices and quotations',
+    category: 'records',
+    query: 'page=customer-account&record=1&skin=underline',
+    blurb: 'Another kind of record listed inside this one: the customer’s invoices under its details, its quotations in a tab — a page at a time, searched, sorted and counted, their total under them, New making one for this customer, and View all opening the invoices list kept to this customer.',
+    howTo: [
+      'Under the details, Invoices says how many this customer has, and lists the latest five, their total under them.',
+      'Press › beside the pager for the next five, or type “paid” in the search and pick Search Status for: paid.',
+      'Click Amount’s header: the invoices in their amount’s order.',
+      'Press New: a new invoice opens in a dialog, its customer filled in. Give it a number and an amount and save: it is in the list, and the count is one more.',
+      'Press View all: the invoices list opens, kept to this customer’s.',
+      'Open the Quotations tab: its own list, the lost ones left out. Press › on the pager over the record: the next customer’s invoices and quotations, never the last one’s.',
+      'Start a new customer (record=new): the lists say nothing points at it until it is saved.',
+    ],
+  },
+  {
+    id: 'property',
+    name: 'A property and its viewings',
+    category: 'records',
+    query: 'page=property&record=1&skin=underline',
+    blurb: 'A home with the viewings booked for it, listed inside the record: when, the client and their phone as people read it, the agent and how it went — the latest first, New booking one for this home, View all opening every viewing of it in a dialog.',
+    howTo: [
+      'Viewings lists this home’s, the latest first, five at a time, and says how many there are.',
+      'Press New: a viewing opens in a dialog, its home filled in. Pick a time and a client and save: it joins the list.',
+      'Click a viewing: it opens in a dialog to change; saved, the list shows it changed.',
+      'Press View all: every viewing of this home, in a dialog, to search, group and page through.',
+      'Press › on the pager over the record, twice: the third home has had no viewings, and says so.',
     ],
   },
   {
@@ -757,6 +787,9 @@ export const OPENED = [
   { page: 'clinic-appointment', name: 'An appointment', from: 'clinic-calendar' },
   { page: 'booking', name: 'A booking', from: 'booking-week' },
   { page: 'contact', name: 'A contact', from: 'contacts' },
+  { page: 'invoice', name: 'An invoice', from: 'customer-account' },
+  { page: 'quotation', name: 'A quotation', from: 'customer-account' },
+  { page: 'viewing', name: 'A viewing', from: 'property' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */
