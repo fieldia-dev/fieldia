@@ -52,6 +52,8 @@ for (const file of readdirSync(join(WORKSPACE, 'examples/templates')).filter((f)
 // The demos' shell, every file of it as tools/build-demos.mjs made it: one added there is never missing here.
 for (const file of readdirSync(DEMOS, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name)) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
 cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });
+// The files a demo is tried with (an import's workbook and CSV file), which its how-to offers.
+cpSync(join(DEMOS, 'samples'), join(OUT, 'demos/samples'), { recursive: true });
 // The catalog imports the real pages' cards from here: without it the shell cannot load.
 cpSync(join(DEMOS, 'real'), join(OUT, 'demos/real'), { recursive: true });
 for (const demo of PUBLIC_DEMOS) cpSync(join(DEMOS, demo), join(OUT, 'demos', demo), { recursive: true });

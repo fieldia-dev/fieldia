@@ -20,6 +20,8 @@ for (const entry of readdirSync(join(WORKSPACE, 'demos'), { withFileTypes: true 
 cpSync(join(WORKSPACE, 'demos/real'), join(OUT, 'real'), { recursive: true, filter: (from) => !/(gaps|README\.md)$/.test(from) });
 cpSync(join(WORKSPACE, 'site/favicon.svg'), join(OUT, 'logo.svg'));
 cpSync(join(WORKSPACE, 'demos/thumbs'), join(OUT, 'thumbs'), { recursive: true });
+// Files a demo is tried with (an import's workbook and CSV file), offered from its how-to.
+cpSync(join(WORKSPACE, 'demos/samples'), join(OUT, 'samples'), { recursive: true });
 
 const SCRIPT_BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
 

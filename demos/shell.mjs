@@ -165,6 +165,7 @@ function drawHowTo() {
     <p class="ht-about">${esc(demo.blurb)}</p>
     <div class="ht-steps">How to try it</div>
     <ol>${demo.howTo.map((step) => `<li>${esc(step)}</li>`).join('')}</ol>
+    ${demo.files?.length ? `<p class="ht-files">Files to try it with: ${demo.files.map((file) => `<a href="${esc(new URL(file.href, new URL('..', location.href)).href)}" download>${esc(file.label)}</a>`).join(' · ')}</p>` : ''}
     <p class="ht-tested">Every demo here is driven by Fieldia’s browser tests on every change, in every framework.</p>`;
   const opener = document.createElement('button');
   opener.type = 'button';
