@@ -1,8 +1,9 @@
 /**
  * The business widgets' part of the stylesheet: priority stars, a state's
- * dot and its menu, a tag colour, a copy button, a range of dates, a running
- * timer, a document shown inline, an analytic distribution, tax totals and a
- * list of payments. Scoped, and written with logical properties, as the rest
+ * dot and its menu, a copy button, a range of dates, a running timer, a
+ * document shown inline, an analytic distribution, tax totals and a list of
+ * payments. A colour's and properties' come with their kinds in the survey
+ * part (styles-survey.ts). Scoped, and written with logical properties, as the rest
  * of it is; it comes after the inputs' part.
  */
 export const BUSINESS_CSS = /* css */ `
@@ -44,20 +45,6 @@ export const BUSINESS_CSS = /* css */ `
 .fd-dot-item[aria-checked="true"] { font-weight: 600; }
 /* The state picked, ticked at the menu's end too: told by more than its weight. */
 .fd-dot-item[aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; padding-inline-start: 16px; color: var(--fd-accent); }
-/* A colour: a swatch of it, and a palette of Flectra's twelve under it; none is a crossed-out square. */
-.fd-colour-box { position: relative; display: inline-flex; align-items: center; gap: 8px; }
-.fd-colour-button, .fd-colour { width: 24px; height: 24px; padding: 0; border: 1px solid var(--fd-border-strong); border-radius: 4px; background: var(--fd-swatch, transparent); cursor: pointer; }
-.fd-colour-button:disabled { cursor: default; }
-.fd-colour-none, .fd-colour[data-colour="0"] { background: linear-gradient(to top right, transparent calc(50% - 1px), var(--fd-error) calc(50% - 1px), var(--fd-error) calc(50% + 1px), transparent calc(50% + 1px)); }
-.fd-colour-palette { position: absolute; top: calc(100% + 4px); inset-inline-start: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 24px); gap: 6px; padding: 8px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
-.fd-colour[aria-checked="true"] { box-shadow: 0 0 0 2px var(--fd-surface), 0 0 0 4px var(--fd-accent); }
-/* A colour as text: the browser's picker over a swatch of its own, so an empty colour shows as none, never black; its code beside it. */
-.fd-colour-well { position: relative; display: inline-block; flex: none; width: 44px; height: 30px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); }
-.fd-colour-well:focus-within { outline: 2px solid var(--fd-focus); }
-.fd-colour-swatch { position: absolute; inset: 3px; border-radius: 2px; background-color: var(--fd-swatch); }
-.fd-colour-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.fd-input.fd-colour-code { width: 11ch; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.fd-colour-clear { border: 0; background: none; color: var(--fd-muted); font-size: 18px; cursor: pointer; }
 /* A value to copy: its box, the button after it. */
 .fd-copy { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
@@ -117,11 +104,4 @@ export const BUSINESS_CSS = /* css */ `
 .fd-payment-details dd { margin: 0; }
 .fd-payment-open { justify-self: start; }
 .fd-payment-due { display: flex; justify-content: space-between; gap: 16px; padding-top: 6px; border-top: 1px solid var(--fd-border); font-weight: 600; }
-/* Properties: in two columns when asked, one on a narrow form; adding one in place, its name and kind in a row. */
-.fd-properties-list { display: grid; gap: 8px; min-width: 0; }
-.fd-properties[data-columns="2"] > .fd-properties-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--fd-gap-x, 24px); }
-@container (max-width: 520px) { .fd-properties[data-columns="2"] > .fd-properties-list { grid-template-columns: minmax(0, 1fr); } }
-.fd-property-add { justify-self: start; }
-.fd-property-new { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.fd-property-new > .fd-input { flex: 1 1 10em; width: auto; }
 `;

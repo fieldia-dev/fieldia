@@ -193,8 +193,6 @@ const SKINS_CSS = /* css */ `
 :is(.fd-lines-table td, .fd-grid-editor) .fd-refusal-hint[data-above] { inset-block-start: auto; inset-block-end: calc(100% + 2px); }
 .fd-lines-table td:has(.fd-refusal-hint:not([hidden])), .fd-grid-editor { position: relative; }
 .ag-cell-inline-editing:has(.fd-refusal-hint:not([hidden])), .ag-row:has(.fd-refusal-hint:not([hidden])) { overflow: visible; z-index: 6; }
-.fd-progressbar-edit:has(> .fd-refusal-hint) { flex-wrap: wrap; }
-.fd-progressbar-edit > .fd-refusal-hint { flex-basis: 100%; }
 .fd-tax-note-row > td { padding: 0; border: 0; }
 
 /* underline: label beside the value, the way a Flectra sheet reads. A field whose page or group
@@ -860,30 +858,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   max-width: 17em; margin-block-start: 6px; padding: 3px 8px; border-radius: var(--fd-control-radius);
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4; text-align: start;
 }
+/* Properties' box: the designer's inspector wears the class too, so it stays here; their rows are the survey part's. */
 .fd-properties { display: grid; gap: 8px; min-width: 0; }
-.fd-property { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
-.fd-property > label { color: var(--fd-muted); font-size: 13px; }
-.fd-property[data-type="boolean"] > :nth-child(2) { justify-self: start; }
-/* A row's problem and a refused key's hint, under its value, not its label. */
-.fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 2; margin-block-start: -8px; }
-/* Beside their values, as the sheet's labels are: the same label column, the same words, the same gap between halves — the properties read as fields of the sheet. */
-.fd-form[data-fd-skin="underline"] .fd-property { grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr); }
-.fd-form[data-fd-skin="underline"] .fd-property > label { color: var(--fd-text); font-size: inherit; font-weight: var(--fd-label-weight); }
-@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } .fd-property > :is(.fd-property-error, .fd-refusal-hint) { grid-column: 1; margin-block-start: 0; } }
-.fd-progressbar {
-  position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
-  background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;
-}
-.fd-progressbar-fill { height: 100%; background: var(--fd-success); transition: width 0.2s ease; }
-.fd-progressbar[data-tone="warning"] .fd-progressbar-fill { background: #d97706; }
-.fd-progressbar[data-tone="danger"] .fd-progressbar-fill { background: var(--fd-error); }
-.fd-progressbar[data-tone="info"] .fd-progressbar-fill { background: var(--fd-info); }
-/* The share in words, on a chip of the surface: it reads the same over the fill and the track, in either scheme. Centred by its left edge, so it is centred right to left too. */
-.fd-progressbar-text { position: absolute; inset-block: 2px; left: 50%; translate: -50% 0; display: grid; place-items: center; padding-inline: 7px; border-radius: 999px; background: var(--fd-surface); font-size: 12px; line-height: 1; font-weight: 600; color: var(--fd-text); }
-.fd-progressbar-text:empty { display: none; }
-.fd-progressbar-edit { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.fd-progressbar-edit > .fd-progressbar { flex: 1 1 auto; }
-.fd-progressbar-edit > .fd-input { flex: 0 0 96px; }
 .fd-progress-bar { height: 4px; background: var(--fd-border); border-radius: 999px; overflow: hidden; }
 .fd-progress-bar > span { display: block; height: 100%; background: var(--fd-accent); transition: width 0.25s ease; }
 .fd-step { display: grid; gap: 18px; }
@@ -914,13 +890,6 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 /* ---- text, status, dialog ------------------------------------------------- */
 .fd-text-heading { font-size: 16px; font-weight: 650; margin: 0; }
 /* Blocks between fields: a line across the row; empty room or a picture that spans like a field. */
-/* A matrix: rows against columns; it scrolls sideways in its own box on a narrow screen. */
-.fd-matrix { overflow-x: auto; max-width: 100%; }
-.fd-matrix-table { border-collapse: collapse; min-width: 100%; }
-.fd-matrix-table th, .fd-matrix-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid var(--fd-border); }
-.fd-matrix-table thead th { font-weight: 500; font-size: 13px; color: var(--fd-muted); }
-.fd-matrix-table tbody th { text-align: start; font-weight: 500; }
-.fd-matrix-table input { accent-color: var(--fd-accent); width: 16px; height: 16px; margin: 0; }
 .fd-divider { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid var(--fd-border); margin: 4px 0; }
 .fd-block { min-width: 0; }
 .fd-spacer { min-height: 24px; }
@@ -1087,11 +1056,13 @@ export function installStyles(document: Document): void {
 }
 
 /**
- * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: a path picker's after
- * the pickers', a record's head after that, a work item's groups and its text editor after those. A sheet of a higher
- * rank goes after one of a lower, all before the page's own looks.
+ * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: rules cut from its
+ * first half (the survey kinds') after all of it, a path picker's after the pickers', a record's head after that, a
+ * work item's groups and its text editor after those, and rules cut from the head of the page's own looks (the survey
+ * kinds' looks) after them all, right before the rest of those looks. A sheet of a higher rank goes after one of a
+ * lower, all before the page's own looks.
  */
-export const PART_RANK = { picker: 1, head: 2, groups: 3, text: 4 } as const;
+export const PART_RANK = { sheet: 0, picker: 1, head: 2, groups: 3, text: 4, looks: 5 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

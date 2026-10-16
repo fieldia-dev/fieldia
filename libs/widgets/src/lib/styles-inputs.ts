@@ -1,8 +1,8 @@
 /**
  * The text, number and date inputs' part of the stylesheet: a count of
  * characters under a box, a number's unit and an amount's currency inside
- * its box, a rating's hearts and thumbs, words at a slider's ends, an NPS
- * scale's colours. Scoped
+ * its box, a rating's hearts and thumbs, an NPS scale's colours (words at a
+ * slider's ends come with it in the survey part). Scoped
  * and written with logical properties as the rest of it is; it comes before
  * the question kinds' part.
  */
@@ -27,9 +27,6 @@ export const INPUTS_CSS = /* css */ `
 .fd-rating-thumb button.fd-on { color: var(--fd-accent); }
 .fd-rating .fd-icon { display: block; width: 1em; height: 1em; }
 .fd-rating .fd-on .fd-icon { fill: currentColor; }
-/* Words under a slider's ends, each under its own end. */
-.fd-slider-word { display: block; max-width: 12em; }
-.fd-slider-last { text-align: end; }
 /* An NPS scale: 0–6, 7–8 and 9–10 tinted red, amber and green in either scheme, and set apart by a gap. */
 .fd-nps [data-tone="low"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
 .fd-nps [data-tone="mid"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }

@@ -1,4 +1,5 @@
 import type { Field, Locale } from '@fieldia/core';
+import { installSurveyStyles } from './styles-survey';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /**
@@ -24,6 +25,7 @@ function percent(value: number, locale: Locale) {
 
 export const progressbarWidget: WidgetFactory = (context) => {
   const { field, node, id, document, locale = 'en' } = context;
+  installSurveyStyles(document);
   const options = node.options ?? {};
   const range = (key: 'min' | 'max', usual: number) => {
     const set = options[key] ?? (field as Record<string, unknown>)[key];

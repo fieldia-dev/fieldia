@@ -2,6 +2,7 @@ import type { Option } from '@fieldia/core';
 import { layOut, limiter, withAlone } from './choice-rules';
 import { clearSelection, describeState, fillIn, maker, rightToLeft, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -23,6 +24,7 @@ import type { WidgetFactory } from './widgets';
 const BLANK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>';
 
 export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
+  installSurveyStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const multiple = field.type === 'selection' && field.multiple === true;

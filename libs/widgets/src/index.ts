@@ -16,13 +16,11 @@ export * from './lib/numbers';
 export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, leftWords, numberFits, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
-export * from './lib/progress';
 export * from './lib/label';
 export * from './lib/statusbar';
-export * from './lib/properties';
 export * from './lib/icons';
 export * from './lib/focus-trap';
-export { countriesIn } from './lib/address';
+export { countriesIn } from './lib/countries';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';
 export { wearsQuiet } from './lib/quiet';
@@ -38,4 +36,7 @@ export { lazyPart, settleParts, type Part } from './lib/parts';
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';
 export type { DateBox, DateBoxOptions } from './lib/date-box';
-export { textPart, pathPart, choicePart, datePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type PartFactory } from './lib/widget-parts';
+// The survey kinds — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a
+// progress bar — come in the survey part, loaded the first time a page shows one; `progressbarWidget` and
+// `propertiesWidget` draw from it, each value shown plainly until it comes.
+export { textPart, pathPart, choicePart, datePart, surveyPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type SurveyPart, type PartFactory } from './lib/widget-parts';

@@ -1,5 +1,6 @@
 import type { Field, FieldNode, Form, FormState, JsonValue, PropertyDefinition, Value } from '@fieldia/core';
 import { maker, wordsFor } from './kind-parts';
+import { installSurveyStyles } from './styles-survey';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /**
@@ -47,6 +48,7 @@ const KINDS = ['char', 'text', 'integer', 'float', 'boolean', 'date'] as const;
 
 export const propertiesWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, labels, locale } = context;
+  installSurveyStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const declared = field.type === 'properties' ? field.definitions : undefined;

@@ -1,6 +1,8 @@
 import { ADDRESS_PARTS, postcodeFits, settledPostcode, settledText } from '@fieldia/core';
 import type { WidgetLabels } from './labels';
+import { countriesIn } from './countries';
 import { describeState, maker, wordsFor } from './kind-parts';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -29,26 +31,8 @@ const PARTS: Record<(typeof ADDRESS_PARTS)[number], [keyof WidgetLabels, string]
 type Part = keyof typeof PARTS;
 const isPart = (name: unknown): name is Part => typeof name === 'string' && name in PARTS;
 
-/** Codes with a region's name that are no country: old ones, groups, and the like. */
-const NOT_COUNTRIES = 'AC AN BU CP CQ CS DD DG DY EA EU EZ FX HV IC NH QO RH SU TA TP UK UN VD XA XB YD YU ZR ZZ';
-const countries: Record<string, [string, string][]> = {};
-/** Every country, by its code and its name in the language, in the language's order. */
-export function countriesIn(locale: string): [string, string][] {
-  if (!countries[locale]) {
-    const names = new Intl.DisplayNames([locale], { type: 'region', fallback: 'none' });
-    const found: [string, string][] = [];
-    for (let a = 65; a < 91; a++)
-      for (let b = 65; b < 91; b++) {
-        const code = String.fromCharCode(a, b);
-        const name = !NOT_COUNTRIES.includes(code) && names.of(code);
-        if (name) found.push([code, name]);
-      }
-    countries[locale] = found.sort((x, y) => x[1].localeCompare(y[1], locale));
-  }
-  return countries[locale];
-}
-
 export const addressWidget: WidgetFactory = ({ form, name, node, id, document, labels, locale = 'en' }) => {
+  installSurveyStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const options = node.options ?? {};

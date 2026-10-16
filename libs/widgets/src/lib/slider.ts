@@ -1,5 +1,6 @@
 import { clearSelection, describeState, maker, wordsFor } from './kind-parts';
 import { formatNumber } from './numbers';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -11,6 +12,7 @@ import type { WidgetFactory } from './widgets';
  * Until it is slid it is not answered, and says so.
  */
 export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale = 'en' }) => {
+  installSurveyStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const has = (key: 'min' | 'max') => (key in field && typeof (field as Record<string, unknown>)[key] === 'number' ? ((field as Record<string, unknown>)[key] as number) : undefined);

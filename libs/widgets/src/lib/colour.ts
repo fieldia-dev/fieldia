@@ -2,6 +2,7 @@ import { foldDigits, stripMarks } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
 import { describeState, fillIn, maker, rightToLeft, setAttr, setHidden, wordsFor } from './kind-parts';
 import { popup } from './popup';
+import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -206,4 +207,7 @@ const hexWidget: WidgetFactory = ({ form, name, field, node, id, document, label
   };
 };
 
-export const colourWidget: WidgetFactory = (context) => (context.field.type === 'char' ? hexWidget(context) : paletteWidget(context));
+export const colourWidget: WidgetFactory = (context) => {
+  installSurveyStyles(context.document);
+  return context.field.type === 'char' ? hexWidget(context) : paletteWidget(context);
+};

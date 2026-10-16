@@ -550,7 +550,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (578.23 measured before, 578.38 after), to 578.4.
 // The input rules (0.21) and Wave 1 joined for 0.22: each line's growth above was measured on 0.20 alone; together,
 // with the box-left call renamed boxLeft and unread text counted as unsaved work, 629.73 measured — to 629.8.
-const BUDGET_KB = 629.8;
+// The survey kinds loaded on first use (0.23): a ranking, a matrix, a slider, pictures to choose from, a colour,
+// properties, an address and a progress bar, with the rules only they use, out of this script into fieldia.survey.js
+// (ranking, matrix, slider, choice-images, colour, properties, address, progress and their two sheets: 35.1 of code).
+// This script keeps the countries an address lists, which the designer and the map list too (countries.ts), and each
+// kind's value shown plainly before its part came — a ranking's order, a matrix's answers by row, a colour's code, an
+// address's lines, properties a line each, a slider in the number box (survey-plain.ts) — and the part's name in the
+// parts' table: 30.2 less (629.78 measured before, 599.60 after), to 599.7.
+const BUDGET_KB = 599.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -650,7 +657,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // committed reading every kind of box (listed with the raw budget above), 1.7 more, to 176.9 (measured 176.83).
 // The input rules (0.21) and Wave 1 joined for 0.22 (listed with the raw budget above): 197.21 measured, to 197.3 —
 // 39.3 over 0.20.0's 157.9, a size pass still owed.
-const GZIP_BUDGET_KB = 197.3;
+// The survey kinds loaded on first use, in fieldia.survey.js (12.1 gzipped), each value shown plainly before it came
+// (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
+const GZIP_BUDGET_KB = 188.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -814,7 +823,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // it saying the time it left out (date 19.3, as measured 19.29 and 7.17). Words typed in a path picker read by every
 // save, check and step — the record they name taken, waited for while it is found, kept unread with why when none or
 // several are called so — and autosave waiting while they are typed (path 15.4, 6.0, as measured 15.34 and 6.00).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2] };
+// The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
+// and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
+// from the head of the page's own looks, cut out of the main script (survey 35.1, 12.2, as measured 35.09 and 12.13).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], survey: [35.1, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -823,9 +835,10 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
+  survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', survey: 'surveyPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 const partSizes = [];
 for (const part of PARTS) {
@@ -874,7 +887,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
  * part, and for each part the first time a page uses one, from beside itself — a work item's head, text and path
- * picker for its bug, the filter bar for its backlog — and the page is drawn whole once they have come.
+ * picker for its bug, the filter bar for its backlog, the survey kinds for a survey — and the page is drawn whole once
+ * they have come.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -919,7 +933,16 @@ console.log(`parts: ${partSizes.join('; ')}`);
   await signup.drawn;
   if (loaded() !== 'choice, date, filters, head, path, text' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
   signup.destroy();
+  // A survey with a matrix: the survey kinds' part, the page drawn once it came — nothing of it before — and its two
+  // sheets where their rules stood: right after Fieldia's first, right before the page's own looks.
+  const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || survey.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a survey drew before its survey part came');
+  await survey.drawn;
+  if (loaded() !== 'choice, date, filters, head, path, survey, text' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
+  const sheets = [...doc.head.querySelectorAll('style')].map((style) => style.id);
+  if (sheets[sheets.indexOf('fieldia-styles') + 1] !== 'fieldia-survey-styles' || sheets[sheets.indexOf('fieldia-styles-looks') - 1] !== 'fieldia-survey-looks') throw new Error(`in a page, the survey part's sheets are not where their rules stood: ${sheets.join(', ')}`);
+  survey.destroy();
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, and a form's date box, each as first used");
+  console.log("in a page: nothing asked for by a page of plain parts; a bug's head, text, path picker and own lists, a backlog's filter bar, a form's date box, and a survey's matrix, each as first used");
 }
