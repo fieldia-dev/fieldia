@@ -1,0 +1,55 @@
+{
+  "fieldia": "0.2",
+  "id": "invoices",
+  "title": "Invoices",
+  "data": { "kind": "record", "model": "invoice" },
+  "fields": {
+    "name": { "type": "char", "label": "Number" },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner" },
+    "city": {
+      "type": "selection",
+      "label": "City",
+      "options": [
+        { "value": "cairo", "label": "Cairo" },
+        { "value": "alexandria", "label": "Alexandria" },
+        { "value": "giza", "label": "Giza" },
+        { "value": "mansoura", "label": "Mansoura" },
+        { "value": "dubai", "label": "Dubai" }
+      ]
+    },
+    "invoice_date": { "type": "date", "label": "Invoice date" },
+    "due_date": { "type": "date", "label": "Due date" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "sent", "label": "Sent" },
+        { "value": "paid", "label": "Paid" }
+      ]
+    },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "amount": { "type": "monetary", "label": "Amount", "currencyField": "currency_id", "money": { "currency": "code" } }
+  },
+  "layout": {
+    "type": "list",
+    "id": "invoices-list",
+    "columns": ["name", "partner_id", "city", "invoice_date", "due_date", "state", "amount"],
+    "sort": [{ "field": "invoice_date", "desc": true }, { "field": "name", "desc": true }],
+    "pageSize": 10,
+    "searchFields": ["name", "partner_id", "city", "state"],
+    "cells": {
+      "state": { "widget": "dot", "options": { "tones": { "draft": "muted", "sent": "info", "paid": "success" } } },
+      "amount": { "total": "sum" }
+    },
+    "filters": [
+      { "id": "overdue", "label": "Overdue", "filter": [{ "field": "state", "op": "=", "value": "sent" }], "period": { "field": "due_date", "is": "overdue" } },
+      { "id": "this_month", "label": "This month", "period": { "field": "invoice_date", "is": "thisMonth" } },
+      { "id": "last_month", "label": "Last month", "period": { "field": "invoice_date", "is": "lastMonth" } },
+      { "id": "this_year", "label": "This year", "period": { "field": "invoice_date", "is": "thisYear" } }
+    ],
+    "defaultFilters": ["this_year"],
+    "groupBy": ["city", "partner_id", "invoice_date", "state", "currency_id"],
+    "actions": [{ "type": "button", "id": "send-reminder", "label": "Send a reminder", "action": "send_reminder" }]
+  }
+}
