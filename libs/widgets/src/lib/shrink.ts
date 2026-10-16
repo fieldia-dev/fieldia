@@ -20,7 +20,8 @@ export interface ShrinkOptions {
 }
 
 /** What a picture field makes its photos, where the data source stores files and the page says nothing. */
-export const SHRINK_DEFAULTS: Required<ShrinkOptions> = { maxSide: 2048, quality: 0.85 };
+import { SHRINK_DEFAULTS } from './file-shown';
+export { SHRINK_DEFAULTS };
 
 const SHRINKABLE = /^image\/(jpeg|pjpeg|png|webp|heic|heif|avif)$/i;
 /** Whether a file is a photo this can make smaller. */

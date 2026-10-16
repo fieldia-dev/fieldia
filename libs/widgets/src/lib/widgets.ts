@@ -720,6 +720,8 @@ export const linesWidget: PartFactory = partFactory(linesPart, (part) => part.li
 // path picker's (pick-list.ts).
 const business = (widget: (part: BusinessPart) => WidgetFactory, plain: WidgetFactory) => partFactory(businessPart, widget, plain);
 const statusbarOf = business((part) => part.statusbarWidget, plainState);
+/** A statusbar, as 0.22 gave it: the business part's, the state's label meanwhile. */
+export const statusbarWidget: WidgetFactory = statusbarOf;
 const priorityOf = business((part) => part.priorityWidget, plainStars);
 
 /**
@@ -745,6 +747,9 @@ function plainFilesWidget({ field, id, document }: WidgetContext): Widget {
 }
 /** A file field's own widget (files.ts, signature.ts, pdf.ts), in the files part: the files' names meanwhile. */
 const filesOf = (real: (part: FilesPart) => WidgetFactory) => partFactory(filesPart, real, plainFilesWidget);
+/** A file field's and a picture field's widgets, as 0.22 gave them: the files part's, the files' names meanwhile. */
+export const binaryWidget: WidgetFactory = filesOf((part) => part.binaryWidget);
+export const imageWidget: WidgetFactory = filesOf((part) => part.imageWidget);
 // The survey kinds come in the survey part (survey-part.ts), each shown plainly meanwhile (survey-plain.ts): a slider's
 // number in the number box, pictures to choose from as the choices' own radios or boxes, a progress bar's number in words.
 // A property's rows and an editable progress bar's box are drawn by createWidget, handed to the part rather than imported
@@ -883,9 +888,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   one2many: linesWidget,
   'one2many.cards': later(() => cardsWidget),
   // A file, a signature and a picture, in the files part (files-part.ts): the files' names meanwhile.
-  binary: filesOf((part) => part.binaryWidget),
+  binary: binaryWidget,
   'binary.signature': filesOf((part) => part.signatureWidget),
-  image: filesOf((part) => part.imageWidget),
+  image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
   'json.address': surveyKind((part) => part.addressWidget, plainAddress),

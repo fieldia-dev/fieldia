@@ -6,7 +6,7 @@ export * from './lib/lines';
 // File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
 // the first time a page shows one: `(await filesPart.load()).goingItem(…)`. Their types are here; their code is not. A
 // file shown as its dialog shows it (a sheet's attachment preview) is here, and so is shrinkPhoto, which asks for the part.
-export { fileShown } from './lib/file-shown';
+export { fileShown, readFile, INLINE_FILE_WARNING, SHRINK_DEFAULTS } from './lib/file-shown';
 export type { Going, GoingItem } from './lib/files-going';
 export type { ShrinkOptions } from './lib/shrink';
 export * from './lib/extras';

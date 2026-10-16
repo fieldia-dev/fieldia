@@ -1,4 +1,5 @@
 import type { FileValue } from '@fieldia/core';
+import type { ShrinkOptions } from './shrink';
 
 /**
  * What a file is and where its bytes are: its kind, for its icon and its
@@ -37,3 +38,21 @@ export function fileShown(doc: Document, file: FileValue): { element: HTMLElemen
   element.setAttribute('data-kind', kind);
   return { element, url, free: () => void (url.startsWith('blob:') && URL.revokeObjectURL(url)) };
 }
+
+/** A file read whole into a value of its own, its bytes as base64: what a field holds where no store keeps files. */
+export const readFile = (file: File) =>
+  new Promise<FileValue>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result ?? '');
+      resolve({ name: file.name, type: file.type, size: file.size, data: url.slice(url.indexOf(',') + 1) });
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+/** A file held inside the record warns, once a form, from this size: it travels in every save. */
+export const INLINE_FILE_WARNING = 1024 * 1024;
+
+/** How large a photo is made before it is stored, unless its field says otherwise (`shrink`). */
+export const SHRINK_DEFAULTS: Required<ShrinkOptions> = { maxSide: 2048, quality: 0.85 };

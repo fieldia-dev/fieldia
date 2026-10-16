@@ -3,7 +3,8 @@ import { keepTabIn } from './focus-trap';
 import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
-import { bytesOf, extension, kindOf, source } from './file-shown';
+import { bytesOf, extension, INLINE_FILE_WARNING, kindOf, readFile, source } from './file-shown';
+export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { formBehind } from './handed';
@@ -34,20 +35,7 @@ import { installFilesStyles } from './styles-files';
 
 type FileField = Extract<Field, { type: 'binary' | 'image' }>;
 
-export const readFile = (file: File) =>
-  new Promise<FileValue>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const url = String(reader.result ?? '');
-      resolve({ name: file.name, type: file.type, size: file.size, data: url.slice(url.indexOf(',') + 1) });
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-
 const asText = (file: FileValue) => /^text\/|json|xml|csv/.test(file.type);
-/** A file held inside the record warns, once a form, from this size: it travels in every save. */
-export const INLINE_FILE_WARNING = 1024 * 1024;
 const warned = new WeakSet<object>();
 function warnInline(form: Form, files: { name: string; size: number }[]) {
   const large = files.find((file) => file.size > INLINE_FILE_WARNING);
