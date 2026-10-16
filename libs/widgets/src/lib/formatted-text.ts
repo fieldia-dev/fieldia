@@ -741,7 +741,8 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     emit();
   }
   const suggestKeys = (event: KeyboardEvent) => {
-    if (suggest.hidden || !found.length) return false;
+    // A key an IME is composing with — the Enter that takes its word — is the IME's, never a pick.
+    if (suggest.hidden || !found.length || event.isComposing || event.keyCode === 229) return false;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       active = (active + (event.key === 'ArrowDown' ? 1 : -1) + found.length) % found.length;
       drawSuggestions();

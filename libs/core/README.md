@@ -178,7 +178,8 @@ values. It asks only about the person's work at risk (`workAtRisk(state)`):
 each change of theirs the last finished save of the record did not send —
 typed while it was on its way, while the run that saved went on, or since
 (`state.unsent`, told against the record as that save left it; a value set by
-a step, a rule, a compute or your app is never theirs) — a file the store holds
+a step, a rule, a compute or your app is never theirs; text they left since
+that does not read, "12a", counts as "12" does) — a file the store holds
 that no save sent, files still on their way, and changes Reload set aside. Then
 it asks "Discard your changes?" through the host's `ask(message, { discard:
 true })`, or `confirm`; Cancel keeps the person where they are, and with

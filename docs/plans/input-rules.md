@@ -22,12 +22,16 @@ or writes anything. There is no other way to save.
 | Enter in a one-line box | the browser's implicit submission → `submitOrSave` (viewer.ts) | `form.save()` → `saving()` | yes (`await readTyped()`) |
 | Ctrl+Enter / ⌘+Enter | viewer.ts `keydown` (not in a grid, not in a slot) → `wizardForward` or `submitOrSave` | `save()` or `next()` | yes |
 | Save / Submit button | a click: the box is left first (its blur and change read it), then the submit | `save()` | yes |
-| A button's key (Alt+…) | viewer.ts `onHotkey` → the button's own path | `save()`, `next()` or a run of steps | yes |
+| A button's key (Alt+…) | viewer.ts `onHotkey` → the button's own path | `save()`, `next()` or a run of steps (below) | yes |
+| A run of steps the person or the app set off: a button, its key, a line's button, `form.run` | form.ts `press`, `run` (`RunScope.typed`) | run.ts `typedFirst`, before the run's first step that reads the form or hands its values on — `call`, `set`, `addLine`, `open` with values, a record or a filter, `post`, `openUrl`, any `when`: `form.settle()`, then text that does not read stops the run (`check`), said under its box. One place in the runner, whatever the step. A moment's run (`on.change`, `afterSave`…) takes the values as they are: it never reads a box under the person's keys | yes |
 | Autosave | `scheduleAutosave` (form.ts) | waits while a box is typed in (`typingNow()`); then `save()` | yes |
 | Pager, Done, leaving a record | viewer.ts `leave()` and the edit switch | `form.settle()` (awaited while `reading()`), then `save()` | yes |
 | Wizard Next, the step list | viewer.ts `wizardForward`, the step buttons | `next()` / `goTo()`; refused while `reading()`, then `settle()` and asked again | yes |
 | Steps: `save`, `check`, `goTo` | run.ts `createRunner` | `saving()`, `check()`, `goToStep()` | yes |
 | A line's dialog: Save & Close | dialog.ts | `form.settle()` awaited, then its check | yes |
+| A line's dialog opened (↗, a card) | lines.ts `openLineDialog` | `form.settle()` awaited first: the dialog shows the line as it reads (a name looked up as its cell was left taken), and Save & Close never writes back what that typing replaced | yes |
+| A line's × with `confirmDelete` | lines-table.ts | `form.settle()` awaited: a line holding only text typed (unread) asks first, as one holding a value does | yes |
+| A conflict's Reload | form.ts `reloadTheirs` | `readTyped()` awaited; the person's changes set aside, and text that does not read kept unread in its box over their value | yes |
 | A saved form placed on the page | the page round it | `readTyped` settles every attached inner form | yes |
 | The app: `form.save()`, `form.next()`, `form.goTo()` | the host | as above | yes |
 | The app: `form.validate()` | the host | `readTyped()`; it cannot wait | no: a name still looked up is refused with "still looking for …"; `await form.settle()` first to wait |
@@ -54,7 +58,9 @@ The letters in the table:
 - **R**: read through its reader before the commit (the viewer's `change`, which the box reads as it reads leaving).
   The value is taken, or the text is kept unread with why and the commit refuses.
 - **W**: the box's own reader, which a save waits for. The record or option named is taken, or the text is kept unread
-  with why ("nothing is called …", "still looking for …").
+  with why ("nothing is called …", "more than one is called …", "still looking for …"). Leaving reads the same way:
+  words that name none, or several, stay as typed, unread with why, and the field holds what it held — a save is
+  refused in words, never made with it, however fast the source answers. Escape puts back what the box held.
 - **L**: the box is left first (focus moves to the button), and leaving reads it as R does.
 - **T**: written as typed. Every key is the value, so there is nothing to read. Text that is not a value (JSON that does
   not parse) is kept unread with where it breaks.
@@ -76,12 +82,12 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Text line, password | `char`, `char.password` (text-box.ts) | T; held keys and the trim on change / blur | the field's check (most characters, pattern) | yes | R | R | L | P | R | R | R | R |
 | Phone, email, web address | `char.phone`, `char.email`, `char.url` (text-box.ts) | T; digits as 0-9, marks and ends stripped on change / blur | the field's check, with its words | yes | R | R | L | P | R | R | R | R |
 | Paragraph | `text` (text-box.ts) | T; held keys on change / blur | the field's check | yes | own: a new line | R | L | P | R | R | R | R |
-| Tags typed as words | `char.tags` (relations.ts `charTagsWidget`) | change / blur adds them | unread: tags past the most wait for room | guard, no refused keys | own: adds the tags | R | L | P | R | R | R | R |
+| Tags typed as words | `char.tags` (relations.ts `charTagsWidget`) | change / blur adds them; tags waiting for room are taken by a save, a check or leaving once there is room (`settling`) | unread: tags past the most wait for room; another record shown, they go | guard, no refused keys | own: adds the tags | R | L | P | R | R | R | R |
 | Colour code | `char.color`, `integer.color` (colour.ts) | a whole code as typed; change / blur reads | unread, the colour as entered | yes | R | R | L | P | R | R | R | R |
-| Link, reference | `many2one`, `reference` (relations.ts `combobox`) | W: the exact name (the last list's at once, else looked up) | unread: "nothing is called …" / "still looking for …" | no (free words) | own: the only match or the exact name | W (Enter's reading, then the save waits) | L, then W | P | W | W | W | W |
-| Tags of links | `many2many`, `many2many.tags`, `many2many.links` (relations.ts `tagsWidget`) | W | unread | no | own: adds the match | W | L, then W | P | W | W | W | W |
-| Path picker | `many2one.path` (path-picker.ts, path part) | W: a whole path, or a name only it has | unread: none or several called so | no | own: the match | W | L, then W | P | W | W | W | W |
-| Choice typed by name | `selection` with a search, `selection.tags` (choice-tags.ts) | its own reader, at once (options are here) | unread: "nothing is called …" | no | own: the only match | R | L | P | R | R | R | R |
+| Link, reference | `many2one`, `reference` (relations.ts `combobox`) | W: the exact name, whatever row the list reached (the last list's at once, else looked up; past the search's limit asked for exactly, `SearchRequest.exact`); a reference's name found after its model changed is let go | unread: "nothing is called …" / "more than one is called …" / "still looking for …" | no (free words) | own: the exact name, else the row the arrows reached, else the only match | W (Enter's reading, then the save waits) | L, then W | P | W | W | W | W |
+| Tags of links | `many2many`, `many2many.tags`, `many2many.links` (relations.ts `tagsWidget`) | W; a tag already chosen, typed again: the words go, "is already there" | unread | no | own: adds the match | W | L, then W | P | W | W | W | W |
+| Path picker | `many2one.path` (path-picker.ts, path part) | W: a whole path, or a name only it has, whatever row is reached | unread: none or several called so | no | own: the exact name, else the row reached | W, however soon: the row reached only when the arrows reached it | L, then W | P | W | W | W | W |
+| Choice typed by name | `selection` with a search, `selection.tags` (choice-tags.ts) | its own reader, at once (options are here) | unread: "nothing is called …", the words kept as typed | no | own: the only match | R | L | P | R | R | R | R |
 | "Other" answer | `selection.radio`, `selection.checkboxes` (widgets.ts `choiceGroup`) | change / blur: trimmed; naming an option ticks it | — | no | R | R | L | P | R | R | R | R |
 | Own list | `selection` with `list: 'own'` (own-list.ts) | — (a letter reaches an option; Enter or Space picks it) | — | — | own: picks | own: picks, then saves | — | — | — | — | — | — |
 | Distribution | `json.distribution` (distribution.ts) | shares: change / blur; accounts: W (a link per line) | unread on the field: the share's or the account's | shares yes | R / own | R / W | L, then W | P | R / W | R / W | R / W | R / W |
@@ -96,8 +102,8 @@ Columns: **Enter** · **Ctrl+Enter** · **Save** (the button) · **Auto** (autos
 | Formatted text | `html`, the text part's rich and Markdown editors | T | — | no | own: a new line; the link row: applies | T (from the link row: applies, then saves) | L | T (rich), P (Markdown) | T | T | T | T |
 | Web page, copy | `char.embed`, `char.copy`, `text.copy` | T | the field's check | no | R | R | L | P | R | R | R | R |
 | Table of lines, cards | `one2many`, `one2many.cards` (lines.ts, cards.ts) | each cell is its kind's box (`lineForm`); its reader leaves with its line | as its kind, by the cell's path | as its kind | as its kind | as its kind | L | P | as its kind | as its kind | as its kind | as its kind |
-| Grid cells | `@fieldia/grid` (`FieldiaCellEditor`) | the kind's box in the cell's editor | as its kind | as its kind | own: the grid's (the cell, the next row) | own: the grid's (a note's end) | L (the editor closes as its cell loses the focus) | P | R | R | R | R |
-| Grid paste on chosen cells | grid.ts `pasteBlock`, cell-paste.ts | each cell read as its column reads | not pasted, named **with why** (as its box says it) | — | — | — | — | — | — | — | — | — |
+| Grid cells | `@fieldia/grid` (`FieldiaCellEditor`) | the kind's box in the cell's editor; a name read once the editor has closed lands in its cell; an editor taken away without a blur (Firefox, WebKit) has its name box read as leaving reads it | as its kind: the cell shows the words, marked, with why | as its kind | own: the grid's (the cell, the next row) | own: the grid's (a note's end) | L (the editor closes as its cell loses the focus) | P | R | R | R | R |
+| Grid paste on chosen cells | grid.ts `pasteBlock`, cell-paste.ts | each cell read as its column reads; a spreadsheet's quoted cell (line breaks, tabs, quotes inside) is one cell | not pasted, named **with why** (as its box says it): another currency named, words past the column's most said by how much | — | — | — | — | — | — | — | — | — |
 | Slider, rating, scale, yes/no, priority, state dot, status bar, checkboxes, radios, ranking, pictures, matrix, files, image, signature, timer, link checkboxes, link table | widgets.ts and their files | — | — | — | — | — | — | — | — | — | — | — |
 
 In the **Next** column for a wizard, Next reads like a check: it refuses while a name is still being looked up. The
@@ -121,7 +127,15 @@ number, 120 or more. It stays 600."). This is the designer's rule since 0.19.
 ### Not a value: filters and searches
 
 The custom filter's value (custom-filter.ts) is read when Apply is pressed. A number keeps its keys held after a refused
-one, with why. A date reads in the page's order, and a day and time says the time it would leave out before it is taken.
+one, with why. A date reads in the page's order, and a day and time — written the ISO way or the page's — says the time
+it would leave out before it is taken.
+
+### A press is the button's
+
+A box left by a press of the pointer — its focus going to the button pressed — may say or unsay words under itself as it
+is left (a refused paste's words going, a name found to be none). Those words wait for the press to end
+(`press.ts` `afterPress`, used by every `refusalHint`), so nothing under the pointer moves before the release: the click
+is the button's — Apply, Save — never lost on what moved under it.
 The search bar, the filter bar, the map's search box and a chatter's composer are not saved with the record.
 
 ## 3. The hold: every way text arrives
@@ -134,7 +148,7 @@ refused one, with the same words, however the text arrives:
 | Typing | held with them, the words said again | `onBeforeInput` (`typing`) |
 | Paste (Ctrl+V, the menu) | joins them, the words said again: never lands beside the text typed before the refused key | `take()` (`held && holding()`) |
 | Drop | as a paste | `take()` |
-| IME (composition) | what it makes is put back and held with them | `onCompositionStart` / `onCompositionEnd` |
+| IME (composition) | what it makes is put back and held with them; the Enter that takes its word, and its other keys, are the IME's — never a name box's, a list's or the grid's (`isComposing`, key 229) | `onCompositionStart` / `onCompositionEnd` |
 | Autocorrect, a spelling's correction (`insertReplacementText`) | refused while keys are held, the words said | `onBeforeInput` |
 | A phone keyboard's keys (not cancelable) | put back once they land, and held | `onBeforeInput` / `onInput` |
 | Backspace | takes back the last key held | `deleteContentBackward` |
@@ -166,7 +180,12 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
 | Enter and Ctrl+Enter as in 0.20 | viewer `typing-save.spec.ts` | `e2e/input-keys.spec.ts`, `e2e/keys.spec.ts` |
 | A paste into the grid says why a cell was left | grid `cell-paste.spec.ts`, `grid-input-rules.spec.ts` | `e2e/input-tables.spec.ts` |
 | The designer reads a setting before a publish; a refused date is said | designer `input-settings.spec.ts`, `date-setting.spec.ts` | — |
-| A day and time where a day goes says the time left out | widgets `plain-date.spec.ts`, viewer `custom-filter.spec.ts` | `e2e/input-keys.spec.ts` (the date box) |
+| A day and time where a day goes says the time left out | widgets `plain-date.spec.ts`, viewer `custom-filter.spec.ts`, `rules-custom-filter-day-and-time-in-page-order.spec.ts` | `e2e/input-keys.spec.ts` (the date box) |
+| A run of steps reads what is typed first; text unread is work at risk; Reload keeps it | core `typed-first.spec.ts` | `e2e/rules-call-step-reads-typed-first.spec.ts`, `rules-way-out-asks-about-unread-text.spec.ts`, `rules-reload-keeps-unread-text.spec.ts` |
+| A name typed taken as meant: none or several kept unread on leaving, an exact name whatever is reached, past the limit, a reference's model, the IME's Enter | widgets `names-taken.spec.ts`, `rules-link-*.spec.ts`, `rules-names-enter-while-composing.spec.ts`, `rules-reference-model-changed-while-looked-up.spec.ts`, `rules-tags-name-already-chosen.spec.ts` | `e2e/rules-link-save-button-name-of-none.spec.ts`, `rules-path-ctrl-enter-same-whatever-the-pace.spec.ts` (three engines) |
+| Lines: a cell's name of none said in the grid, a dialog waiting, `confirmDelete` over typed text, tags waiting for room | widgets `lines-typed.spec.ts`, `rules-char-tags-waiting-when-room-made.spec.ts` | `e2e/rules-grid-link-cell-name-of-none-said.spec.ts`, `rules-grid-line-dialog-keeps-name-found.spec.ts`, `rules-lines-confirm-delete-typed-text.spec.ts` |
+| A grid paste: quoted cells, another currency, past a column's most | grid `cell-paste.spec.ts`, `rules-paste-*.spec.ts` | — |
+| A press is the button's | widgets `press.spec.ts` | `e2e/rules-custom-filter-apply-after-refused-paste.spec.ts` |
 
 ## 5. Known limits
 
@@ -179,6 +198,8 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
   is left, never mid-word.
 - **The grid's own keys.** Ctrl+Enter inside the grid is the grid's (a note's end), as in 0.20, and saves nothing. The
   Save button leaves the cell first.
+- **Work at risk.** Text left that does not read is the person's work as a change is: after a save, a way out asks
+  about it (`workAtRisk`, `state.unsent`); before a record's first save neither is at risk, as in 0.20.
 - **Closing the tab or the window.** Fieldia saves nothing as the page goes, so nothing old or half typed is saved. A
   host that wants to ask first does it in its own `beforeunload`: `form.settle()` (it reads what is typed at once; a
   name looked up is kept unread meanwhile), then `form.getState().dirty` and `unread`.

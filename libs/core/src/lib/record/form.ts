@@ -100,11 +100,12 @@ export interface FormState {
   /**
    * Fields holding a change of the person's that the last finished save of
    * this record did not send: made while it was on its way, while the run that
-   * saved went on (its afterSave run, a copy being made), or since. Worked out
-   * from the record as that save left it, so a change back to it is none; and
-   * before the record's first save, only a file the store holds and no save
-   * sent. Never a value a step, a rule, a compute or the app set: each change
-   * is told by its origin. The next record starts with none.
+   * saved went on (its afterSave run, a copy being made), or since — and text
+   * they left since in a box of it that does not read (`unread`), which no save
+   * can send. Worked out from the record as that save left it, so a change back
+   * to it is none; and before the record's first save, only a file the store
+   * holds and no save sent. Never a value a step, a rule, a compute or the app
+   * set: each change is told by its origin. The next record starts with none.
    */
   readonly unsent: readonly string[];
   /**
@@ -118,6 +119,16 @@ export interface FormState {
    * value it held as the box was entered; validate and save refuse with the words until the text is fixed.
    */
   readonly unread: Readonly<Record<string, UnreadText>>;
+}
+
+/** How a search for a link's records is asked (`form.search`, `form.searchLine`). */
+export interface SearchOptions {
+  /** The model searched: a reference's, or the model structured data names records of. */
+  model?: string;
+  /** Those records alone, for their names. */
+  ids?: RecordId[];
+  /** Only the records named exactly the query, in any case (`SearchRequest.exact`): a typed name read as a record. */
+  exact?: boolean;
 }
 
 /** Text left in a box that does not read, and why, as `FormState.unread` keeps it. */
@@ -155,7 +166,8 @@ export function unsavedWork(state: FormState): boolean {
 
 /**
  * Whether a way out would lose the person's work without their knowing: a
- * change of theirs the last save did not send (`unsent`), files still on
+ * change of theirs the last save did not send, or text they left since that
+ * does not read ("12a" counts as "12" does: `unsent`), files still on
  * their way, changes Reload set aside, the changes of a save refused for a
  * conflict, waiting for Reload or Keep mine (only a source that keeps
  * versions has one) — and, `how.changes`, any change not saved. What
@@ -451,11 +463,12 @@ export interface Form {
    * Records a many2one, many2many or reference may point to. A reference needs
    * `options.model`, and so does structured data naming records of a model (a
    * json field, such as an analytic distribution's accounts); `options.ids`
-   * finds those records alone, for their names.
+   * finds those records alone, for their names; `options.exact`, those named
+   * exactly the query (`SearchRequest.exact`).
    */
-  search(field: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }): Promise<RelatedRecord[]>;
+  search(field: string, query: string, limit?: number, options?: SearchOptions): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values — or structured data of a line naming records of a model (`options.model`). */
-  searchLine(field: string, key: string, subfield: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }): Promise<RelatedRecord[]>;
+  searchLine(field: string, key: string, subfield: string, query: string, limit?: number, options?: SearchOptions): Promise<RelatedRecord[]>;
   /**
    * The values of records a many2many links to, for a table of them: `fields`
    * of the records with these ids, in the order asked, read with the data
@@ -485,7 +498,9 @@ export interface Form {
   /**
    * Press a button: ask its `confirm` first, run its `steps`, then call its
    * `action`, when it names one, as a final `call`. A list's button passes
-   * the records chosen in it, and every call of the run carries them.
+   * the records chosen in it, and every call of the run carries them. What is
+   * typed is read before its first step that reads the form or hands its
+   * values on, as a save reads it: text that does not read stops the run.
    */
   runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<RunResult>;
   /** A field's own value as its tones have it now: its tone and whether it is bold, read on the record. */
@@ -508,7 +523,7 @@ export interface Form {
    * carrying the lines. Hidden, or with no line chosen, it does not run.
    */
   runLinesAction(nodeId: string, buttonId: string, keys: readonly string[]): Promise<RunResult>;
-  /** Run steps on this form, as a button would: `context.id` is what their calls carry (`run` when left out). */
+  /** Run steps on this form, as a button would — what is typed read first: `context.id` is what their calls carry (`run` when left out). */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /** A tab was shown: the viewer says so, and the page's `show` steps for it run. */
   shown(tab: string): void;
@@ -1077,8 +1092,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const was = state.values;
     const shown = state.errors;
     state = { ...state, ...patch };
-    // The person's changes the last save did not send, worked out again from the values as they are now.
-    if (patch.unsent === undefined && patch.values !== undefined) {
+    // The person's changes the last save did not send, worked out again from the values as they are now, and from the
+    // text they left that does not read.
+    if (patch.unsent === undefined && (patch.values !== undefined || patch.unread !== undefined)) {
       const unsent = unsentNow();
       if (!sameList(unsent, state.unsent)) state = { ...state, unsent };
     }
@@ -1127,19 +1143,33 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /**
    * The person's work no save took, by field, in the page's order: each of
    * their changes that differs from the record as the last save left it —
-   * a field they wrote, or a line of a table they changed — and before a
-   * first save, only a file the store holds.
+   * a field they wrote, or a line of a table they changed — and text they
+   * left in a box of it that does not read (`unread`), which no save can
+   * send; before a first save, only a file the store holds.
    */
   function unsentNow(): string[] {
-    if (!personal.size && !personalLines.size) return [];
+    const typed = sentAs ? unreadFields() : null;
+    if (!personal.size && !personalLines.size && !typed?.size) return [];
     const out: string[] = [];
     for (const name of Object.keys(fields)) {
+      // Typed and left unread since a save: the person's, as a change is — a value changed to "12" is, so is "12a".
+      if (typed?.has(name)) {
+        out.push(name);
+        continue;
+      }
       const lines = personalLines.get(name);
       if (!personal.has(name) && !lines) continue;
       const from = sentAs ?? (filedIn(name) ? baseline : null);
       if (!from) continue;
       if (lines ? linesDiffer(name, lines, state.values[name], from[name]) : differs(name, state.values[name], from[name])) out.push(name);
     }
+    return out;
+  }
+
+  /** The fields with text left unread in a box of theirs: a field's, a line's cell's, a property's. */
+  function unreadFields(): Set<string> {
+    const out = new Set<string>();
+    for (const path of Object.keys(state.unread ?? {})) out.add(path.split('.')[0]);
     return out;
   }
 
@@ -2021,6 +2051,31 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return first === undefined ? null : { reason: 'check', message: first };
   }
 
+  /**
+   * What is typed read first, for a run the person or the app set off (`RunScope.typed`): every box read as a save
+   * reads it, a name looked up waited for. Text left that does not read stops the run, said under its box as a check
+   * says it — never a value under it handed on or worked from.
+   */
+  async function typedFirst(): Promise<Stopped | null> {
+    const at = generation;
+    const waiting = readTyped();
+    if (waiting) await waiting;
+    // Another record shown while it waited: the run is not for that one.
+    if (at !== generation) return replaced();
+    const found = unreadProblems();
+    const first = Object.values(found)[0];
+    if (first === undefined) return null;
+    set({ errors: { ...state.errors, ...found } });
+    return { reason: 'check', message: first };
+  }
+
+  /** The problems of text left unread in boxes shown — this form's and its saved forms' placed here — by path. */
+  function unreadProblems(): Record<string, string> {
+    const inner = (path: string) =>
+      [...attached.values()].some((part) => path.startsWith(`${part.name}.`) && !!part.inner.form.getState().unread?.[path.slice(part.name.length + 1)]);
+    return Object.fromEntries(Object.entries(collectErrors()).filter(([path]) => !!state.unread[path] || inner(path)));
+  }
+
   /** Go to a wizard's step for a run; undefined when the target is no step of it, but a tab. */
   async function goToStep(target: string, chain: readonly string[]): Promise<Stopped | null | undefined> {
     if (!steps.includes(target)) return undefined;
@@ -2062,8 +2117,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     ctx: Record<string, unknown>,
     query: string,
     limit: number,
-    model?: string,
-    ids?: RecordId[]
+    { model, ids, exact }: SearchOptions = {}
   ): Promise<RelatedRecord[]> {
     // Formatted text names people and records in place (@mention, #4127): searched by the model they are of.
     const byModel = def.type === 'reference' || def.type === 'json' || def.type === 'html';
@@ -2077,7 +2131,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const own: ResolvedFilter[] | undefined = byModel || !def.filter ? undefined : resolveFilter(def.filter, ctx);
     const filter = ids ? [...(own ?? []), { field: 'id', op: 'in' as const, value: ids }] : own;
     const relation = byModel ? (model as string) : def.relation;
-    return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
+    return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit, ...(exact ? { exact: true } : {}) }));
   }
 
   function lineField(field: string) {
@@ -2260,7 +2314,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     personalLines.clear();
     filed.clear();
     if (back) writeValues({ ...(state.values as Values), ...back });
-    if (state.setAside !== null || state.unsent.length || state.conflict !== null) set({ setAside: null, unsent: [], conflict: null });
+    // Text left that does not read goes too: each box shows what its field holds.
+    const unread = Object.keys(state.unread).length ? { unread: {} } : {};
+    if (state.setAside !== null || state.unsent.length || state.conflict !== null || unread.unread) set({ setAside: null, unsent: [], conflict: null, ...unread });
   }
 
   /** The fields holding the person's changes no save took, as the record as last saved holds them: their lines alone, for a table. */
@@ -2360,6 +2416,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     store: (values) => store(values),
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
+    typedFirst,
     save: saving,
     generation: () => generation,
     gone: replaced,
@@ -2438,6 +2495,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
+    // Pressed by the person: what is typed is read before a step reads the form or hands its values on.
+    scope.typed ??= 'first';
     return track(
       (async (): Promise<RunResult> => {
         if (confirm && !(await runner.ask(confirm))) {
@@ -2660,7 +2719,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     async search(field, query, limit = 8, options = {}) {
-      return runSearch(fieldDef(field), field, context(), query, limit, options.model, options.ids);
+      return runSearch(fieldDef(field), field, context(), query, limit, options);
     },
 
     async previewLine(field, key, values) {
@@ -2683,7 +2742,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
       const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit, options.model, options.ids);
+      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit, options);
     },
 
     canCreate: (field) => creatable(page.fields[field]) !== null,
@@ -2831,7 +2890,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         lines: { field: source.field, keys: [...keys], ids: lines.flatMap((line) => (line.id === undefined ? [] : [line.id])), values: lines.map((line) => structuredCopy(line.values)) },
       });
     },
-    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
+    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], typed: 'first', ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
 
     shown(tab) {
       // A wizard's steps are told by the form itself, as they are entered.
@@ -2863,9 +2922,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const asked = shownNow();
       await savesSettled();
       if (!asked()) return false;
-      // The person's changes, kept before theirs are loaded over them.
+      // What is still typed is the person's too: read, a name looked up waited for, before theirs are loaded.
+      const waiting = readTyped();
+      if (waiting) await waiting;
+      if (!asked()) return false;
+      // The person's changes, kept before theirs are loaded over them; and text they left that does not read.
       const mine: Values = {};
       for (const name of state.dirty) mine[name] = structuredCopy(state.values[name]) as Value;
+      const typed = state.unread;
       // The record loaded again is a record shown anew: what is set aside is laid on it alone.
       const loading = load(true);
       const loaded = generation;
@@ -2874,7 +2938,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Set aside where theirs differ from mine: a change they made the same way is no loss.
       const aside: Values = { ...(state.setAside ?? {}) };
       for (const [name, value] of Object.entries(mine)) if (!sameValue(fields[name], value, state.values[name])) aside[name] = value;
-      set({ conflict: null, saveProblem: null, setAside: Object.keys(aside).length ? aside : null });
+      // Text that does not read is no value to set aside: it stays in its box, unread with why, over their value —
+      // never dropped unsaid. A line of theirs no longer there takes its cells' text with it.
+      const unread = Object.fromEntries(Object.entries(typed).filter(([path]) => valueAt(state.values, path) !== gone));
+      set({ conflict: null, saveProblem: null, setAside: Object.keys(aside).length ? aside : null, ...(Object.keys(unread).length ? { unread } : {}) });
       return true;
     },
 

@@ -392,9 +392,15 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     remove.textContent = '×';
     remove.setAttribute('aria-label', labels.deleteLine);
     remove.addEventListener('click', () => {
+      const asking = options['confirmDelete'] === true;
+      // What is typed in the line is part of it: read first, as leaving its cell reads it — a name still looked up is
+      // kept unread at once meanwhile ("still looking for …"), so it asks too.
+      if (asking) void form.settle?.();
       const at = current().findIndex((l) => l.key === line.key);
-      const values = current()[at]?.values ?? {};
-      if (options['confirmDelete'] !== true || cells.every((cell) => isEmpty(cell.def, values[cell.name]) || values[cell.name] === false)) return form.removeLine(name, line.key);
+      if (at < 0) return;
+      const values = current()[at].values;
+      const typed = Object.keys(form.getState().unread ?? {}).some((path) => path.startsWith(`${name}.${line.key}.`));
+      if (!asking || (!typed && cells.every((cell) => isEmpty(cell.def, values[cell.name]) || values[cell.name] === false))) return form.removeLine(name, line.key);
       confirm.ask(fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: at + 1 }) }), (gone) => {
         if (gone) form.removeLine(name, line.key);
         // The line that took its place, or this one kept; else Add.

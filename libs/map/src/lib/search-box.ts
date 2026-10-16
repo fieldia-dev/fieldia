@@ -239,7 +239,8 @@ export function searchBox(options: SearchBoxOptions) {
     timer = setTimeout(run, 250);
   });
   input.addEventListener('keydown', (event) => {
-    if (input.readOnly) return;
+    // A key an IME is composing with — the Enter that takes its word — is the IME's.
+    if (input.readOnly || event.isComposing || event.keyCode === 229) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       if (list.hidden) return;
       event.preventDefault();

@@ -16,6 +16,7 @@ import {
 import { fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { formatNumber } from './numbers';
+import { afterPress, pressesOf } from './press';
 
 /**
  * The box's side of Fieldia's input rules: what a box refuses as it is typed
@@ -80,6 +81,8 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
     if (!element.isConnected && anchor.parentNode) anchor.after(element);
   };
   box.addEventListener('focus', place);
+  // Shown or hidden as a press leaves the box, the words wait for the press to end: nothing under the pointer moves.
+  pressesOf(document);
   let words = '';
   const describe = () => {
     const tokens = (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((token) => token && token !== id);
@@ -95,20 +98,24 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
     show(next) {
       place();
       words = next;
-      // Said again when the same words come twice in a row: the second refusal is news too.
-      if (element.textContent === next) element.textContent = '';
-      element.textContent = next;
-      element.hidden = false;
+      afterPress(document, element, () => {
+        // Said again when the same words come twice in a row: the second refusal is news too.
+        if (element.textContent === next) element.textContent = '';
+        element.textContent = next;
+        element.hidden = false;
+        // Floating over a table's cell (styles.ts), where the table cuts it off below its last line: above the box instead.
+        element.removeAttribute('data-above');
+        if (cutOff(element)) element.setAttribute('data-above', '');
+      });
       describe();
-      // Floating over a table's cell (styles.ts), where the table cuts it off below its last line: above the box instead.
-      element.removeAttribute('data-above');
-      if (cutOff(element)) element.setAttribute('data-above', '');
     },
     hide() {
       if (!words) return;
       words = '';
-      element.textContent = '';
-      element.hidden = true;
+      afterPress(document, element, () => {
+        element.textContent = '';
+        element.hidden = true;
+      });
       describe();
     },
     describedBy: (base) => [base, words ? id : ''].filter(Boolean).join(' ') || undefined,

@@ -1020,6 +1020,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
    */
   const keys = ({ event, editing, node, column }: SuppressKeyboardEventParams<Line>) => {
     if (event.defaultPrevented) return true;
+    // A key an IME is composing with — the Enter that takes its word — is the IME's: the cell stays open, its box keeps it.
+    if (editing && (event.isComposing || event.keyCode === 229)) return true;
     // Alt+Up/Down moves the line (below), it does not move the focus.
     if (!editing && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) return true;
     // In a note, or a paragraph opened over its cell, Enter is a new line (Ctrl/Cmd+Enter finishes it).

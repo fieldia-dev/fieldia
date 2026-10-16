@@ -613,7 +613,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // public sign-up — that are drawn the moment they are opened. 474.25 measured before, 477.88 after, to 477.9.
 // Save safety round 6 (fix-leave) and autofill (w2-autofill) joined: their growth together, 474.29 + 2.94 + 3.59,
 // to 480.9 until the release measures it.
-const BUDGET_KB = 480.9;
+// The input rules held for names, tables and ways out (inputs-fix-names): a run of steps reading what is typed before
+// it hands values on, and stopping on text that does not read (run.ts `typedFirst`, form.ts); text unread counted as
+// work at risk and kept through Reload; a search asked for an exact name (core); a link's, its tags', a reference's
+// and a choice's words of none kept unread on leaving, several of one name said, an exact name taken whatever row is
+// reached, the IME's Enter left to it, tags waiting for room read by a save, a line's dialog and × reading what is
+// typed, a box's words read when it is taken away without a blur, a box's words waiting for a press to end (widgets,
+// press.ts): 480.83 measured before, 484.98 after — 4.2 more, to 485.0.
+const BUDGET_KB = 485.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -738,7 +745,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Wave 2's autofill and bot check (listed with the raw budget above): 153.62 measured before, 154.78 after — 1.2 more,
 // what every box and every public page draws at mount — to 154.8.
 // The two joined (listed with the raw budget above): 153.62 + 1.06 + 1.16, to 155.9 until the release measures it.
-const GZIP_BUDGET_KB = 155.9;
+// The input rules held for names, tables and ways out (listed with the raw budget above): 155.86 measured before,
+// 157.24 after — 1.4 more, to 157.3.
+const GZIP_BUDGET_KB = 157.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -932,7 +941,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // filled from a pick in another box is read as left (date 19.5, 7.3, as measured 19.45 and 7.23); an address's parts
 // each take whose address it is (survey 35.1, as measured 35.06 and 12.13); hours and a per cent the page's purpose and
 // keyboard, and read as left when filled from elsewhere (business as it was, measured 25.99 and 9.58).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.0, 18.3], path: [15.5, 6.1], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.5, 7.3], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.1, 9.6], files: [30.9, 11.3], survey: [35.1, 12.2] };
+// Save safety round 6 and autofill joined (inputs-fix-base): the business part measured 26.08 and 9.62 there, over
+// its 9.6 gzipped before any fix of the input rules — to 9.7.
+// The input rules held for names, tables and ways out (inputs-fix-names): a path's words of none or several kept unread
+// as it is left or taken away, an exact name taken whatever row is reached, Ctrl+Enter reading the words, a name past
+// the search's limit asked for exactly (path 16.0, 6.3: 15.49 and 6.06 before, 15.91 and 6.24 after); a line's × asking over text
+// typed in it (lines 23.2, 8.1: 22.99 and 7.96 before, 23.11 and 8.01 after); a filter's day and time written the
+// page's way (list 43.0, 12.9: 42.62 and 12.75 before, 42.99 and 12.85 after).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.0, 18.3], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.5, 7.3], list: [43.0, 12.9], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.1, 9.7], files: [30.9, 11.3], survey: [35.1, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
