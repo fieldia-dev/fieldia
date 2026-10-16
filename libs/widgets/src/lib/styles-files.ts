@@ -96,13 +96,15 @@ export const FILES_CSS = /* css */ `
 .fd-files-cards .fd-file-name { flex: none; flex-wrap: wrap; font-size: 13px; line-height: 1.35; }
 .fd-files-cards .fd-file-name > span { max-width: 100%; }
 .fd-image-pick .fd-button { border: none; background: none; color: var(--fd-accent); padding: 0; min-height: 0; font-size: 13px; }
-/* A file open to look at: its name and tools over it, the image whole, a PDF or text filling the box. */
-.fd-file-viewer { max-width: 1000px; height: min(88vh, 100%); background: var(--fd-surface); }
+/* A file open to look at: its name and tools over it, the image whole, a PDF or text filling the box, on a dialog's
+   own ground (.fd-form-dialog's). */
+.fd-file-viewer { max-width: 1000px; height: min(88vh, 100%); }
 /* Close in the corner, beside the name however the tools wrap. */
 .fd-file-viewer > :first-child { position: relative; flex-wrap: wrap; justify-content: start; gap: 6px 10px; padding-block: 8px; padding-inline-end: 52px; }
 .fd-file-viewer .fd-dialog-close { position: absolute; inset-block-start: 10px; inset-inline-end: 10px; }
 .fd-file-viewer h2 { flex: 1 1 10em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fd-file-step { font-size: 18px; line-height: 1; min-width: 34px; }
+/* Previous and Next, their arrows in a button's own words (.fd-button's font). */
+.fd-file-step { min-width: 34px; }
 .fd-file-viewer a { text-decoration: none; }
 .fd-file-viewer-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: auto; background: var(--fd-page); }
 .fd-file-viewer-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
