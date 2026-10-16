@@ -10,7 +10,7 @@
   function pageIn(locale) {
     var w = WORDS[locale] || WORDS.en;
     return {
-      fieldia: '0.1',
+      fieldia: '0.3',
       id: 'early-access',
       title: w[0],
       data: { kind: 'responses' },

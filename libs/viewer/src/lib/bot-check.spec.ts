@@ -8,7 +8,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const signup = (botCheck?: Page['botCheck']): Page => ({
-  fieldia: '0.2',
+  fieldia: '0.3',
   id: 'signup',
   data: { kind: 'responses' },
   fields: { name: { type: 'char', label: 'Full name', required: true }, email: { type: 'char', label: 'Email' }, seats: { type: 'integer', label: 'Seats', min: 1 } },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.2",
+  "fieldia": "0.3",
   "id": "map-heat",
   "title": "Where orders come from",
   "description": "The week's orders as a heat map, each weighing what it came to: the city glows where the money is. Close in, at the streets, each order's pin comes back.",

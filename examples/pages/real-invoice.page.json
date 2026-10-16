@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.2",
+  "fieldia": "0.3",
   "id": "real-invoice",
   "title": "Account Entry",
   "description": "Sherkety ERP's invoice, bill, credit note and journal entry: one page (account.move, view_move_form) whose type decides what shows. With what account (currency), sherkety_manual_currency_rate, account_payment, account_debit_note, account_edi, account_distribution_extras, sale and purchase add to it.",

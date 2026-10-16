@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.2",
+  "fieldia": "0.3",
   "id": "delivery",
   "title": "Delivery details",
   "description": "Where the order goes, and where its invoice goes: one Address form, placed twice.",

@@ -17,7 +17,7 @@ import { FILES } from './files-support';
  */
 
 const LISTING = {
-  fieldia: '0.2',
+  fieldia: '0.3',
   id: 'listing',
   title: 'A listing',
   data: { kind: 'record', model: 'listing' },
