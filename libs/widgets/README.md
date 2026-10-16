@@ -41,7 +41,10 @@ the browser's zone is another ("CEST"), and after it in words ("15 Oct 2026,
 14:30 CEST"), which a paste reads back. A time the clocks skip on a change
 day is said, never moved ("there is no 02:30 on 29 Mar 2026 in Central European
 Time: the clocks go from 02:00 to 03:00"); one they repeat asks which, read
-once its zone's name is typed after it ("02:30 CEST" or "02:30 CET").
+once its zone's name is typed after it ("02:30 CEST" or "02:30 CET"). A
+table's cell, a list's, and a value read-only write a date and time as its box
+does: the instant it is, on the browser's clock where nothing names a zone —
+never the clock it was written with (`12:30Z` is 15:30 to a person in Cairo).
 
 `"widget": "slots"` on a date and time books a time from those free: a month
 whose days are shaded by how they are booked (free times left, fully booked,
