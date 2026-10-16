@@ -1,8 +1,9 @@
-import type { DataSource, Group, Page, RecordId, ResolvedFilter, SortOrder, Value } from '@fieldia/core';
+import type { DataSource, Group, Page, RecordId, RecordPermissions, RecordVersion, ResolvedFilter, SortOrder, Value } from '@fieldia/core';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
-export type Row = { id: RecordId; values: Record<string, Value> };
+/** A record's row: its values, and the version it was listed at and what the person may do with it, where the source told. */
+export type Row = { id: RecordId; values: Record<string, Value>; version?: RecordVersion; can?: RecordPermissions };
 
 export interface GroupContext {
   page: Page;

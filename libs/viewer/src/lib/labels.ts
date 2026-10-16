@@ -101,6 +101,47 @@ export interface ViewerLabels {
   noRecords: string;
   loadFailed: string;
   /**
+   * A list's selection of every record that matches (`{n}` written as the page writes numbers), and what it says when
+   * the source gave fewer than match (`{n}` of `{total}`) or none.
+   */
+  selectAllMatching: string;
+  selectingAll: string;
+  selectedOf: string;
+  selectAllFailed: string;
+  /**
+   * A list's Export: its button, its two files, what goes (`{n}` selected, or all that match: one, or more), how far it
+   * has got (`{done}` of `{n}`), and how it ended.
+   */
+  export: string;
+  exportExcel: string;
+  exportCsv: string;
+  exportAll: string;
+  exportAllOne: string;
+  exporting: string;
+  exportCut: string;
+  exportFailed: string;
+  exported: string;
+  exportedOne: string;
+  /**
+   * A list's Edit of many records: its button, its dialog (`{n}` records: one, or more), its question, how far it has
+   * got, and what was not changed and why (`{name}`: `{why}`).
+   */
+  bulkEdit: string;
+  bulkTitle: string;
+  bulkTitleOne: string;
+  bulkField: string;
+  bulkApply: string;
+  bulkAsk: string;
+  bulkAskOne: string;
+  bulkSet: string;
+  bulkClear: string;
+  bulkProgress: string;
+  bulkDone: string;
+  bulkDoneOne: string;
+  bulkSome: string;
+  bulkWhy: string;
+  bulkChangedSince: string;
+  /**
    * A list's search bar: the box (`{field}` and `{text}` in a suggestion), its
    * chips (`{label}`), the Filters, Group By and Favourites menu (`{name}`),
    * and the conditions a custom filter offers.
@@ -280,6 +321,35 @@ const en: ViewerLabels = {
   selectRecord: 'Select {name}',
   noRecords: 'No records match.',
   loadFailed: 'Could not load the records.',
+  selectAllMatching: 'Select all {n} that match',
+  selectingAll: 'Selecting all that match…',
+  selectedOf: '{n} of {total} could be selected',
+  selectAllFailed: 'Could not select every record that matches.',
+  export: 'Export',
+  exportExcel: 'Excel (.xlsx)',
+  exportCsv: 'CSV (.csv)',
+  exportAll: 'All {n} that match',
+  exportAllOne: 'The {n} that matches',
+  exporting: 'Exporting {done} of {n}…',
+  exportCut: 'Only the first {n} of {total} were exported.',
+  exportFailed: 'Could not export the records.',
+  exported: '{n} records exported.',
+  exportedOne: '{n} record exported.',
+  bulkEdit: 'Edit',
+  bulkTitle: 'Edit {n} records',
+  bulkTitleOne: 'Edit {n} record',
+  bulkField: 'Field',
+  bulkApply: 'Update',
+  bulkAsk: 'Update {n} records?',
+  bulkAskOne: 'Update {n} record?',
+  bulkSet: '{field} becomes “{value}”.',
+  bulkClear: '{field} is cleared.',
+  bulkProgress: 'Updating {done} of {n}…',
+  bulkDone: '{n} records updated.',
+  bulkDoneOne: '{n} record updated.',
+  bulkSome: '{done} of {n} updated. Not changed:',
+  bulkWhy: '{name}: {why}',
+  bulkChangedSince: '{name} changed it after it was listed.',
   search: 'Search…',
   searchLabel: 'Search',
   searchFor: 'Search {field} for: {text}',

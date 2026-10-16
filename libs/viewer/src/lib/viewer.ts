@@ -2053,6 +2053,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
         ...newListRecord(),
+        // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
+        say: (message, tone) => actionHost.say(message, tone),
+        ask: (message) => actionHost.ask(message),
+        editValues: (request) => dialogs.editValues(request),
       };
       // The list comes in its part, which the page waited for; "Loading…" in its place where it could not come.
       const list = listPart.loaded ? listPart.loaded.listView(context) : waitingList(listPart, context);

@@ -596,7 +596,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
 // The six joined (0.23 size pass: the list screen, the looks, a table of lines, the business widgets, files, the survey
 // kinds), each measured above against 0.22.0 alone; together, 629.78 measured before, 474.25 after — 155.5 less, to 474.3.
-const BUDGET_KB = 474.3;
+// Lists people take away and change in bulk (0.24): the words of "Select all 1,284 that match", Export and Edit in the
+// viewer's labels (29 of them), the page check of a list's bulkEdit and the fields it may offer (bulk-edit.ts), the
+// memory source's writeMany, the viewer handing a list its toasts, its questions and its dialog of values, and the
+// names the list part takes from this script — the list, the workbook and the zip themselves in the list part (listed
+// with the part budgets below): 474.29 measured before, 477.31 after — 3.0 more, to 477.4.
+const BUDGET_KB = 477.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -716,7 +721,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
 // The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
-const GZIP_BUDGET_KB = 153.7;
+// Lists people take away and change in bulk (listed with the raw budget above): 153.62 measured before, 154.57 after —
+// 1.0 more, to 154.6.
+const GZIP_BUDGET_KB = 154.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -799,7 +806,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // and 7.15, 15.86, 16.27).
 // The input rules' words and Wave 1's joined for 0.22, as measured: Arabic's 45.0 and 8.2, German's 19.2 and 7.1,
 // French's 19.8 and 7.1 — each to 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [45.1, 8.3], de: [19.3, 7.2], fr: [19.9, 7.2] };
+// Lists people take away and change in bulk (0.24): "Select all 1,284 that match", Export's menu, its progress and how
+// it ended, and Edit's dialog, question, progress and report, 29 in each, as measured: Arabic's 47.74 and 8.63, German's
+// 20.36 and 7.39, French's 21.08 and 7.43 — Arabic's to 47.8 and 8.7, German's to 20.4 and 7.4, French's to 21.1 and 7.5.
+const ADD_ON_BUDGET_KB = { ar: [47.8, 8.7], de: [20.4, 7.4], fr: [21.1, 7.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -897,7 +907,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The survey kinds (0.23) — a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address
 // and a progress bar — with their two sheets, one of the rules cut from Fieldia's first sheet and one of those cut
 // from the head of the page's own looks, cut out of the main script (survey 35.0, 12.2, as measured 34.99 and 12.10).
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [42.7, 12.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
+// Lists people take away and change in bulk (0.24), in the list part: every record that matches chosen and its ids
+// paged through where a source gives none (list-every), Export's menu and an export as CSV or as an Excel workbook
+// written with no library (list-export; xlsx and zip: 6.5 raw, 2.8 gzipped of the whole), and Edit's dialog, question,
+// writes and report (list-bulk) — list 42.62 and 12.75 measured before, 63.50 and 20.48 after (list 63.6, 20.5).
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [54.8, 18.2], path: [15.4, 6.0], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.3, 7.2], list: [63.6, 20.5], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.0, 8.0], business: [26.0, 9.6], files: [30.9, 11.3], survey: [35.0, 12.2] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

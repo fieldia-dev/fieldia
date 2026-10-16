@@ -76,6 +76,21 @@ export const LIST_STYLES = `
 .fd-favourites-none { margin: 0; padding: 4px 6px; color: var(--fd-muted); font-size: 13px; }
 .fd-list-selection { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 3px 4px 3px 10px; border-radius: var(--fd-control-radius); background: var(--fd-accent-soft); }
 .fd-list-count { font-weight: 600; font-size: 13.5px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
+/* Every record that matches, a press away; then Edit, the app's buttons and Clear. */
+.fd-list-every { font-weight: 600; }
+/* Export and the list's views at the bar's end, before its pager; how far a long task has got, before them. */
+.fd-list-export { margin-inline-start: auto; }
+.fd-list-export:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
+.fd-list-export svg { width: 16px; height: 16px; flex: none; }
+.fd-list-export-what { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+.fd-list-progress { color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fd-list-progress:empty { display: none; }
+.fd-list-progress:not(:empty) { margin-inline-start: auto; }
+.fd-list-progress:not(:empty) + .fd-list-export { margin-inline-start: 0; }
+/* What an Edit could not change, and why: under the bar until it is dismissed. */
+.fd-list-report { display: grid; gap: 4px; justify-items: start; padding: 8px 12px; border: 1px solid var(--fd-warning); border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); color: var(--fd-text); font-size: 13.5px; }
+.fd-list-report-words { margin: 0; font-weight: 600; }
+.fd-list-report-list { margin: 0; padding-inline-start: 18px; max-height: 168px; overflow: auto; justify-self: stretch; }
 .fd-pager { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
 .fd-pager-text { color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; margin-inline-end: 6px; white-space: nowrap; }
 .fd-pager-button { min-width: 32px; padding-inline: 0; font-size: 18px; line-height: 1; }

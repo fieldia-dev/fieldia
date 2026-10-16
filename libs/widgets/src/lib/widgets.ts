@@ -122,6 +122,8 @@ export interface WidgetDialogs {
     layout?: LayoutNode[];
     /** The record the values are a line of, read by the form's conditions and filters as `parent`. */
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
+    /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */
+    buttons?: { done?: string; cancel?: string };
   }): Promise<Values | null>;
 }
 

@@ -18,10 +18,13 @@ import {
   type Value,
   type Values,
 } from '@fieldia/core';
-import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { displayValue, drawIcon, formatNumber, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
+import { askBulkValue, bulkOffered, bulkQuestion, lockedOut, writeBulk, type BulkList, type KnownRecord } from './list-bulk';
+import { everyId } from './list-every';
+import { exportList, type ExportFormat, type ExportList, type ExportWhich } from './list-export';
 import { groupRow, type GroupContext, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { searchBar } from './search-bar';
@@ -58,6 +61,12 @@ export interface ListContext {
    * end). A promise answered: the records again once it settles. Without it, a view offers no way to make one.
    */
   onNewRecord?: (values: Values) => unknown;
+  /** Words said over the page, as a toast: an export done, or why it was not. Unsaid without it. */
+  say?: (message: string, tone: Tone) => void;
+  /** A question answered Yes or No, as a button's confirmation asks it: "Update 24 records?". Without it, Edit is not offered. */
+  ask?: (message: string) => Promise<boolean>;
+  /** Values asked in a dialog of fields, as a line's own form asks them: Edit's field and value. Without it, Edit is not offered. */
+  editValues?: WidgetDialogs['editValues'];
 }
 
 /**
@@ -180,6 +189,20 @@ export function listView(context: ListContext): ListView {
   let facets: Facet[] = startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
+  /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */
+  const known = new Map<string, KnownRecord>();
+  /**
+   * The records chosen reach past the rows on show: every one that matched (`total`, of which the source gave `got`),
+   * or those an Edit could not change. A page turned or the order changed keeps them; a new search, Clear or the
+   * header's box lets them go.
+   */
+  let wide: { total: number; got: number } | null = null;
+  /** The rows are under their groups: no count of every match is known then. */
+  let groupedNow = false;
+  /** Each new search counts on: ids asked for under one search are no choice in the next. */
+  let searches = 0;
+  /** A count as the page writes numbers: "1,284". */
+  const number = (n: number) => formatNumber(n, 0, locale);
   let asking = 0;
   let destroyed = false;
 
@@ -342,6 +365,7 @@ export function listView(context: ListContext): ListView {
   };
 
   function row(record: Row, level = 0): HTMLTableRowElement {
+    known.set(String(record.id), { ...(record.version ? { version: record.version } : {}), ...(record.can ? { can: record.can } : {}) });
     const name = show(nameColumn, record.values) || String(record.id);
     const box = choose ? el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) }) : null;
     if (box) {
@@ -498,13 +522,35 @@ export function listView(context: ListContext): ListView {
     );
     return button;
   });
-  const selection = el('div', { class: 'fd-list-selection', hidden: '' }, count, ...buttons, clear);
-  clear.addEventListener('click', () => {
+  // Every record that matches, a press away once each row on show is ticked.
+  const every = el('button', { type: 'button', class: 'fd-button fd-button-link fd-list-every', hidden: '' });
+  every.addEventListener('click', () => void chooseEvery());
+  // Edit: one field set to one value in each record chosen, where the page offers it and the app can ask.
+  const bulk = context.editValues && context.ask && bulkOffered({ page, node, dataSource: context.dataSource }) ? { editValues: context.editValues, ask: context.ask } : null;
+  const edit = el('button', { type: 'button', class: 'fd-button fd-button-secondary fd-list-edit', hidden: '' }, labels.bulkEdit);
+  edit.addEventListener('click', () => void editChosen());
+  const selection = el('div', { class: 'fd-list-selection', hidden: '' }, count, every, ...(bulk ? [edit] : []), ...buttons, clear);
+  /** What an Edit could not change, and why, under the bar: kept until it is dismissed or the next Edit. */
+  const reportWords = el('p', { class: 'fd-list-report-words' });
+  const reportList = el('ul', { class: 'fd-list-report-list' });
+  const dismiss = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.dismiss);
+  const report = el('div', { class: 'fd-list-report', role: 'alert', hidden: '' }, reportWords, reportList, dismiss);
+  dismiss.addEventListener('click', () => {
+    report.hidden = true;
+    edit.focus();
+  });
+  /** Let go of every record chosen, those past the page too. */
+  const clearAll = () => {
     chosen.clear();
+    wide = null;
     for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-checkbox')) box.checked = false;
     drawChoice();
-  });
+    viewParts.chosenChanged();
+  };
+  clear.addEventListener('click', clearAll);
   chooseAll.addEventListener('change', () => {
+    // Unticked while every record that matches is chosen: none is, as Clear.
+    if (!chooseAll.checked && wide) return clearAll();
     for (const record of visible()) {
       if (chooseAll.checked) chosen.add(record.id);
       else chosen.delete(record.id);
@@ -519,10 +565,21 @@ export function listView(context: ListContext): ListView {
     chooseAll.checked = shown.length > 0 && onPage === shown.length;
     chooseAll.indeterminate = onPage > 0 && onPage < shown.length;
     selection.hidden = chosen.size === 0;
-    count.textContent = fill(labels.selected, { n: chosen.size });
+    // Fewer than matched, where the source stopped short: said, never called all.
+    count.textContent = wide && wide.got < wide.total && chosen.size === wide.got ? fill(labels.selectedOf, { n: number(chosen.size), total: number(wide.total) }) : fill(labels.selected, { n: number(chosen.size) });
+    every.hidden = !!wide || groupedNow || !chooseAll.checked || total <= shown.length || !context.dataSource?.list;
+    if (!every.hidden && !every.hasAttribute('aria-busy')) every.textContent = fill(labels.selectAllMatching, { n: number(total) });
+    // Edit, where one record chosen at least may be changed as far as the list knows.
+    let editable = false;
+    for (const id of chosen) {
+      if (lockedOut(known.get(String(id)))) continue;
+      editable = true;
+      break;
+    }
+    edit.hidden = !bulk || !editable;
     if (!choose) return;
     for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
-      tr.setAttribute('aria-selected', String([...chosen].some((id) => String(id) === tr.dataset['id'])));
+      tr.setAttribute('aria-selected', String(chosen.has((recordOf.get(tr) as Row).id)));
     }
   }
 
@@ -544,7 +601,8 @@ export function listView(context: ListContext): ListView {
   function drawPager() {
     // Under a filter bar, the pager shows only when there is more than one page.
     pager.hidden = total === 0 || (fieldsSearch && offset === 0 && total <= pageSize);
-    range.textContent = fill(labels.range, { from: offset + 1, to: Math.min(offset + rows.length, total), total });
+    // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
+    range.textContent = fill(labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
   }
@@ -562,8 +620,8 @@ export function listView(context: ListContext): ListView {
 
   /** Rows came or went: what is chosen keeps to the records on show, the table's or the map's. */
   function changed() {
-    // On a map, a record chosen may be one the table's page does not hold.
-    if (view === 'list') {
+    // On a map, a record chosen may be one the table's page does not hold; and every one that matches reaches past the page.
+    if (view === 'list' && !wide) {
       const shown = new Set(visible().map((record) => record.id));
       for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
     }
@@ -601,6 +659,7 @@ export function listView(context: ListContext): ListView {
         if (mine !== asking || destroyed) return;
         rows = [];
         total = 0;
+        groupedNow = true;
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
         const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
@@ -612,6 +671,7 @@ export function listView(context: ListContext): ListView {
         }
         rows = answer.records;
         total = answer.total;
+        groupedNow = false;
         drawn = nest(rows);
       }
       failed.hidden = true;
@@ -631,6 +691,12 @@ export function listView(context: ListContext): ListView {
   const searched = (next: Facet[]) => {
     facets = next;
     offset = 0;
+    searches++;
+    // Every record that matched the search before is no choice in this one.
+    if (wide) {
+      wide = null;
+      chosen.clear();
+    }
     void load();
     void viewParts.reload();
   };
@@ -750,12 +816,218 @@ export function listView(context: ListContext): ListView {
     parts.get(on)?.shown();
   }
 
+  // ---- every record that matches, Export and Edit ------------------------------------
+
+  /** How far a long task has got — selecting, exporting, updating — said beside the list's tools, and to a screen reader. */
+  const progress = el('span', { class: 'fd-list-progress', role: 'status', 'aria-live': 'polite' });
+  /** A button busy while its task runs: pressed again meanwhile, nothing happens. */
+  async function busy(button: HTMLElement, run: () => Promise<void>): Promise<void> {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    button.setAttribute('aria-disabled', 'true');
+    try {
+      await run();
+    } finally {
+      button.removeAttribute('aria-busy');
+      button.removeAttribute('aria-disabled');
+      progress.textContent = '';
+    }
+  }
+
+  /** Every record the search matches, chosen: their ids from the source (list-every.ts), kept as pages turn. */
+  function chooseEvery(): Promise<void> {
+    const source = context.dataSource;
+    if (!source) return Promise.resolve();
+    const mine = searches;
+    return busy(every, async () => {
+      progress.textContent = labels.selectingAll;
+      try {
+        const { ids, total: matched } = await everyId(source, { model, filter: currentFilter(), sort, field: nameColumn, total });
+        // The search changed meanwhile: these were another's.
+        if (destroyed || mine !== searches) return;
+        for (const id of ids) chosen.add(id);
+        wide = { total: Math.max(matched, ids.length), got: ids.length };
+        for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-row .fd-list-checkbox')) box.checked = true;
+      } catch {
+        context.say?.(labels.selectAllFailed, 'danger');
+      }
+      drawChoice();
+      viewParts.chosenChanged();
+    });
+  }
+
+  /** The records chosen, in the list's order where it knows it: the rows on show first as they stand, then the rest as chosen. */
+  const chosenInOrder = (): RecordId[] => {
+    if (wide) return [...chosen];
+    const shown = visible().filter((record) => chosen.has(record.id)).map((record) => record.id);
+    const placed = new Set(shown.map(String));
+    return [...shown, ...[...chosen].filter((id) => !placed.has(String(id)))];
+  };
+
+  // Export, in the list's bar: what goes — the rows chosen, or every one that matches — and as which file.
+  const exportOn = node.export !== false && !!(context.dataSource?.list || context.dataSource?.exportRecords);
+  const exportId = context.uid(`${node.id}-export`);
+  // A tray with an arrow into it, unless the app's icons have their own "download".
+  const exportIcon = drawIcon(doc, 'download', { download: '<path d="M12 4v10M7.5 9.5L12 14l4.5-4.5"/><path d="M4 15v4.5h16V15"/>', ...context.icons });
+  exportIcon?.setAttribute('aria-hidden', 'true');
+  const exportButton = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-list-export-button', id: `${exportId}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': exportId }, ...(exportIcon ? [exportIcon] : []), labels.export);
+  const exportWhat = el('div', { class: 'fd-record-menu-heading fd-list-export-what', id: `${exportId}-what`, role: 'presentation' });
+  const formats: [ExportFormat, string][] = [['xlsx', labels.exportExcel], ['csv', labels.exportCsv]];
+  const formatItems = formats.map(([format, words]) => {
+    const item = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-format': format, 'aria-describedby': `${exportId}-what` }, el('bdi', {}, words));
+    item.addEventListener('click', () => {
+      closeExport(true);
+      void exportAs(format);
+    });
+    return item;
+  });
+  const exportMenu = el('div', { class: 'fd-record-menu fd-list-export-menu', role: 'menu', id: exportId, 'aria-labelledby': exportButton.id, hidden: '' }, exportWhat, ...formatItems);
+  const exportBox = el('div', { class: 'fd-record-actions fd-list-export' }, exportButton, exportMenu);
+  exportBox.hidden = !exportOn;
+  const outsideExport = (event: Event) => {
+    if (!exportBox.contains(event.target as Node)) closeExport(false);
+  };
+  function openExport(at: 'first' | 'last') {
+    if (!exportMenu.hidden || exportButton.hasAttribute('aria-busy')) return;
+    const ids = chosen.size;
+    exportWhat.textContent = ids
+      ? fill(labels.selected, { n: number(ids) })
+      : fill(new Intl.PluralRules(locale).select(total) === 'one' ? labels.exportAllOne : labels.exportAll, { n: number(total) });
+    exportMenu.hidden = false;
+    // From the button's start, unless that runs past the screen's edge: then from its end.
+    exportMenu.removeAttribute('data-end');
+    const box = exportMenu.getBoundingClientRect();
+    if (box.right > doc.documentElement.clientWidth - 4 || box.left < 4) exportMenu.setAttribute('data-end', '');
+    exportButton.setAttribute('aria-expanded', 'true');
+    doc.addEventListener('pointerdown', outsideExport, true);
+    (at === 'first' ? formatItems[0] : formatItems[formatItems.length - 1]).focus();
+  }
+  function closeExport(refocus: boolean) {
+    if (exportMenu.hidden) return;
+    exportMenu.hidden = true;
+    exportButton.setAttribute('aria-expanded', 'false');
+    doc.removeEventListener('pointerdown', outsideExport, true);
+    if (refocus) exportButton.focus();
+  }
+  exportButton.addEventListener('click', () => (exportMenu.hidden ? openExport('first') : closeExport(false)));
+  exportButton.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    openExport(event.key === 'ArrowDown' ? 'first' : 'last');
+  });
+  exportMenu.addEventListener('keydown', (event) => {
+    const at = formatItems.indexOf(doc.activeElement as HTMLButtonElement);
+    const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: formatItems.length - 1 }[event.key];
+    if (to !== undefined) {
+      event.preventDefault();
+      formatItems[(to + formatItems.length) % formatItems.length].focus();
+    } else if (event.key === 'Escape') {
+      // Escape closes the menu, not the dialog round the list.
+      event.preventDefault();
+      event.stopPropagation();
+      closeExport(true);
+    } else if (event.key === 'Tab') closeExport(false);
+  });
+
+  /** What an export reads of this list. */
+  const exportOf = (): ExportList => ({
+    model,
+    title: page.title || node.id,
+    fields: page.fields,
+    columns: node.columns,
+    reads: fields,
+    dataSource: context.dataSource,
+    locale,
+    labels,
+    doc,
+    words: show,
+    rtl: element.closest('[dir]')?.getAttribute('dir') === 'rtl',
+  });
+
+  /** The rows chosen, or every record that matches, as a file: Excel's or CSV. */
+  function exportAs(format: ExportFormat): Promise<void> {
+    return busy(exportButton, async () => {
+      const ids = chosenInOrder();
+      // Every record that matches, chosen whole: asked by the search, as the source finds them.
+      const all = !ids.length || (wide !== null && wide.got === wide.total && chosen.size === wide.total);
+      const which: ExportWhich = all ? { filter: currentFilter(), sort, count: wide ? wide.total : total } : { ids, filter: context.fixedFilter ?? [], sort, count: ids.length };
+      progress.textContent = fill(labels.exporting, { done: number(0), n: number(which.count) });
+      try {
+        const end = await exportList(exportOf(), which, format, (done, n) => {
+          if (!destroyed) progress.textContent = fill(labels.exporting, { done: number(done), n: number(n) });
+        });
+        if (destroyed) return;
+        if ('message' in end) context.say?.(end.message, 'info');
+        else if (end.done < end.total) context.say?.(fill(labels.exportCut, { n: number(end.done), total: number(end.total) }), 'warning');
+        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? labels.exportedOne : labels.exported, { n: number(end.done) }), 'success');
+      } catch {
+        if (!destroyed) context.say?.(labels.exportFailed, 'danger');
+      }
+    });
+  }
+
+  /** Edit: the field and its value asked, the question, then each record chosen written; what was not, said under the bar. */
+  /** Asked, or writing: a second press meanwhile does nothing. */
+  let editing = false;
+  async function editChosen(): Promise<void> {
+    if (!bulk || editing) return;
+    editing = true;
+    try {
+      const ids = chosenInOrder();
+      const n = ids.length;
+      const one = new Intl.PluralRules(locale).select(n) === 'one';
+      const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
+      const asked = await askBulkValue(how, bulk.editValues, fill(one ? labels.bulkTitleOne : labels.bulkTitle, { n: number(n) }));
+      if (!asked || destroyed) return;
+      if (!(await bulk.ask(bulkQuestion(how, n, asked.field, asked.value, number))) || destroyed) return;
+      report.hidden = true;
+      // Busy while it writes, not while the person is asked.
+      await busy(edit, async () => {
+        const { done, failed } = await writeBulk(how, ids, asked.field, asked.value, (at, of) => {
+          if (!destroyed) progress.textContent = fill(labels.bulkProgress, { done: number(at), n: number(of) });
+        });
+        if (destroyed) return;
+        // Done for the rest; those not changed stay chosen, past the page if they are, and are named with why.
+        chosen.clear();
+        wide = null;
+        if (failed.length) {
+          for (const { id } of failed) chosen.add(id);
+          wide = { total: failed.length, got: failed.length };
+          const names = await namesOf(failed.map(({ id }) => id));
+          if (destroyed) return;
+          reportWords.textContent = fill(labels.bulkSome, { done: number(done), n: number(n) });
+          reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
+          report.hidden = false;
+        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.bulkDoneOne : labels.bulkDone, { n: number(done) }), 'success');
+        await Promise.all([load(), viewParts.reload()]);
+      });
+    } finally {
+      editing = false;
+    }
+  }
+
+  /** Records' names, as the list shows them: from the rows on show, else asked of the source by their ids. */
+  async function namesOf(ids: RecordId[]): Promise<Map<string, string>> {
+    const names = new Map<string, string>();
+    for (const record of visible()) names.set(String(record.id), show(nameColumn, record.values));
+    const unknown = ids.filter((id) => !names.get(String(id))).slice(0, 200);
+    if (unknown.length && context.dataSource?.list) {
+      try {
+        const answer = await context.dataSource.list({ model, fields, filter: [...(context.fixedFilter ?? []), { field: 'id', op: 'in', value: unknown }], sort, offset: 0, limit: unknown.length });
+        for (const record of answer.records) names.set(String(record.id), show(nameColumn, record.values));
+      } catch {
+        // Named by their ids, then.
+      }
+    }
+    return names;
+  }
+
   const element = el(
     'div',
     { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none' },
-    el('div', { class: 'fd-list-bar' }, search.element, views, ...(fieldsSearch ? [] : [pager])),
+    el('div', { class: 'fd-list-bar' }, search.element, progress, exportBox, views, ...(fieldsSearch ? [] : [pager])),
     // A list with no box to choose a row has nothing to act on.
-    ...(choose ? [selection] : []),
+    ...(choose ? [selection, report] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   showAs(view);
@@ -769,6 +1041,7 @@ export function listView(context: ListContext): ListView {
     open: (id, options) => openRow(id, options?.lit !== false),
     destroy() {
       destroyed = true;
+      doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
       parts.forEach((part) => part.destroy());
     },
