@@ -1,16 +1,30 @@
-import { fill, numberMisfit, readNumber, type Facet, type Field, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilterCondition } from '@fieldia/core';
+import { fill, numberMisfit, readNumber, DATE_PERIODS, type DatePeriod, type Facet, type Field, type FilterPeriod, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilter, type ResolvedFilterCondition } from '@fieldia/core';
 import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, typingText, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 
-type Op = ResolvedFilterCondition['op'];
-type Words = Pick<ViewerLabels, 'opIs' | 'opIsNot' | 'opContains' | 'opGreater' | 'opLess' | 'opSet' | 'opNotSet'>;
+/** A condition: one a data source reads, or a period a date falls in, counted again each time the list asks. */
+type Op = ResolvedFilterCondition['op'] | 'period';
+type Words = Pick<ViewerLabels, 'opIs' | 'opIsNot' | 'opContains' | 'opGreater' | 'opLess' | 'opSet' | 'opNotSet' | 'opPeriod'>;
 
 const TEXT: [Op, keyof Words][] = [['ilike', 'opContains'], ['=', 'opIs'], ['!=', 'opIsNot'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const LINK: [Op, keyof Words][] = [['ilike', 'opContains'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const CHOICE: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const NUMBER: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['>', 'opGreater'], ['<', 'opLess'], ['set', 'opSet'], ['notset', 'opNotSet']];
-const DATE: [Op, keyof Words][] = [['=', 'opIs'], ['>', 'opGreater'], ['<', 'opLess'], ['set', 'opSet'], ['notset', 'opNotSet']];
+const DATE: [Op, keyof Words][] = [['=', 'opIs'], ['>', 'opGreater'], ['<', 'opLess'], ['period', 'opPeriod'], ['set', 'opSet'], ['notset', 'opNotSet']];
+/** Each period's words, by its name: "Today", "Last 7 days". */
+export const PERIOD_WORDS: Record<DatePeriod, keyof ViewerLabels> = {
+  today: 'periodToday',
+  yesterday: 'periodYesterday',
+  thisWeek: 'periodThisWeek',
+  lastWeek: 'periodLastWeek',
+  thisMonth: 'periodThisMonth',
+  lastMonth: 'periodLastMonth',
+  thisYear: 'periodThisYear',
+  last7Days: 'periodLast7Days',
+  last30Days: 'periodLast30Days',
+  overdue: 'periodOverdue',
+};
 
 /** The conditions that suit a field, or none for a field a custom filter cannot look at. */
 function conditionsFor(def: Field): [Op, keyof Words][] {
@@ -48,8 +62,12 @@ function conditionsFor(def: Field): [Op, keyof Words][] {
  * date read by the date box's own reader, in the page's order, saying why one
  * is no day (31/02, month 13). A value that does not read is kept, and the
  * words beside it say what goes there; the chip writes the value the page's way.
+ *
+ * A date can also be "in the period" — today, this week, last month, the last
+ * 30 days, overdue — counted again each time the list asks (`periods`), so the
+ * filter kept as a favourite is right the next day: "Invoice date: This month".
  */
-export function customFilterPart(context: { page: Page; el: El; labels: ViewerLabels; locale?: Locale; add: (facet: Facet) => void }) {
+export function customFilterPart(context: { page: Page; el: El; labels: ViewerLabels; locale?: Locale; periods?: (period: FilterPeriod) => ResolvedFilter[]; add: (facet: Facet) => void }) {
   const { page, el, labels } = context;
   const locale = context.locale ?? 'en';
   const words = WIDGET_LABELS[locale] ?? WIDGET_LABELS.en;
@@ -62,6 +80,8 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   const form = el('div', { class: 'fd-custom-filter', hidden: '' }, field, condition, valueBox, apply);
   const button = el('button', { type: 'button', class: 'fd-search-option fd-search-add', 'aria-expanded': 'false' }, labels.addCustomFilter);
   let value: HTMLInputElement | HTMLSelectElement = el('input', { class: 'fd-input', 'aria-label': labels.value });
+  /** Whether the value box is a period's list. */
+  let periodShown = false;
   /** The value box's guard and its hint: what it refuses as typed, and why Apply waits. */
   let checks: Guard | null = null;
   let hint: RefusalHint | null = null;
@@ -71,17 +91,21 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   /** A date's kind, as the date box reads one; null for a field that holds no date. */
   const dateKind = (type: string) => (type === 'date' || type === 'datetime' ? type : null);
 
+  /** The conditions a field takes: a period only where the list can count one. */
+  const offered = (field: Field) => conditionsFor(field).filter(([op]) => op !== 'period' || context.periods);
   function drawConditions() {
-    condition.replaceChildren(...conditionsFor(def()).map(([op, word]) => el('option', { value: op }, labels[word])));
+    condition.replaceChildren(...offered(def()).map(([op, word]) => el('option', { value: op }, labels[word])));
     drawValue();
   }
 
   /** A box of the field's kind: its choices, yes or no, a number, a day, or text. */
   function drawValue() {
     const current = def();
+    periodShown = condition.value === 'period';
     checks?.destroy();
     checks = null;
-    if (current.type === 'selection') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...current.options.map((o) => el('option', { value: String(o.value) }, o.label)));
+    if (condition.value === 'period') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...DATE_PERIODS.map((period) => el('option', { value: period }, labels[PERIOD_WORDS[period]])));
+    else if (current.type === 'selection') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...current.options.map((o) => el('option', { value: String(o.value) }, o.label)));
     else if (current.type === 'boolean') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, el('option', { value: 'true' }, labels.yes), el('option', { value: 'false' }, labels.no));
     else {
       // Never the browser's number or date box: they follow the browser's language, not the page's, and drop Arabic digits.
@@ -98,7 +122,11 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   }
 
   field.addEventListener('change', drawConditions);
-  condition.addEventListener('change', () => (valueBox.hidden = condition.value === 'set' || condition.value === 'notset'));
+  // To a period's list and back: the box of the condition's kind.
+  condition.addEventListener('change', () => {
+    if ((condition.value === 'period') !== periodShown) drawValue();
+    valueBox.hidden = condition.value === 'set' || condition.value === 'notset';
+  });
   button.addEventListener('click', () => {
     form.hidden = !form.hidden;
     button.setAttribute('aria-expanded', String(!form.hidden));
@@ -114,6 +142,14 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   apply.addEventListener('click', () => {
     const current = def();
     const op = condition.value as Op;
+    if (op === 'period' && context.periods) {
+      // The period, kept as it is named, and the conditions it makes today.
+      const period: FilterPeriod = { field: field.value, is: value.value as DatePeriod };
+      context.add({ kind: 'custom', label: fill(labels.periodChip, { field: current.label, period: labels[PERIOD_WORDS[period.is]] }), filter: context.periods(period), period });
+      form.hidden = true;
+      button.setAttribute('aria-expanded', 'false');
+      return;
+    }
     const word = labels[conditionsFor(current).find(([o]) => o === op)?.[1] ?? 'opIs'];
     let wanted: JsonValue = null;
     let shown = '';
@@ -162,7 +198,7 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
       }
     }
     hint?.hide();
-    context.add({ kind: 'custom', label: [current.label, word, shown].filter(Boolean).join(' '), filter: [{ field: field.value, op, value: wanted }] });
+    context.add({ kind: 'custom', label: [current.label, word, shown].filter(Boolean).join(' '), filter: [{ field: field.value, op: op as ResolvedFilterCondition['op'], value: wanted }] });
     form.hidden = true;
     button.setAttribute('aria-expanded', 'false');
   });

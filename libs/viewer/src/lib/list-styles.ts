@@ -110,6 +110,18 @@ export const LIST_STYLES = `
 .fd-group-toggle:hover { background: var(--fd-accent-soft); }
 .fd-group-toggle:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
 .fd-group-count { color: var(--fd-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+/* A heading's sums after its count: "Cairo (12) · EGP 4.3M". */
+.fd-group-sums { color: var(--fd-text); font-weight: 400; font-variant-numeric: tabular-nums; }
+/* The totals under the list: the ticked rows', then every record's, set apart by a firmer rule. */
+.fd-list-totals td, .fd-list-totals th { padding: 7px 10px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; background: var(--fd-surface); border-block-end: 0; }
+.fd-list-totals tr:first-child:not([hidden]) > *, .fd-list-totals tr[hidden] + tr > * { border-block-start: 1px solid var(--fd-border-strong); }
+.fd-list-totals tr[data-total="ticked"] > * { background: var(--fd-accent-soft); color: var(--fd-accent); border-block-end: 1px solid var(--fd-border); }
+.fd-list-totals th { text-align: start; }
+.fd-list-total-kind { color: var(--fd-muted); font-weight: 400; font-size: 12.5px; }
+/* A date grouped by a span: its name, then its Year, Quarter, Month, Week and Day under it, each its own toggle. */
+.fd-search-spans { display: grid; gap: 1px; }
+.fd-search-spans-name { padding: 5px 6px; padding-inline-start: 26px; font-size: 14px; color: var(--fd-text); }
+.fd-search-spans-list { display: grid; gap: 1px; padding-inline-start: 14px; }
 .fd-list-more td { padding: 4px 10px; padding-inline-start: calc(46px + var(--fd-level, 0) * 22px); }
 .fd-list-empty, .fd-list-failed { margin: 0; padding: 28px 12px; text-align: center; color: var(--fd-muted); }
 .fd-list-failed { color: var(--fd-error); }

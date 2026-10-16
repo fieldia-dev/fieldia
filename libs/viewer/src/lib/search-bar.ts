@@ -1,4 +1,4 @@
-import { suggestions, type Facet, type ListNode, type Locale, type Page, type Suggestion } from '@fieldia/core';
+import { suggestions, DATE_INTERVALS, type DateInterval, type Facet, type FilterPeriod, type ListNode, type Locale, type Page, type ResolvedFilter, type Suggestion } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
@@ -21,8 +21,14 @@ export interface SearchContext {
   locale?: Locale;
   /** What the list starts with. */
   facets: Facet[];
+  /** A period as plain conditions, counted from now as the list counts days: for a person's own filter of one. */
+  periods?: (period: FilterPeriod) => ResolvedFilter[];
   onChange: (facets: Facet[]) => void;
 }
+
+/** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
+const SPANS = [...DATE_INTERVALS].reverse();
+const SPAN_WORDS: Record<DateInterval, keyof ViewerLabels> = { year: 'groupByYear', quarter: 'groupByQuarter', month: 'groupByMonth', week: 'groupByWeek', day: 'groupByDay' };
 
 /** A chip's words: a field and the values looked for in it, filters any of which apply, or the fields grouped by. */
 export function facetText(facet: Facet, labels: Pick<ViewerLabels, 'or'>): string {
@@ -167,7 +173,7 @@ export function searchBar(context: SearchContext) {
     const facet: Facet =
       kind === 'filters'
         ? { kind, ids: keys, labels: keys.map((id) => node.filters?.find((f) => f.id === id)?.label ?? id) }
-        : { kind, fields: keys, labels: keys.map((field) => page.fields[field]?.label ?? field) };
+        : { kind, fields: keys, labels: keys.map(groupWords) };
     const next = [...facets];
     if (at < 0) next.push(facet);
     else if (keys.length) next[at] = facet;
@@ -180,12 +186,30 @@ export function searchBar(context: SearchContext) {
     button.addEventListener('click', () => toggleIn('filters', filter.id));
     return button;
   });
-  const groupButtons = (node.groupBy ?? []).map((field) => {
-    const button = el('button', { type: 'button', class: 'fd-search-option', 'aria-pressed': 'false', 'data-group': field }, page.fields[field].label);
-    button.addEventListener('click', () => toggleIn('groupBy', field));
+  /** A grouping in words: its field's label, and for a date the span it is grouped in ("Invoice date: Month"). */
+  function groupWords(key: string): string {
+    const [field, span] = key.split(':');
+    const label = page.fields[field]?.label ?? key;
+    return (SPANS as string[]).includes(span) ? fill(labels.periodChip, { field: label, period: labels[SPAN_WORDS[span as DateInterval]] }) : label;
+  }
+  const groupButton = (key: string, words: string) => {
+    const button = el('button', { type: 'button', class: 'fd-search-option', 'aria-pressed': 'false', 'data-group': key }, words);
+    button.addEventListener('click', () => toggleIn('groupBy', key));
     return button;
+  };
+  /** Each field to group by: a date by the span it falls in — its year, quarter, month, week or day — on a line of its own. */
+  const groupChoices = (node.groupBy ?? []).map((field) => {
+    const def = page.fields[field];
+    if (def.type !== 'date' && def.type !== 'datetime') return groupButton(field, def.label);
+    return el(
+      'div',
+      { class: 'fd-search-spans', role: 'group', 'aria-label': def.label, 'data-group-field': field },
+      el('span', { class: 'fd-search-spans-name', 'aria-hidden': 'true' }, def.label),
+      el('span', { class: 'fd-search-spans-list' }, ...SPANS.map((span) => groupButton(`${field}:${span}`, labels[SPAN_WORDS[span]])))
+    );
   });
-  const custom = customFilterPart({ page, el, labels, locale: context.locale, add: (facet) => change([...facets, facet]) });
+  const groupButtons = groupChoices.flatMap((choice) => (choice.matches('button') ? [choice as HTMLButtonElement] : [...choice.querySelectorAll('button')]));
+  const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
   const favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change });
 
   const group = (kind: string, iconName: string, title: string, ...parts: HTMLElement[]) =>
@@ -194,7 +218,7 @@ export function searchBar(context: SearchContext) {
     'div',
     { class: 'fd-search-panel', id: panelId, hidden: '' },
     group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
-    ...(groupButtons.length ? [group('groupBy', 'layers', labels.groupBy, ...groupButtons)] : []),
+    ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
     group('favourites', 'star', labels.favourites, favourites.list, favourites.none, favourites.open, favourites.form)
   );
 

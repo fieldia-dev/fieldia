@@ -2,6 +2,7 @@ import type { FilterCondition, Fields, Option, PropertyDefinition } from '../for
 import type { JsonValue } from '../format/json';
 import type { FileValue, RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
+import type { DateInterval } from './periods';
 
 /**
  * How Fieldia reaches data. Fieldia knows no backend: an app implements this
@@ -274,7 +275,24 @@ export interface ListedRecord {
   can?: RecordPermissions;
 }
 
-export interface GroupRequest {
+/**
+ * How a date's records are grouped: by the day, week, month, quarter or year
+ * each falls in rather than by its exact value. Each group's `value` is then
+ * the first day of its span — "2026-03-01" for March 2026, "2026-03-09" for
+ * the week from 9 March — the page writing its words ("March 2026", "Week 11,
+ * 2026"); the groups in time order, those with no date last. `spanStart`
+ * counts a value's span as a source should.
+ */
+export interface GroupInterval {
+  /** For a date or a date and time field: group by the span each record falls in. */
+  interval?: DateInterval;
+  /** With `interval: "week"`: the day a week starts on, 0 Sunday to 6 Saturday — the page's language's. */
+  weekStart?: number;
+  /** With `interval`, for a date and time field: the time zone its days are told in (IANA: "Africa/Cairo") — the page's. */
+  timeZone?: string;
+}
+
+export interface GroupRequest extends GroupInterval {
   model: string;
   field: string;
   filter: ResolvedFilter[];
@@ -290,14 +308,22 @@ export interface Group {
 /** How a field is totalled: added up, averaged, its least or its most, or how many records hold a value in it. */
 export type TotalKind = 'sum' | 'avg' | 'min' | 'max' | 'count';
 
-export interface TotalsRequest {
+export interface TotalsRequest extends GroupInterval {
   model: string;
   /** The list's search, as `list` gets it. For the ticked rows alone, add `{ field: 'id', op: 'in', value: ids }`. */
   filter: ResolvedFilter[];
   /** What to total, by field: `{ amount: ['sum'], hours: ['sum', 'avg'] }`. */
   totals: Record<string, TotalKind[]>;
-  /** Total under each value of this field as well, grouped as `groups` groups it: a Group By heading's sums. */
+  /** Total under each value of this field as well, grouped as `groups` groups it (by `interval`, for a date): a Group By heading's sums. */
   groupBy?: string;
+  /**
+   * The field holding each amount's currency, by the money field, where each
+   * record keeps its own: `{ amount: 'currency_id' }`. Such an amount is
+   * totalled within one currency only: over records in more than one, its
+   * sum, average, least and most are null — no honest number — and the
+   * result names the currency of those it could total (`currencies`).
+   */
+  currencies?: Record<string, string>;
 }
 
 /**
@@ -314,10 +340,20 @@ export interface TotalsResult {
   totals: Totals;
   /** With `groupBy`: each value's totals, in the order `groups` gives them. */
   groups?: TotalsGroup[];
+  /**
+   * With `currencies` asked: the currency each money field's totals are in,
+   * by field, as its currency field holds it (a link as `{ id, label }`, a
+   * code as "EGP"); null where its records hold more than one, or none. A
+   * page writes an amount's total only in a currency it knows: the field's
+   * own, or the one named here.
+   */
+  currencies?: Record<string, JsonValue>;
 }
 
 export interface TotalsGroup extends Group {
   totals: Totals;
+  /** The currency of each money field's totals under this value, as `TotalsResult.currencies` says it. */
+  currencies?: Record<string, JsonValue>;
 }
 
 /**

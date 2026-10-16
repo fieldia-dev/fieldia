@@ -1,4 +1,4 @@
-import { cardLines, type ButtonNode, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin } from '@fieldia/core';
+import { cardLines, DATE_PERIODS, type ButtonNode, type DatePeriod, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin, type TotalKind } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
@@ -34,7 +34,10 @@ function everyField(page: Page, designer: Designer): { name: string; field: Fiel
 
 // ---- a filter's one condition ----------------------------------------------------------------
 
-type Test = [FilterCondition['op'], string];
+/** A test of a filter's one condition: one a data source reads, or a period a date falls in. */
+type Test = [FilterCondition['op'] | 'period', string];
+/** A filter as its row edits it: one condition, or a period as one (`op: 'period'`, its value the period). */
+type OneTest = { field: string; op: Test[0]; value?: FilterCondition['value'] };
 
 function testsFor(field: Field, words: DesignerWords): Test[] {
   const t = words.list.tests;
@@ -50,7 +53,7 @@ function testsFor(field: Field, words: DesignerWords): Test[] {
       return [['=', t.is], ['>', t.more], ['<', t.less], ['>=', t.atLeast], ['<=', t.atMost], ...filled];
     case 'date':
     case 'datetime':
-      return [['=', t.is], ['>', t.after], ['<', t.before], ...filled];
+      return [['=', t.is], ['>', t.after], ['<', t.before], ['period', t.period], ...filled];
     case 'char':
     case 'text':
       return [['ilike', t.contains], ['=', t.is], ['!=', t.isNot], ...filled];
@@ -93,30 +96,51 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
   const page = () => designer.getPage();
   const fieldOf = (n: string) => page().fields[n] ?? designer.modelFields().find((m) => m.name === n)?.field;
   let valueKey = '';
-  const save = (patch: Partial<FilterCondition>) => {
-    const current = listOf(page()).filters?.find((f) => f.id === id)?.filter[0] as FilterCondition;
-    const next = { ...current, ...patch };
-    if (next.op === 'set' || next.op === 'notset') delete next.value;
-    designer.updateListFilter(id, { filter: [next] });
+  /** The filter's one test as its row shows it: its condition, or its period. */
+  const current = (): OneTest => {
+    const named = listOf(page()).filters?.find((f) => f.id === id);
+    if (named?.period && !named.filter) return { field: named.period.field, op: 'period', value: named.period.is };
+    return named?.filter?.[0] as FilterCondition;
   };
+  /** Kept as the page keeps it: a period as a period, any other test as a condition. */
+  const write = (next: OneTest) => {
+    if (next.op === 'period') return designer.updateListFilter(id, { filter: null, period: { field: next.field, is: next.value as DatePeriod } });
+    const condition = { ...next } as FilterCondition;
+    if (condition.op === 'set' || condition.op === 'notset') delete condition.value;
+    return designer.updateListFilter(id, { filter: [condition], period: null });
+  };
+  const save = (patch: Partial<OneTest>) => write({ ...current(), ...patch });
+  /** A test's first value: a period's This month, else the field's own. */
+  const valueFor = (op: Test[0], field: Field) => (op === 'period' ? 'thisMonth' : firstValue(field));
   which.addEventListener('change', () => {
     const field = fieldOf(which.value);
     if (!field) return;
-    const [op] = testsFor(field, designer.words)[0];
-    designer.updateListFilter(id, { filter: [op === 'set' ? { field: which.value, op } : { field: which.value, op, value: firstValue(field) }] });
+    // A period stays one from one date to another; else the field's first test.
+    const kept = current().op === 'period' && testsFor(field, designer.words).some(([op]) => op === 'period');
+    const [op] = kept ? (['period'] as const) : testsFor(field, designer.words)[0];
+    write(op === 'set' ? { field: which.value, op } : { field: which.value, op, value: kept ? current().value : valueFor(op, field) });
   });
   test.addEventListener('change', () => {
-    const current = listOf(page()).filters?.find((f) => f.id === id)?.filter[0] as FilterCondition;
-    const field = fieldOf(current.field);
-    save({ op: test.value as FilterCondition['op'], ...(current.value === undefined && field ? { value: firstValue(field) } : {}) });
+    const now = current();
+    const field = fieldOf(now.field);
+    const op = test.value as Test[0];
+    // To a period or from one, the value starts again: a period's names are no day.
+    const fresh = now.value === undefined || (op === 'period') !== (now.op === 'period');
+    save({ op, ...(fresh && field ? { value: valueFor(op, field) } : {}) });
   });
 
   /** The value the filter holds now, as the page last drew it. */
   let heldValue: unknown;
   /** Its number box, drawn again when the page changes. */
   let numberShown: { refresh(): void } | null = null;
-  function valueControl(field: Field, condition: FilterCondition): HTMLElement {
+  function valueControl(field: Field, condition: OneTest): HTMLElement {
     numberShown = null;
+    if (condition.op === 'period') {
+      const box = select(el, w.filterValue, DATE_PERIODS.map((period) => [period, w.periods[period]]));
+      box.value = String(condition.value);
+      box.addEventListener('change', () => save({ value: box.value }));
+      return box;
+    }
     if (field.type === 'selection' || field.type === 'boolean') {
       const options: [string, string][] = field.type === 'boolean' ? [['true', w.yes], ['false', w.no]] : field.options.map((o) => [String(o.value), o.label]);
       const box = select(el, w.filterValue, options);
@@ -151,7 +175,9 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
       if (!focused(name)) name.value = label;
       on.checked = isOn;
       remove.setAttribute('aria-label', w.removeFilter(label));
-      const single = items.filter.length === 1 && !('any' in items.filter[0]) && !('all' in items.filter[0]) ? (items.filter[0] as FilterCondition) : null;
+      // One condition, or a period alone: what this row edits. Anything more was written by hand.
+      const one = !items.period && items.filter?.length === 1 && !('any' in items.filter[0]) && !('all' in items.filter[0]) ? (items.filter[0] as FilterCondition) : null;
+      const single: OneTest | null = items.period && !items.filter ? { field: items.period.field, op: 'period', value: items.period.is } : one;
       const field = single ? fieldOf(single.field) : undefined;
       condition.hidden = !single || !field;
       byHand.hidden = !condition.hidden;
@@ -167,6 +193,9 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
         valueKey = key;
         valueBox.replaceChildren(...(single.op === 'set' || single.op === 'notset' ? [] : [valueControl(field, single)]));
       }
+      // A period's list follows the page: an undo puts the last period back.
+      const periods = single.op === 'period' ? valueBox.querySelector('select') : null;
+      if (periods && !focused(periods)) periods.value = String(single.value);
       numberShown?.refresh();
     },
     focus() {
@@ -803,16 +832,23 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
   });
   const ruleInRow = prop(el, w.cellRuleIn, ruleIn.input);
   const ruleRow = el('div', { class: 'fd-prop', 'data-part': 'rule' }, el('span', { class: 'fd-prop-name' }, w.cellRule), rule, el('p', { class: 'fd-properties-hint' }, w.cellRuleHint));
+  // Its total, under the list, on Group By headings and for the rows ticked: a number's sum, average, lowest or highest, or any column's count.
+  const total = select(el, w.cellTotal, []);
+  total.addEventListener('change', () => save({ ...cellNow(), total: (total.value || undefined) as TotalKind | undefined }));
+  const totalRow = el('div', { class: 'fd-prop', 'data-part': 'total' }, el('span', { class: 'fd-prop-name' }, w.cellTotal), total, el('p', { class: 'fd-properties-hint' }, w.cellTotalHint));
 
   /** A value's colour, and its icon for a lead: a row for each option of a choice. */
   const optionRows = (field: Field | undefined, row: (value: string, label: string) => HTMLElement[]) =>
     field?.type === 'selection' ? field.options.map((option) => el('div', { class: 'fd-list-cell-look' }, el('span', { class: 'fd-list-cell-look-name' }, option.label), ...row(String(option.value), option.label))) : [];
 
   return {
-    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side), ruleRow, ruleInRow],
+    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side), totalRow, ruleRow, ruleInRow],
     update(page: Page) {
       const field = page.fields[name];
       const cell = page.layout.type === 'list' ? (page.layout.cells?.[name] ?? {}) : {};
+      const kinds: TotalKind[] = field && ['integer', 'float', 'monetary'].includes(field.type) ? ['sum', 'avg', 'min', 'max', 'count'] : ['count'];
+      total.replaceChildren(el('option', { value: '' }, w.cellTotals.none), ...kinds.map((kind) => el('option', { value: kind }, w.cellTotals[kind])));
+      total.value = cell.total ?? '';
       widget.value = cell.widget === 'dot' ? 'dot' : '';
       widgetRow.hidden = field?.type !== 'selection';
       // Each state's dot colour, when the column draws its dot.

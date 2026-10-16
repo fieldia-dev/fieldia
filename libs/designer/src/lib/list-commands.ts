@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, FilterItem, ListCalendar, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
+import type { ButtonNode, Field, FilterCondition, FilterItem, FilterPeriod, ListCalendar, ListCell, ListMap, ListNode, Page } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -53,8 +53,8 @@ export interface ListCommands {
   setListCell(column: string, cell: ListCell | null): boolean;
   /** A named filter for the search bar. Returns its id. */
   addListFilter(label: string, filter: FilterCondition[]): string | false;
-  /** Its words, its conditions, and whether it is on when the list opens. */
-  updateListFilter(id: string, patch: { label?: string; filter?: FilterCondition[]; on?: boolean }): boolean;
+  /** Its words, its conditions, its period (a date's: "This month"; null for none), and whether it is on when the list opens. */
+  updateListFilter(id: string, patch: { label?: string; filter?: FilterCondition[] | null; period?: FilterPeriod | null; on?: boolean }): boolean;
   removeListFilter(id: string): boolean;
   /** A button for the rows chosen. Returns its id. */
   addListAction(label: string): string | false;
@@ -267,6 +267,8 @@ export function listCommands(context: {
             if (cell.rule !== undefined && !ruleIsGood(cell.rule)) throw new Refusal((w) => w.refusals.cellRule);
             const own = fieldFor(draft, column);
             if (cell.widget === 'dot' && own.type !== 'selection') throw new Refusal((w) => w.refusals.dotNeedsChoice(own.label));
+            // A sum, an average, the lowest and the highest are a number's; any column has a count.
+            if (cell.total && cell.total !== 'count' && !['integer', 'float', 'monetary'].includes(own.type)) throw new Refusal((w) => w.refusals.totalNeedsNumber(own.label));
             if (cell.lead) {
               const from = fieldFor(draft, cell.lead.field);
               if (from.type !== 'selection') throw new Refusal((w) => w.refusals.leadNeedsChoice(from.label));
@@ -301,11 +303,20 @@ export function listCommands(context: {
           const filters = list.filters ?? [];
           const at = filterOf(list, id);
           if (patch.label !== undefined) filters[at].label = patch.label;
-          if (patch.filter !== undefined) {
+          if (patch.filter === null) delete filters[at].filter;
+          else if (patch.filter !== undefined) {
             if (!patch.filter.length) throw new Refusal((w) => w.refusals.filterCondition);
             for (const name of filterFields(patch.filter)) fieldFor(draft, name);
             filters[at].filter = patch.filter;
           }
+          if (patch.period === null) delete filters[at].period;
+          else if (patch.period !== undefined) {
+            // A period is a date's, or a date and time's.
+            const dated = fieldFor(draft, patch.period.field);
+            if (dated.type !== 'date' && dated.type !== 'datetime') throw new Refusal((w) => w.refusals.periodNeedsDate(dated.label));
+            filters[at].period = { ...patch.period };
+          }
+          if (!filters[at].filter && !filters[at].period) throw new Refusal((w) => w.refusals.filterCondition);
           if (patch.on !== undefined) {
             const on = new Set(list.defaultFilters ?? []);
             if (patch.on) on.add(id);

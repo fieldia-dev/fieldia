@@ -2050,6 +2050,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         icons: options.icons,
         preferences,
         onOpenRecord: options.onOpenRecord,
+        ...(options.now ? { now: options.now } : {}),
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
         ...newListRecord(),

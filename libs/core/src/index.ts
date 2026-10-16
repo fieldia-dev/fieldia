@@ -12,7 +12,7 @@ export {
   ShrinkSchema,
   PERIODS,
 } from './lib/format/field';
-export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema } from './lib/format/layout';
+export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, FilterPeriodSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { validatePage } from './lib/format/validate';
