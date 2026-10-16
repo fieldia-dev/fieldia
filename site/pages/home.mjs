@@ -1,14 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
 import { COUNTS, SIZES, TESTS, Words, figure, words } from '../facts.mjs';
+import { AREAS, DEMOS, areaOf } from '../../demos/catalog.mjs';
 
 /**
- * The front page tells one story, top to bottom: a page of JSON is written and
- * drawn as it grows (the hero's stage); it starts as a question people answer;
+ * The front page tells one story, top to bottom: what a business gets from it, in
+ * one sentence, and the business areas it is at work in; then, for developers, a
+ * page of JSON is written and drawn as it grows (the hero's stage); it starts as a question people answer;
  * then it runs a business record; it is the same in every framework; it already
  * starts from a template in any of its themes; it already draws real ERP
  * screens; it is built in an open designer; and it is small and open. Every moving part is the real viewer, driven by home.js.
  */
+
+/** The business areas the gallery groups its demos by, each a link to its demos there: all but the building blocks. */
+const USES = AREAS.filter((area) => area.id !== 'building-blocks').map((area) => [area.id, area.label, DEMOS.filter((demo) => areaOf(demo.id) === area.id).length]);
 
 /** The real pages, by the thumbnails the demos gallery already draws. */
 const REAL = [
@@ -140,7 +145,12 @@ export default {
   <div class="opening-copy">
     <p class="kicker">Open source · MIT · ${VERSION}</p>
     <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it everywhere.</span></h1>
-    <p class="lede">A page is a short piece of JSON: its fields, its layout, its rules and its buttons. Fieldia runs it in plain JavaScript, React, Vue or Angular: it draws the form, checks what people type, works out the totals, follows the page’s rules, runs its buttons, and hands the record to your backend.</p>
+    <p class="lede lede-business">Your team gets the screens its work runs on — customer records, approvals, bookings, maps — inside your own app, in your look and your language.</p>
+    <nav class="uses" aria-label="See it at work">
+      <p class="uses-h" id="uses-h">See it at work in</p>
+      <ul aria-labelledby="uses-h">${USES.map(([id, label, count]) => `<li><a href="/demos/#${id}">${label}<span class="uses-n">${count}<span class="hidden-words"> demos</span></span></a></li>`).join('')}</ul>
+    </nav>
+    <p class="lede lede-dev"><b>For developers:</b> a page is a short piece of JSON — its fields, its layout, its rules and its buttons. Fieldia runs it in plain JavaScript, React, Vue or Angular: it draws the form, checks what people type, works out the totals, follows the page’s rules, runs its buttons, and hands the record to your backend.</p>
     <div class="opening-actions">
       <a class="btn btn-solid" href="/start/">Get started</a>
       <button class="btn btn-copy" type="button" id="copy-install" data-copy="npm install @fieldia/viewer"><code>npm install @fieldia/viewer</code><span class="copy-word" aria-hidden="true">Copy</span></button>

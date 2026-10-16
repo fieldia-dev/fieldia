@@ -101,6 +101,18 @@
 .opening-copy h1 span { color: var(--h-signal); }
 .lede { margin: 0; max-width: 62ch; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.55; color: var(--h-stage-muted); }
 .opening-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+/* The business line first, in the stage's own ink; the developers' words after it, a step quieter. */
+.lede-business { color: var(--h-stage-ink); font-size: clamp(18px, 1.8vw, 22px); }
+.lede-dev { font-size: clamp(15px, 1.3vw, 17px); }
+.lede-dev b { color: var(--h-stage-ink); font-weight: 650; }
+/* The business areas it is at work in, each a link to its demos in the gallery. */
+.uses { display: grid; gap: 10px; }
+.uses-h { margin: 0; font: 600 12px/1 var(--h-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--h-stage-muted); }
+.uses ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.uses a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 14px; border: 1px solid rgba(164, 179, 204, 0.35); border-radius: 999px; color: var(--h-stage-ink); font-weight: 600; font-size: 15px; text-decoration: none; background: rgba(164, 179, 204, 0.08); }
+.uses a:hover { border-color: var(--h-signal); background: rgba(79, 157, 255, 0.14); color: var(--h-stage-ink); }
+.uses a:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 2px; }
+.uses-n { font: 600 12px/1 var(--h-mono); color: var(--h-stage-muted); }
 
 .stage { background: rgba(4, 14, 30, 0.72); border: 1px solid rgba(164, 179, 204, 0.22); border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35); min-width: 0; }
 .stage-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border-bottom: 1px solid rgba(164, 179, 204, 0.18); font: 13px/1.3 var(--h-mono); color: var(--h-stage-muted); }
