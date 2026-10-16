@@ -80,6 +80,13 @@ describe('a date and time read on a zone’s clock', () => {
     const zoned = { type: 'datetime', label: 'Starts', timeZone: 'Europe/Berlin' } as const;
     expect(displayValue(zoned, '2026-10-15T12:30:00.000Z')).toBe('15 Oct 2026, 14:30 CEST');
   });
+
+  it('shows a cell’s date and time on the browser’s clock where nothing names a zone, as its box does — never the clock it was written with', () => {
+    const plain = { type: 'datetime', label: 'Starts' } as const;
+    // An instant written with its offset, 14:30 in Berlin's summer: 12:30 UTC, whatever clock the browser keeps.
+    for (const value of ['2026-10-15T14:30:00+02:00', '2026-10-15T12:30:00.000Z']) expect(displayValue(plain, value)).toBe(ownWords('2026-10-15T12:30:00.000Z'));
+    expect(displayValue(plain, 'soon')).toBe('soon');
+  });
 });
 
 /** A date and time on a page in Berlin's zone, as the viewer keeps it. */

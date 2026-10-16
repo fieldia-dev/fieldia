@@ -602,8 +602,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // list's words: a time the clocks repeat or skip said, a zone's name read back (date-text, 2.5), their English words —
 // what every page that names a zone draws with, 6.2 of it. Booking slots (0.24): the data source's slots, the form's
 // findSlots, the widget's checks, its part's name and its English words, 2.1 (the memory source's schedules are
-// scheduleSlots, outside this script). 474.29 measured before, 482.56 after — 8.3 more, to 482.6.
-const BUDGET_KB = 482.6;
+// scheduleSlots, outside this script). A cell's date and time written as the box writes it, the instant it is rather than
+// the clock it was written with, 0.3 less. 474.29 measured before, 482.29 after — 8.0 more, to 482.3.
+const BUDGET_KB = 482.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -725,8 +726,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
 // A page's time zone, its clock read in every box, cell, filter and list of a date and time, a time the clocks skip or
 // repeat said (about 2.1), and booking slots' data source member, form call, checks and words (about 0.7), both 0.24
-// (listed with the raw budget above): 153.62 measured before, 156.44 after — 2.8 more, to 156.5.
-const GZIP_BUDGET_KB = 156.5;
+// (listed with the raw budget above): 153.62 measured before, 156.38 after — 2.8 more, to 156.4.
+const GZIP_BUDGET_KB = 156.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
