@@ -17,7 +17,7 @@
  * it that language's words.
  */
 import { build, transform } from 'esbuild';
-import { readFileSync, statSync } from 'node:fs';
+import { copyFileSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -173,6 +173,11 @@ const mainScript = async (table) => {
   for (const [part, file] of parts) PART_SOURCES[part] = file;
   return { inMain, parts: [...parts.keys()].sort(), metafile };
 };
+/**
+ * What a part carries of another project's work, named in its banner: the phone part's table of countries is made from
+ * libphonenumber's metadata (Apache-2.0), its notice in libs/widgets/THIRD_PARTY_NOTICES.md, beside the bundle too.
+ */
+const NOTICES = { phone: " · its phone numbers' table derived from libphonenumber's metadata, (C) 2009 The Libphonenumber Authors, Apache-2.0: see THIRD_PARTY_NOTICES.md" };
 const partScript = (part, inMain, table) =>
   build({
     ...common,
@@ -180,7 +185,7 @@ const partScript = (part, inMain, table) =>
     plugins: [minifiedStyles, englishOnly, takesShared(inMain, table)],
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
-    banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
+    banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev${NOTICES[part] ?? ''} */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
     footer: { js: 'return part; }]);' },
     outfile: join(BUNDLE, `fieldia.${part}.js`),
     metafile: true,
@@ -216,12 +221,16 @@ for (let round = 0; ; round++) {
   table = next;
 }
 const PARTS = main.parts;
+// The notice a part's banner names, beside it: the bundle's folder is what a CDN serves and @fieldia/viewer ships.
+copyFileSync(join(WORKSPACE, 'libs/widgets/THIRD_PARTY_NOTICES.md'), join(BUNDLE, 'THIRD_PARTY_NOTICES.md'));
 const partFiles = {};
 const partInputs = {};
 for (const part of PARTS) {
   const { metafile } = await partScript(part, main.inMain, table);
   partFiles[part] = join(BUNDLE, `fieldia.${part}.js`);
   partInputs[part] = Object.keys(metafile.inputs).filter((input) => input.startsWith('libs/'));
+  // A part made from another project's work says so where it is read: its first line names the notice.
+  if (NOTICES[part] && !readFileSync(partFiles[part], 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) throw new Error(`fieldia.${part}.js does not name the third-party notice its table needs`);
 }
 // A part's own code is in it alone: never in the main script, never in another part (it would be a second copy, its state twice).
 for (const part of PARTS) {

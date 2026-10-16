@@ -289,6 +289,13 @@ for (const [part, holder, gives, beside = []] of [['head', 'headPart', 'recordHe
   const given = await runInNewContext(`Fieldia.${holder}.load()`, page);
   if (typeof given?.[gives] !== 'function') fail(`the packed fieldia.${part}.js does not give the script bundle its part`);
 }
+// The phone part's table is derived from libphonenumber's metadata (Apache-2.0): its notice ships with the package whose
+// source carries the table, and beside the bundle, whose phone part names it in its first line.
+for (const notice of ['@fieldia/widgets/THIRD_PARTY_NOTICES.md', '@fieldia/viewer/bundle/THIRD_PARTY_NOTICES.md']) {
+  const file = join(SMOKE, 'node_modules', notice);
+  if (!existsSync(file) || !/libphonenumber/.test(readFileSync(file, 'utf8')) || !/Apache License, Version 2\.0/.test(readFileSync(file, 'utf8'))) fail(`${notice} is not packed, or does not name libphonenumber and its licence`);
+}
+if (!readFileSync(join(SMOKE, 'node_modules/@fieldia/viewer/bundle/fieldia.phone.js'), 'utf8').split('\n')[0].includes('THIRD_PARTY_NOTICES.md')) fail('the packed fieldia.phone.js does not name its third-party notice');
 
 console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle, its language add-ons and its parts all check`);
 
