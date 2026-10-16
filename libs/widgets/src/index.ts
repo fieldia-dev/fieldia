@@ -38,7 +38,10 @@ export { lazyPart, settleParts, type Part } from './lib/parts';
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';
 export type { DateBox, DateBoxOptions } from './lib/date-box';
-export { textPart, pathPart, choicePart, datePart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type PartFactory } from './lib/widget-parts';
+// A table of lines (a one2many's) and a many2many's table of records come in the lines part, loaded the first time a page
+// shows one: `linesWidget` draws from it, its lines as plain words until it has come. What a line is edited through —
+// `lineForm`, `columnTotal`, `openLineDialog`, which the grid and the cards draw with too — is here (lib/lines).
+export { textPart, pathPart, choicePart, datePart, linesPart, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type PartFactory } from './lib/widget-parts';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

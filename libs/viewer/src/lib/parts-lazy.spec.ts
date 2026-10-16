@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { datePart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { datePart, linesPart, pathPart, quietPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -87,16 +87,16 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections(field('at')), fields))).toEqual([datePart]);
     expect(partsFor(page(sections(field('slot', { widget: 'time' })), fields))).toEqual([datePart]);
     expect(partsFor(page(sections(field('due', { widget: 'daterange', options: { endField: 'at' } })), fields))).toEqual([datePart]);
-    // A table's lines draw each cell with its column's box: a date column, a time column.
-    expect(partsFor(page(sections(field('lines')), fields))).toEqual([datePart]);
-    expect(partsFor(page(sections(field('plain')), fields))).toEqual([]);
-    expect(partsFor(page(sections(field('plain', { cells: { slot: { widget: 'time' } } })), fields))).toEqual([datePart]);
+    // A table's lines draw each cell with its column's box: a date column, a time column (the table itself in the lines part).
+    expect(partsFor(page(sections(field('lines')), fields))).toEqual([linesPart, datePart]);
+    expect(partsFor(page(sections(field('plain')), fields))).toEqual([linesPart]);
+    expect(partsFor(page(sections(field('plain', { cells: { slot: { widget: 'time' } } })), fields))).toEqual([linesPart, datePart]);
     // A property may be a date: one added in place, or worked out from its value, may be one whatever the page names.
     expect(partsFor(page(sections(field('props')), fields))).toEqual([datePart]);
     // A plain char: none. The app's own date box: none.
     expect(partsFor(page(sections(field('slot')), fields))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
-    expect(partsFor(page(sections(field('due'), field('lines')), fields), { date: own })).toEqual([]);
+    expect(partsFor(page(sections(field('due'), field('lines')), fields), { date: own })).toEqual([linesPart]);
   });
 
   it('a list: nothing of it drawn, its element busy, until the list part has come; then the list whole, its records in', async () => {

@@ -137,8 +137,7 @@ describe('a line copied', () => {
 });
 
 describe('a plain table on a phone', () => {
-  it('is marked to draw its lines as cards, each cell with its column’s label, and its columns fit to content', async () => {
-    const { FIELDIA_CSS } = await import('./styles');
+  it('is marked to draw its lines as cards, each cell with its column’s label, and its columns fit to content', () => {
     const node = { ...(page.layout as { children: FieldNode[] }).children[0], cards: 'narrow', fit: 'content' } as FieldNode;
     const form = createForm({ page, values: { state: 'draft', workorder_ids: [{ key: 'a', values: { name: 'Cut', hours: 2 } }] } as never });
     const widget = createWidget({ form, name: 'workorder_ids', field: page.fields['workorder_ids'] as Field, node, id: 'fd-wo', document, labels: WIDGET_LABELS.en });
@@ -146,7 +145,9 @@ describe('a plain table on a phone', () => {
     expect(widget.element.dataset['cards']).toBe('narrow');
     expect(widget.element.dataset['fit']).toBe('content');
     expect((widget.element.querySelector('td[data-column="hours"]') as HTMLElement).dataset['label']).toBe('Hours');
-    expect(FIELDIA_CSS).toContain('@container fd-lines (max-width: 520px)');
-    expect(FIELDIA_CSS).toContain('.fd-lines[data-cards="always"]');
+    // The table's own sheet (the lines part's), in the page once a table is drawn, draws them so.
+    const sheet = document.getElementById('fieldia-lines-styles')?.textContent ?? '';
+    expect(sheet).toContain('@container fd-lines (max-width: 520px)');
+    expect(sheet).toContain('.fd-lines[data-cards="always"]');
   });
 });

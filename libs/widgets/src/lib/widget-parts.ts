@@ -4,6 +4,7 @@ import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
 import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
+import type * as LinesModule from './lines-part';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -14,6 +15,8 @@ export type PathPart = typeof PathModule;
 export type ChoicePart = typeof ChoiceModule;
 /** The date part: Fieldia's own box for a date, a date and time and a time of day, a date's calendar, a range of dates. */
 export type DatePart = typeof DateModule;
+/** The lines part: a one2many's table of lines, a many2many's table of records, and their stylesheet. */
+export type LinesPart = typeof LinesModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -23,6 +26,8 @@ export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-pa
 export const choicePart: Part<ChoicePart> = lazyPart('choice', () => import('./choice-part'));
 /** Fieldia's own date box and its calendar, loaded the first time a page shows a date, a date and time, a time of day or a range. */
 export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-part'));
+/** A table of lines and a many2many's table of records, loaded the first time a page shows one. */
+export const linesPart: Part<LinesPart> = lazyPart('lines', () => import('./lines-part'));
 
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {

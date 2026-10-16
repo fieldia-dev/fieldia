@@ -387,7 +387,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
 
 /* ---- one2many lines ------------------------------------------------------- */
-.fd-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+/* What a table of lines shares with a grid's lines and a distribution's table; a table of lines' own rules come with
+   it, in the lines part (styles-lines.ts). */
 /* The table scrolls sideways inside its own box; the grid around it must not grow to the table's width. */
 /* position: relative keeps the cells' hidden labels inside the scroll box; without it they widen the page. */
 .fd-lines-scroll { overflow-x: auto; min-width: 0; position: relative; }
@@ -396,53 +397,13 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-table td { padding: 4px 8px; border-block-end: 1px solid var(--fd-border); vertical-align: top; min-width: 7em; }
 .fd-lines-table td.fd-lines-tools, .fd-lines-table th.fd-lines-tools { width: 32px; min-width: 32px; padding-inline: 0; text-align: center; }
 .fd-lines-table .fd-input { min-height: 28px; }
-/* A yes/no cell sits level with the inputs beside it. */
-.fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
-.fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
-/* A table wider than its box scrolls sideways under a line's grip and its delete button, which stay at its ends. */
-.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td):is(.fd-lines-grip, .fd-lines-tools) { position: sticky; z-index: 1; background-color: var(--fd-surface); }
-.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td).fd-lines-grip { inset-inline-start: 0; }
-.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td).fd-lines-tools { inset-inline-end: 0; }
-/* A column of yes/no, numbers, money or dates as wide as its values, as Flectra's lists size them: words and links have the rest. */
-.fd-lines-table td[data-fit] { min-width: 0; }
 /* A head may take two lines rather than widen a column of short values: "Delivery Lead Time" over "45". */
 .fd-lines-table thead th:not(.fd-lines-grip, .fd-lines-tools) { white-space: normal; }
 .fd-lines-table thead th { vertical-align: bottom; }
-.fd-lines-table th[data-fit="boolean"] { width: 5em; min-width: 5em; }
-.fd-lines-table th[data-fit="integer"] { width: max(7em, var(--fd-fit-need, 0px)); min-width: max(7em, var(--fd-fit-need, 0px)); }
-.fd-lines-table th[data-fit="float"] { width: max(7.5em, var(--fd-fit-need, 0px)); min-width: max(7.5em, var(--fd-fit-need, 0px)); }
-.fd-lines-table th[data-fit="monetary"] { width: max(11.5em, var(--fd-fit-need, 0px)); min-width: max(11.5em, var(--fd-fit-need, 0px)); }
-.fd-lines-table th[data-fit="date"] { width: 9em; min-width: 9em; }
-.fd-lines-table th[data-fit="datetime"] { width: 12.5em; min-width: 12.5em; }
-/* Numbers and money read from the end, as Flectra's lists align them. */
-.fd-lines-table th:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
-.fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input { text-align: end; }
-/* A table reads as a table, as a grid does: a line shows its boxes and buttons where the pointer or the cursor is.
-   Only colours and visibility change, never a size: a line left for a click elsewhere must not move what is clicked.
-   A touch screen has no pointer to hover with: there the boxes always show. */
-@media (hover: hover) and (pointer: fine) {
-  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) .fd-input:not([aria-invalid="true"]) { border-color: transparent; background-color: transparent; box-shadow: none; }
-  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) :is(.fd-combo-open, .fd-combo-clear) { visibility: hidden; }
-}
-.fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
-/* A line dragged by its grip follows the pointer, lifted over the others, which slide out of its way. */
-.fd-lines-dragging, .fd-lines-dragging * { cursor: grabbing; user-select: none; }
-.fd-lines-dragging > tr:not(.fd-line-lifted) { transition: transform 0.15s ease; }
-.fd-line-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(15, 20, 25, 0.16); }
-.fd-line-lifted > td { background: var(--fd-surface); }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; min-width: 24px; min-height: 24px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-/* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */
-.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
-.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
-.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
-.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
-.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
-.fd-lines-table [data-tone] :is(input, select, textarea, .fd-input, .fd-display) { color: var(--fd-line-tone); -webkit-text-fill-color: var(--fd-line-tone); }
-.fd-lines-table :is(.fd-line-bold, .fd-cell-bold) :is(input, select, textarea, .fd-input, .fd-display) { font-weight: 600; }
 .fd-lines-table td.fd-lines-tools { white-space: nowrap; }
-/* With buttons on some lines, every line's × keeps to the end, so they line up. */
-.fd-lines-table:has(.fd-line-button) td.fd-lines-tools { text-align: end; padding-inline-end: 4px; }
+/* Buttons on a line, as a table and a grid draw them. */
 .fd-line-button { padding: 2px 6px; font-size: 12.5px; vertical-align: middle; }
 .fd-line-button-icon { padding: 4px; color: var(--fd-muted); }
 .fd-line-button-icon:hover { color: var(--fd-accent); }
@@ -451,49 +412,13 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-adds { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-self: start; }
 .fd-lines-control { display: inline-flex; align-items: center; gap: 6px; }
 .fd-lines-control svg, .fd-lines-chosen-button svg { width: 15px; height: 15px; }
-/* Lines chosen for the table's buttons: a tick before each line's grip, and a bar of buttons over the table. */
-.fd-line-lead { display: inline-flex; align-items: center; gap: 4px; margin-block-start: 6px; }
-.fd-line-lead .fd-line-grip { margin-block-start: 0; }
-.fd-lines-table th.fd-lines-grip:has(.fd-line-pick-all) { padding-block: 4px; }
+/* Lines chosen for the table's buttons: a bar of buttons over the table (a table's and a grid's). */
 .fd-lines-chosen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-radius: var(--fd-radius); background: var(--fd-accent-soft); }
 .fd-lines-chosen[hidden] { display: none; }
 .fd-lines-chosen-count { font-weight: 600; font-size: 13px; margin-inline-end: 6px; }
 .fd-lines-chosen-button { display: inline-flex; align-items: center; gap: 6px; padding-block: 3px; }
-/* A line opened in a dialog: its own record's page, or its every field. */
-.fd-lines-table .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
-.fd-lines-table .fd-line-open:hover { background: var(--fd-accent-soft); }
-.fd-links-table td { vertical-align: middle; }
-.fd-links-table .fd-value-text { padding-block: 4px; }
-/* Columns as wide as they hold (fit: content), the widest taking what is left. */
-.fd-lines[data-fit="content"] .fd-lines-table { width: auto; max-width: 100%; }
-.fd-lines[data-fit="content"] .fd-lines-table td { min-width: 0; }
-/* Lines as cards (cards: narrow on a phone, or always): each a box, every cell its column's label above its value. */
-.fd-lines[data-cards] { container: fd-lines / inline-size; }
-@container fd-lines (max-width: 520px) {
-  .fd-lines[data-cards="narrow"] .fd-lines-table, .fd-lines[data-cards="narrow"] .fd-lines-table :is(tbody, tfoot) { display: block; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table thead { display: none; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
-  .fd-lines[data-cards="narrow"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
-  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip { position: absolute; inset-block-start: 6px; inset-inline-start: 6px; padding: 0; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip .fd-line-grip { display: none; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table tr:has(.fd-line-pick) { padding-inline-start: 36px; }
-  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-tools { width: auto; text-align: end; }
-  .fd-lines[data-cards="narrow"] .fd-lines-totals td:empty { display: none; }
-}
-.fd-lines[data-cards="always"] .fd-lines-table, .fd-lines[data-cards="always"] .fd-lines-table :is(tbody, tfoot) { display: block; }
-.fd-lines[data-cards="always"] .fd-lines-table thead { display: none; }
-.fd-lines[data-cards="always"] .fd-lines-table tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 12px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
-.fd-lines[data-cards="always"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
-.fd-lines[data-cards="always"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
-.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-grip, .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { grid-column: 1 / -1; width: auto; }
-.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { text-align: end; }
 .fd-line-copy { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-copy:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
-/* A section heads the lines below it; a note reads as a remark between them. */
-.fd-line-section td { background: var(--fd-page); }
-.fd-line-section .fd-input { font-weight: 600; }
-.fd-line-note .fd-input { font-style: italic; }
 .fd-cell-error { color: var(--fd-error); font-size: 12px; }
 .fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -1090,12 +1015,14 @@ export function installStyles(document: Document): void {
 }
 
 /**
- * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: the themes' first,
- * then the quiet look's, which quietens their shapes; a path picker's after the pickers', a record's head after that,
- * a work item's groups and its text editor after those. A sheet of a higher rank goes after one of a lower, all before
- * the page's own looks.
+ * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS (0.22): a table of
+ * lines', the business widgets', the survey kinds' and the files' first (their rules stood among the skins', the
+ * inputs', the sheet's and the business'), then the themes' shapes, which reshape them, and the quiet look's, which
+ * quietens those; a path picker's after the pickers', a record's head after that, a work item's groups and its text
+ * editor after those; and last the survey kinds' own looks, which stood among the page's looks for each kind. A sheet
+ * of a higher rank goes after one of a lower, all before the page's own looks.
  */
-export const PART_RANK = { themes: 1, quiet: 2, picker: 3, head: 4, groups: 5, text: 6 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

@@ -1,0 +1,574 @@
+import { isEmpty, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
+import { cellText } from './display';
+import { drawIcon } from './icons';
+import { askFirst, fillIn, maker } from './kind-parts';
+import { WIDGET_LABELS } from './labels';
+import { moveLineTo } from './line-moves';
+import { columnTotal, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
+import { installLinesStyles } from './styles-lines';
+import { createWidget, type Widget, type WidgetFactory } from './widgets';
+
+/**
+ * A one2many as an editable table. Each cell is an ordinary widget; a small
+ * adapter routes its edits to `updateLine` and its searches to `searchLine`,
+ * so a many2one inside a line searches with that line's own values. Rows are
+ * matched by line key, so adding or removing a line never rebuilds the others.
+ * When the field declares `lineKinds`, a section or a note is one wide row of
+ * its text.
+ *
+ * A line moves by the grip at its start, or by Alt+↑/↓ from inside it, said
+ * aloud. The node's `options`: `min` lines at least — a new table starts with
+ * them — and `max` at most; `addLabel`, the Add button's words (and
+ * `addSectionLabel`, `addNoteLabel`, its section's and note's); `emptyLabel`,
+ * a sentence while there is no line; `confirmDelete`, asking before a line
+ * with something in it goes.
+ *
+ * It comes in the lines part (parts.ts), loaded the first time a page shows a
+ * table of lines, with its stylesheet (styles-lines.ts); its lines as plain
+ * words meanwhile (lines-plain.ts). What it edits a line through — the form a
+ * cell sees, a column's total, a line's dialog — is the main script's
+ * (lines.ts), shared with the grid and the cards.
+ */
+
+/** The kinds of field whose column is as wide as its values, so the columns of words and links have the rest. */
+/** Columns of numbers, which grow past their kind's width for a long value. */
+const NUMERIC = new Set(['integer', 'float', 'monetary']);
+const FIXED_WIDTH = new Set(['boolean', 'integer', 'float', 'monetary', 'date', 'datetime']);
+
+/** A line being dragged by its grip. */
+interface Drag {
+  follow(y: number): void;
+  drop(): void;
+  settle(): void;
+}
+
+interface Row {
+  element: HTMLTableRowElement;
+  kind: 'section' | 'note' | null;
+  cells: { name: string; def: LineField; widget: Widget; error: HTMLElement; td: HTMLTableCellElement }[];
+  /** The line's own buttons, by their id. */
+  buttons: Map<string, HTMLButtonElement>;
+  remove: HTMLButtonElement;
+  grip: HTMLElement;
+  /** The tick that chooses the line for the table's buttons for chosen lines; none without them, or on a section or note. */
+  pick: HTMLInputElement | null;
+  /** The button that puts a copy of the line right after it (`options.copy`). */
+  copy: HTMLButtonElement | null;
+}
+
+const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
+
+export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs, widgets, onError }) => {
+  installLinesStyles(document);
+  const def = field as Extract<Field, { type: 'one2many' }>;
+  const kinds = def.lineKinds;
+  const make = maker(document);
+  const options = node.options ?? {};
+  const min = count(options['min']) ?? 0;
+  const max = count(options['max']) ?? Infinity;
+  const words = (key: string) => (typeof options[key] === 'string' && (options[key] as string).trim() ? (options[key] as string) : null);
+  // The fields that say what a line is and keep the lines' order never show as columns.
+  // Optional columns the page starts hidden stay out of the plain table.
+  const heads = new Map<string, HTMLTableCellElement>();
+  // The table's own rules, read by the form line by line; a table with none asks nothing.
+  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
+  const columns = (node.columns ?? Object.keys(def.fields)).filter(
+    // Lines a line holds are edited in its form, never drawn in its row.
+    (column) => def.fields[column] && def.fields[column].type !== 'one2many' && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
+  );
+  const element = document.createElement('div');
+  element.className = 'fd-lines';
+  element.id = id;
+  // Lines as cards on a narrow form, or always; columns as wide as they hold: the stylesheet draws them so.
+  if (node.cards) element.dataset['cards'] = node.cards;
+  if (node.fit) element.dataset['fit'] = node.fit;
+  element.setAttribute('role', 'group');
+  const scroller = document.createElement('div');
+  scroller.className = 'fd-lines-scroll';
+  const table = document.createElement('table');
+  table.className = 'fd-lines-table';
+  const head = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  // Lines chosen for the table's buttons for them: a tick on each line, one in the head for every line, and a bar over the table.
+  const choosing = !!node.selectedButtons?.length;
+  const chosen = new Set<string>();
+  const pickAll = choosing ? (make('input', { type: 'checkbox', class: 'fd-checkbox fd-line-pick fd-line-pick-all', 'aria-label': labels.chooseAllLines }) as HTMLInputElement) : null;
+  headRow.append(make('th', { class: 'fd-lines-grip' }, ...(pickAll ? [pickAll] : [])));
+  for (const column of columns) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.dataset['column'] = column;
+    th.textContent = def.fields[column].label;
+    const width = node.cells?.[column]?.width;
+    if (width) th.style.width = `${width}ch`;
+    // Its kind, which sizes a column of yes/no, numbers, money or dates to its values, as Flectra's lists do.
+    else if (FIXED_WIDTH.has(def.fields[column].type)) th.dataset['fit'] = def.fields[column].type;
+    heads.set(column, th);
+    headRow.append(th);
+  }
+  const lastTh = document.createElement('th');
+  lastTh.className = 'fd-lines-tools';
+  headRow.append(lastTh);
+  head.append(headRow);
+  const body = document.createElement('tbody');
+  table.append(head, body);
+  // Number columns the page asks to add up, in a row under the lines.
+  const totals = (node.totals ?? []).filter((column) => columns.includes(column));
+  const sums = new Map<string, HTMLTableCellElement>();
+  const footCells = new Map<string, HTMLTableCellElement>();
+  if (totals.length) {
+    const foot = document.createElement('tfoot');
+    const row = document.createElement('tr');
+    row.className = 'fd-lines-totals';
+    row.append(document.createElement('td'));
+    columns.forEach((column, i) => {
+      const td = document.createElement('td');
+      td.dataset['column'] = column;
+      footCells.set(column, td);
+      if (totals.includes(column)) sums.set(column, td);
+      else if (i === 0) td.textContent = labels.total;
+      row.append(td);
+    });
+    row.append(document.createElement('td'));
+    foot.append(row);
+    table.append(foot);
+  }
+  scroller.append(table);
+  const adds = document.createElement('div');
+  adds.className = 'fd-lines-adds';
+  const addButton = (text: string, values: Record<string, Value>, kind: string) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fd-button fd-button-link fd-lines-add';
+    button.dataset['add'] = kind;
+    button.textContent = `+ ${text}`;
+    button.addEventListener('click', () => {
+      focusNew = form.addLine(name, values);
+      const row = rows.get(focusNew);
+      if (row) {
+        row.cells[0]?.widget.focus();
+        focusNew = null;
+      }
+    });
+    adds.append(button);
+  };
+  addButton(words('addLabel') ?? labels.addLine, {}, 'line');
+  if (kinds) {
+    addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+  }
+  // Buttons in the control row, beside the add buttons: the record's, shown by a condition on it (Flectra's <control>).
+  const controls = (node.controlButtons ?? []).map((own) => {
+    const icon = drawIcon(document, own.icon);
+    const button = make('button', { type: 'button', class: 'fd-button fd-button-link fd-lines-add fd-lines-control', 'data-node': own.id }, ...(icon ? [icon] : []), own.label);
+    button.addEventListener('click', () => void pressed(button, () => form.runAction(own.id)));
+    adds.append(button);
+    return { id: own.id, button };
+  });
+  // The bar of buttons for the lines chosen, over the table while any is.
+  const chosenCount = make('span', { class: 'fd-lines-chosen-count', role: 'status' });
+  const chosenButtons = (node.selectedButtons ?? []).map((own) => {
+    const icon = drawIcon(document, own.icon);
+    const button = make('button', { type: 'button', class: `fd-button fd-button-${own.style ?? 'secondary'} fd-lines-chosen-button`, 'data-node': own.id }, ...(icon ? [icon] : []), own.label);
+    // In the table's order, whatever order they were ticked in.
+    button.addEventListener('click', () => void pressed(button, () => form.runLinesAction(node.id, own.id, current().filter((line) => chosen.has(line.key)).map((line) => line.key))));
+    return { id: own.id, button };
+  });
+  const bar = choosing ? make('div', { class: 'fd-lines-chosen', hidden: '' }, chosenCount, ...chosenButtons.map((b) => b.button)) : null;
+  const emptyWords = words('emptyLabel');
+  const empty = emptyWords ? make('div', { class: 'fd-help fd-lines-empty' }, emptyWords) : null;
+  // Removing a line with something in it asks first, in place: "Remove line 2?  Remove · Keep".
+  const confirm = askFirst(make, labels);
+  // Where a line went, said politely; not the page's own announcer, which a page looks for by its class.
+  const voice = make('div', { class: 'fd-sr-only', role: 'status' });
+  element.append(...(bar ? [bar] : []), scroller, ...(empty ? [empty] : []), adds, confirm.element, voice);
+  /** A press that waits for its run, and is not pressed again meanwhile. */
+  async function pressed(button: HTMLButtonElement, run: () => Promise<unknown>) {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      await run();
+    } finally {
+      button.removeAttribute('aria-busy');
+    }
+  }
+  /** The bar and the head's tick, as the lines chosen are now. */
+  function showChosen() {
+    if (!bar || !pickAll) return;
+    const items = current().filter((line) => !lineKind(def, line.values));
+    for (const key of [...chosen]) if (!items.some((line) => line.key === key)) chosen.delete(key);
+    bar.hidden = readonly || chosen.size === 0;
+    chosenCount.textContent = fillIn(labels.linesChosen, { n: chosen.size });
+    for (const { id, button } of chosenButtons) button.hidden = form.node(id).invisible;
+    pickAll.checked = items.length > 0 && chosen.size === items.length;
+    pickAll.indeterminate = chosen.size > 0 && chosen.size < items.length;
+    pickAll.disabled = readonly || !items.length;
+    for (const [key, row] of rows) {
+      if (!row.pick) continue;
+      row.pick.checked = chosen.has(key);
+      row.pick.disabled = readonly;
+    }
+  }
+  pickAll?.addEventListener('change', () => {
+    const items = current().filter((line) => !lineKind(def, line.values));
+    if (pickAll.checked) for (const line of items) chosen.add(line.key);
+    else chosen.clear();
+    showChosen();
+  });
+
+  const rows = new Map<string, Row>();
+  /** The cell being left now, by its path: a problem leaving it finds is said by its message. */
+  let leaving: string | null = null;
+  let focusNew: string | null = null;
+  let readonly = false;
+  /** The lines the columns were last sized for, by their keys. */
+  let columnsSizedFor: string | null = null;
+  const current = () => (form.getState().values[name] as Line[] | null) ?? [];
+  // A new table starts with the lines it needs at least.
+  for (let have = current().length; have < min; have++) form.addLine(name);
+
+  /** A line to another place, the focus kept where it was, and where it went said aloud. */
+  function move(key: string, to: number) {
+    const from = current().findIndex((line) => line.key === key);
+    if (readonly || to === from || to < 0 || to >= current().length) return;
+    const focused = document.activeElement as HTMLElement | null;
+    // Named by its first column's words, else by where it was.
+    const first = current()[from].values[columns[0]];
+    moveLineTo(form, name, def, key, to);
+    if (focused && focused !== document.activeElement) focused.focus();
+    voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: from + 1 }), n: to + 1, total: current().length });
+  }
+  /**
+   * A line lifted by its grip: it follows the pointer, the lines it passes
+   * slide out of its way, and the table's value changes once, when it is let
+   * go — as a grid's row drags. Escape puts it back.
+   */
+  function lift(tr: HTMLTableRowElement, key: string, startY: number): Drag {
+    const all = [...body.children] as HTMLElement[];
+    const from = all.indexOf(tr);
+    const others = all.filter((row) => row !== tr);
+    const box = tr.getBoundingClientRect();
+    const middles = others.map((row) => {
+      const at = row.getBoundingClientRect();
+      return at.top + at.height / 2;
+    });
+    let to = from;
+    let lifted = false;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      settle();
+    };
+    function settle() {
+      for (const row of all) row.style.transform = '';
+      tr.classList.remove('fd-line-lifted');
+      body.classList.remove('fd-lines-dragging');
+      document.removeEventListener('keydown', escape, true);
+      lifted = false;
+    }
+    return {
+      follow(y: number) {
+        const by = y - startY;
+        if (!lifted) {
+          // A press that hardly moves is not a drag yet.
+          if (Math.abs(by) < 4 || readonly) return;
+          lifted = true;
+          tr.classList.add('fd-line-lifted');
+          body.classList.add('fd-lines-dragging');
+          document.addEventListener('keydown', escape, true);
+        }
+        tr.style.transform = `translateY(${by}px)`;
+        // Its place: after every other line whose middle its own middle has passed.
+        const middle = box.top + box.height / 2 + by;
+        to = middles.filter((at) => at < middle).length;
+        others.forEach((row, i) => {
+          row.style.transform = i >= from && i < to ? `translateY(${-box.height}px)` : i < from && i >= to ? `translateY(${box.height}px)` : '';
+        });
+      },
+      drop() {
+        const moved = lifted && to !== from;
+        settle();
+        if (moved) move(key, to);
+      },
+      settle,
+    };
+  }
+  body.addEventListener('keydown', (event) => {
+    const key = (event.target as Element).closest('tr')?.dataset['line'];
+    if (!key || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+    event.preventDefault();
+    move(key, current().findIndex((line) => line.key === key) + (event.key === 'ArrowUp' ? -1 : 1));
+  });
+  function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
+    const cellId = `${id}-${line.key}-${column}`;
+    // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited, or with a widget of its own.
+    const rules = lineKind(def, line.values) ? undefined : node.cells?.[column];
+    // Its settings reach its widget even without a widget named: a calendar's week numbers.
+    const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : rules?.options ? { options: rules.options } : {};
+    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...look };
+    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
+    const td = document.createElement('td');
+    td.colSpan = span;
+    td.dataset['column'] = column;
+    if (FIXED_WIDTH.has(sub.type)) td.dataset['fit'] = sub.type;
+    // Its column's label, which a card shows before its value.
+    td.dataset['label'] = sub.label;
+    const label = document.createElement('label');
+    label.className = 'fd-sr-only';
+    label.htmlFor = cellId;
+    label.textContent = sub.label;
+    // Its message, linked to its box (aria-describedby), and said once, politely, when leaving the cell finds it.
+    const error = document.createElement('div');
+    error.className = 'fd-cell-error';
+    error.id = `${cellId}-error`;
+    error.hidden = true;
+    td.append(label, widget.element, error);
+    tr.append(td);
+    const path = `${name}.${line.key}.${column}`;
+    td.addEventListener('focusin', () => error.removeAttribute('aria-live'));
+    td.addEventListener('focusout', (event) => {
+      if (td.contains(event.relatedTarget as Node | null)) return;
+      // The cell's own problem — text that does not read, min, max, a whole number — is said now; required waits for Save.
+      leaving = path;
+      try {
+        form.boxLeft(path);
+      } finally {
+        leaving = null;
+      }
+    });
+    return { name: column, def: sub, widget, error, td };
+  }
+
+  function makeRow(line: Line): Row {
+    const tr = document.createElement('tr');
+    tr.dataset['line'] = line.key;
+    const kind = lineKind(def, line.values);
+    if (kind) tr.className = `fd-line-${kind}`;
+    // Dragged by its grip, the line follows the pointer and takes its place when let go.
+    const grip = make('span', { class: 'fd-line-grip fd-rank-grip', 'aria-hidden': 'true' });
+    let drag: Drag | null = null;
+    grip.addEventListener('pointerdown', (event) => {
+      if (readonly || event.button !== 0) return;
+      event.preventDefault();
+      grip.setPointerCapture?.(event.pointerId);
+      drag = lift(tr, line.key, event.clientY);
+    });
+    grip.addEventListener('pointermove', (event) => drag?.follow(event.clientY));
+    grip.addEventListener('pointerup', () => {
+      drag?.drop();
+      drag = null;
+    });
+    grip.addEventListener('pointercancel', () => {
+      drag?.settle();
+      drag = null;
+    });
+    // Its tick for the table's buttons for chosen lines, before the grip.
+    const pick = choosing && !kind ? (make('input', { type: 'checkbox', class: 'fd-checkbox fd-line-pick' }) as HTMLInputElement) : null;
+    pick?.addEventListener('change', () => {
+      if (pick.checked) chosen.add(line.key);
+      else chosen.delete(line.key);
+      showChosen();
+    });
+    tr.append(make('td', { class: 'fd-lines-grip' }, ...(pick ? [make('span', { class: 'fd-line-lead' }, pick, grip)] : [grip])));
+    const cells =
+      kind && kinds
+        ? [makeCell(tr, line, kinds.text, kindTextField(def.fields[kinds.text], kind), columns.length)]
+        : columns.map((column) => makeCell(tr, line, column, def.fields[column]));
+    const tools = document.createElement('td');
+    tools.className = 'fd-lines-tools';
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'fd-line-delete';
+    remove.textContent = '×';
+    remove.setAttribute('aria-label', labels.deleteLine);
+    remove.addEventListener('click', () => {
+      const at = current().findIndex((l) => l.key === line.key);
+      const values = current()[at]?.values ?? {};
+      if (options['confirmDelete'] !== true || cells.every((cell) => isEmpty(cell.def, values[cell.name]) || values[cell.name] === false)) return form.removeLine(name, line.key);
+      confirm.ask(fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: at + 1 }) }), (gone) => {
+        if (gone) form.removeLine(name, line.key);
+        // The line that took its place, or this one kept; else Add.
+        const left = current();
+        const next = left[gone ? Math.min(at, left.length - 1) : at];
+        (next ? rows.get(next.key)?.remove : adds.querySelector('button'))?.focus();
+      });
+    });
+    // The line's own buttons, each shown by its condition on the line; a press runs with the line.
+    const buttons = new Map<string, HTMLButtonElement>();
+    for (const own of kind ? [] : (node.rowButtons ?? [])) {
+      const icon = drawIcon(document, own.icon);
+      const button = make('button', { type: 'button', class: `fd-button fd-button-link fd-line-button${icon ? ' fd-line-button-icon' : ''}`, 'data-row-button': own.id, 'aria-label': own.label, title: own.label });
+      button.append(icon ?? own.label);
+      button.addEventListener('click', async () => {
+        if (button.hasAttribute('aria-busy')) return;
+        button.setAttribute('aria-busy', 'true');
+        try {
+          await form.runRowAction(node.id, own.id, line.key);
+        } finally {
+          button.removeAttribute('aria-busy');
+        }
+      });
+      buttons.set(own.id, button);
+      tools.append(button);
+    }
+    // A copy of the line, its values too, right after it: never its saved id or its place in the order.
+    const copy = options['copy'] === true && !kind ? (make('button', { type: 'button', class: 'fd-line-copy' }, '⧉') as HTMLButtonElement) : null;
+    copy?.addEventListener('click', () => {
+      const all = current();
+      const at = all.findIndex((l) => l.key === line.key);
+      if (readonly || at < 0 || all.length >= max) return;
+      const values = { ...all[at].values };
+      if (def.sequenceField) delete values[def.sequenceField];
+      const made = form.addLine(name, values);
+      moveLineTo(form, name, def, made, at + 1);
+      rows.get(made)?.cells[0]?.widget.focus();
+    });
+    if (copy) tools.append(copy);
+    // Its own page, its own form (lineForm), or its every field, in a dialog (lineOpens).
+    if ((node.lineOpens || node.lineForm) && dialogs && !kind) {
+      const open = make('button', { type: 'button', class: 'fd-line-open', 'aria-label': labels.openLine, title: labels.openLine }, '↗') as HTMLButtonElement;
+      open.addEventListener('click', () => {
+        const now = current().find((l) => l.key === line.key);
+        if (now) void openLineDialog(form, name, node, now, dialogs, readonly);
+      });
+      tools.append(open);
+    }
+    tools.append(remove);
+    tr.append(tools);
+    return { element: tr, kind, cells, remove, grip, buttons, pick, copy };
+  }
+
+  return {
+    element,
+    focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? adds.querySelector('button'))?.focus(),
+    destroy: () => {
+      for (const row of rows.values()) for (const cell of row.cells) cell.widget.destroy?.();
+    },
+    update(state) {
+      readonly = state.readonly;
+      const current = (state.value as Line[] | null) ?? [];
+      adds.hidden = readonly || current.length >= max;
+      if (readonly) confirm.element.hidden = true;
+      if (empty) empty.hidden = current.length > 0;
+      const { errors, unread } = form.getState();
+      // Columns the record hides now: their head, cells and total go with them.
+      const gone = new Set(ruled ? columns.filter((column) => form.columnHidden(node.id, column)) : []);
+      for (const [column, th] of heads) th.hidden = gone.has(column);
+      for (const [column, td] of footCells) td.hidden = gone.has(column);
+      // A column of words or links as wide as its longest value, as a list of words is: a long name has the room a code does not need.
+      // Measured as lines come and go, not as a cell is typed in: the columns never move under the person's hands.
+      const sizedFor = current.map((line) => line.key).join(' ');
+      const resize = sizedFor !== columnsSizedFor;
+      columnsSizedFor = sizedFor;
+      for (const [column, th] of resize ? heads : new Map<string, HTMLTableCellElement>()) {
+        if (node.cells?.[column]?.width) continue;
+        const sub = def.fields[column];
+        if (th.dataset['fit']) {
+          // A number keeps its kind's width at the least, and has room for its longest value too ("E£ 21,600,000.00"), never cut.
+          if (!NUMERIC.has(sub.type)) continue;
+          const widest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
+          th.style.setProperty('--fd-fit-need', `${widest + 4}ch`);
+          continue;
+        }
+        const longest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
+        // A link's box holds its open and clear buttons too.
+        const buttons = sub.type === 'many2one' ? 5 : 0;
+        // Its head may wrap: a long label over short codes does not widen it.
+        th.style.width = `${Math.min(Math.max(longest, Math.min(sub.label.length, 10), 6), 32) + 4 + buttons}ch`;
+        // Short values keep their whole width when the table is tight: the long ones give way.
+        th.style.minWidth = `${Math.min(Math.max(longest, 6), 14) + 4}ch`;
+      }
+      const keep = new Set(current.map((line) => line.key));
+      for (const [key, row] of rows) {
+        if (!keep.has(key)) {
+          row.element.remove();
+          rows.delete(key);
+          // Its cells' widgets go with it, and what they gave the form (a reader of what is typed) with them.
+          for (const cell of row.cells) cell.widget.destroy?.();
+        }
+      }
+      current.forEach((line, index) => {
+        let row = rows.get(line.key);
+        // A line that changed kind is drawn afresh.
+        if (row && row.kind !== lineKind(def, line.values)) {
+          row.element.remove();
+          for (const cell of row.cells) cell.widget.destroy?.();
+          row = undefined;
+        }
+        if (!row) {
+          row = makeRow(line);
+          rows.set(line.key, row);
+        }
+        if (body.children[index] !== row.element) body.insertBefore(row.element, body.children[index] ?? null);
+        const now = ruled ? form.lineState(node.id, line.key) : null;
+        // A line the table keeps (lineDelete) shows no ×.
+        row.remove.hidden = readonly || current.length <= min || now?.deletable === false;
+        row.grip.hidden = readonly;
+        // Named by where it is now: it moves.
+        const lineName = fillIn(labels.lineN, { n: index + 1 });
+        row.pick?.setAttribute('aria-label', fillIn(labels.chooseLine, { name: lineName }));
+        if (row.copy) {
+          row.copy.setAttribute('aria-label', fillIn(labels.copy, { name: lineName }));
+          row.copy.title = row.copy.getAttribute('aria-label') as string;
+          row.copy.hidden = readonly || current.length >= max;
+        }
+        if (readonly) row.remove.remove();
+        else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
+        setData(row.element, 'tone', now?.tone);
+        row.element.classList.toggle('fd-line-bold', !!now?.bold);
+        // A line's buttons act on the saved line, so a read-only table keeps them, as the grid and Flectra's lists do.
+        for (const [id, button] of row.buttons) button.hidden = !now?.buttons[id];
+        // A section's or note's one cell spans the columns shown.
+        if (row.kind) row.cells[0].td.colSpan = columns.length - gone.size;
+        for (const cell of row.cells) {
+          const message = errors[`${name}.${line.key}.${cell.name}`];
+          const rules = row.kind ? undefined : now?.cells[cell.name];
+          if (!row.kind) cell.td.hidden = gone.has(cell.name);
+          // Hidden by its line, the cell stays, empty, so the column lines up.
+          cell.widget.element.hidden = !!rules?.invisible;
+          setData(cell.td, 'tone', rules?.tone);
+          cell.td.classList.toggle('fd-cell-bold', !!rules?.bold);
+          const path = `${name}.${line.key}.${cell.name}`;
+          // Raised by leaving the cell, it is said once, politely; a refused Save's announcer says the rest, once.
+          if (leaving === path && message && message !== cell.error.textContent) cell.error.setAttribute('aria-live', 'polite');
+          cell.error.hidden = !message;
+          cell.error.textContent = message ?? '';
+          cell.widget.update({
+            value: line.values[cell.name],
+            values: line.values,
+            parent: state.values,
+            // A value worked out from the line's others is shown, never typed.
+            readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined || !!rules?.readonly,
+            required: cell.def.required === true || !!rules?.required,
+            invalid: !!message,
+            ...(message ? { describedBy: cell.error.id } : {}),
+          });
+        }
+      });
+      for (const [column, td] of sums) {
+        // Numbers only: a line holding text that does not read, or no number, makes the total wait for it.
+        const total = columnTotal(current, column, (line) => !lineKind(def, line.values), (line) => !!unread?.[`${name}.${line.key}.${column}`]);
+        if ('waits' in total) {
+          const said = fillIn(labels.totalWaits, { n: total.waits });
+          if (td.title !== said) waitingTotal(td, said);
+          continue;
+        }
+        td.removeAttribute('title');
+        delete td.dataset['waits'];
+        td.textContent = cellText(def.fields[column], total.sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
+      }
+      for (const { id, button } of controls) button.hidden = form.node(id).invisible;
+      showChosen();
+      if (focusNew && rows.has(focusNew)) {
+        rows.get(focusNew)?.cells[0]?.widget.focus();
+        focusNew = null;
+      }
+    },
+  };
+};
+
+/** A data attribute set, or taken away when there is nothing to say. */
+function setData(element: HTMLElement, key: string, value: string | null | undefined) {
+  if (value) element.dataset[key] = value;
+  else delete element.dataset[key];
+}
