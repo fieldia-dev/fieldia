@@ -27,6 +27,7 @@ interface DataSource {
   delete?(request: RecordRequest): Promise<void>;            // delete it
   attachments?(request: RecordRequest): Promise<FileValue[]>; // its files, the main one first
   upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>; // store one file as it is picked
+  slots?(request: SlotsRequest): Promise<SlotsResult>;        // the times free to book, day by day
 }`
 )}
 
@@ -47,6 +48,7 @@ interface DataSource {
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
     <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
     <tr><td>${c('upload')}</td><td>Someone picks or drops a file in a file or picture field, uploads a picture of a signature, or saves one drawn</td><td>Files kept in your store, the record holding only their links — see <a href="#upload">files stored as they are picked</a></td></tr>
+    <tr><td>${c('slots')}</td><td>A date and time drawn as booking slots shows a month, a field it depends on changes, or someone picks a time</td><td>Booking a time from those free — see <a href="#slots">booking slots</a></td></tr>
   </tbody>
 </table>
 </div>
@@ -132,6 +134,30 @@ export function uploadAddress(fileName) {
 }`
 )}
 <p>Let your site PUT to the account in its CORS rules, with the ${c('x-ms-blob-type')} and ${c('Content-Type')} headers. To show a stored file to people who may not read the container, give them a read SAS for it when your server sends the record. An S3 presigned PUT URL works the same way, without the ${c('x-ms-blob-type')} header.</p>
+
+<h2 id="slots">Booking slots</h2>
+<p>A date and time drawn as ${c('slots')} books a time from those your app has free: a month whose days are shaded by how they are booked, beside the chosen day's free times. Give your data source ${c('slots')}; without it, the field is the plain date and time box.</p>
+<ul>
+  <li>${c('slots({ model, field, recordId, schedule, from, to, timeZone, length, between, values })')} — the days ${c('from')} and ${c('to')} (both included, ${c('"2026-10-01"')}) are days in ${c('timeZone')}: the field's, its page's, or the browser's. ${c('schedule')} is what the node's ${c('options.schedule')} names (a doctor's, a showroom's), else the field's name; ${c('length')} and ${c('between')} are the minutes a booking lasts and those kept free between two, as the page says. ${c('recordId')} is the record booked: its own time is free to it. ${c('values')} holds every value of the form — the doctor, the car.</li>
+  <li>Answer ${c('{ days, length }')}: each day by its date, ${c("{ state: 'open', free: ['2026-10-19T07:00:00Z', …] }")}, ${c("{ state: 'full' }")}, ${c("{ state: 'closed' }")} or ${c("{ state: 'holiday', note: 'Staff training day' }")} — a day left out is closed — and, when your server knows better than the page, the minutes a booking lasts (a service's own length). The free times are instants: in UTC, or with their offset.</li>
+  <li>It is asked a month at a time, again when a field in ${c('options.dependsOn')} changes, and once more for the day of a time picked: a time someone else booked meanwhile is said — “10:00 was just booked by someone else” — and the day's times drawn again; nothing is booked over. To fail, throw: the picker says so, with Try again.</li>
+  <li>The time picked is the field's instant; with ${c('options.endField')}, the booking's end — its start and its length — goes there too. Your ${c('save')} still decides: refuse a time taken by then with ${c("saveRefused({ kind: 'rule', message })")}.</li>
+</ul>
+${code(
+  'ts',
+  `
+const dataSource = {
+  ...yourDataSource,
+  async slots({ schedule, from, to, timeZone, recordId, values }) {
+    const query = new URLSearchParams({ schedule, from, to, timeZone, car: String(values.car?.id ?? '') });
+    if (recordId !== null) query.set('booking', String(recordId));
+    const answer = await fetch(\`/api/test-drives/free?\${query}\`);
+    if (!answer.ok) throw new Error(await answer.text());
+    return answer.json();   // { days: { '2026-10-19': { state: 'open', free: [...] }, ... }, length: 45 }
+  },
+};`
+)}
+<p>${c('form.findSlots(field, { from, to })')} asks it for a widget of your own, the record, its values and the zone filled in; ${c('form.canFindSlots()')} says whether the source has it. For demos and tests, ${c('scheduleSlots')} answers from booking schedules, beside the <a href="#memory">memory data source</a>.</p>
 
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
@@ -242,6 +268,27 @@ const dataSource = createMemoryDataSource({
 });
 dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
+)}
+<p>Its ${c('slots')} answers from booking schedules, with ${c('scheduleSlots')}: the hours each day of the week on a zone's clock, a booking's length and the minutes kept free after one, holidays, and the records its bookings are — each car's own, with ${c('same')} — a time the clocks skip that day left out, and times gone by too:</p>
+${code(
+  'ts',
+  `
+import { createMemoryDataSource, scheduleSlots } from '@fieldia/core';
+
+const weekday = [['09:00', '13:00'], ['14:00', '18:00']];
+const dataSource = createMemoryDataSource({
+  records,
+  slots: scheduleSlots({
+    showroom: {
+      timeZone: 'Europe/Berlin',
+      hours: { 1: weekday, 2: weekday, 3: weekday, 4: weekday, 5: weekday, 6: [['10:00', '14:00']] }, // 1 Monday … 7 Sunday
+      length: 45,   // minutes a drive lasts
+      between: 15,  // minutes kept free after each
+      holidays: { '2026-12-25': 'Christmas Day' },
+      bookings: { model: 'drive.booking', field: 'start', endField: 'stop', same: ['car'] },
+    },
+  }),
+});`
 )}
 <p>Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(

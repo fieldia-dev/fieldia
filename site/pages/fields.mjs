@@ -9,7 +9,7 @@ const ROWS = [
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits, money'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
   ['date', 'A date', 'daterange', 'min, max, days'],
-  ['datetime', 'A date and a time', 'daterange, timer', 'min, max, days'],
+  ['datetime', 'A date and a time, kept as an instant', 'daterange, timer, slots (booking a time from those free)', 'min, max, days, timeZone'],
   ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple'],
   ['many2one', 'A link to one record of another model, found by typing', 'statusbar, path (a record of a tree as its path)', 'relation, filter'],
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
@@ -42,6 +42,31 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
 </div>
 <p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
 <p>A date's ${c('min')} and ${c('max')} are its earliest and latest day: a day, ${c('"2026-03-02"')}, or one counted from the day the form is opened, ${c('"today"')}, ${c('"today+30"')}, ${c('"today-7"')}; a date and time keeps them by the day it falls on. ${c('days')} are the days of the week it may fall on, ISO numbers from 1, Monday, to 7, Sunday: ${c('[1, 2, 3, 4, 5]')} refuses a weekend of Saturday and Sunday, ${c('[7, 1, 2, 3, 4]')} one of Friday and Saturday. A date's ${c('default')} may be ${c('"today"')}. A field with the widget ${c('email')}, ${c('url')}, ${c('phone')} or ${c('time')} is checked as one, and says what to type.</p>
+
+<h2 id="time-zones">Time zones</h2>
+<p>A page may name the time zone its dates and times are in — a branch's, a clinic's — by its IANA name, and a date and time field its own: a flight's departure in its airport's. A date and time is kept as an instant, as always; it is shown and typed on the zone's clock wherever the person is, with the zone's short name beside its box where the browser's zone is another, and after it in words: <em>15 Oct 2026, 14:30 CEST</em>, which a paste reads back. Today is the zone's day: a date's default ${c('"today"')}, its earliest and latest counted from today, ${c('today()')}, a rule's past and future, and a booking's days. Without ${c('timeZone')}, the browser's own zone, as before.</p>
+${code(
+  'json',
+  `
+{
+  "timeZone": "Europe/Berlin",
+  "fields": {
+    "call_back": { "type": "datetime", "label": "Call back at" },
+    "flight": { "type": "datetime", "label": "Departs", "timeZone": "Africa/Cairo" }
+  }
+}`
+)}
+<p>On the night the clocks change, a time may not exist, or exist twice. Neither is ever moved in silence: <em>there is no 02:30 on 29 Mar 2026 in Central European Time: the clocks go from 02:00 to 03:00</em>; and <em>02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 CEST or 02:30 CET</em> — the box keeps what was typed until the zone's name, or an offset (${c('+01:00')}), says which. A zone the browser does not know is refused as the page is read. In the designer: the screen's Time zone, and a date and time's.</p>
+
+<h2 id="slots">Booking slots</h2>
+<p>${c('"widget": "slots"')} on a date and time books a time from those your app has free: a month whose days are shaded by how they are booked — free times left, fully booked, closed, a holiday by its name — beside the chosen day's free times as chips, all asked of the data source's <a href="/data/#slots">${c('slots')}</a>, on the field's zone's clock. The arrows move across the days, the day's times following; Enter goes to its times, the arrows move among them, and Enter books one. A time someone else booked meanwhile is said when it is picked, and never booked. Without ${c('slots')} in the data source, it is the date and time box. Open <a href="/demos/plain/?page=test-drive&amp;skin=outlined">the test drive demo</a>.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-start", "field": "start", "widget": "slots",
+  "options": { "schedule": "showroom", "length": 45, "between": 15, "endField": "stop", "dependsOn": ["car"] } }`
+)}
+<p>${c('schedule')} names what the app is asked for (the field's name unless said); ${c('length')} and ${c('between')} are the minutes a booking lasts and those kept free after it, unless the app says; ${c('endField')}, a date and time, takes the booking's end; ${c('dependsOn')}, the fields whose change asks again. In the designer: the kind Booking slots, with its Schedule, Minutes a booking lasts, Minutes kept free after one, Its end in, Asked again when, and Time zone.</p>
 
 <h2 id="options">Widget options</h2>
 <p>A node's ${c('options')} tune its widget. An option whose name ends in ${c('Field')} names another field of the page, and the format checks that it exists.</p>
