@@ -109,14 +109,16 @@ const partners: Record<string, Values> = {
   7001: company('Nile Crest Developments', {
     ...NILE_CREST_ADDRESS,
     vat: '512-406-981',
-    phone: '+20 2 2537 4100',
-    mobile: '+20 100 537 4100',
+    // Its numbers from several countries, kept as E.164 or as they were typed: the page reads each, shows Egypt's at
+    // home's way and the others' abroad's, each with a call and a WhatsApp link.
+    phone: '+20225374100',
+    mobile: '+201005374100',
     email: 'info@nilecrest.example',
     website: 'https://nilecrest.example',
     category_id: [link(7621, 'Real estate'), link(7622, 'Key account')],
     child_ids: [
-      { key: 'c7002', id: 7002, values: { type: 'contact', name: 'Hany Saber', title: link(7631, 'Mister'), function: 'Chief Financial Officer', email: 'hany.saber@nilecrest.example', phone: '+20 2 2537 4111', mobile: '+20 100 555 2210' } },
-      { key: 'c7010', id: 7010, values: { type: 'contact', name: 'Rania Fawzy', title: link(7632, 'Madam'), function: 'Procurement Manager', email: 'rania.fawzy@nilecrest.example', phone: '+20 2 2537 4120', mobile: '+20 111 230 8841' } },
+      { key: 'c7002', id: 7002, values: { type: 'contact', name: 'Hany Saber', title: link(7631, 'Mister'), function: 'Chief Financial Officer', email: 'hany.saber@nilecrest.example', phone: '+20 2 2537 4111', mobile: '+447700900123' } },
+      { key: 'c7010', id: 7010, values: { type: 'contact', name: 'Rania Fawzy', title: link(7632, 'Madam'), function: 'Procurement Manager', email: 'rania.fawzy@nilecrest.example', phone: '+97143316600', mobile: '+971501234567' } },
       { key: 'c7011', id: 7011, values: { type: 'invoice', name: 'Accounts department', email: 'ap@nilecrest.example', street: 'Plot 112, South 90th Street', street2: 'Third floor', city: 'New Cairo', state_id: CAIRO, zip: '11835', country_id: EGYPT } },
       { key: 'c7012', id: 7012, values: { type: 'delivery', name: 'New Capital site office', phone: '+20 100 537 4190', street: 'R7 District, Plot 47', city: 'New Administrative Capital', state_id: CAIRO, country_id: EGYPT, comment: 'Gate 3. Deliveries 08:00 to 15:00, Sunday to Thursday.' } },
     ],
@@ -160,7 +162,8 @@ const partners: Record<string, Values> = {
     parent_id: link(7001, 'Nile Crest Developments'),
     function: 'Chief Financial Officer',
     phone: '+20 2 2537 4111',
-    mobile: '+20 100 555 2210',
+    // His mobile from the London office.
+    mobile: '+447700900123',
     email: 'hany.saber@nilecrest.example',
     title: link(7631, 'Mister'),
     user_id: SALMA,
@@ -179,7 +182,7 @@ const partners: Record<string, Values> = {
     country_id: EGYPT,
     country_code: 'EG',
     phone: '+20 2 3761 0042',
-    mobile: '+20 122 300 1144',
+    mobile: '+966501234567',
     email: 'dina@lotusinteriors.example',
     title: link(7632, 'Madam'),
   }),

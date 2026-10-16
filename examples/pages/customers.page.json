@@ -3,6 +3,7 @@
   "id": "customers",
   "title": "Customers",
   "data": { "kind": "record", "model": "partner" },
+  "phone": { "country": "EG" },
   "fields": {
     "name": { "type": "char", "label": "Name" },
     "email": { "type": "char", "label": "Email" },
