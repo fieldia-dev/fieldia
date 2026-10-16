@@ -112,6 +112,8 @@ function blockWords(page: Page, node: Part, words: DesignerWords): string | null
       return w.form(nameOf(page, node, words));
     case 'map':
       return w.map(nameOf(page, node, words));
+    case 'related':
+      return w.related(nameOf(page, node, words));
     default:
       return null;
   }
@@ -224,6 +226,8 @@ export function layoutChanges(before: Page, after: Page, words: DesignerWords = 
     else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
     // A saved form: another one, another version, where its answers go, its title.
     else if (old.type === 'form' && node.type === 'form' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
+    // A related list: its records, their link, its columns, rows, New or View all.
+    else if (old.type === 'related' && node.type === 'related' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
   }
   for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part, words)) lines.push(w.removedBlock(blockWords(before, node as Part, words) as string));
 

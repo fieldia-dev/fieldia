@@ -36,6 +36,8 @@ export const LATIN_KEPT = [
   ...['Turnstile', 'reCAPTCHA', 'hCaptcha'],
   // Names in code, in examples.
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street', 'res', 'users'],
+  // A related list's model and its link, as its panel's hints give them to type.
+  ...['invoice', 'partner_id'],
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2); an escape; and a place in a sentence that something is drawn in, as {language}. */

@@ -9,6 +9,7 @@ export const parts: DesignerWords['parts'] = {
   tabs: 'علامات تبويب',
   image: 'صورة',
   map: 'خريطة',
+  related: 'قائمة مرتبطة',
   divider: 'خط فاصل',
   spacer: 'مسافة',
   untitledSection: 'قسم بلا عنوان',

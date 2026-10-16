@@ -32,6 +32,8 @@ export interface ToolboxOptions {
   words: DesignerWords;
   /** “A saved form”, for a screen: shown while the designer can place one (`update`'s `forms`). */
   forms?: boolean;
+  /** “Related list”, for a screen: shown on a record's page (`update`'s `related`). */
+  related?: boolean;
   onPick(spec: string): void;
   onPress?(spec: string, event: PointerEvent, tile: HTMLElement): void;
 }
@@ -39,7 +41,7 @@ export interface ToolboxOptions {
 export interface ToolboxHandle {
   element: HTMLElement;
   /** The model's fields still to place, whether tabs can be added, whether new fields can be — a list shows only what the model has — and whether it is Advanced. */
-  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean; advanced?: boolean; forms?: boolean }): void;
+  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean; advanced?: boolean; forms?: boolean; related?: boolean }): void;
 }
 
 /** The kinds in the order and groups the toolbox shows them. */
@@ -84,6 +86,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   let kindsOn = true;
   let advancedOn = false;
   let formsOn = false;
+  let relatedOn = false;
 
   const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: w.find, 'aria-label': w.find });
   const none = el('p', { class: 'fd-tool-none', hidden: '' }, w.nothing);
@@ -123,7 +126,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   const fromModel = group('model', w.fromTheModel);
   fromModel.element.classList.add('fd-tool-group-model');
-  const kindGroups = toolboxGroups(options.kinds).map(([title, ids]) => {
+  const kindGroups: Group[] = toolboxGroups(options.kinds).map(([title, ids]) => {
     // Fieldia's groups by their key, in the designer's words; an app's by the name it gave.
     const g = group(title, groupName(options.words, title));
     for (const id of ids) {
@@ -132,10 +135,15 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
       if (kind) g.tiles.append(tile(`kind:${id}`, id, name, w.addNew(name)));
     }
     return g;
-  }).filter((g) => g.tiles.children.length > 0);
+  });
   // One of the app's saved forms, placed whole: an address, a contact person, a consent made once.
   const formTile = tile('form:saved', 'saved-form', options.words.savedForms.tile, options.words.savedForms.tileTip);
   if (options.forms) kindGroups.find((g) => g.key === 'More')?.tiles.append(formTile);
+  // Records of another kind that point at this one, listed inside it: among the records, on a record's page.
+  const relatedTile = tile('block:related', 'lines', options.words.relatedPart.tile, options.words.relatedPart.tileTip);
+  if (options.related) kindGroups.find((g) => g.key === 'Records')?.tiles.append(relatedTile);
+  // A group with nothing in it is not drawn.
+  for (let at = kindGroups.length - 1; at >= 0; at--) if (!kindGroups[at].tiles.children.length) kindGroups.splice(at, 1);
   const layout = group('layout', w.layout);
   const tabsTile = tile('layout:tabs', 'tabs', w.tabs, w.tabsTip);
   layout.tiles.append(tile('layout:section', 'section', w.section, w.sectionTip), tabsTile);
@@ -161,7 +169,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
         const block = blockTiles.includes(t as HTMLButtonElement);
         const simpleOnly = g === layout && !block;
         const unavailable =
-          (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn) || (t === formTile && !formsOn);
+          (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn) || (t === formTile && !formsOn) || (t === relatedTile && !relatedOn);
         setHidden(t, unavailable || (!!query && !name.includes(query)));
         if (!t.hidden) shown++;
       }
@@ -178,10 +186,11 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   return {
     element,
-    update({ modelFields, tabs, kinds = true, advanced = false, forms = false }) {
+    update({ modelFields, tabs, kinds = true, advanced = false, forms = false, related = false }) {
       kindsOn = kinds;
       advancedOn = advanced;
       formsOn = forms;
+      relatedOn = related;
       const key = modelFields.map((m) => `${m.name}:${m.field.label}:${m.field.type}`).join('|');
       if (fromModel.element.dataset['key'] !== key) {
         fromModel.element.dataset['key'] = key;

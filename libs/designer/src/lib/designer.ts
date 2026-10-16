@@ -19,15 +19,17 @@ import {
   type MapFence,
   type MapLayer,
   type MapNode,
+  type LinkedField,
   type Page,
   type PageLook,
+  type RelatedNode,
   type SectionNode,
   type SetWhen,
   type SheetNode,
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { FORMAT_VERSION, upgradePage } from '@fieldia/core';
+import { FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
@@ -496,6 +498,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    */
   /** A map's name, height, layers, tools under its zoom, and fences; `null` takes a height, tools or fences away. Its fields come onto the page from the model. */
   updateMap(id: string, patch: { label?: string; height?: number | null; layers?: MapLayer[]; tools?: NonNullable<MapNode['tools']> | null; fences?: MapFence[] | null }): boolean;
+  /**
+   * A related list's title, the model of its records and their link to this record, its columns (each a field of
+   * theirs, by name, with its definition: a column taken away takes its cells, order and search with it), its rows a
+   * page, New, and View all's page and where it opens; `null` takes the rows or View all away.
+   */
+  updateRelated(id: string, patch: RelatedPatch): boolean;
   /**
    * Several parts' widths as one edit: two trading width across the gutter
    * between them. With `twelfths`, widths are twelfths of their row, and a
@@ -1664,6 +1672,12 @@ export function createDesigner(options: {
         if (patch.layers !== undefined) node.layers = clone(patch.layers);
         if (patch.layers !== undefined || patch.fences !== undefined) for (const name of mapNodeFields(node)) if (!draft.fields[name] && model[name]) draft.fields[name] = model[name];
       }, `map:${id}:${Object.keys(patch).join(',')}`),
+    updateRelated: (id, patch) =>
+      apply((draft) => {
+        const node = findNode(draft, id)?.node;
+        if (!node || node.type !== 'related') throw new Refusal((w) => w.layout.noPart(id));
+        changeRelated(node, patch);
+      }, `related:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
@@ -1779,4 +1793,65 @@ createDesigner.open = async (
 /** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
 function statusbarOf(page: Page, id: string): { invisible?: string; roles?: string[] } | undefined {
   return id === '#statusbar' && page.layout.type === 'sheet' ? (page.layout.statusbar as { invisible?: string; roles?: string[] } | undefined) : undefined;
+}
+
+/** What a related list's panel changes (`updateRelated`). */
+export interface RelatedPatch {
+  title?: string;
+  model?: string;
+  field?: string;
+  /** Its columns, in order: each a field of its records, by name, with its definition. */
+  columns?: { name: string; field: LinkedField }[];
+  limit?: number | null;
+  create?: boolean;
+  viewAll?: NonNullable<RelatedNode['viewAll']> | null;
+}
+
+/** A related list changed as asked: names that are no field's refused, and what named a column taken away gone with it. */
+function changeRelated(node: RelatedNode, patch: RelatedPatch): void {
+  const named = (name: string) => {
+    if (!FIELD_NAME.test(name)) throw new Refusal((w) => w.relatedPart.notAName(name));
+  };
+  if (patch.title !== undefined) {
+    if (patch.title.trim()) node.title = patch.title;
+    else delete node.title;
+  }
+  if (patch.model !== undefined) {
+    if (!patch.model.trim()) throw new Refusal((w) => w.relatedPart.noModel);
+    node.model = patch.model.trim();
+  }
+  if (patch.field !== undefined) {
+    named(patch.field);
+    node.field = patch.field;
+  }
+  if (patch.columns !== undefined) {
+    if (!patch.columns.length) throw new Refusal((w) => w.relatedPart.lastColumn);
+    const names = patch.columns.map((column) => column.name);
+    names.forEach(named);
+    const twice = names.find((name, i) => names.indexOf(name) !== i);
+    if (twice) throw new Refusal((w) => w.relatedPart.columnTwice(twice));
+    // Fields shown in no column stay (the link, an amount's currency); a column taken away goes, and what named it.
+    const fields: RelatedNode['fields'] = Object.fromEntries(Object.entries(node.fields).filter(([name]) => !node.columns.includes(name) || names.includes(name)));
+    for (const column of patch.columns) fields[column.name] = JSON.parse(JSON.stringify(column.field)) as LinkedField;
+    node.fields = fields;
+    node.columns = names;
+    if (node.cells) {
+      for (const name of Object.keys(node.cells)) if (!names.includes(name)) delete node.cells[name];
+      if (!Object.keys(node.cells).length) delete node.cells;
+    }
+    if (node.sort) {
+      node.sort = node.sort.filter((order) => Object.prototype.hasOwnProperty.call(fields, order.field));
+      if (!node.sort.length) delete node.sort;
+    }
+    if (node.searchFields) {
+      node.searchFields = node.searchFields.filter((name) => Object.prototype.hasOwnProperty.call(fields, name));
+      if (!node.searchFields.length) delete node.searchFields;
+    }
+  }
+  if (patch.limit === null) delete node.limit;
+  else if (patch.limit !== undefined) node.limit = patch.limit;
+  if (patch.create === true) delete node.create;
+  else if (patch.create === false) node.create = false;
+  if (patch.viewAll === null) delete node.viewAll;
+  else if (patch.viewAll !== undefined) node.viewAll = { page: patch.viewAll.page, ...(patch.viewAll.as && patch.viewAll.as !== 'dialog' ? { as: patch.viewAll.as } : {}) };
 }

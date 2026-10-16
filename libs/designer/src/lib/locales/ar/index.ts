@@ -29,6 +29,7 @@ import { savedForms } from './saved-forms';
 import { steps } from './steps';
 import { tables } from './tables';
 import { mapPart } from './map-part';
+import { relatedPart } from './related-part';
 import { head } from './head';
 import { workText } from './work-text';
 import { inputs } from './inputs';
@@ -56,4 +57,4 @@ import { inputs } from './inputs';
  *   cut قص · keyboard shortcuts اختصارات لوحة المفاتيح · pick (select) اختيار / المختار
  *   saved form نموذج محفوظ · each kind of part كل نوع من الأجزاء · text boxes مربعات النص · as the page كما في الصفحة
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, head, workText, inputs };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps, tables, mapPart, relatedPart, head, workText, inputs };

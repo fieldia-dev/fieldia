@@ -1,0 +1,38 @@
+/**
+ * A related list on a record's page, in the designer: its tile, its panel — its title, the records it lists and their
+ * link to this one, its columns, rows a page, New and View all — and the words its new one starts with.
+ */
+export const relatedPart = {
+  tile: 'Related list',
+  tileTip: 'Records of another kind that point at this one, listed inside it: a customer’s invoices, a property’s viewings',
+  newTitle: 'Related records',
+  name: 'Name',
+  title: 'Title',
+  model: 'Records of',
+  modelHint: 'Their model, as your data source names it: invoice, sale.order.',
+  field: 'Their link to this record',
+  fieldHint: (model: string) => `A field of theirs that points at a ${model}: partner_id. The list shows those whose link is this record.`,
+  columns: 'Columns',
+  columnName: (n: number) => `Column ${n}: its field`,
+  columnLabel: (n: number) => `Column ${n}: its words`,
+  columnKind: (n: number) => `Column ${n}: its kind`,
+  kinds: { char: 'Text', integer: 'Whole number', float: 'Number', monetary: 'Amount', date: 'Date', datetime: 'Date and time', boolean: 'Yes or no', selection: 'Choice', many2one: 'Link', text: 'Long text' },
+  removeColumn: (label: string) => `Remove the column ${label}`,
+  addColumn: 'Add a column',
+  newColumn: (n: number) => `Column ${n}`,
+  lastColumn: 'A related list shows one column at least.',
+  rows: 'Rows a page',
+  rowsHint: '5 unless said: past them, a pager and a search show.',
+  create: 'Offer New, which makes one with its link to this record filled in',
+  createHint: 'In a dialog of the page your app gives for their model; where it gives none, New is not offered.',
+  viewAll: 'View all opens the page',
+  viewAllHint: 'Your app’s list of them, by its id, showing this record’s alone. Empty: no View all.',
+  opensIn: 'View all opens in',
+  opens: { dialog: 'A dialog', panel: 'A side panel', page: 'This page’s place' },
+  onlyOnRecords: 'A related list belongs on a record’s page: this one collects answers.',
+  noModel: 'Name the model of the records it lists, as your data source names it.',
+  notAName: (name: string) => `“${name}” is not a field’s name: letters, digits and _, not starting with a digit`,
+  columnTwice: (name: string) => `“${name}” is a column already`,
+  previewNote: 'Its records show in Try it, once the record is saved.',
+  more: (n: number) => `${n} more in its own JSON: a filter, an order, its cells`,
+};

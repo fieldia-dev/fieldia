@@ -42,6 +42,7 @@ export const outline: DesignerWords['outline'] = {
     spacer: 'مسافة',
     image: 'صورة',
     map: 'خريطة',
+    related: 'قائمة مرتبطة',
     slot: 'جزء خاص بالتطبيق',
     form: 'نموذج محفوظ',
     part: 'جزء',
