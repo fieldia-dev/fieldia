@@ -9,7 +9,8 @@ import { expect, test } from './fixtures';
  * list (parts.ts in @fieldia/widgets).
  *
  * From one <script> tag: a page with no list asks for no file but fieldia.js;
- * a list asks for fieldia.list.js beside it, and is drawn whole once it came —
+ * a list asks for fieldia.list.js beside it (and the customers', whose phones it
+ * writes as people read them, fieldia.phone.js), and is drawn whole once it came —
  * nothing of it before — searched at once. Where the part cannot come (offline),
  * "Loading…" stands in the list's place, then the records could not be loaded,
  * with Retry, which brings the list into that place. As an app's bundler builds
@@ -62,7 +63,8 @@ test.describe('the list screen in a part of its own', () => {
     // Nothing of it before its part came: no half list to move.
     expect(await mountList(page)).toBe(false);
     await expect(rows(page)).toHaveCount(3);
-    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.list.js']);
+    // The customers' list writes its phone column as people read them: the phone part beside it.
+    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.phone.js']);
     expect(await page.evaluate(() => !!document.getElementById('fd-list-styles'))).toBe(true);
     await expect(page.locator('#app .fd-pager-text')).toHaveText('1–3 / 3');
 
@@ -79,7 +81,7 @@ test.describe('the list screen in a part of its own', () => {
     await page.locator('#app .fd-search-toggle').click();
     await expect(page.locator('#app .fd-search-panel')).toBeVisible();
     // Asked for once.
-    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.list.js']);
+    expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.phone.js']);
     expect(problems).toEqual([]);
   });
 
