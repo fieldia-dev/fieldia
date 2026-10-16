@@ -1,6 +1,7 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
+import { quietPart, themesPart, wearQuiet, wearTheme } from './look-parts';
 import { choicePart, datePart, pathPart, textPart } from './widget-parts';
 import { createWidget, widgetPart, type Widget } from './widgets';
 
@@ -171,5 +172,47 @@ describe('a widget made before its part came', () => {
     await Promise.resolve();
     expect(box.firstElementChild).toBe(plain);
     expect(document.getElementById('fieldia-path-styles')).toBeNull();
+  });
+});
+
+describe('a look worn before its part came', () => {
+  it('a theme: none meanwhile, worn as it comes, its sheet in first; the last one asked for wins, and none stays none', async () => {
+    document.head.replaceChildren();
+    expect(themesPart.loaded).toBeUndefined();
+    const form = document.createElement('form');
+    const off = document.createElement('div');
+    document.body.append(form, off);
+    // What a code editor does: read the tokens as the attribute changes — the theme's sheet is in by then.
+    const seen: boolean[] = [];
+    new MutationObserver(() => seen.push(!!document.getElementById('fieldia-theme-styles'))).observe(form, { attributes: true, attributeFilter: ['data-fd-theme'] });
+    wearTheme(form, 'material');
+    wearTheme(form, 'google-forms');
+    off.setAttribute('data-fd-theme', 'apple');
+    wearTheme(off, 'apple');
+    wearTheme(off, null);
+    expect(form.hasAttribute('data-fd-theme')).toBe(false);
+    expect(off.hasAttribute('data-fd-theme')).toBe(false);
+    await themesPart.load();
+    await Promise.resolve();
+    expect(form.getAttribute('data-fd-theme')).toBe('google-forms');
+    expect(off.hasAttribute('data-fd-theme')).toBe(false);
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id)).toEqual(['fieldia-styles', 'fieldia-theme-styles', 'fieldia-styles-looks']);
+    await Promise.resolve();
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every(Boolean)).toBe(true);
+    // In now: at once.
+    wearTheme(off, 'shadcn');
+    expect(off.getAttribute('data-fd-theme')).toBe('shadcn');
+  });
+
+  it('the quiet look: its sheet in as it comes, after the themes’ and before every other part’s', async () => {
+    expect(quietPart.loaded).toBeUndefined();
+    wearQuiet(document);
+    expect(document.getElementById('fieldia-quiet-styles')).toBeNull();
+    await quietPart.load();
+    await Promise.resolve();
+    installPartStyles(document, 'fieldia-path-styles', '.p{}', PART_RANK.picker);
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id)).toEqual(['fieldia-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-path-styles', 'fieldia-styles-looks']);
+    document.head.replaceChildren();
   });
 });

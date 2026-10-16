@@ -1,7 +1,9 @@
 import { THEMES } from '@fieldia/core';
-import { FIELDIA_CSS } from './styles';
+import { LOOK_TOKENS_CSS } from './look-styles';
+import { FIELDIA_CSS, installStyles } from './styles';
 import { PARTS_CSS } from './styles-parts';
-import { THEME_RULES_CSS, THEME_TOKENS, THEME_TOKENS_CSS, type ThemeTokens } from './themes';
+import { installQuietStyles } from './styles-quiet';
+import { installThemeStyles, THEME_RULES_CSS, THEME_TOKENS, THEME_TOKENS_CSS, THEMES_CSS, type ThemeTokens } from './themes';
 
 /** A colour as [r, g, b, a], from #rrggbb or rgb(a)(). */
 function parse(colour: string): [number, number, number, number] {
@@ -65,11 +67,30 @@ describe('the themes', () => {
     expect(low).toEqual([]);
   });
 
+  // In a sheet of their own, a part loaded the first time a form wears a theme (themes-part.ts), put in after Fieldia's
+  // own and before the quiet look's, every other part's and the page's own looks (PART_RANK.themes).
   it('come after the skins and before the page’s own look, their shapes before the page’s looks for each kind of part', () => {
+    // Their tokens after the skins', in Fieldia's tokens' layer: after Fieldia's own sheet, whose skins' tokens are there.
+    expect(THEME_TOKENS_CSS.startsWith('@layer fieldia-tokens {')).toBe(true);
+    expect(LOOK_TOKENS_CSS.trim().startsWith('@layer fieldia-tokens {')).toBe(true);
     const at = (text: string) => FIELDIA_CSS.indexOf(text);
-    expect(at(THEME_TOKENS_CSS)).toBeGreaterThan(at('.fd-form[data-fd-skin="outlined"], .fd-theme[data-fd-skin="outlined"]'));
-    expect(at(THEME_TOKENS_CSS)).toBeLessThan(at(':is(.fd-form, .fd-form-dialog)[data-accent] {'));
-    expect(at(THEME_RULES_CSS)).toBeGreaterThan(at('.fd-button-primary {'));
-    expect(at(THEME_RULES_CSS)).toBeLessThan(at(PARTS_CSS));
+    expect(at(':is(.fd-form, .fd-theme):is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) {')).toBeGreaterThan(-1);
+    expect(at(LOOK_TOKENS_CSS)).toBeGreaterThan(at(':is(.fd-form, .fd-theme):is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) {'));
+    // Before the page's own look's tokens, which win over them at the same weight: those come again after theirs.
+    expect(THEMES_CSS).toBe(THEME_TOKENS_CSS + LOOK_TOKENS_CSS + THEME_RULES_CSS);
+    expect(LOOK_TOKENS_CSS).toContain(':is(.fd-form, .fd-form-dialog)[data-accent] {');
+    // Their shapes after the parts they reshape (Fieldia's own sheet), before the page's looks for each kind of part.
+    document.head.replaceChildren();
+    installStyles(document);
+    installQuietStyles(document);
+    installThemeStyles(document);
+    installThemeStyles(document);
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id)).toEqual(['fieldia-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-styles-looks']);
+    expect(document.getElementById('fieldia-styles')?.textContent).toContain('.fd-button-primary {');
+    expect(document.getElementById('fieldia-styles-looks')?.textContent).toContain(PARTS_CSS);
+    expect(document.getElementById('fieldia-theme-styles')?.textContent).toBe(THEMES_CSS);
+    // Nothing of them left in Fieldia's own.
+    expect(at('[data-fd-theme')).toBe(-1);
+    document.head.replaceChildren();
   });
 });

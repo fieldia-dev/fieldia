@@ -1,5 +1,7 @@
 import type { Field, FieldNode } from '@fieldia/core';
 import { openOnClick, wearsQuiet } from './quiet';
+import { FIELDIA_CSS } from './styles';
+import { LOCK_CSS } from './styles-lock';
 import { QUIET_CSS } from './styles-quiet';
 import { builtInWidgets } from './widgets';
 
@@ -87,5 +89,28 @@ describe('the quiet stylesheet', () => {
 
   it('keeps every box’s edge at rest, so pointing never moves a word', () => {
     expect(QUIET_CSS).toMatch(/:is\(\.fd-input:not\(\.fd-tags \*\), \.fd-tags, \.fd-dot-box\) \{\s*border: 1px solid transparent;/);
+  });
+
+  // A part loaded the first time a page wears the look (quiet-part.ts): until it comes, nothing in Fieldia's own sheet
+  // misses it. What it would style outside a quiet place — a state's words, a field's lock — is Fieldia's own.
+  it('styles only what is in a quiet place; a state’s words and a field’s lock are Fieldia’s own sheet’s', () => {
+    const selectors = [...QUIET_CSS.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)].map(([, selector]) => selector.trim()).filter((selector) => !selector.startsWith('@'));
+    expect(selectors.length).toBeGreaterThan(40);
+    /** A selector list's selectors: split at its own commas, never those inside :is() or :has(). */
+    const each = (list: string) => {
+      const out = [''];
+      let depth = 0;
+      for (const char of list) {
+        depth += char === '(' ? 1 : char === ')' ? -1 : 0;
+        if (char === ',' && !depth) out.push('');
+        else out[out.length - 1] += char;
+      }
+      return out.map((one) => one.trim());
+    };
+    expect(selectors.flatMap(each).filter((one) => !/\[data-(in-)?quiet\]/.test(one))).toEqual([]);
+    expect(FIELDIA_CSS).toContain(LOCK_CSS);
+    expect(LOCK_CSS).toContain('.fd-dot-label[data-quiet-words] { display: none; }');
+    expect(LOCK_CSS).toContain('.fd-lock-wrap {');
+    expect(FIELDIA_CSS).not.toContain(QUIET_CSS);
   });
 });

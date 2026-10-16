@@ -1,6 +1,6 @@
 import { createForm, type Field, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { applyLook, labelPlace, planSection, quietHint, THEME_SKINS, type Place } from '@fieldia/viewer';
-import { createWidget, wearsQuiet, type Widget, type WidgetFactory } from '@fieldia/widgets';
+import { createWidget, wearQuiet, wearsQuiet, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
 import { formViews } from './canvas-form';
@@ -257,6 +257,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     // The quiet look as the form will wear it: the field's own word, else its group's, else the page's skin.
     const skin = page.look?.skin ?? (page.look?.theme ? THEME_SKINS[page.look.theme] : (options.skin ?? 'outlined'));
     const quietPlace = node.quiet ?? quietAround ?? skin === 'quiet';
+    // Its sheet comes in a part of its own: the card is boxed until it has (look-parts.ts in @fieldia/widgets).
+    if (quietPlace) wearQuiet(element.ownerDocument);
     element.toggleAttribute('data-in-quiet', quietPlace);
     element.toggleAttribute('data-quiet', !!def && wearsQuiet(def, node) && quietPlace);
     hint(card, node);

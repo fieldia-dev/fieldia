@@ -4,7 +4,7 @@ import { INPUTS_CSS } from './styles-inputs';
 import { PARTS_CSS } from './styles-parts';
 import { SHEET_CSS } from './styles-sheet';
 import { BUSINESS_CSS } from './styles-business';
-import { QUIET_CSS } from './styles-quiet';
+import { LOCK_CSS } from './styles-lock';
 import { PICKER_CSS } from './styles-picker';
 import { HEAD_CSS } from './styles-head';
 import { TEXT_CSS } from './styles-text';
@@ -21,13 +21,14 @@ import { UPLOADS_CSS } from './styles-uploads';
  * outlined  — the Ant Design style: boxed inputs with rounded corners, labels
  *             above the field, a blue focus glow.
  * quiet     — the outlined skin's page, each value plain words until pointed
- *             at or entered, as Azure DevOps draws a work item (styles-quiet).
+ *             at or entered, as Azure DevOps draws a work item (styles-quiet.ts,
+ *             a part loaded the first time a page wears it).
  *
  * Written with logical properties (inline/block, start/end), so a right-to-left
  * form mirrors without a second stylesheet.
  */
 import { LAYOUT_CSS } from './layout-styles';
-import { THEME_RULES_CSS, THEME_TOKENS_CSS } from './themes';
+import { LOOK_TOKENS_CSS } from './look-styles';
 
 /**
  * The widths of a form at which its groups take their medium and their narrow
@@ -1056,18 +1057,20 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
-// Themes' tokens after the skins' and before the page's look; their own shapes after the parts they reshape, and
-// before the page's own looks for each kind of part, which win over a theme as the page's look does. The quiet look
-// after the themes' shapes, which it quietens; the pickers' (a work tracker's lists, styles-picker) after the quiet
-// look; a record's head after them, which draws its boxes (and a dot in its lead slot) its own way; a work item's
-// text, groups and links (styles-text) after those.
+// The page's look's tokens after the skins' (in their layer, look-styles); the themes' (themes.ts) and the quiet look
+// (styles-quiet) are parts of their own, whose sheets go in after this one (PART_RANK): a theme's shapes after the
+// parts they reshape, and before the page's own looks for each kind of part, which win over a theme as the page's look
+// does; the quiet look after the themes' shapes, which it quietens. What the quiet look styles outside a quiet place
+// too — a state's words, a field's lock (styles-lock) — stays here, where it stood. The pickers' (a work tracker's
+// lists, styles-picker); a record's head after them, which draws its boxes (and a dot in its lead slot) its own way;
+// a work item's text, groups and links (styles-text) after those.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
-const BASE_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + QUIET_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + UPLOADS_CSS + BROKEN_CSS;
+const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + UPLOADS_CSS + BROKEN_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 /**
  * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each
- * put between this one's two halves — after the quiet look, the pickers', the head's and the text's own rules, and
- * before the page's own looks — so they win and lose as they would inside it (`installPartStyles`).
+ * put between this one's two halves — after the pickers', the head's and the text's own rules, and before the page's
+ * own looks — so they win and lose as they would inside it (`installPartStyles`).
  */
 export const FIELDIA_CSS = BASE_CSS + LOOKS_CSS;
 
@@ -1087,11 +1090,12 @@ export function installStyles(document: Document): void {
 }
 
 /**
- * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: a path picker's after
- * the pickers', a record's head after that, a work item's groups and its text editor after those. A sheet of a higher
- * rank goes after one of a lower, all before the page's own looks.
+ * Where a part's sheet stands among Fieldia's, as the rules it was cut from stood in FIELDIA_CSS: the themes' first,
+ * then the quiet look's, which quietens their shapes; a path picker's after the pickers', a record's head after that,
+ * a work item's groups and its text editor after those. A sheet of a higher rank goes after one of a lower, all before
+ * the page's own looks.
  */
-export const PART_RANK = { picker: 1, head: 2, groups: 3, text: 4 } as const;
+export const PART_RANK = { themes: 1, quiet: 2, picker: 3, head: 4, groups: 5, text: 6 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

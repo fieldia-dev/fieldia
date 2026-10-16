@@ -1,6 +1,6 @@
 import type { ActionRequest, Locale, Theme } from '@fieldia/core';
 import { loadParts, mountViewer, openFormDialog, type FormDialogResult, type Skin, type ViewerOptions } from '@fieldia/viewer';
-import type { WidgetFactory } from '@fieldia/widgets';
+import { quietPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { createMonacoWidgets, monacoWidgets } from '@fieldia/monaco';
@@ -129,8 +129,13 @@ const options: ViewerOptions = {
 };
 // The parts the page draws from (a date's box, a work item's head), in before it is mounted, as an app that wants its
 // page drawn the moment it mounts loads them: what is timed is the page drawn, never the wait for a file. (The
-// framework demos mount at once, and the viewer waits for them itself.)
-await loadParts(page, options.widgets, options.slots).catch(() => undefined);
+// framework demos mount at once, and the viewer waits for them itself.) And the parts of the look the address gives
+// it — a theme, the quiet skin — which the viewer would otherwise wear as they come.
+await Promise.all([
+  loadParts(page, options.widgets, options.slots),
+  options.theme ? themesPart.load() : undefined,
+  options.skin === 'quiet' ? quietPart.load() : undefined,
+]).catch(() => undefined);
 const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, options);
 opened();
