@@ -310,6 +310,18 @@ to one value on the records chosen, after a question, by `writeMany` or a save
 per record, each record's `can` kept, and names what it could not change and
 why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 
+With `"import": true` (or the fields) **Import**, in its bar, brings records in
+from an Excel workbook or a CSV file, read in the browser with no library (a
+CSV file's encoding and separator guessed): its columns matched to the page's
+fields by name or label in any of the page's languages, a picker for each; every
+row checked by the page's own rules before anything is written — the rows
+refused named with why and downloadable as a file to fix, the first shown as
+they will be saved — then written by `createMany` or a save per row, with
+progress and Stop; and **Undo the import** deletes what it made. Its dialog comes
+in a part of its own (`importPart`), the first time it is pressed. At most
+50,000 rows in the browser; `importRecords` takes more on your server. See
+[bringing records in](https://fieldia.dev/lists/#import).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`

@@ -60,6 +60,7 @@ ${code(
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
+    <tr><td>${c('import')}</td><td>Import, in the list's bar: records made from an Excel or CSV file. ${c('true')} offers every field a cell can fill, a list of fields offers those. Off unless said: see <a href="#import">bringing records in</a>.</td></tr>
   </tbody>
 </table>
 <p>A list shows records, so its page's ${c('data')} is a record's: the page check refuses a list of responses, and a column, a sort, a search field or a group that names no field.</p>
@@ -171,6 +172,25 @@ ${code(
 }`
 )}
 <p>A field one value cannot set — links of many, a table of lines, files, a read-only or worked-out field — is never offered, and the page check refuses one named. The fields a ${c('bulkEdit')} of ${c('true')} offers are ${c('bulkEditFields(page, list)')} from ${c('@fieldia/core')}. <a href="/demos/plain/?page=contacts&skin=underline">Try it on 1,284 contacts</a>.</p>
+
+<h2 id="import">Bringing records in from Excel or CSV</h2>
+<p>With ${c('import')}, the list's bar offers <strong>Import</strong>: a customer's own spreadsheet made records, checked before anything is saved. Its dialog comes in a part of its own, the first time it is pressed.</p>
+<ol>
+  <li><strong>A file</strong>, chosen or dropped: an Excel workbook (.xlsx), read in the browser — its zip opened with the browser's own ${c('DecompressionStream')}, its XML read with no library; its days, its numbers and its yes or no kept as the workbook keeps them, its first sheet read and another picked — or a CSV file, its characters' encoding and its separator guessed: UTF-8 with or without its mark, UTF-16 as Excel's Unicode text saves it, the Windows code page of the language it was written in (Arabic's Windows-1256, Western Europe's Windows-1252, …), commas, semicolons, tabs or bars; each said, and changed by the person where the guess is wrong. Its first row names the columns.</li>
+  <li><strong>Its columns matched</strong> to the page's fields: by a field's name or its label in any of the page's languages, in any case, its accents and marks aside — <em>E-mail</em> fills Email, <em>البلد</em> fills Country — each with its first value beside it and a picker of the field it goes into, or <em>Leave out</em>. What is left out is said, and so is a required field no column fills.</li>
+  <li><strong>Every row checked</strong> by the page's own rules before anything is written: each cell read as its field's box reads what is typed — a number in any script with the page's marks, a day in the page's order, an amount in its record's currency, yes or no in any of the page's languages, a choice by its label, a link by its name through your source's ${c('search')} (none or several of that name said, never the first taken), a phone the world over where its column reads phones so — then required, the most characters, the least and most, the places. The rows that would be refused are named with why (<em>Row 13: Status: nothing is called “Prospect”</em>) and downloaded, with why in a last column, as a file to fix; the first rows show as they will be saved.</li>
+  <li><strong>Written</strong>: by your source's ${c('createMany')}, five hundred at a time, or a ${c('save')} of each as a new record, four at once — how far it has got said, and <em>Stop</em> between two. The list then says how it ended — <em>10 of 17 records imported. Not imported:</em> each row with why, those your source refused among them — and offers <strong>Undo the import</strong>, which deletes the records it made through ${c('delete')}, after a question, and names any it could not.</li>
+</ol>
+${code(
+  'json',
+  `
+{
+  "type": "list", "id": "contacts", "columns": ["name", "company", "country_id", "state"],
+  "import": true
+}`
+)}
+<p>${c('true')} offers every field a cell can fill — words, a number, money, yes or no, a date, a choice, a link or links by their names — never a read-only or worked-out field, a table of lines or a file; a list of fields offers those, and the page check refuses one no cell can fill. A link is offered where your source can ${c('search')}, a choice the app lists where it can give its ${c('options')}; Import itself where it can ${c('createMany')} or ${c('save')}. The browser reads at most 50,000 rows at a time and says so plainly; your source's ${c('importRecords')} takes a file of any size on the server (see <a href="/data/#import">many records made at once</a>). The fields ${c('true')} offers are ${c('importFields(page, list)')} from ${c('@fieldia/core')}. <a href="/demos/plain/?page=contacts&skin=underline">Try it on the contacts</a>, with the workbook and the CSV file its how-to offers, a few rows wrong in each.</p>
+<p><strong>A block pasted into a table of lines.</strong> Rows copied from a spreadsheet and pasted in a cell of a table of lines fill across and down from that cell, each read as its column reads what is typed, as the grid takes them; rows past the last line add lines, as many as the table may have, and what a cell could not take is named with why under the table.</p>
 
 <h2 id="map">On a map</h2>
 <p>With ${c('map')}, a list shows its records on a map as well, drawn by ${c('@fieldia/map')} on the provider the app chooses. The map and the table share one search and one choice: a pin lights its row and a row its pin, a home chosen on its card is ticked in the table, and the list's buttons act on it. A pin opens a card with the record's picture, a few of its fields, a box to choose it and a button to open it; pins that crowd become a bubble with their count. Once the map is moved, <em>Search this area</em> puts the area into the search bar as a search of its own; the map's own tools draw one instead — a polygon, a box or a circle, by mouse, finger or keys — searched as <em>In the area drawn</em>.</p>
