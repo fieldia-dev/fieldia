@@ -88,9 +88,17 @@ export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField
  * one of its fields, recalculated as they change and written back on Save &
  * Close. Shared with @fieldia/grid.
  */
-export async function openLineDialog(form: Form, name: string, node: FieldNode, line: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
+export async function openLineDialog(form: Form, name: string, node: FieldNode, pressed: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
   const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  // What is still typed in a cell is read first — a name looked up (the cell left as the line was opened) waited for —
+  // so the dialog shows the line as it reads, and its Save & Close never writes back what the typing replaced.
+  const asked = stillShown(form);
+  const settling = form.settle?.();
+  if (form.reading?.()) await settling;
+  const line = lines().find((l) => l.key === pressed.key);
+  // Taken away, or another record shown, meanwhile: nothing to open.
+  if (!line || !asked()) return;
   // Its answer is for the record it was opened on: written back only while that one is still shown, never on a line of
   // another (two records' lines may have the same key).
   const write = whileShown(form, (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l))));
