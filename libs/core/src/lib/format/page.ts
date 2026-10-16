@@ -80,6 +80,25 @@ export interface PageLook {
   dateOrder?: DateOrder;
 }
 
+/**
+ * A public page's check that a person, not a bot, sends it (a page of responses only). Nothing is refused for it:
+ * each send tells the app what it saw (`SubmitRequest.bot`), and the app decides.
+ */
+export interface BotCheck {
+  /**
+   * A box no person sees, reaches with Tab or hears read out, which a bot filling every box fills: told as
+   * `honeypot`. On unless false.
+   */
+  honeypot?: boolean;
+  /** The fewest seconds a person takes from the page shown to its send: sooner is told as `tooFast`. 3 unless said; 0 tells none. */
+  minSeconds?: number;
+  /**
+   * The slot the app draws its captcha in (Turnstile, reCAPTCHA, hCaptcha), by its name, as a slot part of the page
+   * names it: the app's widget gives its token to the form (`form.botCheck({ captcha })`), and the send carries it.
+   */
+  captcha?: string;
+}
+
 export interface Page {
   /**
    * The format the page is written in, so a reader can tell one it cannot read yet (a newer Fieldia's) from one it can
@@ -107,6 +126,8 @@ export interface Page {
   translations?: { [locale: string]: { [text: string]: string } };
   /** What the form does at its moments — opened, a field changed, before and after saving, a step shown: steps, as data. */
   on?: PageEvents;
+  /** A page of responses open to anyone: a check that a person sends it, told to the app with the answers. */
+  botCheck?: BotCheck;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -166,6 +187,14 @@ export const PageSchema = z
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),
     translations: z.record(z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/), z.record(z.string(), z.string())).optional(),
     on: PageEventsSchema.optional(),
+    botCheck: z
+      .strictObject({
+        honeypot: z.boolean().optional(),
+        minSeconds: z.number().min(0).max(3600).optional(),
+        captcha: z.string().min(1).optional(),
+      })
+      .meta({ id: 'BotCheck' })
+      .optional(),
   })
   .meta({
     title: 'Fieldia page',

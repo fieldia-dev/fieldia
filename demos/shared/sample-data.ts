@@ -238,6 +238,8 @@ const APP_CATALOG_FR: Record<string, string> = {
   Designer: 'Designer',
   Manager: 'Manager',
   'Something else': 'Autre chose',
+  'Mobile phone': 'Téléphone mobile',
+  'Only if the day changes.': 'Seulement si la journée change.',
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */

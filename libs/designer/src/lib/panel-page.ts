@@ -1,4 +1,4 @@
-import type { FieldNode, SheetNode } from '@fieldia/core';
+import type { BotCheck, FieldNode, LayoutNode, Page, SheetNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { allSections } from './page-tree';
@@ -7,6 +7,7 @@ import { pageLookSettings } from './panel-look';
 import type { PropertiesView } from './screen-properties';
 import { formMoments } from './steps-panel';
 import { headSettings } from './head-properties';
+import { settingNumber } from './number-box';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -42,6 +43,35 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const beside = el('select', { class: 'fd-input fd-select', 'aria-label': w.sideBeside }, el('option', { value: 'wide' }, w.sideBesides.wide), el('option', { value: 'always' }, w.sideBesides.always)) as HTMLSelectElement;
   beside.addEventListener('change', () => designer.setSidePanelBeside(beside.value as 'wide' | 'always'));
   const besideRow = setting(el, 'layout', 'Side panel beside the sheet', beside, { words: w.sideBeside });
+  // A public page's bot check: a box only bots fill, the fewest seconds a person takes, the app's captcha in a slot.
+  const checked = (): BotCheck => designer.getPage().botCheck ?? {};
+  const bot = check(w.botCheckOn);
+  bot.addEventListener('change', () => designer.setBotCheck(bot.checked ? {} : null));
+  const botRow = setting(el, 'rules', 'Bot check', bot, { hint: w.botCheckHint, words: w.botCheck });
+  const trap = check(w.honeypot);
+  trap.addEventListener('change', () => {
+    const { honeypot: _, ...rest } = checked();
+    designer.setBotCheck(trap.checked ? rest : { ...rest, honeypot: false });
+  });
+  const trapRow = setting(el, 'rules', 'Hidden box for bots', trap, { words: w.honeypot });
+  const seconds = settingNumber(el, designer, {
+    label: w.minSeconds,
+    attrs: { class: 'fd-input', 'aria-label': w.minSeconds },
+    min: 0,
+    max: 3600,
+    saved: () => checked().minSeconds ?? 3,
+    commit: (n) => {
+      const { minSeconds: _, ...rest } = checked();
+      return designer.setBotCheck(n === null || n === 3 ? rest : { ...rest, minSeconds: n });
+    },
+  });
+  const secondsRow = setting(el, 'rules', 'Fewest seconds to fill', seconds.input, { hint: w.minSecondsHint, words: w.minSeconds });
+  const captcha = el('select', { class: 'fd-input fd-select', 'aria-label': w.captchaIn }) as HTMLSelectElement;
+  captcha.addEventListener('change', () => {
+    const { captcha: _, ...rest } = checked();
+    designer.setBotCheck(captcha.value ? { ...rest, captcha: captcha.value } : rest);
+  });
+  const captchaRow = setting(el, 'rules', 'Captcha drawn in', captcha, { hint: w.captchaHint, words: w.captchaIn });
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -61,15 +91,35 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     besideRow,
     ...head.rows,
     ...look.rows,
+    botRow,
+    trapRow,
+    secondsRow,
+    captchaRow,
     moments.element
   );
   return {
     element,
+    destroy: () => seconds.destroy(),
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
       look.update(page);
       moments.update(page);
       head.update(page);
+      // Only a page of responses, open to anyone, checks for bots; its parts once it does.
+      const own = page.botCheck;
+      botRow.hidden = page.data.kind !== 'responses';
+      bot.checked = !!own;
+      trapRow.hidden = secondsRow.hidden = captchaRow.hidden = botRow.hidden || !own;
+      trap.checked = own?.honeypot !== false;
+      seconds.refresh();
+      const slots = [...new Set(slotsOf(page.layout).filter((name) => name))];
+      const places = [['', w.noCaptcha], ...slots.map((name) => [name, name]), ...(own?.captcha && !slots.includes(own.captcha) ? [[own.captcha, own.captcha]] : [])];
+      const placesKey = JSON.stringify(places);
+      if (captcha.dataset['choices'] !== placesKey) {
+        captcha.dataset['choices'] = placesKey;
+        captcha.replaceChildren(...places.map(([value, words]) => el('option', { value }, words)));
+      }
+      captcha.value = own?.captcha ?? '';
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';
@@ -100,6 +150,20 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       title.value = root.title ? CURRENT_TITLE : '';
     },
   };
+}
+
+/** The names of the slots a page's layout places, where an app's own part — a captcha — is drawn. */
+function slotsOf(root: Page['layout']): string[] {
+  const out: string[] = [];
+  const walk = (nodes: readonly LayoutNode[]) => {
+    for (const node of nodes) {
+      if (node.type === 'slot') out.push(node.name);
+      const inner = (node as { children?: LayoutNode[] }).children;
+      if (Array.isArray(inner)) walk(inner);
+    }
+  };
+  if ('children' in root && Array.isArray(root.children)) walk(root.children as LayoutNode[]);
+  return out;
 }
 
 /** No attachment beside the sheet, in its list: '' is the app's attachments. */

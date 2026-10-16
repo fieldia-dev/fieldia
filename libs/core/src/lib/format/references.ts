@@ -12,6 +12,7 @@ import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
 import { fill, MESSAGES } from '../record/messages';
+import { autofillGroupProblem } from './autofill-group';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -73,6 +74,8 @@ export class ReferenceCheck {
   /** The ids of the tabs and wizard steps a step can go to, and where each goTo and show names one. */
   private readonly places = new Set<string>();
   private readonly goingTo: { target: string; path: string }[] = [];
+  /** The names of the slots the layout places. */
+  private readonly slots = new Set<string>();
 
   constructor(
     private readonly page: Page,
@@ -94,8 +97,17 @@ export class ReferenceCheck {
       isPlace: (id) => this.places.has(id),
     });
     if (this.page.on) this.checkEvents(this.page.on, 'on');
+    if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     this.checkGoingTo();
     return this.issues;
+  }
+
+  /** A bot check: on a page of responses, its captcha drawn in a slot the page places. */
+  private checkBotCheck(page: Page) {
+    const check = page.botCheck;
+    if (page.data.kind !== 'responses') return this.report('botCheck', 'a bot check is for a page of responses that anyone may send; a record’s page is behind the app’s own sign-in');
+    const captcha = check?.captcha;
+    if (typeof captcha === 'string' && !this.slots.has(captcha)) this.report('botCheck.captcha', `no slot "${captcha}" on this page to draw the captcha in: place { "type": "slot", "id": "${captcha}", "name": "${captcha}" } where it goes`);
   }
 
   /** Each step's goTo and show names a tab or a wizard step of this page. */
@@ -732,6 +744,9 @@ export class ReferenceCheck {
         return this.checkValuesIn(node.text, `${path}.text`);
       case 'map':
         return this.walkMap(node, path);
+      case 'slot':
+        this.slots.add(node.name);
+        return;
       default:
         return;
     }
@@ -907,6 +922,12 @@ export class ReferenceCheck {
     node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));
     node.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.placeholderWhen[${i}]`, ['when']));
     this.checkModifiers(node, path, ['bold']);
+    // What the browser fills its box in with: a box names what it holds, an address in parts only whose it is. (That
+    // it is a purpose the standard lists is the format's check, `validatePage`, as other shapes are.)
+    if (typeof node.autocomplete === 'string') {
+      const problem = autofillGroupProblem(node.autocomplete, node.widget === 'address');
+      if (problem) this.report(`${path}.autocomplete`, problem);
+    }
     if (def && node.totals) {
       if (def.type !== 'one2many') {
         this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);

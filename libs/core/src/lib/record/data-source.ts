@@ -378,6 +378,24 @@ export interface SubmitRequest {
   pageId: string;
   /** The answers to the questions that were shown. Skipped steps are left out. */
   values: Values;
+  /** On a page with a bot check (`botCheck`): what it saw, for the app to decide on. The page never refuses a send for it. */
+  bot?: BotReport;
+}
+
+/**
+ * What a page's bot check saw as its answers were sent. A person never fills the hidden box and takes longer than a
+ * few seconds; a send that is either is likely a bot's — or a person's whose browser filled every box at once, which is
+ * why the app decides: keep it aside, ask the captcha's service, or refuse it.
+ */
+export interface BotReport {
+  /** The hidden box was filled: no person sees it, reaches it with Tab or hears it read out. */
+  honeypot: boolean;
+  /** Sent sooner than the page's `minSeconds` after it was shown, or started again. */
+  tooFast: boolean;
+  /** Seconds from the page shown (or started again) to this send, to a tenth. */
+  seconds: number;
+  /** The captcha's token, on a page with one (`botCheck.captcha`), for the app to check with its service: null when none came. */
+  captcha?: string | null;
 }
 
 export interface SubmitResult {

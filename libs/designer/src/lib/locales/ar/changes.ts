@@ -115,6 +115,9 @@ export const changes: DesignerWords['changes'] = {
   columnsWide: (name, n) => `${name}: بعرض ${columns(n)}`,
   itsLabel: (name, place) => `${name}: تسميته ${({ above: 'فوق مربعه', beside: 'بجانب مربعه', hidden: 'داخل مربعه' } as Record<string, string>)[place] ?? 'حيث تضعها مجموعته'}`,
   placeholder: (name) => `${name}: تغيّر نصه الإرشادي`,
+  filledIn: (name) => `${name}: تغيّر ما يملؤه به المتصفح`,
+  keyboard: (name) => `${name}: تغيّرت لوحة مفاتيحه على الهاتف`,
+  botCheck: (now) => ({ on: 'تشغيل التحقق من الروبوتات', off: 'إيقاف التحقق من الروبوتات', changed: 'تغيير التحقق من الروبوتات' })[now],
   thePage: 'الصفحة',
   look: {
     accent: 'لون التمييز',

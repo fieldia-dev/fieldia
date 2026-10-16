@@ -255,6 +255,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   const survey = after.data.kind === 'responses';
   if ((before.title ?? '') !== (after.title ?? '')) out.push(w.title(before.title ?? '', after.title ?? ''));
   if ((before.description ?? '') !== (after.description ?? '')) out.push(w.description);
+  if (JSON.stringify(before.botCheck ?? null) !== JSON.stringify(after.botCheck ?? null)) out.push(w.botCheck(!after.botCheck ? 'off' : !before.botCheck ? 'on' : 'changed'));
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

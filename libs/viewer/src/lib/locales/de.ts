@@ -26,6 +26,7 @@ export const de: ViewerLabels = {
   stepOf: 'Schritt {n} von {total}',
   submitted: 'Vielen Dank. Ihre Antworten wurden gesendet.',
   submitAnother: 'Weitere Antwort senden',
+  leaveEmpty: 'Dieses Feld bitte leer lassen',
   draftFound: 'Sie haben ungespeicherte Antworten vom {time}.',
   restore: 'Wiederherstellen',
   discardDraft: 'Verwerfen',

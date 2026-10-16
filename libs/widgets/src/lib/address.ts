@@ -41,6 +41,9 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
   const needed = Array.isArray(options['requiredParts']) ? options['requiredParts'] : [];
   const start = typeof options['country'] === 'string' ? options['country'] : '';
   const element = make('div', { id, class: 'fd-address', role: 'group' });
+  // Whose address it is ("shipping", "section-home billing") before each part's own purpose, or none at all ("off").
+  const group = node.autocomplete;
+  const purpose = (own: string) => (group === 'off' ? 'off' : group && group !== 'on' ? `${group} ${own}` : own);
   /** The parts as they are now, a part as typed in place of its own. */
   const write = (part: Part, text: string) => {
     const now = form.getState().values[name];
@@ -55,7 +58,7 @@ export const addressWidget: WidgetFactory = ({ form, name, node, id, document, l
   };
   const boxes = parts.map((part) => {
     const [label, autocomplete] = PARTS[part];
-    const attrs = { id: `${id}-${part}`, class: 'fd-input', 'data-part': part, autocomplete: part === 'street' && parts.includes('line2') ? 'address-line1' : autocomplete, 'aria-required': needed.includes(part) ? 'true' : undefined };
+    const attrs = { id: `${id}-${part}`, class: 'fd-input', 'data-part': part, autocomplete: purpose(part === 'street' && parts.includes('line2') ? 'address-line1' : autocomplete), 'aria-required': needed.includes(part) ? 'true' : undefined };
     const input =
       part === 'country'
         ? make('select', attrs, make('option', { value: '' }), ...countriesIn(locale).map(([code, country]) => make('option', { value: code }, country)))

@@ -3,6 +3,8 @@ import { FIELD_NAME, FilterItemSchema, MoneyLookSchema, type FilterItem, type Mo
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
+import { AUTOFILL } from './autofill';
+import { INPUT_MODES, type InputMode } from './autofill-group';
 import { AddressSearchOptionsSchema } from './address-search';
 import { pickerOptionIssues } from './picker-options';
 import { SECTION_TRACK } from './section-checks';
@@ -113,6 +115,21 @@ export interface FieldNode {
    * Lumber Inc" for a company and "e.g. Brandom Freeman" for a person.
    */
   placeholderWhen?: PlaceholderWhen[];
+  /**
+   * What the browser fills its box in with: a purpose from the HTML standard's list — `name`, `given-name`, `email`,
+   * `tel`, `street-address`, `postal-code`, `country`, `organization`, `one-time-code`, `bday`, `cc-number`… — with
+   * `shipping`, `billing` or `section-…` before it and `home`, `work` or `mobile` before a phone or an email, as
+   * "shipping postal-code" or "work email"; or `off`, so the browser offers nothing. An email box is `email`, a phone
+   * box `tel`, a web address `url`, a password `new-password` and an address in parts each part's own unless this
+   * says; an address names only whose it is ("shipping"), or `off`. See `AUTOFILL_NAMES`.
+   */
+  autocomplete?: string;
+  /**
+   * The keyboard a phone shows for its box: `numeric`, `decimal`, `tel`, `email`, `url`, `search` or `text`. Its kind
+   * says it unless this does: a whole number's digits, an email's @, a phone's keypad, and the purpose's own for a
+   * line of words (`tel`, `email`, `url`, `one-time-code`, `cc-number`…).
+   */
+  inputmode?: InputMode;
   help?: string;
   /** Grid columns this field spans inside a section. */
   colspan?: number;
@@ -1290,6 +1307,8 @@ export const FieldNodeSchema = z.strictObject({
   options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
   placeholder: z.string().optional(),
   placeholderWhen: z.array(PlaceholderWhenSchema).min(1).optional(),
+  autocomplete: z.string().regex(AUTOFILL, 'a purpose a browser fills in, from the HTML standard, in small letters: "email", "given-name", "shipping postal-code", "off"').optional(),
+  inputmode: z.enum(INPUT_MODES).optional(),
   help: z.string().optional(),
   colspan: span,
   columns: z.array(fieldName).min(1).optional(),

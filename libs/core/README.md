@@ -63,6 +63,43 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+## A public form's bot check
+
+A page of responses anyone may send — a sign-up, a contact form — can check that
+a person sent it (`botCheck`): a box no person sees or reaches, which a bot
+filling every box fills (`honeypot`, on unless `false`); the fewest seconds a
+person takes from the page shown to its send (`minSeconds`, 3 unless said; 0
+tells none); and the slot the app draws its own captcha in (`captcha`: a slot's
+name — Turnstile, reCAPTCHA, hCaptcha):
+
+```json
+"layout": { "type": "sections", "id": "signup", "children": [
+  …,
+  { "type": "slot", "id": "s-captcha", "name": "captcha" }
+] },
+"botCheck": { "minSeconds": 3, "captcha": "captcha" }
+```
+
+Nothing is refused for it on the page: each send tells the app what it saw,
+beside the answers (`submit({ pageId, values, bot })`, and the `send` event), and
+the app decides — keep the response aside, check the token with its service, or
+refuse it:
+
+```ts
+async submit({ pageId, values, bot }) {
+  // bot: { honeypot: false, tooFast: false, seconds: 41.2, captcha: '0.Zx…' }
+  if (bot?.honeypot || bot?.tooFast) return keepAside(pageId, values);
+  if (bot && !(await verifyTurnstile(bot.captcha))) throw saveRefused({ kind: 'rule', message: 'Tick “I am human” first' });
+  return store(pageId, values);
+}
+```
+
+The app's captcha widget hands its token to the form, `form.botCheck({ captcha: token })`
+(null once it expires); a token goes once it is sent, as a captcha's is spent. The
+viewer draws the hidden box and tells the form when it is filled
+(`form.botCheck({ honeypot: true })`). A page without `botCheck` sends what it
+always did.
+
 ## Files stored as they are picked
 
 Give the data source `upload(file, request)` and a file or picture field sends

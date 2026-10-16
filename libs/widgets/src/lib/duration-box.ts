@@ -1,5 +1,5 @@
 import type { NumberLimits, Value } from '@fieldia/core';
-import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { boxPurpose, describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import { guard, leftWords, numberFits, numberKeyboard, numberRules, quoted, refusalHint, unreadWords, type NumberBox } from './input-rules';
 import { formatDuration, parseDuration, parsePercentage, percentFormat, percentPlaces } from './duration';
 import type { WidgetContext, WidgetFactory } from './widgets';
@@ -31,7 +31,7 @@ function shownBox(
     ...(way.places !== undefined ? { places: way.places } : {}),
     ...(min !== undefined ? { min: way.percent ? min * 100 : min } : {}),
   });
-  const input = make('input', { id, type: 'text', class: `fd-input fd-number-input ${way.className}`, autocomplete: 'off', inputmode: way.duration ? 'text' : numberKeyboard(limits()) });
+  const input = make('input', { id, type: 'text', class: `fd-input fd-number-input ${way.className}`, ...boxPurpose(node, { autocomplete: 'off', inputmode: way.duration ? 'text' : numberKeyboard(limits()) }) });
   if (node.placeholder) input.placeholder = node.placeholder;
   const shown = (value: Value | undefined) => (typeof value === 'number' ? (Number.isFinite(value) ? way.show(value) : '') : value === null || value === undefined ? '' : String(value));
   // Inside the box after the value, as a number's unit is.
@@ -46,6 +46,8 @@ function shownBox(
   let entered: Value | undefined;
   input.addEventListener('focus', () => (entered = form.getState().values[name]));
   input.addEventListener('input', () => {
+    // Written while the person is elsewhere (the browser's autofill): what the field held as it came is kept should it not read.
+    if (document.activeElement !== input) entered = form.getState().values[name];
     const value = way.parse(input.value);
     // Not yet, or not as it stands ("25.555" in a box of two places, on its way to "25.555,5"): left, it is said.
     if (value === undefined || (!way.duration && !numberFits(input.value, box))) return;

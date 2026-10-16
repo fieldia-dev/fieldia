@@ -3,7 +3,7 @@ import { displayValue } from './display';
 import { distributionWords } from './distribution';
 import { parseDuration, parsePercentage, shownNumber } from './duration';
 import { quoted } from './input-rules';
-import { fillIn, setAttr, setText, wordsFor } from './kind-parts';
+import { boxPurpose, fillIn, setAttr, setText, wordsFor } from './kind-parts';
 import { formatMoney, formatNumber } from './numbers';
 import type { WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
@@ -78,7 +78,8 @@ export const plainState = plainWords(({ value }, { field, locale }) => displayVa
 export const plainNumber: WidgetFactory = ({ form, name, field, node, id, document, labels, locale = 'en' }) => {
   const percent = node.widget === 'percentage';
   const input = document.createElement('input');
-  Object.assign(input, { type: 'text', id, className: 'fd-input fd-number-input', autocomplete: 'off' });
+  Object.assign(input, { type: 'text', id, className: 'fd-input fd-number-input' });
+  for (const [key, value] of Object.entries(boxPurpose(node, { autocomplete: 'off' }))) input.setAttribute(key, value);
   if (node.placeholder) input.placeholder = node.placeholder;
   input.setAttribute('data-fd-plain', '');
   const read = (text: string) => (percent ? parsePercentage(text, locale) : parseDuration(text, locale));

@@ -2,7 +2,7 @@ import { checkValue, couldBeMonth, foldDigits, MESSAGES, stripMarks, type Field,
 import { withCalendar } from './calendar';
 import { dateExample, dateOrderOf, dateShape, localOf, readDateText, restingText, typingText, type DateKind, type DateReader } from './date-text';
 import { guard, quoted, refusalHint, type InputRules } from './input-rules';
-import { fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import { boxPurpose, fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { bounds, markBounds, type DayLimits } from './limits';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
@@ -108,6 +108,8 @@ export interface DateBoxOptions {
    * of them leaves the box all the same, and the page round it hears so (a focusout of its own), to say what it found.
    */
   within?: HTMLElement;
+  /** What the browser fills it in with and the keyboard a phone shows (`boxPurpose`): nothing unless said. */
+  purpose?: { autocomplete?: string; inputmode?: string };
 }
 
 /** A date box: its text box, which its widget draws where it wants, and what keeps it current. */
@@ -181,7 +183,7 @@ export function dateBox(options: DateBoxOptions): DateBox {
   const words = wordsFor(labels, locale);
   const order = dateOrderOf(form);
   const reader: DateReader = { kind, order, locale, label, labels };
-  const input = make('input', { type: 'text', class: `fd-input fd-${kind}${options.className ? ` ${options.className}` : ''}`, 'data-kind': kind, autocomplete: 'off', spellcheck: 'false', ...(options.id ? { id: options.id } : {}) });
+  const input = make('input', { type: 'text', class: `fd-input fd-${kind}${options.className ? ` ${options.className}` : ''}`, 'data-kind': kind, autocomplete: 'off', ...options.purpose, spellcheck: 'false', ...(options.id ? { id: options.id } : {}) });
   input.placeholder = options.placeholder || dateShape(kind, order, words);
   markBounds(input, limits);
 
@@ -214,6 +216,9 @@ export function dateBox(options: DateBoxOptions): DateBox {
     entered = { value, text: input.value };
   });
   input.addEventListener('input', () => {
+    // Written while the person is elsewhere — the browser's autofill, from a pick in another box: read as the box is
+    // left (its change), the field holding what it held as the write came should it not read.
+    if (!typing()) entered = { value: form.getState().values[name], text: restingText(form.getState().values[name], kind, locale) };
     const text = input.value;
     if (!stripMarks(text).trim()) {
       write(null);
@@ -256,14 +261,19 @@ export function dateBox(options: DateBoxOptions): DateBox {
     // Enter sends a form: what is typed is read first, so a date that does not read is never sent as the one held.
     if (event.key === 'Enter' && !event.isComposing) settle();
   });
-  // A save made with the box still entered (Ctrl+Enter, a button's key) reads it first, as leaving it would.
-  input.addEventListener('change', () => typing() && settle());
-  input.addEventListener('blur', (event) => {
+  /** Read as it is left, then shown at rest: the text it kept unread, or its value in words. */
+  const leave = () => {
     settle();
     entered = null;
     const unread = unreadNow();
     const text = unread ? unread.text : restingText(form.getState().values[name], kind, locale);
     if (input.value !== text) input.value = text;
+  };
+  // A save made with the box still entered (Ctrl+Enter, a button's key) reads it first, as leaving it would; written
+  // while the person is elsewhere, it is read as left.
+  input.addEventListener('change', () => (typing() ? settle() : entered && leave()));
+  input.addEventListener('blur', (event) => {
+    leave();
     // Left for its own calendar button, or a range's other box: still the box left, and what it found is said now. (Not
     // in a grid's editor, which a focus leaving its cell closes: there the cell's own close reads what was typed.)
     const to = (event as FocusEvent).relatedTarget;
@@ -317,7 +327,7 @@ export function dateBoxWidget(kind: DateKind): WidgetFactory {
     const { form, name, field, node, id, document, labels, locale = 'en' } = context;
     // A date's box and its calendar button, in one: the hint goes under both.
     const into = kind === 'time' ? undefined : maker(document)('span', { class: 'fd-date-pick' });
-    const box = dateBox({ form, name, field, kind, label: node.label ?? field.label, document, locale, labels, id, limits: bounds(null, field, node), placeholder: node.placeholder, anchor: into, within: into });
+    const box = dateBox({ form, name, field, kind, label: node.label ?? field.label, document, locale, labels, id, limits: bounds(null, field, node), placeholder: node.placeholder, anchor: into, within: into, purpose: boxPurpose(node) });
     const inner: Widget = {
       element: box.input,
       focus: () => box.input.focus(),

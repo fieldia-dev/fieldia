@@ -30,9 +30,10 @@ export const LATIN_KEPT = [
   ...['true', 'false', 'null'],
   // Language tags, as examples of what to type.
   ...['ar', 'es', 'pt-BR'],
-  // Fieldia's own name, as its look's; an editor's, as people know it.
+  // Fieldia's own name, as its look's; an editor's, as people know it; the captchas', as people know them.
   'Fieldia',
   ...['VS', 'Code'],
+  ...['Turnstile', 'reCAPTCHA', 'hCaptcha'],
   // Names in code, in examples.
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street', 'res', 'users'],
 ];
@@ -63,6 +64,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
   'changes.filesShownAs': ['list', 'thumbnails', 'cards'].map((as) => ['س', as]),
   'changes.filesSwitch': [['س', true], ['س', false]],
+  'changes.botCheck': ['on', 'off', 'changed'].map((now) => [now]),
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],
   'outline.atEdgeOfSurvey': [[true, 'top'], [false, 'bottom']],

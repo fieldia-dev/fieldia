@@ -190,13 +190,15 @@ export const DEMOS = [
     name: 'Workshop sign-up',
     category: 'forms',
     query: 'page=signup&skin=outlined',
-    blurb: 'A form in sections, with questions that show only when they apply, checks as you type, and a response sent when it is done.',
+    blurb: 'A form in sections, with questions that show only when they apply, checks as you type, your browser’s autofill, a check for bots, and a response sent when it is done.',
     howTo: [
       'Choose "Something else" as your role: a question appears to say what it is.',
       'Choose Manager: a question about your team appears instead.',
       'Turn on “Joining the dinner”: a question about what you eat appears.',
       'Type an email without an @ and leave the field: it says what is wrong.',
+      'Click in Full name and pick one of your browser’s saved addresses: your name, email, company and phone are filled in, each box saying what it holds.',
       'Submit with a required question empty: the form takes you to it.',
+      'Send it within three seconds, or without ticking “I am a person”: it is still sent, and under the form you see what the app was told.',
     ],
   },
   {

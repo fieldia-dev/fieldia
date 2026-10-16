@@ -38,6 +38,14 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-price .fd-input { flex: 1; min-width: 0; }
 .demo-price output { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--fd-accent-soft); color: var(--fd-text); font-weight: 600; font-size: 12.5px; }
 #app:has(.fd-designer) { max-width: 1320px; }
+/* The sign-up's stand-in for an app's captcha (shared/captcha.ts), in the form's own colours. */
+.demo-captcha {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; max-width: 360px; margin-block-start: 16px; padding: 12px 14px;
+  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-text);
+}
+.demo-captcha label { font-weight: 600; }
+.demo-captcha-said { color: var(--fd-muted); font-size: 13px; }
+.demo-captcha small { flex-basis: 100%; color: var(--fd-muted); font-size: 12px; }
 /* The listing's bar: the shell's own colours, so it follows the reader's scheme. */
 .demo-photos-bar { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
 .demo-photos-said { flex: 1 1 24em; color: var(--dh-muted, #5b6470); font-size: 13px; }

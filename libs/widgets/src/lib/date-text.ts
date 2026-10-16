@@ -1,6 +1,6 @@
 import { readDate, readTime, stripMarks, type DateOrder, type DateProblem, type Form, type Locale, type Value } from '@fieldia/core';
 import { minuteDigitsWords, quoted, refusalHint } from './input-rules';
-import { fillIn, setAttr, wordsFor } from './kind-parts';
+import { boxPurpose, fillIn, setAttr, wordsFor } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import type { WidgetFactory } from './widgets';
 
@@ -181,7 +181,8 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
     const order = dateOrderOf(form);
     const reader: DateReader = { kind, order, locale, label: node.label ?? field.label, labels };
     const input = document.createElement('input');
-    Object.assign(input, { type: 'text', id, className: `fd-input fd-${kind}`, autocomplete: 'off', placeholder: node.placeholder || dateShape(kind, order, wordsFor(labels, locale)) });
+    Object.assign(input, { type: 'text', id, className: `fd-input fd-${kind}`, placeholder: node.placeholder || dateShape(kind, order, wordsFor(labels, locale)) });
+    for (const [key, value] of Object.entries(boxPurpose(node, { autocomplete: 'off' }))) input.setAttribute(key, value);
     const unread = () => form.getState().unread?.[name];
     const atRest = () => unread()?.text ?? restingText(form.getState().values[name], kind, locale);
     // A day and time where a day goes: the day is taken, and the time it leaves out said under the box, never in silence.

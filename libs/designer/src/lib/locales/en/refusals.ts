@@ -28,6 +28,7 @@ export const refusals = {
   cannotPublish: 'This page has problems and cannot be published',
   // ---- the page and its parts
   surveyHasNoRecords: 'A survey has no records to link to or list: this kind is for app screens',
+  botCheckForResponses: 'A bot check is for a form anyone may send, which collects responses: an app’s screen is behind its sign-in',
   onThePageAlready: (label: string) => `${label} is on the page already`,
   optionsFromModel: (label: string) => `The options of ${label} come from the model`,
   cannotMoveFurther: 'It cannot move further',

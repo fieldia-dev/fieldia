@@ -123,6 +123,19 @@ ${code(
 </ul>
 <p>${c('shrinkPhoto(file, { maxSide, quality })')} from ${c('@fieldia/widgets')} does the same for your own code.</p>
 
+<h2 id="autofill">Filled in by the browser, and a phone's keyboard</h2>
+<p>A field node's ${c('autocomplete')} says what the browser may fill its box in with, from what the person saved: a purpose from the HTML standard's list — ${c('name')}, ${c('given-name')}, ${c('family-name')}, ${c('email')}, ${c('tel')}, ${c('organization')}, ${c('street-address')}, ${c('postal-code')}, ${c('country')}, ${c('bday')}, ${c('one-time-code')}, ${c('cc-number')}… — with ${c('shipping')}, ${c('billing')} or ${c('section-…')} before it, and ${c('home')}, ${c('work')} or ${c('mobile')} before a phone or an email; or ${c('off')}, so the browser offers nothing. Its ${c('inputmode')} picks the keyboard a phone shows: ${c('numeric')}, ${c('decimal')}, ${c('tel')}, ${c('email')}, ${c('url')}, ${c('search')} or ${c('text')}. The page's checks refuse a purpose the standard does not list, in its words.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "f-name", "field": "full_name", "autocomplete": "name" },
+{ "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel" },
+{ "type": "field", "id": "f-code", "field": "code", "autocomplete": "one-time-code" },
+{ "type": "field", "id": "f-ship", "field": "ship_to", "widget": "address", "autocomplete": "shipping" }`
+)}
+<p>Each kind has its own unless the node says: an ${c('email')} box ${c('email')} and its keyboard, a ${c('phone')} ${c('tel')}, a ${c('url')} ${c('url')}, a ${c('password')} ${c('new-password')} — a password being set, never the one the person signs in with filled into a record's field — a number its digits (a decimal mark where it has places, the full keyboard where it may be below 0), and an address in parts each part its own (${c('address-line1')}, ${c('address-level2')}, ${c('postal-code')}, ${c('country')}): its node names only whose address it is, ${c('"shipping"')}, or ${c('"off"')}. A line of words offers nothing unless its node names a purpose, and then shows that purpose's keyboard (digits for ${c('one-time-code')}). A choice drawn as a list, or as a box to type in for a long one, takes a purpose too, such as ${c('country-name')}. A link to a record keeps the browser out: it looks records up by their names.</p>
+<p>What the browser fills in is the person's own, read as typed: a box filled from a pick in another one is read at once, as one left, and says its problem there; in the box picked in, what the box would refuse is held, said, and taken as it is left, never lost. It is a change of theirs like any other: Discard and a way out ask about it, and Save sends it. In the designer, a field's Content tab sets both: <em>Filled in by the browser as</em> and <em>Keyboard on a phone</em>.</p>
+
 <h2 id="numbers">Numbers in the reader's language</h2>
 <p>Numbers are written grouped, with the field's ${c('digits')} (two for money and decimals by default), the way readers of the page's ${c('locale')} write them: ${c('1,850,000.00')} in English, ${c('1.850.000,00')} in German, ${c('1 850 000,00')} in French, in Latin digits in Arabic. What is typed is read the same way, Arabic-Indic digits included.</p>
 

@@ -26,6 +26,7 @@ export const fr: ViewerLabels = {
   stepOf: 'Étape {n} sur {total}',
   submitted: 'Merci. Vos réponses ont été envoyées.',
   submitAnother: 'Envoyer une autre réponse',
+  leaveEmpty: 'Laissez ce champ vide',
   draftFound: 'Vous avez des réponses non enregistrées du {time}.',
   restore: 'Restaurer',
   discardDraft: 'Ignorer',

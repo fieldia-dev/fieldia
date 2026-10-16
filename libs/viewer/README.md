@@ -46,6 +46,41 @@ mountViewer(host, {
 A slot's renderer is given `fail(error)` too, for content that fails after it was
 drawn: the slot then shows its box.
 
+## A public form: autofill and a bot check
+
+Every box tells the browser what it may fill it in with and a phone which
+keyboard to show (the field node's `autocomplete` and `inputmode`, or its
+kind's own). What the browser fills in is the person's own: read as typed, and
+a box filled from a pick in another one is read at once, as one left, its
+problem said there.
+
+A page of responses with a `botCheck` gets a box no person sees, reaches with
+Tab or hears read out — inert, so no browser fills it either — and each send
+tells the app what was seen (`submit({ pageId, values, bot })`, and the `send`
+event). The app's captcha goes in a slot of the page, named by
+`botCheck.captcha`, and hands its token to the form:
+
+```ts
+mountViewer(host, {
+  page,            // "botCheck": { "minSeconds": 3, "captcha": "captcha" }, a { "type": "slot", "name": "captcha" } placed
+  dataSource,      // its submit gets bot: { honeypot, tooFast, seconds, captcha }
+  slots: {
+    captcha: (element, { form }) => {
+      const id = turnstile.render(element, {
+        sitekey,
+        callback: (token) => form.botCheck({ captcha: token }),
+        'expired-callback': () => form.botCheck({ captcha: null }),
+      });
+      // A token is spent once sent: a fresh one for the next response.
+      const spent = form.on('send', () => turnstile.reset(id));
+      return () => (spent(), turnstile.remove(id));
+    },
+  },
+});
+```
+
+Nothing is refused on the page for what the check saw: the app decides.
+
 ## Saved forms placed in a page
 
 A page may place another saved page in it by its id — an address made once,
