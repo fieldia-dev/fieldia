@@ -33,12 +33,12 @@ describe('a date and time read on a zone’s clock', () => {
   });
 
   it('says a time the clocks skip, never moving it', () => {
-    expect(read('29/03/2026 02:30')).toEqual({ ok: false, problem: 'skipped', words: 'Test drive: there is no 02:30 on 29 Mar 2026 in Central European Time: the clocks go from 02:00 to 03:00' });
+    expect(read('29/03/2026 02:30')).toEqual({ ok: false, problem: 'skippedTime', words: 'Test drive: there is no 02:30 on 29 Mar 2026 in Central European Time: the clocks go from 02:00 to 03:00' });
     expect(read('29/03/2026 03:00')).toEqual({ ok: true, value: '2026-03-29T01:00:00.000Z' });
   });
 
-  it('says a time the clocks repeat, and reads either once its zone’s name says which', () => {
-    expect(read('25/10/2026 02:30')).toEqual({ ok: false, problem: 'twice', words: 'Test drive: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 CEST or 02:30 CET' });
+  it('says a time the clocks repeat, naming both offsets, and reads either once an offset or its zone’s name says which', () => {
+    expect(read('25/10/2026 02:30')).toEqual({ ok: false, problem: 'repeatedTime', words: 'Test drive: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 +02:00 or 02:30 +01:00' });
     expect(read('25/10/2026 02:30 CEST')).toEqual({ ok: true, value: '2026-10-25T00:30:00.000Z' });
     expect(read('25/10/2026 02:30 cet')).toEqual({ ok: true, value: '2026-10-25T01:30:00.000Z' });
     // An offset is the instant as written.
@@ -140,13 +140,13 @@ describe('a date and time box on a zone’s clock', () => {
     expect(zone.textContent).toBe('CET');
   });
 
-  it('keeps a time the clocks repeat as typed until its zone’s name says which, and says why', () => {
+  it('keeps a time the clocks repeat as typed until an offset or its zone’s name says which, and says why', () => {
     const { input, value, form } = mount();
     enter(input);
     keys(input, '25/10/2026 02:30');
     expect(value()).toBeNull();
     input.blur();
-    expect(form.getState().unread['x']?.message).toBe('Test drive: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 CEST or 02:30 CET');
+    expect(form.getState().unread['x']?.message).toBe('Test drive: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 +02:00 or 02:30 +01:00');
     expect(input.value).toBe('25/10/2026 02:30');
     enter(input);
     input.setSelectionRange(input.value.length, input.value.length);
@@ -159,6 +159,15 @@ describe('a date and time box on a zone’s clock', () => {
     // Entered again, its name is written: it comes twice that day.
     enter(input);
     expect(input.value).toBe('25/10/2026 02:30 CET');
+  });
+
+  it('takes an offset typed after a time the clocks repeat, as the words say: its sign is no stranger to the box', () => {
+    const { input, value } = mount();
+    enter(input);
+    keys(input, '25/10/2026 02:30 +02:00');
+    expect(input.value).toBe('25/10/2026 02:30 +02:00');
+    input.blur();
+    expect(value()).toBe('2026-10-25T00:30:00.000Z');
   });
 
   it('refuses a letter no zone’s name begins with, as it refuses any', () => {

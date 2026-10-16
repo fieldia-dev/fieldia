@@ -167,11 +167,13 @@ describe('a date and time read in the zone it is typed in', () => {
   const reader = { kind: 'datetime' as const, order: 'dmy' as const, locale: 'en' as const, label: 'Kickoff', zone: 'Europe/Berlin' };
 
   it('a time the clocks skip is refused, saying what they do', () => {
-    expect(readDateText('29/03/2026 02:30', reader)).toEqual({ ok: false, problem: 'skippedTime', words: 'Kickoff: 29/03/2026 02:30 does not happen here: the clocks go from 02:00 to 03:00 that night' });
+    // One wording wherever a date and time is typed: the zone's, a page's or the browser's own (date-zones.spec.ts).
+    expect(readDateText('29/03/2026 02:30', reader)).toEqual({ ok: false, problem: 'skippedTime', words: 'Kickoff: there is no 02:30 on 29 Mar 2026 in Central European Time: the clocks go from 02:00 to 03:00' });
   });
 
   it('a time the clocks pass twice is refused, naming each way to write it — and each, written so, is read', () => {
-    expect(readDateText('25/10/2026 02:30', reader)).toEqual({ ok: false, problem: 'repeatedTime', words: 'Kickoff: 25/10/2026 02:30 happens twice here as the clocks go back; write 25/10/2026 02:30 +02:00 or 25/10/2026 02:30 +01:00' });
+    expect(readDateText('25/10/2026 02:30', reader)).toEqual({ ok: false, problem: 'repeatedTime', words: 'Kickoff: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 +02:00 or 02:30 +01:00' });
+    expect(readDateText('25/10/2026 02:30 +02:00', reader)).toEqual({ ok: true, value: '2026-10-25T00:30:00.000Z' });
     expect(readDateText('25/10/2026 02:30 +01:00', reader)).toEqual({ ok: true, value: '2026-10-25T01:30:00.000Z' });
   });
 

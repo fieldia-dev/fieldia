@@ -149,12 +149,13 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     // 02:30 comes twice the night the clocks go back: which is asked, the text kept.
     await box.fill('25/10/2026 02:30');
     await box.press('Tab');
-    await expect(callBack.locator('.fd-error').first()).toHaveText('Call back at: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 CEST or 02:30 CET');
+    await expect(callBack.locator('.fd-error').first()).toHaveText('Call back at: 02:30 comes twice on 25 Oct 2026 in Central European Time, as the clocks go back; write 02:30 +02:00 or 02:30 +01:00');
     await expect(box).toHaveValue('25/10/2026 02:30');
     await screen(page, 'zone-twice');
     await box.click();
     await box.press('End');
-    await box.pressSequentially(' CET');
+    // Either offset the words name is typed after it, key by key (the zone's short name, CET, is read too).
+    await box.pressSequentially(' +01:00');
     await box.press('Tab');
     await expect.poll(() => valueOf(page, 'call_back')).toBe('2026-10-25T01:30:00.000Z');
     await expect(box).toHaveValue('25 Oct 2026, 02:30');
