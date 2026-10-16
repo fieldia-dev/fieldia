@@ -22,7 +22,7 @@ export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWo
 export { boxPurpose } from './lib/kind-parts';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export { currencySymbol } from './lib/units';
-export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, type DateKind, type DateReader, type DateReading } from './lib/date-text';
+export { dateExample, dateOrderOf, dateShape, isoWeek, plainDateWidget, readDateText, restingText, typingText, zoneName, zoneOf, type DateKind, type DateReader, type DateReading } from './lib/date-text';
 export * from './lib/label';
 
 export * from './lib/icons';
@@ -56,8 +56,9 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // `propertiesWidget` draw from it, each value shown plainly until it comes.
 // A phone read the world over (a page's `phone`, a field's `country` or `shown`) comes in the phone part, with every
 // country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
+// Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type SlotsPart, type PartFactory } from './lib/widget-parts';
 export { phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

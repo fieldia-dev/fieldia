@@ -12,6 +12,7 @@ import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
 import { BULK_KINDS, bulkSettable } from './bulk-edit';
+import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
 
@@ -84,6 +85,7 @@ export class ReferenceCheck {
   ) {}
 
   run(): PageIssue[] {
+    if (this.page.timeZone !== undefined) this.checkZone(this.page.timeZone, 'timeZone');
     this.checkFields(this.page.fields, 'fields', this.line?.name, this.line?.parent);
     this.walkRoot(this.page.layout, 'layout');
     checkHead(this.page.layout, 'layout', {
@@ -109,6 +111,11 @@ export class ReferenceCheck {
     if (page.data.kind !== 'responses') return this.report('botCheck', 'a bot check is for a page of responses that anyone may send; a record’s page is behind the app’s own sign-in');
     const captcha = check?.captcha;
     if (typeof captcha === 'string' && !this.slots.has(captcha)) this.report('botCheck.captcha', `no slot "${captcha}" on this page to draw the captcha in: place { "type": "slot", "id": "${captcha}", "name": "${captcha}" } where it goes`);
+  }
+
+  /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */
+  private checkZone(zone: unknown, path: string) {
+    if (!isTimeZone(zone)) this.report(path, `${JSON.stringify(zone)} is not a time zone this browser knows: name one as the IANA does, such as "Africa/Cairo"`);
   }
 
   /** Each step's goTo and show names a tab or a wizard step of this page. */
@@ -403,6 +410,11 @@ export class ReferenceCheck {
       if (def.type === 'char' && def.pattern !== undefined) {
         const pattern = fieldPattern(def.pattern);
         if (pattern instanceof Error) this.report(`${path}.pattern`, fill(MESSAGES.en.patternBroken, { label: def.label, problem: pattern.message }));
+      }
+      if (def.type === 'datetime' && def.timeZone !== undefined) this.checkZone(def.timeZone, `${path}.timeZone`);
+      // A linked record's date and time, in a table of the records a many2many links to.
+      if (def.type === 'many2many' && def.fields) {
+        for (const [column, linked] of Object.entries(def.fields)) if (linked.type === 'datetime' && linked.timeZone !== undefined) this.checkZone(linked.timeZone, `${path}.fields.${column}.timeZone`);
       }
       if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
@@ -914,6 +926,20 @@ export class ReferenceCheck {
     if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
   }
 
+  /** Booking slots: on a date and time, its end written in another, asked again as the fields it depends on change. */
+  private checkSlots(node: FieldNode, def: Field | LineField | undefined, path: string) {
+    const options = node.options ?? {};
+    if (def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);
+    const end = options['endField'];
+    if (typeof end === 'string' && has(this.page.fields, end)) {
+      const type = this.page.fields[end].type;
+      if (end === node.field) this.report(`${path}.options.endField`, 'a booking ends in another field than the one it starts in');
+      else if (type !== 'datetime') this.report(`${path}.options.endField`, `"${end}" is a ${type}; a booking's end is kept in a datetime field`);
+    }
+    const on = options['dependsOn'];
+    if (Array.isArray(on)) on.forEach((name, i) => typeof name === 'string' && this.need(name, `${path}.options.dependsOn[${i}]`));
+  }
+
   /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
     const options = node.options ?? {};
@@ -975,6 +1001,7 @@ export class ReferenceCheck {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
     if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
+    if (node.widget === 'slots') this.checkSlots(node, def, path);
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order) {

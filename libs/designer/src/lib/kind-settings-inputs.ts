@@ -6,6 +6,7 @@ import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import type { InputLimits } from './input-commands';
 import { settingDate, type SettingDateOptions } from './date-setting';
 import { settingNumber, type SettingNumberOptions } from './number-box';
+import { zoneBox } from './zone-setting';
 
 /**
  * The text, number and date kinds' settings, in the picked field itself
@@ -412,6 +413,46 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     return { element: word(w.propertyColumns, count), refresh: (_page, node) => show(count, node.options?.['columns'] === 2 ? '2' : '') };
   }
 
+  /** The time zone a date and time is shown and typed on the clock of, by its IANA name: empty, the page's. */
+  function zone(): Part {
+    const input = zoneBox(el, w.timeZone, w.pageZone);
+    input.classList.add('fd-inline-input');
+    input.addEventListener('change', () => designer.setTimeZone(id, input.value.trim() || null));
+    return { element: word(w.timeZone, input), refresh: (page, node) => show(input, (page.fields[node.field] as { timeZone?: string } | undefined)?.timeZone) };
+  }
+
+  /** A whole number of a booking's minutes, a widget's option (`key`): emptied, the app's or the usual. */
+  function minutesBox(label: string, key: string, least: number, placeholder: string): Part {
+    let saved: number | null = null;
+    const box = numberBox({ label, integer: true, min: least, max: 1440, optional: true, placeholder, saved: () => saved, commit: (n) => designer.setWidgetOptions(id, { [key]: n }) });
+    return {
+      element: word(label, box.input),
+      refresh(_page, node) {
+        saved = held(node.options?.[key]);
+        box.refresh();
+      },
+    };
+  }
+
+  /** The field whose change asks a booking's free times again (`dependsOn`): the doctor, the car. */
+  function dependsPick(label: string): Part {
+    const pick = select(label, []);
+    pick.addEventListener('change', () => designer.setWidgetOptions(id, { dependsOn: pick.value ? [pick.value] : null }));
+    return {
+      element: word(label, pick),
+      refresh(page, node) {
+        const fields = Object.entries(page.fields).filter(([name]) => name !== node.field);
+        const keyOf = JSON.stringify(fields.map(([name, field]) => [name, field.label]));
+        if (pick.dataset['fields'] !== keyOf) {
+          pick.dataset['fields'] = keyOf;
+          pick.replaceChildren(el('option', { value: '' }, w.noField), ...fields.map(([name, field]) => el('option', { value: name }, field.label || name)));
+        }
+        const on = node.options?.['dependsOn'];
+        show(pick, Array.isArray(on) ? on[0] : '');
+      },
+    };
+  }
+
   /** The language code is written in, for its colours; none for JSON, which is JSON. */
   function codeLanguage(): Part {
     const list = select(w.codeLanguage, [['', w.plainText], ...CODE_LANGUAGE_CHOICES.map(([value, name]): [string, string] => [value, name])]);
@@ -458,6 +499,13 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'date') parts.push(startsToday());
   if (kind === 'time') parts.push(hours());
   if (kind === 'date-time' || kind === 'time') parts.push(minutes());
+  if (kind === 'date-time' || kind === 'booking-slots') parts.push(zone());
+  // Booking slots: the schedule the app is asked for, a booking's minutes and those kept free after it, where its end
+  // goes, and the field that asks again.
+  if (kind === 'booking-slots') {
+    parts.push(optionText(w.schedule, 'schedule', 'showroom'), minutesBox(w.slotLength, 'length', 5, '30'), minutesBox(w.slotsBetween, 'between', 0, '0'));
+    parts.push(fieldPick(w.bookingEndsIn, 'endField', (field) => field.type === 'datetime'), dependsPick(w.askedAgainWhen));
+  }
   if (kind === 'keywords') parts.push(keywords());
   if (kind === 'progress') parts.push(progress());
   // The business kinds: the fields they read beside their own, and their looks.

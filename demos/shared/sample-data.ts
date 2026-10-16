@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -52,6 +52,7 @@ import { calendarDemo, demoNow } from './calendar';
 import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
+import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -128,6 +129,8 @@ export const pages: Record<string, Page> = {
   ...calendarDemo.pages,
   // A listing's handover with the owner's consent placed in it, its files the listing's: shared/listing-handover.ts.
   ...listingHandover.pages,
+  // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
+  'test-drive': testDriveDemo.page,
 };
 
 /**
@@ -218,6 +221,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
+    // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are.
+    ...(params.get('page') === 'test-drive' ? { now: demoNow } : {}),
   };
 }
 
@@ -359,6 +364,8 @@ export function sampleDataSource() {
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
+    // A test drive's free times, from the showroom's schedule, on the demos' clock (shared/test-drive.ts).
+    slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
     attachments: billAttachments(),
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
     can: { 'crm.contact': contactPermissions },
@@ -386,6 +393,8 @@ export function sampleDataSource() {
       ...calendarDemo.records(),
       // Fifteen months of invoices up to now (shared/invoices.ts).
       invoice: sampleInvoices(),
+      // The showroom's cars and test drives, made round now (shared/test-drive.ts).
+      ...testDriveRecords(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

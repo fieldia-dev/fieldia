@@ -149,6 +149,59 @@ the span a value falls in as the list counts it, and `dayIn` and `dayStarts`
 a day in a time zone; `createMemoryDataSource` does it all. See
 [lists that add up](https://fieldia.dev/lists/#totals).
 
+## Time zones and booking slots
+
+A page may name the time zone its dates and times are in, by its IANA name —
+a branch's, a clinic's — and a date and time field may name its own:
+
+```json
+{ "timeZone": "Europe/Berlin", "fields": { "flight": { "type": "datetime", "label": "Departs", "timeZone": "Africa/Cairo" } } }
+```
+
+A date and time is still kept as an instant, as before (`2026-10-15T12:30:00.000Z`;
+one written with its offset is read the same). It is shown and typed on the
+zone's clock wherever the person is, with the zone's short name beside it where
+the browser's zone is another ("14:30 CEST"). Today is the zone's day: a date's
+default `"today"`, its earliest and latest counted from today, `today()`, a
+rule's past and future, and `form.today()`. A time the clocks skip, or repeat, on
+a change day is said, never moved. `zonedPage(page)` writes the page's zone into
+each date and time field that names none, as the form and the viewer read it;
+`wallTime`, `instantsAt`, `dayIn` and `clocksSkip` are the clock arithmetic
+they use. `checkPage` and `validatePage` refuse a zone the browser does not know.
+Without `timeZone`, the browser's own zone, as before.
+
+A date and time drawn as booking slots (`"widget": "slots"`) asks the data
+source's `slots(request)` for its free times: the days asked (`from`, `to`, in
+`timeZone`), the schedule its node names (`options.schedule`), the booking's
+`length` and the minutes `between` two as the page says, the record and its
+values. It answers each day's state — `open`, `full`, `closed`, `holiday` with a
+`note` — and the times free, as instants, and may say the booking's `length`.
+`form.findSlots(field, { from, to })` asks it for a widget of your own;
+`form.canFindSlots()` says whether the source can. Without `slots`, the field is
+the plain date and time box. For demos and tests, `scheduleSlots(schedules)`
+answers from booking schedules — hours by the day of the week on a zone's clock,
+a booking's length, the minutes kept free after one, holidays, and the records
+the bookings are:
+
+```ts
+import { createMemoryDataSource, scheduleSlots } from '@fieldia/core';
+
+const weekday: [string, string][] = [['09:00', '13:00'], ['14:00', '18:00']];
+const dataSource = createMemoryDataSource({
+  records,
+  slots: scheduleSlots({
+    showroom: {
+      timeZone: 'Europe/Berlin',
+      hours: { 1: weekday, 2: weekday, 3: weekday, 4: weekday, 5: weekday, 6: [['10:00', '14:00']] },
+      length: 45,
+      between: 15,
+      holidays: { '2026-12-25': 'Christmas Day' },
+      bookings: { model: 'drive.booking', field: 'start', endField: 'stop', same: ['car'] },
+    },
+  }),
+});
+```
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

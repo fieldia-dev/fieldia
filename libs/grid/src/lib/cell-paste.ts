@@ -150,7 +150,9 @@ export function readPastedCell(def: LineField, pasted: string, reading: CellRead
     case 'datetime': {
       // As the cell's own date box reads it: a day, or a date and time as the instant its field keeps. An instant in a
       // day's cell would leave its time out: not pasted, and named, as a date and time is.
-      const read = readDateText(text, { kind: def.type, order: reading.dateOrder ?? 'dmy', locale: reading.locale, label: def.label });
+      // A date and time on its zone's clock: its own, or its page's written into it.
+      const zone = def.type === 'datetime' ? def.timeZone : undefined;
+      const read = readDateText(text, { kind: def.type, order: reading.dateOrder ?? 'dmy', locale: reading.locale, label: def.label, ...(zone ? { zone } : {}) });
       return read.ok && !read.timeLeftOut ? { value: read.value } : null;
     }
     case 'selection': {
@@ -222,7 +224,8 @@ export function whyNotPasted(def: LineField, pasted: string, reading: CellReadin
     case 'date':
     case 'datetime': {
       const reader = { order: reading.dateOrder ?? 'dmy', locale, label, labels } as const;
-      const read = readDateText(text, { kind: def.type, ...reader });
+      const zone = def.type === 'datetime' ? def.timeZone : undefined;
+      const read = readDateText(text, { kind: def.type, ...reader, ...(zone ? { zone } : {}) });
       if (read.ok) return read.timeLeftOut ? fill(labels.timeLeftOut, { label, time: read.timeLeftOut }) : null;
       // A day and time pasted into a day: said as the date box says it, the time it would leave out named.
       const moment = def.type === 'date' ? readDateText(text, { kind: 'datetime', ...reader }) : null;

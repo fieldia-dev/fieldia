@@ -1,4 +1,5 @@
-import { momentsOf, readDate, wallClock } from './input-rules';
+import { readDate } from './input-rules';
+import { instantsAt, wallOf, wallText, wallTime, type WallTime } from './zones';
 
 /**
  * A date and time is one moment where it is read. The reader takes the time zone it is typed in (`zone`), so a page's
@@ -36,10 +37,12 @@ describe('a date and time read in its time zone', () => {
 
   it('an ordinary time is one moment, and read as before', () => {
     expect(readDate('15/10/2026 14:30', { time: true, zone: 'Europe/Berlin' })).toEqual({ ok: true, value: '2026-10-15T14:30' });
-    expect(momentsOf('2026-10-15T14:30', 'Europe/Berlin')).toEqual([Date.UTC(2026, 9, 15, 12, 30)]);
-    expect(momentsOf('2026-03-29T02:30', 'Europe/Berlin')).toEqual([]);
-    expect(momentsOf('2026-10-25T02:30', 'Europe/Berlin')).toEqual([Date.UTC(2026, 9, 25, 0, 30), Date.UTC(2026, 9, 25, 1, 30)]);
-    expect(wallClock(Date.UTC(2026, 9, 25, 1, 30), 'Europe/Berlin')).toBe('2026-10-25T02:30');
+    // The reader counts by the zones' one set of clock arithmetic (zones.ts), as every writer does.
+    const at = (local: string) => instantsAt(wallOf(local) as WallTime, 'Europe/Berlin');
+    expect(at('2026-10-15T14:30')).toEqual([Date.UTC(2026, 9, 15, 12, 30)]);
+    expect(at('2026-03-29T02:30')).toEqual([]);
+    expect(at('2026-10-25T02:30')).toEqual([Date.UTC(2026, 9, 25, 0, 30), Date.UTC(2026, 9, 25, 1, 30)]);
+    expect(wallText(wallTime(Date.UTC(2026, 9, 25, 1, 30), 'Europe/Berlin'))).toBe('2026-10-25T02:30');
   });
 });
 

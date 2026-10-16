@@ -1,5 +1,5 @@
-import type { Locale, Value } from '@fieldia/core';
-import { isoWeek } from './date-text';
+import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallTime, type Locale, type Value } from '@fieldia/core';
+import { isoWeek, restingText, zoneName, zoneOf } from './date-text';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { rightToLeft, setHidden, setText } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
@@ -33,6 +33,8 @@ export interface CalendarOptions {
   refuse?: (value: string) => string | undefined;
   /** The element the box and its calendar are drawn in: a new one unless given. */
   into?: HTMLElement;
+  /** What is drawn between the box and its button: a date and time's zone. */
+  beside?: HTMLElement;
 }
 
 /**
@@ -57,15 +59,15 @@ function addMonths(d: Date, n: number) {
   return new Date(d.getFullYear(), d.getMonth() + n, Math.min(d.getDate(), last));
 }
 
-/** The day a date field holds ("2026-10-11"), or a date and time (an ISO instant), in local time. */
-function dayOf(kind: 'date' | 'datetime', value: Value | undefined): Date | null {
+/**
+ * The day a date field holds ("2026-10-11"), or a date and time (an ISO instant) on its zone's clock (the browser's
+ * without one), as a day of the calendar drawn — a date at the browser's midnight — and the time it holds then.
+ */
+function dayOf(kind: 'date' | 'datetime', value: Value | undefined, zone?: string): { day: Date; hour: number; minute: number } | null {
   if (typeof value !== 'string' || !value) return null;
-  if (kind === 'date') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
-  }
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const at = kind === 'date' ? NaN : Date.parse(value);
+  const wall = kind === 'date' ? wallOf(value) : Number.isNaN(at) ? null : wallTime(at, zone);
+  return wall ? { day: new Date(wall.year, wall.month - 1, wall.day), hour: wall.hour, minute: wall.minute } : null;
 }
 
 export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date' | 'datetime', options: CalendarOptions = {}): Widget {
@@ -131,21 +133,39 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
 
   const element = options.into ?? doc.createElement('span');
   element.classList.add('fd-date-pick');
-  element.append(inner.element, button, dialog);
+  element.append(inner.element, ...(options.beside ? [options.beside] : []), button, dialog);
+  // A date and time on its zone's clock; today, the day it is there — the page's, by the form's clock.
+  const zone = zoneOf(form, context.field);
+  const todayOf = () => {
+    const day = wallOf(zone === form.page.timeZone ? form.today() : dayIn(Date.now(), zone));
+    return day ? new Date(day.year, day.month - 1, day.day) : new Date();
+  };
 
   let focused = new Date();
   let readonly = false;
 
-  /** A day as the field would hold it: the date, or the day at the hours the field has. */
-  function valueOn(day: Date): string {
+  /**
+   * A day as the field would hold it: the date, or the day at the hours the field has on its zone's clock — the
+   * first time, where the clocks repeat it that day (its zone's name then shows which); none where they skip it.
+   */
+  function valueOn(day: Date): string | null {
     if (kind === 'date') return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
-    const was = dayOf('datetime', form.getState().values[name]);
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), was?.getHours() ?? 0, was?.getMinutes() ?? 0).toISOString();
+    const was = dayOf('datetime', form.getState().values[name], zone);
+    const at = instantsAt({ year: day.getFullYear(), month: day.getMonth() + 1, day: day.getDate(), hour: was?.hour ?? 0, minute: was?.minute ?? 0 }, zone)[0];
+    return at === undefined ? null : new Date(at).toISOString();
+  }
+  /** Why a day cannot be picked at the hours the field has: the clocks skip them there that day. */
+  function skipped(day: Date): string {
+    const was = dayOf('datetime', form.getState().values[name], zone);
+    const wall = { year: day.getFullYear(), month: day.getMonth() + 1, day: day.getDate(), hour: was?.hour ?? 0, minute: was?.minute ?? 0 };
+    const skip = clocksSkip(wall, zone);
+    const iso = `${wall.year}-${pad(wall.month)}-${pad(wall.day)}`;
+    return fill(labels.timeSkipped, { label: context.node.label ?? context.field.label, time: wallClock(wall), day: restingText(iso, 'date', locale), zone: zone ? zoneName(Date.now(), zone, locale, 'longGeneric') : '', from: skip ? wallClock(skip.from) : '', to: skip ? wallClock(skip.to) : '' });
   }
 
   function pick(day: Date) {
     const value = valueOn(day);
-    const refused = options.refuse?.(value);
+    const refused = value === null ? skipped(day) : options.refuse?.(value);
     if (refused) {
       // Said again when the same day is pressed twice: the region is emptied first.
       setText(note, '');
@@ -153,6 +173,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
       setHidden(note, false);
       return;
     }
+    if (value === null) return;
     form.setValue(name, value);
     // A day picked is what the box holds now: text left in it that did not read goes.
     if (form.getState().unread?.[name]) form.setUnread(name, null);
@@ -162,8 +183,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   }
 
   function draw(focus: boolean) {
-    const chosen = dayOf(kind, form.getState().values[name]);
-    const today = new Date();
+    const chosen = dayOf(kind, form.getState().values[name], zone)?.day;
+    const today = todayOf();
     const label = monthName.format(focused);
     title.textContent = label;
     dialog.setAttribute('aria-label', label);
@@ -209,7 +230,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
         if (chosen && sameDay(d, chosen)) day.setAttribute('aria-selected', 'true');
         if (sameDay(d, today)) day.setAttribute('aria-current', 'date');
         // Past the field's limits: faint, and a press says why.
-        if (options.refuse?.(valueOn(d))) day.classList.add('fd-off');
+        const value = valueOn(d);
+        if (value !== null && options.refuse?.(value)) day.classList.add('fd-off');
         day.disabled = readonly;
         day.addEventListener('click', () => pick(d));
         day.addEventListener('keydown', (event) => onKey(event, d));
@@ -250,7 +272,7 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
   }
 
   function open() {
-    focused = dayOf(kind, form.getState().values[name]) ?? new Date();
+    focused = dayOf(kind, form.getState().values[name], zone)?.day ?? todayOf();
     // Over the field's error, the month says it too: why the text typed was not read.
     const unread = form.getState().unread?.[name]?.message ?? '';
     setText(note, unread);

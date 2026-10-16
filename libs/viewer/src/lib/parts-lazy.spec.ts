@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -48,7 +48,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
     await handle.drawn;
-    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, surveyPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
+    for (const part of [headPart, listPart, filtersPart, textPart, pathPart, datePart, linesPart, businessPart, filesPart, surveyPart, slotsPart, themesPart, quietPart]) expect(part.loaded).toBeUndefined();
   });
 
   it('are found wherever the page names what needs them, unless the app draws those fields', () => {
@@ -98,6 +98,9 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page(sections(field('slot')), fields))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections(field('due'), field('lines')), fields), { date: own })).toEqual([linesPart]);
+    // Booking slots: their own part, which brings the date part with it (its box where the source has no slots).
+    expect(partsFor(page(sections(field('at', { widget: 'slots', options: { schedule: 'clinic' } })), fields))).toEqual([slotsPart]);
+    expect(partsFor(page(sections(field('at', { widget: 'slots' })), fields), { 'datetime.slots': own })).toEqual([]);
   });
 
   it('a list: nothing of it drawn, its element busy, until the list part has come; then the list whole, its records in', async () => {

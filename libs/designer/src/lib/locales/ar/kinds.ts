@@ -45,6 +45,7 @@ export const kinds: DesignerWords['kinds'] = {
     percentage: 'نسبة مئوية',
     timer: 'مؤقّت',
     'date-range': 'نطاق تواريخ',
+    'booking-slots': 'مواعيد للحجز',
     colour: 'لون',
     copy: 'نص للنسخ',
     pdf: 'ملف PDF معروض',

@@ -137,6 +137,8 @@ export const refusals = {
   onlyDecimals: 'Only a number or an amount has decimals',
   decimalsRange: 'Decimals run from 0 to 6',
   onlyDateDays: 'Only a date falls on days of the week',
+  onlyDateTimeZone: 'Only a date and time is on a time zone’s clock',
+  zoneUnknown: (zone: string) => `“${zone}” is no time zone: name one as the IANA does, such as Africa/Cairo or Europe/Berlin`,
   daysRange: 'The days of the week are 1, Monday, to 7, Sunday',
   oneDay: 'A date falls on one day of the week at least',
   onlyDateToday: 'Only a date starts on today',

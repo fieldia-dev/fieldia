@@ -35,6 +35,8 @@ import type {
   UploadedFile,
   WriteManyRequest,
   WriteManyResult,
+  SlotsRequest,
+  SlotsResult,
 } from './data-source';
 import { ConflictError, loadedRecord, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -103,6 +105,12 @@ export interface MemoryDataSourceOptions {
   /** Answer after this long, so a demo shows its loading states (an upload's progress, in four steps). */
   delayMs?: number;
   scheduler?: Scheduler;
+  /**
+   * How `slots` answers: the free times of the days asked, worked out from the records the source keeps —
+   * `scheduleSlots(schedules)` answers from booking schedules. Without it, `slots` refuses, as a source with no
+   * schedule would.
+   */
+  slots?: (request: SlotsRequest, records: Readonly<Record<string, Record<string, Values>>>) => SlotsResult | Promise<SlotsResult>;
 }
 
 /**
@@ -377,6 +385,13 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return groupRows(matchingRows(request.model, request.filter), request.field, request).map(({ rows: _rows, ...group }) => group);
     },
 
+    async slots(request: SlotsRequest): Promise<SlotsResult> {
+      calls.push({ method: 'slots', request });
+      await pause();
+      if (!options.slots) throw new Error(`No schedule "${request.schedule}"`);
+      return options.slots(request, records);
+    },
+
     async totals(request: TotalsRequest): Promise<TotalsResult> {
       calls.push({ method: 'totals', request });
       await pause();
@@ -589,3 +604,4 @@ function base64(bytes: Uint8Array): string {
   for (let at = 0; at < bytes.length; at += 0x8000) text += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
   return (globalThis as unknown as { btoa(text: string): string }).btoa(text);
 }
+

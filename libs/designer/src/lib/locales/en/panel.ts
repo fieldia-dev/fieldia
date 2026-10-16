@@ -135,6 +135,10 @@ export const panel = {
   breadcrumbsShown: 'Breadcrumbs over the record',
   aroundHint: 'They show when the app gives the records round this one and the trail to it — never in a dialog.',
   attachmentBeside: 'Attachment beside the sheet',
+  // ---- the page's time zone
+  pageTimeZone: 'Time zone',
+  browserZone: 'The browser’s own',
+  pageTimeZoneHint: 'Every date and time on the page is shown and typed on this zone’s clock — a branch’s, a clinic’s — and today is its day there.',
   attachmentNone: 'None',
   attachmentFromApp: 'The record’s attachments, from the app',
   attachmentHint: 'A PDF or a picture beside the sheet on a wide screen, under it on a narrow one.',

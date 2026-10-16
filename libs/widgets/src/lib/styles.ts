@@ -644,6 +644,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-value-badge[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
+/* A date and time on another clock than the browser's: its zone's short name beside the box, "CEST". */
+.fd-zone { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--fd-muted); white-space: nowrap; cursor: default; }
 .fd-calendar-button {
   flex: 0 0 auto; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; cursor: pointer;
   border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-muted);
@@ -884,10 +886,17 @@ export function installStyles(document: Document): void {
  * inputs', the sheet's and the business'), then the themes' shapes, which reshape them, and the quiet look's, which
  * quietens those; a path picker's after the pickers', a record's head after that, a work item's groups and its text
  * editor after those; and last the survey kinds' own looks, which stood among the page's looks for each kind. A sheet
- * of a higher rank goes after one of a lower, all before the page's own looks. A phone's (0.24), new rather than cut,
- * lays out its own parts alone, after them all: the boxes it draws are the main sheet's.
+ * of a higher rank goes after one of a lower, all before the page's own looks.
+ *
+ * The phone's and the booking slots' (0.24) are new, cut from no rule of 0.22's: each lays out its own parts alone (a
+ * number's country and links; a month of days and the times free as chips), drawing its boxes and its calendar with
+ * the main sheet's rules. Each goes after the sheets cut from Fieldia's first (nothing in those names a phone's or a
+ * slot's parts, so nothing it overrides comes after it) and before the themes', so a theme still reshapes its focus,
+ * its corners and its calendar's days, and the quiet look still quietens its boxes. A list's (the list part's own
+ * sheet, `fd-list-styles`, its totals, export and bulk edit's rules among it) is no ranked part's: it goes after them
+ * all, where it stood at 0.23, and no theme's rule names what it added.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11, phone: 12 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, themes: 7, quiet: 8, picker: 9, head: 10, groups: 11, text: 12, surveyLooks: 13 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

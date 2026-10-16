@@ -76,6 +76,7 @@ export type {
 export type { AddressSearchOptions } from './lib/format/address-search';
 export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-options';
 export type { PagePhone, PhoneOptions } from './lib/format/phone';
+export type { SlotsOptions } from './lib/format/slots-options';
 export { wideColumns } from './lib/format/columns';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
 export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';
@@ -182,12 +183,19 @@ export type {
   ExportRequest,
   ExportedFile,
   ExportBytes,
+  SlotsRequest,
+  SlotsResult,
+  SlotDay,
+  SlotDayState,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
-export { DATE_PERIODS, DATE_INTERVALS, addDays, dayIn, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
+export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+// Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
+export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
+export { zonedPage } from './lib/format/zoned';
 // Files stored as they are picked: the form's uploads, and an upload for a plain endpoint or a signed address.
 export { uploadGoing, UPLOADS_AT_ONCE, type FileUpload, type UploadHow } from './lib/record/uploads';
 export { uploadTo, type UploadAnswer, type UploadTarget, type UploadToOptions } from './lib/record/upload-to';
@@ -227,8 +235,6 @@ export {
   cleanPastedNumber,
   readDuration,
   readDate,
-  wallClock,
-  momentsOf,
   foldTyped,
   couldBeMonth,
   readTime,

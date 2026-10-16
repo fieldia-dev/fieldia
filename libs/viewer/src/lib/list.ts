@@ -1,6 +1,7 @@
 import {
   facetsToFilter,
   groupByFields,
+  ownZone,
   type ButtonNode,
   type DayCount,
   type FilterPeriod,
@@ -262,18 +263,22 @@ export function listView(context: ListContext): ListView {
 
   /**
    * A week from the page's language's first day (Saturday in Arabic, as Egypt's week runs; Monday elsewhere, as
-   * Fieldia's calendars have it); days told in the page's time zone (its `timeZone`), else the browser's.
+   * Fieldia's calendars have it); days told in the page's time zone (its `timeZone`), else the browser's — and a date
+   * and time's own days in its own zone, where it names one (the page's is written into each that names none).
    */
-  const pageZone = (page as Page & { timeZone?: string }).timeZone;
-  const count: DayCount = { weekStart: locale === 'ar' ? 6 : 1, timeZone: pageZone || Intl.DateTimeFormat().resolvedOptions().timeZone };
+  const count: DayCount = { weekStart: locale === 'ar' ? 6 : 1, timeZone: page.timeZone || ownZone() };
+  const zoneOfField = (name: string) => {
+    const def = page.fields[name];
+    return (def?.type === 'datetime' && def.timeZone) || count.timeZone;
+  };
   const now = context.now ?? (() => new Date());
   /** A period ("This month", "Overdue") as the plain conditions any data source reads, counted from now. */
   const periods = (period: FilterPeriod): ResolvedFilter[] => {
     const { from, to } = periodDays(period.is, now(), count);
-    return daysFilter(period.field, from, to, page.fields[period.field]?.type === 'datetime' ? 'datetime' : 'date', count.timeZone);
+    return daysFilter(period.field, from, to, page.fields[period.field]?.type === 'datetime' ? 'datetime' : 'date', zoneOfField(period.field));
   };
   /** How a Group By of a date asks for its spans: by the list's week and time zone. */
-  const interval = (key: GroupKey) => (key.interval ? { interval: key.interval, weekStart: count.weekStart, timeZone: count.timeZone } : {});
+  const interval = (key: GroupKey) => (key.interval ? { interval: key.interval, weekStart: count.weekStart, timeZone: zoneOfField(key.field) } : {});
   const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node, periods)];
 
   // ---- the table ---------------------------------------------------------------

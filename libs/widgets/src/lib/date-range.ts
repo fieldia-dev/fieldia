@@ -1,5 +1,6 @@
-import type { Field, FieldNode, Locale, Value } from '@fieldia/core';
+import { clocksSkip, dayIn, fill, instantsAt, wallClock, wallOf, wallText, wallTime, type Field, type FieldNode, type Locale, type Value } from '@fieldia/core';
 import { weekdayHead } from './calendar';
+import { restingText, zoneName, zoneOf } from './date-text';
 import { dateBox } from './date-box';
 import { maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { bounds } from './limits';
@@ -43,23 +44,39 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   const weekday = weekdayHead(lang);
   const weekdayLong = new Intl.DateTimeFormat(lang, { weekday: 'long' });
 
+  // A date and time's days and hours on its zone's clock (the browser's without one).
+  const zone = zoneOf(form, field);
   /** A field's value as the calendar reads it, and the day it falls on. */
   const boxText = (value: Value | undefined) => {
     if (typeof value !== 'string' || !value) return '';
     if (kind === 'date') return value.slice(0, 10);
-    const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? '' : `${dayKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const at = Date.parse(value);
+    return Number.isNaN(at) ? '' : wallText(wallTime(at, zone));
   };
   const dayOf = (value: Value | undefined): Date | null => {
     const text = boxText(value);
     const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(text);
     return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0)) : null;
   };
-  /** A day as the field keeps it: a date, or the day at the hours it had. */
-  const valueOn = (day: Date, was: Value | undefined): string => {
-    if (kind === 'date') return dayKey(day);
+  /** The day at the hours a value had, on the zone's clock. */
+  const wallOn = (day: Date, was: Value | undefined) => {
     const before = dayOf(was);
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), before?.getHours() ?? 0, before?.getMinutes() ?? 0).toISOString();
+    return { year: day.getFullYear(), month: day.getMonth() + 1, day: day.getDate(), hour: before?.getHours() ?? 0, minute: before?.getMinutes() ?? 0 };
+  };
+  /**
+   * A day as the field keeps it: a date, or the day at the hours it had — the first time where the clocks repeat
+   * them that day (its zone's name then shows which); null where they skip them.
+   */
+  const valueOn = (day: Date, was: Value | undefined): string | null => {
+    if (kind === 'date') return dayKey(day);
+    const at = instantsAt(wallOn(day, was), zone)[0];
+    return at === undefined ? null : new Date(at).toISOString();
+  };
+  /** Why a day cannot be taken at the hours a value had: the clocks skip them there that day. */
+  const skipped = (day: Date, was: Value | undefined, label: string) => {
+    const wall = wallOn(day, was);
+    const skip = clocksSkip(wall, zone);
+    return fill(words.timeSkipped, { label, time: wallClock(wall), day: restingText(dayKey(day), 'date', locale), zone: zone ? zoneName(Date.now(), zone, locale, 'longGeneric') : '', from: skip ? wallClock(skip.from) : '', to: skip ? wallClock(skip.to) : '' });
   };
 
   const element = make('div', { class: 'fd-range', role: 'group' });
@@ -99,17 +116,26 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
   // Why a day pressed was not picked: said politely under the month, which stays open.
   const note = make('div', { class: 'fd-calendar-note', role: 'status', hidden: '' });
   const calendar = make('div', { id: `${id}-range`, class: 'fd-calendar fd-range-calendar', role: 'dialog', hidden: '' }, make('div', { class: 'fd-calendar-head' }, prev, title, next), grid, note);
-  element.append(make('span', { class: 'fd-range-box' }, from, ...(to ? [make('span', { class: 'fd-range-arrow', 'aria-hidden': 'true' }, '→'), to] : [])), button, calendar, notes);
+  // Each box's zone beside it, where it is on another clock than the browser's.
+  const zoned = (box: { zone?: HTMLElement } | null) => (box?.zone ? [box.zone] : []);
+  element.append(make('span', { class: 'fd-range-box' }, from, ...zoned(fromBox), ...(to ? [make('span', { class: 'fd-range-arrow', 'aria-hidden': 'true' }, '→'), to, ...zoned(toBox)] : [])), button, calendar, notes);
 
+  /** Today, the day it is on the zone's clock: the page's, by the form's clock. */
+  const todayOf = () => {
+    const day = wallOf(zone === form.page.timeZone ? form.today() : dayIn(Date.now(), zone));
+    return day ? new Date(day.year, day.month - 1, day.day) : new Date();
+  };
   let focused = new Date();
   /** The first day picked on the calendar, while the last is still to pick. */
   let starting: Date | null = null;
   let hovered: Date | null = null;
 
-  /** Why a day may not be picked for the start (or the end): its field's limits, in the page's words. */
+  /** Why a day may not be picked for the start (or the end): its field's limits, or its hours skipped that day, in the page's words. */
   const refused = (day: Date, end: boolean) => {
     const values = form.getState().values;
-    return end && toBox && endName ? toBox.refuse(valueOn(day, values[endName])) : fromBox.refuse(valueOn(day, values[name]));
+    const [at, box, label] = end && toBox && endName ? [values[endName], toBox, endLabel] : [values[name], fromBox, field.label];
+    const value = valueOn(day, at);
+    return value === null ? skipped(day, at, label) : box.refuse(value);
   };
   function say(words: string) {
     setText(note, '');
@@ -122,7 +148,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     if (!endName) {
       const why = refused(day, false);
       if (why) return say(why);
-      form.setValue(name, valueOn(day, values[name]));
+      form.setValue(name, valueOn(day, values[name]) as string);
       return close();
     }
     if (!starting) {
@@ -139,8 +165,8 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     if (why) return say(why);
     starting = null;
     // Each as a person's change, so the page's own steps for either run; text left in a box that did not read goes.
-    form.setValue(name, valueOn(first, values[name]));
-    form.setValue(endName, valueOn(last, values[endName]));
+    form.setValue(name, valueOn(first, values[name]) as string);
+    form.setValue(endName, valueOn(last, values[endName]) as string);
     for (const at of [name, endName]) if (form.getState().unread?.[at]) form.setUnread(at, null);
     close();
   }
@@ -152,6 +178,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     const label = monthName.format(focused);
     title.textContent = label;
     calendar.setAttribute('aria-label', label);
+    const today = todayOf();
     const first = new Date(focused.getFullYear(), focused.getMonth(), 1);
     const monday = addDays(first, -((first.getDay() + 6) % 7));
     const head = make('tr', {}, ...Array.from({ length: 7 }, (_, i) => make('th', { scope: 'col', abbr: weekdayLong.format(addDays(monday, i)) }, weekday(addDays(monday, i)))));
@@ -165,7 +192,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
         const edge = sameDay(d, start) || sameDay(d, end);
         if (edge) button.setAttribute('aria-selected', 'true');
         if (start && end && d > start && d < end && !edge) button.classList.add('fd-in-range');
-        if (sameDay(d, new Date())) button.setAttribute('aria-current', 'date');
+        if (sameDay(d, today)) button.setAttribute('aria-current', 'date');
         // Past the limits of the day picked now — the start, then the end: faint, and a press says why.
         if (starting ? refused(d, true) : refused(d, false) && (!endName || refused(d, true))) button.classList.add('fd-off');
         button.addEventListener('click', () => pick(d));
@@ -217,7 +244,7 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
     const why = unread[name]?.message ?? (endName ? unread[endName]?.message : undefined) ?? '';
     setText(note, why);
     setHidden(note, !why);
-    focused = dayOf(form.getState().values[name]) ?? new Date();
+    focused = dayOf(form.getState().values[name]) ?? todayOf();
     calendar.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     draw(true);

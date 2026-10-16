@@ -286,6 +286,14 @@ export const questions: DesignerWords['questions'] = {
   amountDueFrom: 'المبلغ المستحق من',
   propertyColumns: 'الأعمدة',
   canAddProperty: 'يمكن للناس إضافة خاصية',
+  // ---- ساعة التاريخ والوقت، ومواعيد الحجز
+  timeZone: 'المنطقة الزمنية',
+  pageZone: 'منطقة الصفحة',
+  schedule: 'الجدول',
+  slotLength: 'دقائق الحجز الواحد',
+  slotsBetween: 'دقائق تُترك بعد كل حجز',
+  bookingEndsIn: 'نهايته في',
+  askedAgainWhen: 'يُسأل من جديد حين يتغيّر',
   // ---- code
   codeLanguage: 'اللغة',
   plainText: 'نص عادي',

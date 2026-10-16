@@ -11,6 +11,8 @@
  * copying brings along, are never part of what is read.
  */
 
+import { clocksSkip, instantsAt, wallClock, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './zones';
+
 /** Invisible direction marks: LRM, RLM, ALM, the embeddings and overrides, the isolates, and a byte-order mark. */
 const MARKS = /[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g;
 const MARKS_AT_ENDS = /^[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]+|[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]+$/g;
@@ -626,7 +628,8 @@ export type DateProblem = 'unfinished' | 'noSuchMonth' | 'yearDigits' | 'time' |
 export type DateRead =
   /**
    * Read; `timeLeftOut`, the time (HH:MM, here) an instant had, where a day alone is kept: said, never dropped in
-   * silence. `at`, the moment a date and time written with its offset from UTC is (an instant), in milliseconds.
+   * silence. `at`, in milliseconds, the instant a date and time written with its own zone or its offset from UTC is:
+   * its time on the clock of the zone it is read in may not tell it apart (the hour the clocks repeat).
    */
   | { ok: true; value: string | null; timeLeftOut?: string; at?: number }
   /** A date and time the clocks skip where it is read (going forward for summer time): they go from `from` to `to`. */
@@ -642,67 +645,24 @@ export type DateRead =
 
 const daysIn = (year: number, month: number) => [31, year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 const pad2 = (n: number) => String(n).padStart(2, '0');
-/** A moment as the local day and time it is, as the readers give a date and time: yyyy-mm-ddTHH:MM. */
-const localOf = (d: Date) => `${String(d.getFullYear()).padStart(4, '0')}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-
 // ---------------------------------------------------------------------------
-// Wall clocks and their zones
+// Wall clocks and their zones: zones.ts's, the one set every reader and writer counts by.
 
-const MINUTE = 60000;
-const DAY = 86400000;
-const wallFormats = new Map<string, Intl.DateTimeFormat>();
-
-/**
- * A moment as the wall clock reads it in `zone` — a time zone's name, "Africa/Cairo" — or where the computer is when
- * left out: yyyy-mm-ddTHH:MM.
- */
-export function wallClock(at: number, zone?: string): string {
-  if (!zone) return localOf(new Date(at));
-  let format = wallFormats.get(zone);
-  if (!format) {
-    format = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', numberingSystem: 'latn' });
-    wallFormats.set(zone, format);
-  }
-  const part = (type: string, parts: Intl.DateTimeFormatPart[]) => parts.find((p) => p.type === type)?.value ?? '00';
-  const parts = format.formatToParts(new Date(at));
-  return `${part('year', parts).padStart(4, '0')}-${part('month', parts)}-${part('day', parts)}T${part('hour', parts)}:${part('minute', parts)}`;
-}
-
-/** A wall clock's reading (yyyy-mm-ddTHH:MM) as if it were UTC, in milliseconds. */
-const asUtc = (local: string) => Date.UTC(Number(local.slice(0, 4)), Number(local.slice(5, 7)) - 1, Number(local.slice(8, 10)), Number(local.slice(11, 13)), Number(local.slice(14, 16)));
-/** How many minutes a wall clock in `zone` is ahead of UTC at a moment. */
-const offsetAt = (at: number, zone?: string) => (asUtc(wallClock(at, zone)) - Math.floor(at / MINUTE) * MINUTE) / MINUTE;
+/** A moment as the wall clock reads it in `zone` (a time zone's name; where the computer is when left out): yyyy-mm-ddTHH:MM. */
+const wallAt = (at: number, zone?: string) => wallText(wallTime(at, zone));
 /** An offset from UTC as people write it after a time: +02:00, -05:00. */
 const offsetText = (minutes: number) => `${minutes < 0 ? '-' : '+'}${pad2(Math.floor(Math.abs(minutes) / 60))}:${pad2(Math.abs(minutes) % 60)}`;
 
-/**
- * The moments a wall clock reads `local` (yyyy-mm-ddTHH:MM) in `zone` (where the computer is when left out), earliest
- * first: one; none where the clocks skip it, going forward for summer time; two where they pass it twice, going back.
- */
-export function momentsOf(local: string, zone?: string): number[] {
-  const base = asUtc(local);
-  // Every offset the zone has a day round it: no change of its clocks is further from a time it moves.
-  const offsets = new Set([offsetAt(base - DAY, zone), offsetAt(base, zone), offsetAt(base + DAY, zone)]);
-  return [...offsets].map((offset) => base - offset * MINUTE).filter((at) => wallClock(at, zone) === local).sort((a, b) => a - b);
-}
-
 /** Why a date and time typed (yyyy-mm-ddTHH:MM) is not one moment in `zone`, or null when it is: skipped or passed twice. */
 function clocksMove(local: string, zone?: string): DateRead | null {
-  const moments = momentsOf(local, zone);
+  const wall = wallOf(local) as WallTime;
+  const moments = instantsAt(wall, zone);
   const [date, time] = [local.slice(0, 10), local.slice(11)];
-  if (moments.length === 2) return { ok: false, problem: 'repeatedTime', date, time, offsets: [offsetText(offsetAt(moments[0], zone)), offsetText(offsetAt(moments[1], zone))] };
+  if (moments.length === 2) return { ok: false, problem: 'repeatedTime', date, time, offsets: [offsetText(zoneOffset(moments[0], zone)), offsetText(zoneOffset(moments[1], zone))] };
   if (moments.length) return null;
-  // Skipped: the clocks moved forward across it. The moment they moved, found to the minute; they read `from` just
-  // before it on the old offset, and `to` from it on.
-  const base = asUtc(local);
-  const before = offsetAt(base - DAY, zone);
-  let [low, high] = [base - DAY, base + DAY];
-  while (high - low > MINUTE) {
-    const mid = Math.floor((low + high) / 2 / MINUTE) * MINUTE;
-    if (offsetAt(mid, zone) === before) low = mid;
-    else high = mid;
-  }
-  return { ok: false, problem: 'skippedTime', date, time, from: new Date(high + before * MINUTE).toISOString().slice(11, 16), to: wallClock(high, zone).slice(11) };
+  // Skipped: the clocks moved forward across it, reading `from` just before they moved and `to` from then on.
+  const skip = clocksSkip(wall, zone);
+  return { ok: false, problem: 'skippedTime', date, time, from: skip ? wallClock(skip.from) : time, to: skip ? wallClock(skip.to) : time };
 }
 
 /** An instant as a server or a spreadsheet writes one, with its zone: 2026-10-15T14:30:00Z, 2026-10-15T16:30:00.000+02:00. */
@@ -790,7 +750,8 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
     const offset = /^z$/i.test(zone) ? 'Z' : zone.length === 3 ? `${zone}:00` : `${zone.slice(0, 3)}:${zone.slice(-2)}`;
     const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:00${offset}`).getTime();
     if (Number.isNaN(at)) return { ok: false, problem: 'unfinished' };
-    const local = wallClock(at, options.zone);
+    // On the clock of the zone it is read in (the computer's own without one): the instant itself said too.
+    const local = wallAt(at, options.zone);
     return options.time ? { ok: true, value: local, at } : { ok: true, value: local.slice(0, 10), timeLeftOut: local.slice(11) };
   }
   if (options.time) {
@@ -803,8 +764,9 @@ export function readDate(text: string, options: { order?: DateOrder; time?: bool
       if (!read.ok || read.value === null) return read;
       const offset = (Number(hours) * 60 + Number(minutes)) * (sign === '+' ? 1 : -1);
       if (Number(hours) > 14 || Number(minutes) > 59) return { ok: false, problem: 'time' };
-      const at = asUtc(read.value) - offset * MINUTE;
-      return { ok: true, value: wallClock(at, options.zone), at };
+      const wall = wallOf(read.value) as WallTime;
+      const at = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute) - offset * 60000;
+      return { ok: true, value: wallAt(at, options.zone), at };
     }
   }
   const read = readWritten(t, options);

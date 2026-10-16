@@ -90,8 +90,10 @@ function groupFilter(context: GroupContext, key: GroupKey, group: Group): Resolv
   const { field } = key;
   if (group.value === null) return [{ field, op: 'notset', value: null }];
   if (!key.interval || !startsSpan(group.value, key, context.count)) return [{ field, op: '=', value: group.value }];
-  const kind = context.page.fields[field].type === 'datetime' ? 'datetime' : 'date';
-  return daysFilter(field, group.value as string, spanEnd(group.value as string, key.interval), kind, context.count.timeZone);
+  const def = context.page.fields[field];
+  // A date and time's days in its own zone where it names one, else the list's.
+  const zone = (def.type === 'datetime' && def.timeZone) || context.count.timeZone;
+  return daysFilter(field, group.value as string, spanEnd(group.value as string, key.interval), def.type === 'datetime' ? 'datetime' : 'date', zone);
 }
 
 /** Take away every row under a group: its records, its groups and theirs. */

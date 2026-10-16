@@ -69,6 +69,15 @@ export interface DataSource {
    */
   upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>;
   /**
+   * The times free to book, for a date and time drawn as booking slots
+   * (`"widget": "slots"`): each day asked — the days of a month, in the
+   * field's time zone — with its state (open, full, closed, a holiday) and
+   * the times a booking may start on it; asked again for the day of a time
+   * picked, so a time someone else took meanwhile is said, never booked.
+   * Without it, such a field is the plain date and time box.
+   */
+  slots?(request: SlotsRequest): Promise<SlotsResult>;
+  /**
    * Change many records at once, the same value in each field given: a
    * list's bulk edit, of the rows ticked or of every record the search
    * finds. Answer with those not changed and why; every other one is taken
@@ -605,4 +614,45 @@ export function saveProblemOf(error: unknown): SaveProblem {
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof TypeError && /fetch|network|load failed/i.test(message)) return { kind: 'network', message };
   return { kind: 'other', message };
+}
+
+/** What a booking's free times are asked with: the days, the zone they are in, and what the page knows of the booking. */
+export interface SlotsRequest {
+  /** The page's model, for a record page; empty for a responses page. */
+  model: string;
+  /** The date and time field booked. */
+  field: string;
+  /** The record booked, so its own booking counts as free for it; null for a new one. */
+  recordId: RecordId | null;
+  /** The schedule the field's node names (`options.schedule`): a doctor's, a showroom's. The field's name unless it names one. */
+  schedule: string;
+  /** The first and the last day asked, both included, as 2026-10-01: days in `timeZone`. */
+  from: string;
+  to: string;
+  /** The zone the days are in, by its IANA name: the field's, its page's, or the browser's. */
+  timeZone: string;
+  /** The minutes a booking lasts, and those kept free between two, as the page says (`options.length`, `options.between`). */
+  length?: number;
+  between?: number;
+  /** Every value of the form: the doctor, the service, the car to drive. */
+  values: Values;
+}
+
+/** What a day is for booking: times free on it, all taken, not open, or a holiday. */
+export type SlotDayState = 'open' | 'full' | 'closed' | 'holiday';
+
+/** One day of a booking's: its state and the times a booking may start on it. */
+export interface SlotDay {
+  state: SlotDayState;
+  /** The times free, as instants (ISO 8601, in UTC or with their offset: 2026-10-15T09:30:00+03:00), earliest first. */
+  free?: string[];
+  /** Words for the day, in the person's language: a holiday's name, why it is closed. */
+  note?: string;
+}
+
+/** The days asked, each by its date (2026-10-15): a day left out is closed. */
+export interface SlotsResult {
+  days: Record<string, SlotDay>;
+  /** The minutes a booking lasts, when the source knows better than the page: the service's own length. */
+  length?: number;
 }

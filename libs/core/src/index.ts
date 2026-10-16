@@ -1,4 +1,6 @@
 export * from './runtime';
+// A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
+export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
 export {
   FieldSchema,
   FieldsSchema,
@@ -11,6 +13,7 @@ export {
   MoneyLookSchema,
   ShrinkSchema,
   PERIODS,
+  TimeZoneSchema,
 } from './lib/format/field';
 export { ModifierSchema, RolesSchema, CellRulesSchema, ToneWhenSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema, ListCellSchema, ListCalendarSchema, FilterPeriodSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
@@ -19,6 +22,7 @@ export { validatePage } from './lib/format/validate';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
 export { PagePhoneSchema, PhoneOptionsSchema } from './lib/format/phone';
+export { SlotsOptionsSchema } from './lib/format/slots-options';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.
 export { AUTOFILL, AUTOFILL_CONTACT, AUTOFILL_NAMES, autofillProblem, autofillPurpose } from './lib/format/autofill';

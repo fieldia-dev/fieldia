@@ -648,7 +648,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 1.5 more, to 475.9.
 // The input rules, the lists' totals and bulk work, and the phone joined: 500.16 + 1.50, to 501.7 until the release
 // measures it.
-const BUDGET_KB = 501.7;
+// A page's time zone (0.24): its clock read with Intl (zones.ts in core: a zone's time, its day, the instants a time on
+// it is, the change that skips one, 2.0), its zone written into its date and time fields (0.4), today on its clock,
+// its name checked, and every reader and writer of a date and time on it — a box, a cell, a pasted cell, a filter, a
+// list's words: a time the clocks repeat or skip said, a zone's name read back (date-text, 2.5), their English words —
+// what every page that names a zone draws with, 6.2 of it. Booking slots (0.24): the data source's slots, the form's
+// findSlots, the widget's checks, its part's name and its English words, 2.1 (the memory source's schedules are
+// scheduleSlots, outside this script). A cell's date and time written as the box writes it, the instant it is rather than
+// the clock it was written with, 0.3 less. 474.29 measured before, 482.29 after — 8.0 more, to 482.3.
+// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: 501.66 + 8.00, to
+// 509.7 until the release measures it.
+const BUDGET_KB = 509.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -790,7 +800,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 154.16 after — 0.5 more, to 154.2.
 // The input rules, the lists' totals and bulk work, and the phone joined (listed with the raw budget above): 162.64 +
 // 0.54, to 163.2 until the release measures it.
-const GZIP_BUDGET_KB = 163.2;
+// A page's time zone, its clock read in every box, cell, filter and list of a date and time, a time the clocks skip or
+// repeat said (about 2.1), and booking slots' data source member, form call, checks and words (about 0.7), both 0.24
+// (listed with the raw budget above): 153.62 measured before, 156.38 after — 2.8 more, to 156.4.
+// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined (listed with the raw
+// budget above): 163.18 + 2.76, to 166.0 until the release measures it.
+const GZIP_BUDGET_KB = 166.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -895,7 +910,14 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // The input rules' sentences, the lists' totals' and bulk work's words and the phone's joined: Arabic's 51.16 + 1.15
 // and 9.18 + 0.21, German's 21.82 + 0.57 and 7.87 + 0.17, French's 22.57 + 0.61 and 7.90 + 0.18, until the release measures
 // them.
-const ADD_ON_BUDGET_KB = { ar: [52.4, 9.4], de: [22.4, 8.1], fr: [23.2, 8.1] };
+// A date and time on its zone's clock and booking slots (0.24) — a time the clocks skip or repeat, a zone's name another
+// day's, and the slots' 19 (finding, failed, Try again, a day's state, its times, a time checked or taken, the zone) —
+// 22 in each: Arabic's to 47.6 and 8.7, German's to 20.2 and 7.5, French's to 20.9 and 7.5 (as measured 47.51 and
+// 8.62, 20.16 and 7.41, 20.86 and 7.43).
+// The input rules' sentences, the lists' totals' and bulk work's words, the phone's, and the time zones' and slots'
+// joined: Arabic's 52.31 + 2.52 and 9.39 + 0.39, German's 22.39 + 0.98 and 8.04 + 0.33, French's 23.18 + 1.05 and 8.08 +
+// 0.34, until the release measures them.
+const ADD_ON_BUDGET_KB = { ar: [54.9, 9.8], de: [23.4, 8.4], fr: [24.3, 8.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1041,7 +1063,16 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The input rules, the lists' totals and bulk work, and the phone joined: the list part 72.13 + 0.20 and 23.69 + 0.06,
 // to 72.4 and 23.8, the phone part as its lane measured it, the others as the input rules left them, until the release
 // measures it.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [72.4, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3], phone: [34.7, 15.2] };
+// A date and time on its zone's clock (0.24): the box's zone beside it and its letters let through, its calendar's and a
+// range's days, today and hours on that clock, and a day whose time the clocks skip said (date 21.6, 8.2, as measured
+// 21.53 and 8.12: 2.2 and 1.0 more). Booking slots (0.24), a part of their own — the month shaded by how it is booked,
+// the day's times as chips, the arrows across both, a time taken meanwhile said, and their sheet (slots 14.7, 5.6, as
+// measured 14.64 and 5.58) — loaded with the date part, whose box they are without the data source's slots. In the
+// date part they would have added 14.6 and 5.6 to every page with a date; on their own, a booking page loads both.
+// The input rules, the lists' totals and bulk work, the phone, and the time zones and slots joined: the date part
+// 21.53 + 0.18 and 8.12 + 0.08, to 21.8 and 8.3, the slots part as its lane measured it, the others as left above, until
+// the release measures it.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [21.8, 8.3], list: [72.4, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3], phone: [34.7, 15.2], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1058,10 +1089,14 @@ const PART_GIVES = {
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
+  slots: ['slotsWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
+// The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
+// source's slots.
+const PART_BESIDE = { slots: ['date'] };
 const partSizes = [];
 for (const part of PARTS) {
   const file = partFiles[part];
@@ -1075,7 +1110,8 @@ for (const part of PARTS) {
   const partGzipped = gzipSync(partCode, { level: 9 }).length;
   if (partBytes > raw * 1024) throw new Error(`${name} is ${(partBytes / 1024).toFixed(2)} KB, over its ${raw} KB budget`);
   if (partGzipped > gzip * 1024) throw new Error(`${name} is ${(partGzipped / 1024).toFixed(1)} KB gzipped, over its ${gzip} KB budget`);
-  for (const order of [[OUT, file], [file, OUT], [OUT, file, file]]) {
+  const beside = (PART_BESIDE[part] ?? []).map((other) => partFiles[other]);
+  for (const order of [[OUT, ...beside, file], [file, ...beside, OUT], [OUT, file, ...beside, file]]) {
     const { Fieldia: withIt, warnings } = runTogether(order);
     const loaded = order.map((f) => f.replace(BUNDLE + '/', '')).join(', then ');
     const gives = await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, withIt ? { Fieldia: withIt } : {});
@@ -1121,7 +1157,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
  * part, and for each part the first time a page uses one, from beside itself — a list's screen, a theme, a customer's
  * statusbar and photo, a work item's head, text and path picker for its bug, the filter bar for its backlog, a date's
- * box, a table of lines, the survey kinds — and the page is drawn whole once they have come.
+ * box, a table of lines, the survey kinds, a booking's slots — and the page is drawn whole once they have come.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -1225,6 +1261,17 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, phone, quiet, survey, text, themes' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
   survey.destroy();
   gone('survey');
+  // A test drive booked from the times free: the slots part, with the date part beside it, the page drawn once both
+  // came — nothing of it before — and the month asked of the data source's slots.
+  const asked = [];
+  const slots = (request) => (asked.push(request), Promise.resolve({ days: { [request.from]: { state: 'open', free: [] } } }));
+  const drive = inPage.mountViewer(host, { page: read('test-drive.page.json'), dataSource: inPage.createMemoryDataSource({ slots }) });
+  if (host.querySelector('.fd-field') || drive.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a test drive drew before its slots part came');
+  await drive.drawn;
+  await new Promise((done) => dom.window.setTimeout(done, 0));
+  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, slots, survey, text, themes' || !host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error(`in a page, booking slots are not drawn from their part (${loaded()})`);
+  drive.destroy();
+  gone('drive');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', the themes' and the quiet
   // look's before the pickers', the head's and the text's, the survey kinds' own looks last.
@@ -1234,8 +1281,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const ranks = ranked.map((style) => Number(style.getAttribute('data-fd-rank')));
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-phone-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen and its phones; a theme the app gives, worn as it came; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a form's date box; an order's table of lines; a survey's matrix — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen and its phones; a theme the app gives, worn as it came; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a form's date box; an order's table of lines; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
 }

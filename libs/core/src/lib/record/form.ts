@@ -4,9 +4,10 @@ import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, M
 import type { Page } from '../format/page';
 import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
+import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
-import { localDay } from '../expression/functions';
+import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
 import { checkInput } from './inputs';
 import { compileComputed } from './compute';
@@ -31,6 +32,7 @@ import {
   type SaveConflict,
   type SaveProblem,
   type BotReport,
+  type SlotsResult,
   type UploadFile,
 } from './data-source';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -537,6 +539,16 @@ export interface Form {
    * travels inside the record as base64, as it always has.
    */
   canUpload(): boolean;
+  /** Today, as 2026-10-15, on the clock of the page's time zone — the browser's own where it names none — by the form's clock (`now`). */
+  today(): string;
+  /** Whether a date and time drawn as booking slots can ask for its free times: the data source has `slots`. */
+  canFindSlots(): boolean;
+  /**
+   * The free times of a date and time drawn as booking slots, asked of the data source's `slots` for the days `from`
+   * to `to` — in the field's time zone: its own, its page's, or the browser's — with the record, its values and the
+   * zone filled in. Rejects where the source has no `slots`.
+   */
+  findSlots(field: string, ask: { from: string; to: string; schedule?: string; length?: number; between?: number }): Promise<SlotsResult>;
   /**
    * Store files picked for a file or picture field — or a field on a table's
    * line (`how.line`) — through the data source's `upload`, each as soon as
@@ -700,7 +712,8 @@ interface Outer {
  * its ways out go through that one's check.
  */
 function innerForm(options: FormOptions, within: string[], place?: Place, outer?: Outer): InnerForm {
-  const { page } = options;
+  // Its time zone written into each date and time field naming none, for whatever reads one from its field alone.
+  const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
   const index = indexLayout(page.layout);
@@ -752,7 +765,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
-  const today = () => localDay(options.now?.() ?? new Date());
+  /** Today, on the clock of the page's time zone (the browser's own when it names none). */
+  const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
   const clock = () => (options.now?.() ?? new Date()).getTime();
   /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
   let bot = { honeypot: false, captcha: null as string | null, since: clock() };
@@ -2632,6 +2646,26 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     save: () => track(save()),
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
+    today,
+    canFindSlots: () => typeof options.dataSource?.slots === 'function',
+    findSlots(field, ask) {
+      const source = options.dataSource;
+      if (!source?.slots) return Promise.reject(new Error('The data source has no slots()'));
+      const def = page.fields[field];
+      const { schedule = field, length, between, from, to } = ask;
+      return source.slots({
+        model: page.data.kind === 'record' ? page.data.model : '',
+        field,
+        recordId: state.recordId,
+        schedule,
+        from,
+        to,
+        timeZone: (def?.type === 'datetime' && def.timeZone) || page.timeZone || ownZone(),
+        ...(length ? { length } : {}),
+        ...(between ? { between } : {}),
+        values: structuredCopy(state.values as Values),
+      });
+    },
     upload: (field, files, how = {}) => uploads.start(field, files, how),
     uploading: (field) => state.uploads.filter((upload) => upload.field === field && !upload.line),
     cancelUpload(id) {
@@ -3019,7 +3053,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // A record of no model of its own: its links search and its lists load, but it never loads, saves, sends or recalculates alone.
       const made = innerForm(
         {
-          page: { ...inner, data: { kind: 'responses' } },
+          // In the record's time zone, unless it names its own.
+          page: { ...inner, data: { kind: 'responses' }, ...(inner.timeZone || !page.timeZone ? {} : { timeZone: page.timeZone }) },
           dataSource: options.dataSource,
           values: isRecord(given) ? given : {},
           onAction: options.onAction,

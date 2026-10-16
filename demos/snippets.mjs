@@ -440,6 +440,66 @@ export function uploadAddress(fileName) {
 }
 
 /**
+ * A test drive booked from the times free (the test-drive demo): the page's JSON — its time zone, a date and time drawn
+ * as slots — the demo's own script, the memory source answering from the showroom's schedule, and the slots() an app
+ * gives instead, asking its own server.
+ */
+export function slotsSnippets(page, params) {
+  const name = page?.id ?? 'test-drive';
+  const look = looks(params);
+  const js = `import { createMemoryDataSource } from '@fieldia/core';
+import { mountViewer } from '@fieldia/viewer';
+import page from './${name}.page.json';
+
+// The demo's source: the memory source, answering slots() from the showroom's schedule —
+// its hours on Berlin's clock, a drive 45 minutes long with 15 kept free after it, a staff
+// day closed, and the bookings it already has (each car's own).
+const weekday = [['09:00', '13:00'], ['14:00', '18:00']];
+const dataSource = createMemoryDataSource({
+  records: {
+    'showroom.car': { 1: { name: 'City hatchback, electric' }, 2: { name: 'Family estate, hybrid' }, 3: { name: 'Compact SUV' } },
+    'drive.booking': {},
+  },
+  schedules: {
+    showroom: {
+      timeZone: 'Europe/Berlin',
+      hours: { 1: weekday, 2: weekday, 3: weekday, 4: weekday, 5: weekday, 6: [['10:00', '14:00']] },
+      length: 45,
+      between: 15,
+      holidays: { '2026-12-25': 'Christmas Day' },
+      bookings: { model: 'drive.booking', field: 'start', endField: 'stop', same: ['car'] },
+    },
+  },
+});
+
+// The page names its zone ("timeZone": "Europe/Berlin"): every time on it is on Berlin's
+// clock, wherever it is booked from, and kept as the instant it is.
+mountViewer(document.getElementById('app'), {
+  page,
+  dataSource,${look.map(([key, value]) => `\n  ${key}: ${value},`).join('')}
+});`;
+  const source = `// Your data source's slots(): the free times of the days asked, from your own server.
+// Asked for a month at a time, again when a field the slots depend on changes (the car),
+// and once more for the day of a time picked — so a time booked meanwhile is said.
+const dataSource = {
+  ...yourDataSource,
+  async slots({ schedule, from, to, timeZone, recordId, values }) {
+    const query = new URLSearchParams({ schedule, from, to, timeZone, car: String(values.car?.id ?? '') });
+    // The record booked: its own time counts as free to it.
+    if (recordId !== null) query.set('booking', String(recordId));
+    const answer = await fetch(\`/api/test-drives/free?\${query}\`);
+    if (!answer.ok) throw new Error(await answer.text());
+    // { days: { '2026-10-19': { state: 'open', free: ['2026-10-19T07:00:00Z', …] },
+    //           '2026-10-20': { state: 'full' }, '2026-10-25': { state: 'closed' },
+    //           '2026-10-26': { state: 'holiday', note: 'Staff training day' } },
+    //   length: 45 }
+    return answer.json();
+  },
+};`;
+  return { json: JSON.stringify(page ?? {}, null, 2), js, source };
+}
+
+/**
  * One record in two tabs (the two-tabs and viewer-role demos): the lead's page JSON, the demo's own script as it runs —
  * one memory data source that keeps versions and says what each person may do, the lead mounted in two tabs, the
  * second saving in Mona's name — and a data source of your own that does the same against your server.

@@ -14,6 +14,8 @@
  * @fieldia/viewer).
  */
 
+import { clocksSkip, dayIn as zoneDay, instantsAt, isTimeZone, wallOf, zoneOffset, type WallTime } from './zones';
+
 /** The periods a list's filter can name, counted from the day the list is looked at. */
 export const DATE_PERIODS = ['today', 'yesterday', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth', 'thisYear', 'last7Days', 'last30Days', 'overdue'] as const;
 export type DatePeriod = (typeof DATE_PERIODS)[number];
@@ -32,7 +34,6 @@ export interface DayCount {
   timeZone?: string;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
 /** A day by its numbers, the month from 1, rolled over as the calendar rolls: month 13 is next January, day 0 the last of the month before. */
 const dayAt = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10);
 const numbersOf = (day: string) => day.split('-').map(Number) as [number, number, number];
@@ -43,54 +44,25 @@ export const addDays = (day: string, n: number): string => {
   return dayAt(y, m, d + n);
 };
 
-const zones = new Map<string, Intl.DateTimeFormat | null>();
-/** The year, month, day, hour, minute and second an instant is in a time zone; null for a zone no browser knows. */
-function wallClock(at: number, timeZone: string): number[] | null {
-  let format = zones.get(timeZone);
-  if (format === undefined) {
-    try {
-      format = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
-    } catch {
-      format = null;
-    }
-    zones.set(timeZone, format);
-  }
-  if (!format) return null;
-  const got: Record<string, number> = {};
-  for (const part of format.formatToParts(at)) if (part.type !== 'literal') got[part.type] = Number(part.value);
-  return [got['year'], got['month'], got['day'], got['hour'] % 24, got['minute'], got['second']];
-}
+/** A zone this browser knows, else none — the computer's own: a source's request may name any. */
+const known = (timeZone?: string) => (timeZone && isTimeZone(timeZone) ? timeZone : undefined);
 
-/** The day an instant falls on, where the time zone says. */
-export function dayIn(at: Date | number, timeZone?: string): string {
-  const time = typeof at === 'number' ? at : at.getTime();
-  const wall = timeZone ? wallClock(time, timeZone) : null;
-  if (wall) return dayAt(wall[0], wall[1], wall[2]);
-  const local = new Date(time);
-  return `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}`;
-}
+/** The day an instant falls on, where the time zone says (zones.ts `dayIn`, the computer's own for a zone it does not know). */
+export const dayIn = (at: Date | number, timeZone?: string): string => zoneDay(at, known(timeZone));
 
 /**
  * A day's first moment where the time zone says, as an instant written as a
  * date and time field keeps one ("2026-10-13T21:00:00.000Z" for 14 October in
- * Cairo): its midnight, or the first moment after it on a day the clocks go
- * forward at midnight.
+ * Cairo): its midnight, the first of two where the clocks go back across it,
+ * or the moment they go forward on a day they skip midnight.
  */
 export function dayStarts(day: string, timeZone?: string): string {
-  const [y, m, d] = numbersOf(day);
-  const wall = Date.UTC(y, m - 1, d);
-  /** How far ahead of UTC the zone's clock is at an instant, in milliseconds. */
-  const ahead = (at: number) => {
-    const clock = timeZone ? wallClock(at, timeZone) : null;
-    return clock ? Date.UTC(clock[0], clock[1] - 1, clock[2], clock[3], clock[4], clock[5]) - Math.floor(at / 1000) * 1000 : null;
-  };
-  const first = ahead(wall);
-  if (first === null) return new Date(y, m - 1, d).toISOString();
-  let at = wall - first;
-  // Across a change of the clocks the zone is a different distance ahead at its midnight: counted again from there.
-  const then = ahead(at) as number;
-  if (then !== first) at = wall - then;
-  return new Date(at).toISOString();
+  const zone = known(timeZone);
+  const midnight = wallOf(day) as WallTime;
+  const [first] = instantsAt(midnight, zone);
+  if (first !== undefined) return new Date(first).toISOString();
+  const skip = clocksSkip(midnight, zone);
+  return new Date(skip ? instantsAt(skip.to, zone)[0] : Date.UTC(midnight.year, midnight.month - 1, midnight.day) - zoneOffset(Date.UTC(midnight.year, midnight.month - 1, midnight.day), zone) * 60000).toISOString();
 }
 
 /** Its day of the week, 0 Sunday to 6 Saturday. */

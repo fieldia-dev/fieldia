@@ -3,13 +3,13 @@ import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
 import { shownNumber } from './duration';
 import { distributionWords } from './distribution';
+import { restingText } from './date-text';
 
 
+/** A date field's day, at the browser's midnight. */
 function localDate(text: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(text);
-  if (!match) return null;
-  const [, y, m, d, hh, mm] = match;
-  return new Date(Number(y), Number(m) - 1, Number(d), Number(hh ?? 0), Number(mm ?? 0));
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
 }
 
 /**
@@ -70,12 +70,10 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       const date = localDate(String(value));
       return date ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date) : String(value);
     }
-    case 'datetime': {
-      const date = localDate(String(value));
-      return date
-        ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }).format(date)
-        : String(value);
-    }
+    case 'datetime':
+      // The instant it is, as its box shows it at rest: on its zone's clock, its name beside it where that is not the
+      // browser's — the browser's own clock where nothing names one; never the clock it was written with (12:30Z).
+      return restingText(String(value), 'datetime', locale, def.timeZone);
     case 'html':
       return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     case 'binary':

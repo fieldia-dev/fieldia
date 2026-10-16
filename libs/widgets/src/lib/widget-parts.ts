@@ -10,6 +10,7 @@ import type * as FilesModule from './files-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
+import type * as SlotsModule from './slots-part';
 import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -30,6 +31,8 @@ export type FilesPart = typeof FilesModule;
 export type SurveyPart = typeof SurveyModule;
 /** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
 export type PhonePart = typeof PhoneModule;
+/** The slots part: a booking's time picked from the times free, on a month shaded by how its days are booked. */
+export type SlotsPart = typeof SlotsModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -54,6 +57,11 @@ export const filesPart: Part<FilesPart> = lazyPart('files', () => import('./file
 export const shrinkPhoto = (file: File, options?: ShrinkOptions, doc?: Document): Promise<File> => filesPart.load().then((part) => part.shrinkPhoto(file, options, doc));
 /** The survey kinds, loaded the first time a page shows a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address or a progress bar. */
 export const surveyPart: Part<SurveyPart> = lazyPart('survey', () => import('./survey-part'));
+/**
+ * Booking slots, loaded the first time a page shows a date and time drawn as slots — with the date part, whose box it
+ * is where the data source has no `slots`: in when both are.
+ */
+export const slotsPart: Part<SlotsPart> = lazyPart('slots', () => Promise.all([import('./slots-part'), datePart.load()]).then(([module]) => module));
 
 /**
  * A phone number read the world over, loaded the first time a page shows a phone field it reads so (its page's

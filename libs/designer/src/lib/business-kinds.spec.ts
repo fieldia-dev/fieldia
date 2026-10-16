@@ -29,7 +29,8 @@ describe('the business kinds', () => {
     expect(kinds('allocated_hours')).not.toContain('priority');
     expect(kinds('priority')).toEqual(expect.arrayContaining(['priority', 'state-dot']));
     expect(kinds('request_date_from')).toEqual(['date', 'date-range']);
-    expect(kinds('timer_start')).toEqual(['date-time', 'timer', 'date-range']);
+    // A date and time from the model may be booked from the times free, too.
+    expect(kinds('timer_start')).toEqual(['date-time', 'timer', 'date-range', 'booking-slots']);
     expect(kinds('tax_totals')).toEqual(['address', 'code', 'vscode', 'distribution', 'tax-totals', 'payments']);
   });
 

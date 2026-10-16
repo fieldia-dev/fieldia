@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { PageEventsSchema, type PageEvents } from './actions';
-import { FieldsSchema, type Fields } from './field';
+import { FieldsSchema, TimeZoneSchema, type Fields } from './field';
 import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
@@ -136,6 +136,14 @@ export interface Page {
    * says otherwise in its `options`. Without it (and without those options), a phone field is a text box, as before.
    */
   phone?: PagePhone;
+  /**
+   * The time zone the page's dates and times are in, by its IANA name: a branch's, a clinic's ("Africa/Cairo"). A date
+   * and time is then shown and typed on that zone's clock — its short name beside it where the browser's zone is
+   * another ("14:30 EEST") — and kept as the instant it is. Today is that zone's day: a date's default "today", its
+   * earliest and latest counted from today, `today()`, a booking's days. A date and time field may name its own
+   * (`timeZone`). Left out, the browser's own zone, as before.
+   */
+  timeZone?: string;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -204,6 +212,7 @@ export const PageSchema = z
       .meta({ id: 'BotCheck' })
       .optional(),
     phone: PagePhoneSchema.optional(),
+    timeZone: TimeZoneSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',
