@@ -8,6 +8,8 @@ import { INPUT_MODES, type InputMode } from './autofill-group';
 import { AddressSearchOptionsSchema } from './address-search';
 import { pickerOptionIssues } from './picker-options';
 import { SECTION_TRACK } from './section-checks';
+import { DATE_PERIODS, type DatePeriod } from '../record/periods';
+import type { TotalKind } from '../record/data-source';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -1006,11 +1008,29 @@ export interface SheetNode {
   footer?: ButtonNode[];
 }
 
-/** A named filter in a list's search bar, such as "Active" or "Big accounts". */
+/**
+ * A period a date, or a date and time, falls in, counted from the day the list
+ * is looked at — so a filter of it is right every day: today, yesterday, this
+ * week or last (a week starting on the page's language's first day), this
+ * month or last, this year, the last 7 or 30 days (today the last of them),
+ * or overdue (any day before today, for a due date). Days are the page's
+ * time zone's.
+ */
+export interface FilterPeriod {
+  field: string;
+  is: DatePeriod;
+}
+
+/**
+ * A named filter in a list's search bar, such as "Active" or "Big accounts":
+ * its conditions, a period ("This month", "Overdue"), or both, which hold
+ * together.
+ */
 export interface ListFilter {
   id: string;
   label: string;
-  filter: FilterItem[];
+  filter?: FilterItem[];
+  period?: FilterPeriod;
 }
 
 /**
@@ -1089,6 +1109,14 @@ export interface ListCell {
   width?: number | `${number}px`;
   /** The side its words keep to: `end` lines up an order's numbers. */
   align?: 'start' | 'end';
+  /**
+   * The column's total, in a row under the list, on each Group By heading and
+   * for the rows ticked: the `sum`, `avg` (average), `min` (lowest) or `max`
+   * (highest) of a number column, or the `count` of records holding a value
+   * in any column — asked of the data source's `totals`, without which no
+   * total shows. An amount is totalled in one currency only.
+   */
+  total?: TotalKind;
   /**
    * The short rule at its header's end, where a theme parts the columns
    * (Fluent's): `false` for none, as a work tracker draws a column the
@@ -1835,7 +1863,7 @@ export const ListCalendarSchema = z
   })
   .meta({ id: 'ListCalendar' });
 
-/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule. */
+/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule, its total. */
 export const ListCellSchema = z
   .strictObject({
     widget: z.string().min(1).optional(),
@@ -1854,6 +1882,7 @@ export const ListCellSchema = z
       ])
       .optional(),
     align: z.enum(['start', 'end']).optional(),
+    total: z.enum(['sum', 'avg', 'min', 'max', 'count']).optional(),
     rule: z
       .union([
         z.literal(false),
@@ -1864,6 +1893,9 @@ export const ListCellSchema = z
   })
   .meta({ id: 'ListCell' });
 
+/** A period a date falls in, from the day the list is looked at: "This month", "Overdue". */
+export const FilterPeriodSchema = z.strictObject({ field: fieldName, is: z.enum(DATE_PERIODS) }).meta({ id: 'FilterPeriod' });
+
 export const ListNodeSchema = z.strictObject({
   type: z.literal('list'),
   id,
@@ -1871,7 +1903,14 @@ export const ListNodeSchema = z.strictObject({
   sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
   pageSize: z.int().min(1).max(500).optional(),
   searchFields: z.array(fieldName).optional(),
-  filters: z.array(z.strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1) })).optional(),
+  filters: z
+    .array(
+      z
+        .strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1).optional(), period: FilterPeriodSchema.optional() })
+        .refine((named) => named.filter !== undefined || named.period !== undefined, { message: 'a filter holds conditions (filter), a period (period) or both' })
+        .meta({ anyOf: [{ required: ['filter'] }, { required: ['period'] }] })
+    )
+    .optional(),
   defaultFilters: z.array(id).optional(),
   groupBy: z.array(fieldName).optional(),
   actions: z.array(ButtonNodeSchema).optional(),

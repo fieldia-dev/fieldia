@@ -74,6 +74,21 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'invoices',
+    name: 'Invoices that add up',
+    category: 'lists',
+    query: 'page=invoices&skin=underline',
+    blurb: 'A list that adds up and filters by time: a total under it, sums on each Group By heading and for the rows ticked, each amount totalled in its own currency; filters of a period — this month, overdue — right every day; and invoices grouped by their month, quarter or week.',
+    howTo: [
+      'The list opens on This year: the total of this year’s invoices is under the Amount column.',
+      'Tick three invoices: a row over the total says “3 selected” and adds up those three.',
+      'Open the menu at the end of the search box and turn on Overdue: the invoices sent and not paid by their due date, counted from today.',
+      'Under Group By, press Month beside Invoice date: a heading for each month, its count and its sum — “October 2026 (4) · EGP 812.5K”.',
+      'Take This year away, then group by City: Dubai’s invoices are in dollars, summed in dollars; the list’s total has none, as no honest sum of pounds and dollars exists.',
+      'Add a custom filter: Invoice date, in the period, Last 7 days. Save it as a favourite: it is the last seven days whenever it is used.',
+    ],
+  },
+  {
     id: 'backlog',
     name: 'Work item in a popup',
     category: 'records',

@@ -173,6 +173,8 @@ export const refusals: DesignerWords['refusals'] = {
   filterLabelNotOffered: (label: string) => `لا يعرض شريط التصفية ${label}: حدده أولًا`,
   leadNeedsChoice: (label) => `الأيقونة قبل الكلمات تأتي من قيمة حقل اختيار، و${q(label)} ليس حقل اختيار`,
   dotNeedsChoice: (label) => `نقطة الحالة لحقل اختيار، و${q(label)} ليس كذلك`,
+  periodNeedsDate: (label) => `الفترة لحقل تاريخ، و${q(label)} لا يحمل تاريخًا`,
+  totalNeedsNumber: (label) => `المجموع والمتوسط والأدنى والأعلى لحقل رقمي، و${q(label)} ليس كذلك. ويمكن لأي عمود أن يعدّ سجلاته`,
   parentNotOwnLink: (label) => `تتداخل الصفوف تحت رابط إلى سجلات القائمة نفسها، و${q(label)} ليس كذلك`,
   notFilterable: (label) => `لا يستطيع شريط التصفية عرض قيم ${q(label)}`,
   chooseHasButtons: 'للقائمة أزرار للصفوف المحددة: أزلها قبل مربع تحديد الصف',

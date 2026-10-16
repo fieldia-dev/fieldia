@@ -628,7 +628,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // words (0.6), a table cell placed for its hint as its box is entered: 480.83 measured before, 489.58 after — 8.8
 // more, to 489.6.
 // The two joined (inputs-fix-names, inputs-fix-boxes): 480.83 + 4.15 + 8.75, to 493.8 until the release measures it.
-const BUDGET_KB = 493.8;
+// Lists that add up and filter by time (Wave 2, lane F): the words of a period, a date's span, a total and its kinds
+// (labels.ts, 25 of them, in English), what both a list and the memory data source count days by — the day an instant
+// falls on and a day's first moment in a time zone, the span a date falls in (core's periods.ts, 1.9) — the memory
+// source's groups by a span and amounts totalled in one currency, a period kept in a facet and counted again, and the
+// viewer's clock handed to a list: 474.29 measured before, 477.70 after — 3.4 more, to 477.8. Where a span ends, a
+// period's days and their conditions, the totals row, a heading's sums and the menu's spans are the list part's.
+// The input rules and the lists' totals joined: 493.73 + 3.41, to 497.2 until the release measures it.
+const BUDGET_KB = 497.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -758,7 +765,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The input rules checked again on 0.23 (listed with the raw budget above): 155.86 measured before, 159.02 after —
 // 3.2 more, to 159.1.
 // The two joined (listed with the raw budget above): 155.86 + 1.38 + 3.16, to 160.4 until the release measures it.
-const GZIP_BUDGET_KB = 160.4;
+// Lists that add up and filter by time (Wave 2, lane F; listed with the raw budget above): 153.62 measured before,
+// 154.91 after — 1.3 more, to 155.0.
+// The input rules and the lists' totals joined (listed with the raw budget above): 160.40 + 1.29, to 161.7 until the
+// release measures it.
+const GZIP_BUDGET_KB = 161.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -847,7 +858,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // clocks skip and one they pass twice, decimal hours, a JSON number not kept as written — and the whole part's digits:
 // measured 46.93 and 8.51 in Arabic, 19.99 and 7.31 in German, 20.62 and 7.31 in French (before: 45.11 and 8.25,
 // 19.22 and 7.09, 19.84 and 7.10), each to 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [47.0, 8.6], de: [20.1, 7.4], fr: [20.7, 7.4] };
+// Lists that add up and filter by time (Wave 2, lane F): a period, a date's span, a total and its kinds, 25 words in
+// each — Arabic's 44.99 and 8.23 measured before, 46.47 and 8.50 after, to 46.5 and 8.6; German's 19.18 and 7.08 to
+// 19.83 and 7.33, to 19.9 and 7.4; French's 19.81 and 7.09 to 20.49 and 7.34, to 20.5 and 7.4.
+// The input rules' sentences and the lists' totals' words joined: Arabic's 46.93 + 1.48 and 8.51 + 0.27, German's
+// 19.99 + 0.65 and 7.31 + 0.25, French's 20.62 + 0.68 and 7.31 + 0.25, until the release measures them.
+const ADD_ON_BUDGET_KB = { ar: [48.5, 8.8], de: [20.7, 7.6], fr: [21.4, 7.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -971,7 +987,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // a slider's, which marks text its number box left unread (survey 35.4, 12.3: 35.35 and 12.23, from 35.06 and 12.13);
 // a links box reading the words typed before it came (text 55.6, 18.6: 55.57 and 18.50, from 54.92 and 18.23).
 // The two joined: each part at the larger of the two lanes' budgets until the release measures it.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [43.0, 12.9], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3] };
+// Lists that add up and filter by time (Wave 2, lane F), in the list part: the totals row under a list, the ticked
+// rows' and a Group By heading's sums, each amount in the one currency its source names (list-totals.ts); a date
+// grouped by its year, quarter, month, week or day, its headings in words and each opened to its span (list-groups.ts);
+// where a span ends, a period's days and the plain conditions for them (list-days.ts); the menu's spans and a person's
+// own period (search-bar.ts, custom-filter.ts) and their rules — 42.62 and 12.75 measured before, 50.80 and 15.80
+// after, to 50.9 and 15.9.
+// The input rules and the lists' totals joined: the list part 42.99 + 8.18 and 12.85 + 3.05, to 51.2 and 16.0, the
+// others as the input rules left them, until the release measures it.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.6, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [19.7, 7.4], list: [51.2, 16.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.2, 8.1], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.4, 12.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

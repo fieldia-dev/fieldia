@@ -264,6 +264,40 @@ In plain words:
   `GroupRequest` and `TotalsRequest` together. That is an additive change
   inside one lane, so it is not declared here.
 
+**Added by lane F (Wave 2)**, each optional, as everything here:
+
+```ts
+type DateInterval = 'day' | 'week' | 'month' | 'quarter' | 'year';
+interface GroupInterval {
+  interval?: DateInterval;   // a date's records by the span they fall in; each group's value the span's first day, "2026-03-01"
+  weekStart?: number;        // with "week": the day a week starts on, 0 Sunday to 6 Saturday (the page's language's)
+  timeZone?: string;         // for a date and time: the IANA zone its days are told in (the page's)
+}
+interface GroupRequest extends GroupInterval { model; field; filter }
+interface TotalsRequest extends GroupInterval {
+  /* …as above… */
+  currencies?: Record<string, string>;   // { amount: 'currency_id' }: totalled within one currency only
+}
+interface TotalsResult { /* …as above… */ currencies?: Record<string, JsonValue> }  // the currency each is in; null over several
+interface TotalsGroup extends Group { totals: Totals; currencies?: Record<string, JsonValue> }
+```
+
+- **Group By a date.** With `interval`, the groups come in time order, those
+  with no date last, each `value` the first day of its span (`spanStart` from
+  `@fieldia/core` counts one as the list does). The page writes the words
+  ("March 2026", "Q1 2026", "Week 12, 2026") and opens a group with `>=` and
+  `<` on its first day and the next span's. A source that leaves `interval`
+  out groups by the value itself, and the page shows those groups as they are.
+- **Money.** An amount named in `currencies` is totalled within one currency:
+  over records in more than one, its sum, average, least and most are null,
+  and `currencies[field]` is null; otherwise it names the currency (a link as
+  `{ id, label }`). A page writes a money total only in a currency it knows —
+  the field's own `currency`, or the one the answer names — so a source that
+  does not fill `currencies` shows no money total, never a wrong one.
+- **Periods** ("This month", "Overdue") reach `list`, `groups` and `totals`
+  as plain conditions: `>=` and `<` on days for a date, on the days' first
+  moments (instants) for a date and time; nothing new for a source.
+
 ## 7. The memory data source
 
 `createMemoryDataSource(options)` implements all of the above. What a
@@ -276,7 +310,8 @@ saves are not checked.
 | `ds.changeElsewhere(model, id, values, { by: 'Mona', at? })` | Changes a stored record as another person on another screen would, so a page opened earlier gets a conflict when it saves. Returns the new version. |
 | `can: { lead: (values, id) => RecordPermissions }` | Adds `can` to each load, list row and save result, and enforces it the way a backend would. A save, delete, archive or copy that is not allowed is refused with `reason`. A change to a read-only or hidden field is refused as a `fields` problem. Values of hidden fields are left out. |
 | `list({ …, allIds: true })` | Returns `allIds` in the list's order. |
-| `totals(request)` | Sum, average, minimum and maximum of the numbers, and a count of the records that hold a value, overall and per `groupBy` group. It does not know about currencies. |
+| `totals(request)` | Sum, average, minimum and maximum of the numbers, and a count of the records that hold a value, overall and per `groupBy` group (by `interval`, for a date). An amount named in `currencies` is totalled within one currency only, the currency told beside it. |
+| `groups({ …, interval })` | A date grouped by the span it falls in: its first day each group's value and label, in time order, nothing last. |
 | `upload(file, request)` | Returns a `data:` link (so a preview needs nothing else), with `fileId` counting up from 1. With `delayMs`, it reports progress in four steps; it obeys `signal` and rejects with `AbortError`. |
 
 ## 8. Not in this contract

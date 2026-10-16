@@ -8681,14 +8681,28 @@
                 "items": {
                   "$ref": "#/$defs/FilterItem"
                 }
+              },
+              "period": {
+                "$ref": "#/$defs/FilterPeriod"
               }
             },
             "required": [
               "id",
-              "label",
-              "filter"
+              "label"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "filter"
+                ]
+              },
+              {
+                "required": [
+                  "period"
+                ]
+              }
+            ]
           }
         },
         "defaultFilters": {
@@ -8870,6 +8884,35 @@
         "type",
         "id",
         "columns"
+      ],
+      "additionalProperties": false
+    },
+    "FilterPeriod": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "is": {
+          "type": "string",
+          "enum": [
+            "today",
+            "yesterday",
+            "thisWeek",
+            "lastWeek",
+            "thisMonth",
+            "lastMonth",
+            "thisYear",
+            "last7Days",
+            "last30Days",
+            "overdue"
+          ]
+        }
+      },
+      "required": [
+        "field",
+        "is"
       ],
       "additionalProperties": false
     },
@@ -9175,6 +9218,16 @@
           "enum": [
             "start",
             "end"
+          ]
+        },
+        "total": {
+          "type": "string",
+          "enum": [
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "count"
           ]
         },
         "rule": {

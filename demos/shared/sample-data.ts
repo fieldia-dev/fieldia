@@ -21,6 +21,7 @@ import kinds from '../../examples/pages/kinds.page.json';
 import layout from '../../examples/pages/layout.page.json';
 import lists from '../../examples/pages/lists.page.json';
 import customers from '../../examples/pages/customers.page.json';
+import invoices from '../../examples/pages/invoices.page.json';
 import order from '../../examples/pages/order.page.json';
 import quickOrder from '../../examples/pages/quick-order.page.json';
 import newCustomer from '../../examples/pages/new-customer.page.json';
@@ -46,7 +47,8 @@ import { wiHistoryPage, wiHistoryRecord } from './wi-history';
 import { CONTAINED_RECORDS, containedPage } from './contained';
 import listingPhotos from '../../examples/pages/listing-photos.page.json';
 import { LISTING, LISTING_STORAGE, listingUpload } from './listing-photos';
-import { calendarDemo } from './calendar';
+import { calendarDemo, demoNow } from './calendar';
+import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 
 /** The example pages every demo can show, by name. */
@@ -55,6 +57,8 @@ export const pages: Record<string, Page> = {
   survey: survey as Page,
   customer: customer as Page,
   customers: customers as Page,
+  // Invoices that add up and filter by time: a total under the list and on each heading, periods, Group By month (shared/invoices.ts).
+  invoices: invoices as Page,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -189,9 +193,12 @@ export function optionsFromQuery(params: URLSearchParams): {
   warnOnLeave?: boolean;
   translate?: (text: string) => string;
   user?: FormUser;
+  now?: () => Date;
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
+    ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
     // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
@@ -367,6 +374,8 @@ export function sampleDataSource() {
       listing: { 1: LISTING },
       // The calendars' appointments and bookings, made round now (shared/calendar.ts).
       ...calendarDemo.records(),
+      // Fifteen months of invoices up to now (shared/invoices.ts).
+      invoice: sampleInvoices(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

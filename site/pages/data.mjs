@@ -19,6 +19,7 @@ interface DataSource {
   submit?(request: SubmitRequest): Promise<SubmitResult>;    // store one response
   list?(request: ListRequest): Promise<ListResult>;          // a page of records, for a list
   groups?(request: GroupRequest): Promise<Group[]>;          // a list's groups and their counts
+  totals?(request: TotalsRequest): Promise<TotalsResult>;    // a list's sums: under it, per group, the rows ticked
   options?(request: OptionsRequest): Promise<Option[]>;      // a selection's choices from the app
   definitions?(request: OptionsRequest): Promise<PropertyDefinition[]>;  // properties a linked record keeps
   saveDefinitions?(request: OptionsRequest & { definitions }): Promise<void>; // one added in place
@@ -41,7 +42,8 @@ interface DataSource {
     <tr><td>${c('create')}</td><td>Someone picks <em>Create “…”</em> in a link field</td><td>Making a record without leaving the page</td></tr>
     <tr><td>${c('submit')}</td><td>Someone sends a responses page</td><td>Surveys, sign-ups</td></tr>
     <tr><td>${c('list')}</td><td>A list opens, is searched, sorted or paged</td><td>Lists of records — see <a href="/lists/#data">lists</a></td></tr>
-    <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
+    <tr><td>${c('groups')}</td><td>A list is grouped by a field, or a date by its month, quarter, week, day or year</td><td>Group By — see <a href="/lists/#totals">lists that add up</a></td></tr>
+    <tr><td>${c('totals')}</td><td>A list totals a column: as it is searched, grouped, and as rows are ticked</td><td>A totals row, sums on each Group By heading, the sum of the rows ticked — see <a href="/lists/#totals">lists that add up</a>; without it, none shows</td></tr>
     <tr><td>${c('definitions')}</td><td>A properties field with ${c('definitionsFrom')} is shown, and again when the link it follows changes</td><td>Properties a linked record defines — see <a href="/fields/#business">business widgets</a></td></tr>
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
@@ -276,6 +278,7 @@ const dataSource = createMemoryDataSource({
 dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
+<p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
 <p>Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(
   'ts',

@@ -4,6 +4,7 @@ import type { JsonValue } from '../format/json';
 import type {
   DataSource,
   Group,
+  GroupInterval,
   GroupRequest,
   ListRequest,
   ListResult,
@@ -35,6 +36,7 @@ import type {
 } from './data-source';
 import { ConflictError, loadedRecord, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
+import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
@@ -341,15 +343,15 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
     async groups(request: GroupRequest): Promise<Group[]> {
       calls.push({ method: 'groups', request });
       await pause();
-      return groupRows(matchingRows(request.model, request.filter), request.field).map(({ rows: _rows, ...group }) => group);
+      return groupRows(matchingRows(request.model, request.filter), request.field, request).map(({ rows: _rows, ...group }) => group);
     },
 
     async totals(request: TotalsRequest): Promise<TotalsResult> {
       calls.push({ method: 'totals', request });
       await pause();
       const rows = matchingRows(request.model, request.filter);
-      const result: TotalsResult = { count: rows.length, totals: totalsOver(rows, request.totals) };
-      if (request.groupBy) result.groups = groupRows(rows, request.groupBy).map(({ rows: under, ...group }) => ({ ...group, totals: totalsOver(under, request.totals) }));
+      const result: TotalsResult = { count: rows.length, ...totalsOver(rows, request) };
+      if (request.groupBy) result.groups = groupRows(rows, request.groupBy, request).map(({ rows: under, ...group }) => ({ ...group, ...totalsOver(under, request) }));
       return result;
     },
 
@@ -493,15 +495,19 @@ function compareValues(a: unknown, b: unknown): { result: number; empty: boolean
   return { result: String(x).localeCompare(String(y)), empty: false };
 }
 
-/** Records under each value of a field: a link's by its record, nothing as its own group, last; the rest by their labels. */
-function groupRows(rows: Values[], field: string): (Group & { rows: Values[] })[] {
+/**
+ * Records under each value of a field: a link's by its record, nothing as its own group, last; the rest by their
+ * labels. With `interval`, a date's by the span it falls in, its first day the group's value and label, in time order.
+ */
+function groupRows(rows: Values[], field: string, by: GroupInterval = {}): (Group & { rows: Values[] })[] {
   const grouped = new Map<string, Group & { rows: Values[] }>();
   for (const values of rows) {
     const raw = values[field] ?? null;
     const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
-    const value = (link ? link.id : raw) as JsonValue;
+    const value = (by.interval ? spanStart(raw, by.interval, by) : link ? link.id : raw) as JsonValue;
     const key = JSON.stringify(value);
-    const group = grouped.get(key) ?? { value, label: link ? link.label : raw === null || raw === '' ? '' : String(raw), count: 0, rows: [] };
+    const label = by.interval ? (value ?? '') : link ? link.label : raw === null || raw === '' ? '' : String(raw);
+    const group = grouped.get(key) ?? { value, label: String(label), count: 0, rows: [] };
     group.count++;
     group.rows.push(values);
     grouped.set(key, group);
@@ -509,11 +515,17 @@ function groupRows(rows: Values[], field: string): (Group & { rows: Values[] })[
   return [...grouped.values()].sort((a, b) => (a.value === null) === (b.value === null) ? a.label.localeCompare(b.label) : a.value === null ? 1 : -1);
 }
 
-/** Each field's totals over these records: of its numbers, and a count of those holding any value. */
-function totalsOver(rows: Values[], asked: Record<string, TotalKind[]>): Totals {
+/**
+ * Each field's totals over these records: of its numbers, and a count of those holding any value. An amount whose
+ * currency each record keeps (`currencies`) is totalled within one currency only: over records in more than one, its
+ * sum, average, least and most are null, and the currency it is in is told beside.
+ */
+function totalsOver(rows: Values[], asked: TotalsRequest): { totals: Totals; currencies?: Record<string, JsonValue> } {
   const totals: Totals = {};
-  for (const [field, kinds] of Object.entries(asked)) {
-    const numbers = rows.map((values) => values[field]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  const currencies: Record<string, JsonValue> = {};
+  for (const [field, kinds] of Object.entries(asked.totals)) {
+    const holding = rows.filter((values) => typeof values[field] === 'number' && Number.isFinite(values[field]));
+    const numbers = holding.map((values) => values[field] as number);
     const sum = numbers.reduce((a, b) => a + b, 0);
     const of: Record<TotalKind, number | null> = {
       sum,
@@ -522,9 +534,20 @@ function totalsOver(rows: Values[], asked: Record<string, TotalKind[]>): Totals 
       max: numbers.length ? numbers.reduce((a, b) => Math.max(a, b)) : null,
       count: rows.filter((values) => !blankValue(values[field])).length,
     };
+    const currencyField = asked.currencies?.[field];
+    if (currencyField) {
+      // A link by its id, a code as it is: the same currency twice is one.
+      const held = new Map(holding.map((values) => {
+        const currency = (values[currencyField] ?? null) as JsonValue;
+        const id = currency !== null && typeof currency === 'object' && !Array.isArray(currency) && 'id' in currency ? currency['id'] : currency;
+        return [JSON.stringify(id), currency];
+      }));
+      currencies[field] = held.size === 1 ? [...held.values()][0] : null;
+      if (held.size > 1) for (const kind of ['sum', 'avg', 'min', 'max'] as const) of[kind] = null;
+    }
     totals[field] = Object.fromEntries(kinds.map((kind) => [kind, of[kind]]));
   }
-  return totals;
+  return asked.currencies ? { totals, currencies } : { totals };
 }
 
 const blankValue = (v: unknown) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0);

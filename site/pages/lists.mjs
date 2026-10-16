@@ -48,12 +48,12 @@ ${code(
     <tr><td>${c('sort')}</td><td>The order the list opens in. A header click puts its column first, then the other way; this order breaks the ties.</td></tr>
     <tr><td>${c('pageSize')}</td><td>Records to a page, 1 to 500; 40 when left out.</td></tr>
     <tr><td>${c('searchFields')}</td><td>The fields typed text is looked for in; the columns when left out.</td></tr>
-    <tr><td>${c('filters')} · ${c('defaultFilters')}</td><td>Named filters for the menu, and the ones the list starts with. A filter compares with values, never with another field.</td></tr>
-    <tr><td>${c('groupBy')}</td><td>The fields the menu offers to group by.</td></tr>
+    <tr><td>${c('filters')} · ${c('defaultFilters')}</td><td>Named filters for the menu, and the ones the list starts with. A filter compares with values, never with another field; or names a ${c('period')} a date falls in, counted from today — see <a href="#totals">lists that add up</a>.</td></tr>
+    <tr><td>${c('groupBy')}</td><td>The fields the menu offers to group by; a date by its year, quarter, month, week or day.</td></tr>
     <tr><td>${c('actions')}</td><td>Buttons for the records chosen. A ${c('confirm')} asks first.</td></tr>
     <tr><td>${c('map')}</td><td>The records on a map too, beside the table or instead of it: see <a href="#map">on a map</a>.</td></tr>
     <tr><td>${c('calendar')}</td><td>The records on a calendar too, by day, week or month or as an agenda, a column for each person or room: see <a href="#calendar">on a calendar</a>.</td></tr>
-    <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters, or in pixels for the whole column (${c('"200px"')}) as a tracker sizes its grid's (words past it end in “…”, a header cut short shows its whole name when pointed at; every column sized, the table keeps them and scrolls sideways in its card when wider), an ${c('align')}, and its header's ${c('rule')} where the theme parts the columns (Fluent's): ${c('false')} for none, as a tracker draws a column people cannot size, or ${c('"42px"')} to set it in from the column's end, before the room a tracker keeps there for a row's tools. See <a href="#backlog">a backlog</a>.</td></tr>
+    <tr><td>${c('cells')}</td><td>Each column's cells, by its field: a ${c('widget')} (${c('dot')}, a state's dot in ${c('options.colours')} or ${c('tones')}), a ${c('lead')} icon from another field's value, a ${c('width')} in characters, or in pixels for the whole column (${c('"200px"')}) as a tracker sizes its grid's (words past it end in “…”, a header cut short shows its whole name when pointed at; every column sized, the table keeps them and scrolls sideways in its card when wider), an ${c('align')}, a ${c('total')} (see <a href="#totals">lists that add up</a>), and its header's ${c('rule')} where the theme parts the columns (Fluent's): ${c('false')} for none, as a tracker draws a column people cannot size, or ${c('"42px"')} to set it in from the column's end, before the room a tracker keeps there for a row's tools. See <a href="#backlog">a backlog</a>.</td></tr>
     <tr><td>${c('choose')}</td><td>${c('false')}: no box to choose a row, and so no buttons for rows chosen.</td></tr>
     <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
@@ -68,16 +68,55 @@ ${code(
   'ts',
   `
 list?(request: { model, fields, filter, sort, offset, limit }): Promise<{ records: { id, values }[]; total: number }>;
-groups?(request: { model, field, filter }): Promise<{ value, label, count }[]>;`
+groups?(request: { model, field, filter, interval?, weekStart?, timeZone? }): Promise<{ value, label, count }[]>;
+totals?(request: { model, filter, totals, groupBy?, interval?, currencies? }): Promise<{ count, totals, groups?, currencies? }>;`
 )}
 <p>${c('filter')} arrives resolved, as a link's search filter does: ${c('{ any: [...] }')} is an OR, ${c('{ all: [...] }')} an AND. ${c('sort')} is ${c('[{ field, desc? }]')}; for a map's Nearest first, ${c('[{ field, near: { lat, lng, longitude? } }]')}: the records nearest that place first, those with no place last (the field a GeoJSON point, or a latitude whose pair ${c('longitude')} names). A source that cannot sort by distance leaves its order as it is. For ${c('groups')}, a group's ${c('value')} is what records share (a linked record's id), ${c('null')} for the records with none; the list asks for each group's records with that value as one more condition. ${c('createMemoryDataSource()')} does both, empty values last whichever way a list is sorted.</p>
+
+<h2 id="totals">Lists that add up, and filter by time</h2>
+<p>A column can add up: its ${c('cells')} entry says how — ${c('"sum"')}, ${c('"avg"')} (the average), ${c('"min"')} (the lowest), ${c('"max"')} (the highest) of a number, or the ${c('"count"')} of records holding a value in any column. A named filter can be a period a date falls in, counted from the day the list is looked at, so it is right every day. And a date in ${c('groupBy')} groups by its year, quarter, month, week or day.</p>
+${code(
+  'json',
+  `
+{
+  "type": "list", "id": "invoices-list",
+  "columns": ["name", "partner_id", "city", "invoice_date", "due_date", "state", "amount"],
+  "cells": { "amount": { "total": "sum" } },
+  "filters": [
+    { "id": "overdue", "label": "Overdue", "filter": [{ "field": "state", "op": "=", "value": "sent" }], "period": { "field": "due_date", "is": "overdue" } },
+    { "id": "this_month", "label": "This month", "period": { "field": "invoice_date", "is": "thisMonth" } }
+  ],
+  "groupBy": ["city", "invoice_date"]
+}`
+)}
+<ul>
+  <li><strong>A totals row</strong> under the list totals every record the search finds, not only the page shown; while rows are ticked, a row over it totals those (<em>3 selected</em>). Each <strong>Group By heading</strong> says its sums after its count: <em>Cairo (12) · EGP 4.3M</em>, an amount short there.</li>
+  <li><strong>Money in one currency only.</strong> An amount whose currency each record keeps (${c('currencyField')}) is totalled within one currency: over records in more than one, no honest sum exists, and none is shown — never a wrong number. Pointed at, its empty cell says why. An amount in the field's own ${c('currency')} always adds up.</li>
+  <li><strong>Periods</strong>: ${c('today')}, ${c('yesterday')}, ${c('thisWeek')}, ${c('lastWeek')}, ${c('thisMonth')}, ${c('lastMonth')}, ${c('thisYear')}, ${c('last7Days')}, ${c('last30Days')} (today the last of them) and ${c('overdue')} (any day before today, for a due date). A week starts on the page's language's first day: Saturday in Arabic, Monday elsewhere. Days are the page's time zone's (its ${c('timeZone')}), else the browser's; a date and time falls on the day it is there. A filter may hold a period and conditions, which hold together; a person's own filter offers <em>in the period</em> for a date, and kept as a favourite it is counted again each time it is used.</li>
+  <li><strong>Group By a date</strong>: the menu offers its Year, Quarter, Month, Week and Day; the headings say them in words — <em>March 2026</em>, <em>Q1 2026</em>, <em>Week 12, 2026</em> (the ISO week holding most of its days) — in time order, those with no date last.</li>
+  <li><strong>The viewer's clock</strong>: ${c('now')} (a function giving the date) is what periods count from, as a form's ${c('today()')} does; the computer's own unless given.</li>
+</ul>
+<p>Nothing new to filter: a period reaches the data source as plain conditions — ${c('{ field: "due_date", op: "<", value: "2026-10-14" }')}, or ${c('>=')} and ${c('<')} on a span's first days (on their first moments, as instants, for a date and time). The data source's optional ${c('totals')} adds up, and its ${c('groups')} groups a date by a span:</p>
+${code(
+  'ts',
+  `
+// Group By month: each group's value is its span's first day; the page writes its words.
+groups({ model: 'invoice', field: 'invoice_date', filter, interval: 'month', weekStart: 1, timeZone: 'Africa/Cairo' })
+  // → [{ value: '2026-09-01', label: '2026-09-01', count: 4 }, { value: '2026-10-01', label: '2026-10-01', count: 7 }, { value: null, label: '', count: 1 }]
+
+// The totals row, the sums on each heading (groupBy), the rows ticked (one more condition: id in the ids).
+totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, groupBy: 'city', currencies: { amount: 'currency_id' } })
+  // → { count: 23, totals: { amount: { sum: null } }, currencies: { amount: null },
+  //     groups: [{ value: 'cairo', label: 'cairo', count: 12, totals: { amount: { sum: 4312550 } }, currencies: { amount: { id: 1, label: 'EGP' } } }, …] }`
+)}
+<p>${c('spanStart(value, interval, { weekStart, timeZone })')} from ${c('@fieldia/core')} finds the span a value falls in as the list counts it, for a source that groups in JavaScript; a backend groups by its own (SQL's ${c('date_trunc')}). A source without ${c('totals')} shows no totals — no row, no sums; one that leaves ${c('interval')} out groups by the value itself, which the list then shows as it is. ${c('createMemoryDataSource()')} does it all. <a href="/demos/plain/?page=invoices&amp;skin=underline">Try the invoices</a>.</p>
 
 <h2 id="search">The search bar</h2>
 <ul>
   <li><strong>Typing</strong> offers the ways to search it: <em>Search Name for: nile</em> in each text field and link, a choice whose label matches (<em>Status: Active</em>), a number where it is one. <kbd>↑</kbd> <kbd>↓</kbd> and <kbd>Enter</kbd> take one, <kbd>Escape</kbd> puts them away.</li>
   <li><strong>Chips</strong> show what applies. Values searched in one field share a chip, any of them (<em>Name: nile or amira</em>); chips all apply together. <kbd>Backspace</kbd> in the empty box takes the last one away; each has its ×.</li>
-  <li><strong>Filters</strong> turn on and off from the menu, any of the ones on; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value.</li>
-  <li><strong>Group By</strong> groups by one field, then another inside it: a row for each value, with how many records have it, opening into the next field's groups or into its records, a page at a time.</li>
+  <li><strong>Filters</strong> turn on and off from the menu, any of the ones on; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value — for a date, also a period: <em>Invoice date: This month</em>.</li>
+  <li><strong>Group By</strong> groups by one field, then another inside it: a row for each value, with how many records have it (and their sums), opening into the next field's groups or into its records, a page at a time. A date groups by its year, quarter, month, week or day.</li>
   <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one.</li>
 </ul>
 

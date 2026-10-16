@@ -133,6 +133,22 @@ your words and offers no Retry; any other error offers Retry. Stop with an
 one. Without `upload`, files travel inside the record as base64, as before.
 See [files stored as they are picked](https://fieldia.dev/data/#upload).
 
+## Lists that add up, and filter by time
+
+A list asks its source's optional `totals({ model, filter, totals, groupBy?,
+interval?, currencies? })` for a column's sum, average, lowest, highest or
+count — over the search, under each group, or the rows ticked (`id in` their
+ids) — and its `groups` for a date by the span it falls in (`interval`: `day`,
+`week`, `month`, `quarter` or `year`, with `weekStart` and `timeZone`), each
+group's value its span's first day. An amount named in `currencies` (by the
+field holding each record's currency) is totalled within one currency only:
+over several, its sum is `null`, and `currencies` in the answer names the one
+it is in. A period a list's filter names ("This month", "Overdue") arrives as
+plain conditions. `spanStart(value, interval, { weekStart, timeZone })` finds
+the span a value falls in as the list counts it, and `dayIn` and `dayStarts`
+a day in a time zone; `createMemoryDataSource` does it all. See
+[lists that add up](https://fieldia.dev/lists/#totals).
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

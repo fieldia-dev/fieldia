@@ -276,6 +276,27 @@ view that makes a record (a calendar's empty slot) asks `onNewRecord(values)`;
 without it the record's page from `pages` opens in a dialog with the values
 filled in.
 
+### Lists that add up, and filter by time
+
+A column may total: `"cells": { "amount": { "total": "sum" } }` — `sum`,
+`avg`, `min` and `max` of a number, `count` of any column. The list shows a
+totals row under it, the sums on each Group By heading (`Cairo (12) · EGP
+4.3M`) and, while rows are ticked, their totals, all asked of the data
+source's optional `totals`: without it, none shows. An amount whose currency
+each record keeps is totalled in one currency only: over several, no total
+is shown rather than a wrong one.
+
+A named filter may be a period a date falls in, counted from today —
+`{ "id": "overdue", "label": "Overdue", "period": { "field": "due_date", "is": "overdue" } }`
+— and a person's own filter offers "in the period" for a date: today,
+yesterday, this week or last, this month or last, this year, the last 7 or
+30 days, overdue. A week starts on the language's first day (Saturday in
+Arabic, Monday elsewhere); days are the page's time zone's (`timeZone`), else
+the browser's; the clock is the viewer's `now`. They reach the data source as
+plain conditions. A date in `groupBy` groups by its year, quarter, month,
+week or day, asked of `groups` with `interval`. See
+[lists that add up](https://fieldia.dev/lists/#totals).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`

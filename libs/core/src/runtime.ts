@@ -63,6 +63,7 @@ export type {
   MapTool,
   Pin,
   ListFilter,
+  FilterPeriod,
   LabelPlace,
   ScreenWidth,
   AnswerRule,
@@ -155,6 +156,7 @@ export type {
   ListRequest,
   ListResult,
   GroupRequest,
+  GroupInterval,
   Group,
   OptionsRequest,
   RecordRequest,
@@ -176,6 +178,7 @@ export type {
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
+export { DATE_PERIODS, DATE_INTERVALS, addDays, dayIn, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 // Files stored as they are picked: the form's uploads, and an upload for a plain endpoint or a signed address.

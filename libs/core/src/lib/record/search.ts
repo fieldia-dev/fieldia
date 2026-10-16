@@ -1,5 +1,5 @@
 import type { JsonValue } from '../format/json';
-import type { ListNode } from '../format/layout';
+import type { FilterPeriod, ListNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { ResolvedFilter, ResolvedFilterCondition } from './data-source';
 import { fill } from './messages';
@@ -9,11 +9,16 @@ import { foldDigits, foldForSearch, readNumber, stripMarks } from './input-rules
  * What a list's search bar holds, each shown as a chip: values searched in
  * one field (any of them), named filters (any of them), a custom filter, or
  * the fields the list is grouped by. The facets all apply together.
+ *
+ * A custom filter of a period ("Invoice date: This month") keeps the period,
+ * counted again each time the list asks — kept as a favourite, it is right
+ * the next day; `filter` is what it was counted as when it was made. A field
+ * grouped by the span a date falls in is `field:interval` ("date:month").
  */
 export type Facet =
   | { kind: 'field'; field: string; label: string; values: { op: ResolvedFilterCondition['op']; value: JsonValue; label: string }[] }
   | { kind: 'filters'; ids: string[]; labels: string[] }
-  | { kind: 'custom'; label: string; filter: ResolvedFilter[] }
+  | { kind: 'custom'; label: string; filter: ResolvedFilter[]; period?: FilterPeriod }
   | { kind: 'groupBy'; fields: string[]; labels: string[] };
 
 /** One way to search what was typed: a field, how to compare, and the words that say so. */
@@ -78,8 +83,12 @@ export function suggestions(typed: string, page: Page, list: ListNode, words: { 
   return found.map((s, i) => ({ s, i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map(({ s }) => s);
 }
 
-/** The filter a list's facets make: the values of one field any of them, named filters any of them, the facets all together. */
-export function facetsToFilter(facets: readonly Facet[], list: ListNode): ResolvedFilter[] {
+/**
+ * The filter a list's facets make: the values of one field any of them, named filters any of them, the facets all
+ * together. A period — a named filter's, a custom filter's — is counted by `periods`, as the list counts days (its
+ * clock, its week, its time zone); a custom filter without it keeps what it was counted as.
+ */
+export function facetsToFilter(facets: readonly Facet[], list: ListNode, periods?: (period: FilterPeriod) => ResolvedFilter[]): ResolvedFilter[] {
   const filter: ResolvedFilter[] = [];
   for (const facet of facets) {
     if (facet.kind === 'field') {
@@ -87,11 +96,14 @@ export function facetsToFilter(facets: readonly Facet[], list: ListNode): Resolv
       filter.push(conditions.length === 1 ? conditions[0] : { any: conditions });
     } else if (facet.kind === 'filters') {
       // A list's own filters have no valueFrom: their conditions are already values.
-      const chosen = facet.ids.map((id) => (list.filters?.find((f) => f.id === id)?.filter ?? []) as ResolvedFilter[]).filter((items) => items.length);
+      const chosen = facet.ids
+        .map((id) => list.filters?.find((f) => f.id === id))
+        .map((named) => [...((named?.filter ?? []) as ResolvedFilter[]), ...(named?.period && periods ? periods(named.period) : [])])
+        .filter((items) => items.length);
       if (chosen.length === 1) filter.push(...chosen[0]);
       else if (chosen.length > 1) filter.push({ any: chosen.map((items) => (items.length === 1 ? items[0] : { all: items })) });
     } else if (facet.kind === 'custom') {
-      filter.push(...facet.filter);
+      filter.push(...(facet.period && periods ? periods(facet.period) : facet.filter));
     }
   }
   return filter;

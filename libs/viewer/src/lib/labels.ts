@@ -133,6 +133,42 @@ export interface ViewerLabels {
   opLess: string;
   opSet: string;
   opNotSet: string;
+  /**
+   * A person's own filter of a date by a period (`opPeriod`), and its chip: `{field}` and `{period}`, "Invoice date: This
+   * month" — as a date grouped by a span says it too, "Invoice date: Month".
+   */
+  opPeriod: string;
+  periodChip: string;
+  /** The periods a date's filter can name, counted from today; a week from the language's first day, the last 7 and 30 days ending today. */
+  periodToday: string;
+  periodYesterday: string;
+  periodThisWeek: string;
+  periodLastWeek: string;
+  periodThisMonth: string;
+  periodLastMonth: string;
+  periodThisYear: string;
+  periodLast7Days: string;
+  periodLast30Days: string;
+  /** Any day before today, for a due date. */
+  periodOverdue: string;
+  /** Group By a date by the span it falls in, in the search menu; and a week's and a quarter's heading (`{week}`, `{quarter}`, `{year}`). */
+  groupByYear: string;
+  groupByQuarter: string;
+  groupByMonth: string;
+  groupByWeek: string;
+  groupByDay: string;
+  groupWeek: string;
+  groupQuarter: string;
+  /**
+   * A list's totals: the row under it, the words before a total that is not a sum, and why an amount over records in
+   * more than one currency has none (said to whoever points at it).
+   */
+  total: string;
+  totalAvg: string;
+  totalMin: string;
+  totalMax: string;
+  totalCount: string;
+  totalMixed: string;
   yes: string;
   no: string;
   /** A list's groups: the one of records with no value, and the rest of a group's records (`{n}`). */
@@ -309,6 +345,31 @@ const en: ViewerLabels = {
   opLess: 'less than',
   opSet: 'is set',
   opNotSet: 'is not set',
+  opPeriod: 'in the period',
+  periodChip: '{field}: {period}',
+  periodToday: 'Today',
+  periodYesterday: 'Yesterday',
+  periodThisWeek: 'This week',
+  periodLastWeek: 'Last week',
+  periodThisMonth: 'This month',
+  periodLastMonth: 'Last month',
+  periodThisYear: 'This year',
+  periodLast7Days: 'Last 7 days',
+  periodLast30Days: 'Last 30 days',
+  periodOverdue: 'Overdue',
+  groupByYear: 'Year',
+  groupByQuarter: 'Quarter',
+  groupByMonth: 'Month',
+  groupByWeek: 'Week',
+  groupByDay: 'Day',
+  groupWeek: 'Week {week}, {year}',
+  groupQuarter: 'Q{quarter} {year}',
+  total: 'Total',
+  totalAvg: 'Average',
+  totalMin: 'Lowest',
+  totalMax: 'Highest',
+  totalCount: 'Count',
+  totalMixed: 'In more than one currency: no total',
   yes: 'Yes',
   no: 'No',
   none: 'None',

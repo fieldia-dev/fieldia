@@ -502,7 +502,10 @@ export class ReferenceCheck {
     list.filters?.forEach((filter, i) => {
       this.claim(filter.id, `${path}.filters[${i}]`);
       named.add(filter.id);
-      filter.filter.forEach((item, j) => walk(item, `${path}.filters[${i}].filter[${j}]`));
+      filter.filter?.forEach((item, j) => walk(item, `${path}.filters[${i}].filter[${j}]`));
+      // A period is of a date, or a date and time.
+      const dated = filter.period ? this.need(filter.period.field, `${path}.filters[${i}].period.field`) : undefined;
+      if (dated && dated.type !== 'date' && dated.type !== 'datetime') this.report(`${path}.filters[${i}].period.field`, `"${filter.period?.field}" is a ${dated.type}; a period is of a date, or a date and time`);
     });
     list.defaultFilters?.forEach((id, i) => {
       if (!named.has(id)) this.report(`${path}.defaultFilters[${i}]`, `no filter "${id}" in this list`);
@@ -559,6 +562,11 @@ export class ReferenceCheck {
       if (!list.columns.includes(column)) {
         this.report(at, `"${column}" is no column of this list: its cells are for its columns`);
         continue;
+      }
+      // A sum, an average, the lowest and the highest are a number column's; any column has a count.
+      const kind = this.page.fields[column]?.type;
+      if (cell.total && cell.total !== 'count' && kind && kind !== 'integer' && kind !== 'float' && kind !== 'monetary') {
+        this.report(`${at}.total`, `"${column}" is a ${kind}; its total "${cell.total}" is of numbers — an integer, a float or an amount — and any column's is "count"`);
       }
       if (!cell.lead) continue;
       const def = this.need(cell.lead.field, `${at}.lead.field`);

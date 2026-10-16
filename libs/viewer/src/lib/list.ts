@@ -2,6 +2,8 @@ import {
   facetsToFilter,
   groupByFields,
   type ButtonNode,
+  type DayCount,
+  type FilterPeriod,
   type DataSource,
   type Facet,
   type Form,
@@ -22,8 +24,10 @@ import { displayValue, drawIcon, moneyReads, type IconSet, type PreferenceStore 
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
-import { groupRow, type GroupContext, type Row } from './list-groups';
+import { daysFilter, periodDays } from './list-days';
+import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
+import { listTotals } from './list-totals';
 import { searchBar } from './search-bar';
 import { filtersPart } from './viewer-parts';
 
@@ -58,6 +62,8 @@ export interface ListContext {
    * end). A promise answered: the records again once it settles. Without it, a view offers no way to make one.
    */
   onNewRecord?: (values: Values) => unknown;
+  /** The clock a period is counted from ("Today", "This week"): the computer's own unless given (the viewer's `now`). */
+  now?: () => Date;
 }
 
 /**
@@ -220,6 +226,24 @@ export function listView(context: ListContext): ListView {
   /** The columns before the fields': the box to choose a row, and the parents' toggles. */
   const leading = (choose ? 1 : 0) + (parentField ? 1 : 0);
 
+  // ---- days, as the list counts them ----------------------------------------------------
+
+  /**
+   * A week from the page's language's first day (Saturday in Arabic, as Egypt's week runs; Monday elsewhere, as
+   * Fieldia's calendars have it); days told in the page's time zone (its `timeZone`), else the browser's.
+   */
+  const pageZone = (page as Page & { timeZone?: string }).timeZone;
+  const count: DayCount = { weekStart: locale === 'ar' ? 6 : 1, timeZone: pageZone || Intl.DateTimeFormat().resolvedOptions().timeZone };
+  const now = context.now ?? (() => new Date());
+  /** A period ("This month", "Overdue") as the plain conditions any data source reads, counted from now. */
+  const periods = (period: FilterPeriod): ResolvedFilter[] => {
+    const { from, to } = periodDays(period.is, now(), count);
+    return daysFilter(period.field, from, to, page.fields[period.field]?.type === 'datetime' ? 'datetime' : 'date', count.timeZone);
+  };
+  /** How a Group By of a date asks for its spans: by the list's week and time zone. */
+  const interval = (key: GroupKey) => (key.interval ? { interval: key.interval, weekStart: count.weekStart, timeZone: count.timeZone } : {});
+  const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node, periods)];
+
   // ---- the table ---------------------------------------------------------------
 
   const chooseAll = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': labels.selectAll });
@@ -253,6 +277,8 @@ export function listView(context: ListContext): ListView {
   const expandAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.expandAll, title: labels.expandAll }, el('span', { 'aria-hidden': 'true' }, '+'));
   const collapseAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.collapseAll, title: labels.collapseAll }, el('span', { 'aria-hidden': 'true' }, '\u2212'));
   const body = el('tbody');
+  // The columns' totals, when the list has any and its source can tell them: a row under the list, the ticked rows'.
+  const totals = listTotals({ page, node, el, labels, locale, fill, dataSource: context.dataSource, model, leading, atEnd, interval });
   const table = el(
     'table',
     { class: 'fd-list-table', 'aria-label': page.title, 'data-fixed': fixedWidths ? '' : undefined, 'data-sortable': sortable ? undefined : 'false' },
@@ -267,7 +293,8 @@ export function listView(context: ListContext): ListView {
         ...headers
       )
     ),
-    body
+    body,
+    ...(totals ? [totals.foot] : [])
   );
   const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
@@ -484,7 +511,7 @@ export function listView(context: ListContext): ListView {
 
   // ---- what is chosen, and the buttons for it --------------------------------------
 
-  const count = el('span', { class: 'fd-list-count', role: 'status' });
+  const chosenCount = el('span', { class: 'fd-list-count', role: 'status' });
   const clear = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.clearSelection);
   const buttons = (node.actions ?? []).map((action: ButtonNode) => {
     const button = el('button', { type: 'button', class: `fd-button fd-button-${action.style ?? 'secondary'}`, 'data-node': action.id }, ...context.withIcon(action.icon, action.label));
@@ -498,7 +525,7 @@ export function listView(context: ListContext): ListView {
     );
     return button;
   });
-  const selection = el('div', { class: 'fd-list-selection', hidden: '' }, count, ...buttons, clear);
+  const selection = el('div', { class: 'fd-list-selection', hidden: '' }, chosenCount, ...buttons, clear);
   clear.addEventListener('click', () => {
     chosen.clear();
     for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-checkbox')) box.checked = false;
@@ -519,7 +546,8 @@ export function listView(context: ListContext): ListView {
     chooseAll.checked = shown.length > 0 && onPage === shown.length;
     chooseAll.indeterminate = onPage > 0 && onPage < shown.length;
     selection.hidden = chosen.size === 0;
-    count.textContent = fill(labels.selected, { n: chosen.size });
+    chosenCount.textContent = fill(labels.selected, { n: chosen.size });
+    totals?.ticked([...chosen], currentFilter());
     if (!choose) return;
     for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
       tr.setAttribute('aria-selected', String([...chosen].some((id) => String(id) === tr.dataset['id'])));
@@ -571,17 +599,26 @@ export function listView(context: ListContext): ListView {
     viewParts.chosenChanged();
   }
 
+  /** The groups under a key of the records a filter keeps, each with its sums where the list totals columns. */
+  const headings = async (source: DataSource, key: GroupKey, filter: ResolvedFilter[]): Promise<Heading[]> => {
+    const [groups, sums] = await Promise.all([source.groups?.({ model, field: key.field, filter, ...interval(key) }) ?? [], totals?.headings(key, filter)]);
+    return groups.map((group) => ({ ...group, sums: sums?.get(JSON.stringify(group.value)) }));
+  };
+
   const grouped = (source: DataSource): GroupContext => ({
     page,
     el,
     labels,
+    locale,
     fill,
     dataSource: source,
     model,
     fields,
     columns: node.columns.length + leading,
     pageSize,
+    count,
     sort: () => sort,
+    groups: (key, filter) => headings(source, key, filter),
     recordRow: row,
     changed,
   });
@@ -592,12 +629,14 @@ export function listView(context: ListContext): ListView {
     table.setAttribute('aria-busy', 'true');
     let drawn: HTMLTableRowElement[] = [];
     try {
-      const filter = [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node)];
-      const grouping = groupByFields(facets);
+      const filter = currentFilter();
+      const grouping = groupByFields(facets).map((text) => groupKey(page, text));
       const source = context.dataSource;
+      // The totals of every record the search finds, asked beside them.
+      totals?.refresh(filter);
       if (grouping.length && source?.groups && source.list) {
-        // Grouped: a row for each value of the first field, each opening into the rest.
-        const groups = await source.groups({ model, field: grouping[0], filter });
+        // Grouped: a row for each value of the first field (or span of a date), each opening into the rest.
+        const groups = await headings(source, grouping[0], filter);
         if (mine !== asking || destroyed) return;
         rows = [];
         total = 0;
@@ -640,7 +679,7 @@ export function listView(context: ListContext): ListView {
   const search =
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
-      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, onChange: searched });
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched });
 
   // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
@@ -658,7 +697,6 @@ export function listView(context: ListContext): ListView {
     highlight: (id: RecordId | null) => parts.forEach((part) => part.highlight(id)),
     chosenChanged: () => parts.forEach((part) => part.chosenChanged()),
   };
-  const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node)];
   /** A new record, as the app makes one: then the records again, in the table and in each view. */
   const newRecord = context.onNewRecord;
   const create = newRecord

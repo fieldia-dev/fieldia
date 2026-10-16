@@ -117,6 +117,20 @@ export const list = {
     after: 'is after',
     before: 'is before',
     contains: 'contains',
+    period: 'is in the period',
+  },
+  /** The periods a date's filter can name, counted from the day the list is looked at. */
+  periods: {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    thisWeek: 'This week',
+    lastWeek: 'Last week',
+    thisMonth: 'This month',
+    lastMonth: 'Last month',
+    thisYear: 'This year',
+    last7Days: 'The last 7 days',
+    last30Days: 'The last 30 days',
+    overdue: 'Overdue: before today',
   },
   // ---- a column
   orderBy: 'Order the list by it',
@@ -141,6 +155,9 @@ export const list = {
   cellRule: 'Its header’s rule',
   cellRules: { end: 'At its end', none: 'None', in: 'Set in from its end' },
   cellRuleIn: 'Pixels in from its end',
+  cellTotal: 'Total',
+  cellTotals: { none: 'None', sum: 'The sum', avg: 'The average', min: 'The lowest', max: 'The highest', count: 'How many hold one' },
+  cellTotalHint: 'Under the list, on each Group By heading and for the rows ticked. The app’s data source works it out (its totals): with none, no total shows. An amount is added up in one currency only.',
   cellRuleHint: 'The short line that parts it from the next column, where the theme draws one (Fluent’s). None, as a tracker draws a column people cannot size; set in, before the room a tracker keeps at a title’s end for a row’s tools.',
   // ---- a button for the rows chosen
   look: 'Look',
