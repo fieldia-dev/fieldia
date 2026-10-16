@@ -703,14 +703,16 @@ describe('a record sheet', () => {
     expect(stats).toEqual(['4Sales', '2Invoices']);
   });
 
-  it('asks before a button with a confirmation runs', async () => {
+  it('asks before a button with a confirmation runs — Cancel focused — then blocks the customer and saves', async () => {
     const pressed: string[] = [];
-    const { host, form } = sheet({ onAction: (r) => void pressed.push(r.action) });
+    const { host, form, dataSource } = sheet({ onAction: (r) => void pressed.push(r.action) });
     await form.settled();
     expect(button(host, 'Activate')).toBeUndefined(); // already active
     button(host, 'Block').click();
     const dialog = document.querySelector('[role=alertdialog]') as HTMLElement;
     expect(dialog.textContent).toContain('Block this customer? New orders will be refused.');
+    // A question before a step opens on Cancel, as "Discard your changes?" does: Enter never answers Yes by itself.
+    expect(document.activeElement).toBe(button(dialog, 'Cancel'));
     button(dialog, 'Cancel').click();
     await flush();
     expect(pressed).toEqual([]);
@@ -719,10 +721,13 @@ describe('a record sheet', () => {
     await form.settled();
     await flush();
     expect(pressed).toEqual(['block']);
+    expect(form.getState().values['state']).toBe('blocked');
+    expect(dataSource.records['partner'][1]['state']).toBe('blocked');
+    expect(host.querySelector('.fd-statusbar [aria-current="step"]')?.textContent).toBe('Blocked');
   });
 
   it('moves the record when a clickable state is chosen', async () => {
-    const { host, form } = sheet();
+    const { host, form } = sheet({ page: clickableCustomer() });
     await form.settled();
     (host.querySelector('.fd-statusbar li:nth-child(3) button') as HTMLButtonElement).click();
     expect(form.getState().values['state']).toBe('blocked');

@@ -37,7 +37,7 @@ export const DEMOS = [
     query: 'page=customer&skin=underline',
     blurb: 'A business record on a sheet: a statusbar, stat buttons, badges and an alert, tabs, a table of contacts, links to other records, and the conversation beside it.',
     howTo: [
-      'Click Blocked on the statusbar at the top: the Blocked ribbon appears on the sheet, and the record has changes to save.',
+      'Press Block and answer OK: the customer is blocked and saved, and the Blocked ribbon appears on the sheet. Activate brings them back.',
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',

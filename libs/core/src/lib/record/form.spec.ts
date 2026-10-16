@@ -186,9 +186,13 @@ describe('createForm — modifiers', () => {
     const form = createForm({ page: page('customer') });
     expect(form.node('blocked-ribbon').invisible).toBe(true);
     expect(form.node('activate').invisible).toBe(false);
+    form.setValue('state', 'active');
+    expect(form.node('activate').invisible).toBe(true);
+    expect(form.node('block').invisible).toBe(false);
     form.setValue('state', 'blocked');
     expect(form.node('blocked-ribbon').invisible).toBe(false);
-    expect(form.node('activate').invisible).toBe(true);
+    // Blocked, Activate is the way back; Block is gone.
+    expect(form.node('activate').invisible).toBe(false);
     expect(form.node('block').invisible).toBe(true);
   });
 
@@ -788,9 +792,16 @@ describe('createForm — skipping and jumping between steps', () => {
 });
 
 describe('createForm — actions', () => {
+  /** The customer page with its buttons' own steps taken out: each press only the app's action. */
+  const actionsOnly = (): Page => {
+    const customer = page('customer');
+    if (customer.layout.type === 'sheet') customer.layout.buttons = customer.layout.buttons?.map(({ steps: _steps, ...button }) => button);
+    return customer;
+  };
+
   it('passes a button press to the app, with the record', async () => {
     const pressed: unknown[] = [];
-    const form = createForm({ page: page('customer'), onAction: (request) => void pressed.push(request) });
+    const form = createForm({ page: actionsOnly(), onAction: (request) => void pressed.push(request) });
     form.setValue('name', 'Delta');
     await form.runAction('activate');
     expect(pressed).toEqual([
@@ -802,14 +813,14 @@ describe('createForm — actions', () => {
     const pressed: string[] = [];
     const form = createForm({ page: page('customer'), onAction: (request) => void pressed.push(request.action) });
     await form.runAction('sales');
-    form.setValue('state', 'blocked');
-    await form.runAction('activate');
+    form.setValue('state', 'active');
+    expect(await form.runAction('activate')).toEqual(expect.objectContaining({ done: false, reason: 'cannot' }));
     expect(pressed).toEqual(['open_sales']);
   });
 
   it('hands a list’s button the records chosen in it, and only then', async () => {
     const pressed: ActionRequest[] = [];
-    const form = createForm({ page: page('customer'), onAction: (request) => void pressed.push(request) });
+    const form = createForm({ page: actionsOnly(), onAction: (request) => void pressed.push(request) });
     await form.runAction('activate', { recordIds: [4, 'b7'] });
     await form.runAction('activate');
     expect(pressed[0].recordIds).toEqual([4, 'b7']);
