@@ -45,7 +45,7 @@ ${code(
     <tr><td>${c('post')}</td><td>Words in the record's conversation, each ${c('{field}')} showing its value: a note, or with ${c('"kind": "message"')} a message to its followers. In a page opened over a record, in that record's.</td></tr>
   </tbody>
 </table>
-<p>Any step may run only ${c('when')} a condition holds. One that fails or is refused stops the rest: a check with problems, No to a question, a save refused, your app saying stop, a page closed unsaved. A button's ${c('confirm')} is asked first, once; its ${c('action')}, when it names one, runs last as a ${c('call')}.</p>
+<p>Any step may run only ${c('when')} a condition holds. One that fails or is refused stops the rest: a check with problems, No to a question, a save refused, your app saying stop, a page closed unsaved. A button's ${c('confirm')} is asked first, once; its ${c('action')}, when it names one, runs last as a ${c('call')}. A record's button whose steps act and then ${c('save')} saves a new or changed record first, as Flectra's does: refused, none of its steps runs. And a run that saves is one piece of work: its save refused, what its steps wrote since its last save is put back.</p>
 <p>The moments under the page's ${c('on')}: ${c('open')} (it has its values), ${c('change')} by field — a person's change only, never a step's or your app's, so steps never chase each other round; a saved form placed in the page is named by its answers' name — ${c('beforeSave')} (a stop keeps it unsaved), ${c('afterSave')}, and ${c('show')} by tab or wizard step.</p>
 
 <h2 id="answers">Your app's answers</h2>
@@ -69,7 +69,7 @@ mountViewer(host, {
 <ul>
   <li><strong>A page opened</strong> comes from ${c('pages')} by ${c('{ id, version }')} — in a dialog or a side panel with the same data source, pages, language, skin and look; or in this form's place, with Back over it: saved, the form comes back and the steps go on; Back brings it back as it was, and they stop. A page your app has none of stops them, saying so. A page opened gets a host of its own, so its own steps run there, and a ${c('close')} step closes it.</li>
   <li><strong>Words</strong> are toasts at the foot of the screen, each in its tone, read out politely, one over another, going after a moment — not while the pointer or the focus is on one — or with their ×. A page opened in a dialog or a panel says its words through the page that opened it: they show over the dialog and outlive it, and a screen reader hears them inside it too.</li>
-  <li><strong>A question</strong> is the viewer's own box, Cancel and OK, or your ${c('confirm')}. Escape answers No there and closes nothing under it.</li>
+  <li><strong>A question</strong> is the viewer's own box, Cancel and OK, or your ${c('confirm')}. It opens on Cancel, so Enter never answers Yes by itself; Escape answers No there and closes nothing under it.</li>
   <li><strong>A tab</strong> a step goes to is shown, and its ${c('show')} steps run, as for a tab a person picks.</li>
   <li><strong>A button</strong> is busy while its steps run — marked so, a ring turning beside its words — and is not run twice. A check that stops it takes the focus to the first problem.</li>
 </ul>
