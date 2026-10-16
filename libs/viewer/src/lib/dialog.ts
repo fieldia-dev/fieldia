@@ -55,6 +55,7 @@ export interface FormDialogResult {
    */
   saved: boolean;
   recordId: RecordId | null;
+  /** Its values as it closed: once a save went through, a change the person let go after it is not among them. */
   values: Values;
 }
 
@@ -256,7 +257,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       if (done) return;
       done = true;
       const state = handle.form.getState();
-      // The form never changes its values in place, so these are safe to hand back.
+      // The form never changes its values in place, so these are safe to hand back. A change let go after a save (Discard
+      // on "Discard your changes?") went back to the record as saved as it was let go: it is no value handed back.
       const result: FormDialogResult = { saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values };
       handle.destroy();
       backdrop.remove();
@@ -277,7 +279,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       if (handle.form.leaveNow(how)) return close(saved);
       if ((await handle.form.leave(how)) && !done) close(saved);
     };
-    const leave = () => closeChecked(false, panel || headed ? { changes: true } : undefined);
+    // A dialog of values (a line's own form) holds what was typed and nothing else saves it: every change counts too.
+    const leave = () => closeChecked(false, panel || headed || options.mode === 'values' ? { changes: true } : undefined);
     saveClose.addEventListener('click', async () => {
       const had = doc.activeElement === saveClose;
       saveClose.disabled = true;

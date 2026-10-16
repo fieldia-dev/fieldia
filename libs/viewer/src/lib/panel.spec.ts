@@ -443,15 +443,27 @@ describe('a panel from each side', () => {
 });
 
 describe('the dialog beside it', () => {
-  it('keeps its own words and closes on Escape at once, changes or not', async () => {
+  it('keeps its own words, and closes on Escape at once while nothing is typed in it', async () => {
     const result = openFormDialog({ page: page('signup'), title: 'Your details', mode: 'values' });
     await flush();
     const box = document.querySelector('[role="dialog"]') as HTMLElement;
     expect(box.classList.contains('fd-form-panel')).toBe(false);
     expect([...box.querySelectorAll('.fd-form-dialog-foot button')].map((b) => b.textContent)).toEqual(['Discard', 'Save & Close']);
-    typeIn(box.querySelector('[data-node="f-email"] input') as HTMLInputElement, 'sara@example.com');
     press(box, 'Escape');
     expect((await result).saved).toBe(false);
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+
+  it('of values, with something typed in it: Escape asks first, as a panel’s does — nothing else saves what it holds', async () => {
+    const result = openFormDialog({ page: page('signup'), title: 'Your details', mode: 'values' });
+    await flush();
+    const box = document.querySelector('[role="dialog"]') as HTMLElement;
+    typeIn(box.querySelector('[data-node="f-email"] input') as HTMLInputElement, 'sara@example.com');
+    press(box, 'Escape');
+    await flush();
+    const ask = document.querySelector('[role="alertdialog"]') as HTMLElement;
+    expect(ask.textContent).toContain('Discard your changes?');
+    ([...ask.querySelectorAll('button')].find((b) => b.textContent === 'Discard') as HTMLButtonElement).click();
+    expect((await result).saved).toBe(false);
   });
 });

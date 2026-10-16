@@ -135,8 +135,10 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     if (asking) return;
     asking = true;
     const names = Object.keys(form.getState().setAside ?? {});
+    // The changes set aside on the record shown as it was asked: never another's.
+    const shown = form.recordShown();
     try {
-      if (!(await context.discard())) return;
+      if (!(await context.discard()) || !shown()) return;
     } finally {
       asking = false;
     }

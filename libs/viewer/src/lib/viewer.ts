@@ -180,6 +180,14 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /** An Edit button that unlocks a read-only form, and a Done that saves and locks it again. */
   editSwitch?: boolean;
   /**
+   * The browser's own ways out — Back, Reload, a tab closed, an address typed — ask first ("Leave site? Changes you
+   * made may not be saved.") while the person's work is at risk: every change not saved counts, as nothing saves it
+   * on the way out (`workAtRisk` with `changes`). Off unless said, as in 0.20: an app that keeps its own
+   * `beforeunload` (`unsavedWork`) goes on as it did. Listened for only while there is work at risk, and no longer
+   * once the viewer is destroyed.
+   */
+  warnOnLeave?: boolean;
+  /**
    * The app's own translator, for apps that keep translations by text or by
    * key: every word of the page goes through it. Record data never does.
    */
@@ -1603,7 +1611,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const waiting = form.settle();
         if (form.reading()) await waiting;
         const state = form.getState();
-        if (state.dirty.length || Object.keys(state.unread).length || state.uploads.some(uploadGoing)) {
+        // A record its source lets the person only read — locked by its own last save, say — has nothing to save: what
+        // was typed in it is asked about by the one check below, never tried again and refused for ever.
+        const locked = state.can?.edit === false;
+        if (!locked && (state.dirty.length || Object.keys(state.unread).length || state.uploads.some(uploadGoing))) {
           const saved = await form.save();
           if (!saved) {
             if (!form.getState().saveProblem) announce(checkText(form.getState()));
@@ -1680,8 +1691,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, step.label));
         go.addEventListener('click', async () => {
           if (form.goTo(step.id)) return focusStep();
-          // Refused while a name typed is still being looked up: once it is found, or not, it is asked again.
+          // Refused while a name typed is still being looked up: once it is found, or not, it is asked again — on the
+          // record it was pressed on, never another shown meanwhile.
+          const shown = form.recordShown();
           if (form.reading()) await form.settle();
+          if (!shown()) return;
           if (form.reading() || !form.goTo(step.id)) return focusFirstProblem();
           focusStep();
         });
@@ -1718,7 +1732,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // What is still typed is read first (form.next): a step goes on with what the boxes show. Refused while a name
       // typed is still being looked up, it waits for it, then asks again: the record it names, or why there is none.
       if (form.next()) return focusStep();
+      const shown = form.recordShown();
       if (form.reading()) await form.settle();
+      if (!shown()) return;
       if (!form.reading() && form.next()) return focusStep();
       focusFirstProblem();
     };
@@ -2257,6 +2273,33 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     doc.removeEventListener('keyup', altUp);
     doc.defaultView?.removeEventListener('blur', offHotkeys);
   });
+
+  // ---- the browser's own ways out ------------------------------------------------
+  // `warnOnLeave`: Back, Reload or a closed tab ask the browser's own question while the person's work is at risk —
+  // every change not saved, as nothing saves it on the way out. Listened for only then: a page with nothing to lose
+  // keeps the browser's quick Back.
+  const browserWindow = options.warnOnLeave ? doc.defaultView : null;
+  if (browserWindow) {
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // What older browsers ask for besides: any words (they show their own).
+      event.returnValue = '';
+    };
+    let warning = false;
+    const follow = (state: FormState) => {
+      const now = workAtRisk(state, { changes: true });
+      if (now === warning) return;
+      warning = now;
+      if (now) browserWindow.addEventListener('beforeunload', warn);
+      else browserWindow.removeEventListener('beforeunload', warn);
+    };
+    follow(form.getState());
+    const stopFollowing = form.subscribe(follow);
+    cleanups.push(() => {
+      stopFollowing();
+      browserWindow.removeEventListener('beforeunload', warn);
+    });
+  }
 
   // ---- confirmation dialog -----------------------------------------------------
 

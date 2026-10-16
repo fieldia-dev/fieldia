@@ -257,8 +257,11 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
     moving = true;
     try {
       const to = (from + by + total) % total;
-      // The id first, which may come from the server: a change made while it is looked up is saved with the rest.
+      // The id first, which may come from the server: a change made while it is looked up is saved with the rest. The
+      // record shown replaced meanwhile (the app opened another), the place it was counted from is gone: no move.
+      const shown = form.recordShown();
       const id = await idAt(to);
+      if (!shown()) return;
       if (!(await context.leave())) return;
       at = to;
       placed = id;
@@ -286,6 +289,8 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
       if (place === -1) return;
       if (ids) ids.splice(place, 1);
       total = ids ? ids.length : total - 1;
+      // Deleted once the pager had moved on: it leaves the records, and the one shown — with what is typed in it — stays.
+      if (!same(form.getState().recordId, recordId)) return context.render();
       if (total < 1) return void trail?.[trail.length - 1]?.open?.();
       at = Math.min(place, total - 1);
       // At once when the id is at hand, so the form never starts a new record meanwhile.
