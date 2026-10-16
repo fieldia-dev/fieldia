@@ -594,7 +594,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // kind's value shown plainly before its part came — a ranking's order, a matrix's answers by row, a colour's code, an
 // address's lines, properties a line each, a slider in the number box (survey-plain.ts) — and the part's name in the
 // parts' table: 30.2 less (629.78 measured before, 599.59 after), to 599.7.
-const BUDGET_KB = 9999; // JOIN: measured after every lane is in
+// The six joined (0.23 size pass: the list screen, the looks, a table of lines, the business widgets, files, the survey
+// kinds), each measured above against 0.22.0 alone; together, 629.78 measured before, 474.25 after — 155.5 less, to 474.3.
+const BUDGET_KB = 474.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -712,7 +714,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after — 8.8 less, to 188.5.
 // The survey kinds loaded on first use, in fieldia.survey.js (12.1 gzipped), each value shown plainly before it came
 // (listed with the raw budget above): 197.23 measured before, 188.88 after — 8.4 less, to 188.9.
-const GZIP_BUDGET_KB = 9999; // JOIN: measured after every lane is in
+// The six joined (listed with the raw budget above): 197.23 measured before, 153.61 after — 43.6 less, to 153.7, under
+// 0.20.0's 157.9 again; what a page uses beyond it comes in its parts.
+const GZIP_BUDGET_KB = 153.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -981,17 +985,24 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const loaded = () => PARTS.filter((part) => inPage[PART_OF[part]].loaded).join(', ');
   const host = doc.getElementById('app');
   const read = (name) => JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages', name), 'utf8'));
+  // Each page taken away whole: nothing of it left in the app's element for the next.
+  const gone = (name) => {
+    if (host.childElementCount) throw new Error(`in a page, ${name} left ${host.childElementCount} element(s) behind once destroyed: ${[...host.children].map((e) => e.className).join(', ')}`);
+  };
   // A page of plain parts: drawn at once, nothing asked for.
   const plain = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
   if (loaded()) throw new Error(`in a page, a page using no part asked for ${loaded()}`);
+  plain.destroy();
+  gone('plain');
   // A list with its search bar: the list part alone, the page drawn once it came — nothing of it before.
   const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-list') || customers.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a list drew before its part came');
   await customers.drawn;
   if (loaded() !== 'list' || !host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error(`in a page, a list is not drawn from its part (${loaded() || 'no part'})`);
   customers.destroy();
+  gone('customers');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
@@ -1000,46 +1011,53 @@ console.log(`parts: ${partSizes.join('; ')}`);
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
   themed.destroy();
-  // A customer's sheet: its statusbar's part, the business widgets', and its photo's, the files part — the page drawn once
-  // they came, nothing of it before.
-  const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a sheet with a statusbar and a photo drew before its parts came');
-  await customer.drawn;
-  if (loaded() !== 'business, files, list, themes' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
-  if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
-  customer.destroy();
-  // A work item's bug: its parts asked for — its quiet skin's among them — the page drawn once they came, nothing of it before.
-  const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
-  await bug.drawn;
-  if (loaded() !== 'business, choice, files, head, list, path, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path, quiet look and text`);
-  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
-  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
-  bug.destroy();
-  // Its backlog: the filter bar's part too.
-  const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
-  await backlog.drawn;
-  if (loaded() !== 'business, choice, files, filters, head, list, path, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
-  backlog.destroy();
-  // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
-  const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
-  if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
-  await signup.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, list, path, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
-  signup.destroy();
+  gone('themed');
   // An order with a table of its items: the lines part, its sheet before the page's own looks, the page drawn once it
   // came — nothing of it before.
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || order.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a table of lines drew before its lines part came');
   await order.drawn;
-  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, text, themes' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
+  if (loaded() !== 'lines, list, themes' || !host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error(`in a page, a table of lines is not drawn from its part (${loaded()})`);
   order.destroy();
+  gone('order');
+  // A customer's sheet: its statusbar's part, the business widgets', its photo's, the files part, and its table of
+  // contacts', the lines part — the page drawn once they came, nothing of it before.
+  const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || customer.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a sheet with a statusbar and a photo drew before its parts came');
+  await customer.drawn;
+  if (loaded() !== 'business, files, lines, list, themes' || !host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error(`in a page, a statusbar is not drawn from its part (${loaded()})`);
+  if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
+  customer.destroy();
+  gone('customer');
+  // A work item's bug: its parts asked for — its quiet skin's among them — the page drawn once they came, nothing of it before.
+  const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || bug.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page drew before its parts came');
+  await bug.drawn;
+  if (loaded() !== 'business, choice, files, head, lines, list, path, quiet, text, themes') throw new Error(`in a page, a work item's bug asked for ${loaded() || 'no part'}, not its choices, files, head, path, quiet look and text`);
+  if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
+  for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
+  bug.destroy();
+  gone('bug');
+  // Its backlog: the filter bar's part too.
+  const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
+  await backlog.drawn;
+  if (loaded() !== 'business, choice, files, filters, head, lines, list, path, quiet, text, themes' || !host.querySelector('.fd-filter-bar')) throw new Error(`in a page, a backlog's filter bar is not drawn from its part (${loaded()})`);
+  backlog.destroy();
+  gone('backlog');
+  // A form with a date: its box and calendar's part, the page drawn once it came — nothing of it before.
+  const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
+  if (host.querySelector('.fd-field') || signup.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a page with a date drew before its date part came');
+  await signup.drawn;
+  if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, text, themes' || !host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error(`in a page, a date is not drawn from its part (${loaded()})`);
+  signup.destroy();
+  gone('signup');
   // A survey with a matrix: the survey kinds' part, the page drawn once it came — nothing of it before.
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (host.querySelector('.fd-field') || survey.element.getAttribute('aria-busy') !== 'true') throw new Error('in a page, a survey drew before its survey part came');
   await survey.drawn;
   if (loaded() !== 'business, choice, date, files, filters, head, lines, list, path, quiet, survey, text, themes' || !host.querySelector('.fd-matrix-table')) throw new Error(`in a page, a matrix is not drawn from its part (${loaded()})`);
   survey.destroy();
+  gone('survey');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', the themes' and the quiet
   // look's before the pickers', the head's and the text's, the survey kinds' own looks last.
