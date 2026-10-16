@@ -26,6 +26,7 @@ export const ar: ViewerLabels = {
   stepOf: 'الخطوة {n} من {total}',
   submitted: 'شكرًا لك. تم إرسال إجاباتك.',
   submitAnother: 'إرسال إجابة أخرى',
+  leaveEmpty: 'اترك هذا الحقل فارغًا',
   draftFound: 'لديك إجابات غير محفوظة من {time}.',
   restore: 'استعادة',
   discardDraft: 'تجاهل',

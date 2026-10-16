@@ -37,6 +37,8 @@ export interface ViewerLabels {
   stepOf: string;
   submitted: string;
   submitAnother: string;
+  /** A public page's hidden box (`botCheck`), which no person sees: what it says to one who does, its look gone. */
+  leaveEmpty: string;
   draftFound: string;
   restore: string;
   discardDraft: string;
@@ -238,6 +240,7 @@ const en: ViewerLabels = {
   stepOf: 'Step {n} of {total}',
   submitted: 'Thank you. Your answers were sent.',
   submitAnother: 'Submit another response',
+  leaveEmpty: 'Leave this box empty',
   draftFound: 'You have unsaved answers from {time}.',
   restore: 'Restore',
   discardDraft: 'Discard',

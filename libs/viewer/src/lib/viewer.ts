@@ -306,6 +306,8 @@ let mounts = 0;
 
 /** The inputs nothing is typed in: their change says a choice, never text to take. */
 const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
+/** A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take. */
+const typedBox = (box: Element) => box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type));
 
 /**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
@@ -742,6 +744,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // Not at once: focus also leaves when a redraw removes the focused part
         // (a deleted line's button), and that redraw must finish first.
         queueMicrotask(() => update(form.getState()));
+      });
+      // Written while the person is elsewhere — the browser's autofill filling the form from one pick: each box is read
+      // at once, as one typed in and left (its change, which a browser may not send), and its problem said.
+      wrapper.addEventListener('input', (event) => {
+        const box = event.target as Element;
+        if (wrapper.contains(doc.activeElement) || !typedBox(box)) return;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+        form.boxLeft(node.field);
       });
       // Quiet, Escape puts back the value the field had as it was entered — once its own list or calendar, if open, has
       // taken the key — and only then is it left for the dialog round it. Leaving keeps the change, for Save.
@@ -2100,6 +2110,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
   root.append(content, done, announcer);
+  // A public page's bot check (`botCheck`): a box no person sees, reaches with Tab or hears read out — inert, so no
+  // browser fills it in either — which a bot filling every box fills. Told to the form as it is filled, and read again
+  // as the answers go; the send carries it, and the app decides.
+  if (page.data.kind === 'responses' && page.botCheck && page.botCheck.honeypot !== false) {
+    const trap = el('input', { type: 'text', id: uid('website'), name: 'website', tabindex: '-1', autocomplete: 'off' }) as HTMLInputElement;
+    const box = el('div', { class: 'fd-trap', 'aria-hidden': 'true', inert: '' }, el('label', { for: trap.id }, labels.leaveEmpty), trap);
+    const seen = () => void (trap.value !== '' && form.botCheck({ honeypot: true }));
+    trap.addEventListener('input', seen);
+    cleanups.push(form.settling(seen));
+    content.append(box);
+  }
   // The status leaves its place beside Save when the page wants it in a corner or across the top: now, and again once a
   // page that waited for its parts is drawn, its Save having put the status beside itself.
   function placeStatus() {
@@ -2144,8 +2165,6 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (!active || !root.contains(active)) return;
     if (typedBox(active)) active.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  /** A box typed in: a tick, a choice, a file or a colour picker has nothing typed to take. */
-  const typedBox = (box: Element) => box.tagName === 'TEXTAREA' || (box.tagName === 'INPUT' && !NOT_TYPED.has((box as HTMLInputElement).type));
   /**
    * The box typed in since it last read what it holds (a change: Enter, or the box left): autosave, which nobody
    * pressed, waits while the focus is still in it, and never reads "12." of "12.5" or "Office " of "Office Park" under
