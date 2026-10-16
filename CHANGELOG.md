@@ -15,7 +15,89 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
-## Unreleased
+## 0.24.0 — 2026-10-16
+
+**Time zones, phones the world over, booking slots, lists that add up and go
+out in bulk, a browser's autofill and a public form's bot check** — and save
+safety, the input rules and a business owner's walk of 0.23, each held to one
+rule. The page format is 0.3; a page of 0.1 or 0.2 is read as it is.
+
+**A page's time zone.** A page may name the time zone its dates and times are
+in (`"timeZone": "Africa/Cairo"`, by its IANA name), and a date and time field
+its own. A date and time is kept as the instant it is, as before, and shown
+and typed on that zone's clock wherever the person is, its short name beside
+the box and after the time in words where the browser's zone is another ("15
+Oct 2026, 14:30 CEST"), which a paste reads back. Today is the zone's day: a
+date's default `"today"`, its earliest and latest, a rule's past and future, a
+list's periods, `form.today()`. A zone the browser does not know is refused by
+the checks. `zonedPage(page)` writes the page's zone into each date and time
+field that names none; `wallTime`, `instantsAt`, `dayIn`, `zoneOffset` and
+`clocksSkip` are the clock arithmetic every reader and writer uses. In the
+designer: the screen's Time zone, and a date and time's.
+
+**Booking slots.** `"widget": "slots"` on a date and time books a time from
+those free: a month whose days are shaded by how they are booked — free times
+left, fully booked, closed, a holiday by its name — beside the chosen day's
+free times as chips, asked of the data source's optional `slots(request)`
+(`SlotsRequest`, `SlotsResult`), again when a field in `options.dependsOn`
+changes, and once more for the day of a time picked, so a time someone else
+booked meanwhile is said and never booked. `options` (`SlotsOptions`): the
+`schedule`, a booking's `length` and the minutes `between` two, its
+`endField`. `form.canFindSlots()` and `form.findSlots(field, { from, to })`
+for a widget of your own; `scheduleSlots(schedules)` answers from booking
+schedules for demos and tests (the full `@fieldia/core`, not the script
+bundle). Without `slots` in the source, it is the date and time box. It comes
+in a part of its own, `fieldia.slots.js`, with the date part.
+
+**Phone numbers the world over.** A page's `"phone": { "country": "EG",
+"shown": "national" }` — or a phone field's own `options.country` and
+`shown` — makes its phone fields (`"widget": "phone"`) one number the world
+over: its country picked before the number (its flag and dialling code) or
+typed with its +, checked by its country (how long, how it starts), kept as
+E.164 (`"+201012345678"`), shown at rest at home's way or abroad's, with a
+call and a WhatsApp link. A number that does not read stays as typed with why,
+and the save refuses it; no country is ever assumed. A list's phone column
+and a table's phone cells are written the same way; a table drawn as cards
+draws each cell with its column's widget, and a line's dialog reads phones as
+its page does. The country table, made from libphonenumber's metadata
+(`tools/phone-table.mjs`; its notice in `@fieldia/widgets`'
+THIRD_PARTY_NOTICES.md), comes in a part of its own, `fieldia.phone.js` (15.2
+KB gzipped), only where a page reads phones so. In the designer: the screen's
+Phone numbers, and a phone field's Country and Shown.
+
+**Lists that add up, and filter by time.** A column may total
+(`"cells": { "amount": { "total": "sum" } }`: `sum`, `avg`, `min`, `max`,
+`count`): a totals row under the list, the sums on each Group By heading and
+the ticked rows' totals, asked of the source's optional `totals`
+(`TotalsRequest`, `TotalsResult`). An amount whose currency each record keeps
+is totalled in one currency only (`TotalsRequest.currencies`): over several,
+the total is blank, its reason said on hover — never a wrong number. A named
+filter may be a period a date falls in (`ListFilter.period`: today, this week,
+last month, the last 30 days, overdue…), counted from the viewer's `now` in
+the page's time zone, and a person's own filter offers "in the period". A date
+in `groupBy` groups by its year, quarter, month, week or day (`GroupInterval`:
+`interval`, `weekStart`, `timeZone`, on `groups` and `totals`); the memory
+source does it all (`spanStart`, `dayStarts`, `addDays`).
+
+**Lists people take away and change in bulk.** With every row on show ticked,
+**Select all 1,284 that match** (the source's `allIds`, or its pages read
+through) — never called "all" where the source stopped short. **Export**
+(`"export": true`) writes the rows ticked, or every record the search finds,
+as an Excel workbook or a CSV file, in the browser with no library, or on your
+server (`exportRecords`). **Edit** (`"bulkEdit": true`, or the fields) sets one
+field to one value on the records chosen, after a question, by the source's
+`writeMany` or a save per record, each record's permissions and version kept,
+and names what it could not change and why. Both are off unless the list asks
+for them; in the designer, a list's Export and Edit.
+
+**What the browser fills in, and a public form's bot check.** A field node's
+`autocomplete` (a purpose from the HTML standard's list) and `inputmode` over
+its kind's own; a value the browser fills in is read as typed. A page of
+responses may take a `botCheck`: a hidden box only bots fill (`honeypot`), the
+fewest seconds a person takes (`minSeconds`), and a slot for the app's own
+captcha (`captcha`); `form.botCheck(…)` and the `bot` report sent with the
+answers (`SubmitRequest.bot`) — the app decides. In the designer: a field's
+autofill purpose and keyboard, the screen's Bot check.
 
 **Save safety: every late answer kept to its record.** An answer that comes
 once the record it was asked for is gone — an onchange, a name a box looks up, a
@@ -76,17 +158,6 @@ person typed; each way is now one rule:
 - `SearchRequest.exact` (optional): only the records named exactly the query.
   A box asks so for a typed name a search's first answers did not hold; a
   source that leaves it out still works.
-- What an app sees change: a button's or `form.run`'s steps stop (reason
-  `check`) over text that does not read, where they ran with the value under
-  it; and words that name nothing, left in a link, tags, a reference, a path or
-  a choice typed by name, stay in the box (unread) instead of the old record
-  coming back — a save is refused until they are put right or Escape puts back
-  what the box held.
-
-**Upgrading:** for an app with none of 0.22's data source members, two things
-are new: a line's dialog asks before Escape drops a change, and the `save`
-event's `values` are the record as that save left it — a change typed while it
-was on its way is no longer among them.
 
 **Every box reads what was typed, and never rewrites what was not** (0.21's
 input rules checked again on 0.23).
@@ -110,12 +181,16 @@ input rules checked again on 0.23).
 - A number's digits [precision, scale] are counted as its check counts them:
   Floor area [10, 1] takes nine digits before the point, and says so.
 - **Dates**: an instant on a day its month lacks (2026-02-31T10:00Z) is
-  refused, never 3 March. A date and time the clocks skip or pass twice for
-  summer time is refused, saying what the clocks do; one passed twice can be
-  written with its offset ("25/10/2026 02:30 +01:00"). The reader takes a time
-  zone (`DateReader.zone`, `readDate(text, { zone })`), the computer's when
-  left out. Full-width marks read ("１５／１０／２０２６ １４：３０", hours
-  "６：３０"). A pasted date that does not read says why; one pasted after a
+  refused, never 3 March. A date and time the clocks skip for summer time is
+  refused, saying what the clocks do ("there is no 02:30 on 29 Mar 2026 in
+  Central European Time: the clocks go from 02:00 to 03:00"); one they pass
+  twice is refused naming both offsets ("write 02:30 +02:00 or 02:30 +01:00"),
+  and taken once either offset, or the zone's short name ("02:30 CEST"), is
+  written after it. The reader takes a time zone (`DateReader.zone`,
+  `readDate(text, { zone })`; the page's or the field's `timeZone`), the
+  computer's when left out — one set of zone functions, core's (`wallTime`,
+  `instantsAt`, `zoneOffset`, `clocksSkip`), for every reader and writer.
+  Full-width marks read ("１５／１０／２０２６ １４：３０", hours "６：３０"). A pasted date that does not read says why; one pasted after a
   refused key joins the keys held. A day-first date on a year-first page
   points to the page's order. Escape in the quiet look puts back a date typed
   that did not read.
@@ -130,13 +205,6 @@ input rules checked again on 0.23).
   after the guard puts back an IME's or a phone keyboard's edit still takes
   back the keys typed before it. In Firefox, a key refused in a table's cell no
   longer empties the box ("1x5" is held, as everywhere else).
-
-**Upgrading:** an app that gives the form a whole `messages` object of its own
-adds `wholeDigits`; one that gives the widgets a whole `labels` object adds
-`emailDomainChar`, `dateOrder`, `skippedTime`, `repeatedTime`, `hoursDecimal`
-and `jsonNumber` (`addLanguage` fills any left out from English).
-
-## 0.24.0 — not released yet
 
 **A business owner's walk of 0.23, mended**, for every page of the shape they
 met it in:
@@ -193,21 +261,87 @@ met it in:
   under its box, "… is 1901 characters too long: shorten it to 500", in Arabic,
   German and French too. Nothing beside the count says it again.
 
-**Upgrading:**
+**And:**
 
+- The designer's Try it says the required questions not answered yet apart
+  from problems, neutrally — "5 to answer" — its red count kept for real
+  problems.
+- A grid paste past a column's most says it in the words Save uses ("Code is 3
+  characters too long: shorten it to 5"), as the field's own box does.
+- A date range's end field counts as on the page in the designer; booking
+  slots on a source without `slots` draw the date box from the date part.
+- fieldia.dev: the front page opens with a business line and its business
+  areas; the gallery groups the demos by business area, with a search and a By
+  feature switch; sizes and counts are read from the build and the code
+  (`site/facts.mjs`); the phone bar folds under Menu; templates open titled,
+  every check clear; dialog demos have Done and Start over; demo titles are in
+  a visitor's words. New demos: invoices that add up, 1,284 contacts to export
+  and edit in bulk, a test drive booked from the times free on Berlin's clock,
+  phones the world over on the contact page and the customers list.
+- The page format is **0.3** (`FORMAT_VERSION`): it only added, so a 0.1 or
+  0.2 page is read as it is, and `upgradePage` writes 0.3 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- Save safety: a line's dialog asks before Escape drops a change, and the
+  `save` event's `values` are the record as that save left it — a change typed
+  while it was on its way is no longer among them.
+- A button's or `form.run`'s steps stop (reason `check`) over text that does
+  not read, where they ran with the value under it; and words that name
+  nothing, left in a link, tags, a reference, a path or a choice typed by
+  name, stay in the box (unread) instead of the old record coming back — a
+  save is refused until they are put right or Escape puts back what the box
+  held.
+- A button whose steps act and then save saves a new or changed record before
+  them: its data source sees that save, then the steps' own. When the steps'
+  save is refused, what they wrote is put back.
+- Every question — a button's `confirm`, an `ask` step, Archive, Delete —
+  opens on Cancel: Enter no longer answers Yes by itself.
+- A double-click's later clicks are not taken by a bar's button that slid under
+  the pointer (Save hides as it saves): a single click, a key or an app's
+  `click()` always is.
 - A sheet's title and subtitle box is a `textarea` that wraps, no longer an
   `input`: a test that finds it as `[data-node="#title"] input` finds it as
-  `textarea`, or by its role (textbox) and its name.
-- A field box's `options.symbol` is no longer read: a field's `money.at` puts
-  the sign after the amount everywhere the field is written.
-- `WidgetLabels` loses `charactersOver` and `charactersOverOne`, and gains
-  `cellWaits` and `cellOfHeading`; the messages `overBy` and `overByOne` say
-  "{label} is {over} characters too long: shorten it to {max}".
-- A button whose steps act and then save saves a new or changed record before
-  them: its data source sees that save, then the steps' own, as Flectra's
-  server sees a record saved before its button's method runs.
+  `textarea`, or by its role (textbox) and its name. (A work item's head's
+  title is still an `input`.)
+- A field box's `options.symbol` is no longer read: the currency sign stands
+  where the page's language writes it; a field's `money.at` still moves it
+  everywhere the field is written.
+- A table cell's or a read-only value's date and time is written as the instant
+  it is, on the browser's clock where nothing names a zone (0.23 wrote the clock
+  it was stored with: `12:30Z` is 15:30 to a person in Cairo).
+- A password box's `autocomplete` is `new-password` (was `off`), so a browser
+  offers to make and keep one.
+- A list's pager and its count of rows chosen group thousands ("1–10 / 1,284",
+  "1,284 selected"); a date in `groupBy` offers its spans in the Group By menu;
+  `ListFilter.filter` is optional (a `period` may stand in its place).
+- A text pasted past its most is one message under the field, "… is 1901
+  characters too long: shorten it to 500" (the messages `overBy` and
+  `overByOne`), the counter beside it a count alone.
+- An app that gives the form a whole `messages` object adds `wholeDigits`. One
+  that gives the widgets a whole `labels` object adds `emailDomainChar`,
+  `jsonNumber`, `dateOrder`, `hoursDecimal`, `cellWaits`, `cellOfHeading`,
+  `timeSkipped`, `timeTwice`, `notThisZone`, and the phone's (`phone…`) and
+  booking slots' (`slot…`, `slots…`) words, and loses `charactersOver` and
+  `charactersOverOne`; a whole viewer `labels` object adds `leaveEmpty` and the
+  words of a list's totals, periods, Group By spans, Select all, Export and
+  Edit. `addLanguage` fills any left out from English.
+- A page the designer saves says `"fieldia": "0.3"`: Fieldia 0.23 refuses it
+  as newer than it reads. An app that keeps pages for older Fieldias keeps
+  them in 0.2 (nothing 0.3 adds is in them).
+- An app that serves `fieldia.js` itself serves the new `fieldia.phone.js` and
+  `fieldia.slots.js` beside it (and THIRD_PARTY_NOTICES.md): the package's
+  `bundle` folder has them all. A CDN already does.
+- `PART_RANK` (`@fieldia/widgets`) gains `phone` and `slots`, before the
+  themes; the ranks after them move on by two.
+- `@fieldia/calendar` still places its events on the browser's clock, not a
+  page's time zone.
 
-**Size:** `fieldia.js` 479.7 KB, 155.4 gzipped (0.23: 474.3, 153.6).
+**Size:** `fieldia.js` 512.8 KB, 167.1 gzipped (0.23: 474.3, 153.6). Its
+parts are 2.2 to 23.7 KB gzipped: the list's grew with its totals, periods,
+Export and Edit (23.7, from 12.7); the phone's (15.2) and booking slots' (5.6)
+are new and loaded only where a page uses them. A language's add-on is 8.3 to
+9.7 KB gzipped (0.23: 7.1 to 8.2).
 
 ## 0.23.0 — 2026-10-16
 
