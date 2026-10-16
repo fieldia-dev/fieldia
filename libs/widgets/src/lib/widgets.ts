@@ -294,14 +294,17 @@ function wrappingLine(context: WidgetContext): Widget {
     grow();
     form.setValue(name, area.value === '' ? null : area.value);
   });
-  // Its lines follow its width: a phone turned, a panel opened beside it, the page drawn.
+  // Its lines follow its width: a phone turned, a panel opened beside it, the page drawn. Grown in the next frame, never
+  // inside the observer's own call: a height changed there is a loop the browser reports.
   const View = document.defaultView as (Window & { ResizeObserver?: typeof ResizeObserver }) | null;
   let width = 0;
+  let frame = 0;
   const sized = View?.ResizeObserver
     ? new View.ResizeObserver(() => {
         if (area.clientWidth === width) return;
         width = area.clientWidth;
-        grow();
+        View.cancelAnimationFrame(frame);
+        frame = View.requestAnimationFrame(grow);
       })
     : null;
   sized?.observe(area);
@@ -311,6 +314,7 @@ function wrappingLine(context: WidgetContext): Widget {
       focus: () => area.focus(),
       destroy: () => {
         sized?.disconnect();
+        View?.cancelAnimationFrame(frame);
         box.destroy();
       },
       update(state) {
