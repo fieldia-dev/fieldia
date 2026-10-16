@@ -210,7 +210,8 @@ test.describe('a date, a date and time, a time', () => {
     expect(await valueOf(page, 'arrival')).toBe('09:30');
     await enter(arrival);
     await paste(page, arrival, 'noon');
-    await expect(hintOf(page, 'q-arrival')).toHaveText('“⁨noon⁩” is not a date, so it was not pasted');
+    // A time's box says why as a time's does, never "not a date" (7ed2b4f).
+    await expect(hintOf(page, 'q-arrival')).toHaveText('What time will you arrive on your first day?: “⁨noon⁩” is not a time; write it like 14:30');
     expect(await valueOf(page, 'arrival')).toBe('09:30');
   });
 
