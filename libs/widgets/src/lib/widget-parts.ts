@@ -1,4 +1,4 @@
-import type { FieldNode } from '@fieldia/core';
+import type { FieldNode, Page } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
@@ -9,6 +9,7 @@ import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
+import type * as PhoneModule from './phone-part';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
@@ -27,6 +28,8 @@ export type BusinessPart = typeof BusinessModule;
 export type FilesPart = typeof FilesModule;
 /** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
 export type SurveyPart = typeof SurveyModule;
+/** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
+export type PhonePart = typeof PhoneModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
@@ -52,16 +55,22 @@ export const shrinkPhoto = (file: File, options?: ShrinkOptions, doc?: Document)
 /** The survey kinds, loaded the first time a page shows a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address or a progress bar. */
 export const surveyPart: Part<SurveyPart> = lazyPart('survey', () => import('./survey-part'));
 
+/**
+ * A phone number read the world over, loaded the first time a page shows a phone field it reads so (its page's
+ * `phone`, or the field's own `country` or `shown`): every country's numbers, the box with its country, its links.
+ */
+export const phonePart: Part<PhonePart> = lazyPart('phone', () => import('./phone-part'));
+
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {
-  /** The part a field's widget comes in, or undefined when it needs none. */
-  partOf(node: FieldNode): Part | undefined;
+  /** The part a field's widget comes in, or undefined when it needs none; `page`, the page it is on, where `when` reads it. */
+  partOf(node: FieldNode, page?: Page): Part | undefined;
 };
 
-/** A field's widget drawn by `part`'s factory, or `plain` where `when` says it needs no part. */
-export function partFactory<M>(part: Part<M>, real: (module: M) => WidgetFactory, plain: WidgetFactory, when: (node: FieldNode) => boolean = () => true): PartFactory {
-  const factory: WidgetFactory = (context) => (when(context.node) ? partWidget(part, context, (module) => real(module)(context), plain) : plain(context));
-  return Object.assign(factory, { partOf: (node: FieldNode) => (when(node) ? part : undefined) });
+/** A field's widget drawn by `part`'s factory, or `plain` where `when` says it needs no part — by its node, or its page's settings. */
+export function partFactory<M>(part: Part<M>, real: (module: M) => WidgetFactory, plain: WidgetFactory, when: (node: FieldNode, page?: Page) => boolean = () => true): PartFactory {
+  const factory: WidgetFactory = (context) => (when(context.node, context.form.page) ? partWidget(part, context, (module) => real(module)(context), plain) : plain(context));
+  return Object.assign(factory, { partOf: (node: FieldNode, page?: Page) => (when(node, page) ? part : undefined) });
 }
 
 /**

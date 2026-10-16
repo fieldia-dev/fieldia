@@ -880,9 +880,10 @@ export function installStyles(document: Document): void {
  * inputs', the sheet's and the business'), then the themes' shapes, which reshape them, and the quiet look's, which
  * quietens those; a path picker's after the pickers', a record's head after that, a work item's groups and its text
  * editor after those; and last the survey kinds' own looks, which stood among the page's looks for each kind. A sheet
- * of a higher rank goes after one of a lower, all before the page's own looks.
+ * of a higher rank goes after one of a lower, all before the page's own looks. A phone's (0.24), new rather than cut,
+ * lays out its own parts alone, after them all: the boxes it draws are the main sheet's.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, themes: 5, quiet: 6, picker: 7, head: 8, groups: 9, text: 10, surveyLooks: 11, phone: 12 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

@@ -155,6 +155,8 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
       checks.destroy();
       input.removeEventListener('change', settle);
       input.removeEventListener('blur', settle);
+      // Placed beside the box, outside its widget's element: it goes with the box (a part's widget taking its place has its own).
+      hint.element.remove();
     },
   };
 }

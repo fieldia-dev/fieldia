@@ -359,6 +359,23 @@ export interface WidgetLabels {
   enterNumber: string;
   enterDate: string;
   enterValue: string;
+  /**
+   * A phone number read the world over (the phone part): its country's list, named by the field's `{label}`, and its
+   * choice of none; a call and a WhatsApp link to the `{number}` shown; and why a number typed does not read — no
+   * country to read it in, a `{code}` that is no country's, too short or too long for a number of its dialling code
+   * (`{dial}`, "+20") in its `{country}`, or a `{start}` no number there has.
+   */
+  phoneCountry: string;
+  phoneNoCountry: string;
+  phoneCall: string;
+  phoneCallNamed: string;
+  phoneWhatsApp: string;
+  phoneWhatsAppNamed: string;
+  phoneNeedsCountry: string;
+  phoneNoCode: string;
+  phoneShort: string;
+  phoneLong: string;
+  phoneStart: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -612,6 +629,17 @@ const en: WidgetLabels = {
   enterNumber: 'Enter a number',
   enterDate: 'Enter a date, like {example}',
   enterValue: 'Enter a value to filter by',
+  phoneCountry: 'Country of {label}',
+  phoneNoCountry: 'Country',
+  phoneCall: 'Call',
+  phoneCallNamed: 'Call {number}',
+  phoneWhatsApp: 'WhatsApp',
+  phoneWhatsAppNamed: 'Message {number} on WhatsApp',
+  phoneNeedsCountry: '{label}: choose its country, or write it with + and the country code',
+  phoneNoCode: '{label}: “{code}” is no country’s code',
+  phoneShort: '{label}: too short for a {dial} number ({country})',
+  phoneLong: '{label}: too long for a {dial} number ({country})',
+  phoneStart: '{label}: no {dial} number ({country}) starts with {start}',
 };
 
 /**
