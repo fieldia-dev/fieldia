@@ -153,16 +153,43 @@ test.describe('a list’s column moved by dragging its header', () => {
     expect(problems).toEqual([]);
   });
 
-  test('moves the first column too: the column that comes first is the one held in view', async ({ page }) => {
+  test('the name column stays first, held in view: its header lifts nothing, and a column carried before it goes right after it', async ({ page }) => {
     const { problems } = await contacts(page);
+    const order = ['Name', 'Company', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
     await holdsStill(header(page, 'name'));
     const name = await boxOf(header(page, 'name'));
     const company = await boxOf(header(page, 'company'));
+    // Name carried past Company (0.26 moved it there, the companies held in view): nothing lifts, nothing moves.
     await carry(page, { x: name.x + name.width / 2, y: name.y + name.height / 2 }, company.x + company.width * 0.75);
+    await expect(page.locator('.fd-list-ghost')).toHaveCount(0);
     await page.mouse.up();
-    await expect(heads(page)).toHaveText(['Company', 'Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter']);
-    await expect(page.locator('.fd-list-table thead th[data-pin]')).toHaveAttribute('data-col', 'company');
-    await expect(rows(page).first().locator('td[data-pin]')).toHaveAttribute('data-col', 'company');
+    await expect(heads(page)).toHaveText(order);
+    // Owner carried before Name, past the table's start: right after Name.
+    await holdsStill(header(page, 'owner_id'));
+    const owner = await boxOf(header(page, 'owner_id'));
+    await carry(page, { x: owner.x + owner.width / 2, y: owner.y + owner.height / 2 }, name.x + 4);
+    await page.mouse.up();
+    await expect(heads(page)).toHaveText(['Name', 'Owner', 'Company', 'Country', 'Status', 'Last order', 'Lifetime value', 'Newsletter']);
+    await expect(page.locator('.fd-list-table thead th[data-pin]')).toHaveAttribute('data-col', 'name');
+    await expect(rows(page).first().locator('td[data-pin]')).toHaveAttribute('data-col', 'name');
+    await expect(page.locator('.fd-sr-only[role="status"]').filter({ hasText: 'moved to place' })).toHaveText('Owner moved to place 2 of 8');
+    expect(problems).toEqual([]);
+  });
+
+  test('the Columns menu moves no column above the name column: Name has no arrows, the one under it no Move up', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await page.locator('.fd-list-columns-button').click();
+    const menu = page.locator('.fd-list-columns-menu[role="dialog"]');
+    const row = (column: string) => menu.locator(`[data-col="${column}"]`);
+    await expect(row('name').locator('[data-move]:visible')).toHaveCount(0);
+    await expect(row('company').locator('[data-move="up"]')).toBeHidden();
+    await menu.getByLabel('Phone', { exact: true }).check();
+    await menu.getByLabel('Phone', { exact: true }).focus();
+    // As the walk pressed it: ↑ until it stops. It stops under Name (0.25 put it above, Phone held in view).
+    for (let i = 0; i < 10; i++) await page.keyboard.press('Alt+ArrowUp');
+    await expect(heads(page)).toHaveText(['Name', 'Phone', 'Company', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter']);
+    await expect(page.locator('.fd-list-table thead th[data-pin]')).toHaveAttribute('data-col', 'name');
+    await screen(page, 'columns-name-held', { viewport: true });
     expect(problems).toEqual([]);
   });
 });

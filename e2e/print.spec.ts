@@ -503,10 +503,10 @@ test.describe('what is printed follows what is shown', () => {
     const { problems } = await open(page, 'plain', `page=contacts&skin=underline&${NOW}`);
     await expect(page.locator('.fd-list-table tbody tr.fd-list-row')).toHaveCount(10);
     const header = (column: string) => page.locator(`.fd-list-table thead th[data-col="${column}"]`);
-    // Company carried before Name at a hand's speed and let go: the first column now, the one held in view.
-    await carry(page, header('company'), (await boxOf(header('name'))).x + 10);
+    // Country carried toward Name at a hand's speed and let go: right after it — the name column stays first.
+    await carry(page, header('country_id'), (await boxOf(header('name'))).x + 10);
     await page.mouse.up();
-    const shown = ['Company', 'Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
+    const shown = ['Name', 'Country', 'Company', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
     await expect(heads(page)).toHaveText(shown);
     if (browserName === 'chromium') {
       // On Chromium's paper: the header in that order, every row's words clear of one another — the first column at
@@ -514,7 +514,7 @@ test.describe('what is printed follows what is shown', () => {
       const sheets = await chromiumSheets(page, 'print-contacts-dragged');
       const lines = sheets[0].lines;
       // (A sheet's width is narrower than the screen's: a header of two words may take two lines.)
-      expect(lines.some((line) => /^Company\s+Name\s+Country\s+Status\s+Owner\b/.test(line.text.trim()))).toBe(true);
+      expect(lines.some((line) => /^Name\s+Country\s+Company\s+Status\s+Owner\b/.test(line.text.trim()))).toBe(true);
       expect(lines.filter((line) => line.over)).toEqual([]);
     }
     // Ctrl+P: the rows as they stand, in the person's order, the column after the fields (its Columns cell) left out.
@@ -523,9 +523,9 @@ test.describe('what is printed follows what is shown', () => {
     await expect(page.getByRole('button', { name: 'Columns' })).toBeHidden();
     await expect(page.locator('.fd-list-table .fd-list-tail:visible')).toHaveCount(0);
     const table = await boxOf(page.locator('.fd-list-table'));
-    const first = await boxOf(header('company'));
+    const first = await boxOf(header('name'));
     expect(Math.abs(first.x - table.x)).toBeLessThanOrEqual(1);
-    expect(first.x + first.width).toBeLessThanOrEqual((await boxOf(header('name'))).x + 0.5);
+    expect(first.x + first.width).toBeLessThanOrEqual((await boxOf(header('country_id'))).x + 0.5);
     await screen(page, 'print-contacts-dragged');
     await printed(page);
     // A drag under way as printing begins: its ghost and its line are the screen's, the lifted column's cells as the others'.

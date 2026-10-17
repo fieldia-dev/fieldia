@@ -148,11 +148,11 @@ describe('a list’s Print', () => {
   it('prints the columns the person chose, in their order, as Export writes them', async () => {
     const shaped = { ...invoices, layout: { ...invoices.layout, groupBy: undefined, optionalColumns: { city: 'show', date: 'hide' } } } as Page;
     const preferences = memoryPreferences();
-    // City hidden and Amount moved before Number by the person; Invoice date, hidden by the page, shown by them.
+    // City hidden and Amount moved after Invoice date by the person; Invoice date, hidden by the page, shown by them.
     preferences.set(columnsKey(shaped, shaped.layout as Extract<Page['layout'], { type: 'list' }>), [
-      { colId: 'amount', width: null, hide: false },
       { colId: 'name', width: null, hide: false },
       { colId: 'date', width: null, hide: false },
+      { colId: 'amount', width: null, hide: false },
       { colId: 'city', width: null, hide: true },
     ]);
     const host = await mount(shaped, undefined, { preferences });
@@ -160,9 +160,9 @@ describe('a list’s Print', () => {
     printButton(host).click();
     await until(() => print.mock.calls.length === 1);
     const out = sheet(host) as HTMLElement;
-    expect(cells(out.querySelector('thead tr') as Element)).toEqual(['Amount', 'Number', 'Invoice date']);
-    expect(bodyRows(host)[0]).toEqual(['EGP 1,000.00', 'INV/001', '28 Sept 2026']);
-    expect(cells(out.querySelector('tfoot tr') as Element)).toEqual(['EGP 4,750.50', '', '']);
+    expect(cells(out.querySelector('thead tr') as Element)).toEqual(['Number', 'Invoice date', 'Amount']);
+    expect(bodyRows(host)[0]).toEqual(['INV/001', '28 Sept 2026', 'EGP 1,000.00']);
+    expect(cells(out.querySelector('tfoot tr') as Element)).toEqual(['Total', '', 'EGP 4,750.50']);
     window.dispatchEvent(new Event('afterprint'));
     await until(() => !sheet(host));
   });

@@ -504,7 +504,8 @@ back, a press that does not move still sorts, a finger's long press lifts it
 said to a screen reader ("Phone moved to place 2 of 8", as the menu's moves
 are); a header's edge drags (or its grip takes the arrow keys) to size its
 column; the header and the first column stay in view as the rows scroll — the
-first column is whichever comes first, moved or not — and the Columns button is
+first is the list's name column (the page's first), which no move or drag
+displaces: the others order after it — and the Columns button is
 held at the header's end, in sight however wide the table.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
