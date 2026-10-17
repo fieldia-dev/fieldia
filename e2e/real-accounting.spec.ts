@@ -296,6 +296,7 @@ for (const variant of VARIANTS) {
       // and Start over, so a second press can never make a second payment. In a dialog it closes (the tests above).
       const done = page.locator('.demo-done');
       await expect(done).toContainText(/posted, check CHK-004417 due 2026-11-15/);
+      await expect(done.locator('.demo-done-note')).toHaveText('In your app this window closes, and the invoice shows the payment.');
       await expect(page.getByRole('button', { name: 'Create Payment', exact: true })).toBeHidden();
       await expectNoSidewaysScroll(page);
       await done.getByRole('button', { name: 'Start over' }).click();

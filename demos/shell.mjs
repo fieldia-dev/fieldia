@@ -8,7 +8,7 @@
  * `embed=1`: the demo alone, no frame at all, as fieldia.dev's feature pages
  * show it inside their own.
  */
-import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, GITHUB, demoAt, demoHref, openedAt, sourceOf } from './catalog.mjs';
+import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, GITHUB, demoAt, demoHref, openedAt, sourceOf, stepParts } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
 import { backlogSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
@@ -90,6 +90,7 @@ function drawHeader() {
       ${visitor ? '<button type="button" class="dh-menu" aria-label="All demos" aria-controls="demo-nav" aria-expanded="false"><span></span></button>' : ''}
       <a class="dh-brand" href="../"><span class="dh-mark" aria-hidden="true"></span><span class="dh-word">Fieldia</span></a>
       <span class="dh-crumb">demos</span>
+      ${visitor && demo ? '<button type="button" class="dh-help" aria-label="About this demo" aria-controls="demo-howto" aria-expanded="false">?</button>' : ''}
       <button type="button" class="dh-options" aria-expanded="false" aria-label="Framework, look and links"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="13" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Options</span></button>
       ${frameworks}
       <nav class="dh-links" aria-label="Links">
@@ -101,6 +102,7 @@ function drawHeader() {
     </div>
     <div class="dh-title-row">
       <h1 class="dh-title">${esc(demo?.name ?? opened?.name ?? '')}</h1>
+      <p class="dh-kept" hidden>What you saved stays while this tab is open. <button type="button" class="dh-start-over">Start over</button></p>
       ${skins}
     </div>
     ${tryThis()}`;
@@ -115,7 +117,26 @@ function tryThis() {
   const steps = demo.howTo ?? [];
   const all = visitor && steps.length > 1 ? ` <button type="button" class="dh-try-all" aria-controls="demo-howto">All ${steps.length} steps</button>` : '';
   const source = `<a class="dh-source" href="${GITHUB}/blob/main/${esc(sourceOf(demo))}" target="_blank" rel="noopener">Its source on GitHub<span aria-hidden="true"> ↗</span></a>`;
-  return `<p class="dh-try">${steps.length ? `<span class="dh-try-word">Try this:</span> <span class="dh-try-step">${esc(steps[0])}</span>${all}` : ''} ${source}</p>`;
+  return `<p class="dh-try">${steps.length ? `<span class="dh-try-word">Try this:</span> <span class="dh-try-step">${stepHtml(steps[0])}</span>${all}` : ''} ${source}</p>`;
+}
+
+/**
+ * A how-to step as the header and the panel show it: its words, each link in it a link (catalog.mjs's `stepParts`) — a
+ * file to try the demo with, downloaded from beside the demos; or this demo with a setting in its address, the others
+ * kept, so no step sends a person to the address bar.
+ */
+function stepHtml(step) {
+  return stepParts(step)
+    .map((part) => {
+      if (!part.href) return esc(part.text);
+      if (part.href.startsWith('?')) {
+        const next = new URLSearchParams(params);
+        for (const [key, value] of new URLSearchParams(part.href.slice(1))) next.set(key, value);
+        return `<a class="dh-step-link" href="?${esc(next.toString())}">${esc(part.text)}</a>`;
+      }
+      return `<a class="dh-step-link" href="${esc(new URL(part.href, new URL('..', location.href)).href)}" download>${esc(part.text)}</a>`;
+    })
+    .join('');
 }
 
 // ---- the menu of every demo ----------------------------------------------------------------
@@ -169,6 +190,18 @@ function drawMenu() {
 
 // ---- about and how to try it -------------------------------------------------------------------
 
+/** The menu's width and the how-to panel's, as shell.css gives them (--dh-nav, --dh-howto). */
+const NAV = 264;
+const HOWTO = 300;
+/**
+ * The window the widest demo's record needs to be whole, with no panel open, as measured at 0.26: the sales order's
+ * lines (its cells cut below it), and the real order's, task's, transfer's and employee's; the contacts' columns and
+ * the homes on a map need 1,120, the property 1,060, the customers 1,000. Not counted: a calendar's event titles and
+ * the dense grids of a few ERP replicas (the real invoice's, the expense's), which cut their long cells at any width,
+ * as their ERP does. The menu, the panel and the record all fit side by side from this plus both panels: 1,744px.
+ */
+const RECORD_WHOLE = 1180;
+
 function drawHowTo() {
   if (!demo) return;
   const panel = document.createElement('aside');
@@ -178,26 +211,30 @@ function drawHowTo() {
     <div class="ht-head"><span>About &amp; how to try it</span><button type="button" class="ht-close" aria-label="Close the panel">×</button></div>
     <p class="ht-about">${esc(demo.blurb)}</p>
     <div class="ht-steps">How to try it</div>
-    <ol>${demo.howTo.map((step) => `<li>${esc(step)}</li>`).join('')}</ol>
-    ${demo.files?.length ? `<p class="ht-files">Files to try it with: ${demo.files.map((file) => `<a href="${esc(new URL(file.href, new URL('..', location.href)).href)}" download>${esc(file.label)}</a>`).join(' · ')}</p>` : ''}
+    <ol>${demo.howTo.map((step) => `<li>${stepHtml(step)}</li>`).join('')}</ol>
     <p class="ht-tested">Every demo here is driven by Fieldia’s browser tests on every change, in every framework.</p>`;
-  const opener = document.createElement('button');
-  opener.type = 'button';
-  opener.id = 'demo-howto-open';
-  opener.setAttribute('aria-label', 'About this demo');
-  opener.textContent = '?';
-  document.body.append(panel, opener);
+  document.body.append(panel);
+  // Its button is in the header, beside Options on a phone: nothing floats over the demo.
+  const opener = head?.querySelector('.dh-help');
   const setOpen = (open, keep = true) => {
     document.body.classList.toggle('ht-open', open);
+    opener?.setAttribute('aria-expanded', String(open));
     if (keep) remember('fieldia-demos-howto', open ? '1' : '0');
   };
+  // Open by itself only where it, the menu if open, and the record all fit whole; else folded to its first step, which
+  // the header says. A person's own choice, either way, is kept.
   const kept = remember('fieldia-demos-howto');
-  setOpen(kept === null ? innerWidth >= 1280 : kept === '1', false);
+  const room = innerWidth - (document.body.classList.contains('dn-open') ? NAV : 0) - HOWTO;
+  setOpen(kept === null ? innerWidth >= 1280 && room >= RECORD_WHOLE : kept === '1', false);
   panel.querySelector('.ht-close').addEventListener('click', () => {
     setOpen(false);
-    opener.focus();
+    opener?.focus();
   });
-  opener.addEventListener('click', () => setOpen(true));
+  opener?.addEventListener('click', () => {
+    const open = !document.body.classList.contains('ht-open');
+    setOpen(open);
+    if (open) panel.querySelector('.ht-close')?.focus();
+  });
   // The header's "All the steps": the panel, open, its steps in view.
   head?.querySelector('.dh-try-all')?.addEventListener('click', () => {
     setOpen(true);
@@ -350,6 +387,37 @@ if (visitor) {
   drawCode();
 }
 
+// ---- what this tab saved, kept across the demo's own pages; and Start over ----------------------------------------
+/** The prefix a demo keeps a model's records under in this tab (demos/shared/kept.ts: KEPT, and KEPT_EVENT below). */
+const KEPT = 'fieldia-demo-records:';
+const keptKeys = () => {
+  try {
+    return Object.keys(sessionStorage).filter((key) => key.startsWith(KEPT));
+  } catch {
+    return [];
+  }
+};
+/** Under the demo's name, once something is saved: that it stays while the tab is open, and Start over. */
+const showKept = () => {
+  const line = head?.querySelector('.dh-kept');
+  if (line) line.hidden = keptKeys().length === 0;
+};
+showKept();
+addEventListener('fieldia-demo-kept', showKept);
+// The samples back, and the demo's own first page in the look it is worn in, on its clock: a record saved since is gone.
+head?.querySelector('.dh-start-over')?.addEventListener('click', () => {
+  for (const key of keptKeys()) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      // Nothing kept can be taken away where nothing could be kept.
+    }
+  }
+  const next = new URLSearchParams((demo ?? opened?.from)?.query ?? location.search.slice(1));
+  for (const key of ['skin', 'theme', 'scheme', 'locale', 'dir', 'now']) if (params.get(key)) next.set(key, params.get(key));
+  location.search = next.toString();
+});
+
 // ---- a theme's ground, the whole window's ---------------------------------------------------------------------------
 /**
  * A theme paints its form on a ground of its own (its `--fd-page`): drawn as a box in the frame's page, a short page's
@@ -436,7 +504,7 @@ function standingAlone(handle) {
     panel.innerHTML = `
       <h2 id="demo-done-h" tabindex="-1">${done ? 'Done' : 'Cancelled'}</h2>
       ${(done ? (words.length ? words : ['Saved.']) : ['Nothing was made.']).map((w) => `<p class="demo-done-said">${esc(w)}</p>`).join('')}
-      <p class="demo-done-note">${done ? `In an app, “${esc(page.title ?? 'this window')}” opens over the record it is for, closes now, and that record shows what was done. Shown here on its own, it stops here instead, so nothing is done twice.` : `In an app, “${esc(page.title ?? 'this window')}” opens over the record it is for and closes now, leaving it as it was. Shown here on its own, it stops here instead.`}</p>
+      <p class="demo-done-note">${esc(done ? (demo?.done?.saved ?? 'In your app this window closes, and the record it was opened from shows what was done.') : (demo?.done?.cancelled ?? 'In your app this window closes, and the record it was opened from stays as it was.'))}</p>
       <button type="button" class="demo-done-again">Start over</button>`;
     app.hidden = true;
     app.after(panel);
