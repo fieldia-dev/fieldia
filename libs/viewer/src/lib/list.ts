@@ -32,7 +32,7 @@ import { exportList, type ExportFormat, type ExportList, type ExportWhich } from
 import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
-import { printout, PRINT_MOST } from './list-print';
+import { keepFootRoom, printout, PRINT_MOST } from './list-print';
 import { printAlone } from './print';
 import { searchBar } from './search-bar';
 import { filtersPart } from './viewer-parts';
@@ -1084,6 +1084,8 @@ export function listView(context: ListContext): ListView {
       progress.textContent = '';
       // In the list's place on paper, inside its form: its language, its direction and its accent.
       element.append(out.sheet);
+      // Its footer at the foot of every sheet, its room kept there.
+      keepFootRoom(out.sheet.querySelector<HTMLElement>(':scope > .fd-print-foot'));
       await printAlone(doc, out.sheet, () => out.sheet.remove());
     });
   }

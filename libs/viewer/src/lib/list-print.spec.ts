@@ -95,6 +95,8 @@ describe('a list’s Print', () => {
     expect(out.querySelector('.fd-print-when')?.textContent).toMatch(/^Printed 16 Oct 2026, 11:05/);
     expect(out.querySelector('.fd-print-words')?.textContent).toBe('Nile Accounting · Cairo');
     expect(out.querySelector('.fd-print-foot')?.textContent).toBe('Amounts in each invoice’s currency.');
+    // Its footer at the foot of every sheet, its room kept there.
+    expect(out.hasAttribute('data-print-room')).toBe(true);
     expect([...out.querySelectorAll('.fd-print-about > div')].map((line) => line.textContent)).toEqual(['5 records']);
     expect(cells(out.querySelector('thead tr') as Element)).toEqual(['Number', 'City', 'Invoice date', 'Amount']);
     // Each value as its cell says it: a choice by its label, a date in words, money with its currency.

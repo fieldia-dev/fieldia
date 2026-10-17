@@ -53,6 +53,25 @@ export interface PrintList {
   now: () => Date;
 }
 
+/**
+ * Room kept at the foot of every printed sheet for a footer (`foot`) the stylesheet repeats there, fixed to each
+ * sheet's foot (list-styles.ts): its height as it is written on paper, measured out of sight at a sheet's width (a
+ * narrow one's, so it is never too little), with a gap over it — on the part it closes (`data-print-room`,
+ * `--fd-print-room`). A list's printout keeps it: rows of a table break cleanly between sheets, the room kept at each
+ * sheet's foot in Chromium and Firefox alike. A record's footer is printed once, after it: its groups' grids do not
+ * (Chromium laid a group's last field over the next group's heading; Firefox let a group run under the footer).
+ */
+export function keepFootRoom(foot: HTMLElement | null | undefined): void {
+  const holder = foot?.parentElement;
+  if (!foot || !holder) return;
+  const was = foot.style.cssText;
+  foot.style.cssText = 'display:block;position:absolute;visibility:hidden;inset-inline-start:0;width:640px';
+  const height = foot.getBoundingClientRect().height;
+  foot.style.cssText = was;
+  holder.style.setProperty('--fd-print-room', `${Math.ceil(height) + 16}px`);
+  holder.setAttribute('data-print-room', '');
+}
+
 /** The printout, ready to print, and how many of how many records it holds. */
 export interface Printout {
   sheet: HTMLElement;

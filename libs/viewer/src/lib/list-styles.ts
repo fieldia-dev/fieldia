@@ -247,6 +247,13 @@ export const LIST_STYLES = `
   .fd-print-sheet .fd-print-table .fd-num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .fd-print-sheet .fd-print-table tr > :first-child { padding-inline-start: calc(6px + var(--fd-level, 0) * 14px); }
   .fd-print-sheet .fd-print-group > td { padding-block-start: 10px; font-weight: 600; color: var(--fd-accent); border-block-end-color: var(--fd-border-strong); break-after: avoid; }
+  /* Its footer at the foot of every sheet where an engine keeps room on each — the printout padded at each sheet's foot,
+     its padding cloned there — as Chromium's and Firefox's do, a fixed footer repeated on every sheet over that room.
+     Elsewhere, or where its room was never measured, once after the rows. (A record's is printed once, after it.) */
+  @supports (box-decoration-break: clone) {
+    .fd-print-sheet[data-print-room] { padding-block-end: var(--fd-print-room) !important; box-decoration-break: clone; }
+    .fd-print-sheet[data-print-room] > .fd-print-foot { position: fixed; inset-block-end: 0; inset-inline: 0; margin: 0; background: #fff; }
+  }
   /* The totals once, under the last row: not again at each sheet's foot, where they would read as that sheet's. */
   .fd-print-sheet .fd-print-table tfoot { display: table-row-group; }
   .fd-print-sheet .fd-print-table tfoot td { font-weight: 600; border-block: 2px solid var(--fd-border-strong) 0; }
