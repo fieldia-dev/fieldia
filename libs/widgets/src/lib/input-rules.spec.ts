@@ -156,6 +156,19 @@ describe('a number box refuses what can never be part of a number', () => {
     expect(value()).toBe(132);
   });
 
+  it('lets the keys held and their words go when the field is set from outside while it is typed in (a block pasted on its line)', () => {
+    const { input, form } = numberBox({ type: 'float' });
+    keys(input, '2.5x');
+    expect(input.value).toBe('2.5');
+    expect(hintSays()).toBe('Seats: numbers only');
+    form.setValue('x', 12);
+    expect(input.value).toBe('12.00');
+    expect(hintSays()).toBeNull();
+    // Left now, what the box shows is the field's: no "x" waiting to come back.
+    leave(input);
+    expect(form.getState().values['x']).toBe(12);
+  });
+
   it('never refuses deleting', () => {
     const { input } = numberBox({ type: 'float' });
     keys(input, '1,234,567');

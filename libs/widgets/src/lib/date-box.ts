@@ -346,7 +346,9 @@ export function dateBox(options: DateBoxOptions): DateBox {
         if (state.value !== held && !readonly) {
           held = state.value;
           input.value = typingText(state.value, kind, order, locale, zone);
+          // Keys held after a refused one are let go with the text they were typed into, and the words that said why.
           checks.accept();
+          hint.hide();
         }
       } else {
         held = state.value;

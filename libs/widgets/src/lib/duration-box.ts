@@ -136,7 +136,9 @@ function shownBox(
         const parsed = way.parse(input.value);
         if (parsed !== undefined && (way.duration || numberFits(input.value, box)) && parsed !== (state.value ?? null)) {
           input.value = shown(state.value);
+          // Keys held after a refused one are let go with the text they were typed into, and the words that said why.
           checks.accept();
+          hint.hide();
         }
       } else {
         const text = unread ? unread.text : shown(state.value);

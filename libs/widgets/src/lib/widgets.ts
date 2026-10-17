@@ -583,7 +583,9 @@ const numberWidget: WidgetFactory = (context) => {
         // whole numbers, waiting to be said as the box is left) is theirs, and stays.
         if (reading.ok && numberFits(input.value, box) && reading.value !== (state.value ?? null)) {
           input.value = !state.readonly && typeof state.value === 'number' ? plain(state.value) : shown(state.value);
+          // Keys held after a refused one are let go with the text they were typed into, and the words that said why.
           checks.accept();
+          hint.hide();
         }
       } else {
         // Text left that does not read stays as it was typed; anything else shows the value at rest.
