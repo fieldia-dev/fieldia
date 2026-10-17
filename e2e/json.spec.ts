@@ -187,14 +187,18 @@ test.describe('Try it’s drawer', () => {
     await expect(page.locator('.fd-json-state')).toHaveText('Applied. Undo takes it back.');
     await page.getByRole('button', { name: 'Try it' }).click();
     const drawer = page.locator('.fd-try-drawer');
-    // A required question not answered yet is said neutrally, not counted as a problem in red.
-    await expect(drawer.getByRole('button', { name: 'Problems' }).locator('.fd-try-to-answer')).toHaveText('1 to answer');
-    await expect(drawer.getByRole('button', { name: 'Problems' }).locator('.fd-try-count')).toBeHidden();
+    // A required question not answered yet is said neutrally, not counted as a problem in red: the tab says "1 to
+    // answer", with no "Problems" before it, as nothing is wrong yet.
+    const problemsTab = drawer.locator('.fd-try-tab').nth(1);
+    await expect(problemsTab).toHaveAccessibleName('1 to answer');
+    await expect(problemsTab.locator('.fd-try-to-answer')).toHaveText('1 to answer');
+    await expect(problemsTab.locator('.fd-try-count')).toBeHidden();
+    await expect(problemsTab.locator('.fd-try-word')).toBeHidden();
     await drawer.getByRole('button', { name: 'Data', exact: true }).click();
     await page.locator('.fd-try-frame').getByLabel('Notes').fill('Bring the plans');
     await expect(drawer.locator('.fd-try-data')).toContainText('"Bring the plans"');
     await screen(page, 'json-try-data', { viewport: true });
-    await drawer.getByRole('button', { name: 'Problems' }).click();
+    await problemsTab.click();
     await expect(drawer.locator('.fd-try-problem')).toHaveText(['CustomerCustomer is required']);
     await drawer.locator('.fd-try-problem').click();
     await expect(page.locator('.fd-try-frame').getByLabel('Customer')).toBeFocused();

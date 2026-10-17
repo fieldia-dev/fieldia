@@ -67,7 +67,7 @@
             "required": "role == 'other'"
           },
           { "type": "field", "id": "f-team", "field": "team_size", "invisible": "role != 'manager'" },
-          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel" }
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel", "colspan": 2 }
         ]
       },
       {

@@ -360,10 +360,26 @@ function themeGround() {
   const app = document.getElementById('app');
   if (!app) return;
   const root = document.documentElement;
+  /** Whether a colour, as rgb(), is a dark one: what a light scheme's words could not be read on. */
+  const dark = (colour) => {
+    const [r, g, b] = (colour.match(/[\d.]+/g) ?? []).map(Number);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
+  };
+  /** The frame's own page, in its scheme: what the words round the form (a log under it, a bar over it) are drawn for. */
+  const framePage = () => {
+    const probe = document.createElement('i');
+    probe.style.background = 'var(--dh-page)';
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return colour;
+  };
   const paint = () => {
     const form = app.querySelector('.fd-form[data-fd-theme]');
     const ground = form ? getComputedStyle(form).backgroundColor : '';
-    const on = !!ground && ground !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(ground);
+    // Only a ground of the frame's own kind, light on light or dark on dark: the words round the form stay readable
+    // when a page asks its form for a scheme of its own.
+    const on = !!ground && ground !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(ground) && dark(ground) === dark(framePage());
     root.classList.toggle('demo-themed', on);
     if (on) root.style.setProperty('--demo-ground', ground);
     else root.style.removeProperty('--demo-ground');
