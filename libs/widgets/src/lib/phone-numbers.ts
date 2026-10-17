@@ -33,6 +33,8 @@ interface Plan extends PhoneCountry {
   readonly rule: string;
   readonly rules: readonly { readonly starts: RegExp; readonly lengths: readonly number[] }[];
   readonly formats: readonly Format[];
+  /** How its mobiles start (Egypt's 10, 11, 12, 15): any number may be one where null — their kind unknown, or a mobile written as a fixed line (+1's) — none where false. */
+  readonly mobile: RegExp | null | false;
 }
 
 let plans: Map<string, Plan> | undefined;
@@ -51,7 +53,7 @@ function read(): Map<string, Plan> {
   plans = new Map();
   byDial = new Map();
   for (const line of PHONE_TABLE.split('\n')) {
-    const [code, dial, trunk, rule, rules, ...rest] = line.split(' ');
+    const [code, dial, trunk, rule, rules, mobile, ...rest] = line.split(' ');
     const main = byDial.get(dial)?.[0];
     const formats = rest.length
       ? rest
@@ -76,6 +78,7 @@ function read(): Map<string, Plan> {
         return { starts: new RegExp(`^(?:${one.slice(at + 1)})`), lengths: [...one.slice(0, at)].map(lengthOf) };
       }),
       formats,
+      mobile: mobile === '*' ? null : mobile === '-' ? false : new RegExp(`^(?:${mobile})`),
     };
     plans.set(code, plan);
     byDial.set(dial, [...(byDial.get(dial) ?? []), plan]);
@@ -96,8 +99,8 @@ export function phoneCountry(code: string | null | undefined): PhoneCountry | un
 /** A country's flag, from its code's two letters (shown as those letters where a system draws no flags). */
 export const flagOf = (code: string): string => String.fromCodePoint(...[...code.toUpperCase()].map((letter) => 0x1f1a5 + letter.charCodeAt(0)));
 
-/** Why a number does not read: no country to read it in, no country's code, too short, too long, or no number there starts so. */
-export type PhoneProblem = 'country' | 'code' | 'short' | 'long' | 'start';
+/** Why a number does not read: letters in it, no country to read it in, no country's code, too short, too long, or no number there starts so. */
+export type PhoneProblem = 'letters' | 'country' | 'code' | 'short' | 'long' | 'start';
 
 /** A number read: kept as E.164 with its country, or why it is not one (with the country it was read in, and the start none there has). */
 export type PhoneReading = { readonly number: string; readonly country: string } | { readonly problem: PhoneProblem; readonly country?: string; readonly start?: string };
@@ -171,8 +174,10 @@ export function typedCode(text: string): { dial: string; digits: string } | unde
  * long there, or no number there starts so (`start`, as typed).
  */
 export function readPhone(text: string, country?: string | null): PhoneReading {
-  const digits = foldDigits(stripMarks(text)).replace(/\D/g, '');
   const home = phoneCountry(country);
+  // Letters are no part of a number: "0151 abc" is said to have them, never read as its digits ("too short").
+  if (/\p{L}/u.test(stripMarks(text))) return home ? { problem: 'letters', country: home.code } : { problem: 'letters' };
+  const digits = foldDigits(stripMarks(text)).replace(/\D/g, '');
   const abroad = abroadDigits(text, home);
   if (abroad !== null) {
     read();
@@ -260,9 +265,25 @@ export function writePhone(number: string, shown: 'international' | 'national' =
   return atHome ? grouped(plan, parts.digits, true) : `+${parts.dial} ${grouped(plan, parts.digits, false)}`;
 }
 
-/** Where a number's links go: a call (`tel:`) and a WhatsApp chat (wa.me); undefined for one that is not a number. */
-export function phoneLinks(number: string): { call: string; whatsapp: string } | undefined {
-  return phoneParts(number) ? { call: `tel:${number}`, whatsapp: `https://wa.me/${number.slice(1)}` } : undefined;
+/**
+ * Whether an E.164 number may be a mobile, by how its country's mobiles start: Cairo's 02 2537 4100 is a fixed line,
+ * its 010… a mobile. Where a country's mobiles cannot be told from its fixed lines (+1's), or their kind is unknown,
+ * any number may be one.
+ */
+export function canBeMobile(number: string): boolean {
+  const parts = phoneParts(number);
+  if (!parts) return false;
+  const mobile = (read().get(parts.country) as Plan).mobile;
+  return mobile === null || (mobile !== false && mobile.test(parts.digits));
+}
+
+/**
+ * Where a number's links go: a call (`tel:`), and a WhatsApp chat (wa.me) for a number that may be a mobile — a fixed
+ * line has none; undefined for one that is not a number.
+ */
+export function phoneLinks(number: string): { call: string; whatsapp?: string } | undefined {
+  if (!phoneParts(number)) return undefined;
+  return canBeMobile(number) ? { call: `tel:${number}`, whatsapp: `https://wa.me/${number.slice(1)}` } : { call: `tel:${number}` };
 }
 
 /**

@@ -302,8 +302,11 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
     const away = !!zone && !isOwnZone(zone);
     setHidden(zoneNote, !away);
     if (away && zone) {
-      const middle = new Date(month.getFullYear(), month.getMonth(), 15, 12).getTime();
-      setText(zoneNote, fillIn(words.slotsZone, { zone: zoneName(middle, zone, locale, 'longGeneric'), mark: zoneName(middle, zone, locale) }));
+      // The zone by its name all year ("Central European Time"): a month may hold both its seasons — October's CEST,
+      // then CET from the 25th — so its season's short name stands beside the times alone, as the day has it. `{mark}`,
+      // for a note of the app's own, is the day's: the time held, else the day shown, else the month's middle.
+      const dayAt = at ?? (shown ? dateOf(shown).getTime() + 12 * 3600000 : new Date(month.getFullYear(), month.getMonth(), 15, 12).getTime());
+      setText(zoneNote, fillIn(words.slotsZone, { zone: zoneName(dayAt, zone, locale, 'longGeneric'), mark: zoneName(dayAt, zone, locale) }));
     }
   }
 

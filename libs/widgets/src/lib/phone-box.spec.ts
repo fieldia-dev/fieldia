@@ -144,6 +144,25 @@ describe('a phone read the world over', () => {
     expect(input.value).toBe('010 1oo 5678');
     expect(value()).toBeNull();
     expect(unread()?.text).toBe('010 1oo 5678');
+    // Why, in its words: letters, never "too short" for the digits left without them.
+    expect(unread()?.message).toBe('Mobile: letters are not allowed in a phone number');
+  });
+
+  it('the owner’s walk: "0151 abc" in Germany is said to have letters, not to be too short', () => {
+    const { input, unread } = mount({}, { phone: { country: 'DE' } });
+    type(input, '0151 abc');
+    leave(input);
+    expect(unread()).toEqual({ text: '0151 abc', message: 'Mobile: letters are not allowed in a phone number' });
+  });
+
+  it('offers WhatsApp for a number that can be a mobile, never for a fixed line; a country whose kinds are unknown keeps it', () => {
+    const cairo = mount({}, { phone: { country: 'EG' }, value: '+20225374100' });
+    expect(links(cairo.el)).toEqual([['Call', 'tel:+20225374100']]);
+    const mobile = mount({}, { phone: { country: 'EG' }, value: '+201005374100' });
+    expect(links(mobile.el).map(([name]) => name)).toEqual(['Call', 'WhatsApp']);
+    // A +1 number's kind cannot be told from its digits: it may be a mobile.
+    const us = mount({}, { phone: { country: 'US' }, value: '+12125550100' });
+    expect(links(us.el).map(([name]) => name)).toEqual(['Call', 'WhatsApp']);
   });
 
   it('keeps a number that does not read as it was typed, with why, and the value the field held', () => {

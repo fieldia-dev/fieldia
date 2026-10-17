@@ -1,4 +1,4 @@
-import { flagOf, phoneCountries, phoneCountry, phoneLinks, phoneParts, readPhone, shownPhone, typedCode, writePhone } from './phone-numbers';
+import { canBeMobile, flagOf, phoneCountries, phoneCountry, phoneLinks, phoneParts, readPhone, shownPhone, typedCode, writePhone } from './phone-numbers';
 import { PHONE_TABLE } from './phone-table';
 
 /**
@@ -18,7 +18,8 @@ describe('the table of countries', () => {
   });
 
   it('stays small: a tenth of libphonenumber’s weight', () => {
-    expect(PHONE_TABLE.length).toBeLessThan(24 * 1024);
+    // 23.1 KB in 0.24; 25.0 with how each country's mobiles start (WhatsApp for those alone).
+    expect(PHONE_TABLE.length).toBeLessThan(26 * 1024);
   });
 
   it('draws a country’s flag from its code', () => {
@@ -29,6 +30,12 @@ describe('the table of countries', () => {
 
 describe('a number read', () => {
   const read = (text: string, country?: string | null) => readPhone(text, country);
+
+  it('says a number with letters in it has letters, whatever its digits', () => {
+    expect(read('0151 abc', 'DE')).toEqual({ problem: 'letters', country: 'DE' });
+    expect(read('+20 10 1234 5678 ext', 'EG')).toEqual({ problem: 'letters', country: 'EG' });
+    expect(read('010 1OO 5678', null)).toEqual({ problem: 'letters' });
+  });
 
   it('takes a number typed at home in the country given, its trunk digit dropped, in any digits', () => {
     expect(read('010 1234 5678', 'EG')).toEqual({ number: '+201012345678', country: 'EG' });
@@ -134,6 +141,18 @@ describe('a number’s parts and links', () => {
     expect(phoneLinks('+201012345678')).toEqual({ call: 'tel:+201012345678', whatsapp: 'https://wa.me/201012345678' });
     expect(phoneLinks('+20101234567')).toBeUndefined();
     expect(phoneLinks('010 1234 5678')).toBeUndefined();
+  });
+
+  it('chats on WhatsApp only with a number that can be a mobile, by its country’s numbers: a fixed line is called', () => {
+    // Cairo's fixed line, a German one in Berlin, a London one: called, never chatted with.
+    for (const fixed of ['+20225374100', '+493012345678', '+442071234567']) expect(phoneLinks(fixed)).toEqual({ call: `tel:${fixed}` });
+    // Egypt's, Germany's, Britain's, Saudi Arabia's, France's mobiles.
+    for (const mobile of ['+201012345678', '+4915112345678', '+447911123456', '+966501234567', '+33612345678']) expect(phoneLinks(mobile)?.whatsapp).toBe(`https://wa.me/${mobile.slice(1)}`);
+    // Where a mobile cannot be told from a fixed line by its digits (+1's), it may be one: kept.
+    expect(phoneLinks('+12125550100')?.whatsapp).toBe('https://wa.me/12125550100');
+    expect(canBeMobile('+12125550100')).toBe(true);
+    expect(canBeMobile('+20225374100')).toBe(false);
+    expect(canBeMobile('not a number')).toBe(false);
   });
 
   it('knows the code of a number typed abroad’s way as it is typed', () => {
