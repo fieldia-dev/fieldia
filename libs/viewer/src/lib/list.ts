@@ -3,6 +3,7 @@ import {
   groupByFields,
   importFields,
   ownZone,
+  recordSentence,
   type ButtonNode,
   type DayCount,
   type FilterPeriod,
@@ -196,6 +197,8 @@ const isPromise = (value: unknown): value is Promise<unknown> => !!value && type
  */
 export function listView(context: ListContext): ListView {
   const { page, node, form, el, labels, fill, locale, doc } = context;
+  /** One of the list's sentences in the words its page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
   installListStyles(doc);
   const pageSize = node.pageSize ?? 40;
   const defaultSort = node.sort ?? [];
@@ -383,9 +386,9 @@ export function listView(context: ListContext): ListView {
   );
   // The headers in the person's order, those they hid hidden.
   arrangeRow(headRow);
-  const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
+  const empty = el('p', { class: 'fd-list-empty', hidden: '' }, sentence(labels.noRecordsNoun, labels.noRecords));
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
-  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
+  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, sentence(labels.loadFailedNoun, labels.loadFailed), ' ', retry);
   // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
   const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
@@ -751,7 +754,7 @@ export function listView(context: ListContext): ListView {
     chosenCount.textContent = wide && wide.got < wide.total && chosen.size === wide.got ? fill(labels.selectedOf, { n: number(chosen.size), total: number(wide.total) }) : fill(labels.selected, { n: number(chosen.size) });
     totals?.ticked([...chosen], currentFilter());
     every.hidden = !!wide || groupedNow || !chooseAll.checked || total <= shown.length || !context.dataSource?.list;
-    if (!every.hidden && !every.hasAttribute('aria-busy')) every.textContent = fill(labels.selectAllMatching, { n: number(total) });
+    if (!every.hidden && !every.hasAttribute('aria-busy')) every.textContent = fill(sentence(labels.selectAllMatchingNoun, labels.selectAllMatching), { n: number(total) });
     // Edit, where one record chosen at least may be changed as far as the list knows.
     let editable = false;
     for (const id of chosen) {
@@ -791,10 +794,10 @@ export function listView(context: ListContext): ListView {
       bar.hidden = pager.hidden && search.element.hidden;
     }
     // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
-    range.textContent = fill(labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
+    range.textContent = fill(sentence(labels.rangeNoun, labels.range), { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
     if (shownOf) {
       shownOf.hidden = rows.length >= total;
-      shownOf.textContent = fill(labels.relatedShown, { n: number(rows.length), total: number(total) });
+      shownOf.textContent = fill(sentence(labels.relatedShownNoun, labels.relatedShown), { n: number(rows.length), total: number(total) });
     }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
@@ -896,7 +899,7 @@ export function listView(context: ListContext): ListView {
     }
     body.replaceChildren(...drawn);
     empty.hidden = drawn.length > 0 || !failed.hidden;
-    empty.textContent = context.none && !facets.length ? context.none : labels.noRecords;
+    empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');
     drawShape();
     drawPager();
@@ -1110,7 +1113,7 @@ export function listView(context: ListContext): ListView {
         wide = { total: Math.max(matched, ids.length), got: ids.length };
         for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-row .fd-list-checkbox')) box.checked = true;
       } catch {
-        context.say?.(labels.selectAllFailed, 'danger');
+        context.say?.(sentence(labels.selectAllFailedNoun, labels.selectAllFailed), 'danger');
       }
       drawChoice();
       viewParts.chosenChanged();
@@ -1154,7 +1157,7 @@ export function listView(context: ListContext): ListView {
     const ids = chosen.size;
     exportWhat.textContent = ids
       ? fill(labels.selected, { n: number(ids) })
-      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? labels.exportAllOne : labels.exportAll, { n: number(matching) });
+      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
     exportMenu.hidden = false;
     // From the button's start, unless that runs past the screen's edge: then from its end.
     exportMenu.removeAttribute('data-end');
@@ -1221,10 +1224,10 @@ export function listView(context: ListContext): ListView {
         });
         if (destroyed) return;
         if ('message' in end) context.say?.(end.message, 'info');
-        else if (end.done < end.total) context.say?.(fill(labels.exportCut, { n: number(end.done), total: number(end.total) }), 'warning');
-        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? labels.exportedOne : labels.exported, { n: number(end.done) }), 'success');
+        else if (end.done < end.total) context.say?.(fill(sentence(labels.exportCutNoun, labels.exportCut), { n: number(end.done), total: number(end.total) }), 'warning');
+        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
       } catch {
-        if (!destroyed) context.say?.(labels.exportFailed, 'danger');
+        if (!destroyed) context.say?.(sentence(labels.exportFailedNoun, labels.exportFailed), 'danger');
       }
     });
   }
@@ -1280,14 +1283,14 @@ export function listView(context: ListContext): ListView {
           PRINT_MOST
         );
       } catch {
-        if (!destroyed) context.say?.(labels.printFailed, 'danger');
+        if (!destroyed) context.say?.(sentence(labels.printFailedNoun, labels.printFailed), 'danger');
         return;
       }
       if (destroyed) return;
       // Its logo drawn before the browser lays the sheet out for paper.
       await Promise.all([...out.sheet.querySelectorAll('img')].map((image) => (typeof image.decode === 'function' ? image.decode().catch(() => undefined) : undefined)));
       if (destroyed) return;
-      if (out.done < out.total) context.say?.(fill(labels.printCut, { n: number(out.done), total: number(out.total) }), 'warning');
+      if (out.done < out.total) context.say?.(fill(sentence(labels.printCutNoun, labels.printCut), { n: number(out.done), total: number(out.total) }), 'warning');
       progress.textContent = '';
       // In the list's place on paper, inside its form: its language, its direction and its accent.
       element.append(out.sheet);
@@ -1308,7 +1311,7 @@ export function listView(context: ListContext): ListView {
       const n = ids.length;
       const one = new Intl.PluralRules(locale).select(n) === 'one';
       const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
-      const asked = await askBulkValue(how, bulk.editValues, fill(one ? labels.bulkTitleOne : labels.bulkTitle, { n: number(n) }));
+      const asked = await askBulkValue(how, bulk.editValues, fill(one ? sentence(labels.bulkTitleNounOne, labels.bulkTitleOne) : sentence(labels.bulkTitleNoun, labels.bulkTitle), { n: number(n) }));
       if (!asked || destroyed) return;
       if (!(await bulk.ask(bulkQuestion(how, n, asked.field, asked.value, number))) || destroyed) return;
       report.hidden = true;
@@ -1326,12 +1329,12 @@ export function listView(context: ListContext): ListView {
           wide = { total: failed.length, got: failed.length };
           const names = await namesOf(failed.map(({ id }) => id));
           if (destroyed) return;
-          reportWords.textContent = fill(labels.bulkSome, { done: number(done), n: number(n) });
+          reportWords.textContent = fill(sentence(labels.bulkSomeNoun, labels.bulkSome), { done: number(done), n: number(n) });
           reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
           reportFix.hidden = reportUndo.hidden = true;
           reported = edit;
           report.hidden = false;
-        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.bulkDoneOne : labels.bulkDone, { n: number(done) }), 'success');
+        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
         await Promise.all([load(), viewParts.reload()]);
       });
     } finally {
@@ -1365,7 +1368,7 @@ export function listView(context: ListContext): ListView {
       try {
         part = await importPart.load();
       } catch {
-        context.say?.(labels.importFailed, 'danger');
+        context.say?.(sentence(labels.importFailedNoun, labels.importFailed), 'danger');
         return;
       }
       if (destroyed) return;
@@ -1393,10 +1396,10 @@ export function listView(context: ListContext): ListView {
       const made = end.made.length;
       const one = new Intl.PluralRules(locale).select(made) === 'one';
       reportWords.textContent = end.stopped
-        ? fill(labels.importStopped, { n: number(made), total: number(end.total) })
+        ? fill(sentence(labels.importStoppedNoun, labels.importStopped), { n: number(made), total: number(end.total) })
         : end.notImported.length
-          ? fill(labels.importSome, { n: number(made), total: number(end.total) })
-          : fill(one ? labels.importDoneOne : labels.importDone, { n: number(made) });
+          ? fill(sentence(labels.importSomeNoun, labels.importSome), { n: number(made), total: number(end.total) })
+          : fill(one ? sentence(labels.importDoneNounOne, labels.importDoneOne) : sentence(labels.importDoneNoun, labels.importDone), { n: number(made) });
       reportList.replaceChildren(...end.notImported.slice(0, 50).map(({ number: row, why }) => el('li', {}, fill(labels.importRow, { n: number(row), why }))));
       reportFix.hidden = !end.notImported.length;
       reportFix.onclick = () => void end.downloadFix(end.notImported);
@@ -1412,7 +1415,7 @@ export function listView(context: ListContext): ListView {
   /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
   async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
     const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
-    if (!context.ask || !(await context.ask(fill(one ? labels.importUndoAskOne : labels.importUndoAsk, { n: number(ids.length) }))) || destroyed) return;
+    if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }))) || destroyed) return;
     await busy(reportUndo, async () => {
       const { done, failed } = await undo(ids, (at, of) => {
         if (!destroyed) progress.textContent = fill(labels.importUndoing, { done: number(at), n: number(of) });
@@ -1422,11 +1425,11 @@ export function listView(context: ListContext): ListView {
       if (failed.length) {
         const names = await namesOf(failed.map(({ id }) => id));
         if (destroyed) return;
-        reportWords.textContent = fill(labels.importUndoSome, { done: number(done), n: number(ids.length) });
+        reportWords.textContent = fill(sentence(labels.importUndoSomeNoun, labels.importUndoSome), { done: number(done), n: number(ids.length) });
         reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
       } else {
         report.hidden = true;
-        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.importUndoneOne : labels.importUndone, { n: number(done) }), 'success');
+        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
         importButton.focus();
       }
       await Promise.all([load(), viewParts.reload()]);

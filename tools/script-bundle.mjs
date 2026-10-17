@@ -810,7 +810,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (viewerWords) — 509.23 measured before, 497.88 after: 11.4 less, to 497.9.
 // The words lane joined with every other lane (size-words; its line above measured on the size pass's tip): 512.44
 // measured before, 500.97 after — 11.5 less, to 501.0.
-const BUDGET_KB = 501.0;
+// A page names its records (0.26, open-names): the page's `records` read and checked, a sentence said in its words
+// (recordSentence) — the form's questions before Archive and Delete, why it may not, why a run stopped, what letting
+// changes go asks; a record's crumb, its pager, the gear's This record, someone else's save, a record only to be read,
+// a list that could not load — their 19 English sentences beside the plain ones, a language's or an app's own sentence
+// said where it gives none with a noun, and a related list asking the app's page for its model what its records are
+// called: 500.97 measured before, 504.04 after — 3.1 more, to 504.1.
+const BUDGET_KB = 504.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -982,7 +988,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // parts read being in both.
 // The words lane joined with every other lane (listed with the raw budget above): 165.44 measured before, 161.14 after
 // — 4.3 less, to 161.2.
-const GZIP_BUDGET_KB = 161.2;
+// A page names its records (0.26; listed with the raw budget above): 161.14 measured before, 162.15 after — 1.0 more,
+// to 162.2.
+const GZIP_BUDGET_KB = 162.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1116,7 +1124,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Arabic's to 54.8, German's to 23.5, French's to 24.3 and, its 8.40 half a byte over, 8.5.
 // The walk's engine lane joined, its words for values that wait, several currencies and a phone's letters: Arabic's
 // 67.21 and 11.65, German's 29.04 and 9.95, French's 30.08 and 10.00, each to the next 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [29.1, 10.0], fr: [30.1, 10.1] };
+// A page names its records (0.26): each sentence a language can say round any page's words for its records — German's
+// 42 (its plurals and its "ein Kunde" agree with no gender), French's 31 (none that agrees with the noun's) — the rest
+// left out, so the language's own plain sentence is said: German's 29.04 and 9.95 measured before, 31.46 and 10.29
+// after, to 31.5 and 10.3; French's 30.08 and 10.00 to 31.76 and 10.28, to 31.8 and 10.3; Arabic's one (the pager's
+// name), 67.23 and 11.66, under its own.
+const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [31.5, 10.3], fr: [31.8, 10.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1357,7 +1370,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 19.94 and 7.52; duplicates 14.79 and 6.24; head 34.46 and 10.02; date 22.13 and 8.38; filters 11.25 and 4.21;
 // columns 10.96 and 4.05; path 16.06 and 6.31; choice 10.64 and 4.34 — each to the next 0.1 over; cards, themes and
 // quiet as they were.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A page names its records (0.26, open-names): each part's sentences in the page's words for them, their English with
+// it — list 103.42 and 33.50 measured before, 106.67 and 34.19 after (its pager, nothing found, Select all, Export,
+// Edit, Print's count, Import's report and Undo, a related list's New, View all, None and "5 of 23 invoices" in its
+// model page's words: 35), to 106.7 and 34.2; import 35.99 and 14.29 to 36.29 and 14.37 (Import 10 contacts, could not
+// import them, made none of it: 4), to 36.3 and 14.4; duplicates 14.79 and 6.24 to 15.85 and 6.54 (a customer with
+// this phone, It's a new customer, the merge's title, words and column: 7, and a label written small where the page
+// says so), to 15.9 and 6.6.
+const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [106.7, 34.2], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.3, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [15.9, 6.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

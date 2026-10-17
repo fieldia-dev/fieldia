@@ -373,3 +373,58 @@ describe('without the source’s duplicates', () => {
     expect(host.querySelector('.fd-duplicates-said')).toBeNull();
   });
 });
+
+describe('possible duplicates on a page that names its records', () => {
+  const customers = (records: Page['records'], more: Partial<Page> = {}) => page({ records, ...more });
+
+  it('says a customer with this phone, its label written small inside the sentence where the page says so', async () => {
+    const ds = source();
+    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['A customer with this phone already exists: Nile Traders']);
+    expect(ways('phone')).toEqual(['Open it', 'It’s a new customer']);
+  });
+
+  it('keeps a label whose first word holds another capital as written: "Tax ID" small, "IBAN" never', async () => {
+    const ds = source();
+    const shown = customers({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true });
+    await mount({ dataSource: ds }, { ...shown, fields: { ...shown.fields, email: { type: 'char', label: 'IBAN' } } });
+    await type('vat', '123-456-789', 20);
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('vat')).toEqual(['A customer with this tax ID already exists: Nile Traders', 'A customer with this tax ID already exists: Nile Traders Co.']);
+    await type('email', 'orders@deltafoods.example', 5);
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('email')).toEqual(['A customer with this IBAN already exists: Delta Foods']);
+  });
+
+  it('keeps each label as the page wrote it unless it says so, and says "A record" where the page gives no article', async () => {
+    const ds = source();
+    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers' }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['A record with this Phone already exists: Nile Traders']);
+    // A sentence with no article in it names the record still.
+    expect(ways('phone')).toEqual(['Open it', 'It’s a new customer']);
+  });
+
+  it('keeps a German label’s capital: a language that writes its nouns so', async () => {
+    const ds = source();
+    await mount({ dataSource: ds, locale: 'de' }, customers({ one: 'Kunde', other: 'Kunden', a: 'ein Kunde', lowerLabels: true }, { fields: { ...page().fields, phone: { type: 'char', label: 'Telefon' } } }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['Ein Kunde mit gleichem Wert in Telefon ist bereits vorhanden: Nile Traders']);
+  });
+
+  it('names them on the merge’s screen', async () => {
+    const ds = source();
+    await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers', a: 'a customer' }));
+    await pass(0);
+    way('email', 'Merge…').click();
+    await pass(0);
+    const screen = document.querySelector('.fd-merge') as HTMLElement;
+    expect(screen.querySelector('.fd-form-dialog-title')?.textContent).toBe('Merge two customers');
+    expect(screen.querySelector('.fd-merge-intro')?.textContent).toBe('Pick the customer to keep, then the value it keeps for each field.');
+    expect(screen.querySelector('.fd-merge-shown')?.textContent).toBe('This customer');
+  });
+});

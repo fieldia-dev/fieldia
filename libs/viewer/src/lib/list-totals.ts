@@ -2,7 +2,7 @@ import { placesOfCurrency, type DataSource, type GroupInterval, type LineField, 
 import { currencyOf, displayValue, formatNumber } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { GroupKey } from './list-groups';
-import type { ViewerLabels } from './labels';
+import type { ViewerLabels, WordKey } from './labels';
 
 export interface TotalsContext {
   page: Page;
@@ -48,7 +48,7 @@ export interface GroupSums {
   why?: string;
 }
 
-const KIND_WORDS: Record<Exclude<TotalKind, 'sum'>, keyof ViewerLabels> = { avg: 'totalAvg', min: 'totalMin', max: 'totalMax', count: 'totalCount' };
+const KIND_WORDS: Record<Exclude<TotalKind, 'sum'>, WordKey> = { avg: 'totalAvg', min: 'totalMin', max: 'totalMax', count: 'totalCount' };
 
 /**
  * A list's totals (`cells.<column>.total`), asked of the data source's

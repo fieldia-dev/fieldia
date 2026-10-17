@@ -45,6 +45,7 @@ import {
   type WaitsFor,
   MESSAGES,
   hotkeyWords,
+  recordSentence,
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
@@ -378,6 +379,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
+  /** One of the viewer's sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
   /**
    * What the page's steps ask of the screen: a page opened, words said, a
    * question asked, a tab shown — the viewer's own, under the app's. A form
@@ -395,7 +398,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           missing: (id) => fill(labels.pageMissing, { page: id }),
           say: (message, tone) => actionHost.say(message, tone),
           post: (message) => form.post(message),
-          name: () => recordName() || labels.newRecord,
+          name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
         },
@@ -497,7 +500,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -1395,6 +1398,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           open: (request) => actionHost.open(request),
           say: (message, tone) => actionHost.say(message, tone),
           name: recordName,
+          recordsOf: modelRecords,
         });
         part.update(form.getState());
       };
@@ -1405,6 +1409,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       else void listPart.load().then((module) => gone || take(module), () => undefined);
       hideWhen(box, node.id);
       return box;
+    }
+
+    /** What the app's page for a model calls its records, as this page is shown: now, or once the app has found it. */
+    function modelRecords(model: string) {
+      const of = (other: Page | null) => (other?.records ? shownAs(other).records : undefined);
+      try {
+        const found = findPage(options, { model });
+        return found instanceof Promise ? found.then(of, () => undefined) : of(found);
+      } catch {
+        return undefined;
+      }
     }
 
     /** A map of the record's places, drawn by the app's maps; told of each change to the form. */
@@ -1773,6 +1788,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       records: options.records,
       breadcrumbs: options.breadcrumbs,
       labels,
+      locale,
       icons: options.icons,
       uid,
       fill,
@@ -2278,7 +2294,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (options.onNewRecord) return { onNewRecord: options.onNewRecord };
     const model = page.data.kind === 'record' ? page.data.model : '';
     if (!model || (!options.pages && !options.relatedPages) || !dialogs.canOpen(model)) return {};
-    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: labels.newRecord }) };
+    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: sentence(labels.newRecordNoun, labels.newRecord) }) };
   }
   let pageDrawn = false;
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */

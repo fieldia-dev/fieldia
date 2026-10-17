@@ -1,4 +1,4 @@
-import type { Form, MenuItem, RecordId, RecordToolbar, RunResult } from '@fieldia/core';
+import { recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
 import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -34,6 +34,8 @@ export interface RecordBarContext {
   records: readonly RecordId[] | RecordPager | undefined;
   breadcrumbs: readonly Breadcrumb[] | undefined;
   labels: ViewerLabels;
+  /** The language the bar's words are in, for a capital a record's name begins a sentence with ("Customers"). */
+  locale?: string;
   icons?: IconSet;
   uid(id: string): string;
   fill(template: string, values: Record<string, string | number>): string;
@@ -53,6 +55,9 @@ const GEAR: IconSet = {
 };
 
 const same = (a: RecordId | null | undefined, b: RecordId | null | undefined) => a != null && b != null && String(a) === String(b);
+
+/** One of the bar's sentences in the words the form's page names its records by (`records`), else as it says them plainly. */
+const sentenceOf = (context: Pick<RecordBarContext, 'form' | 'locale'>) => (noun: string | undefined, words: string) => recordSentence(context.form.page.records, noun, words, context.locale);
 
 /**
  * The bar over a record, as Flectra's control panel: the breadcrumbs the app
@@ -106,7 +111,8 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
       el('li', {}, current)
     );
     bar.append(el('nav', { class: 'fd-breadcrumbs', 'aria-label': labels.breadcrumbs }, list));
-    updaters.push(() => setText(current, context.name() || labels.newRecord));
+    const newRecord = sentenceOf(context)(labels.newRecordNoun, labels.newRecord);
+    updaters.push(() => setText(current, context.name() || newRecord));
   }
 
   // ---- the gear menu ----
@@ -127,7 +133,7 @@ export function recordBar(context: RecordBarContext): { element: HTMLElement; up
 }
 
 /** What the record's menu needs of the viewer that draws it. */
-export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'uid' | 'withIcon' | 'press'>;
+export type RecordMenuContext = Pick<RecordBarContext, 'doc' | 'el' | 'form' | 'labels' | 'locale' | 'uid' | 'withIcon' | 'press'>;
 
 /**
  * The record's menu: the gear with its words over a record, or — `more` —
@@ -146,7 +152,7 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   const menu = el('div', { class: 'fd-record-menu', role: 'menu', id, 'aria-labelledby': gear.id, hidden: '' });
   const drawn = items.map((item) => {
     // The built-in Print is under its Print heading: "This record".
-    const words = item.label ?? (item.builtin === 'print' ? labels.printRecord : item.builtin ? labels[item.builtin] : item.id);
+    const words = item.label ?? (item.builtin === 'print' ? sentenceOf(context)(labels.printRecordNoun, labels.printRecord) : item.builtin ? labels[item.builtin] : item.id);
     const button = el('button', { type: 'button', role: 'menuitem', tabindex: '-1', class: 'fd-record-menu-item', 'data-node': item.id }, ...context.withIcon(item.icon, words));
     if (item.builtin === 'delete') button.classList.add('fd-record-menu-danger');
     button.addEventListener('click', () => {
@@ -247,11 +253,13 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
   };
   // "3 / 42" reads left to right in every language, as numbers do.
   const text = el('span', { class: 'fd-record-pager-text', dir: 'ltr' });
-  const previous = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.previousRecord }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '‹'));
-  const next = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.nextRecord }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '›'));
-  hotkeyOn(previous, 'p', labels.previousRecord);
-  hotkeyOn(next, 'n', labels.nextRecord);
-  const box = el('div', { class: 'fd-record-pager', role: 'group', 'aria-label': labels.records }, text, previous, next);
+  const sentence = sentenceOf(context);
+  const [before, after] = [sentence(labels.previousRecordNoun, labels.previousRecord), sentence(labels.nextRecordNoun, labels.nextRecord)];
+  const previous = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': before }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '‹'));
+  const next = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': after }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '›'));
+  hotkeyOn(previous, 'p', before);
+  hotkeyOn(next, 'n', after);
+  const box = el('div', { class: 'fd-record-pager', role: 'group', 'aria-label': sentence(labels.recordsNoun, labels.records) }, text, previous, next);
 
   const idAt = async (place: number): Promise<RecordId> => (ids ? ids[place] : (asked as RecordPager).id(place));
   async function move(by: number) {

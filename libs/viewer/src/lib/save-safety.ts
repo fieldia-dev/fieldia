@@ -1,4 +1,4 @@
-import type { Form, FormState, LineField, Locale, Page, RecordPermissions, Values } from '@fieldia/core';
+import { recordSentence, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -100,7 +100,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
       if (form.getState().setAside) asideTitle.focus();
       else {
         focusOn(changedNow);
-        context.announce(labels.reloaded);
+        context.announce(recordSentence(context.page.records, labels.reloadedNoun, labels.reloaded, context.locale));
       }
       return true;
     })
@@ -163,7 +163,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     if (found) {
       const name = found.version.by || labels.someoneElse;
       const time = found.version.at ? timeWords(found.version.at, context.tag, context.locale) : '';
-      setText(title, time ? fill(labels.conflictAt, { name, time }) : fill(labels.conflictSince, { name }));
+      const said = (noun: string | undefined, words: string) => recordSentence(context.page.records, noun, words, context.locale);
+      setText(title, time ? fill(said(labels.conflictAtNoun, labels.conflictAt), { name, time }) : fill(said(labels.conflictSinceNoun, labels.conflictSince), { name }));
       const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(fieldLabel)) }) : '';
       const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(fieldLabel)) }) : '';
       setText(changed, [theirs, both].filter(Boolean).join(' '));
@@ -222,7 +223,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     const can: Readonly<RecordPermissions> | null = state.can;
     const readOnly = can?.edit === false;
     setHidden(note, !readOnly);
-    setText(noteWords, readOnly ? (can?.reason ?? labels.readOnlyRecord) : '');
+    setText(noteWords, readOnly ? (can?.reason ?? recordSentence(context.page.records, labels.readOnlyRecordNoun, labels.readOnlyRecord, context.locale)) : '');
     setAttr(note, 'data-reason', readOnly && can?.reason ? '' : null);
   }
 

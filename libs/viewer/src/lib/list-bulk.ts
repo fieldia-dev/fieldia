@@ -1,4 +1,4 @@
-import { bulkEditFields, saveProblemOf, type DataSource, type Field, type LayoutNode, type LineField, type ListNode, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type SaveProblem, type Value, type Values } from '@fieldia/core';
+import { bulkEditFields, recordSentence, saveProblemOf, type DataSource, type Field, type LayoutNode, type LineField, type ListNode, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type SaveProblem, type Value, type Values } from '@fieldia/core';
 import { displayValue, type WidgetDialogs } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 
@@ -96,7 +96,8 @@ export function bulkQuestion(list: BulkList, count: number, field: string, value
   const one = new Intl.PluralRules(list.locale).select(count) === 'one';
   const words = value === null || value === undefined ? '' : def.type === 'boolean' ? (value ? labels.yes : labels.no) : displayValue(def as LineField, value, {}, list.locale);
   const what = words ? fill(labels.bulkSet, { field: def.label, value: words }) : fill(labels.bulkClear, { field: def.label });
-  return `${fill(one ? labels.bulkAskOne : labels.bulkAsk, { n: number(count) })} ${what}`;
+  const ask = one ? recordSentence(list.page.records, labels.bulkAskNounOne, labels.bulkAskOne, list.locale) : recordSentence(list.page.records, labels.bulkAskNoun, labels.bulkAsk, list.locale);
+  return `${fill(ask, { n: number(count) })} ${what}`;
 }
 
 /** Why the source refused a record, as the list says it: who changed it since it was listed, the field's own words, or the source's. */
@@ -108,6 +109,7 @@ function whyOf(list: BulkList, problem: SaveProblem): string {
 /** Writes the value in each record, saying how far it has got; the records not changed, in their order, and why. */
 export async function writeBulk(list: BulkList, ids: readonly RecordId[], field: string, value: Value, progress: (done: number, total: number) => void): Promise<{ done: number; failed: BulkFailure[] }> {
   const { labels, model } = list;
+  const readOnly = recordSentence(list.page.records, labels.readOnlyRecordNoun, labels.readOnlyRecord, list.locale);
   const source = list.dataSource as DataSource;
   const def = list.page.fields[field];
   const failed: BulkFailure[] = [];
@@ -115,7 +117,7 @@ export async function writeBulk(list: BulkList, ids: readonly RecordId[], field:
   // What the list knows the person may not change is never sent: it says why at once.
   for (const id of ids) {
     const can = list.known(id)?.can;
-    if (can?.edit === false) failed.push({ id, why: can.reason ?? labels.readOnlyRecord });
+    if (can?.edit === false) failed.push({ id, why: can.reason ?? readOnly });
     else if (can?.readonlyFields?.includes(field) || can?.hiddenFields?.includes(field)) failed.push({ id, why: can.reason ?? labels.fieldNotYours });
     else sent.push(id);
   }

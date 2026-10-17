@@ -33,7 +33,10 @@ export const PART_WORDS = {
   columns: { viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
   date: { widgets: ['chooseDate', 'weekShort', 'notPastedDate', 'previousMonth', 'nextMonth'] },
   duplicates: {
-    viewer: ['duplicateWith', 'duplicateNamed', 'duplicateNamedWith', 'duplicateAnd', 'duplicatesMore', 'openDuplicate', 'notDuplicate', 'mergeDuplicate', 'mergeTitle', 'mergeIntro', 'mergeKeep', 'mergeShown', 'mergeEmpty', 'mergeSame', 'mergeAllSame', 'mergeWhat', 'merging', 'mergeUnread'],
+    viewer: [
+      'duplicateWith', 'duplicateNamed', 'duplicateNamedWith', 'duplicateAnd', 'duplicatesMore', 'openDuplicate', 'notDuplicate', 'mergeDuplicate', 'mergeTitle', 'mergeIntro', 'mergeKeep', 'mergeShown', 'mergeEmpty', 'mergeSame', 'mergeAllSame', 'mergeWhat', 'merging', 'mergeUnread',
+      'duplicateWithNoun', 'duplicateNamedNoun', 'duplicateNamedWithNoun', 'notDuplicateNoun', 'mergeTitleNoun', 'mergeIntroNoun', 'mergeShownNoun',
+    ],
   },
   files: {
     widgets: [
@@ -55,6 +58,7 @@ export const PART_WORDS = {
       'importFileRows', 'importFileRowsOne', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
       'importWhy', 'importFixName', 'importing', 'importStop', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
+      'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
   lines: {
@@ -74,6 +78,9 @@ export const PART_WORDS = {
       'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opSet', 'opNotSet', 'opPeriod', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'expandAll', 'collapseAll',
       'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown',
+      'rangeNoun', 'noRecordsNoun', 'selectAllMatchingNoun', 'selectAllFailedNoun', 'exportAllNoun', 'exportAllNounOne', 'exportCutNoun', 'exportFailedNoun', 'exportedNoun', 'exportedNounOne', 'printCutNoun', 'printFailedNoun',
+      'printCountNoun', 'printCountNounOne', 'bulkTitleNoun', 'bulkTitleNounOne', 'bulkAskNoun', 'bulkAskNounOne', 'bulkDoneNoun', 'bulkDoneNounOne', 'bulkSomeNoun', 'importDoneNoun', 'importDoneNounOne', 'importStoppedNoun', 'importSomeNoun',
+      'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun',
     ],
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },

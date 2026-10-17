@@ -1,6 +1,6 @@
 import { MESSAGES, type Locale, type Messages } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from '@fieldia/widgets';
-import { VIEWER_LABELS, type ViewerLabels } from './labels';
+import { plainOf, VIEWER_LABELS, type ViewerLabels } from './labels';
 
 /** A language's own words, in the three places Fieldia keeps them. A word left out shows in English. */
 export interface LanguageWords {
@@ -24,10 +24,26 @@ const languagesGiven = new Map<Locale, LanguageWords>();
  */
 export function addLanguage(locale: Locale, words: LanguageWords): void {
   languagesGiven.set(locale, words);
-  MESSAGES[locale] = { ...MESSAGES.en, ...ownCounts(words.messages, MESSAGES.en) };
-  WIDGET_LABELS[locale] = { ...WIDGET_LABELS.en, ...ownCounts(words.widgets, WIDGET_LABELS.en) };
-  VIEWER_LABELS[locale] = { ...VIEWER_LABELS.en, ...ownCounts(words.viewer, VIEWER_LABELS.en) };
+  MESSAGES[locale] = withOwn(MESSAGES.en, words.messages);
+  WIDGET_LABELS[locale] = withOwn(WIDGET_LABELS.en, words.widgets);
+  VIEWER_LABELS[locale] = withOwn(VIEWER_LABELS.en, words.viewer);
 }
+
+/** A language's words over English's, its counts' own (`ownCounts`), and none of English's sentences it says plainly. */
+function withOwn<T extends object>(english: T, given: Partial<T> | undefined): T {
+  const words: Record<string, unknown> = { ...english, ...ownCounts(given, english) };
+  for (const key of Object.keys(words)) if (leftOut(key, given)) delete words[key];
+  return words as T;
+}
+
+/**
+ * A sentence in a page's words for its records (`exportedNoun`) that a language left out where it gave the sentence it
+ * stands for (`exported`): it says that one, its own, on such a page — never English's round the language's words.
+ */
+const leftOut = (key: string, given: object | undefined) => {
+  const plain = plainOf(key);
+  return plain !== null && !!given && !(key in given) && plain in given;
+};
 
 /**
  * A part's own words, in English, as the one-tag script's part brings them (tools/script-parts.ts): the main script's
@@ -46,7 +62,8 @@ function fillIn<T extends object>(tables: Record<string, T>, english: Partial<T>
   if (!english) return;
   for (const [locale, table] of Object.entries(tables)) {
     const own: Record<string, unknown> = locale === 'en' ? {} : ownCounts(languagesGiven.get(locale as Locale)?.[kind] as Partial<T> | undefined, english as T);
-    for (const [key, word] of Object.entries(english)) if (!Object.prototype.hasOwnProperty.call(table, key)) (table as Record<string, unknown>)[key] = own[key] ?? word;
+    const given = locale === 'en' ? undefined : (languagesGiven.get(locale as Locale)?.[kind] as object | undefined);
+    for (const [key, word] of Object.entries(english)) if (!Object.prototype.hasOwnProperty.call(table, key) && !leftOut(key, given)) (table as Record<string, unknown>)[key] = own[key] ?? word;
   }
 }
 
@@ -58,7 +75,13 @@ function ownCounts<T extends object>(given: Partial<T> | undefined, english: T):
   if (!given) return {};
   const words: Record<string, unknown> = { ...given };
   for (const [key, value] of Object.entries(given)) {
-    for (const count of ['One', 'Two', 'Many']) if (`${key}${count}` in english && !(`${key}${count}` in given)) words[`${key}${count}`] = value;
+    for (const count of ['One', 'Two', 'Many']) {
+      const counted = `${key}${count}`;
+      if (!(counted in english) || counted in given) continue;
+      // A count's sentence for a page's records (`exportedNounOne`) is the language's plain one for that count, where given.
+      const plain = plainOf(counted);
+      if (plain === null || !(plain in given)) words[counted] = value;
+    }
   }
   return words as Partial<T>;
 }
