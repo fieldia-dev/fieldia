@@ -4,7 +4,7 @@ import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
 import type { ViewerLabels } from './labels';
 import { openMergeScreen } from './merge-screen';
-import { nameFieldOf } from './related';
+import { nameFieldOf } from './name-field';
 
 /**
  * Possible duplicates (`duplicates` on a record's page), the duplicates part: while a person types in a field the
@@ -92,6 +92,8 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const said = el('div', { class: 'fd-sr-only fd-duplicates-said', role: 'status', 'aria-live': 'polite' });
   root.append(said);
   let saidKeys = new Set<string>();
+  /** A merge on its way, from its first save to its screen's answer: one at a time. */
+  let merging = false;
 
   const stop = () => {
     if (timer !== null) view.clearTimeout(timer);
@@ -256,7 +258,9 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
    * merged, the record kept is shown — loaded again when it is this one — and the merge said.
    */
   async function mergeWith(match: DuplicateMatch, pressed: HTMLElement) {
-    if (pressed.hasAttribute('aria-busy')) return;
+    if (merging) return;
+    merging = true;
+    // Busy while it saves and reads; not while the screen is open, which is the person's to answer.
     pressed.setAttribute('aria-busy', 'true');
     try {
       const before = form.getState();
@@ -274,14 +278,17 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
       if (!still() || gone) return;
       const typedName = nameField ? values[nameField] : null;
       const here: MergeSide = { id: recordId, name: typeof typedName === 'string' && typedName.trim() ? typedName : labels.newRecord, values: { ...values } };
+      pressed.removeAttribute('aria-busy');
       const done = await openMergeScreen(context, here, { id: match.id, name: match.name, values: other }, pressed);
       if (!done) return;
       if (still() && !gone) {
         if (String(done.id) === String(recordId)) await form.load();
         else await form.openRecord(done.id);
       }
-      context.say([fill(labels.merged, { name: done.name }), done.message ?? ''].filter(Boolean).join(' '), 'success');
+      // A name that ends its own sentence ("Nile Traders Co.") takes no second full stop.
+      context.say([fill(labels.merged, { name: done.name }).replace(/\.\.$/, '.'), done.message ?? ''].filter(Boolean).join(' '), 'success');
     } finally {
+      merging = false;
       pressed.removeAttribute('aria-busy');
     }
   }

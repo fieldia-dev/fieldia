@@ -813,9 +813,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
-// Possible duplicates and Merge (0.25; listed with the raw budget above): 167.12 measured before, 168.76 after — 1.6
-// more, to 168.8 (their 20 words about 0.6 of it).
-const GZIP_BUDGET_KB = 168.8;
+// Possible duplicates and Merge (0.25; listed with the raw budget above): 167.12 measured before, 168.50 after — 1.4
+// more, to the next 0.1 over, 168.6 (their 20 words about 0.6 of it).
+const GZIP_BUDGET_KB = 168.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1081,8 +1081,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Possible duplicates and Merge (0.25), a part of their own — the note of records like the one typed under the field
 // they matched on, asked a moment after typing rests and left unheard when typing goes on, Open it, It's someone new
 // remembered by record, Merge…'s screen of the two side by side, and their sheet — new, in fieldia.duplicates.js
-// (duplicates 13.9, 5.9, as measured 13.84 and 5.85), loaded only where a page names duplicates and its source answers
-// them, never waited for. In the main script they would have added 13.8 and 5.9 to every page.
+// (duplicates 13.9, 5.9, as measured 13.89 and 5.87), loaded only where a page names duplicates and its source answers
+// them, never waited for. In the main script they would have added 13.9 and 5.9 to every page.
 const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [72.5, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {

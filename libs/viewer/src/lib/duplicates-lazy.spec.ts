@@ -62,3 +62,25 @@ describe('possible duplicates, in their part', () => {
     expect(document.getElementById('fieldia-duplicates-styles')).not.toBeNull();
   });
 });
+
+describe('the viewer’s parts, as a bundler makes them', () => {
+  it('never reach the viewer (viewer.ts) but for its types: an app bundled whole would start one of its modules early, and mount before its words are set', () => {
+    // The modules a module takes values from, or hands on: its imports and re-exports of this folder, types aside.
+    const { readFileSync, readdirSync } = jest.requireActual<typeof import('node:fs')>('node:fs');
+    const { join } = jest.requireActual<typeof import('node:path')>('node:path');
+    const takes = (name: string) =>
+      [...readFileSync(join(__dirname, `${name}.ts`), 'utf8').matchAll(/^(?:import|export)\s+(type\s+)?\{[^}]*\}\s+from\s+'\.\/([a-z-]+)'/gm)].filter(([, types]) => !types).map(([, , from]) => from);
+    const parts = readdirSync(__dirname).filter((file) => file.endsWith('-part.ts')).map((file) => file.slice(0, -3));
+    expect(parts).toEqual(expect.arrayContaining(['duplicates-part', 'head-part', 'list-part', 'filters-part']));
+    for (const part of parts) {
+      const reached = new Set<string>();
+      const visit = (name: string): void => {
+        if (reached.has(name)) return;
+        reached.add(name);
+        for (const next of takes(name)) visit(next);
+      };
+      visit(part);
+      expect([part, reached.has('viewer')]).toEqual([part, false]);
+    }
+  });
+});

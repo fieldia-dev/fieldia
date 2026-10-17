@@ -1,7 +1,7 @@
 import { BULK_KINDS, isEmpty, saveProblemOf, type Field, type LineField, type Page, type RecordId, type Value, type Values } from '@fieldia/core';
 import { displayValue, keepTabIn } from '@fieldia/widgets';
 import type { DuplicatesContext, MergeSide } from './duplicates';
-import { nameFieldOf } from './related';
+import { nameFieldOf } from './name-field';
 
 /**
  * The merge's screen (the duplicates part): the record shown and the one found like it, side by side — a column each,
