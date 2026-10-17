@@ -288,6 +288,17 @@ pager's name. A language that leaves one out says its own plain sentence, and so
 does an app's `labels` that gives the plain one alone (`exported`): never an
 English sentence round another language's words. `addLanguage` keeps it so.
 
+With `"lowerLabels": true`, every sentence of the viewer's and the widgets' that
+puts a field's label after a word of it writes it with a small first letter, by
+the one rule of `@fieldia/core` (`labelAt`): a refused save's "Not saved. Check:
+full name, quantity", "Help for tax ID", "Locked: budget", "Fix quantity to see
+total", "Clear country", "Add tags", "Country of mobile", "Fix quantity to see
+this line's subtotal", "This field could not be shown: price", "They changed:
+phone.", "Put back phone", "Resize tax ID", "Filter by status", "Search name for:
+…", "The same in both: email." — one that begins its sentence ("Full name is
+required", "Status: nothing is called …") as written. The quiet look's "Add story
+points" has always been so, and keeps to the same rule.
+
 ## Possible duplicates, and Merge
 
 A record's page with `duplicates` (`{ "fields": ["name", "phone", "email"] }`)

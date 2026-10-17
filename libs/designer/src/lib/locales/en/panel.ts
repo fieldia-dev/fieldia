@@ -424,5 +424,5 @@ export const panel = {
   recordsAExample: 'a customer',
   recordsAHint: '“A customer”, “an invoice”: left empty, a sentence that needs it says “A record”.',
   recordsLowerLabels: 'Field names small inside them',
-  recordsLowerLabelsHint: '“A customer with this phone already exists”, not “this Phone”. A name like IBAN or WhatsApp stays as written.',
+  recordsLowerLabelsHint: 'Inside every sentence Fieldia says: “A customer with this phone already exists”, “Choose at least 2 for interests”. A label that begins a sentence, and a name like IBAN or WhatsApp, stay as written.',
 };
