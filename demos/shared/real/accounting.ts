@@ -3,6 +3,7 @@ import expense from '../../../examples/pages/real-expense.page.json';
 import invoice from '../../../examples/pages/real-invoice.page.json';
 import registerPayment from '../../../examples/pages/real-register-payment.page.json';
 import type { RealLane } from './lane';
+import { onePagePdf, type PdfLine } from '../invoice-pdf';
 
 /**
  * Accounting: Sherkety ERP's invoice (account.move), its Register Payment
@@ -909,6 +910,25 @@ function postMove(values: Values): ActionResult {
   return { values: posted };
 }
 
+/** The invoice as the app's report prints it: the firm, the customer, each line and the totals. */
+function invoicePdf(v: Values, customer: string | undefined): Uint8Array {
+  const currency = codeOf(v['currency_id']) ?? 'EGP';
+  const items = ((v['invoice_line_ids'] as Line[] | null) ?? []).filter(isAccountLine);
+  const lines: PdfLine[] = [
+    { text: COMPANY.label, bold: true, size: 16 },
+    { text: '26 July Street, Zamalek, Cairo  -  VAT EG 100-200-300', size: 9 },
+    { text: `Invoice ${String(v['name'] || 'Draft')}`, bold: true, size: 20, gap: 30 },
+    { text: `Customer: ${customer ?? ''}`, gap: 14 },
+    { text: `Invoice date: ${String(v['invoice_date'] ?? '')}    Due: ${String(v['invoice_date_due'] ?? '')}` },
+    { text: 'Description', amount: 'Amount', bold: true, gap: 22 },
+    ...items.map((line) => ({ text: `${String(line.values['name'] ?? '')}  x ${num(line.values['quantity'])}`, amount: money(num(line.values['price_subtotal']), currency) })),
+    { text: 'Untaxed amount', amount: money(num(v['amount_untaxed']), currency), gap: 16 },
+    { text: 'Taxes', amount: money(num(v['amount_tax']), currency) },
+    { text: 'Total', amount: money(num(v['amount_total']), currency), bold: true, size: 13 },
+  ];
+  return onePagePdf(lines);
+}
+
 function invoiceAction(request: ActionRequest): ActionResult | undefined {
   const v = request.values;
   const name = String(v['name'] ?? '');
@@ -922,7 +942,8 @@ function invoiceAction(request: ActionRequest): ActionResult | undefined {
         say: { message: `${name} sent to ${customer?.email ?? 'the customer'}, with its PDF`, tone: 'success' },
       };
     case 'print_invoice':
-      return { say: { message: `${name || 'The draft'}: the invoice PDF opens to print`, tone: 'info' } };
+      // The app's own PDF of the invoice, shown over it: its bytes, as a server's report sends them.
+      return { file: { name: `${(name || 'Draft invoice').replaceAll('/', '_')}.pdf`, type: 'application/pdf', bytes: invoicePdf(v, customer?.name) } };
     case 'js_assign_outstanding_line': {
       // The outstanding credit on this line, set against what is left to pay.
       const line = request.line;

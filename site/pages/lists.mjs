@@ -172,6 +172,15 @@ ${code(
 )}
 <p>A field one value cannot set — links of many, a table of lines, files, a read-only or worked-out field — is never offered, and the page check refuses one named. The fields a ${c('bulkEdit')} of ${c('true')} offers are ${c('bulkEditFields(page, list)')} from ${c('@fieldia/core')}. <a href="/demos/plain/?page=contacts&skin=underline">Try it on 1,284 contacts</a>.</p>
 
+<h2 id="print">On paper</h2>
+<p><strong>Print</strong>, in the list's bar with ${c('"print": true')}, prints every record the search finds — each page of them asked of your source, as Export asks for every match, up to 10,000, saying how many it left out past that — the columns as the list shows them, each value as its cell says it, under the list's Group By headings with their counts and their sums in their columns, the totals under them all. Over them: the list's title, its filters in words, how many, the day it was printed, and the page's ${c('print')} logo and words. The list itself is left off the paper, and the printout goes once it is printed. Ctrl+P alone prints the rows on screen, without the bar and the boxes. <a href="/demos/plain/?page=invoices&amp;skin=underline">Print the invoices</a>, grouped by customer.</p>
+${code(
+  'json',
+  `
+{ "type": "list", "id": "invoices", "columns": ["name", "partner_id", "invoice_date", "amount"],
+  "cells": { "amount": { "total": "sum" } }, "groupBy": ["partner_id"], "print": true }`
+)}
+
 <h2 id="map">On a map</h2>
 <p>With ${c('map')}, a list shows its records on a map as well, drawn by ${c('@fieldia/map')} on the provider the app chooses. The map and the table share one search and one choice: a pin lights its row and a row its pin, a home chosen on its card is ticked in the table, and the list's buttons act on it. A pin opens a card with the record's picture, a few of its fields, a box to choose it and a button to open it; pins that crowd become a bubble with their count. Once the map is moved, <em>Search this area</em> puts the area into the search bar as a search of its own; the map's own tools draw one instead — a polygon, a box or a circle, by mouse, finger or keys — searched as <em>In the area drawn</em>.</p>
 ${code(

@@ -21,10 +21,11 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * way, a box the browser fills in, which each engine writes its own way, a phone read the world over, a box of its
  * own over the browser's list of countries, booking slots and a date and time on a zone's clock, which each engine's
  * Intl writes and each engine's keys move, a phone's frame round a demo, and fieldia.dev's bar and story on a phone
- * (phone-frame), and what a phone's finger meets — a press that lands where it began, a title that wraps. Chromium
+ * (phone-frame), and what a phone's finger meets — a press that lands where it began, a title that wraps — and a page
+ * laid out for paper (print), each engine laying it out its own way. Chromium
  * runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing', 'print'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

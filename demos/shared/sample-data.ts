@@ -223,6 +223,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are.
     ...(params.get('page') === 'test-drive' ? { now: demoNow } : {}),
+    // A printout's day is the demos' too where the address pins it (`?now=`, as the browser tests pin it).
+    ...(params.get('page') === 'real-invoice' && params.get('now') ? { now: demoNow } : {}),
   };
 }
 

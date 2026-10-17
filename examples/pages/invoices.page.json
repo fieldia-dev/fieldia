@@ -3,6 +3,7 @@
   "id": "invoices",
   "title": "Invoices",
   "data": { "kind": "record", "model": "invoice" },
+  "print": { "header": "Nile Accounting Services · Cairo", "footer": "Amounts in each invoice’s own currency; a total only where every amount shares one." },
   "fields": {
     "name": { "type": "char", "label": "Number" },
     "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner" },
@@ -50,6 +51,7 @@
     ],
     "defaultFilters": ["this_year"],
     "groupBy": ["city", "partner_id", "invoice_date", "state", "currency_id"],
-    "actions": [{ "type": "button", "id": "send-reminder", "label": "Send a reminder", "action": "send_reminder" }]
+    "actions": [{ "type": "button", "id": "send-reminder", "label": "Send a reminder", "action": "send_reminder" }],
+    "print": true
   }
 }
