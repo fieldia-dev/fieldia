@@ -51,7 +51,8 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
     form: undefined,
     recordId: request.recordId ?? null,
     values: request.values,
-    listFilter: request.filter,
+    // A search the person sees as chips and may take away (View all's), or else conditions kept whatever is searched.
+    ...(request.search ? { listSearch: request.search, listFilter: undefined } : { listFilter: request.filter, listSearch: undefined }),
     // What belongs to the page that opened it alone.
     drafts: undefined,
     autosave: undefined,

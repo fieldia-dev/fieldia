@@ -193,7 +193,13 @@ describe('a related list inside a record', () => {
     expect(all.getAttribute('aria-label')).toBe('View all Invoices');
     all.click();
     await until(() => asked.length === 1);
-    expect(asked[0]).toEqual({ page: 'invoices', as: 'page', filter: [{ field: 'partner_id', op: '=', value: 1 }] });
+    // The same conditions as the search its list opens with, chips a person sees: "Customer: Acme".
+    expect(asked[0]).toEqual({
+      page: 'invoices',
+      as: 'page',
+      filter: [{ field: 'partner_id', op: '=', value: 1 }],
+      search: [{ kind: 'field', field: 'partner_id', label: 'Customer', values: [{ op: '=', value: 1, label: 'Acme' }] }],
+    });
     // In the viewer's own dialog, a list has nothing to save: Close alone.
     const own = await mount({ page: customer({ viewAll: { page: 'all' } }), pages: { all: { ...invoicePage, id: 'all', layout: { type: 'list', id: 'all-list', columns: ['name'] } } as unknown as Page } });
     await until(() => rows(own.host).length === 2);
@@ -224,8 +230,35 @@ describe('a related list inside a record', () => {
     named(host, 'View all')?.click();
     await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 3);
     expect([...host.querySelectorAll('[data-node="all"] .fd-list-row td:nth-child(2)')].map((td) => td.textContent)).toEqual(['INV/1', 'INV/2', 'INV/4']);
+    // What it is kept to, said as a chip over it, which the person may take away: then every invoice.
+    const chips = () => [...host.querySelectorAll('[data-node="all"] .fd-facet')].map((chip) => chip.querySelector('.fd-facet-text')?.textContent);
+    expect(chips()).toEqual(['Customer: Acme']);
+    (host.querySelector('[data-node="all"] .fd-facet-remove') as HTMLButtonElement).click();
+    await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 4);
+    expect(chips()).toEqual([]);
     (host.querySelector('.fd-back') as HTMLButtonElement).click();
     await until(() => !host.querySelector('[data-node="all"]') && rows(host).length === 2);
+    // A list kept to a part of them (its own filter) says that part too, by its title, as a chip of its own.
+    const posted = await mount({ page: customer({ title: 'Posted invoices', filter: [{ field: 'state', op: '=', value: 'posted' }], viewAll: { page: 'invoices', as: 'page' } }), pages: { invoices: list } });
+    await until(() => rows(posted.host).length === 2);
+    named(posted.host, 'View all')?.click();
+    await until(() => posted.host.querySelectorAll('[data-node="all"] .fd-list-row').length === 2);
+    expect([...posted.host.querySelectorAll('[data-node="all"] .fd-facet-text')].map((chip) => chip.textContent)).toEqual(['Customer: Acme', 'Posted invoices']);
+  });
+
+  it('an open step with a filter and no search keeps it fixed and unsaid, as 0.25 did', async () => {
+    const list = {
+      fieldia: '0.4',
+      id: 'invoices',
+      title: 'All invoices',
+      data: { kind: 'record', model: 'invoice' },
+      fields: invoices.fields,
+      layout: { type: 'list', id: 'all', columns: ['name', 'partner_id'], sort: [{ field: 'name' }] },
+    } as unknown as Page;
+    const { host, handle } = await mount({ pages: { invoices: list } });
+    void handle.run([{ do: 'open', page: 'invoices', as: 'page', filter: [{ field: 'partner_id', op: '=', value: 2 }] }]);
+    await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 1);
+    expect(host.querySelectorAll('[data-node="all"] .fd-facet')).toHaveLength(0);
   });
 
   it('asks nothing while hidden by its rule, and asks once it shows', async () => {

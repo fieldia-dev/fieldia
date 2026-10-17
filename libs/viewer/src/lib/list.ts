@@ -63,6 +63,8 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
+  /** The search it opens with, chips a person may take away, in place of its default filters and favourite (View all's). */
+  search?: Facet[];
   /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
   views?: Record<string, ListViewFactory>;
   /**
@@ -212,7 +214,7 @@ export function listView(context: ListContext): ListView {
   const visible = () => [...body.querySelectorAll('.fd-list-row')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
-  let facets: Facet[] = startingFacets(node, context.preferences, page);
+  let facets: Facet[] = context.search ? [...context.search] : startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */

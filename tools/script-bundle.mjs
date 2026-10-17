@@ -837,7 +837,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The four open-items lanes joined (0.26: open-small, open-columns, open-names, open-print — each line above measured on
 // 0.25.0), with a list's shaped columns, a grid's moved ones and a work item's title on paper across them (all in the
 // parts' sheets): 500.98 measured on 0.25.0, 513.49 after — the lanes' 1.30, 4.35 and 6.86 added up — to 513.5.
-const BUDGET_KB = 513.5;
+// A related list's View all says what its list is kept to as chips a person may take away (`OpenRequest.search` opened
+// as the list's `listSearch`), and the memory source numbers a new line after every line of the records it was given
+// (0.26, the owner walk's site lane): 513.49 measured before, 513.94 after — 0.45 more, to 514.0.
+const BUDGET_KB = 514.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1023,7 +1026,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
 // The four open-items lanes joined (listed with the raw budget above): 161.14 measured on 0.25.0, 165.20 after — the
 // lanes' 0.58, 1.58 and 1.91 added up — to 165.3.
-const GZIP_BUDGET_KB = 165.3;
+// View all's chips and the memory source's line numbers (0.26, the owner walk's site lane; listed with the raw budget
+// above): 165.20 measured before, 165.35 after — 0.15 more, to 165.4.
+const GZIP_BUDGET_KB = 165.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1440,7 +1445,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 12.91; import 35.99 and 14.29 to 36.36 and 14.39; duplicates 14.79 and 6.24 to 15.67 and 6.45; relations 19.93 and
 // 7.52 to 20.07 and 7.58; phone 37.77 and 16.47 to 37.84 and 16.50; filters 11.25 and 4.21 to 11.30 and 4.24 — each to
 // the next 0.1 over; the rest as they were.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [107.8, 34.6], cards: [11.6, 3.7], columns: [18.9, 6.8], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [38.0, 13.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
+// A related list's View all saying what its list is kept to, as chips a person may take away (0.26, the owner walk's
+// site lane: the record by its name, the list's own filter by its title; the list opened with them): list 107.73 and
+// 34.56 measured before, 108.02 and 34.66 after, to 108.1 and 34.7.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [108.1, 34.7], cards: [11.6, 3.7], columns: [18.9, 6.8], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [38.0, 13.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1621,8 +1629,10 @@ console.log(`parts: ${partSizes.join('; ')}`);
   contact.destroy();
   gone('contact');
   // A list with its search bar: the list part, the page drawn once it came; its phone column's numbers written by the
-  // phone part, in already. Export, Edit, Import and Print are asked for by the page: none is in its bar.
-  const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
+  // phone part, in already. Export, Edit, Import and Print are asked for by the page: none is in its bar. Its cards on a
+  // phone (the demo's customers have some) left out: a list that asks for none never brings the cards part.
+  const listed = read('customers.page.json');
+  const customers = inPage.mountViewer(host, { page: { ...listed, layout: { ...listed.layout, card: undefined } }, dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
   waits(customers, 'a list');
   await customers.drawn;
   hasIn("a list's screen", 'list, phone, relations');
