@@ -78,6 +78,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   let failed = false;
   /** What Undo writes back, the version the record holds after the move, and the moment it started at before. */
   let undo: { record: ListedRecord; values: Values; version?: RecordVersion; at: Date } | null = null;
+  /** Whether the person put the keys on a slot (a slot took the focus): New makes its record there. */
+  let chosen = false;
   /** The fields a move writes. When the page locks one, nothing moves; when a record's source locks or hides one, that record stays. */
   const moveFields = [spec.start, spec.end, spec.resource].filter((name): name is string => !!name);
   const canSave = !!source?.save && !moveFields.some((name) => page.fields[name]?.readonly);
@@ -413,7 +415,10 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
           cell.addEventListener('click', (e) => {
             if (e.detail === 0) void createAt(atMinutes(column.day, m), null, column);
           });
-          cell.addEventListener('focus', () => (state.cursor = { day: column.day, minutes: m, column: i }));
+          cell.addEventListener('focus', () => {
+            state.cursor = { day: column.day, minutes: m, column: i };
+            chosen = true;
+          });
           col.append(cell);
         }
         col.addEventListener('pointerdown', (e) => pressSlot(cal, e, col, i));
@@ -619,6 +624,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   function go(day: Date) {
     state.anchor = startOfDay(day);
     state.cursor = { ...state.cursor, day: state.anchor, column: 0 };
+    chosen = false;
     void reload();
   }
 
@@ -626,24 +632,37 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     state.view = next;
     if (day) state.anchor = startOfDay(day);
     state.cursor = { ...state.cursor, day: day ? startOfDay(day) : state.cursor.day, column: 0 };
+    chosen = false;
     void reload();
   }
 
   // ---- making a record --------------------------------------------------------------------------------------
 
-  /** Where New puts a record: the slot the keys stand on, else the next whole hour today in the span, else its first day. */
+  /**
+   * Where New puts a record: the slot the person put the keys on, past or not (they chose it); else the next free time
+   * from now on the calendar's clock — rounded up to its slot, within its hours, where none of the records it shows is
+   * (a new record's hour) — from the span shown where that is still to come. A date's calendar: today, or the span's
+   * first day to come. 0.25 took the slot the keys had never left: 08:00, at 12:30.
+   */
   function newPlace(): [Date, Date | null, Column | null, boolean] {
-    const shown = range();
-    if ((state.view === 'day' || state.view === 'week') && kind === 'datetime' && body.querySelector('.fd-cal-slot')) {
+    if (chosen && (state.view === 'day' || state.view === 'week') && kind === 'datetime' && body.querySelector('.fd-cal-slot')) {
       const column = state.columns[state.cursor.column] ?? state.columns[0];
       return [atMinutes(column.day, clampMinutes(state.cursor.minutes)), null, column, false];
     }
+    const shown = range();
     const at = now();
-    const inSpan = at >= shown.from && at < shown.to;
-    const day = inSpan ? startOfDay(at) : shown.from;
-    if (kind === 'date') return [day, null, null, true];
-    const minutes = inSpan ? Math.min(Math.max(hours.start * 60, (Math.floor(minutesOf(at) / 60) + 1) * 60), (hours.end - 1) * 60) : hours.start * 60;
-    return [atMinutes(day, minutes), null, null, false];
+    const from = shown.from > at ? shown.from : at;
+    if (kind === 'date') return [startOfDay(from), null, null, true];
+    const taken = (start: Date) => {
+      const end = addMinutes(start, NEW_LENGTH);
+      return events.some((event) => !event.allDay && event.start < end && event.end > start);
+    };
+    const last = hours.end * 60 - slot;
+    for (let day = startOfDay(from), n = 0; n < 366; day = addDays(day, 1), n++) {
+      const first = n === 0 ? Math.max(hours.start * 60, Math.ceil(minutesOf(from) / slot) * slot) : hours.start * 60;
+      for (let minutes = first; minutes <= last; minutes += slot) if (!taken(atMinutes(day, minutes))) return [atMinutes(day, minutes), null, null, false];
+    }
+    return [atMinutes(startOfDay(from), hours.start * 60), null, null, false];
   }
 
   /** A new record from `start` (to `end`, or an hour on; the whole day for a day's), with its column's person. */

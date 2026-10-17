@@ -105,3 +105,32 @@ test.describe('a calendar on Berlin’s clock, from Tokyo', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('the showroom’s New at 12:30 on Saturday 17 October, in Berlin (the owner’s walk of 0.25)', () => {
+  test.use({ timezoneId: 'Europe/Berlin', locale: 'en-GB', viewport: { width: 1440, height: 900 } });
+
+  test('New takes the next free time from now, rounded to the calendar’s slot — never 08:00, gone by', async ({ page }) => {
+    const { problems } = await openDrives(page, '2026-10-17T12:30');
+    // The free time worked out from the demo's own drives: the first quarter hour from 12:30 whose hour no drive holds.
+    const all = Object.values(await drives(page)).map((d) => ({ start: new Date(d.start).getTime(), stop: new Date(d.stop).getTime() }));
+    const now = new Date('2026-10-17T10:30:00Z').getTime();
+    let at = now;
+    while (all.some((d) => d.start < at + 3_600_000 && d.stop > at)) at += 15 * 60_000;
+    const [, expected] = await inBerlin(page, new Date(at).toISOString());
+    expect(expected >= '12:30').toBe(true);
+    await page.locator('.fd-cal-new').click();
+    const dialog = page.getByRole('dialog');
+    // Each engine's Intl writes the day its own way: "Saturday 17 October", Firefox "Saturday, 17 October".
+    await expect(dialog).toContainText(new RegExp(`Saturday,? 17 October 2026, ${expected} to`));
+    await expect(dialog).not.toContainText(/Saturday,? 17 October 2026, 08:00/);
+    await screen(page, 'calendar-new-next-free', { viewport: true });
+    // A slot gone by, pressed by the person: made there, as they chose.
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    const morning = page.locator('.fd-cal-col[data-day="2026-10-17"] .fd-cal-slot[data-minutes="540"]');
+    await morning.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).toContainText(/Saturday,? 17 October 2026, 09:00 to/);
+    expect(problems).toEqual([]);
+  });
+});

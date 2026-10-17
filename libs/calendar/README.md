@@ -88,9 +88,12 @@ appointment", and Enter "makes a new appointment there".
   **stretch** it by dragging its lower edge. Escape while dragging or
   stretching puts it back, and Escape while dragging across empty slots makes
   nothing. The move is saved at once; **Undo** puts it back.
-- **Make** a record by pressing an empty slot, or dragging down across the
-  slots it should take, or with **New**. The app's `onNewRecord` gets the
-  values (start, end, person). Without it, the viewer opens the record's page
+- **Make** a record by pressing an empty slot — one gone by too: the person
+  chose it — or dragging down across the slots it should take, or with
+  **New**: at the slot the keys stand on, else the next free time from now on
+  the calendar's clock, rounded up to its `slot`, within its `hours`, where none
+  of its records is (in the span shown where that is still to come). The app's
+  `onNewRecord` gets the values (start, end, person). Without it, the viewer opens the record's page
   from `pages` in a dialog; with neither, nothing offers to make one.
 - **Open** a record by pressing it, or Enter: the app's `onOpenRecord`, as a
   row of the table opens it.
