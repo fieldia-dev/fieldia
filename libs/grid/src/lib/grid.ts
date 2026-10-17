@@ -847,6 +847,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // The table's own rules, read by the form for each line as the form changes; a table with none asks nothing.
   const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   let lineStates = new Map<string, LineState>();
+  /** A finger resting on a column's header (below: a long press lifts the column), from its touch to its lifting. */
+  let resting: { pointer: number; x: number; y: number; timer: number; cell: HTMLElement } | null = null;
   /** Accounts' names an analytic distribution's cells show, by model and id, as they are found. */
   const accountNames = new Map<string, string>();
   /** The analytic distributions among the columns, by column: their names found and said. */
@@ -1145,7 +1147,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       colId: column,
       headerName: sub.label,
       // A long label wraps onto a second line rather than be cut, so two columns never read the same; all of it on pointing at it.
-      headerTooltip: sub.label,
+      // Not under a finger resting on it: its long press lifts the column, whose ghost says its name.
+      headerTooltip: () => (resting ? undefined : sub.label),
       wrapHeaderText: true,
       autoHeaderHeight: true,
       valueGetter: (p) => {
@@ -1630,7 +1633,6 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   });
   // A finger on a header: AG Grid's press waits until it has rested there a moment, and is handed on then.
   const handedOn = new WeakSet<Event>();
-  let resting: { pointer: number; x: number; y: number; timer: number; cell: HTMLElement } | null = null;
   const stopResting = () => {
     if (!resting) return;
     window.clearTimeout(resting.timer);
