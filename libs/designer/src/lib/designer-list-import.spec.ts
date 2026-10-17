@@ -55,7 +55,7 @@ describe('a list’s Import, by the designer', () => {
     expect(designer.getPage().fields['owner_id']).toBeUndefined();
   });
 
-  it('the list’s panel: a box after Export and Edit', () => {
+  it('the list’s panel: a box after Export, Edit and Print — what goes out, then what comes in', () => {
     const designer = contacts();
     const panel = listProperties(elementFactory(document), designer);
     document.body.replaceChildren(panel.element);
@@ -64,7 +64,7 @@ describe('a list’s Import, by the designer', () => {
     update();
     const imports = panel.element.querySelector<HTMLInputElement>('[aria-label="Import from Excel and CSV"]') as HTMLInputElement;
     expect(imports.checked).toBe(false);
-    expect([...panel.element.querySelectorAll('[data-part]')].map((part) => part.getAttribute('data-part')).slice(2, 5)).toEqual(['export', 'bulk-edit', 'import']);
+    expect([...panel.element.querySelectorAll('[data-part]')].map((part) => part.getAttribute('data-part')).slice(2, 6)).toEqual(['export', 'bulk-edit', 'print', 'import']);
     imports.checked = true;
     imports.dispatchEvent(new Event('change', { bubbles: true }));
     expect(list(designer).import).toBe(true);

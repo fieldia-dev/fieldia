@@ -643,8 +643,9 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     sortsRow,
     exportRow,
     bulkRow,
-    importRow,
+    // What goes out — Export, Edit, Print — then what comes in.
     printRow,
+    importRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
     parentRow,

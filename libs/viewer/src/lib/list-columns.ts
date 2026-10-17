@@ -248,7 +248,7 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     });
     const rtl = () => header.closest('[dir]')?.getAttribute('dir') === 'rtl';
     const now = () => widths.get(name) ?? Math.round(header.getBoundingClientRect().width);
-    const say = () => handle.setAttribute('aria-valuenow', String(now()));
+    const say = () => handle.setAttribute('aria-valuenow', String(clamp(now())));
     const size = (width: number, kept: boolean) => {
       widths.set(name, clamp(width));
       if (kept) keep();
@@ -294,6 +294,11 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
       size(now() + (wider ? STEP : -STEP), true);
     });
     handle.addEventListener('focus', say);
+    // A separator that takes the focus says its width from the first: as kept, then as laid out once drawn.
+    handle.setAttribute('aria-valuenow', String(widths.get(name) ?? NARROWEST));
+    header.ownerDocument.defaultView?.requestAnimationFrame(() => {
+      if (handle.isConnected) say();
+    });
     return handle;
   }
 
