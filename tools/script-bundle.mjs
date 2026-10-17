@@ -667,7 +667,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.24's lanes joined, measured in the merged build: 474.29 at 0.23.0, 512.82 now — 38.5 more (the lanes' growths
 // above add to 40.8: merged, two lanes' ways of one thing are one — one set of time zone functions, one press rule),
 // to 512.9.
-const BUDGET_KB = 512.9;
+// The business owner's walk of 0.24 mended (0.25), in what every page carries: a value worked out from a table's lines
+// waits while a line holds text that does not read (core's waitsFor, the viewer's dash said in words), a booking's
+// times kept steady under a double-click, a list that drops open only for a person, a record's labels above their
+// values on a phone and its title kept whole, the words for a phone's letters, a list's several currencies and a CSV
+// file's currency column — 512.84 measured before, 515.53 after: 2.7 more, to 515.6.
+const BUDGET_KB = 515.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -807,7 +812,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
-const GZIP_BUDGET_KB = 167.2;
+// The business owner's walk of 0.24 mended (listed with the raw budget above): 167.12 measured before, 167.95 after —
+// 0.8 more, to 168.0.
+const GZIP_BUDGET_KB = 168.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -912,7 +919,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 0.24's lanes joined, measured in the merged build: Arabic's 54.23 and 9.70 (44.99 and 8.23 at 0.23.0), German's
 // 23.15 and 8.30 (19.18 and 7.08), French's 23.97 and 8.34 (19.81 and 7.09) — each to the next 0.1 over, German's
 // gzipped to 8.4, its 8.30 a fifth of a byte under 8.3.
-const ADD_ON_BUDGET_KB = { ar: [54.3, 9.8], de: [23.2, 8.4], fr: [24.0, 8.4] };
+// The business owner's walk of 0.24 mended (0.25) — a value that waits for a field or a line, a list's several
+// currencies said in sight, a CSV file's currency column, a phone's letters: 4 in each, as measured Arabic's 54.74 and
+// 9.78 (54.23 and 9.70 before), German's 23.44 and 8.37 (23.15 and 8.30), French's 24.26 and 8.40 (23.97 and 8.34):
+// Arabic's to 54.8, German's to 23.5, French's to 24.3 and, its 8.40 half a byte over, 8.5.
+const ADD_ON_BUDGET_KB = { ar: [54.8, 9.8], de: [23.5, 8.4], fr: [24.3, 8.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1066,7 +1077,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 12.29 (35.00, 12.10), and the new phone 34.77 and 15.21 and slots 14.63 and 5.57 — each to the next 0.1 over
 // (business's raw to 26.7, 4 bytes under 26.6 being no room; date's gzipped to 8.4, its 8.30 at the line); head,
 // choice, filters, themes and the quiet look as at 0.23.0, unchanged.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [72.5, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
+// The business owner's walk of 0.24 mended (0.25): the list's — a CSV file's numbers, days and currency column, its
+// several currencies said in the cell and on a heading, its headings' sums in full — 72.41 and 23.71 measured before,
+// 73.63 and 24.11 after, to 73.7 and 24.2; the phone's table telling how each country's mobiles start, so a fixed line
+// is offered no WhatsApp, and its letters said — 34.77 and 15.21 before, 37.04 and 16.19 after, to 37.1 and 16.2.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [73.7, 24.2], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [37.1, 16.2], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1082,7 +1097,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
-  phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
+  phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.

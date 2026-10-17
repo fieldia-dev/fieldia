@@ -12,7 +12,8 @@ import { node, open, screen } from './support';
 const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
 
 async function onPhone(browser: Browser, query: string): Promise<{ page: Page; problems: string[]; close: () => Promise<void> }> {
-  const context = await browser.newContext(PHONE);
+  // Firefox has no phone to be: its width alone.
+  const context = await browser.newContext(browser.browserType().name() === 'firefox' ? { viewport: PHONE.viewport } : PHONE);
   const page = await context.newPage();
   const { problems } = await open(page, 'plain', query);
   return { page, problems, close: () => context.close() };
