@@ -7,6 +7,8 @@
     "name": { "type": "char", "label": "Name", "required": true },
     "company": { "type": "char", "label": "Company" },
     "email": { "type": "char", "label": "Email" },
+    "phone": { "type": "char", "label": "Phone" },
+    "photo": { "type": "image", "label": "Photo" },
     "country_id": { "type": "many2one", "label": "Country", "relation": "country" },
     "state": {
       "type": "selection",
@@ -28,7 +30,7 @@
   "layout": {
     "type": "list",
     "id": "contacts-list",
-    "columns": ["name", "company", "country_id", "state", "owner_id", "last_order", "lifetime_value", "newsletter"],
+    "columns": ["name", "company", "country_id", "state", "owner_id", "last_order", "lifetime_value", "newsletter", "phone", "email"],
     "sort": [{ "field": "name" }],
     "pageSize": 10,
     "searchFields": ["name", "company", "email", "country_id", "owner_id"],
@@ -38,6 +40,14 @@
       { "id": "newsletter", "label": "On the newsletter", "filter": [{ "field": "newsletter", "op": "=", "value": true }] }
     ],
     "groupBy": ["state", "country_id", "owner_id"],
+    "cells": {
+      "state": { "widget": "badge", "options": { "tones": { "customer": "success", "lead": "info", "inactive": "muted", "blocked": "danger" } } },
+      "owner_id": { "widget": "avatar" },
+      "phone": { "widget": "phone", "options": { "shown": "international", "links": true } }
+    },
+    "optionalColumns": { "company": "show", "country_id": "show", "owner_id": "show", "last_order": "show", "lifetime_value": "show", "newsletter": "show", "phone": "hide", "email": "hide" },
+    "rowTones": [{ "tone": "muted", "when": "state == 'inactive'" }],
+    "card": { "title": "name", "subtitle": "company", "image": "photo", "status": "state", "fields": ["phone", "owner_id", "lifetime_value"] },
     "export": true,
     "bulkEdit": ["state", "owner_id", "newsletter", "country_id"],
     "actions": [{ "type": "button", "id": "send-newsletter", "label": "Send newsletter", "action": "send_newsletter", "confirm": "Send the newsletter to the chosen contacts?" }]
