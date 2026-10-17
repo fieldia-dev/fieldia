@@ -135,6 +135,13 @@ function textFixer(draft: Page): CheckFixer {
       found.list.splice(found.list.indexOf(found.part), 1);
       return true;
     },
+    setPrinted(id, printed) {
+      const found = findPart(draft.layout, id);
+      if (!found) return false;
+      if (printed) delete found.part['print'];
+      else found.part['print'] = false;
+      return true;
+    },
     setCondition(id, condition: Condition | null) {
       const found = findPart(draft.layout, id);
       if (!found) return false;

@@ -25,7 +25,7 @@ import { fixStepCheck, stepChanges, stepChecks, type StepFix, type StepFixer } f
  * fields on show, so it is required only when shown, as it should be.
  */
 
-export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | RuleFix | StepFix;
+export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | { kind: 'print-all'; ids: string[] } | RuleFix | StepFix;
 
 export interface PageCheck {
   /** The element it is about, or null for the page. */
@@ -186,6 +186,15 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
     });
   }
 
+  // A page that leaves every part of it off paper prints its title alone: said, with a way to print them all again.
+  const top = page.layout.type === 'list' ? [] : (page.layout as { children?: { id: string; type: string; print?: boolean; children?: { id: string; print?: boolean }[] }[] }).children ?? [];
+  // Tabs as one part, by their tabs; the rest by themselves.
+  const printable = top.flatMap((part) => (part.type === 'tabs' ? (part.children ?? []) : [part]));
+  const offPaper = printable.filter((part) => part.print === false);
+  if (printable.length && offPaper.length === printable.length) {
+    found.push({ at: offPaper[0].id, severity: 'should', text: w.nothingOnPaper, fix: { label: w.printEveryPart, action: { kind: 'print-all', ids: offPaper.map((part) => part.id) } } });
+  }
+
   // What would stop people comes before what would only read wrong.
   return [...found.filter((c) => c.severity === 'must'), ...found.filter((c) => c.severity === 'should')];
 }
@@ -194,6 +203,7 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
 export interface CheckFixer extends RuleFixer, StepFixer {
   getPage(): Page;
   removeNode(id: string): boolean;
+  setPrinted(id: string, printed: boolean): boolean;
   setCondition(id: string, condition: Condition | null): boolean;
   select(id: string | null): void;
 }
@@ -220,6 +230,7 @@ export function fixCheck(designer: CheckFixer, check: PageCheck): boolean {
     return true;
   }
   if (action.kind === 'remove') return designer.removeNode(action.id);
+  if (action.kind === 'print-all') return action.ids.map((id) => designer.setPrinted(id, true)).every(Boolean);
   if (action.kind === 'remove-rule') return fixRuleCheck(designer, action);
   if (action.kind === 'remove-step' || action.kind === 'remove-steps') return fixStepCheck(designer, action);
   const target = withRules(designer.getPage()).find((t) => t.id === action.id);

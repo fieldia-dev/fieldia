@@ -1,3 +1,4 @@
+import { printSetting } from './print-setting';
 import type { LabelPlace } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -29,7 +30,18 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
   const own = blockContent(el, designer, id);
   // A button's icon alone, toggle, menu and look while the record has changes (head-properties.ts).
   const parts = locate(designer.getPage(), id)?.node.type === 'button' ? buttonPartsSettings(el, designer, id) : null;
-  const element = el('div', { class: 'fd-props' }, about, ...(own?.rows ?? []), ...(parts?.rows ?? []), onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'), ...(width?.rows ?? []));
+  // A related list on paper or not.
+  const paper = locate(designer.getPage(), id)?.node.type === 'related' ? printSetting(el, designer, id) : null;
+  const element = el(
+    'div',
+    { class: 'fd-props' },
+    about,
+    ...(own?.rows ?? []),
+    ...(parts?.rows ?? []),
+    onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'),
+    ...(width?.rows ?? []),
+    ...(paper ? [paper.element] : [])
+  );
   return {
     element,
     update(page) {
@@ -38,6 +50,7 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
       width?.update(page);
       own?.update(page);
       parts?.update(page);
+      paper?.update(page);
       const said: Record<string, string> = w.about;
       about.textContent = node.type === 'text' && node.style === 'heading' ? w.about.heading : (said[node.type] ?? '');
     },

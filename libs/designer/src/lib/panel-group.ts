@@ -9,6 +9,7 @@ import { columnsSetting, labelsSetting, rowsSetting, widthSetting } from './pane
 import { groupStyleSetting } from './panel-look';
 import { foldSetting } from './panel-fold';
 import { movers, type PropertiesView } from './screen-properties';
+import { printSetting } from './print-setting';
 import { rolesSetting } from './roles-setting';
 import { shownWhileSetting } from './shown-while';
 import { workGroupSetting } from './work-text';
@@ -41,6 +42,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   showWhen.addEventListener('click', () => when.start());
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesGroup);
   const roles = rolesSetting(el, designer, id);
+  const paper = printSetting(el, designer, id);
   const shownWhile = shownWhileSetting(el, designer, id);
   const element = el(
     'div',
@@ -56,7 +58,8 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     ...style.rows,
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows'),
     roles.element,
-    shownWhile.element
+    shownWhile.element,
+    paper.element
   );
   return {
     element,
@@ -73,6 +76,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       when.update(page, outside, section.invisible);
       roles.update(page);
       shownWhile.update(page);
+      paper.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
     },

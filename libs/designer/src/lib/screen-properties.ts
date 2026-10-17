@@ -1,3 +1,4 @@
+import { printSetting } from './print-setting';
 import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -84,7 +85,9 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
   remove.addEventListener('click', () => designer.removeNode(id));
   // Its icon, shown alone or not, and a count after it (head-properties.ts).
   const parts = tabPartsSettings(el, designer, id);
-  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label, { words: w.label }), ...parts.rows, onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'));
+  // On paper or not: an invoice's journal items are its screen's alone.
+  const paper = printSetting(el, designer, id);
+  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label, { words: w.label }), ...parts.rows, onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'), paper.element);
   return {
     element,
     update(page) {
@@ -93,6 +96,7 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
       if (!focused(label)) label.value = found.tab.label;
       moves.update(page);
       parts.update(page);
+      paper.update(page);
     },
   };
 }
