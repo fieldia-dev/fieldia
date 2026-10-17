@@ -1357,7 +1357,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 19.94 and 7.52; duplicates 14.79 and 6.24; head 34.46 and 10.02; date 22.13 and 8.38; filters 11.25 and 4.21;
 // columns 10.96 and 4.05; path 16.06 and 6.31; choice 10.64 and 4.34 — each to the next 0.1 over; cards, themes and
 // quiet as they were.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A work item's head's title wraps where it is too long for its line, never cut (open-small): the head 34.46 and 10.02
+// to 34.66 and 10.07 — its title drawn as a line that wraps and its first line's room kept for what stands beside it —
+// to 34.7.
+const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

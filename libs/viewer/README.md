@@ -153,7 +153,10 @@ A page whose sheet has a `head` (a work item's: its kind's strip and badge,
 the title line, Save and Close, Follow, the band of fields and the tabs) is
 the dialog's own head and foot: the dialog draws neither, its ⤢ and × sit at
 the end of the head's badge row, and Escape and × ask before changes go. A
-head button whose steps save and then close resolves with `saved: true`.
+head button whose steps save and then close resolves with `saved: true`. The
+head's title is one line that wraps where it is too long for its line, as a
+sheet's title does: a `textarea` (`aria-multiline="false"`), read from its
+start, never cut; Enter adds no line, and a line break pasted is a space.
 
 `side` is where it comes from: `'end'` (the default: the end of the line, the
 right, or the left right to left) or `'start'`, as the page reads; or

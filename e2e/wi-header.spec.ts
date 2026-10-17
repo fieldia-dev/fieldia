@@ -58,7 +58,7 @@ async function popup(page: Page, query = POPUP) {
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   await page.goto(`/plain/?${query}`);
   await expect(dialog(page)).toBeVisible();
-  await expect(part(page, '#title').locator('input')).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
+  await expect(part(page, '#title').locator('textarea')).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
   await settle(page);
   return problems;
 }
@@ -103,7 +103,7 @@ test.describe('at rest, as the screenshot of the bug shows it', () => {
     await expect(number).toHaveText('4127');
     near((await at(page, number)).x, 19, 1);
     expect((await drawn(number, 'font-size'))['font-size']).toBe('18px');
-    const title = part(page, '#title').locator('input');
+    const title = part(page, '#title').locator('textarea');
     expect(await at(page, title)).toMatchObject({ x: 64, right: 42, height: 32 });
     near((await at(page, title)).cy, 59, 1);
     // At rest: words only, no edge, no Copy title.
@@ -208,7 +208,7 @@ test.describe('pointed at, focused, pressed', () => {
 
   test('the title pointed at: an edge of the strong border, 32px, and Copy title at its end; the same on keyboard focus', async ({ page }) => {
     await popup(page);
-    const title = part(page, '#title').locator('input');
+    const title = part(page, '#title').locator('textarea');
     await title.hover();
     await expect.poll(async () => (await drawn(title, 'border-top-color'))['border-top-color']).toBe('rgb(126, 126, 126)');
     const copy = dialog(page).getByRole('button', { name: 'Copy title' });
@@ -411,6 +411,46 @@ test.describe('right to left, dark, a phone, four languages', () => {
     await expect(dialog(page).getByRole('button', { name: 'Maximise' })).toBeHidden();
     await screen(page, 'wi-header-phone', { viewport: true });
     expect(await axeFindings(page, 'wi-head, 390px')).toEqual([]);
+  });
+
+  test('its title wraps whole where it is too long for its line, one line of 32px on the tracker’s screens; Enter adds no line', async ({ page }) => {
+    /** Whether all of the title shows — nothing scrolled out of sight, read from its start — and on how many lines. */
+    const whole = () =>
+      part(page, '#title')
+        .locator('textarea')
+        .evaluate((box: HTMLTextAreaElement) => ({
+          cut: box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1,
+          fromStart: box.scrollLeft === 0 && box.scrollTop === 0,
+          lines: Math.round((box.clientHeight - parseFloat(getComputedStyle(box).paddingTop) * 2) / parseFloat(getComputedStyle(box).lineHeight)),
+        }));
+    for (const [width, height] of [[1920, 983], [1440, 900]] as const) {
+      await page.setViewportSize({ width, height });
+      await popup(page);
+      const title = part(page, '#title').locator('textarea');
+      expect(await at(page, title)).toMatchObject({ x: 64, right: 42, height: 32 });
+      near((await at(page, title)).cy, 59, 1);
+      expect(await whole()).toEqual({ cut: false, fromStart: true, lines: 1 });
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const problems = await popup(page);
+    const title = part(page, '#title').locator('textarea');
+    await expect(title).toHaveAttribute('aria-multiline', 'false');
+    await expect.poll(() => whole()).toEqual({ cut: false, fromStart: true, lines: 3 });
+    // The number and Copy title keep to its first line.
+    const number = await at(page, dialog(page).locator('.fd-head-number'));
+    near(number.cy, (await at(page, title)).y + 16, 1);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'wi-header-phone-title', { viewport: true });
+    // Enter adds no line: the title stays one line of words, and is saved as a title's Enter saves it.
+    await title.click();
+    // The end of its words, on its last line.
+    await page.keyboard.press('ControlOrMeta+End');
+    await page.keyboard.type(' again');
+    await page.keyboard.press('Enter');
+    await expect(title).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088 again');
+    await expect(part(page, 'b-save-close').getByRole('button', { name: 'Save and Close', exact: true })).toHaveClass(/fd-button-subtle/);
+    await expect(dialog(page)).toBeVisible();
+    expect(problems).toEqual([]);
   });
 
   test('its own words in German and French', async ({ page }) => {

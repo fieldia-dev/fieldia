@@ -129,12 +129,17 @@ export const HEAD_PART_CSS = /* css */ `
 /* The kind's icon 14px, its box 2px before the badge's start so its drawing starts there, the words 39px in (20.22.23). */
 .fd-head-badge-icon .fd-icon { width: 14px; height: 14px; margin: 0; margin-inline-start: -2px; stroke-width: 2.2; }
 .fd-head-window { display: inline-flex; align-items: center; gap: 3px; margin-inline-start: auto; }
-/* The title line: the number before the title, its box from 64px in, Copy title at its end. */
-.fd-head-title { display: flex; align-items: center; min-height: 32px; margin-block-start: 1px; padding-inline: 19px 8px; }
-.fd-head-number { flex: none; min-inline-size: 40px; margin-inline-end: 5px; font-size: 18px; line-height: 24px; color: color-mix(in srgb, var(--fd-text) 85%, #000); font-variant-numeric: tabular-nums; }
+/* The title line: the number before the title, its box from 64px in, Copy title at its end. What stands beside the
+   title keeps to its first line, 32px tall, where a long title runs onto more. */
+.fd-head-title { display: flex; align-items: flex-start; min-height: 32px; margin-block-start: 1px; padding-inline: 19px 8px; }
+.fd-head-number { flex: none; min-inline-size: 40px; margin-block-start: 4px; margin-inline-end: 5px; font-size: 18px; line-height: 24px; color: color-mix(in srgb, var(--fd-text) 85%, #000); font-variant-numeric: tabular-nums; }
 .fd-form .fd-head-title > .fd-field { flex: 1 1 auto; min-width: 0; display: block; }
-.fd-form .fd-head-title > .fd-title-side { flex: none; }
+.fd-form .fd-head-title > .fd-title-side { flex: none; min-height: 32px; align-content: center; }
 .fd-form .fd-head-title > .fd-field > .fd-input { width: 100%; height: 32px; font-size: 18px; padding-inline: 11px; color: var(--fd-text); }
+/* The title wraps rather than being cut (a textarea that says it is one line): one line of it 32px tall, its
+   words where a box's stand, 12px in; a long one grows a line of 24px at a time, read from its start. No margin round
+   it, which Firefox gives a textarea and an input has none of. */
+.fd-form .fd-head-title > .fd-field > .fd-line-wraps { height: auto; min-height: 32px; margin: 0; padding-block: 3px; line-height: 24px; }
 /* Copy title: there while the title is pointed at or worked in, its room always kept; always where nothing can point. */
 .fd-head-copy {
   flex: none; display: inline-grid; place-items: center; width: 34px; height: 32px; padding: 0; border: 0; border-radius: 2px;

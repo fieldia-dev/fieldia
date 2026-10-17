@@ -163,7 +163,7 @@ test.describe('the backlog', () => {
     await row(page, 4136).click();
     await expect(dialog(page)).toBeVisible();
     await expect(page).toHaveURL(/[?&]workitem=4136\b/);
-    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('The menu link should say Inventory, not Warehouse');
+    await expect(dialog(page).locator('[data-field="title"] textarea')).toHaveValue('The menu link should say Inventory, not Warehouse');
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);
     await expect(page).not.toHaveURL(/workitem=/);
@@ -182,7 +182,7 @@ test.describe('the backlog', () => {
     const problems = watch(page);
     await page.goto(`${BACKLOG}?workitem=4127`);
     await expect(dialog(page)).toBeVisible();
-    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
+    await expect(dialog(page).locator('[data-field="title"] textarea')).toHaveValue('Stock count shows 12 after releasing 3 of 15 items to order SO-2088');
     await page.reload();
     await expect(dialog(page)).toBeVisible();
     await expect(page).toHaveURL(/[?&]workitem=4127\b/);
@@ -201,8 +201,8 @@ test.describe('the backlog', () => {
     const problems = await openBacklog(page);
     await page.getByRole('button', { name: 'New Work Item' }).click();
     await expect(dialog(page)).toBeVisible();
-    await expect(dialog(page).locator('[data-field="title"] input')).toHaveValue('');
-    await dialog(page).locator('[data-field="title"] input').fill('Printing a pick list cuts its last line');
+    await expect(dialog(page).locator('[data-field="title"] textarea')).toHaveValue('');
+    await dialog(page).locator('[data-field="title"] textarea').fill('Printing a pick list cuts its last line');
     await dialog(page).getByRole('button', { name: 'Save and Close', exact: true }).click();
     await expect(dialog(page)).toHaveCount(0);
     // A new bug is New, not Active: it shows once the filter lets every state through.

@@ -11,7 +11,8 @@ import { installHeadStyles } from './head-styles';
  * kind's strip of colour along its start edge and the badge over the title —
  * the kind's icon, its name in capitals, the record's number — with room at
  * the badge row's end for a dialog's ⤢ and ×; the title line, the number
- * before the title, a Copy title button at its end while it is pointed at or
+ * before the title — a title that wraps where it is too long for its line,
+ * never cut — a Copy title button at its end while it is pointed at or
  * focused; the row of people and links, the record's buttons and ⋮ at its
  * end; then the band of fields, labels beside them, a lead slot before each
  * value (a state's dot, a lock), "Updated by" and the tabs placed in the head
@@ -99,7 +100,8 @@ export function recordHead(context: RecordHeadContext): RecordHead {
       drawn.classList.add('fd-title-side');
       return drawn;
     };
-    const name = context.fieldItem({ type: 'field', id: '#title', field: title.field, placeholder: title.placeholder, ...(title.placeholderWhen ? { placeholderWhen: title.placeholderWhen } : {}), ...(title.focus ? { focus: true } : {}) }, 'hidden');
+    // A long title wraps rather than being cut, read from its start, as a sheet's does: one line all the same (`wraps`).
+    const name = context.fieldItem({ type: 'field', id: '#title', field: title.field, placeholder: title.placeholder, ...(title.placeholderWhen ? { placeholderWhen: title.placeholderWhen } : {}), ...(title.focus ? { focus: true } : {}), options: { wraps: true } }, 'hidden');
     name.classList.add('fd-title-name');
     line.append(...(title.before ?? []).map(side), name);
     // The record's name for a dialog round it: its title's words, kept up to date, out of sight.
