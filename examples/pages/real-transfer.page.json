@@ -177,7 +177,7 @@
       {
         "type": "button",
         "id": "action_confirm",
-        "label": "Mark as Todo",
+        "label": "Mark as ready",
         "style": "primary",
         "invisible": "state != 'draft'",
         "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.action_confirm" }, { "do": "save" }],
