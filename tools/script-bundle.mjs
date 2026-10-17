@@ -837,7 +837,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The four open-items lanes joined (0.26: open-small, open-columns, open-names, open-print — each line above measured on
 // 0.25.0), with a list's shaped columns, a grid's moved ones and a work item's title on paper across them (all in the
 // parts' sheets): 500.98 measured on 0.25.0, 513.49 after — the lanes' 1.30, 4.35 and 6.86 added up — to 513.5.
-const BUDGET_KB = 513.5;
+// The owner's walk of 0.25 mended in the engine (0.26, walkfix26-engine): every dialog's Escape asks about every change,
+// a line not added yet searched by what it starts with (a pasted row's names read first), a grid drawn for paper told so,
+// and on paper a record's own name or its noun and stage over it, its printout's lines one each — a line of an empty
+// value left out — no required star, what its page leaves off left off, every grid's groups lines a sheet breaks between,
+// grids side by side by the sheet's width (a media query: Firefox drew a box a container query changed nothing of) —
+// rules for paper the main sheet must hold: 513.49 measured before, 515.07 after — 1.6 more, to 515.1.
+const BUDGET_KB = 515.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1023,7 +1029,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
 // The four open-items lanes joined (listed with the raw budget above): 161.14 measured on 0.25.0, 165.20 after — the
 // lanes' 0.58, 1.58 and 1.91 added up — to 165.3.
-const GZIP_BUDGET_KB = 165.3;
+// The owner's walk of 0.25 mended in the engine (listed with the raw budget above): 165.20 measured before, 165.75 after
+// — 0.6 more, to 165.8.
+const GZIP_BUDGET_KB = 165.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1162,7 +1170,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // left out, so the language's own plain sentence is said: German's 29.04 and 9.95 measured before, 31.46 and 10.29
 // after, to 31.5 and 10.3; French's 30.08 and 10.00 to 31.76 and 10.28, to 31.8 and 10.3; Arabic's one (the pager's
 // name), 67.23 and 11.66, under its own.
-const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [31.5, 10.3], fr: [31.8, 10.3] };
+// The owner's walk of 0.25 mended in the engine: a pasted row's name read as no record said (four words, the lines
+// part's), a CSV file's characters misread and its header alone said, the key over a list's rows named — each language's
+// words: Arabic's 67.23 and 11.66 measured before, 68.25 and 11.82 after, to 68.3 and 11.9; German's 31.46 and 10.29 to
+// 31.91 and 10.42, to 32.0 and 10.5; French's 31.76 and 10.28 to 32.24 and 10.42, to 32.3 and 10.5.
+const ADD_ON_BUDGET_KB = { ar: [68.3, 11.9], de: [32.0, 10.5], fr: [32.3, 10.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1440,7 +1452,15 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 12.91; import 35.99 and 14.29 to 36.36 and 14.39; duplicates 14.79 and 6.24 to 15.67 and 6.45; relations 19.93 and
 // 7.52 to 20.07 and 7.58; phone 37.77 and 16.47 to 37.84 and 16.50; filters 11.25 and 4.21 to 11.30 and 4.24 — each to
 // the next 0.1 over; the rest as they were.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [107.8, 34.6], cards: [11.6, 3.7], columns: [18.9, 6.8], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [38.0, 13.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
+// The owner's walk of 0.25 mended in the engine: lines 37.93 and 12.91 measured before, 40.51 and 13.97 after — a block
+// pasted row by row, the plain table's and the grid's one way, its names read through the source's search, a row whose
+// name reads as no record refused whole and said, a number, a day or a phone whole on paper; list 107.73 and 34.56 to
+// 109.27 and 34.98 — the key over the rows, a printout's lines one each, its whole cells, an untitled related list's head
+// off paper; import 36.36 and 14.39 to 37.59 and 14.77 — characters misread said, a header alone said, the rows to fix
+// as the file had them under the fields' labels; cards 11.41 and 3.65 to 11.85 and 3.77 — an amount never broken
+// inside, its line's room given; columns 18.86 and 6.78 to 19.01 and 6.86 — the name column held first — each to the
+// next 0.1 over; the rest as they were (duplicates' 15.67 and 6.45 to 15.63 and 6.44).
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [109.3, 35.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
