@@ -81,14 +81,14 @@
     "name": "Invoice",
     "group": "records",
     "theme": "odoo",
-    "blurb": "A customer invoice on a sheet: its status, the customer and terms, lines whose subtotals and totals work themselves out, and Confirm then Register payment."
+    "blurb": "A customer invoice: its status, the customer and terms, lines whose subtotals and totals work themselves out, then Confirm — once it has lines to bill — and Register payment."
   },
   {
     "id": "purchase-order",
     "name": "Purchase order",
     "group": "records",
     "theme": "ant",
-    "blurb": "An order to a vendor: the vendor and dates, products with quantities and prices, totals, and Send then Confirm on its statusbar."
+    "blurb": "An order to a vendor: the vendor and dates, products with quantities and prices, totals, and its steps in their order — Send by email, Confirm order, Receive products — each once the order is ready for it."
   },
   {
     "id": "expense-claim",
@@ -130,6 +130,6 @@
     "name": "Task",
     "group": "records",
     "theme": "apple",
-    "blurb": "A project task: its stage on a clickable statusbar, priority stars, who it is assigned to, a deadline, a checklist whose progress counts itself, and a description."
+    "blurb": "A project task: its stage along the top, moved with a click, priority stars, who it is assigned to, a deadline, a checklist whose progress counts itself, and a description."
   }
 ]

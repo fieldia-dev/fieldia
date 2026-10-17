@@ -6,13 +6,13 @@ export default [
     category: 'real',
     query: 'page=real-task&record=5201&skin=underline',
     blurb:
-      'A task in a project: the project’s stages on the statusbar, approval buttons, stat buttons, nine tabs with timesheets and sub-tasks in grids, hours that add themselves up, and the conversation beside it.',
+      'A task in a project: the project’s stages along the top, buttons to approve, counters, nine tabs with timesheets and sub-tasks as tables, hours that add themselves up, and the conversation with your team beside it.',
     howTo: [
       'Open Timesheets and add a line: type the hours, and Hours Spent, Total Hours and Remaining Hours under the grid follow.',
-      'Open Sub-tasks and add one: it takes the task’s project and customer, and the Sub-tasks count on the stat button grows.',
+      'Open Sub-tasks and add one: it takes the task’s project and customer, and the Sub-tasks counter at the top grows.',
       'Press Mark Done / Send for Approval: the app answers, Approve and Request Changes appear, and so does the Waiting Approval badge.',
       'Change Work Item Type to Bug: the Task Details tab gives way to Bug Details.',
-      'Click Client Review on the statusbar to move the task to that stage.',
+      'Click Client Review on the stages along the top to move the task to that stage.',
     ],
   },
   {
@@ -21,9 +21,9 @@ export default [
     category: 'real',
     query: 'page=real-transfer&record=5301&skin=underline',
     blurb:
-      'Goods coming into the warehouse: a receipt of timber from Alexandria with its operations grid and on-hand columns, the buttons that move it from Draft to Ready to Done, and the backorder question when less arrives than was ordered.',
+      'Goods coming into the warehouse: a receipt of timber from Alexandria, each product with what was ordered, what came and what is in stock, the buttons that move it from Draft to Ready to Done, and the question of what to do with the rest when less arrives than was ordered.',
     howTo: [
-      'Press Mark as Todo: the receipt is Ready and every line’s Quantity is its Demand.',
+      'Press Mark as ready: the receipt moves from Draft to Ready, and every line’s Quantity is what was ordered (its Demand).',
       'Set the table legs’ Quantity to 12 of 16, then press Validate.',
       'Create Backorder? asks what to do with the rest: press Create Backorder. The receipt is Done, and the rest goes to a backorder.',
       'Add a product in the grid: its unit and the stock on hand come with it.',
@@ -36,7 +36,7 @@ export default [
     category: 'real',
     query: 'page=real-manufacturing-order&record=5401&skin=underline',
     blurb:
-      'An order to make four beech dining tables: their components, work orders and by-products from the bill of materials, sixteen header buttons and fourteen stat buttons, each shown only when it applies.',
+      'An order to make four beech dining tables: their components, the work at each station and the offcuts, from the bill of materials; sixteen buttons and fourteen counters, each shown only when it applies.',
     howTo: [
       'Change To Produce to 6: the components, the offcuts and the work orders’ minutes follow.',
       'The glue, consumed by hand, leads the components; each has its × while the order is a draft.',

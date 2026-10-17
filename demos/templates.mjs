@@ -131,11 +131,11 @@ export default [
     name: 'Invoice',
     category: 'templates',
     query: 'page=template-invoice&theme=odoo&record=new',
-    blurb: "A customer invoice on a sheet: its status, the customer and terms, lines whose subtotals and totals work themselves out, and Confirm then Register payment.",
+    blurb: "A customer invoice: its status, the customer and terms, lines whose subtotals and totals work themselves out, then Confirm — once it has lines to bill — and Register payment.",
     howTo: [
       "Add a line: pick a product, type a quantity and a price, and the subtotal and the totals under it follow.",
       "Type a discount on a line: its subtotal drops by that much.",
-      "Press Confirm: the statusbar moves to Posted and Register payment takes its place.",
+      "Press Confirm with no lines: it says why it cannot. Add a line and press Confirm: the invoice gets its number, moves to Posted, and Register payment takes its place.",
     ],
   },
   {
@@ -143,10 +143,10 @@ export default [
     name: 'Purchase order',
     category: 'templates',
     query: 'page=template-purchase-order&theme=ant&record=new',
-    blurb: "An order to a vendor: the vendor and dates, products with quantities and prices, totals, and Send then Confirm on its statusbar.",
+    blurb: "An order to a vendor: the vendor and dates, products with quantities and prices, totals, and its steps in their order — Send by email, Confirm order, Receive products — each once the order is ready for it.",
     howTo: [
       "Pick a vendor and add products: the totals follow the lines.",
-      "Press Send by email, then Confirm order: the statusbar follows, or click a stage on it.",
+      "Press Confirm order on an empty order: it says what is missing. Add products, then Send by email and Confirm order: the stages along the top follow, and Receive products comes once it is confirmed.",
     ],
   },
   {
@@ -209,9 +209,9 @@ export default [
     name: 'Task',
     category: 'templates',
     query: 'page=template-task&theme=apple&record=new',
-    blurb: "A project task: its stage on a clickable statusbar, priority stars, who it is assigned to, a deadline, a checklist whose progress counts itself, and a description.",
+    blurb: "A project task: its stage along the top, moved with a click, priority stars, who it is assigned to, a deadline, a checklist whose progress counts itself, and a description.",
     howTo: [
-      "Click a stage on the statusbar, and a star for the priority.",
+      "Click a stage along the top, and a star for the priority.",
       "Add three checklist items and tick one: Progress shows 33%.",
     ],
   },

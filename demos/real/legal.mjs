@@ -6,9 +6,9 @@ export default [
     category: 'real',
     query: 'page=real-legal-case&record=42&skin=underline',
     blurb:
-      'The largest record here: a law firm’s commercial dispute at the Cairo Economic Court, with 15 tabs, 12 tables of lines, 12 stat buttons, a statusbar and the case’s buttons — hearings, deadlines, time, budget, trust money and the conversation beside it.',
+      'The largest record here: a law firm’s commercial dispute at the Cairo Economic Court, with 15 tabs, 12 tables, 12 counters, its stages and the case’s buttons — hearings, deadlines, time, budget, money held in trust and the conversation with your team beside it.',
     howTo: [
-      'Press Hearings on the stat buttons: the Hearings tab opens. Add a hearing with a date ahead of the next one: Next Hearing and the count follow.',
+      'Press the Hearings counter at the top: the Hearings tab opens. Add a hearing with a date ahead of the next one: Next Hearing and the count follow.',
       'In Timesheets, type COURT in a new line’s Shortcode: the category, description and rate fill in, and the budget’s progress follows the hours.',
       'Open Billing and pick Flat Fee: the matter rate goes, the flat fee schedule appears.',
       'Press Close Case, pick an outcome and write the closing notes: the case closes, its pending tasks are cancelled and the Outcome tab opens.',
@@ -21,7 +21,7 @@ export default [
     category: 'real',
     query: 'page=real-survey&record=7&skin=underline',
     blurb:
-      'A survey’s settings, as its owner edits them: the sections and questions in order, pagination, who may answer, scoring and certification, exam mode and live sessions — options that show and switch off as the survey’s type changes.',
+      'A survey’s settings, as its owner edits them: the sections and questions in order, one page or several, who may answer, scores and certificates, exam mode and live sessions — options that appear and switch off as the survey’s type changes.',
     howTo: [
       'Add a question at the end of a section, then move it up with its grip or Alt+↑.',
       'Pick Assessment over the title: Time & Scoring appears, scoring turns on and access becomes invitation only.',

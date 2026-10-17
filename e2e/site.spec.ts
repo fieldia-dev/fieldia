@@ -2,7 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
 import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/catalog.mjs';
-import { expectNoSidewaysScroll } from './support';
+import { expectNoSidewaysScroll, screen } from './support';
 import { gzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 
@@ -185,6 +185,51 @@ test('the gallery by business area, found by words as they are typed, and by fea
   await page.getByRole('button', { name: 'By business area' }).click();
   await expect(page).not.toHaveURL(/by=feature/);
   await expect(page.locator('.gallery-section#sales')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('the gallery opens in a business owner’s words, a demo is found by what it does, and headings count what a search keeps', async ({ page }) => {
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(SITE + '/demos/');
+  // The first words under the title are a business owner's; the developers' — tests, frameworks — come after the search.
+  const lead = page.locator('.gallery-hero .lead');
+  await expect(lead).toContainText('quotes and orders');
+  await expect(lead).not.toContainText(/test|JavaScript|React|Vue|Angular/);
+  const dev = page.locator('.gallery-dev');
+  await expect(dev).toContainText('in plain JavaScript, React, Vue and Angular');
+  expect((await dev.boundingBox())!.y).toBeGreaterThan((await page.locator('.gallery-tools').boundingBox())!.y);
+  // No card, and no demo's first thing to try, in a developer's words for an ERP's parts.
+  const said = DEMOS.flatMap((demo) => [demo.name, demo.blurb, demo.howTo[0]]);
+  for (const jargon of [/statusbar/i, /stat buttons?/i, /smart buttons?/i, /chatter/i, /\bpager\b/i, /\bwidgets?\b/i]) expect(said.filter((words) => jargon.test(words)), String(jargon)).toEqual([]);
+  expect(await page.locator('.gallery-body .demo-blurb').allTextContents()).not.toContainEqual(expect.stringMatching(/statusbar|stat button|smart button|chatter|pager/i));
+  // Found by what it does and the common words for it, as the walk typed them.
+  const find = page.getByRole('searchbox', { name: 'Find a demo' });
+  const shown = page.locator('.gallery-body a.demo-card:visible .demo-name');
+  for (const [typed, demo] of [
+    ['booking', 'A test drive, booked from the times free'],
+    ['reservation', 'The booking desk’s week'],
+    ['appointment', 'A test drive, booked from the times free'],
+    ['phone', 'A customer or supplier'],
+    ['mobile', 'Workshop sign-up'],
+    ['bill', 'Invoices that add up'],
+  ] as const) {
+    await find.fill(typed);
+    await expect(shown.filter({ hasText: demo }), typed).toHaveCount(1);
+  }
+  // While a search is on, each heading counts what it still shows, of all it has; Escape puts the whole counts back.
+  const sales = DEMOS.filter((demo) => areaOf(demo.id) === 'sales').length;
+  await find.fill('booking');
+  await expect(page.locator('.gallery-section#sales h2 .count')).toHaveText(`1 of ${sales}`);
+  await expect(page.locator('.gallery-section#clinic h2 .count')).toHaveText(/^\d+ of \d+$/);
+  await screen(page, 'gallery-search-booking', { viewport: true });
+  // A slip of the keys still finds: "invoce" brings the invoices, and says they are close to what was typed.
+  await find.fill('invoce');
+  await expect(shown.filter({ hasText: 'Invoices that add up' })).toHaveCount(1);
+  await expect(page.locator('#gallery-said')).toContainText('words close to them');
+  await find.press('Escape');
+  await expect(page.locator('.gallery-section#sales h2 .count')).toHaveText(String(sales));
+  await screen(page, 'gallery-top', { viewport: true });
   expect(problems).toEqual([]);
 });
 
