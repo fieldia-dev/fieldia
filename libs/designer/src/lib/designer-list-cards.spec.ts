@@ -146,3 +146,52 @@ describe('a column’s new ways and its hiding, by the designer', () => {
     expect(designer.setListOptions({ optionalColumn: { field: 'company', starts: 'show' } })).toBe(false);
   });
 });
+
+describe('a list’s rows, by the designer: their tones, bold and own buttons', () => {
+  it('sets each row’s tone and bold by conditions on its record, refusing one that does not read', () => {
+    const designer = contacts();
+    expect(designer.setListOptions({ rowTones: [{ tone: 'muted', when: "state == 'lead'" }], rowBold: 'score > 80' })).toBe(true);
+    expect(list(designer).rowTones).toEqual([{ tone: 'muted', when: "state == 'lead'" }]);
+    expect(list(designer).rowBold).toBe('score > 80');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ rowBold: 'floors > 3' })).toBe(false);
+    expect(designer.getState().issues[0]).toMatch(/^When: /);
+    expect(designer.setListOptions({ rowTones: null, rowBold: null })).toBe(true);
+    expect(list(designer).rowTones).toBeUndefined();
+    expect(list(designer).rowBold).toBeUndefined();
+  });
+
+  it('puts buttons on each row: their words, the app’s action, hidden by a condition, kept by their ids', () => {
+    const designer = contacts();
+    expect(designer.setListOptions({ rowButtons: [{ label: 'Call back' }] })).toBe(true);
+    const made = list(designer).rowButtons?.[0];
+    expect(made).toEqual({ type: 'button', id: expect.any(String), label: 'Call back', action: 'call_back' });
+    expect(designer.setListOptions({ rowButtons: [{ id: made?.id, label: 'Call back', action: 'call_contact', invisible: "state == 'customer'" }] })).toBe(true);
+    expect(list(designer).rowButtons).toEqual([{ type: 'button', id: made?.id, label: 'Call back', action: 'call_contact', invisible: "state == 'customer'" }]);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ rowButtons: [{ label: '  ' }] })).toBe(false);
+    expect(designer.setListOptions({ rowButtons: null })).toBe(true);
+    expect(list(designer).rowButtons).toBeUndefined();
+  });
+
+  it('the list’s panel: a tone added by its condition, and a button on each row', () => {
+    const designer = contacts();
+    const panel = listProperties(elementFactory(document), designer);
+    document.body.replaceChildren(panel.element);
+    const update = () => panel.update(designer.getPage());
+    designer.subscribe(update);
+    update();
+    const part = panel.element.querySelector('[data-part="rows"]') as HTMLElement;
+    ([...part.querySelectorAll('button')].find((b) => b.textContent === 'Add a tone') as HTMLButtonElement).click();
+    const when = part.querySelector('.fd-table-tone-row input[aria-label="When"]') as HTMLInputElement;
+    when.value = "state == 'lead'";
+    when.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(list(designer).rowTones).toEqual([{ tone: 'danger', when: "state == 'lead'" }]);
+    ([...part.querySelectorAll('button')].find((b) => b.textContent === 'Add a button on each row') as HTMLButtonElement).click();
+    expect(list(designer).rowButtons?.map((b) => b.label)).toEqual(['Button']);
+    const words = part.querySelector('.fd-table-button input[aria-label="Words"]') as HTMLInputElement;
+    words.value = 'Book a viewing';
+    words.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(list(designer).rowButtons?.map((b) => b.label)).toEqual(['Book a viewing']);
+  });
+});

@@ -6,6 +6,7 @@ import { storedAs } from './kinds';
 import { FILTERABLE, ruleIsGood, widthIsGood } from './list-commands';
 import { calendarSection } from './list-calendar';
 import { cardsSection } from './list-cards-settings';
+import { rowsSection } from './list-rows-settings';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -619,6 +620,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
   const onMap = mapSection(el, designer);
   const onCalendar = calendarSection(el, designer);
   const asCards = cardsSection(el, designer);
+  const rowRules = rowsSection(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -635,6 +637,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.groupBy), groupsBox, addGroup),
+    rowRules.element,
     asCards.element,
     onMap.element,
     onCalendar.element,
@@ -728,6 +731,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
           return el('span', { class: 'fd-chip' }, label, remove);
         })
       );
+      rowRules.update(page);
       asCards.update(page);
       onMap.update(page);
       onCalendar.update(page);

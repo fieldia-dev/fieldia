@@ -1,7 +1,9 @@
-import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Page } from '@fieldia/core';
+import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
+import { formulaProblem, problemWords } from './rules-formula';
+import type { TableButton } from './table-commands';
 
 /**
  * A list page, as the designer edits it: its columns, its order, how many
@@ -44,6 +46,12 @@ export interface ListOptionsPatch {
   gallery?: ListGallery | null;
   /** Whether people may hide a column, and how it starts: shown, or hidden; null when they may not. */
   optionalColumn?: { field: string; starts: 'show' | 'hide' | null };
+  /** Each row's tone while a condition on its record holds, the first that holds; null or none for no tone. */
+  rowTones?: ToneWhen[] | null;
+  /** Each row in bold while a condition on its record holds; null for never. */
+  rowBold?: string | null;
+  /** The buttons on each row, in order, as a table's (a button kept keeps its id and steps); null or none for none. */
+  rowButtons?: TableButton[] | null;
 }
 
 export interface ListActionPatch {
@@ -284,6 +292,44 @@ export function listCommands(context: {
         }
         if (options.gallery === null) delete list.gallery;
         else if (options.gallery !== undefined) list.gallery = { ...options.gallery };
+        // A row's own rules: conditions on its record, refused in words where they do not read.
+        const refuse = (when: string) => {
+          if (formulaProblem(draft, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(draft, when, w), w)));
+        };
+        if (options.rowTones !== undefined) {
+          const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when }));
+          for (const item of kept) if (typeof item.when === 'string') refuse(item.when);
+          if (kept.length) list.rowTones = kept;
+          else delete list.rowTones;
+        }
+        if (options.rowBold !== undefined) {
+          const said = options.rowBold?.trim();
+          if (said) {
+            refuse(said);
+            list.rowBold = said;
+          } else delete list.rowBold;
+        }
+        if (options.rowButtons !== undefined) {
+          const before = new Map((list.rowButtons ?? []).map((button) => [button.id, button]));
+          const kept: ButtonNode[] = (options.rowButtons ?? []).map((button) => {
+            const label = button.label.trim();
+            if (!label) throw new Refusal((w) => w.tables.buttonNeedsWords);
+            const was = button.id ? before.get(button.id) : undefined;
+            const made: ButtonNode = { ...(was ?? { type: 'button', id: fresh(draft, `${list.id}-row-button`) }), label };
+            if (button.action?.trim()) made.action = button.action.trim();
+            else delete made.action;
+            const hidden = button.invisible?.trim();
+            if (hidden) {
+              refuse(hidden);
+              made.invisible = hidden;
+            } else delete made.invisible;
+            // A button does something: an app action, or the steps it had.
+            if (!made.action && !made.steps?.length) made.action = actionName(label);
+            return made;
+          });
+          if (kept.length) list.rowButtons = kept;
+          else delete list.rowButtons;
+        }
         if (options.optionalColumn !== undefined) {
           const { field, starts } = options.optionalColumn;
           if (!list.columns.includes(field)) throw new Refusal((w) => w.refusals.notAColumn(field));

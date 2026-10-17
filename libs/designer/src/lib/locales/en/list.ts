@@ -180,6 +180,14 @@ export const list = {
   // ---- a button for the rows chosen
   look: 'Look',
   actionHint: 'The name the app receives with the rows chosen; the app decides what it does.',
+  // ---- the list's rows: their tones, bold and buttons
+  rows: {
+    title: 'Rows',
+    toneHint: 'Each row’s words in a colour while a condition on its record holds: the first that holds. A card takes it on its edge.',
+    buttons: 'Buttons on each row',
+    addButton: 'Add a button on each row',
+    buttonsHint: 'A press runs the button with its row’s record alone; the app is given its id. Hidden on a row while its condition holds there.',
+  },
   // ---- the list's cards and gallery
   cards: {
     title: 'Cards',
