@@ -155,6 +155,9 @@ const NAMES: Record<string, string> = {
   'View all opens in': '«عرض الكل» يُفتح في',
   'Rows and New open': 'الصفوف و«جديد» تُفتح',
   'Possible duplicates': 'السجلات المكررة المحتملة',
+  'Records are called': 'اسم السجلات',
+  'One with its article': 'الواحد مع أداة التنكير',
+  'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
 };
 
@@ -540,4 +543,16 @@ export const panel: DesignerWords['panel'] = {
   duplicatesNone: 'لا حقل هنا يصلح للبحث عنها: أضف نصًا أو رقمًا أو تاريخًا أو اختيارًا أو رابطًا.',
   duplicatesOn: 'متى يُبحث عنها',
   duplicatesOnAs: { type: 'أثناء الكتابة وعند الحفظ', save: 'عند حفظ السجل فقط' },
+  recordsCalled: 'اسم السجلات',
+  recordsOne: 'اسم السجل الواحد',
+  recordsOneExample: 'عميل',
+  recordsHint: 'تسمّي جمل Fieldia نفسها سجلات هذه الشاشة هكذا: «يوجد عميل بهذا الهاتف»، «استُورد 17 عميلًا»، «عميل جديد». إن تُرك فارغًا قالت «سجل».',
+  recordsOther: 'اسم أكثر من سجل',
+  recordsOtherExample: 'عملاء',
+  recordsBoth: 'اكتب اسم السجل الواحد واسم أكثر من سجل.',
+  recordsA: 'الواحد مع أداة التنكير',
+  recordsAExample: 'عميل',
+  recordsAHint: 'في لغة تضع أداة قبل الاسم، كالإنجليزية والفرنسية. إن تُرك فارغًا قالت الجملة التي تحتاجه «سجل».',
+  recordsLowerLabels: 'أسماء الحقول بحرف صغير داخلها',
+  recordsLowerLabelsHint: 'في لغة فيها حروف كبيرة وصغيرة، كالإنجليزية: يُكتب اسم الحقل داخل الجملة بحرف أول صغير. يبقى اسم فيه حرف كبير آخر كما كُتب.',
 };

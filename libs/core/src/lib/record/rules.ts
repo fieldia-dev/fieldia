@@ -5,7 +5,7 @@ import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
 import { foldDigits, stripMarks } from './input-rules';
-import { fill, type Messages } from './messages';
+import { fillMessage, type MessageKey, type Messages } from './messages';
 import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
 /**
@@ -56,12 +56,12 @@ export function checkRules(
     const level = compiled.rule.level ?? 'error';
     if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
     const broken = brokenAsk(compiled, field, value as Value, at.now, at.env.today?.()) ?? brokenAcross(compiled, at);
-    if (broken) found[level] = compiled.rule.message ?? fill(at.messages[broken.say], { label, ...broken.values });
+    if (broken) found[level] = compiled.rule.message ?? fillMessage(at.messages, at.messages[broken.say], { label, ...broken.values });
   }
   return found;
 }
 
-type Broken = { say: keyof Messages; values?: Record<string, string | number> };
+type Broken = { say: MessageKey; values?: Record<string, string | number> };
 
 /** The first thing a rule asks that the answer does not keep, in the order a rule lists them. */
 function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, now: Date, today?: string): Broken | undefined {

@@ -1,5 +1,6 @@
 import { createMemoryDataSource, type ActionRequest, type DataSource, type ListRequest, type ListResult, type OpenRequest, type OpenResult, type Page, type Values } from '@fieldia/core';
 import { until } from './test-list';
+import type { PageRequest } from './related';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 import { cardsPart, listPart, partsFor } from './viewer-parts';
 
@@ -451,5 +452,57 @@ describe('a related list on a phone', () => {
     } finally {
       size.restore();
     }
+  });
+});
+
+describe('a related list whose records are named', () => {
+  const namedInvoice = { ...invoicePage, records: { one: 'invoice', other: 'invoices', a: 'an invoice' } } as Page;
+  const namedCustomer = (related: Record<string, unknown> = {}) => ({ ...customer({ viewAll: { page: 'all' }, ...related }), records: { one: 'customer', other: 'customers', a: 'a customer' } }) as Page;
+
+  it('says New, View all and None in the words its model’s page names them by; before the first save, this record’s', async () => {
+    const dataSource = createMemoryDataSource({ records: records() });
+    const { host, handle } = await mount({ page: namedCustomer(), recordId: null, dataSource, pages: { invoice: namedInvoice } });
+    expect(part(host).querySelector('.fd-related-note')?.textContent).toBe('Nothing here until this customer is saved.');
+    handle.form.setValue('name', 'Initech');
+    expect(await handle.save()).toBe(true);
+    await until(() => part(host).querySelector('.fd-list-empty:not([hidden])'));
+    expect(part(host).querySelector('.fd-list-empty')?.textContent).toBe('No invoices yet.');
+    // Their words name them: no title folded into a name of their own.
+    expect(named(host, 'New invoice')?.hasAttribute('aria-label')).toBe(false);
+    expect(named(host, 'View all invoices')?.hasAttribute('aria-label')).toBe(false);
+    named(host, 'New invoice')?.click();
+    await until(() => dialog());
+    expect(dialog()?.querySelector('.fd-form-dialog-title')?.textContent).toBe('New invoice');
+  });
+
+  it('counts them so on paper, and searched to none says none of them match', async () => {
+    const { host } = await mount({ page: namedCustomer(), pages: { invoice: namedInvoice } });
+    await until(() => rows(host).length === 2);
+    expect(part(host).querySelector('.fd-list-shown')?.textContent).toBe('2 of 3 invoices');
+    expect(part(host).querySelector('.fd-pager-text')?.textContent).toBe('1–2 of 3 invoices');
+  });
+
+  it('kept to a part of them by its own filter, says all and none of them by its title, as before; New still names one', async () => {
+    const dataSource = createMemoryDataSource({ records: { ...records(), partner: { ...records().partner, 3: { name: 'Initech' } } } });
+    const { host } = await mount({ page: namedCustomer({ title: 'Posted invoices', filter: [{ field: 'state', op: '=', value: 'posted' }] }), recordId: 3, dataSource, pages: { invoice: namedInvoice } });
+    await until(() => part(host).querySelector('.fd-list-empty:not([hidden])'));
+    expect(part(host).querySelector('.fd-list-empty')?.textContent).toBe('None yet.');
+    expect(named(host, 'View all')?.getAttribute('aria-label')).toBe('View all Posted invoices');
+    expect(named(host, 'New invoice')).toBeTruthy();
+  });
+
+  it('names them once an app that finds its pages later has found the model’s', async () => {
+    const pages = (request: PageRequest) => ('model' in request && request.model === 'invoice' ? Promise.resolve(namedInvoice) : null);
+    const { host } = await mount({ page: namedCustomer(), pages });
+    await until(() => named(host, 'New invoice'));
+    expect(named(host, 'View all invoices')).toBeTruthy();
+  });
+
+  it('reads as before where its model’s page names none', async () => {
+    const { host } = await mount({ page: namedCustomer(), pages: { invoice: invoicePage } });
+    await until(() => rows(host).length === 2);
+    expect(named(host, 'New')?.getAttribute('aria-label')).toBe('New in Invoices');
+    expect(named(host, 'View all')?.getAttribute('aria-label')).toBe('View all Invoices');
+    expect(part(host).querySelector('.fd-list-shown')?.textContent).toBe('2 of 3');
   });
 });

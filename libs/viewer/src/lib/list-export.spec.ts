@@ -338,3 +338,15 @@ describe('the file an export writes', () => {
     expect(exportName('Sales: Q3/Q4 *draft*', 'csv', new Date(2026, 0, 1))).toBe('Sales Q3 Q4 draft 2026-01-01.csv');
   });
 });
+
+describe('Export, on a page that names its records', () => {
+  it('says them in what goes, and what it did', async () => {
+    const said: string[] = [];
+    const host = await mount({ host: { say: (message) => void said.push(message) } }, { ...contacts, records: { one: 'contact', other: 'contacts', a: 'a contact' } });
+    exportButton(host).click();
+    expect(menu(host).querySelector('.fd-list-export-what')?.textContent).toBe('All 3 contacts that match');
+    (menu(host).querySelector('[data-format="csv"]') as HTMLButtonElement).click();
+    await until(() => said.length > 0);
+    expect(said).toEqual(['3 contacts exported.']);
+  });
+});

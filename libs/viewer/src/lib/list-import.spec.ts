@@ -346,3 +346,22 @@ describe('Import, a file it cannot take', () => {
     expect(document.activeElement).toBe(importButton(host));
   });
 });
+
+describe('Import, on a page that names its records', () => {
+  it('says them on its button, in its report, its Undo’s question and what it undid', async () => {
+    const asked: string[] = [];
+    const said: string[] = [];
+    const host = await mount({ confirm: async (message) => (asked.push(message), true), host: { say: (message) => void said.push(message) } }, { ...contacts, records: { one: 'contact', other: 'contacts', a: 'a contact' } });
+    await open(host);
+    await choose(sample('contacts-to-import.xlsx'));
+    pick('Full name', 'name');
+    await checkRows();
+    expect(button(/^Import \d/).textContent).toBe('Import 10 contacts');
+    await importRows(host);
+    expect(report(host).querySelector('.fd-list-report-words')?.textContent).toBe('10 of 17 contacts imported. Not imported:');
+    (report(host).querySelector('.fd-list-report-undo') as HTMLButtonElement).click();
+    await until(() => said.length > 0);
+    expect(asked).toEqual(['Delete the 10 contacts this import made?']);
+    expect(said).toEqual(['Import undone: 10 contacts deleted.']);
+  });
+});

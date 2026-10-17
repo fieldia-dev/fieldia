@@ -20,7 +20,7 @@ export function historySlot(options: HistoryOptions): (element: HTMLElement, con
     let status = form.getState().status;
     // The history's code comes the first time one is shown (a tab of its own, built as it is opened): drawn whole once it has.
     const draw = ({ mountHistory, stateColours }: NonNullable<typeof historyPart.loaded>, record: RecordRef | null) =>
-      mountHistory(element, { ...options, record, ...(options.stateField ? { stateColour: stateColours(form.page, options.stateField) } : {}) });
+      mountHistory(element, { records: form.page.records, lowerLabels: form.page.lowerLabels, ...options, record, ...(options.stateField ? { stateColour: stateColours(form.page, options.stateField) } : {}) });
     const history = historyPart.loaded ? draw(historyPart.loaded, shown) : drawnLater(element, shown, historyPart.load().then((part) => (record) => draw(part, record)));
     const unsubscribe = form.subscribe((state) => {
       const next = recordOf(state);

@@ -1,9 +1,9 @@
-import { fill, type Locale } from '@fieldia/core';
+import { fill, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart } from './activities';
 import { attachmentList, composerFiles } from './attachments';
 import { followersPart } from './followers';
-import { CHATTER_LABELS, type ChatterLabels } from './labels';
+import { chatterLabels, type ChatterLabels } from './labels';
 import { mentions } from './mentions';
 import { reactionBar } from './reactions';
 import type { ChatterMessage, ChatterSource, Person, RecordRef } from './source';
@@ -24,6 +24,8 @@ export interface ChatterOptions {
   me?: Person;
   /** Photos attached made smaller first, as a picture field's are: the longest side and the quality. Kept as they are unless said. */
   shrink?: ShrinkOptions;
+  /** What the page calls its records (`Page.records`), for its words that name one: "once the customer is saved". */
+  records?: PageRecords;
 }
 
 export interface ChatterHandle {
@@ -77,7 +79,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   installStyles(doc);
   installChatterStyles(doc);
   const locale = options.locale ?? 'en';
-  const labels: ChatterLabels = { ...CHATTER_LABELS[locale], ...options.labels };
+  const labels: ChatterLabels = chatterLabels(locale, options.labels);
   let record = options.record;
   let destroyed = false;
 
@@ -93,7 +95,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   const sendButton = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.sendMessage);
   const noteButton = el('button', { type: 'button', class: 'fd-button' }, labels.logNote);
   const bar = el('div', { class: 'fd-chatter-bar' }, sendButton, noteButton);
-  const waiting = el('p', { class: 'fd-chatter-waiting', hidden: '' }, labels.notSaved);
+  const waiting = el('p', { class: 'fd-chatter-waiting', hidden: '' }, recordSentence(options.records, labels.notSavedNoun, labels.notSaved, locale));
   const empty = el('p', { class: 'fd-chatter-empty', hidden: '' }, labels.empty);
   const list = el('ol', { class: 'fd-chatter-messages' });
 

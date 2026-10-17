@@ -24,7 +24,7 @@ const goesInto = (page: Page, header: string) => dialog(page).getByRole('combobo
 async function contacts(page: Page) {
   const opened = await open(page, 'plain', 'page=contacts&skin=underline');
   await expect(rows(page)).toHaveCount(10);
-  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,284');
+  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
   return opened;
 }
 
@@ -104,19 +104,19 @@ test.describe('a customer’s contacts brought in from a file', () => {
     expect(sheet).toContain('Why it was not imported');
     expect(sheet).toContain('Status: nothing is called “Prospect”');
     expect(sheet.match(/<row /g)).toHaveLength(8);
-    await dialog(page).getByRole('button', { name: 'Import 10 records' }).click();
+    await dialog(page).getByRole('button', { name: 'Import 10 contacts' }).click();
     await expect(dialog(page)).toBeHidden();
-    await expect(report(page).locator('.fd-list-report-words')).toHaveText('10 of 17 records imported. Not imported:');
+    await expect(report(page).locator('.fd-list-report-words')).toHaveText('10 of 17 contacts imported. Not imported:');
     await expect(report(page).locator('li')).toHaveCount(7);
-    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,294');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,294 contacts');
     await screen(page, 'lists-import-report', { viewport: true });
     // Undone, after a question: the records it made are gone again.
     await report(page).getByRole('button', { name: 'Undo the import' }).click();
     const question = page.getByRole('alertdialog');
-    await expect(question).toHaveText(/Delete the 10 records this import made\?/);
+    await expect(question).toHaveText(/Delete the 10 contacts this import made\?/);
     await question.getByRole('button', { name: 'OK' }).click();
-    await expect(page.locator('.fd-say')).toContainText('Import undone: 10 records deleted.');
-    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,284');
+    await expect(page.locator('.fd-say')).toContainText('Import undone: 10 contacts deleted.');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
     await expect(report(page)).toBeHidden();
     expect(problems).toEqual([]);
   });
@@ -136,8 +136,8 @@ test.describe('a customer’s contacts brought in from a file', () => {
       'Row 10: Last order: months go from 1 to 12',
       'Row 11: Newsletter: “sometimes” is neither yes nor no',
     ]);
-    await dialog(page).getByRole('button', { name: 'Import 6 records' }).click();
-    await expect(report(page).locator('.fd-list-report-words')).toHaveText('6 of 10 records imported. Not imported:');
+    await dialog(page).getByRole('button', { name: 'Import 6 contacts' }).click();
+    await expect(report(page).locator('.fd-list-report-words')).toHaveText('6 of 10 contacts imported. Not imported:');
     await page.locator('.fd-search-input').fill('سلمى');
     await expect(page.locator('.fd-search-suggestions [role="option"]').first()).toBeVisible();
     await page.locator('.fd-search-input').press('Enter');

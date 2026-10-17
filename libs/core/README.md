@@ -254,6 +254,57 @@ import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });
 ```
 
+## What a page's records are called
+
+A page may say what its records are, so Fieldia's own sentences name them as
+the business does — "A customer with this phone already exists", "17 customers
+imported", "Are you sure you want to delete this customer?", "New customer" —
+where they said "record", or no noun at all:
+
+```json
+{ "records": { "one": "customer", "other": "customers", "a": "a customer" }, "lowerLabels": true }
+```
+
+`one` and `other` are the words for one record and for more, as they stand
+inside a sentence; a sentence that counts picks one of them as its language does
+for the number. `a` is one with its article, where the language puts one before
+it ("an invoice", "une facture"): Fieldia never guesses an article, so a
+sentence that needs one says "A record …" until it is given.
+
+The page's own `lowerLabels`, beside `records` (label casing is no part of what
+records are called), writes a field's label with a small first letter wherever one of
+Fieldia's sentences puts it after a word of it — the form's messages ("Choose at
+least 2 for interests", "End date can’t be before start date"), a refused save's
+"Not saved. Check: email", a value that waits ("Fix tax rate to see total"), a
+help's, a lock's and a link's × names, a possible duplicate ("A customer with
+this phone already exists"), a conflict ("They changed: phone."), a column's
+grip, a filter's menu, a search's suggestion, a history's "changed status to …"
+— while a label that begins its sentence keeps its capital: "Phone is
+required", and a heading's place, "Status: nothing is called …" (an import's
+refusals, an input's). Off unless said, since only the page knows whether that
+is right: a label whose first word is a name ("IBAN", "VAT number", "WhatsApp",
+"E-mail") stays as written, its first letter alone ever changes ("found in
+Build"), and every label stays as written in a language that writes its nouns
+with a capital (German) or has none (Arabic). One rule says it, `labelAt(template,
+key, lower, locale)`; the form's messages carry the page's ask as
+`messages.lowerLabels` (`fillMessage`). A page asks it with its records named or
+not, a survey too. A line's own dialog says its labels as its record's page asks — a part
+of the same record — unless the line's own page (`lineOpens: "record"`) says
+otherwise; a list's Edit dialog as the list's page asks. Other languages come through the
+page's `translations`, as its other words do (`"customer": "عميل"`), and
+`pageWords` lists them for a translator.
+
+The form's own sentences say them — what it asks before the gear menu's Archive
+and Delete, why a person may not change, archive, copy or delete one, why a run
+of steps stopped, what letting changes go asks — and the viewer's (a list's, a
+record's, possible duplicates', a related list's in its model page's words: see
+`@fieldia/viewer`). Each such sentence is a message of its own beside the plain
+one (`deleteConfirmNoun`: "Are you sure you want to delete this {record}?",
+with `{record}`, `{records}` and `{aRecord}`); `recordSentence(records, named,
+plain, locale)` says one. A language, or an app's own `messages`, that has no
+such sentence says its plain one: a page that names no records reads as before.
+`checkPage` and `validatePage` refuse a word for one or for more left out.
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this

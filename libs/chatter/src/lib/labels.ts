@@ -15,6 +15,12 @@ export interface ChatterLabels {
   /** `{kind}`: what the record is called (HistoryOptions.kind), else `recordKind`. */
   created: string;
   recordKind: string;
+  /**
+   * Its making told, and the conversation waiting for a first save, in the words the page names its records by
+   * (`Page.records`): `{record}`. Where a language leaves one out, or the app gives its sentence before it alone, that one.
+   */
+  createdNoun?: string;
+  notSavedNoun?: string;
   commented: string;
   /** The history's groups by age; the first is `today`. */
   yesterday: string;
@@ -84,6 +90,16 @@ export interface ChatterLabels {
   keepWriting: string;
 }
 
+/**
+ * The chatter's words in `locale`, the app's own over them; a sentence the app gives without its sentence in a page's
+ * words for its records (`notSaved` without `notSavedNoun`) is said on such a page too.
+ */
+export function chatterLabels(locale: Locale, own: Partial<ChatterLabels> = {}): ChatterLabels {
+  const words: ChatterLabels = { ...CHATTER_LABELS[locale], ...own };
+  for (const [noun, plain] of [['createdNoun', 'created'], ['notSavedNoun', 'notSaved']] as const) if (!(noun in own) && plain in own) delete words[noun];
+  return words;
+}
+
 export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
   en: {
     conversation: 'Conversation',
@@ -95,6 +111,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     madeChanges: '{name} made field changes',
     cleared: '{name} cleared {field}',
     created: '{name} created the {kind}',
+    createdNoun: '{name} created the {record}',
     recordKind: 'record',
     commented: '{name} commented',
     yesterday: 'Yesterday',
@@ -121,6 +138,7 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     forTeam: 'Log an internal note…',
     empty: 'No messages yet.',
     notSaved: 'The conversation starts once the record is saved.',
+    notSavedNoun: 'The conversation starts once the {record} is saved.',
     attach: 'Attach a file',
     removeAttachment: 'Remove {name}',
     react: 'Add a reaction',

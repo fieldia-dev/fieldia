@@ -1,4 +1,4 @@
-import type { Value } from '@fieldia/core';
+import { labelAt, type Value } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
 import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
@@ -31,7 +31,7 @@ export const phoneWidget: WidgetFactory = (context) => {
   const home = phoneCountry(settings.country)?.code ?? null;
   const names = countryNames(locale);
 
-  const select = make('select', { class: 'fd-phone-select', 'aria-label': fillIn(words.phoneCountry, { label }) }, make('option', { value: '' }, words.phoneNoCountry));
+  const select = make('select', { class: 'fd-phone-select', 'aria-label': fillIn(words.phoneCountry, { label: labelAt(words.phoneCountry, 'label', form.page.lowerLabels, locale)(label) }) }, make('option', { value: '' }, words.phoneNoCountry));
   for (const [code, country] of names.sorted) select.append(make('option', { value: code }, `${flagOf(code)} ${country} ⁦+${(phoneCountry(code) as { dial: string }).dial}⁩`));
   const flag = make('span', { class: 'fd-phone-flag', 'aria-hidden': 'true' });
   // Its code reads left to right on a right-to-left page too: +20, never 20+.

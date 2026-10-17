@@ -173,7 +173,7 @@ test.describe('a list of invoices printed', () => {
     const { problems } = await open(page, 'plain', `page=invoices&skin=underline&${NOW}`);
     const rows = page.locator('.fd-list-table tbody tr.fd-list-row');
     await expect(rows).toHaveCount(10);
-    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 40');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 40 invoices');
     // Grouped by customer: the headings on screen, their rows folded.
     await page.getByRole('button', { name: 'Search options' }).click();
     await page.getByLabel('Group By').getByRole('button', { name: 'Customer', exact: true }).click();
@@ -189,7 +189,7 @@ test.describe('a list of invoices printed', () => {
     await expect(sheet).toBeVisible();
     await expect(page.locator('.fd-list-table')).toBeHidden();
     await expect(sheet.locator('.fd-print-title')).toHaveText('Invoices');
-    await expect(sheet.locator('.fd-print-about > div')).toHaveText(['Filters: This year', 'Grouped by Customer', '40 records']);
+    await expect(sheet.locator('.fd-print-about > div')).toHaveText(['Filters: This year', 'Grouped by Customer', '40 invoices']);
     // Every one of the forty under its customer — the screen showed ten, and no group open.
     await expect(sheet.locator('tbody tr:not(.fd-print-group)')).toHaveCount(40);
     await expect(sheet.locator('tbody tr.fd-print-group')).toHaveCount(7);
@@ -244,7 +244,7 @@ test.describe('what is printed follows what is shown', () => {
     await expect(sheet).toHaveCount(1);
     await page.emulateMedia({ media: 'print' });
     await expect(sheet.locator('thead th')).toHaveText(shown);
-    await expect(sheet.locator('.fd-print-about > div').last()).toHaveText('1,284 records');
+    await expect(sheet.locator('.fd-print-about > div').last()).toHaveText('1,284 contacts');
     // Each row's phone as people read it, where the list shows it.
     await expect(sheet.locator('tbody td:nth-child(2)').filter({ hasText: /\S/ }).first()).toHaveText(/^\+\d/);
     await printed(page);

@@ -218,7 +218,7 @@ test.describe('lists on a phone', () => {
     await expect(call).toHaveAttribute('href', /^tel:\+\d+$/);
     await page.getByText('Select all', { exact: true }).click();
     await expect(page.locator('.fd-list-count')).toHaveText('10 selected');
-    await expect(page.getByRole('button', { name: 'Select all 1,284 that match' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Select all 1,284 contacts that match' })).toBeVisible();
     await screen(page, 'list-cards-phone', { viewport: true });
     expect(problems).toEqual([]);
   });

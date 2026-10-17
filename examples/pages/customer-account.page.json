@@ -7,6 +7,7 @@
     "kind": "record",
     "model": "partner"
   },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
   "fields": {
     "name": {
       "type": "char",

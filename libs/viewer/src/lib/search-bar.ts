@@ -3,7 +3,7 @@ import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
 import { favouritesPart } from './favourites';
-import type { ViewerLabels } from './labels';
+import type { ViewerLabels, WordKey } from './labels';
 
 type FieldFacet = Extract<Facet, { kind: 'field' }>;
 
@@ -30,7 +30,7 @@ export interface SearchContext {
 
 /** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
 const SPANS = [...DATE_INTERVALS].reverse();
-const SPAN_WORDS: Record<DateInterval, keyof ViewerLabels> = { year: 'groupByYear', quarter: 'groupByQuarter', month: 'groupByMonth', week: 'groupByWeek', day: 'groupByDay' };
+const SPAN_WORDS: Record<DateInterval, WordKey> = { year: 'groupByYear', quarter: 'groupByQuarter', month: 'groupByMonth', week: 'groupByWeek', day: 'groupByDay' };
 
 /** A chip's words: a field and the values looked for in it, filters any of which apply, or the fields grouped by. */
 export function facetText(facet: Facet, labels: Pick<ViewerLabels, 'or'>): string {

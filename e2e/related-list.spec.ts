@@ -38,7 +38,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(count(invoices)).toHaveText(String(mine.length));
     await expect(invoices).toHaveAccessibleName(`Invoices, ${mine.length}`);
     await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
-    await expect(invoices.locator('.fd-pager-text')).toHaveText(`1–5 / ${mine.length}`);
+    await expect(invoices.locator('.fd-pager-text')).toHaveText(`1–5 of ${mine.length} invoices`);
     // Every one of this customer's, not only the five shown, in the totals row under them.
     await expect(invoices.locator('.fd-list-totals tr[data-total="all"] td[data-field="amount"]')).toHaveText(money(mine.reduce((sum, invoice) => sum + invoice.amount, 0)));
     // Past a page, a search box — a box alone, no menu of filters.
@@ -76,7 +76,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(count(invoices)).toHaveText(String(before));
     await button(invoices, 'New').click();
     await expect(dialog(page)).toBeVisible();
-    await expect(dialog(page).locator('.fd-form-dialog-title')).toHaveText('New in Invoices');
+    await expect(dialog(page).locator('.fd-form-dialog-title')).toHaveText('New invoice');
     // The customer filled in, by its name.
     await expect(dialog(page).locator('[data-node="f-partner"] input')).toHaveValue('Nile Traders');
     await dialog(page).locator('[data-node="#title"] textarea').fill('INV/2026/9999');
@@ -111,13 +111,13 @@ test.describe('a customer’s invoices, inside the customer', () => {
   test('View all goes to the invoices list by the app’s own route, kept to this customer’s, all of them', async ({ page }) => {
     const { problems } = await open(page, 'plain', CUSTOMER);
     const mine = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1);
-    await expect(button(part(page, 'invoices'), 'View all')).toHaveAccessibleName('View all Invoices');
+    await expect(button(part(page, 'invoices'), 'View all')).toHaveAccessibleName('View all invoices');
     await button(part(page, 'invoices'), 'View all').click();
     await expect(page).toHaveURL(/page=invoices&filter=/);
     await expect(page.locator('.fd-list-row').first()).toBeVisible();
     // No "This year": the list's own default filter is off for one customer's.
     await expect(page.locator('.fd-facet')).toHaveCount(0);
-    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, mine.length)} / ${mine.length}`);
+    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, mine.length)} of ${mine.length} invoices`);
     await expect(page.locator('.fd-list-row td[data-field="partner_id"], .fd-list-row td:nth-child(3)').first()).toContainText('Nile Traders');
     // Its rows open an invoice.
     await page.locator('.fd-list-row').first().click();
@@ -136,7 +136,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(quotations.locator('.fd-pager-text')).toHaveText(mine.length > 5 ? `1–5 / ${mine.length}` : /.*/);
     await screen(page, 'related-quotations');
     // The pager over the record: Amira Clinics, its own invoices and quotations, never Nile Traders'.
-    await page.getByRole('button', { name: 'Next record' }).click();
+    await page.getByRole('button', { name: 'Next customer' }).click();
     await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Amira Clinics');
     const theirs = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 20).sort(latestFirst);
     await expect(count(part(page, 'invoices'))).toHaveText(String(theirs.length));
@@ -186,7 +186,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await page.emulateMedia({ media: 'print' });
     await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
     await expect(shown).toBeVisible();
-    await expect(shown).toHaveText(`5 of ${mine.length}`);
+    await expect(shown).toHaveText(`5 of ${mine.length} invoices`);
     await expect(invoices.locator('.fd-pager')).toBeHidden();
     await expect(invoices.locator('.fd-search-input')).toBeHidden();
     await expect(button(invoices, 'New')).toBeHidden();
@@ -227,14 +227,14 @@ test.describe('a customer’s invoices, inside the customer', () => {
   test('a new customer: nothing points at it until it is saved, then none yet and New', async ({ page }) => {
     const { problems } = await open(page, 'plain', `page=customer-account&record=new&skin=underline&${NOW}`);
     const invoices = part(page, 'invoices');
-    await expect(invoices.locator('.fd-related-note')).toHaveText('Nothing here until this record is saved.');
+    await expect(invoices.locator('.fd-related-note')).toHaveText('Nothing here until this customer is saved.');
     await expect(button(invoices, 'New')).toBeHidden();
     await expect(button(invoices, 'View all')).toBeHidden();
     await expect(invoices.locator('.fd-list')).toHaveCount(0);
     await screen(page, 'related-unsaved');
     await page.locator('[data-node="#title"] textarea').fill('Nile Delta Shipping');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(invoices.locator('.fd-list-empty')).toHaveText('None yet.');
+    await expect(invoices.locator('.fd-list-empty')).toHaveText('No invoices yet.');
     await expect(count(invoices)).toHaveText('0');
     await expect(button(invoices, 'New')).toBeVisible();
     await expect(invoices.locator('.fd-related-note')).toBeHidden();
@@ -255,7 +255,7 @@ test.describe('a property’s viewings, inside the property', () => {
     await button(viewings, 'View all').click();
     await expect(dialog(page)).toBeVisible();
     await expect(dialog(page).locator('.fd-list-row')).toHaveCount(mine.length);
-    await expect(dialog(page).locator('.fd-pager-text')).toHaveText(`1–${mine.length} / ${mine.length}`);
+    await expect(dialog(page).locator('.fd-pager-text')).toHaveText(`1–${mine.length} of ${mine.length} viewings`);
     // A list has nothing to save: Close alone at the dialog's foot.
     await expect(dialog(page).locator('.fd-form-dialog-foot button:visible')).toHaveText(['Close']);
     await screen(page, 'related-view-all-dialog', { viewport: true });
@@ -280,9 +280,9 @@ test.describe('a property’s viewings, inside the property', () => {
     await expect(count(viewings)).toHaveText(String(before + 1));
     await expect(rows(viewings).locator('td:nth-child(2)').first()).toHaveText('Mona Kamal');
     // Two homes on: none yet.
-    await page.getByRole('button', { name: 'Next record' }).click();
-    await page.getByRole('button', { name: 'Next record' }).click();
-    await expect(viewings.locator('.fd-list-empty')).toHaveText('None yet.');
+    await page.getByRole('button', { name: 'Next property' }).click();
+    await page.getByRole('button', { name: 'Next property' }).click();
+    await expect(viewings.locator('.fd-list-empty')).toHaveText('No viewings yet.');
     await expect(count(viewings)).toHaveText('0');
   });
 

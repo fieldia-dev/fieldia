@@ -1,4 +1,5 @@
 import { LANGUAGES } from './locales/all';
+import { labelAt } from './record-words';
 
 /**
  * Validation messages, by language. `{label}` is the field's label; the other
@@ -105,6 +106,18 @@ export interface Messages {
   discardChanges: string;
   /** Why a run of steps stopped: the record it ran on was replaced by another while it went on, and its steps are not for that one. */
   recordReplaced: string;
+  /**
+   * The same sentences in the words a page names its records by (`Page.records`): `{record}` for one, `{records}` for
+   * more, `{aRecord}` for one with its article. Where a language leaves one out, it says its own sentence above.
+   */
+  archiveConfirmNoun?: string;
+  deleteConfirmNoun?: string;
+  mayNotEditNoun?: string;
+  mayNotArchiveNoun?: string;
+  mayNotDuplicateNoun?: string;
+  mayNotDeleteNoun?: string;
+  discardChangesNoun?: string;
+  recordReplacedNoun?: string;
   /** A text longer than its most, pasted whole: `{over}` characters too long for its `{max}`; one over (`overByOne`). The one message: its count stays a count. */
   overBy: string;
   overByOne: string;
@@ -120,9 +133,17 @@ export interface Messages {
   patternBroken: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
+  /**
+   * A field's label written small where a message puts it inside its sentence — "Choose at least 2 for interests" — as
+   * a form's page asks (`lowerLabels`): set on the form's own messages, never in a language's table.
+   */
+  lowerLabels?: boolean;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
+
+/** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
+export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels'>;
 
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {
@@ -191,6 +212,14 @@ const en: Messages = {
   theirsUnread: 'Their version could not be read, so yours was not saved over it. Try Keep mine again, or Reload.',
   discardChanges: 'Discard your changes?',
   recordReplaced: 'Another record is shown now: the rest of these steps did not run.',
+  archiveConfirmNoun: 'Are you sure that you want to archive this {record}?',
+  deleteConfirmNoun: 'Are you sure you want to delete this {record}?',
+  mayNotEditNoun: 'You can read this {record}, but not change it.',
+  mayNotArchiveNoun: 'You cannot archive this {record}.',
+  mayNotDuplicateNoun: 'You cannot duplicate this {record}.',
+  mayNotDeleteNoun: 'You cannot delete this {record}.',
+  discardChangesNoun: 'Discard your changes to this {record}?',
+  recordReplacedNoun: 'Another {record} is shown now: the rest of these steps did not run.',
   overBy: '{label} is {over} characters too long: shorten it to {max}',
   overByOne: '{label} is 1 character too long: shorten it to {max}',
   postcode: '{label}: a postcode in {country} has {n} digits, like {example}',
@@ -208,6 +237,20 @@ const en: Messages = {
  * `addLanguage`.
  */
 export const MESSAGES: Record<Locale, Messages> = { en, ...LANGUAGES };
+
+/** The blanks of a message a field's label fills: its own, a table's column, a range's start and end. */
+const LABELS = ['label', 'column', 'start', 'end'];
+
+/**
+ * A message filled in (`fill`), each field's label as its sentence puts it (`labelAt`): small inside the sentence where
+ * the form's page asks (`messages.lowerLabels`), else as written.
+ */
+export function fillMessage(messages: Messages, template: string, values: Record<string, string | number>): string {
+  if (!messages.lowerLabels) return fill(template, values);
+  const own = { ...values };
+  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, true, messages.locale)(own[key] as string);
+  return fill(template, own);
+}
 
 /** Fill `{name}` placeholders. */
 export function fill(template: string, values: Record<string, string | number>): string {

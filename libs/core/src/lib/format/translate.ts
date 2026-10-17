@@ -2,7 +2,8 @@ import type { Page } from './page';
 
 /**
  * Keys whose text a person reads: titles, labels, help, prompts, messages, a printout's header and footer, why a
- * field is locked and why an answer does not fit its pattern.
+ * field is locked and why an answer does not fit its pattern. (What a page's records are called, `records`, is read
+ * too: see `walk`.)
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
@@ -71,8 +72,9 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
     else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
     // A list's card names fields too, but for the words after its lines' values.
     else if (name === 'card' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = (wordsOfCard(text)({ card: inner }) as { card: unknown }).card;
-    // A head's link: the words after its number, each plural form ("Comment", "Comments"); a list's filters' own names, by field.
-    else if ((name === 'words' || name === 'filterLabels') && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
+    // A head's link: the words after its number, each plural form ("Comment", "Comments"); a list's filters' own names, by
+    // field; what a page's records are called ("customer", "customers", "a customer").
+    else if ((name === 'words' || name === 'filterLabels' || name === 'records') && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
   }
   return out;

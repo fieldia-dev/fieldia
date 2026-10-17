@@ -82,6 +82,8 @@ export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-opt
 export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export type { PageDuplicates } from './lib/format/duplicates';
+export type { PageRecords } from './lib/format/records';
+export { labelAt, recordSentence } from './lib/record/record-words';
 export { wideColumns } from './lib/format/columns';
 export { relatedInTab } from './lib/format/head-checks';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';

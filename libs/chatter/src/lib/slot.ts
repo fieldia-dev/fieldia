@@ -42,10 +42,10 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
     const { look, placeholder, references, onCount, ...rest } = options;
     // A discussion's code, and the editor of its comment box, come the first time one is shown: drawn whole once they have.
     const discussion = (part: NonNullable<typeof discussionPart.loaded>, record: RecordRef | null) =>
-      part.mountDiscussion(element, { ...rest, record, placeholder, references, onCount: (count) => onCount?.(count, form) });
+      part.mountDiscussion(element, { ...rest, records: form.page.records, record, placeholder, references, onCount: (count) => onCount?.(count, form) });
     const chatter =
       look !== 'discussion'
-        ? mountChatter(element, { ...rest, record: shown })
+        ? mountChatter(element, { ...rest, records: form.page.records, record: shown })
         : discussionPart.loaded && textPart.loaded
           ? discussion(discussionPart.loaded, shown)
           : drawnLater(element, shown, Promise.all([discussionPart.load(), textPart.load()]).then(([part]) => (record) => discussion(part, record)));

@@ -3,6 +3,7 @@
   "id": "contacts",
   "title": "Contacts",
   "data": { "kind": "record", "model": "crm.contact" },
+  "records": { "one": "contact", "other": "contacts", "a": "a contact" },
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true },
     "company": { "type": "char", "label": "Company" },

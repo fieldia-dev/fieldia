@@ -5,6 +5,7 @@ import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } fr
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
 import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
+import { PageRecordsSchema, type PageRecords } from './records';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -170,6 +171,22 @@ export interface Page {
    * Never in the way of a save. Without the source's `duplicates`, nothing is asked and nothing shows.
    */
   duplicates?: PageDuplicates;
+  /**
+   * What its records are called, so Fieldia's sentences name them: "A customer with this phone already exists", "17
+   * customers imported", "New customer" — `one`, `other` and, where its language puts an article before one, `a` ("an
+   * invoice"). Other languages through `translations`. Left out, "record", as before. See `PageRecords`.
+   */
+  records?: PageRecords;
+  /**
+   * A field's label written with a small first letter wherever one of Fieldia's sentences puts it after a word of it:
+   * "A customer with this phone already exists", "Choose at least 2 for interests", "Fix tax rate to see total", "Not
+   * saved. Check: email". One that begins its sentence ("Phone is required", "Status: nothing is called …") keeps its
+   * capital. Off unless said: a label is the page's own words, and only the page knows whether lower-casing it is
+   * right. A label whose first word is a name ("IBAN", "VAT number", "WhatsApp", "E-mail") stays as written either
+   * way, as does every label in a language that writes its nouns with a capital (German) or has none (Arabic). A
+   * line's own dialog, and a list's Edit, follow the page they are part of, unless the line's own page says otherwise.
+   */
+  lowerLabels?: boolean;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -252,6 +269,8 @@ export const PageSchema = z
       .meta({ id: 'PagePrint' })
       .optional(),
     duplicates: PageDuplicatesSchema.optional(),
+    records: PageRecordsSchema.optional(),
+    lowerLabels: z.boolean().optional(),
   })
   .meta({
     title: 'Fieldia page',

@@ -1,4 +1,4 @@
-import { MESSAGES, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
+import { MESSAGES, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
 import { dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
 import { ENCODING_SCRIPT, ENCODINGS, FileProblem, readFile, SEPARATORS, type FileCell, type FileSheet, type PickedFile, type ReadHow } from './import-file';
@@ -98,6 +98,9 @@ const cellWords = (cell: FileCell) => (cell === null ? '' : typeof cell === 'obj
 /** The import, in its dialog: settled once it has ended — null when the person closed it before writing anything. */
 export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   const { page, doc, labels, fill, number, locale } = context;
+  /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const failedWords = sentence(labels.importFailedNoun, labels.importFailed);
   const most = context.most ?? IMPORT_MOST;
   installImportStyles(doc);
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string | undefined> = {}, ...children: (Node | string)[]) => {
@@ -363,7 +366,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
         });
       } catch {
         if (mine !== turn) return;
-        status.textContent = labels.importFailed;
+        status.textContent = failedWords;
         return;
       }
       if (mine !== turn) return;
@@ -383,7 +386,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     try {
       [readers, phoneReaders] = await Promise.all([loadLinesPart(), phones ? loadPhonePart() : Promise.resolve(undefined)]);
     } catch {
-      if (mine === turn) status.textContent = labels.importFailed;
+      if (mine === turn) status.textContent = failedWords;
       return;
     }
     const words = { importNoneCalled: labels.importNoneCalled, importSeveralCalled: labels.importSeveralCalled, importNotYesNo: labels.importNotYesNo };
@@ -394,7 +397,8 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       locale,
       dateOrder: dateOrderOf({ page }),
       today: context.form.today(),
-      messages: MESSAGES[locale] ?? MESSAGES.en,
+      // A field's label small inside a message's sentence where the page asks, as its own form says them.
+      messages: page.lowerLabels ? { ...(MESSAGES[locale] ?? MESSAGES.en), lowerLabels: true } : (MESSAGES[locale] ?? MESSAGES.en),
       labels: WIDGET_LABELS[locale] ?? WIDGET_LABELS.en,
       words,
       ...yesAndNo(),
@@ -411,7 +415,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
         if (mine === turn) status.textContent = fill(labels.importChecking, { done: number(Math.round((at / of) * now.total)), n: number(now.total) });
       }, () => mine !== turn);
     } catch {
-      if (mine === turn) status.textContent = labels.importFailed;
+      if (mine === turn) status.textContent = failedWords;
       return;
     }
     if (mine !== turn) return;
@@ -470,7 +474,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       parts.push(make('h3', { class: 'fd-import-heading' }, labels.importPreview), make('div', { class: 'fd-import-scroll' }, preview));
     }
     body.replaceChildren(...parts);
-    steps({ back: () => showMatch(), ...(ready.length ? { primary: { words: plural(ready.length, labels.importStart, labels.importStartOne), act: () => void write(ready, refused) } } : {}) });
+    steps({ back: () => showMatch(), ...(ready.length ? { primary: { words: plural(ready.length, sentence(labels.importStartNoun, labels.importStart), sentence(labels.importStartNounOne, labels.importStartOne)), act: () => void write(ready, refused) } } : {}) });
     (ready.length ? primary : back).focus();
   }
 
@@ -508,7 +512,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       stop.setAttribute('aria-busy', 'true');
     };
     stop.focus();
-    const how = { model: context.model, fields: page.fields, dataSource: context.dataSource, notMade: labels.importNotMade };
+    const how = { model: context.model, fields: page.fields, dataSource: context.dataSource, notMade: sentence(labels.importNotMadeNoun, labels.importNotMade) };
     let written: Written;
     try {
       written = await writeRows(how, ready, (at, of) => {
@@ -516,7 +520,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
         status.textContent = fill(labels.importing, { done: number(at), n: number(of) });
       }, () => stopping);
     } catch {
-      written = { made: [], failed: ready.map((row) => ({ number: row.number, why: labels.importFailed })), stopped: false };
+      written = { made: [], failed: ready.map((row) => ({ number: row.number, why: failedWords })), stopped: false };
     }
     writing = false;
     stop.removeAttribute('aria-busy');

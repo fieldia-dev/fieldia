@@ -1,4 +1,4 @@
-import { isOwnZone, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
+import { isOwnZone, recordSentence, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads, zoneName } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
@@ -41,6 +41,9 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const source = context.dataSource;
   const model = page.data.kind === 'record' ? page.data.model : '';
   const labels: CalendarLabels = calendarLabels(locale, settings.labels?.[locale]);
+  /** One of its sentences in the words the list's page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const holds = (n: number) => (n === 1 ? sentence(labels.holdsNounOne, labels.holdsOne) : fill(sentence(labels.holdsNoun, labels.holds), { n }));
   const kind = kindOf(page, spec);
   /** The zone its clock is: its start's, else its page's, else the reader's own (dates.ts). */
   const zone = zoneOfCalendar(page, spec);
@@ -105,7 +108,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   });
   const ranges = make('div', { class: 'fd-cal-ranges', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
   ranges.hidden = views.length < 2;
-  const newButton = make('button', { type: 'button', class: 'fd-button fd-button-primary fd-cal-new' }, labels.newRecord);
+  const newButton = make('button', { type: 'button', class: 'fd-button fd-button-primary fd-cal-new' }, sentence(labels.newRecordNoun, labels.newRecord));
   newButton.hidden = !canCreate;
   today.addEventListener('click', () => go(startOfDay(now())));
   back.addEventListener('click', () => go(stepFrom(state.view, state.anchor, -1)));
@@ -130,8 +133,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   // What a record's keys do: Enter and M, or Enter alone for one that stays where it is.
   const keysEvent = make('span', { id: `${id}-keys-event`, class: 'fd-sr-only' }, canOpen ? labels.keysOpenMove : labels.keysMove);
   const keysStill = make('span', { id: `${id}-keys-still`, class: 'fd-sr-only' }, labels.keysOpen);
-  const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, labels.keysSlots);
-  const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, labels.keysDays);
+  const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, sentence(labels.keysSlotsNoun, labels.keysSlots));
+  const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, sentence(labels.keysDaysNoun, labels.keysDays));
   const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysStill, keysSlot, keysDay);
   element.setAttribute('role', 'group');
   element.style.setProperty('--fd-cal-hour', `${HOUR}px`);
@@ -403,7 +406,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         for (let m = from * 60; m < to * 60; m += slot) {
           const at = atMinutes(column.day, m);
           const busy = timed.filter((event) => event.start <= at && event.end > at && inColumn(event, column)).length;
-          const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(joined);
+          const words = [longDay(column.day), time(at), column.resource?.label, busy ? holds(busy) : labels.free].filter(Boolean).join(joined);
           const cell = make('div', { class: 'fd-cal-slot', role: 'button', tabindex: '-1', 'data-minutes': String(m), 'data-focus': `s:${i}:${m}`, 'aria-label': words, 'aria-describedby': keysSlot.id });
           cell.addEventListener('keydown', (e) => onSlotKey(cal, e, i, m));
           // A screen reader's press, with no pointer behind it: a new record there, as Enter makes one.
@@ -556,7 +559,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getUTCMonth() !== state.anchor.getUTCMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
       const number = make(
         'button',
-        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
+        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? holds(mine.length) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
         format(locale, { day: 'numeric' }).format(day)
       );
       number.addEventListener('click', () => (views.includes('day') ? showView('day', day) : undefined));

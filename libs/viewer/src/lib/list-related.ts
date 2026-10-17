@@ -1,4 +1,4 @@
-import type { DataSource, Form, FormState, ListNode, Locale, OpenRequest, OpenResult, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, TabNode, Tone, Values } from '@fieldia/core';
+import { recordSentence, type DataSource, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
 import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -43,6 +43,11 @@ export interface RelatedContext {
   route?: ((model: string, request: Omit<OpenRequest, 'page'>) => Promise<OpenResult | null>) | undefined;
   /** Told how many records it lists for the record shown, each time it counts them unsearched: a tab's count of it. */
   onCount?: (total: number) => void;
+  /**
+   * What the app's page for a model calls its records (its `records`, in this page's language), now or once it is
+   * found: "New invoice", "View all invoices", "No invoices yet". Nothing named without it.
+   */
+  recordsOf?: (model: string) => PageRecords | undefined | Promise<PageRecords | undefined>;
 }
 
 /** A related list drawn: told each state of the form, as a part of the page is. */
@@ -58,7 +63,7 @@ export interface RelatedPart {
  * tones, bold and buttons, order and search, a page of `limit` rows (5 unless said), nothing to choose; the time zone, phones, look and language of the record's
  * page, which they are shown in.
  */
-export function relatedListPage(page: Page, node: RelatedNode): Page {
+export function relatedListPage(page: Page, node: RelatedNode, records?: PageRecords): Page {
   const layout: ListNode = {
     type: 'list',
     // Its own id: the part's is its box's, which holds it.
@@ -87,6 +92,8 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
     ...(page.look ? { look: page.look } : {}),
     ...(page.phone ? { phone: page.phone } : {}),
     ...(page.timeZone ? { timeZone: page.timeZone } : {}),
+    // Its records named as their own page names them: "5 of 23 invoices".
+    ...(records ? { records } : {}),
   };
 }
 
@@ -112,10 +119,18 @@ export function relatedList(context: RelatedContext): RelatedPart {
     return opens && (await dialogs.openRecord(node.model, { ...(recordId === null ? {} : { recordId }), ...(values ? { values } : {}), title })) !== null;
   };
   const openRecord = opens || byApp ? (id: RecordId, name?: string) => show(id, name || node.title || node.model) : undefined;
-  const newRecord = (opens || byApp) && node.create !== false ? (values: Values) => show(null, node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord, values) : undefined;
+  /** What its model's records are called, once known: New, View all and None name them ("New invoice"). */
+  let records: PageRecords | undefined;
+  const ofModel = (noun: string | undefined, words: string) => recordSentence(records, noun, words, locale);
+  // Kept to a part of them (its own `filter`: only posted invoices), "all" and "no" of them would be untrue: its title says which.
+  const part = !!node.filter?.length;
+  const newRecord =
+    (opens || byApp) && node.create !== false
+      ? (values: Values) => show(null, records?.one ? ofModel(labels.relatedNewNoun, labels.relatedNew) : node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord, values)
+      : undefined;
   const { viewAll } = node;
   const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
-  const page = relatedListPage(context.page, node);
+  let page = relatedListPage(context.page, node);
   // Its count in a pill after the title, read out with it as the group's name: "Invoices, 12".
   const count = el('span', { class: 'fd-related-count', 'aria-hidden': 'true', hidden: '' });
   const title = node.title ? el('span', { class: 'fd-related-title' }, ...context.withIcon(node.icon, node.title), count) : null;
@@ -126,7 +141,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
   const head = el('div', { class: 'fd-related-head' }, ...(title ? [title] : []), tools);
   // Its buttons show once the record is saved: until then, a heading only for its title.
   head.hidden = !title;
-  const note = el('p', { class: 'fd-related-note', hidden: '' }, labels.relatedUnsaved);
+  const note = el('p', { class: 'fd-related-note', hidden: '' }, recordSentence(context.page.records, labels.relatedUnsavedNoun, labels.relatedUnsaved, locale));
   const holder = el('div', { class: 'fd-related-list' });
   box.classList.add('fd-related');
   /** The group's name: its title, and once counted how many it holds. */
@@ -178,6 +193,30 @@ export function relatedList(context: RelatedContext): RelatedPart {
     ...(context.now ? { now: context.now } : {}),
     ...(openRecord ? { onOpenRecord: openRecord } : {}),
   };
+
+  /**
+   * Its words in the names its model's page gives its records, once known: New and View all say them — their title
+   * then needless as their name — None yet too, and the list made for the next record counts them ("5 of 23 invoices").
+   */
+  function nameRecords(given: PageRecords | undefined) {
+    // A page that only asks for its labels small names no records.
+    if (!given?.one) return;
+    records = given;
+    page = relatedListPage(context.page, node, given);
+    listContext.page = page;
+    if (!part) listContext.none = ofModel(labels.relatedNoneNoun, labels.relatedNone);
+    if (add) {
+      add.textContent = ofModel(labels.relatedNewNoun, labels.relatedNew);
+      add.removeAttribute('aria-label');
+    }
+    if (all && !part) {
+      all.textContent = ofModel(labels.relatedAllNoun, labels.relatedAll);
+      all.removeAttribute('aria-label');
+    }
+  }
+  const known = context.recordsOf?.(node.model);
+  if (known instanceof Promise) void known.then((given) => gone || nameRecords(given), () => undefined);
+  else nameRecords(known);
 
   /** The list for the record shown now: a new one for a record it was not listing, else its records asked again. */
   function ask(filter: ResolvedFilter[], id: RecordId) {

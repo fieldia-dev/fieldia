@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { cardLineFields, type JsonValue, type ListMap, type ListRequest, type ListResult, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
+import { cardLineFields, recordSentence, type JsonValue, type ListMap, type ListRequest, type ListResult, type RecordId, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewFactory, ListViewPart } from '@fieldia/viewer';
 import { drawCard, drawCrowd, type Card } from './card';
 import { clusterPoints } from './cluster';
@@ -624,7 +624,7 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
       result = await source.list({ model, fields, filter, sort: context.sort(), offset: 0, limit: spec.limit ?? 500 });
     } catch {
       if (asked !== asking || destroyed) return;
-      note.textContent = labels.mapFailed;
+      note.textContent = recordSentence(page.records, labels.mapFailedNoun, labels.mapFailed, locale);
       note.hidden = false;
       return;
     }

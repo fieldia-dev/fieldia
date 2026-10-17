@@ -67,6 +67,8 @@ export const de: Messages = {
   theirsUnread: 'Die andere Fassung konnte nicht gelesen werden, darum wurde Ihre nicht darüber gespeichert. Versuchen Sie Meine behalten erneut, oder Neu laden.',
   discardChanges: 'Ihre Änderungen verwerfen?',
   recordReplaced: 'Jetzt wird ein anderer Datensatz angezeigt: die übrigen Schritte wurden nicht ausgeführt.',
+  archiveConfirmNoun: '{record} wirklich archivieren?',
+  deleteConfirmNoun: '{record} wirklich löschen?',
   overBy: '{label} ist {over} Zeichen zu lang: kürzen Sie es auf {max}',
   overByOne: '{label} ist 1 Zeichen zu lang: kürzen Sie es auf {max}',
   postcode: '{label}: Postleitzahl für {country} mit {n} Ziffern, z. B. {example}',

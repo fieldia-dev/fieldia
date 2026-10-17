@@ -197,13 +197,15 @@ describe('checkValue — other languages', () => {
     expect(checkValue(upload, { name: 'a.zip', type: 'application/zip', size: 1 }, false, MESSAGES.ar)).toBe('يجب أن يكون العقد ملف PDF أو image');
   });
 
-  it('gives every language every message, with only the placeholders English uses', async () => {
+  it('gives every language every message, with only the placeholders English uses; those naming a page’s records, as it can say them', async () => {
     const { MESSAGES } = await import('./messages');
     const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    const plain = (keys: string[]) => keys.filter((key) => !key.endsWith('Noun')).sort();
     for (const [locale, messages] of Object.entries(MESSAGES)) {
-      expect({ locale, keys: Object.keys(messages).sort() }).toEqual({ locale, keys: Object.keys(MESSAGES.en).sort() });
+      expect({ locale, keys: plain(Object.keys(messages)) }).toEqual({ locale, keys: plain(Object.keys(MESSAGES.en)) });
       for (const [key, text] of Object.entries(messages)) {
-        const allowed = new Set([...placeholders(MESSAGES.en[key as keyof typeof MESSAGES.en]), 'label', 'aTypes', 'aModels', 'types', 'models']);
+        expect({ locale, key, english: key in MESSAGES.en }).toEqual({ locale, key, english: true });
+        const allowed = new Set([...placeholders(MESSAGES.en[key as keyof typeof MESSAGES.en] as string), 'label', 'aTypes', 'aModels', 'types', 'models']);
         for (const used of placeholders(text)) expect({ locale, key, used, ok: allowed.has(used) }).toEqual({ locale, key, used, ok: true });
       }
     }

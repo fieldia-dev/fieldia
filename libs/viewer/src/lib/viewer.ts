@@ -45,6 +45,8 @@ import {
   type WaitsFor,
   MESSAGES,
   hotkeyWords,
+  labelAt,
+  recordSentence,
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
@@ -378,6 +380,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
+  /** One of the viewer's sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  /** A sentence of the viewer's filled in, each field's label at `keys` small inside it where the page asks (`labelAt`). */
+  const labelled = (template: string, values: Record<string, string | number>, ...keys: string[]) => {
+    const own = { ...values };
+    for (const key of keys) own[key] = labelAt(template, key, page.lowerLabels, locale)(String(own[key]));
+    return fill(template, own);
+  };
   /**
    * What the page's steps ask of the screen: a page opened, words said, a
    * question asked, a tab shown — the viewer's own, under the app's. A form
@@ -395,7 +405,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           missing: (id) => fill(labels.pageMissing, { page: id }),
           say: (message, tone) => actionHost.say(message, tone),
           post: (message) => form.post(message),
-          name: () => recordName() || labels.newRecord,
+          name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
         },
@@ -497,7 +507,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -604,7 +614,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const { node } = part;
       report(error, { stage, part: node.type, node: node.id, ...(node.type === 'field' ? { field: node.field } : {}), ...(node.type === 'slot' ? { name: node.name } : {}) });
       const name = node.type === 'field' ? (node.label ?? page.fields[node.field]?.label ?? node.field) : partName(node);
-      const words = node.type === 'field' ? fill(widgetLabels.brokenField, { label: name ?? '' }) : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
+      const words = node.type === 'field' ? labelled(widgetLabels.brokenField, { label: name ?? '' }, 'label') : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
       const box = brokenBox(doc, words);
       box.dataset['node'] = node.id;
       const drawn = part.element;
@@ -712,7 +722,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Under the field, behind a (?) by its label, or both: the field's own way, else the page's.
       const helpWay = node.helpShown ?? page.look?.helpShown ?? 'below';
       const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
-      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
+      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, labelled(labels.helpFor, { label: labelText }, 'label')) : null;
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
       if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
       // Its side of the words and the gap before it follow the way the words run: English on an Arabic page too.
@@ -742,7 +752,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         lockMark?.remove();
         lockWords = words;
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
-        lock = words ? bubbleTip(`${id}-lock`, words, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
+        lock = words ? bubbleTip(`${id}-lock`, words, labelled(labels.locked, { label: labelText }, 'label'), 'fd-lock', icon) : null;
         if (words && !pointing) {
           pointing = true;
           for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
@@ -775,8 +785,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let waitMark: HTMLElement | null = null;
       const waitWords = (waits: WaitsFor) =>
         waits.line
-          ? fill(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText })
-          : fill(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText });
+          ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'lines', 'own')
+          : labelled(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'field', 'own');
       const drawWaiting = (words: string | null) => {
         if (!words && !waitMark) return;
         if (!waitMark) {
@@ -1431,6 +1441,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
                   return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
                 }
               : undefined,
+          recordsOf: modelRecords,
         });
         part.update(form.getState());
       };
@@ -1441,6 +1452,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       else void listPart.load().then((module) => gone || take(module), () => undefined);
       hideWhen(box, node.id);
       return box;
+    }
+
+    /** What the app's page for a model calls its records, as this page is shown: now, or once the app has found it. */
+    function modelRecords(model: string) {
+      const of = (other: Page | null) => (other?.records ? shownAs(other).records : undefined);
+      try {
+        const found = findPage(options, { model });
+        return found instanceof Promise ? found.then(of, () => undefined) : of(found);
+      } catch {
+        return undefined;
+      }
     }
 
     /** A map of the record's places, drawn by the app's maps; told of each change to the form. */
@@ -1649,7 +1671,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (!found.some((f) => f.name === name)) found.push({ name, at: shown ? fieldsShown.indexOf(shown) : Infinity });
     }
     const names = found.sort((a, b) => a.at - b.at).map((f) => f.name);
-    return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
+    const small = labelAt(labels.checkFields, 'fields', page.lowerLabels, locale);
+    return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.map(small).join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   /**
@@ -1809,6 +1832,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       records: options.records,
       breadcrumbs: options.breadcrumbs,
       labels,
+      locale,
       icons: options.icons,
       uid,
       fill,
@@ -2314,7 +2338,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (options.onNewRecord) return { onNewRecord: options.onNewRecord };
     const model = page.data.kind === 'record' ? page.data.model : '';
     if (!model || (!options.pages && !options.relatedPages) || !dialogs.canOpen(model)) return {};
-    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: labels.newRecord }) };
+    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: sentence(labels.newRecordNoun, labels.newRecord) }) };
   }
   let pageDrawn = false;
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
@@ -2739,19 +2763,12 @@ const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="fi
 const isBlank = (value: unknown) => value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length);
 
 /**
- * A label inside a sentence, as "Add story points" says it: in English and French its first letter small, unless the
- * word is a name such as "VAT"; German nouns, and Arabic, as written.
- */
-function inSentence(label: string, locale: Locale): string {
-  return (locale === 'en' || locale === 'fr') && /^\p{Lu}\p{Ll}/u.test(label) ? label[0].toLocaleLowerCase(locale) + label.slice(1) : label;
-}
-
-/**
  * What an empty field in the quiet look says, by its label, in the viewer's
  * words for `locale`: "Add story points", or for a question "Your answer".
  */
 export function quietHint(label: string, locale: Locale, labels: Pick<ViewerLabels, 'quietHint' | 'quietAnswer'> = VIEWER_LABELS[locale]): string {
-  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', inSentence(label, locale));
+  // Small inside its sentence, as it has always been — "Add story points" — by the one rule every sentence asks (labelAt).
+  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', labelAt(labels.quietHint, 'label', true, locale)(label));
 }
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */

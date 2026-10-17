@@ -13,6 +13,15 @@ export interface CalendarLabels {
   /** The group of Today, back and on. */
   moveThrough: string;
   newRecord: string;
+  /**
+   * New, how many a slot holds and what Enter makes, in the words a page names its records by (`Page.records`):
+   * `{record}` for one, `{records}` for more. Where a language leaves one out, it says its own sentence before it.
+   */
+  newRecordNoun?: string;
+  holdsNoun?: string;
+  holdsNounOne?: string;
+  keysSlotsNoun?: string;
+  keysDaysNoun?: string;
   allDay: string;
   /** The hours' column head, for a screen reader. */
   time: string;
@@ -69,6 +78,7 @@ const en: CalendarLabels = {
   showAs: 'Show the calendar by',
   moveThrough: 'Move through the calendar',
   newRecord: 'New',
+  newRecordNoun: 'New {record}',
   allDay: 'All day',
   time: 'Time',
   loadFailed: 'The calendar could not be loaded.',
@@ -82,12 +92,16 @@ const en: CalendarLabels = {
   withWho: 'with {name}',
   free: 'free',
   holds: '{n} records',
+  holdsNoun: '{n} {records}',
   holdsOne: '1 record',
+  holdsNounOne: '1 {record}',
   keysOpen: 'Enter opens it.',
   keysMove: 'M moves it.',
   keysOpenMove: 'Enter opens it. M moves it.',
   keysSlots: 'The arrow keys move between days and times; Enter makes a new record there.',
+  keysSlotsNoun: 'The arrow keys move between days and times; Enter makes a new {record} there.',
   keysDays: 'The arrow keys move between days; Enter makes a new record there.',
+  keysDaysNoun: 'The arrow keys move between days; Enter makes a new {record} there.',
   moveTo: 'Move to…',
   moveTitle: 'Move {name}',
   moveDay: 'Day',
@@ -174,7 +188,9 @@ const fr: CalendarLabels = {
   withWho: 'avec {name}',
   free: 'libre',
   holds: '{n} fiches',
+  holdsNoun: '{n} {records}',
   holdsOne: '1 fiche',
+  holdsNounOne: '1 {record}',
   keysOpen: 'Entrée l’ouvre.',
   keysMove: 'M le déplace.',
   keysOpenMove: 'Entrée l’ouvre. M le déplace.',
@@ -207,6 +223,7 @@ const de: CalendarLabels = {
   showAs: 'Kalender zeigen nach',
   moveThrough: 'Durch den Kalender blättern',
   newRecord: 'Neu',
+  newRecordNoun: 'Neu: {record}',
   allDay: 'Ganztägig',
   time: 'Uhrzeit',
   loadFailed: 'Der Kalender konnte nicht geladen werden.',
@@ -220,7 +237,9 @@ const de: CalendarLabels = {
   withWho: 'mit {name}',
   free: 'frei',
   holds: '{n} Einträge',
+  holdsNoun: '{n} {records}',
   holdsOne: '1 Eintrag',
+  holdsNounOne: '1 {record}',
   keysOpen: 'Eingabe öffnet ihn.',
   keysMove: 'M verschiebt ihn.',
   keysOpenMove: 'Eingabe öffnet ihn. M verschiebt ihn.',
@@ -248,8 +267,20 @@ export const CALENDAR_LABELS: Record<Locale, CalendarLabels> = { en, ar, fr, de 
 
 /** The calendar's words in a page's language, the app's own over them. */
 export function calendarLabels(locale: Locale, own?: Partial<CalendarLabels>): CalendarLabels {
-  return { ...(CALENDAR_LABELS[locale] ?? en), ...own };
+  const words: CalendarLabels = { ...(CALENDAR_LABELS[locale] ?? en), ...own };
+  // A sentence the app gives without its sentence in a page's words for its records says its own on that page too.
+  for (const [noun, plain] of NOUNS) if (own && !(noun in own) && plain in own) delete words[noun];
+  return words;
 }
+
+/** Each sentence in a page's words for its records, and the sentence it stands for. */
+const NOUNS = [
+  ['newRecordNoun', 'newRecord'],
+  ['holdsNoun', 'holds'],
+  ['holdsNounOne', 'holdsOne'],
+  ['keysSlotsNoun', 'keysSlots'],
+  ['keysDaysNoun', 'keysDays'],
+] as const;
 
 /** Words with their `{name}`s filled in. */
 export const fill = (words: string, values: Record<string, string | number>) => words.replace(/\{(\w+)\}/g, (all, key: string) => (key in values ? String(values[key]) : all));

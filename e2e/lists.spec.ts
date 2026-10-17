@@ -18,7 +18,7 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=customers');
       await expect(names(page)).toHaveCount(8);
       await expect(names(page).first()).toHaveText('Amira Clinics');
-      await expect(range(page)).toHaveText('1–8 / 12');
+      await expect(range(page)).toHaveText('1–8 of 12 customers');
       await expect(page.locator('.fd-list-table th[aria-sort="ascending"]')).toHaveText('Name');
       // The headers share one line, and a number sits on the end of its column, as its header does.
       const heads = page.locator('.fd-list-table thead th');
@@ -43,12 +43,12 @@ for (const variant of VARIANTS) {
       await expect(offered.nth(3)).toHaveAttribute('aria-selected', 'true');
       await box(page).press('Enter');
       await expect(chips(page)).toHaveText(['Country: egy']);
-      await expect(range(page)).toHaveText('1–8 / 10');
+      await expect(range(page)).toHaveText('1–8 of 10 customers');
       await page.getByRole('button', { name: 'Search options' }).click();
       await menu(page).getByRole('button', { name: 'Active' }).click();
       await expect(menu(page).getByRole('button', { name: 'Active' })).toHaveAttribute('aria-pressed', 'true');
       await expect(chips(page)).toHaveText(['Country: egy', 'Active']);
-      await expect(range(page)).toHaveText('1–6 / 6');
+      await expect(range(page)).toHaveText('1–6 of 6 customers');
       // The menu sits over the list, under the box, in its three columns.
       const field = (await page.locator('.fd-search-field').boundingBox())!;
       const panel = (await menu(page).boundingBox())!;
@@ -59,7 +59,7 @@ for (const variant of VARIANTS) {
       await box(page).focus();
       await box(page).press('Backspace');
       await expect(chips(page)).toHaveText(['Country: egy']);
-      await expect(range(page)).toHaveText('1–8 / 10');
+      await expect(range(page)).toHaveText('1–8 of 10 customers');
     });
 
     test('puts the records in a header’s order, either way, and pages through them', async ({ page }) => {
@@ -72,7 +72,7 @@ for (const variant of VARIANTS) {
       await expect(credit).toHaveAttribute('aria-sort', 'descending');
       await expect(names(page).first()).toHaveText('Delta Foods');
       await page.getByRole('button', { name: 'Next page' }).click();
-      await expect(range(page)).toHaveText('9–12 / 12');
+      await expect(range(page)).toHaveText('9–12 of 12 customers');
       await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
       // Empty amounts come last, whichever way.
       await expect(names(page).last()).toHaveText('Maadi Labs');

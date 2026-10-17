@@ -1,4 +1,4 @@
-import type { ButtonNode, LineField, ListNode, Page } from '@fieldia/core';
+import { recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
@@ -285,7 +285,8 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       // No box to choose a row: no buttons for the rows chosen either.
       selection.hidden = list.choose === false;
       chosen.textContent = said.selected.replace('{n}', '2');
-      pagerText.textContent = said.range.replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
+      // In the words the page names its records by, as the list will say it: "1–40 of 120 customers".
+      pagerText.textContent = recordSentence(page.records, said.rangeNoun, said.range, pageLocale(page)).replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
       drawActions(list, selected);
       // steps lane: a button that does something wears a mark.
       pressMarks(actions, page, designer);

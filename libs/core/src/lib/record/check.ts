@@ -1,7 +1,7 @@
 import type { Field, LineField, PropertyDefinition } from '../format/field';
 import { fieldPattern } from '../format/pattern';
 import { checkDay } from './limits';
-import { fill, MESSAGES, type Messages } from './messages';
+import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
@@ -27,7 +27,7 @@ export function checkValue(
   widget?: string
 ): string | undefined {
   const label = field.label || 'This field';
-  const say = (key: keyof Messages, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
+  const say = (key: MessageKey, values: Record<string, string | number> = {}) => fillMessage(messages, messages[key], { label, ...values });
   if (isEmpty(field, value)) return required ? say('required') : undefined;
   if (field.type === 'matrix') return checkMatrix(field, value, required, say);
 
@@ -139,7 +139,7 @@ function checkMatrix(
   field: Extract<Field, { type: 'matrix' }>,
   value: Value | undefined,
   required: boolean,
-  say: (key: keyof Messages, values?: Record<string, string | number>) => string
+  say: (key: MessageKey, values?: Record<string, string | number>) => string
 ): string | undefined {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return say('matrix');
   const rows = new Set(field.rows.map((r) => String(r.value)));
@@ -161,7 +161,7 @@ function checkMatrix(
 
 /** A field takes at most `places` decimal places, in its language's words and plural form ("Area takes at most 1 decimal place"). */
 export function decimalsWords(label: string, places: number, messages: Messages = MESSAGES.en): string {
-  return fill(places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
+  return fillMessage(messages, places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
 }
 
 const pluralRules = new Map<string, Intl.PluralRules>();
@@ -194,7 +194,7 @@ function isRecord(value: unknown): value is RelatedRecord {
   );
 }
 
-type Say = (key: keyof Messages, values?: Record<string, string | number>) => string;
+type Say = (key: MessageKey, values?: Record<string, string | number>) => string;
 
 function checkDate(value: Value | undefined, say: Say): string | undefined {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return say('dateFormat');

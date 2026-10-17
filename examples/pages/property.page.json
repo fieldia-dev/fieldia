@@ -10,6 +10,7 @@
   "phone": {
     "country": "EG"
   },
+  "records": { "one": "property", "other": "properties", "a": "a property" },
   "fields": {
     "name": {
       "type": "char",

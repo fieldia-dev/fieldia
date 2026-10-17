@@ -1,4 +1,4 @@
-import { BULK_KINDS, isEmpty, saveProblemOf, type Field, type LineField, type Page, type RecordId, type Value, type Values } from '@fieldia/core';
+import { BULK_KINDS, isEmpty, labelAt, recordSentence, saveProblemOf, type Field, type LineField, type Page, type RecordId, type Value, type Values } from '@fieldia/core';
 import { displayValue, keepTabIn } from '@fieldia/widgets';
 import type { DuplicatesContext, MergeSide } from './duplicates';
 import { nameFieldOf } from './name-field';
@@ -52,6 +52,8 @@ const same = (a: Value | undefined, b: Value | undefined): boolean => {
  */
 export function openMergeScreen(context: DuplicatesContext, here: MergeSide, there: MergeSide, opener: HTMLElement | null): Promise<Merged | null> {
   const { el, labels, fill, form, page } = context;
+  /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, context.locale);
   const nameField = nameFieldOf(page);
   const id = `fd-merge-${++screens}`;
   const fields = mergeFields(page);
@@ -70,7 +72,7 @@ export function openMergeScreen(context: DuplicatesContext, here: MergeSide, the
   const byDefault = (field: string): Side => (blank(field, sides[keep].values[field]) && !blank(field, sides[other(keep)].values[field]) ? other(keep) : keep);
 
   return new Promise((resolve) => {
-    const title = el('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, labels.mergeTitle);
+    const title = el('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, sentence(labels.mergeTitleNoun, labels.mergeTitle));
     const close = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close, title: labels.close }, '×');
     const radio = (name: string, value: Side, labelledBy?: string) => el('input', { type: 'radio', name: `${id}-${name}`, value, ...(labelledBy ? { 'aria-labelledby': labelledBy } : {}) }) as HTMLInputElement;
     // The columns: each record by its name, the one shown marked, its radio keeping it.
@@ -80,7 +82,7 @@ export function openMergeScreen(context: DuplicatesContext, here: MergeSide, the
       {},
       el('td', {}),
       ...(['here', 'there'] as const).map((side, i) =>
-        el('th', { scope: 'col' }, el('label', { class: 'fd-merge-pick' }, keepRadios[i], el('span', {}, fill(labels.mergeKeep, { name: sides[side].name }), ...(side === 'here' ? [el('span', { class: 'fd-merge-shown' }, labels.mergeShown)] : []))))
+        el('th', { scope: 'col' }, el('label', { class: 'fd-merge-pick' }, keepRadios[i], el('span', {}, fill(labels.mergeKeep, { name: sides[side].name }), ...(side === 'here' ? [el('span', { class: 'fd-merge-shown' }, sentence(labels.mergeShownNoun, labels.mergeShown))] : []))))
       )
     );
     // A row for each field they hold apart: its label, then each record's value with its radio.
@@ -105,10 +107,10 @@ export function openMergeScreen(context: DuplicatesContext, here: MergeSide, the
     const table = el('table', { class: 'fd-merge-table' }, el('thead', {}, head), el('tbody', {}, ...rows.map((r) => r.row)));
     const labelOf = (field: string) => page.fields[field].label;
     const separator = (context.tag ?? context.locale).split('-')[0] === 'ar' ? '، ' : ', ';
-    const sameWords = apart.length ? (alike.length ? fill(labels.mergeSame, { fields: alike.map(labelOf).join(separator) }) : '') : labels.mergeAllSame;
+    const sameWords = apart.length ? (alike.length ? fill(labels.mergeSame, { fields: alike.map(labelOf).map(labelAt(labels.mergeSame, 'fields', page.lowerLabels, context.tag ?? context.locale)).join(separator) }) : '') : labels.mergeAllSame;
     const what = el('p', { class: 'fd-merge-what', id: `${id}-what` });
     const problem = el('p', { class: 'fd-merge-error', role: 'alert', hidden: '' });
-    const body = el('div', { class: 'fd-form-dialog-body' }, el('p', { class: 'fd-merge-intro' }, labels.mergeIntro), ...(apart.length ? [table] : []), ...(sameWords ? [el('p', { class: 'fd-merge-same' }, sameWords)] : []), what, problem);
+    const body = el('div', { class: 'fd-form-dialog-body' }, el('p', { class: 'fd-merge-intro' }, sentence(labels.mergeIntroNoun, labels.mergeIntro)), ...(apart.length ? [table] : []), ...(sameWords ? [el('p', { class: 'fd-merge-same' }, sameWords)] : []), what, problem);
     const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
     const merge = el('button', { type: 'button', class: 'fd-button fd-button-primary', 'aria-describedby': what.id }, labels.merge);
     const box = el('div', { class: 'fd-form-dialog fd-size-medium fd-merge', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' }, el('div', { class: 'fd-form-dialog-head' }, title, close), body, el('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }, cancel, merge));

@@ -1,8 +1,8 @@
-import { fill } from '@fieldia/core';
+import { fill, recordSentence } from '@fieldia/core';
 import { installStyles, sanitizeHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
-import { CHATTER_LABELS, type ChatterLabels } from './labels';
+import { chatterLabels, type ChatterLabels } from './labels';
 import type { ChatterMessage, Person } from './source';
 import { installDiscussionStyles } from './discussion-styles';
 import { drawnLater } from './later';
@@ -41,7 +41,7 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
   installStyles(doc);
   installDiscussionStyles(doc);
   const locale = options.locale ?? 'en';
-  const labels: ChatterLabels = { ...CHATTER_LABELS[locale], ...options.labels };
+  const labels: ChatterLabels = chatterLabels(locale, options.labels);
   let record = options.record;
   let destroyed = false;
 
@@ -111,7 +111,7 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
   const ask = el('div', { class: 'fd-discussion-ask', role: 'group', 'aria-label': labels.discardComment, hidden: '' }, discardWords, discard, keep);
   const me = el('div', { class: 'fd-discussion-me' }, avatar(options.me));
   const card = el('div', { class: 'fd-comment-card fd-composer-card' }, me, el('div', { class: 'fd-discussion-write' }, box.element, actions, ask));
-  const waiting = el('p', { class: 'fd-discussion-waiting', hidden: '' }, labels.notSaved);
+  const waiting = el('p', { class: 'fd-discussion-waiting', hidden: '' }, recordSentence(options.records, labels.notSavedNoun, labels.notSaved, locale));
   const list = el('ol', { class: 'fd-discussion-comments' });
   root.append(card, waiting, list);
   host.append(root);

@@ -275,3 +275,25 @@ describe('Edit, for many records at once', () => {
     await until(() => !dialog());
   });
 });
+
+describe('Edit, on a page that names its records', () => {
+  it('says them in its dialog, its question and what it did', async () => {
+    const asked: string[] = [];
+    const said: string[] = [];
+    const host = await mount({ confirm: async (message) => (asked.push(message), true), host: { say: (message) => void said.push(message) } }, { ...contacts, records: { one: 'contact', other: 'contacts', a: 'a contact' } });
+    tick(host, 'Amira Clinics', 'Petra Tours');
+    edit(host).click();
+    await until(() => dialog());
+    expect(dialog()?.querySelector('.fd-form-dialog-title')?.textContent).toBe('Edit 2 contacts');
+    choose('bulk-pick', 'Status');
+    choose('bulk-state', 'Customer');
+    footButton('Update').click();
+    await until(() => said.length > 0);
+    expect(asked).toEqual(['Update 2 contacts? Status becomes “Customer”.']);
+    expect(said).toEqual(['2 contacts updated.']);
+    tick(host, 'Nile Traders');
+    edit(host).click();
+    await until(() => dialog());
+    expect(dialog()?.querySelector('.fd-form-dialog-title')?.textContent).toBe('Edit 1 contact');
+  });
+});

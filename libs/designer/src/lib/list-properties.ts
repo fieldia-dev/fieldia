@@ -1,5 +1,6 @@
 import { cardLines, DATE_PERIODS, type ButtonNode, type DatePeriod, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin, type TotalKind } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
+import { recordsSettings } from './records-settings';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
@@ -633,9 +634,12 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
   const onCalendar = calendarSection(el, designer);
   const asCards = cardsSection(el, designer);
   const rowRules = rowsSection(el, designer);
+  // What the list's records are called in Fieldia's own sentences, first: the screen's own words (records-settings.ts).
+  const records = recordsSettings(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
+    ...records.rows,
     prop(el, w.rowsOnPage, size.input),
     prop(el, w.sortedBy, sortBy),
     directionRow,
@@ -662,6 +666,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
   return {
     element,
     update(page) {
+      records.update(page);
       const list = listOf(page);
       pageSize = list.pageSize ?? 40;
       size.refresh();

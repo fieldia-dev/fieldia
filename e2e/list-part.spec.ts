@@ -66,7 +66,7 @@ test.describe('the list screen in a part of its own', () => {
     // The customers' list writes its phone column as people read them: the phone part beside it.
     expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.list.js', '/script/fieldia.phone.js']);
     expect(await page.evaluate(() => !!document.getElementById('fd-list-styles'))).toBe(true);
-    await expect(page.locator('#app .fd-pager-text')).toHaveText('1–3 / 3');
+    await expect(page.locator('#app .fd-pager-text')).toHaveText('1–3 of 3 customers');
 
     // Searched at once: a name typed, its suggestion taken, a chip, the records it names.
     const search = page.locator('#app .fd-search-input');
@@ -97,7 +97,7 @@ test.describe('the list screen in a part of its own', () => {
     const holder = page.locator('#app .fd-list[data-node="customers-list"]');
     const failed = holder.locator('.fd-list-failed');
     await expect(failed).toBeVisible();
-    await expect(failed).toContainText('Could not load the records.');
+    await expect(failed).toContainText('Could not load the customers.');
     await expect(holder.locator('.fd-list-waiting')).toBeHidden();
     await expect(holder).not.toHaveAttribute('aria-busy');
     await expect(page.locator('#app .fd-list-table')).toHaveCount(0);

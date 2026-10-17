@@ -5,6 +5,8 @@
   "data": { "kind": "record", "model": "partner" },
   "phone": { "country": "EG" },
   "duplicates": { "fields": ["name", "phone", "email", "vat"] },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
+  "lowerLabels": true,
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true },
     "phone": { "type": "char", "label": "Phone" },
@@ -37,6 +39,9 @@
   "translations": {
     "ar": {
       "Customer": "عميل",
+      "customer": "عميل",
+      "customers": "عملاء",
+      "a customer": "عميل",
       "Customer’s name": "اسم العميل",
       "Name": "الاسم",
       "Phone": "الهاتف",

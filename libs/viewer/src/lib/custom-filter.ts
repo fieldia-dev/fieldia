@@ -1,7 +1,7 @@
 import { fill, numberMisfit, readNumber, wallClock, wallDay, wallTime, DATE_PERIODS, type DatePeriod, type Facet, type Field, type FilterPeriod, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilter, type ResolvedFilterCondition } from '@fieldia/core';
 import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, typingText, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
-import type { ViewerLabels } from './labels';
+import type { ViewerLabels, WordKey } from './labels';
 
 /** A condition: one a data source reads, or a period a date falls in, counted again each time the list asks. */
 type Op = ResolvedFilterCondition['op'] | 'period';
@@ -13,7 +13,7 @@ const CHOICE: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['set', '
 const NUMBER: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['>', 'opGreater'], ['<', 'opLess'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const DATE: [Op, keyof Words][] = [['=', 'opIs'], ['>', 'opGreater'], ['<', 'opLess'], ['period', 'opPeriod'], ['set', 'opSet'], ['notset', 'opNotSet']];
 /** Each period's words, by its name: "Today", "Last 7 days". */
-export const PERIOD_WORDS: Record<DatePeriod, keyof ViewerLabels> = {
+export const PERIOD_WORDS: Record<DatePeriod, WordKey> = {
   today: 'periodToday',
   yesterday: 'periodYesterday',
   thisWeek: 'periodThisWeek',

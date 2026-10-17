@@ -25,7 +25,7 @@ const cell = (page: Page, row: number, column: number) => rows(page).nth(row).lo
 async function contacts(page: Page, query = '') {
   const opened = await open(page, 'plain', `page=contacts&skin=underline${query}`);
   await expect(rows(page)).toHaveCount(10);
-  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,284');
+  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
   return opened;
 }
 
@@ -68,13 +68,13 @@ test.describe('a list people take away and change in bulk', () => {
     await expect(every(page)).toBeHidden();
     await header(page).check();
     await expect(count(page)).toHaveText('10 selected');
-    await expect(every(page)).toHaveText('Select all 1,284 that match');
+    await expect(every(page)).toHaveText('Select all 1,284 contacts that match');
     await screen(page, 'lists-bulk-offer', { viewport: true });
     await every(page).click();
     await expect(count(page)).toHaveText('1,284 selected');
     await expect(every(page)).toBeHidden();
     await page.getByRole('button', { name: 'Next page' }).click();
-    await expect(page.locator('.fd-pager-text')).toHaveText('11–20 / 1,284');
+    await expect(page.locator('.fd-pager-text')).toHaveText('11–20 of 1,284 contacts');
     for (const box of await rows(page).locator('.fd-list-checkbox').all()) await expect(box).toBeChecked();
     // One let go: the rest stay chosen.
     await rows(page).first().locator('.fd-list-checkbox').uncheck();
@@ -109,7 +109,7 @@ test.describe('a list people take away and change in bulk', () => {
     const first = await cell(page, 0, 1).textContent();
     const download = await exportAs(page, 'Excel (.xlsx)');
     expect(download.suggestedFilename()).toBe(`Contacts ${today()}.xlsx`);
-    await expect(toast(page).filter({ hasText: '1,284 records exported.' })).toBeVisible();
+    await expect(toast(page).filter({ hasText: '1,284 contacts exported.' })).toBeVisible();
     const files = unzip(readFileSync(await download.path()));
     const sheet = files.get('xl/worksheets/sheet1.xml') as string;
     // A header row and 1,284 contacts, in the list's order; the header stays in view and filters.
@@ -165,18 +165,18 @@ test.describe('a list people take away and change in bulk', () => {
     );
     expect(refused.length, 'the first page holds contacts that cannot be changed').toBeGreaterThan(0);
     await page.locator('.fd-list-selection').getByRole('button', { name: 'Edit' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Edit 10 records' });
+    const dialog = page.getByRole('dialog', { name: 'Edit 10 contacts' });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel('Field').selectOption({ label: 'Status' });
     await dialog.getByLabel('Status').selectOption({ label: 'Inactive' });
     await screen(page, 'lists-bulk-edit-dialog', { viewport: true });
     await dialog.getByRole('button', { name: 'Update' }).click();
     const question = page.getByRole('alertdialog');
-    await expect(question).toHaveText(/Update 10 records\? Status becomes “Inactive”\./);
+    await expect(question).toHaveText(/Update 10 contacts\? Status becomes “Inactive”\./);
     await question.getByRole('button', { name: 'OK' }).click();
     const report = page.locator('.fd-list-report');
     await expect(report).toBeVisible();
-    await expect(report.locator('.fd-list-report-words')).toHaveText(`${10 - refused.length} of 10 updated. Not changed:`);
+    await expect(report.locator('.fd-list-report-words')).toHaveText(`${10 - refused.length} of 10 contacts updated. Not changed:`);
     await expect(report.locator('li')).toHaveText(refused);
     await screen(page, 'lists-bulk-edit-report', { viewport: true });
     // Those not changed stay chosen; the rest read Inactive now, saved.
@@ -197,12 +197,12 @@ test.describe('a list people take away and change in bulk', () => {
     const free = names.map((name, i) => ({ name, i })).filter(({ i }) => owners[i] !== 'Karim Nasser').slice(0, 3);
     for (const { i } of free) await rows(page).nth(i).locator('.fd-list-checkbox').check();
     await page.locator('.fd-list-selection').getByRole('button', { name: 'Edit' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Edit 3 records' });
+    const dialog = page.getByRole('dialog', { name: 'Edit 3 contacts' });
     await dialog.getByLabel('Field').selectOption({ label: 'Newsletter' });
     await dialog.getByRole('checkbox', { name: 'Newsletter' }).check();
     await dialog.getByRole('button', { name: 'Update' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
-    await expect(toast(page).filter({ hasText: '3 records updated.' })).toBeVisible();
+    await expect(toast(page).filter({ hasText: '3 contacts updated.' })).toBeVisible();
     for (const { name } of free) await expect(rows(page).filter({ hasText: name }).first().locator('td').nth(8)).toHaveText('✓');
     expect(problems).toEqual([]);
   });

@@ -363,3 +363,16 @@ describe('the pointer', () => {
     expect(source.records['clinic.appointment'][1]['stop']).toBe(at(14, 10, 30));
   });
 });
+
+describe('a calendar whose page names its records', () => {
+  it('says New, how many a slot holds and what Enter makes in the page’s words; without them, as before', async () => {
+    const host = await mount({ onNewRecord: () => undefined }, { ...clinicPage(), records: { one: 'appointment', other: 'appointments', a: 'an appointment' } });
+    expect(button(host, 'New appointment')).toBeTruthy();
+    expect(host.querySelector('.fd-cal-slot[aria-label="Wednesday 14 October, 10:30, 1 appointment"]')).not.toBeNull();
+    expect([...host.querySelectorAll('.fd-sr-only')].map((said) => said.textContent)).toContain('The arrow keys move between days and times; Enter makes a new appointment there.');
+    handle?.destroy();
+    const plain = await mount({ onNewRecord: () => undefined });
+    expect(button(plain, 'New')).toBeTruthy();
+    expect(plain.querySelector('.fd-cal-slot[aria-label="Wednesday 14 October, 10:30, 1 record"]')).not.toBeNull();
+  });
+});

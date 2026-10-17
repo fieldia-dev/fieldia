@@ -412,4 +412,17 @@ export const panel = {
   duplicatesNone: 'No field here can find one: add words, a number, a date, a choice or a link.',
   duplicatesOn: 'Duplicates asked for',
   duplicatesOnAs: { type: 'As they are typed, and as saved', save: 'Only as the record is saved' },
+  // ---- what the screen's records are called
+  recordsCalled: 'Records are called',
+  recordsOne: 'One record is called',
+  recordsOneExample: 'customer',
+  recordsHint: 'Fieldia’s own sentences name this screen’s records so: “A customer with this phone already exists”, “17 customers imported”, “New customer”. Left empty, they say “record”.',
+  recordsOther: 'More are called',
+  recordsOtherExample: 'customers',
+  recordsBoth: 'Give the word for one and for more.',
+  recordsA: 'One with its article',
+  recordsAExample: 'a customer',
+  recordsAHint: '“A customer”, “an invoice”: left empty, a sentence that needs it says “A record”.',
+  recordsLowerLabels: 'Field names small inside them',
+  recordsLowerLabelsHint: 'Inside every sentence Fieldia says: “A customer with this phone already exists”, “Choose at least 2 for interests”. A label that begins a sentence, and a name like IBAN or WhatsApp, stay as written.',
 };

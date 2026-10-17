@@ -196,3 +196,15 @@ describe('a list’s Print', () => {
     expect(sheet(host)).toBeNull();
   });
 });
+
+describe('a list’s Print, on a page that names its records', () => {
+  it('counts them over its rows in their words', async () => {
+    const host = await mount({ ...invoices, records: { one: 'invoice', other: 'invoices', a: 'an invoice' } });
+    const print = printOpen();
+    printButton(host).click();
+    await until(() => print.mock.calls.length === 1);
+    expect([...(sheet(host) as HTMLElement).querySelectorAll('.fd-print-about > div')].map((line) => line.textContent)).toEqual(['5 invoices']);
+    window.dispatchEvent(new Event('afterprint'));
+    await until(() => !sheet(host));
+  });
+});

@@ -268,6 +268,7 @@ export const ar: ViewerLabels = {
   breadcrumbs: 'مسار التنقل',
   newRecord: 'جديد',
   records: 'السجلات',
+  recordsNoun: '{records}',
   recordAt: '{n} / {total}',
   previousRecord: 'السجل السابق',
   nextRecord: 'السجل التالي',

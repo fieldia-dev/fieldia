@@ -125,7 +125,7 @@ export function recordHead(context: RecordHeadContext): RecordHead {
   const menu = sheet.toolbar?.menu ?? [];
   if (menu.length) {
     const updaters: (() => void)[] = [];
-    actions.append(recordMenu({ doc, el, form, labels, uid: context.uid, withIcon: context.withIcon, press: context.press }, menu as MenuItem[], updaters, context.cleanups, 'more'));
+    actions.append(recordMenu({ doc, el, form, labels, locale: context.locale, uid: context.uid, withIcon: context.withIcon, press: context.press }, menu as MenuItem[], updaters, context.cleanups, 'more'));
     watch(() => updaters.forEach((update) => update()));
   }
   row.append(meta, actions);

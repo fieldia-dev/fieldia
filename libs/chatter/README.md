@@ -34,5 +34,11 @@ reasonField: 'reason', kind: 'work item' })`. The State Graph shows how the
 state moved and why; under it, each change grouped by age, the one chosen
 beside the list with its new values and those they replaced.
 
+On a page that names its records (`"records": { "one": "customer", … }`), the
+chatter waits "once the customer is saved" and the history tells "Mona created
+the customer" where you give no `kind`; standing alone, they take the page's
+words as `records`. An app's own `notSaved` or `created`, given without its
+`…Noun` sentence, is said instead.
+
 Message HTML is cleaned before it is shown; what people type is posted as
 escaped text. MIT.

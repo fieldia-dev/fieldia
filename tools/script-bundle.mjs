@@ -816,7 +816,20 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // to 502.2.
 // A related list's rows and New the app's own way (open-small, `"open": "app"`): the app's way handed to the list,
 // with the page it gives for the model — 502.13 measured before, 502.28 after: 0.2 more, to 502.3.
-const BUDGET_KB = 502.3;
+// A page names its records (0.26, open-names): the page's `records` read and checked, a sentence said in its words
+// (recordSentence) — the form's questions before Archive and Delete, why it may not, why a run stopped, what letting
+// changes go asks; a record's crumb, its pager, the gear's This record, someone else's save, a record only to be read,
+// a list that could not load — their 19 English sentences beside the plain ones, a language's or an app's own sentence
+// said where it gives none with a noun, and a related list asking the app's page for its model what its records are
+// called: 500.97 measured before, 504.04 after — 3.1 more, to 504.1.
+// Every label inside a sentence small where the page asks (`lowerLabels`), by one rule (labelAt): the form's
+// messages filled through it (fillMessage: "Choose at least 2 for interests", "End date can’t be before start date"),
+// the viewer's own — a refused save's Check, a help's and a lock's names, a value that waits, a field not shown — and
+// the search's suggestion; the quiet look's hint by the same rule — 504.04 measured before, 505.18 after: 1.1 more,
+// to 505.2.
+// A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, the page's
+// `lowerLabels` a setting of its own beside `records`: 505.18 measured before, 505.33 after — 0.2 more, to 505.4.
+const BUDGET_KB = 505.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -992,7 +1005,13 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 161.65 after — 0.5 more, to 161.7.
 // A related list's rows and New the app's own way (listed with the raw budget above): 161.65 measured before, 161.72
 // after — 0.1 more, to 161.8.
-const GZIP_BUDGET_KB = 161.8;
+// A page names its records (0.26; listed with the raw budget above): 161.14 measured before, 162.15 after — 1.0 more,
+// to 162.2.
+// Every label inside a sentence small where the page asks (listed with the raw budget above): 162.15 measured before,
+// 162.68 after — 0.5 more, to 162.7.
+// A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.72
+// after, to 162.8.
+const GZIP_BUDGET_KB = 162.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1126,7 +1145,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Arabic's to 54.8, German's to 23.5, French's to 24.3 and, its 8.40 half a byte over, 8.5.
 // The walk's engine lane joined, its words for values that wait, several currencies and a phone's letters: Arabic's
 // 67.21 and 11.65, German's 29.04 and 9.95, French's 30.08 and 10.00, each to the next 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [29.1, 10.0], fr: [30.1, 10.1] };
+// A page names its records (0.26): each sentence a language can say round any page's words for its records — German's
+// 42 (its plurals and its "ein Kunde" agree with no gender), French's 31 (none that agrees with the noun's) — the rest
+// left out, so the language's own plain sentence is said: German's 29.04 and 9.95 measured before, 31.46 and 10.29
+// after, to 31.5 and 10.3; French's 30.08 and 10.00 to 31.76 and 10.28, to 31.8 and 10.3; Arabic's one (the pager's
+// name), 67.23 and 11.66, under its own.
+const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [31.5, 10.3], fr: [31.8, 10.3] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1380,7 +1404,22 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // the Columns menu's cell held at the header's end, the card's marks for both held ends moved in from the list part,
 // 18.28 and 6.64 — to 18.3 and 6.7. The list part, which hands each header and the card to it, 103.42 and 33.50 to
 // 103.38 and 33.47, under its own.
-const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [104.5, 33.9], cards: [11.6, 3.7], columns: [18.3, 6.7], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A page names its records (0.26, open-names): each part's sentences in the page's words for them, their English with
+// it — list 103.42 and 33.50 measured before, 106.67 and 34.19 after (its pager, nothing found, Select all, Export,
+// Edit, Print's count, Import's report and Undo, a related list's New, View all, None and "5 of 23 invoices" in its
+// model page's words: 35), to 106.7 and 34.2; import 35.99 and 14.29 to 36.29 and 14.37 (Import 10 contacts, could not
+// import them, made none of it: 4), to 36.3 and 14.4; duplicates 14.79 and 6.24 to 15.85 and 6.54 (a customer with
+// this phone, It's a new customer, the merge's title, words and column: 7, and a label written small where the page
+// says so), to 15.9 and 6.6.
+// Every label inside a sentence small where the page asks (open-names, as one class): each part's sentences that put a
+// label after a word asking the one rule in the main script (labelAt) — relations 19.93 and 7.52 to 20.09 and 7.59 (a
+// link's ×, a tags' Add), phone 37.77 and 16.47 to 37.85 and 16.51 (its country's name), lines 37.78 and 12.85 to
+// 37.86 and 12.89 (a line's cell that waits), filters 11.25 and 4.21 to 11.31 and 4.24, columns 10.96 and 4.05 to 11.06
+// and 4.11, import 36.29 and 14.37 to 36.37 and 14.39 (its form's messages so) — each to the next 0.1 over; duplicates
+// 15.85 and 6.54 to 15.69 and 6.46, its own lowering gone for the one rule, to 15.7 and 6.5. A list's Edit dialog
+// asking its labels as the list's page does, and a related list naming none for a page that only asks them small:
+// list 106.68 and 34.19 to 106.73 and 34.21, to 106.8 and 34.3.
+const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [106.8, 34.3], cards: [11.6, 3.7], columns: [18.3, 6.7], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

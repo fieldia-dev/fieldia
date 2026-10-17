@@ -263,6 +263,9 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
   if (JSON.stringify(before.botCheck ?? null) !== JSON.stringify(after.botCheck ?? null)) out.push(w.botCheck(!after.botCheck ? 'off' : !before.botCheck ? 'on' : 'changed'));
   if (JSON.stringify(before.print ?? null) !== JSON.stringify(after.print ?? null)) out.push(w.printout);
   if (JSON.stringify(before.duplicates ?? null) !== JSON.stringify(after.duplicates ?? null)) out.push(w.duplicates(!after.duplicates ? 'off' : !before.duplicates ? 'on' : 'changed'));
+  const recordWords = (page: Page) => JSON.stringify([page.records?.one, page.records?.other, page.records?.a]);
+  if (recordWords(before) !== recordWords(after)) out.push(w.records(after.records?.other ?? null));
+  if (!!before.lowerLabels !== !!after.lowerLabels) out.push(w.smallLabels(!!after.lowerLabels));
   out.push(...lookChanges(before, after, words));
   const layout = layoutChanges(before, after, words);
   const at = (id: string) => layout.placed.get(id) ?? '';

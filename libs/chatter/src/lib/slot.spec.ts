@@ -106,3 +106,19 @@ describe('chatterAttachments', () => {
     ]);
   });
 });
+
+describe('on a page that names its records', () => {
+  it('waits for the customer to be saved, in the page’s words; an app’s own sentence without them, its own', async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const named = { ...page('customer'), records: { one: 'customer', other: 'customers', a: 'a customer' } } as Page;
+    viewer = mountViewer(host, { page: named, dataSource: createMemoryDataSource(), slots: { chatter: chatterSlot({ source: chatter() }) } });
+    const slot = () => host.querySelector('.fd-slot[data-slot="chatter"]') as HTMLElement;
+    await until(() => slot().textContent?.includes('The conversation starts once the customer is saved.'));
+    expect(slot().textContent).toContain('The conversation starts once the customer is saved.');
+    viewer.destroy();
+    viewer = mountViewer(host, { page: named, dataSource: createMemoryDataSource(), slots: { chatter: chatterSlot({ source: chatter(), labels: { notSaved: 'Save first to talk.' } }) } });
+    await until(() => slot().textContent?.includes('Save first to talk.'));
+    expect(slot().textContent).toContain('Save first to talk.');
+  });
+});

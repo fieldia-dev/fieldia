@@ -42,7 +42,7 @@ test.describe('a list that adds up', () => {
     const { problems } = await open(page, 'plain', INVOICES);
     const thisYear = (await records(page)).filter((invoice) => invoice.invoice_date.startsWith('2026'));
     await expect(chips(page)).toHaveText(['This year']);
-    await expect(range(page)).toHaveText(`1–10 / ${thisYear.length}`);
+    await expect(range(page)).toHaveText(`1–10 of ${thisYear.length} invoices`);
     await expect(totalRow(page).locator('th')).toHaveText('Total');
     // Every invoice of the year, not only the ten shown, in pounds alone.
     await expect(amountIn(totalRow(page))).toHaveText(money(sum(thisYear)));
@@ -75,7 +75,7 @@ test.describe('a list that adds up', () => {
     await open(page, 'plain', INVOICES);
     const all = await records(page);
     await page.locator('.fd-facet', { hasText: 'This year' }).getByRole('button').click();
-    await expect(range(page)).toHaveText(`1–10 / ${all.length}`);
+    await expect(range(page)).toHaveText(`1–10 of ${all.length} invoices`);
     // Pounds and dollars: no honest sum, and why in sight — a phone has no pointer to hover with — the sentence as its title.
     await expect(amountIn(totalRow(page))).toHaveText('Several currencies');
     await expect(amountIn(totalRow(page))).toHaveAttribute('title', 'In more than one currency: no total');
@@ -107,7 +107,7 @@ test.describe('a list that filters by time', () => {
     await menu(page).getByRole('button', { name: 'Overdue' }).click();
     const overdue = all.filter((invoice) => invoice.state === 'sent' && invoice.due_date < TODAY);
     expect(overdue.length, 'the demo has overdue invoices').toBeGreaterThan(1);
-    await expect(range(page)).toHaveText(`1–${Math.min(10, overdue.length)} / ${overdue.length}`);
+    await expect(range(page)).toHaveText(`1–${Math.min(10, overdue.length)} of ${overdue.length} invoices`);
     await expect(chips(page)).toHaveText(['Overdue']);
     // The owner's walk: overdue in pounds and dollars — why there is no total is said in the cell, not only on hover.
     await expect(amountIn(totalRow(page))).toHaveText('Several currencies');
@@ -132,7 +132,7 @@ test.describe('a list that filters by time', () => {
     await menu(page).getByRole('button', { name: 'Overdue' }).click();
     await menu(page).getByRole('button', { name: 'This month' }).click();
     const october = all.filter((invoice) => invoice.invoice_date >= '2026-10-01' && invoice.invoice_date <= TODAY);
-    await expect(range(page)).toHaveText(`1–${Math.min(10, october.length)} / ${october.length}`);
+    await expect(range(page)).toHaveText(`1–${Math.min(10, october.length)} of ${october.length} invoices`);
     await expect(amountIn(totalRow(page))).toHaveText(money(sum(october)));
   });
 
@@ -149,7 +149,7 @@ test.describe('a list that filters by time', () => {
     await menu(page).getByRole('button', { name: 'Apply' }).click();
     await expect(chips(page)).toHaveText(['Invoice date: Last 30 days']);
     const lately = all.filter((invoice) => invoice.invoice_date >= '2026-09-15' && invoice.invoice_date <= TODAY);
-    await expect(range(page)).toHaveText(`1–${Math.min(10, lately.length)} / ${lately.length}`);
+    await expect(range(page)).toHaveText(`1–${Math.min(10, lately.length)} of ${lately.length} invoices`);
     // Kept by name: the period, not the days it was today.
     await menu(page).getByRole('button', { name: 'Save current search' }).click();
     await menu(page).getByRole('textbox', { name: 'Name of the search' }).fill('Lately');

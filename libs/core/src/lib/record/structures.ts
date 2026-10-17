@@ -1,7 +1,7 @@
 import type { Field } from '../format/field';
 import type { FieldNode } from '../format/layout';
 import { foldDigits, stripMarks } from './input-rules';
-import { fill, type Messages } from './messages';
+import { fill, fillMessage, type Messages } from './messages';
 import type { Value } from './values';
 
 /**
@@ -55,8 +55,8 @@ export function checkStructure(field: Field, node: FieldNode, value: Value | und
   const options = node.options ?? {};
   const label = node.label ?? field.label;
   if (field.type === 'one2many' && Array.isArray(value) && value.length) {
-    if (typeof options['min'] === 'number' && value.length < options['min']) return fill(messages.minLines, { label, min: options['min'] });
-    if (typeof options['max'] === 'number' && value.length > options['max']) return fill(messages.maxLines, { label, max: options['max'] });
+    if (typeof options['min'] === 'number' && value.length < options['min']) return fillMessage(messages, messages.minLines, { label, min: options['min'] });
+    if (typeof options['max'] === 'number' && value.length > options['max']) return fillMessage(messages, messages.maxLines, { label, max: options['max'] });
   }
   const needed = Array.isArray(options['requiredParts']) ? options['requiredParts'] : [];
   if (node.widget !== 'address' || !value || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -68,5 +68,5 @@ export function checkStructure(field: Field, node: FieldNode, value: Value | und
   const country = String(parts['country']).toUpperCase();
   const shape = POSTCODES[country];
   const n = shape.least === shape.most ? shape.least : `${shape.least}–${shape.most}`;
-  return fill(messages.postcode, { label, country: countryName(country, messages.locale), n, example: shape.example });
+  return fillMessage(messages, messages.postcode, { label, country: countryName(country, messages.locale), n, example: shape.example });
 }
