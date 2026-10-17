@@ -113,6 +113,32 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     expect(problems).toEqual([]);
   });
 
+  test('“Someone else books 10:00” over the form: a visitor sees a time taken meanwhile said, and nothing booked', async ({ page }) => {
+    // As the walk asked: what only the console could do, a button over the demo does, as the two tabs' "Someone else edits this".
+    const { problems } = await open(page, 'plain', DRIVE);
+    const bar = page.locator('.demo-meanwhile-bar');
+    const someone = bar.getByRole('button');
+    await expect(bar).toContainText('Pick a car and a day');
+    await expect(someone).toBeHidden();
+    await chooseCar(page, 'hatch', 'City hatchback, electric');
+    await settled(page);
+    await day(page, 16).click();
+    await expect(someone).toHaveText('Someone else books 10:00');
+    await someone.click();
+    await expect(bar).toContainText('Tom Schulz booked 10:00 on another screen, just now. Yours still shows it: press 10:00 and see.');
+    // This screen was not told: 10:00 is still there, as another screen's booking leaves it; the button takes the next.
+    await expect(chips(page).filter({ hasText: '10:00' })).toHaveCount(1);
+    await expect(someone).toHaveText('Someone else books 09:00');
+    await screen(page, 'slots-someone-else-books');
+    await chips(page).filter({ hasText: '10:00' }).click();
+    await expect(said(page)).toHaveText('10:00 was just booked by someone else. Pick another time.');
+    expect(await valueOf(page, 'start')).toBeNull();
+    await expect(chips(page).filter({ hasText: '10:00' })).toHaveCount(0);
+    await expect(bar).toContainText('Tom Schulz booked 10:00 first, on another screen: this page said so, and booked nothing.');
+    await screen(page, 'slots-someone-else-booked-first');
+    expect(problems).toEqual([]);
+  });
+
   test('another car has its own times: a full day for one is open for another', async ({ page }) => {
     await open(page, 'plain', DRIVE);
     await chooseCar(page, 'hatch', 'City hatchback, electric');

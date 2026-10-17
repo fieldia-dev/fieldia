@@ -54,8 +54,10 @@ export const captchaSlot: SlotRenderer = (element, { form }) => {
 };
 
 /**
- * What the app was told with each response, under the form: the bot check's report, as an app's data source gets it
- * (`SubmitRequest.bot`). An app keeps a response aside, asks its captcha's service, or refuses it there.
+ * What the app was told with each response, in words: whether it looks like a bot, and why — the hidden box filled,
+ * sent too soon after the page opened, the captcha ticked or not — as an app reads its bot check's report. The report
+ * itself, as an app's data source gets it (`SubmitRequest.bot`), is under Details. An app keeps a response aside, asks
+ * its captcha's service, or refuses it there.
  */
 export function botLog(doc: Document, form: Form): HTMLElement {
   const element = doc.createElement('section');
@@ -71,10 +73,32 @@ export function botLog(doc: Document, form: Form): HTMLElement {
   form.on('send', ({ bot }) => {
     empty.hidden = true;
     const item = doc.createElement('li');
-    const said = doc.createElement('code');
-    said.textContent = JSON.stringify({ bot } satisfies { bot?: BotReport });
-    item.append(said);
+    const said = doc.createElement('p');
+    said.textContent = botWords(bot);
+    const details = doc.createElement('details');
+    const summary = doc.createElement('summary');
+    summary.textContent = 'Details';
+    const code = doc.createElement('code');
+    code.textContent = JSON.stringify({ bot } satisfies { bot?: BotReport });
+    details.append(summary, code);
+    item.append(said, details);
     list.append(item);
   });
   return element;
+}
+
+/**
+ * A bot check's report in a sentence, as an app would read it out: "Looks like a bot: a hidden field was filled; sent
+ * 0.4 s after the page opened, sooner than a person can; the captcha was not ticked."
+ */
+export function botWords(bot: BotReport | undefined): string {
+  if (!bot) return 'No bot check on this page.';
+  const after = `${bot.seconds.toLocaleString('en', { maximumFractionDigits: 1 })} s after the page opened`;
+  const why = [
+    ...(bot.honeypot ? ['a hidden field was filled, which no person sees'] : []),
+    bot.tooFast ? `sent ${after}, sooner than a person can` : `sent ${after}`,
+    ...(bot.captcha === undefined ? [] : [bot.captcha ? 'the captcha was ticked' : 'the captcha was not ticked']),
+  ];
+  const verdict = bot.honeypot || bot.tooFast ? 'Looks like a bot' : bot.captcha === null ? 'Probably a person, but unchecked' : 'Looks like a person';
+  return `${verdict}: ${why.join('; ')}.`;
 }

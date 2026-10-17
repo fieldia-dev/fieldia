@@ -19,6 +19,7 @@ import { wiTextDiscussion } from '../shared/wi-text';
 import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
+import { meanwhileBar } from '../shared/test-drive';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -193,6 +194,9 @@ if (name === 'signup') document.getElementById('app')?.after(botLog(document, ha
 
 // The listing has a bar over it: ten photos as a phone takes them, added at once (shared/listing-photos.ts).
 if (name === 'listing-photos') document.getElementById('app')?.before(photosBar());
+
+// The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
+if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows.
 Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages) } });
