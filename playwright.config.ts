@@ -17,7 +17,7 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * meets first — forms drawn and filled, their behaviour and layout, lists, their totals and periods (days counted
  * through each engine's own Intl), what they export and change in bulk and what they import (a file chosen or dropped,
  * read in each engine's own DecompressionStream and TextDecoder, its dialog), their cards on a phone and their columns
- * a person shapes, a record's related lists and a tab's count of one, dialogs, the quiet look, a place on a map, right to left, and a part that
+ * a person shapes, a record's related lists and a tab's count of one, an empty table of lines' words, dialogs, the quiet look, a place on a map, right to left, and a part that
  * fails kept to itself — in the plain demo alone, as the frameworks' bindings draw the same DOM — where the keyboard
  * lands after save safety's buttons hide themselves, which each engine moves its own way, a box the browser fills in,
  * which each engine writes its own way, a phone read the world over, a box of its own over the browser's list of
@@ -30,7 +30,7 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * reads; a link's box typed in before its part came, which each engine hands over its own way; and a part's own
  * words, put in each language's tables as it comes. Chromium runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'lists-import', 'list-cards', 'related-list', 'related-count-open', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing', 'duplicates', 'print', 'calendar-zone', 'relations-part', 'phone-labels', 'focus-lists-closed', 'part-words'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'lists-import', 'list-cards', 'related-list', 'related-count-open', 'grid-empty', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing', 'duplicates', 'print', 'calendar-zone', 'relations-part', 'phone-labels', 'focus-lists-closed', 'part-words'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

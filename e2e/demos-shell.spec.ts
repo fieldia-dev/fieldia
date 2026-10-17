@@ -31,7 +31,8 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   // The 500-field page is for timing (e2e/perf.spec.ts), not for a visitor: it has no card on purpose.
   const forTiming = new Set(['big']);
   // A section choosing its own look, for e2e/quiet-look.spec.ts: the work item's demo shows the switch whole.
-  const forTests = new Set(['work-item-mixed']);
+  // Tables of lines with none yet, for e2e/grid-empty.spec.ts.
+  const forTests = new Set(['work-item-mixed', 'empty-grids']);
   // A home's, a courier's and an order's own page, an appointment's, a booking's and a contact's: a record opened from its list's row,
   // pin or calendar, not a demo of its own — each named in the catalog (OPENED), as the test below holds it to.
   const opened = new Set(OPENED.map((o) => o.page));
