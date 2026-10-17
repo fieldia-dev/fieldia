@@ -366,6 +366,9 @@
     },
     "duplicates": {
       "$ref": "#/$defs/PageDuplicates"
+    },
+    "records": {
+      "$ref": "#/$defs/PageRecords"
     }
   },
   "required": [
@@ -9951,6 +9954,34 @@
       },
       "required": [
         "fields"
+      ],
+      "additionalProperties": false
+    },
+    "PageRecords": {
+      "type": "object",
+      "properties": {
+        "one": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "\\S"
+        },
+        "other": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "\\S"
+        },
+        "a": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "\\S"
+        },
+        "lowerLabels": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "one",
+        "other"
       ],
       "additionalProperties": false
     }

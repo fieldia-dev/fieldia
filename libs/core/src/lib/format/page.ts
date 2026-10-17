@@ -5,6 +5,7 @@ import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } fr
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 import { PagePhoneSchema, type PagePhone } from './phone';
 import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
+import { PageRecordsSchema, type PageRecords } from './records';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -170,6 +171,13 @@ export interface Page {
    * Never in the way of a save. Without the source's `duplicates`, nothing is asked and nothing shows.
    */
   duplicates?: PageDuplicates;
+  /**
+   * What its records are called, so Fieldia's sentences name them: "A customer with this phone already exists", "17
+   * customers imported", "New customer" — `one`, `other` and, where its language puts an article before one, `a` ("an
+   * invoice"); `lowerLabels` writes a field's label inside those sentences with a small letter ("this phone"). Other
+   * languages through `translations`. Left out, "record", as before. See `PageRecords`.
+   */
+  records?: PageRecords;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -252,6 +260,7 @@ export const PageSchema = z
       .meta({ id: 'PagePrint' })
       .optional(),
     duplicates: PageDuplicatesSchema.optional(),
+    records: PageRecordsSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

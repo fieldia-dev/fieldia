@@ -106,6 +106,7 @@ export class ReferenceCheck {
     if (this.page.on) this.checkEvents(this.page.on, 'on');
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
     if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
+    if (this.page.records !== undefined && !this.line) this.checkRecords(this.page.records);
     this.checkGoingTo();
     return this.issues;
   }
@@ -131,6 +132,15 @@ export class ReferenceCheck {
       const def = this.need(name, at);
       if (def && !DUPLICATE_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; records are compared by words, a number, a date, a choice or a link`);
     });
+  }
+
+  /** What the page's records are called: words for one and for more, and for one with its article where given. */
+  private checkRecords(records: unknown) {
+    const words = (records ?? {}) as Record<string, unknown>;
+    const said = (value: unknown) => typeof value === 'string' && /\S/.test(value);
+    if (!said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
+    if (!said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
+    if (words['a'] !== undefined && !said(words['a'])) this.report('records.a', 'the word for one record with its article: "a customer", "an invoice"');
   }
 
   /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */

@@ -19,6 +19,7 @@ import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { fill, MESSAGES, type Messages } from './messages';
+import { recordSentence } from './record-words';
 import {
   loadedRecordOf,
   saveProblemOf,
@@ -758,6 +759,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
+  /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
+  const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   const index = indexLayout(page.layout);
   /** Each field node's answer rules, read once. */
   const nodeRules = new Map<string, CompiledRule[]>();
@@ -1885,13 +1888,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   async function savingNow(chain: readonly string[]): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
-      const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? messages.mayNotEdit };
+      const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? named(messages.mayNotEditNoun, messages.mayNotEdit) };
       set({ status: 'error', error: problem.message, saveProblem: problem, conflict: null });
       return { reason: 'save', message: problem.message };
     }
     // Asked for the record shown now: another shown while it waits below, it saves nothing of that one, nor says anything there.
     const asked = generation;
-    const elsewhere = (): Stopped => ({ reason: 'save', message: messages.recordReplaced });
+    const elsewhere = (): Stopped => ({ reason: 'save', message: named(messages.recordReplacedNoun, messages.recordReplaced) });
     // What is still typed in a box is read first: it is what is saved, or why nothing is. A name still being looked
     // up is waited for, so the record it names is what is saved — or, named by none, why nothing is.
     const waiting = readTyped();
@@ -2357,7 +2360,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   async function askToLetGo(): Promise<boolean> {
-    const message = messages.discardChanges;
+    const message = named(messages.discardChangesNoun, messages.discardChanges);
     const host = options.host;
     let yes = false;
     try {
@@ -2415,7 +2418,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return go === true ? null : go.then((yes) => (yes ? null : kept()));
   }
 
-  const kept = (): Stopped => ({ reason: 'no', message: messages.discardChanges });
+  const kept = (): Stopped => ({ reason: 'no', message: named(messages.discardChangesNoun, messages.discardChanges) });
 
   /**
    * A step's own move — the record loaded again, or another shown — once the check let what is shown go: kept, the
@@ -2452,7 +2455,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** Why a run stops whose record was replaced while it went on — quietly, when the form was closed. */
   function replaced(): Stopped {
-    return disposed ? { reason: 'closed' } : { reason: 'cannot', message: messages.recordReplaced };
+    return disposed ? { reason: 'closed' } : { reason: 'cannot', message: named(messages.recordReplacedNoun, messages.recordReplaced) };
   }
 
   /** The record a record step asks the data source about. */
@@ -2552,7 +2555,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
     post,
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
-    barred: (right) => (state.can?.[right] === false ? state.can.reason ?? messages[MAY_NOT[right]] : null),
+    barred: (right) => (state.can?.[right] === false ? state.can.reason ?? named(messages[`${MAY_NOT[right]}Noun`], messages[MAY_NOT[right]]) : null),
   });
   // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
   // go when another record is shown by then (its steps were for that one).
@@ -2580,7 +2583,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // A built-in item of the gear menu with nothing of its own: its step, asked about first when it archives or deletes.
     const builtin = 'builtin' in source && !list.length ? source.builtin : undefined;
     if (builtin) list.push({ do: builtin });
-    const asked = builtin === 'archive' ? messages.archiveConfirm : builtin === 'delete' ? messages.deleteConfirm : undefined;
+    const asked = builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
     const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
