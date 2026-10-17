@@ -719,7 +719,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A related list's rows' tones, bold and buttons, as a list's (their schema, their page check on its own records'
 // fields, its row buttons among the form's, a record read with another model's fields): 509.23 measured before,
 // 509.67 after — 0.4 more, to 509.7.
-const BUDGET_KB = 509.7;
+// The owner's walk of 0.24 mended, its site lane (walkfix-site): a button pressed takes away the toasts earlier presses
+// left — 509.67 measured before, 509.73 after, to 509.8.
+const BUDGET_KB = 509.8;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
