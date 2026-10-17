@@ -76,7 +76,7 @@ const SEARCH_WORDS = {
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
-  'test-drives': 'calendar week schedule bookings test drives cars showroom time zone berlin diary agenda',
+  'test-drives': 'calendar week schedule planner test drives cars showroom time zone berlin diary agenda drag',
   backlog: 'bug bugs issue issues ticket tickets tracker jira azure devops work item sprint popup dialog window backlog',
   'work-item': 'bug issue ticket tracker azure devops work item quiet look state reason locked workflow',
   fields: 'every field kinds inputs text number money currency choice dropdown date calendar file upload attachment picture image rich text tags',
@@ -715,7 +715,7 @@ export const DEMOS = [
     name: 'The showroom’s week of test drives, on a calendar',
     category: 'lists',
     query: 'page=test-drives&skin=outlined',
-    blurb: 'The Berlin showroom’s week of test drives on a calendar, coloured by car. Every time is on Berlin’s clock, its name beside the week, wherever you look from: the week, today and the red line for now are Berlin’s, and a drive dragged to another time, or made from an empty slot, is booked at that time in Berlin.',
+    blurb: 'The Berlin showroom’s week of test drives on a calendar, coloured by car. Every time is on Berlin’s clock, its name beside the week, wherever you look from: the week, today and the red line for now are Berlin’s, and a drive dragged to another time, or made from an empty slot, is set for that time in Berlin.',
     howTo: [
       'Look from another time zone (your own, if you are not in Berlin): each drive is at its Berlin time, and CEST or CET stands beside the week.',
       'Drag a drive to another time or day: it keeps its 45 minutes, and the line under the bar says where it went, with Undo.',
