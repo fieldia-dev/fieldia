@@ -174,7 +174,7 @@ export interface Page {
   /**
    * What its records are called, so Fieldia's sentences name them: "A customer with this phone already exists", "17
    * customers imported", "New customer" — `one`, `other` and, where its language puts an article before one, `a` ("an
-   * invoice"); `lowerLabels` writes a field's label inside those sentences with a small letter ("this phone"). Other
+   * invoice"); `lowerLabels` writes a field's label inside any of Fieldia's sentences with a small letter ("this phone"). Other
    * languages through `translations`. Left out, "record", as before. See `PageRecords`.
    */
   records?: PageRecords;

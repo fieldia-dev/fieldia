@@ -269,12 +269,24 @@ where they said "record", or no noun at all:
 inside a sentence; a sentence that counts picks one of them as its language does
 for the number. `a` is one with its article, where the language puts one before
 it ("an invoice", "une facture"): Fieldia never guesses an article, so a
-sentence that needs one says "A record …" until it is given. `lowerLabels`
-writes a field's label inside those sentences with a small first letter — "this
-phone", not "this Phone" — off unless said, since only the page knows whether
-that is right: a label whose first word holds another capital ("IBAN", "VAT
-number", "WhatsApp") stays as written, as does every label in a language that
-writes its nouns with a capital (German). Other languages come through the
+sentence that needs one says "A record …" until it is given.
+
+`lowerLabels` writes a field's label with a small first letter wherever one of
+Fieldia's sentences puts it after a word of it — the form's messages ("Choose at
+least 2 for interests", "End date can’t be before start date"), a refused save's
+"Not saved. Check: email", a value that waits ("Fix tax rate to see total"), a
+help's, a lock's and a link's × names, a possible duplicate ("A customer with
+this phone already exists"), a conflict ("They changed: phone."), a column's
+grip, a filter's menu, a search's suggestion, a history's "changed status to …"
+— while a label that begins its sentence keeps its capital: "Phone is
+required", and a heading's place, "Status: nothing is called …" (an import's
+refusals, an input's). Off unless said, since only the page knows whether that
+is right: a label whose first word is a name ("IBAN", "VAT number", "WhatsApp",
+"E-mail") stays as written, its first letter alone ever changes ("found in
+Build"), and every label stays as written in a language that writes its nouns
+with a capital (German) or has none (Arabic). One rule says it, `labelAt(template,
+key, lower, locale)`; the form's messages carry the page's ask as
+`messages.lowerLabels` (`fillMessage`). Other languages come through the
 page's `translations`, as its other words do (`"customer": "عميل"`), and
 `pageWords` lists them for a translator.
 

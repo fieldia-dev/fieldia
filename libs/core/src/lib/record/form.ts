@@ -18,7 +18,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { fill, MESSAGES, type Messages } from './messages';
+import { fillMessage, MESSAGES, type Messages } from './messages';
 import { recordSentence } from './record-words';
 import {
   loadedRecordOf,
@@ -758,7 +758,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // Its time zone written into each date and time field naming none, for whatever reads one from its field alone.
   const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
-  const messages = options.messages ?? MESSAGES.en;
+  // A field's label small inside a message's sentence where the page asks (`records.lowerLabels`).
+  const messages: Messages = page.records?.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   const index = indexLayout(page.layout);
@@ -1524,7 +1525,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const start = state.values[node.field as string];
     if (typeof start !== 'string' || typeof value !== 'string' || !start || !value) return undefined;
     const at = (v: string) => (def.type === 'datetime' ? Date.parse(v) : Date.parse(v.slice(0, 10)));
-    if (at(value) < at(start)) return fill(messages.endBeforeStart, { end: def.label, start: page.fields[node.field as string].label });
+    if (at(value) < at(start)) return fillMessage(messages, messages.endBeforeStart, { end: def.label, start: page.fields[node.field as string].label });
     return undefined;
   }
 

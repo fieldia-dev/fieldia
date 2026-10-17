@@ -1,7 +1,7 @@
 import type { Field, LineField } from '../format/field';
 import { localDay } from '../expression/functions';
 import { dayIn } from './zones';
-import { fill, type Messages } from './messages';
+import { fillMessage, type Messages } from './messages';
 
 /**
  * A date's limits: its earliest and latest day (`min`, `max`), each a day
@@ -28,7 +28,7 @@ export function checkDay(field: Field | LineField, value: string, today: string 
   if (field.type !== 'date' && field.type !== 'datetime') return undefined;
   // A date and time by the day it falls on in its zone (the page's, written into it), else where the person is.
   const day = field.type === 'date' ? value : dayIn(Date.parse(value), field.timeZone);
-  const say = (key: 'before' | 'after' | 'weekday', limit: string) => fill(messages[key], { label: field.label, min: limit, max: limit, days: limit });
+  const say = (key: 'before' | 'after' | 'weekday', limit: string) => fillMessage(messages, messages[key], { label: field.label, min: limit, max: limit, days: limit });
   const words = (limit: string) => written({ day: 'numeric', month: 'long', year: 'numeric' }, messages, Date.parse(limit));
   const min = field.min && dayOf(field.min, today);
   const max = field.max && dayOf(field.max, today);

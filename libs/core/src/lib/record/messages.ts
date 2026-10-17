@@ -1,4 +1,5 @@
 import { LANGUAGES } from './locales/all';
+import { labelAt } from './record-words';
 
 /**
  * Validation messages, by language. `{label}` is the field's label; the other
@@ -132,12 +133,17 @@ export interface Messages {
   patternBroken: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
+  /**
+   * A field's label written small where a message puts it inside its sentence — "Choose at least 2 for interests" — as
+   * a form's page asks (`records.lowerLabels`): set on the form's own messages, never in a language's table.
+   */
+  lowerLabels?: boolean;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
 
 /** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
-export type MessageKey = Exclude<keyof Messages, `${string}Noun`>;
+export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels'>;
 
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {
@@ -231,6 +237,20 @@ const en: Messages = {
  * `addLanguage`.
  */
 export const MESSAGES: Record<Locale, Messages> = { en, ...LANGUAGES };
+
+/** The blanks of a message a field's label fills: its own, a table's column, a range's start and end. */
+const LABELS = ['label', 'column', 'start', 'end'];
+
+/**
+ * A message filled in (`fill`), each field's label as its sentence puts it (`labelAt`): small inside the sentence where
+ * the form's page asks (`messages.lowerLabels`), else as written.
+ */
+export function fillMessage(messages: Messages, template: string, values: Record<string, string | number>): string {
+  if (!messages.lowerLabels) return fill(template, values);
+  const own = { ...values };
+  for (const key of LABELS) if (typeof own[key] === 'string') own[key] = labelAt(template, key, true, messages.locale)(own[key] as string);
+  return fill(template, own);
+}
 
 /** Fill `{name}` placeholders. */
 export function fill(template: string, values: Record<string, string | number>): string {

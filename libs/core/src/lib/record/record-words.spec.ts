@@ -7,7 +7,7 @@ import { validatePage } from '../format/validate';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import { MESSAGES } from './messages';
-import { recordSentence } from './record-words';
+import { labelAt, recordSentence } from './record-words';
 
 /**
  * A page names its records (`records`): what one is called, what more are, and one with its article. Fieldia's own
@@ -128,5 +128,87 @@ describe('the form’s sentences on a page that names its records', () => {
     await french.load();
     await french.runAction('m-delete');
     expect(asked).toEqual([MESSAGES.en.deleteConfirm, MESSAGES.fr.deleteConfirm]);
+  });
+});
+
+describe('a field’s label inside a sentence, where the page asks for it small (`lowerLabels`)', () => {
+  const at = (template: string, key: string, label: string, locale = 'en') => labelAt(template, key, true, locale)(label);
+
+  it('is small after a word of its sentence — a colon’s words too — and as written where it begins one', () => {
+    expect(at('Choose at least {min} for {label}', 'label', 'Interests')).toBe('interests');
+    expect(at('{what}. Check: {fields}', 'fields', 'Phone')).toBe('phone');
+    expect(at('Locked: {label}', 'label', 'Budget')).toBe('budget');
+    // Its sentence's first word: a heading's place, "Status: …", or the subject.
+    expect(at('{label}: nothing is called “{text}”', 'label', 'Status')).toBe('Status');
+    expect(at('{label} is required', 'label', 'Phone')).toBe('Phone');
+    expect(at('Not saved. {label} is required', 'label', 'Phone')).toBe('Phone');
+    // Both places in one sentence: as written.
+    expect(at('{label} or {label}', 'label', 'Phone')).toBe('Phone');
+    expect(at('Add {label}', 'field', 'Phone')).toBe('Phone');
+  });
+
+  it('keeps a name as written — a first word with another capital, or none small after its first — and German and Arabic', () => {
+    expect(at('Fix {field} to see {own}', 'field', 'Tax ID')).toBe('tax ID');
+    for (const name of ['IBAN', 'VAT number', 'WhatsApp number', 'E-mail', 'iPhone']) expect(at('Fix {field} to see {own}', 'field', name)).toBe(name);
+    // Its first letter only, as the quiet look's hint has always written one: "Add found in Build".
+    expect(at('Fix {field} to see {own}', 'field', 'Found in Build')).toBe('found in Build');
+    expect(at('Fügen Sie {label} mindestens {min} hinzu', 'label', 'Bestellzeilen', 'de')).toBe('Bestellzeilen');
+    expect(at('أضف إلى {label} ما لا يقل عن {min}', 'label', 'البنود', 'ar')).toBe('البنود');
+    // An English label inside an Arabic sentence: as the page wrote it.
+    expect(at('أضف {label}', 'label', 'Story points', 'ar')).toBe('Story points');
+    expect(at('Ajoutez au moins {min} à {label}', 'label', 'Lignes', 'fr')).toBe('lignes');
+    expect(at('Choose at least {min} for {label}', 'label', 'Işıklar', 'tr')).toBe('ışıklar');
+  });
+
+  it('is as written where the page does not ask', () => {
+    expect(labelAt('Choose at least {min} for {label}', 'label', undefined)('Interests')).toBe('Interests');
+    expect(labelAt('Choose at least {min} for {label}', 'label', false)('Interests')).toBe('Interests');
+  });
+});
+
+describe('the form’s messages on a page that asks for labels small', () => {
+  const survey = (lower: boolean | undefined): Page => ({
+    fieldia: FORMAT_VERSION,
+    id: 'order',
+    title: 'Order',
+    data: { kind: 'record', model: 'sale.order' },
+    fields: {
+      interests: { type: 'selection', label: 'Interests', multiple: true, options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }, { value: 'c', label: 'C' }] },
+      start: { type: 'date', label: 'Start date' },
+      end: { type: 'date', label: 'End date' },
+      phone: { type: 'char', label: 'Phone', required: true },
+      iban: { type: 'char', label: 'IBAN', required: true },
+    },
+    layout: {
+      type: 'sections',
+      id: 's',
+      children: [
+        { type: 'field', id: 'f-interests', field: 'interests', validate: [{ atLeast: 2 }] },
+        { type: 'field', id: 'f-range', field: 'start', widget: 'daterange', options: { endField: 'end' } },
+        { type: 'field', id: 'f-phone', field: 'phone' },
+        { type: 'field', id: 'f-iban', field: 'iban' },
+      ],
+    },
+    ...(lower === undefined ? {} : { records: { one: 'order', other: 'orders', lowerLabels: lower } }),
+  }) as unknown as Page;
+
+  it('says each label inside its sentence small, and one that begins it, or a name, as written', () => {
+    const form = createForm({ page: survey(true), values: { interests: ['a'], start: '2026-10-20', end: '2026-10-10' } });
+    form.validate();
+    const errors = form.getState().errors;
+    expect(errors['interests']).toBe('Choose at least 2 for interests');
+    expect(errors['phone']).toBe('Phone is required');
+    expect(errors['iban']).toBe('IBAN is required');
+    expect(Object.values(errors)).toContain('End date can’t be before start date');
+  });
+
+  it('reads as before without it, or with it off', () => {
+    for (const lower of [undefined, false]) {
+      const form = createForm({ page: survey(lower), values: { interests: ['a'], start: '2026-10-20', end: '2026-10-10' } });
+      form.validate();
+      const errors = form.getState().errors;
+      expect(errors['interests']).toBe('Choose at least 2 for Interests');
+      expect(Object.values(errors)).toContain('End date can’t be before Start date');
+    }
   });
 });

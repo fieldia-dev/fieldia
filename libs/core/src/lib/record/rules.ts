@@ -5,7 +5,7 @@ import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
 import { foldDigits, stripMarks } from './input-rules';
-import { fill, type MessageKey, type Messages } from './messages';
+import { fillMessage, type MessageKey, type Messages } from './messages';
 import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
 /**
@@ -56,7 +56,7 @@ export function checkRules(
     const level = compiled.rule.level ?? 'error';
     if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
     const broken = brokenAsk(compiled, field, value as Value, at.now, at.env.today?.()) ?? brokenAcross(compiled, at);
-    if (broken) found[level] = compiled.rule.message ?? fill(at.messages[broken.say], { label, ...broken.values });
+    if (broken) found[level] = compiled.rule.message ?? fillMessage(at.messages, at.messages[broken.say], { label, ...broken.values });
   }
   return found;
 }

@@ -1,7 +1,7 @@
 import type { Field, LineField, PropertyDefinition } from '../format/field';
 import { fieldPattern } from '../format/pattern';
 import { checkDay } from './limits';
-import { fill, MESSAGES, type MessageKey, type Messages } from './messages';
+import { fill, fillMessage, MESSAGES, type MessageKey, type Messages } from './messages';
 import { charCount, foldDigits, MOST_DIGITS, placesOf, stripMarks } from './input-rules';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
@@ -27,7 +27,7 @@ export function checkValue(
   widget?: string
 ): string | undefined {
   const label = field.label || 'This field';
-  const say = (key: MessageKey, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
+  const say = (key: MessageKey, values: Record<string, string | number> = {}) => fillMessage(messages, messages[key], { label, ...values });
   if (isEmpty(field, value)) return required ? say('required') : undefined;
   if (field.type === 'matrix') return checkMatrix(field, value, required, say);
 
@@ -161,7 +161,7 @@ function checkMatrix(
 
 /** A field takes at most `places` decimal places, in its language's words and plural form ("Area takes at most 1 decimal place"). */
 export function decimalsWords(label: string, places: number, messages: Messages = MESSAGES.en): string {
-  return fill(places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
+  return fillMessage(messages, places === 0 ? messages.integer : messages[decimalsKey(places, messages.locale)], { label, digits: places });
 }
 
 const pluralRules = new Map<string, Intl.PluralRules>();

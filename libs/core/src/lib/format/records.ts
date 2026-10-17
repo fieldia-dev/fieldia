@@ -15,10 +15,12 @@ import * as z from 'zod';
  * Fieldia never guesses an article, so a sentence that needs one says "A record …" until it is given. Other languages
  * come through the page's `translations`, as its other words do ("customer" → "عميل").
  *
- * `lowerLabels`: a field's label inside one of these sentences starts with a small letter — "this phone", not "this
- * Phone". Off unless said: a label is the page's own words, and only the page knows whether lower-casing it is right.
- * A label whose first word holds another capital ("IBAN", "VAT number", "WhatsApp") stays as written either way, as
- * does every label in a language that writes its nouns with a capital (German).
+ * `lowerLabels`: a field's label inside any of Fieldia's sentences — after a word of it — starts with a small letter:
+ * "A customer with this phone already exists", "Choose at least 2 for interests", "Fix tax rate to see total", "Not
+ * saved. Check: email". One that begins its sentence ("Phone is required", "Status: nothing is called …") keeps its
+ * capital. Off unless said: a label is the page's own words, and only the page knows whether lower-casing it is right.
+ * A label whose first word is a name ("IBAN", "VAT number", "WhatsApp", "E-mail") stays as written either way, as does
+ * every label in a language that writes its nouns with a capital (German) or has no capitals (Arabic).
  */
 export const PageRecordsSchema = z
   .strictObject({

@@ -1,7 +1,7 @@
 import type { Field } from '../format/field';
 import type { FieldNode } from '../format/layout';
 import { foldDigits, stripMarks } from './input-rules';
-import { fill, type Messages } from './messages';
+import { fillMessage, type Messages } from './messages';
 import { checkStructure } from './structures';
 import type { Value } from './values';
 
@@ -94,16 +94,16 @@ export function checkInput(field: Field, node: FieldNode, value: Value | undefin
     const label = node.label ?? field.label;
     const min = typeof options['min'] === 'number' ? options['min'] : (field.min ?? 0);
     const max = typeof options['maxField'] === 'string' ? undefined : typeof options['max'] === 'number' ? options['max'] : (field.max ?? 100);
-    if (value < min) return fill(messages.min, { label, min });
-    if (max !== undefined && value > max) return fill(messages.max, { label, max });
+    if (value < min) return fillMessage(messages, messages.min, { label, min });
+    if (max !== undefined && value > max) return fillMessage(messages, messages.max, { label, max });
   }
   // Stars or a scale keep to the points they draw: the field's min and max, else a rating's 1 to 5 and a scale's 0 to 10.
   if ((widget === 'rating' || widget === 'scale') && typeof value === 'number' && field.type === 'integer') {
     const label = node.label ?? field.label;
     const min = field.min ?? (widget === 'rating' ? 1 : 0);
     const max = field.max ?? (widget === 'rating' ? 5 : 10);
-    if (value < min) return fill(messages.min, { label, min });
-    if (value > max) return fill(messages.max, { label, max });
+    if (value < min) return fillMessage(messages, messages.min, { label, min });
+    if (value > max) return fillMessage(messages, messages.max, { label, max });
   }
   if (field.type !== 'char') return checkStructure(field, node, value, messages);
   if (typeof value !== 'string' || !value.trim()) return undefined;
@@ -121,14 +121,14 @@ export function checkInput(field: Field, node: FieldNode, value: Value | undefin
   if (widget === 'email' && /\p{Cf}/u.test(text)) return messages.email;
   if (format && (!format.test(text) || (widget === 'phone' && (digits < 7 || digits > 15)))) return messages[widget as 'email'];
   if (widget === 'time') {
-    if (typeof options['min'] === 'string' && text < options['min']) return fill(messages.before, { label, min: options['min'] });
-    if (typeof options['max'] === 'string' && text > options['max']) return fill(messages.after, { label, max: options['max'] });
+    if (typeof options['min'] === 'string' && text < options['min']) return fillMessage(messages, messages.before, { label, min: options['min'] });
+    if (typeof options['max'] === 'string' && text > options['max']) return fillMessage(messages, messages.after, { label, max: options['max'] });
     const off = offStep(text, options['step'], options['min']);
-    if (off) return fill(messages.timeStep, { label, step: off.step, example: off.before, next: off.after });
+    if (off) return fillMessage(messages, messages.timeStep, { label, step: off.step, example: off.before, next: off.after });
   }
   if (widget === 'tags' && typeof options['max'] === 'number') {
     const count = text.split(typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',').filter((t) => t.trim()).length;
-    if (count > options['max']) return fill(messages.atMost, { label, max: options['max'] });
+    if (count > options['max']) return fillMessage(messages, messages.atMost, { label, max: options['max'] });
   }
   return undefined;
 }
