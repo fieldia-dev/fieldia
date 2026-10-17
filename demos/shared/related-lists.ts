@@ -36,6 +36,7 @@ export const invoicePage = {
   id: 'invoice',
   title: 'An invoice',
   data: { kind: 'record', model: 'invoice' },
+  records: { one: 'invoice', other: 'invoices', a: 'an invoice' },
   fields: invoiceFields,
   layout: {
     type: 'sheet',
@@ -85,6 +86,7 @@ export const quotationPage = {
   id: 'quotation',
   title: 'A quotation',
   data: { kind: 'record', model: 'quotation' },
+  records: { one: 'quotation', other: 'quotations', a: 'a quotation' },
   fields: quotationFields,
   layout: {
     type: 'sheet',
@@ -134,6 +136,7 @@ export const viewingPage = {
   id: 'viewing',
   title: 'A viewing',
   data: { kind: 'record', model: 'viewing' },
+  records: { one: 'viewing', other: 'viewings', a: 'a viewing' },
   phone: { country: 'EG' },
   fields: viewingFields,
   layout: {
@@ -164,6 +167,7 @@ export const viewingsPage = {
   id: 'viewings',
   title: 'Viewings',
   data: { kind: 'record', model: 'viewing' },
+  records: { one: 'viewing', other: 'viewings', a: 'a viewing' },
   phone: { country: 'EG' },
   fields: viewingFields,
   layout: {

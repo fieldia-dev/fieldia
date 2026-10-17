@@ -4,6 +4,7 @@
   "title": "Invoices",
   "data": { "kind": "record", "model": "invoice" },
   "print": { "header": "Nile Accounting Services · Cairo", "footer": "Amounts in each invoice’s own currency; a total only where every amount shares one." },
+  "records": { "one": "invoice", "other": "invoices", "a": "an invoice" },
   "fields": {
     "name": { "type": "char", "label": "Number" },
     "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner" },

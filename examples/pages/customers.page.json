@@ -4,6 +4,7 @@
   "title": "Customers",
   "data": { "kind": "record", "model": "partner" },
   "phone": { "country": "EG" },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
   "fields": {
     "name": { "type": "char", "label": "Name" },
     "email": { "type": "char", "label": "Email" },
