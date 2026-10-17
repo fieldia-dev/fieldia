@@ -9979,11 +9979,19 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "one",
-        "other"
-      ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "one": [
+          "other"
+        ],
+        "other": [
+          "one"
+        ],
+        "a": [
+          "one",
+          "other"
+        ]
+      }
     }
   }
 }

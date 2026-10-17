@@ -297,7 +297,9 @@ this line's subtotal", "This field could not be shown: price", "They changed:
 phone.", "Put back phone", "Resize tax ID", "Filter by status", "Search name for:
 …", "The same in both: email." — one that begins its sentence ("Full name is
 required", "Status: nothing is called …") as written. The quiet look's "Add story
-points" has always been so, and keeps to the same rule.
+points" has always been so, and keeps to the same rule. A line's own dialog —
+its table's `lineForm`, or its model's page (`lineOpens: "record"`) unless that
+page says otherwise — and a list's Edit dialog follow the page they are part of.
 
 ## Possible duplicates, and Merge
 

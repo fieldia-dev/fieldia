@@ -821,7 +821,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // the viewer's own — a refused save's Check, a help's and a lock's names, a value that waits, a field not shown — and
 // the search's suggestion; the quiet look's hint by the same rule — 504.04 measured before, 505.18 after: 1.1 more,
 // to 505.2.
-const BUDGET_KB = 505.2;
+// A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, and a page may
+// ask for its labels small alone, its records unnamed: 505.18 measured before, 505.49 after — 0.3 more, to 505.5.
+const BUDGET_KB = 505.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -997,7 +999,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 162.2.
 // Every label inside a sentence small where the page asks (listed with the raw budget above): 162.15 measured before,
 // 162.68 after — 0.5 more, to 162.7.
-const GZIP_BUDGET_KB = 162.7;
+// A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.80
+// after — 0.1 more, to 162.9.
+const GZIP_BUDGET_KB = 162.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1389,8 +1393,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // link's ×, a tags' Add), phone 37.77 and 16.47 to 37.85 and 16.51 (its country's name), lines 37.78 and 12.85 to
 // 37.86 and 12.89 (a line's cell that waits), filters 11.25 and 4.21 to 11.31 and 4.24, columns 10.96 and 4.05 to 11.06
 // and 4.11, import 36.29 and 14.37 to 36.37 and 14.39 (its form's messages so) — each to the next 0.1 over; duplicates
-// 15.85 and 6.54 to 15.69 and 6.46, its own lowering gone for the one rule, to 15.7 and 6.5.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [106.7, 34.2], cards: [11.6, 3.7], columns: [11.1, 4.2], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
+// 15.85 and 6.54 to 15.69 and 6.46, its own lowering gone for the one rule, to 15.7 and 6.5. A list's Edit dialog
+// asking its labels as the list's page does, and a related list naming none for a page that only asks them small:
+// list 106.68 and 34.19 to 106.73 and 34.21, to 106.8 and 34.3.
+const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [106.8, 34.3], cards: [11.6, 3.7], columns: [11.1, 4.2], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

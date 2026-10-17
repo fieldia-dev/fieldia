@@ -221,3 +221,60 @@ describe('a list and a record’s ways on a page that asks for its labels small'
     }
   });
 });
+
+describe('a line’s own dialog on a page that asks for its labels small', () => {
+  const DAYS = { type: 'selection', label: 'Work days', multiple: true, options: ['Sun', 'Mon', 'Tue'].map((day) => ({ value: day, label: day })) };
+  const order = (lower: boolean | undefined, opens?: 'record'): Page =>
+    ({
+      fieldia: '0.4',
+      id: 'roster',
+      data: { kind: 'record', model: 'roster' },
+      fields: { line_ids: { type: 'one2many', label: 'Shifts', relation: 'roster.shift', fields: { days: DAYS } } },
+      layout: {
+        type: 'sections',
+        id: 'root',
+        children: [{ type: 'field', id: 'f-lines', field: 'line_ids', columns: ['days'], ...(opens ? { lineOpens: opens } : { lineForm: { children: [{ type: 'field', id: 'l-days', field: 'days', validate: [{ atLeast: 2 }] }] } }) }],
+      },
+      ...(lower === undefined ? {} : { records: { one: 'roster', other: 'rosters', lowerLabels: lower } }),
+    }) as unknown as Page;
+  /** The app's page for a shift: what a line opens in its own way (`lineOpens: "record"`), saying so itself or not. */
+  const shift = (records?: Page['records']): Page =>
+    ({
+      fieldia: '0.4',
+      id: 'shift',
+      data: { kind: 'record', model: 'roster.shift' },
+      fields: { days: DAYS },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 's-days', field: 'days', validate: [{ atLeast: 2 }] }] },
+      ...(records ? { records } : {}),
+    }) as unknown as Page;
+  const dialog = () => document.querySelector('.fd-form-dialog') as HTMLElement;
+
+  async function refusedIn(page: Page, options: Partial<ViewerOptions> = {}) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const dataSource = createMemoryDataSource({ records: { roster: { 1: { line_ids: [{ key: 'k1', id: 7, values: { days: ['Sun'] } }] } }, 'roster.shift': { 7: { days: ['Sun'] } } } });
+    handle = mountViewer(host, { page, dataSource, recordId: 1, ...options });
+    await handle.form.settled();
+    (host.querySelector('tr[data-line="k1"] .fd-line-open') as HTMLButtonElement).click();
+    await until(() => dialog());
+    await until(() => dialog().querySelector('.fd-form-dialog-foot button'));
+    [...dialog().querySelectorAll<HTMLButtonElement>('.fd-form-dialog-foot button')].find((b) => b.textContent === 'Save & Close')?.click();
+    await until(() => dialog()?.querySelector('.fd-error:not([hidden])')?.textContent);
+    const words = dialog().querySelector('.fd-error:not([hidden])')?.textContent;
+    handle.destroy();
+    handle = null;
+    document.body.replaceChildren();
+    return words;
+  }
+
+  it('follows the record’s page: a line is part of its record', async () => {
+    expect(await refusedIn(order(true))).toBe('Choose at least 2 for work days');
+    expect(await refusedIn(order(undefined))).toBe('Choose at least 2 for Work days');
+  });
+
+  it('opened in its own page, follows the record’s unless that page says otherwise', async () => {
+    expect(await refusedIn(order(true, 'record'), { pages: { 'roster.shift': shift() } })).toBe('Choose at least 2 for work days');
+    expect(await refusedIn(order(true, 'record'), { pages: { 'roster.shift': shift({ one: 'shift', other: 'shifts', lowerLabels: false }) } })).toBe('Choose at least 2 for Work days');
+    expect(await refusedIn(order(undefined, 'record'), { pages: { 'roster.shift': shift({ lowerLabels: true }) } })).toBe('Choose at least 2 for work days');
+  });
+});

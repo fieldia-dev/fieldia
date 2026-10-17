@@ -19,9 +19,11 @@ const capital = (words: string, locale: string) => firstOf(words).toLocaleUpperC
  * (`named` left out), or the sentence needs `a` and the page gave none — an article is never guessed.
  */
 export function recordSentence(records: PageRecords | undefined, named: string | undefined, plain: string, locale = 'en'): string {
-  if (!records || named === undefined) return plain;
-  if (named.includes('{aRecord}') && !records.a) return plain;
-  const filled = named.replace(NOUNS, (_, noun: string) => (noun === 'record' ? records.one : noun === 'records' ? records.other : (records.a as string)));
+  // A page that only asks for its labels small (`{ lowerLabels: true }`) names no records.
+  const { one, other, a } = records ?? {};
+  if (!one || !other || named === undefined) return plain;
+  if (named.includes('{aRecord}') && !a) return plain;
+  const filled = named.replace(NOUNS, (_, noun: string) => (noun === 'record' ? one : noun === 'records' ? other : (a as string)));
   return /^\{(record|records|aRecord)\}/.test(named) ? capital(filled, locale) : filled;
 }
 

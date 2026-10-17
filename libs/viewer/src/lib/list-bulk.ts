@@ -79,6 +79,8 @@ export async function askBulkValue(list: BulkList, editValues: WidgetDialogs['ed
     values: {},
     layout: [{ type: 'section', id: 'bulk', columns: 1, children }],
     buttons: { done: labels.bulkApply, cancel: labels.cancel },
+    // Its labels said as the list's page asks.
+    ...(page.records?.lowerLabels ? { lowerLabels: true } : {}),
   });
   if (!values) return null;
   const field = offered.length > 1 ? String(values[pick] ?? '') : offered[0];

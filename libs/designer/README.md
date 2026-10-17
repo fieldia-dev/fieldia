@@ -82,7 +82,8 @@ With nothing picked, a record screen's panel — and a list's, first — offers
 phone already exists", "17 customers imported", "New customer"); both, or
 neither — with one alone nothing is kept yet, and the panel says what is
 missing. Once named, **One with its article** ("a customer", "an invoice") and
-**Field names small inside them** ("this phone", not "this Phone"). A list's
+**Field names small inside them** ("this phone", not "this Phone"), which a
+screen may ask with its records unnamed too. A list's
 canvas says its pager in them as they are typed ("1–40 of 128 customers"). The
 page stores `records`; `designer.setRecords({ one, other, a, lowerLabels })`
 sets it, `null` takes it away, and one word without the other is refused in

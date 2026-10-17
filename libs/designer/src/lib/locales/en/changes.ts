@@ -127,6 +127,7 @@ export const changes = {
   printout: 'The printout’s header, footer or logo changed',
   duplicates: (now: 'on' | 'off' | 'changed') => ({ on: 'Possible duplicates are found as records are typed', off: 'Possible duplicates are no longer found', changed: 'How possible duplicates are found changed' })[now],
   records: (other: string | null) => (other ? `Its records are called “${other}” in Fieldia’s sentences` : 'Its records are called records again'),
+  smallLabels: (on: boolean): string => (on ? 'Field names are written small inside Fieldia’s sentences' : 'Field names are written as they are inside Fieldia’s sentences'),
   thePage: 'the page',
   // ---- the look
   look: {

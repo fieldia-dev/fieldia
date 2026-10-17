@@ -110,7 +110,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
   const part = !!node.filter?.length;
   const newRecord =
     opens && node.create !== false
-      ? async (values: Values) => (await dialogs.openRecord(node.model, { values, title: records ? ofModel(labels.relatedNewNoun, labels.relatedNew) : node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null
+      ? async (values: Values) => (await dialogs.openRecord(node.model, { values, title: records?.one ? ofModel(labels.relatedNewNoun, labels.relatedNew) : node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null
       : undefined;
   const { viewAll } = node;
   const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
@@ -182,7 +182,8 @@ export function relatedList(context: RelatedContext): RelatedPart {
    * then needless as their name — None yet too, and the list made for the next record counts them ("5 of 23 invoices").
    */
   function nameRecords(given: PageRecords | undefined) {
-    if (!given) return;
+    // A page that only asks for its labels small names no records.
+    if (!given?.one) return;
     records = given;
     page = relatedListPage(context.page, node, given);
     listContext.page = page;

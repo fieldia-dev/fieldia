@@ -49,15 +49,23 @@ describe('a sentence in the words a page names its records by', () => {
 
   it('is the plain sentence where the page names none, the language has none, or it needs an article the page left out', () => {
     expect(recordSentence(undefined, 'Delete this {record}?', 'Delete this record?')).toBe('Delete this record?');
+    expect(recordSentence({ lowerLabels: true }, 'Delete this {record}?', 'Delete this record?')).toBe('Delete this record?');
     expect(recordSentence(customers, undefined, 'Delete this record?')).toBe('Delete this record?');
     expect(recordSentence({ one: 'invoice', other: 'invoices' }, '{aRecord} with this {fields} already exists', 'A record with this {fields} already exists')).toBe('A record with this {fields} already exists');
   });
 });
 
 describe('the page format: what its records are called', () => {
-  it('is read with one and more, and with an article and small labels where given', () => {
+  it('is read with one and more, and with an article and small labels where given — or small labels alone', () => {
     expect(validatePage(customer).ok).toBe(true);
     expect(validatePage({ ...customer, records: { ...customers, lowerLabels: true } }).ok).toBe(true);
+    expect(validatePage({ ...customer, records: { lowerLabels: true } }).ok).toBe(true);
+    expect(checkPage({ ...customer, records: { lowerLabels: true } }).ok).toBe(true);
+    // One word without the other, or an article with neither: refused.
+    expect(validatePage({ ...customer, records: { other: 'customers' } } as Page).ok).toBe(false);
+    expect(validatePage({ ...customer, records: { a: 'a customer' } } as Page).ok).toBe(false);
+    const quick = checkPage({ ...customer, records: { a: 'a customer', lowerLabels: true } } as Page);
+    expect(quick.ok ? [] : quick.issues.map((issue) => issue.path)).toEqual(['records.one', 'records.other']);
   });
 
   it('refuses words for one or more left out or blank, in the full check and the quick one', () => {

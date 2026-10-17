@@ -138,8 +138,10 @@ export class ReferenceCheck {
   private checkRecords(records: unknown) {
     const words = (records ?? {}) as Record<string, unknown>;
     const said = (value: unknown) => typeof value === 'string' && /\S/.test(value);
-    if (!said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
-    if (!said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
+    // Both words or neither: labels small alone (`lowerLabels`) leave the records unnamed.
+    const named = words['one'] !== undefined || words['other'] !== undefined || words['a'] !== undefined;
+    if (named && !said(words['one'])) this.report('records.one', 'the word for one record, as a sentence says it: "customer"');
+    if (named && !said(words['other'])) this.report('records.other', 'the word for more than one record: "customers"');
     if (words['a'] !== undefined && !said(words['a'])) this.report('records.a', 'the word for one record with its article: "a customer", "an invoice"');
   }
 

@@ -286,7 +286,11 @@ is right: a label whose first word is a name ("IBAN", "VAT number", "WhatsApp",
 Build"), and every label stays as written in a language that writes its nouns
 with a capital (German) or has none (Arabic). One rule says it, `labelAt(template,
 key, lower, locale)`; the form's messages carry the page's ask as
-`messages.lowerLabels` (`fillMessage`). Other languages come through the
+`messages.lowerLabels` (`fillMessage`). A page may ask it alone, its records
+unnamed: `{ "records": { "lowerLabels": true } }` (`one` and `other` both, or
+neither). A line's own dialog says its labels as its record's page asks — a part
+of the same record — unless the line's own page (`lineOpens: "record"`) says
+otherwise; a list's Edit dialog as the list's page asks. Other languages come through the
 page's `translations`, as its other words do (`"customer": "عميل"`), and
 `pageWords` lists them for a translator.
 

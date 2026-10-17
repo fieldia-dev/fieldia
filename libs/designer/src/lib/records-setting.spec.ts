@@ -31,6 +31,17 @@ describe('what the screen’s records are called', () => {
     expect(designer.getPage().records).toBeUndefined();
   });
 
+  it('keeps labels small alone, its records unnamed, said as a change of its own', () => {
+    const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
+    const before = designer.getPage();
+    expect(designer.setRecords({ one: '', other: '', lowerLabels: true })).toBe(true);
+    expect(designer.getPage().records).toEqual({ lowerLabels: true });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(pageChanges(before, designer.getPage())).toEqual(['Field names are written small inside Fieldia’s sentences']);
+    expect(designer.setRecords({ one: '', other: '', lowerLabels: false })).toBe(true);
+    expect(designer.getPage().records).toBeUndefined();
+  });
+
   it('refuses one word without the other, in words, keeping what it held', () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
     designer.setRecords({ one: 'customer', other: 'customers' });
@@ -54,7 +65,8 @@ describe('what the screen’s records are called', () => {
       view.update(designer.getPage());
     };
     expect(row('Records are called').hidden).toBe(false);
-    expect([row('One with its article').hidden, row('Field names small inside them').hidden]).toEqual([true, true]);
+    // Small labels, named records or not; the article once both words are given.
+    expect([row('One with its article').hidden, row('Field names small inside them').hidden]).toEqual([true, false]);
     // One word alone: kept in its box, nothing written, the boxes saying what is missing.
     type('One record is called', 'customer');
     expect(designer.getPage().records).toBeUndefined();
