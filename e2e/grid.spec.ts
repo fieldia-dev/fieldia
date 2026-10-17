@@ -328,10 +328,11 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('Enter');
       await page.keyboard.press('Enter');
       await page.keyboard.type('Gone.');
-      await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(before + 30);
+      // The grid draws a row again as its line changes: polled until it is there, never read while it is being redrawn.
+      await expect.poll(async () => (await row.boundingBox())?.height ?? 0).toBeGreaterThan(before + 30);
       await page.keyboard.press('Escape');
       await expect.poll(() => editing(page)).toBeNull();
-      await expect.poll(async () => Math.round((await row.boundingBox())!.height)).toBe(Math.round(before));
+      await expect.poll(async () => Math.round((await row.boundingBox())?.height ?? 0)).toBe(Math.round(before));
       expect((await lines(page))[NOTE]['name']).toBe('Warm white only, to match the reception.\nOur electrician fits them on delivery day.');
     });
 
