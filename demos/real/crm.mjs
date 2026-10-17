@@ -12,7 +12,7 @@ export default [
       'Open Contacts & Addresses: the people and addresses of Nile Crest are cards; add one with Add, or press ↗ on a card for its own form — pick Invoice Address there and the address takes the job’s place.',
       'Open Invoicing and untick Partner Limit: the credit limit goes away.',
       'In Internal Notes, set the invoice warning to Warning: a message box appears and must be filled in before saving.',
-      'Open Hany Saber (record=7002): his address is the company’s and locked, and Invoicing is managed on the parent company.',
+      '[Open Hany Saber](?record=7002): his address is the company’s and locked, and Invoicing is managed on the parent company.',
     ],
   },
   {
@@ -27,7 +27,7 @@ export default [
       'Press Lost, pick a reason and Mark as Lost: the Lost ribbon, the reason, and Restore appear, and the reason is posted in the conversation.',
       'Press Restore to bring it back, then Won: it moves to the Won stage at 100 %.',
       'Change the email under Customer: a note says the customer’s email will be updated too.',
-      'Open the lead (record=7702): its own groups and tab, and Convert to Opportunity in a dialog.',
+      '[Open the lead](?record=7702): its own groups and tab, and Convert to Opportunity in a dialog.',
     ],
   },
   {

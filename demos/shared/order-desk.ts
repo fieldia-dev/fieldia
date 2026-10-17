@@ -2,6 +2,7 @@ import type { ActionRequest, ActionResult, RelatedRecord } from '@fieldia/core';
 import { real } from './real';
 import { answerBusiness } from './business';
 import { answerBill } from './vendor-bill';
+import { sayWhatTheAppGot, type Told } from './app-told';
 
 /** What the shop has left of each product, by id; the standing desk none. */
 const STOCK: Record<number, number> = { 1: 12, 2: 40, 3: 7, 4: 0, 5: 120 };
@@ -14,9 +15,16 @@ const ANSWER_MS = 250;
  * the same in every framework's demo: “Order by phone” checks the stock of
  * the product picked — the price and how many are left, or a stop with words
  * for one out of stock. The words in the page's language, English or Arabic.
- * Any other call is left alone.
+ * Any other call is left alone — but, given the page and its records (`told`),
+ * a button's press with nothing to show says what the app was given
+ * (shared/app-told.ts): "The app was asked to send a reminder for INV/2026/0042."
  */
-export function answerAction(request: ActionRequest, locale?: string): Promise<ActionResult | undefined> | undefined {
+export function answerAction(request: ActionRequest, locale?: string, told?: Told): Promise<ActionResult | undefined> | undefined {
+  const answer = answerOf(request, locale);
+  return told ? sayWhatTheAppGot(told, request, answer) : answer;
+}
+
+function answerOf(request: ActionRequest, locale?: string): Promise<ActionResult | undefined> | undefined {
   // The vendor bill's gear menu: a debit note made, a bill printed.
   const billed = request.id.startsWith('m-') ? answerBill(request) : undefined;
   if (billed) return Promise.resolve(billed);

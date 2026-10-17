@@ -62,6 +62,24 @@ test.describe('a customer typed twice', () => {
     expect(await shownId(page)).toBe(23);
   });
 
+  test('the address follows the customer shown — opened by Open it, or new and saved — so Reload shows it again', async ({ page }) => {
+    await node(page, 'f-email').locator('input').fill('orders@deltafoods.example');
+    await note(page, 'f-email').getByRole('button', { name: 'Open it' }).click();
+    await discard(page).click();
+    await expect(title(page)).toHaveValue('Delta Foods');
+    await expect(page).toHaveURL(/[?&]page=customer-card&record=23&skin=underline$/);
+    await page.reload();
+    await expect(title(page)).toHaveValue('Delta Foods');
+    // A new one saved: its own id in the address, and kept in this tab, so Reload shows it and not an empty customer.
+    await page.goto('/plain/?page=customer-card&record=new&skin=underline');
+    await title(page).fill('Sinai Outfitters');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(() => shownId(page)).toBe(41);
+    await expect(page).toHaveURL(/[?&]page=customer-card&record=41&skin=underline$/);
+    await page.reload();
+    await expect(title(page)).toHaveValue('Sinai Outfitters');
+  });
+
   test('It’s a new customer lets one go, and a name like one kept is said as like it', async ({ page }) => {
     await node(page, 'f-email').locator('input').fill('orders@niletraders.example');
     const rows = note(page, 'f-email').locator('.fd-duplicate');

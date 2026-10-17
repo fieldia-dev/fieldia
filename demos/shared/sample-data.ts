@@ -1,4 +1,4 @@
-import { alikeRecords, createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, scheduleSlots, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -57,8 +57,9 @@ import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
 import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
-import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings } from './related-lists';
+import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
+import { keepWrites, keptOver } from './kept';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -165,8 +166,8 @@ export const pages: Record<string, Page> = {
 export function pageFromQuery(params: URLSearchParams): Page {
   // The code page in the editor the demo's switch picked.
   const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
-  // A list opened for one record's records (`filter=`, a related list's View all by the app's route) shows them all, its own default filters off.
-  const page = params.get('filter') && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
+  // A list opened for one record's records (`filter=` or `search=`, a related list's View all by the app's route) shows them all, its own default filters off.
+  const page = (params.get('filter') || params.get('search')) && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const dark = !page.look?.scheme && matchMedia('(prefers-color-scheme: dark)').matches;
@@ -219,6 +220,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   next.set('record', String(id));
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
+  next.delete('search');
   location.search = next.toString();
 }
 
@@ -245,12 +247,16 @@ export function optionsFromQuery(params: URLSearchParams): {
   user?: FormUser;
   now?: () => Date;
   listFilter?: ResolvedFilter[];
+  listSearch?: Facet[];
 } {
   const saveStatus = params.get('saveStatus');
   const listFilter = filterFromQuery(params);
+  const listSearch = searchFromQuery(params);
   return {
-    // A list kept to one record's records by its address: a related list's View all, by the app's route.
+    // A list kept to one record's records by its address: a related list's View all, by the app's route — said as chips
+    // a person may take away ("Customer: Nile Traders"), or conditions kept whatever is searched.
     ...(listFilter ? { listFilter } : {}),
+    ...(listSearch ? { listSearch } : {}),
     // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
@@ -414,7 +420,7 @@ function quietHeader(page: Page): Page {
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
   const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-  const source = createMemoryDataSource(withReal({
+  const options = withReal({
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
@@ -662,7 +668,11 @@ export function sampleDataSource() {
           Number(values['credit_limit']) > 100000 ? 'Above the 100,000 approval limit: a manager has to sign this off.' : null,
       },
     },
-  }));
+  });
+  // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
+  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
+  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
+  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra) });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
@@ -670,12 +680,12 @@ export function sampleDataSource() {
   if (params.get('store') === 'none') delete (source as { upload?: unknown }).upload;
   // The contacts' source as the address asks: ids cut short or none, no bulk writing, an export on the server.
   contactsAsAsked(params, source);
-  // The customer's card: a second Nile Traders, someone else's, to find and merge (shared/duplicates.ts).
-  if (params.get('page') === 'customer-card') Object.assign(source.records['partner'], duplicateCustomers());
   // `?lines=40`: the posted invoice with that many lines, to see a long one on paper (e2e/print.spec.ts).
   const lines = Number(params.get('lines'));
   const posted = source.records['account.move']?.[4102];
   if (lines > 0 && posted) posted['invoice_line_ids'] = longLines(posted['invoice_line_ids'], lines);
+  // Each save, import, merge and delete kept in this tab: the next page the demo goes to shows it.
+  keepWrites(source);
   return source;
 }
 

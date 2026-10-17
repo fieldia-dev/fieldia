@@ -10,6 +10,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
 
@@ -139,9 +140,13 @@ createApp({
         onAction: (request: ActionRequest) => {
           actions.push(request.action);
           requests.push(request);
-          return answerAction(request, params.get('locale') ?? undefined);
+          return answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
         },
-        onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } }),
+        onReady: (handle: ViewerHandle) => {
+          Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });
+          // The address in step with the record shown (shared/address.ts).
+          addressFollowsRecord(handle.form, page);
+        },
       },
       {
         chatter: ({ form }: { form: Form }) => h(Chatter, { form }),

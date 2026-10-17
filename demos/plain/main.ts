@@ -21,6 +21,7 @@ import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
+import { addressFollowsRecord } from '../shared/address';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -88,8 +89,9 @@ const options: ViewerOptions = {
   onAction: (request) => {
     actions.push(request.action);
     requests.push(request);
-    // The shop's answers to the pages' steps: the stock checked for "Order by phone".
-    return answerAction(request, params.get('locale') ?? undefined);
+    // The shop's answers to the pages' steps: the stock checked for "Order by phone"; and a press with nothing to show
+    // says what the app was given.
+    return answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
   },
   widgets: { 'char.name-badge': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
@@ -148,6 +150,8 @@ await Promise.all([
 const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, options);
 opened();
+// The address in step with the record shown: Reload and Back show the one on screen (shared/address.ts).
+addressFollowsRecord(handle.form, page);
 
 /**
  * `&open=dialog`: the page's record opened again in a large popup over the page,
@@ -177,7 +181,7 @@ if (params.get('open') === 'dialog') {
       onAction: (request) => {
         actions.push(request.action);
         requests.push(request);
-        return wiHeadAction(request) ?? answerAction(request, locale);
+        return wiHeadAction(request) ?? answerAction(request, locale, { page, source: dataSource });
       },
     }).then((result) => void results.push(result));
   void open();

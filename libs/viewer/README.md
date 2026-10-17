@@ -432,7 +432,12 @@ gives for `model`, **New** makes one there with its link filled in and lists it
 once saved (`"create": false` for none), and **View all** opens the page
 `viewAll` names showing this record's records alone, as an `open` step opens
 one — in a dialog, a side panel or this page's place, or your app's own way
-(`onOpen`, with the conditions in `request.filter`). Before the record's first
+(`onOpen`, with the conditions in `request.filter`). Its list says what it is
+kept to as chips over it, which a person may take away — "Customer: Nile
+Traders", and the list's own `filter` by its title — given in
+`request.search` (`Facet[]`) for a route of your own: hand them to the list
+page's viewer as `listSearch`, the search it opens with in place of its
+default filters (where `listFilter` keeps conditions fixed and unsaid). Before the record's first
 save it says nothing points at it yet, with no New. With `card`, its rows are
 cards on a phone, as a list's (each a field of its own `fields`); `rowTones`,
 `rowBold` and `rowButtons` tone, bold and give buttons to its rows as a list's,

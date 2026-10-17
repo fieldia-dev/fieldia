@@ -19,6 +19,7 @@ import {
   type Skin,
   type Theme,
   type RecordId,
+  type Facet,
   type ResolvedFilter,
   type SectionNode,
   type SectionsNode,
@@ -216,6 +217,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   onNewRecord?: (values: Values) => unknown;
   /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
   listFilter?: ResolvedFilter[];
+  /**
+   * A list page: the search it opens with, as chips a person sees and may take away, in place of its default filters and
+   * favourite — a related list's View all, "Customer: Nile Traders" (`OpenRequest.search`).
+   */
+  listSearch?: Facet[];
   /**
    * What the page's steps ask of the screen, the viewer does itself: a page
    * opened (in a dialog, a side panel, or this form's place, with Back), words
@@ -2310,6 +2316,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         onOpenRecord: options.onOpenRecord,
         ...(options.now ? { now: options.now } : {}),
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
+        ...(options.listSearch ? { search: options.listSearch } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.

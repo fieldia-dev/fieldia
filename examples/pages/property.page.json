@@ -263,6 +263,16 @@
             "width": 32
           }
         },
+        "card": {
+          "title": "client",
+          "status": "state",
+          "fields": [
+            "starts_at",
+            "phone",
+            "agent_id",
+            "feedback"
+          ]
+        },
         "sort": [
           {
             "field": "starts_at",

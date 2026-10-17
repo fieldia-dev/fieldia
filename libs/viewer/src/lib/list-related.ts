@@ -1,4 +1,4 @@
-import { recordSentence, type DataSource, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
+import { recordSentence, type DataSource, type Facet, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
 import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -129,7 +129,15 @@ export function relatedList(context: RelatedContext): RelatedPart {
       ? (values: Values) => show(null, records?.one ? ofModel(labels.relatedNewNoun, labels.relatedNew) : node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord, values)
       : undefined;
   const { viewAll } = node;
-  const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
+  const showAll = viewAll ? (filter: ResolvedFilter[], search: Facet[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter, search }) : undefined;
+  /**
+   * What View all's list is kept to, as chips it shows and a person may take away: this record ("Customer: Nile
+   * Traders"), and the list's own part of them (its `filter`), by its title.
+   */
+  const searchOf = (filter: ResolvedFilter[], id: RecordId): Facet[] => [
+    { kind: 'field', field: node.field, label: node.fields[node.field]?.label ?? node.field, values: [{ op: '=', value: id, label: context.name() || String(id) }] },
+    ...(filter.length > 1 ? [{ kind: 'custom' as const, label: node.title ?? labels.filters, filter: filter.slice(1) }] : []),
+  ];
   let page = relatedListPage(context.page, node);
   // Its count in a pill after the title, read out with it as the group's name: "Invoices, 12".
   const count = el('span', { class: 'fd-related-count', 'aria-hidden': 'true', hidden: '' });
@@ -279,11 +287,12 @@ export function relatedList(context: RelatedContext): RelatedPart {
   });
   all?.addEventListener('click', async () => {
     const filter = form.relatedFilter(node.id);
-    if (!filter || !showAll || all.hasAttribute('aria-busy')) return;
+    const id = form.getState().recordId;
+    if (!filter || id == null || !showAll || all.hasAttribute('aria-busy')) return;
     const back = again();
     all.setAttribute('aria-busy', 'true');
     try {
-      await showAll(filter);
+      await showAll(filter, searchOf(filter, id));
     } catch (error) {
       // A page the app does not have: said, as an `open` step says it.
       context.say((error as Error).message, 'danger');

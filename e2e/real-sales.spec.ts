@@ -261,8 +261,8 @@ for (const variant of VARIANTS) {
       await button(page, 'create_invoices').click();
       const done = page.locator('.demo-done');
       await expect(done).toContainText(/Draft invoice INV\/2026\/\d+ created/);
-      // Why it stops here, in a business owner's words: no "dialog", no "in an app: there it closes here".
-      await expect(done.locator('.demo-done-note')).toHaveText(/^In an app, “.+” opens over the record it is for, closes now, and that record shows what was done\. Shown here on its own, it stops here instead, so nothing is done twice\.$/);
+      // What happens next in an app, in a business owner's words: no "dialog", no "opens over the record it is for".
+      await expect(done.locator('.demo-done-note')).toHaveText('In your app this window closes, and the order shows its new invoice.');
       await expect(done).not.toContainText('dialog');
       await expect(button(page, 'create_invoices')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard-done', { viewport: true });
@@ -270,7 +270,7 @@ for (const variant of VARIANTS) {
       await done.getByRole('button', { name: 'Start over' }).click();
       await button(page, 'cancel').click();
       await expect(page.locator('.demo-done')).toContainText('Nothing was made');
-      await expect(page.locator('.demo-done .demo-done-note')).toContainText('leaving it as it was');
+      await expect(page.locator('.demo-done .demo-done-note')).toHaveText('In your app this window closes, and the order stays as it was.');
       await expect(button(page, 'create_invoices')).toBeHidden();
       expect(problems).toEqual([]);
     });

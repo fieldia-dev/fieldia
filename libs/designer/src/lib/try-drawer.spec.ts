@@ -88,15 +88,41 @@ describe('Try it’s drawer of data and problems', () => {
     expect(document.activeElement).toBe(fieldOf('Comments'));
   });
 
-  it('says when nothing stands in the way', () => {
+  it('has no Problems tab while it has nothing to say: a blank survey, a screen with nothing required', () => {
+    for (const kind of ['survey', 'screen'] as const) {
+      const designer = createDesigner({ page: blankPage(kind, 'Visit') });
+      if (kind === 'screen') designer.updateQuestion(designer.addQuestion('short-answer') as string, { label: 'Customer' });
+      handle = tryIt({ el: elementFactory(document), doc: document, designer, skin: 'outlined', onChange: () => undefined });
+      document.body.append(handle.toggle, handle.element);
+      (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
+      const drawer = handle.element.querySelector('.fd-try-drawer') as HTMLElement;
+      const tabs = [...drawer.querySelectorAll<HTMLButtonElement>('.fd-try-tab')].filter((tab) => !tab.hidden).map((tab) => tab.textContent?.trim());
+      expect(tabs).toEqual(['Data']);
+      handle.destroy();
+      handle = null;
+      document.body.replaceChildren();
+    }
+  });
+
+  it('says nothing stands in the way once the last problem is put right, while its tab is open; folded, the tab goes', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
-    designer.updateQuestion(designer.addQuestion('short-answer') as string, { label: 'Customer' });
+    designer.updateQuestion(designer.addQuestion('short-answer') as string, { label: 'Customer', required: true });
     handle = tryIt({ el: elementFactory(document), doc: document, designer, skin: 'outlined', onChange: () => undefined });
     document.body.append(handle.toggle, handle.element);
     (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
     const drawer = handle.element.querySelector('.fd-try-drawer') as HTMLElement;
-    expect(drawer.querySelector('.fd-try-tab:last-child')?.textContent?.trim()).toBe('Problems');
+    const problemsTab = drawer.querySelectorAll<HTMLButtonElement>('.fd-try-tab')[1];
+    expect(problemsTab.hidden).toBe(false);
+    problemsTab.click();
+    const input = handle.element.querySelector('.fd-field input') as HTMLInputElement;
+    input.value = 'Nile Traders';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(problemsTab.hidden).toBe(false);
+    expect((drawer.querySelector('.fd-try-none') as HTMLElement).hidden).toBe(false);
     expect(drawer.querySelector('.fd-try-none')?.textContent).toBe('Nothing stands in the way of sending this.');
+    // Pressed again, the drawer folds: with nothing to say, the tab is gone.
+    problemsTab.click();
+    expect(problemsTab.hidden).toBe(true);
   });
 
   it('is not there for a list, which holds no answers of its own', () => {

@@ -1,4 +1,4 @@
-import type { OpenRequest, OpenResult, Page, ResolvedFilter, Values } from '@fieldia/core';
+import type { Facet, OpenRequest, OpenResult, Page, ResolvedFilter, Values } from '@fieldia/core';
 import { demoNow } from './calendar';
 
 /**
@@ -178,6 +178,8 @@ export const viewingsPage = {
     pageSize: 10,
     searchFields: ['client', 'home_id', 'agent_id', 'state'],
     cells: { state: { widget: 'dot', options: { tones: { planned: 'info', done: 'success', no_show: 'warning', cancelled: 'muted' } } }, phone: { widget: 'phone' } },
+    // On a phone, a card each: who, how it went, and when, where, the phone and the agent.
+    card: { title: 'client', status: 'state', fields: ['starts_at', 'home_id', 'phone', 'agent_id'] },
     groupBy: ['agent_id', 'state', 'starts_at'],
   },
 } as unknown as Page;
@@ -276,8 +278,9 @@ const ROUTED_RECORDS = new Set(['quotation']);
 
 /**
  * The app's own way to open a page a step, View all, or a related list's row or New asks for (`onOpen`): a list of a
- * customer's invoices goes to that list's own address, its conditions in it (`filter=`); a quotation to its own page's,
- * a new one's values in it (`record=new&values=`), as an app's router would; anything else is the viewer's to open
+ * customer's invoices goes to that list's own address, its search in it as chips a person may take away (`search=`,
+ * View all's "Customer: Nile Traders") or else its conditions kept (`filter=`); a quotation to its own page's, a new
+ * one's values in it (`record=new&values=`), as an app's router would; anything else is the viewer's to open
  * (undefined).
  */
 export function openByRoute(params: URLSearchParams, request: OpenRequest): Promise<OpenResult> | undefined {
@@ -290,7 +293,8 @@ export function openByRoute(params: URLSearchParams, request: OpenRequest): Prom
     if (value) next.set(key, value);
   }
   next.set('page', request.page);
-  if (list) next.set('filter', JSON.stringify(request.filter));
+  if (list && request.search) next.set('search', JSON.stringify(request.search));
+  else if (list) next.set('filter', JSON.stringify(request.filter));
   else {
     next.set('record', request.recordId == null ? 'new' : String(request.recordId));
     if (request.values) next.set('values', JSON.stringify(request.values));
@@ -319,6 +323,18 @@ export function filterFromQuery(params: URLSearchParams): ResolvedFilter[] | und
   try {
     const read = JSON.parse(given) as unknown;
     return Array.isArray(read) ? (read as ResolvedFilter[]) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The search a list's address opens it with (`search=`, as `openByRoute` writes View all's), or none. */
+export function searchFromQuery(params: URLSearchParams): Facet[] | undefined {
+  const given = params.get('search');
+  if (!given) return undefined;
+  try {
+    const read = JSON.parse(given) as unknown;
+    return Array.isArray(read) ? (read as Facet[]) : undefined;
   } catch {
     return undefined;
   }

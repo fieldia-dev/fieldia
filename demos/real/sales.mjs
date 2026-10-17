@@ -10,9 +10,9 @@ export default [
       'Press Send by Email: the quotation is emailed and moves to Quotation Sent; press Confirm and it becomes a sales order, the Delivery counter appears and Expiration gives way to Order Date.',
       'In the grid, change the patient monitors’ Quantity from 4 to 5: the line’s Tax excl. and the totals under the grid follow.',
       'Add a product and pick the Defibrillator AED-3: its description, unit, VAT 14% and the hospital price come with it.',
-      'Show Analytic Distribution from the grid’s column chooser (⋮): each line’s accounts with their shares; click a cell to change them. Opened as someone without the analytic accounting role (roles=base.group_user in the address), the column is not there.',
+      'Show Analytic Distribution from the grid’s column chooser (⋮): each line’s accounts with their shares; click a cell to change them. [Opened as someone without the analytic accounting role](?roles=base.group_user), the column is not there.',
       'Change the Customer to Delta Care Clinics: the addresses, pricelist and terms follow, and the credit-limit warning shows over the sheet.',
-      'Open S00068 (record=7102) and press Create Invoice: the Create invoices dialog opens over the order.',
+      '[Open S00068](?record=7102) and press Create Invoice: the Create invoices dialog opens over the order.',
     ],
   },
   {
@@ -20,12 +20,14 @@ export default [
     name: 'Invoice an order',
     category: 'real',
     query: 'page=real-sale-invoice-wizard&record=7701&skin=outlined',
+    // What the frame says once it is done here on its own (shell.mjs), where an app closes it over its order.
+    done: { saved: 'In your app this window closes, and the order shows its new invoice.', cancelled: 'In your app this window closes, and the order stays as it was.' },
     blurb: 'The dialog a confirmed order opens to invoice it: a regular invoice or a down payment by percentage or a fixed amount, its fields shown and required by the choice, a warning when the down payment is more than is left to invoice.',
     howTo: [
       'Choose Down payment (percentage): Down Payment Amount appears with % beside it, and is required.',
       'Type 95: a warning says the down payment is more than is left to invoice.',
       'Choose Down payment (fixed amount): the amount in Egyptian pounds takes its place.',
-      'Open it for three orders at once (record=7702): Order Count and Consolidated Billing show instead of the choice.',
+      '[Open it for three orders at once](?record=7702): Order Count and Consolidated Billing show instead of the choice.',
     ],
   },
   {
