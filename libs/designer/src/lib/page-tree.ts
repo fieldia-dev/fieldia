@@ -92,8 +92,9 @@ export function allIds(page: Page): Set<string> {
   // A sheet's header parts have ids of their own.
   const root = page.layout;
   if (root.type === 'sheet') for (const part of sheetParts(root)) ids.add(part.id);
-  // A list's filters and buttons too.
-  if (root.type === 'list') for (const part of [...(root.filters ?? []), ...(root.actions ?? [])]) ids.add(part.id);
+  // A list's filters and buttons too, a row's own among them; and a related list's rows' buttons.
+  if (root.type === 'list') for (const part of [...(root.filters ?? []), ...(root.actions ?? []), ...(root.rowButtons ?? [])]) ids.add(part.id);
+  for (const c of containers(page)) for (const child of c.children) if (child.type === 'related') for (const button of child.rowButtons ?? []) ids.add(button.id);
   return ids;
 }
 

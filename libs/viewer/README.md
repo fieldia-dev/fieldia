@@ -379,8 +379,11 @@ once saved (`"create": false` for none), and **View all** opens the page
 one — in a dialog, a side panel or this page's place, or your app's own way
 (`onOpen`, with the conditions in `request.filter`). Before the record's first
 save it says nothing points at it yet, with no New. With `card`, its rows are
-cards on a phone, as a list's (each a field of its own `fields`); on paper, its
-rows as shown and "5 of 23" where they run past a page. Without `list` in the
+cards on a phone, as a list's (each a field of its own `fields`); `rowTones`,
+`rowBold` and `rowButtons` tone, bold and give buttons to its rows as a list's,
+each read on the row's record (its own fields, `id`, `user`, `context`), a
+button run with that one record (`recordIds`) on the record shown; on paper,
+its rows as shown and "5 of 23" where they run past a page. Without `list` in the
 data source it is not shown. An answer that comes once another record is shown — the
 pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See

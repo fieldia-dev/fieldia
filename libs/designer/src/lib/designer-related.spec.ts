@@ -144,6 +144,28 @@ describe('a related list on a page, in the designer', () => {
     expect(node().card).toEqual({ title: 'name', lead: true });
   });
 
+  it('takes its rows’ tones, bold and buttons, read on its own records, refusing a condition on this page’s fields', () => {
+    const { designer, id, node } = withRelated();
+    designer.updateRelated(id, {
+      columns: [
+        { name: 'name', field: { type: 'char', label: 'Number' } },
+        { name: 'state', field: { type: 'char', label: 'Status' } },
+      ],
+    });
+    expect(designer.updateRelated(id, { rowTones: [{ tone: 'danger', when: "state == 'late'" }], rowBold: 'user.id == 7', rowButtons: [{ id: '', label: 'Send a reminder', invisible: "state != 'sent'" }] })).toBe(true);
+    expect(node()).toMatchObject({
+      rowTones: [{ tone: 'danger', when: "state == 'late'" }],
+      rowBold: 'user.id == 7',
+      rowButtons: [{ type: 'button', id: expect.stringMatching(/-row-button-\d+$/), label: 'Send a reminder', action: 'send_a_reminder', invisible: "state != 'sent'" }],
+    });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    // The record's own field, not its records': refused, as a list's condition on no field is.
+    expect(designer.updateRelated(id, { rowBold: "title == 'x'" })).toBe(false);
+    expect(node().rowBold).toBe('user.id == 7');
+    designer.updateRelated(id, { rowTones: null, rowBold: null, rowButtons: null });
+    expect([node().rowTones, node().rowBold, node().rowButtons]).toEqual([undefined, undefined, undefined]);
+  });
+
   it('is said as a change: added, changed', () => {
     const { designer, id } = withRelated();
     const before = designer.getPage();
@@ -221,6 +243,15 @@ describe('a related list’s panel', () => {
     expect(opensIn.hidden).toBe(false);
     opensIn.querySelector<HTMLButtonElement>('[data-choice="panel"]')!.click();
     expect(node().viewAll).toEqual({ page: 'viewings', as: 'panel' });
+  });
+
+  it('sets its rows’ tones, bold and buttons, as a list’s panel does, checked against its own records’ fields', () => {
+    const { designer, id, node, host } = mount();
+    designer.updateRelated(id, { columns: [{ name: 'name', field: { type: 'char', label: 'Number' } }, { name: 'state', field: { type: 'char', label: 'Status' } }] });
+    const rows = host.querySelector<HTMLElement>('[data-setting="Row tones and buttons"]')!;
+    expect(rows).not.toBeNull();
+    [...rows.querySelectorAll('button')].find((b) => b.textContent === 'Add a button on each row')!.click();
+    expect(node().rowButtons).toEqual([expect.objectContaining({ type: 'button', label: 'Button', action: 'button' })]);
   });
 
   it('turns its records into cards on a phone, as a list’s panel does, of its own fields, with no gallery', () => {

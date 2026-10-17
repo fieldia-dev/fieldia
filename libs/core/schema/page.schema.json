@@ -8361,6 +8361,125 @@
         "card": {
           "$ref": "#/$defs/ListCard"
         },
+        "rowTones": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToneWhen"
+          }
+        },
+        "rowBold": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "rowButtons": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "button"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ActionStep"
+                }
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "params": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                }
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "danger",
+                  "link"
+                ]
+              },
+              "confirm": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
+              },
+              "colspan": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
         "filter": {
           "minItems": 1,
           "type": "array",

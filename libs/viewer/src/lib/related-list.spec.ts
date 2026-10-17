@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type DataSource, type ListRequest, type ListResult, type OpenRequest, type OpenResult, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, type ActionRequest, type DataSource, type ListRequest, type ListResult, type OpenRequest, type OpenResult, type Page, type Values } from '@fieldia/core';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 import { cardsPart, listPart, partsFor } from './viewer-parts';
@@ -347,6 +347,40 @@ describe('a related list inside a record', () => {
     await until(() => rows(host).length === 2);
     // No title: no heading to name it by, its count in its pager.
     expect(part(host).querySelector('.fd-related-head')?.hasAttribute('hidden')).toBe(true);
+  });
+});
+
+describe('a related list’s rows', () => {
+  const rules = {
+    rowTones: [{ tone: 'success', when: "state == 'posted'" }],
+    rowBold: 'amount >= user.id',
+    rowButtons: [{ type: 'button', id: 'remind', label: 'Remind', action: 'remind', invisible: "state != 'posted'" }],
+  };
+
+  it('are toned, bold and given their buttons, as a list’s, each read on its own record — its fields and the person', async () => {
+    const asked: ActionRequest[] = [];
+    const dataSource = createMemoryDataSource({ records: records() });
+    const { host } = await mount({ page: customer(rules), dataSource, user: { id: 60, name: 'Mona' }, onAction: (request) => void asked.push(request) });
+    await until(() => rows(host).length === 2);
+    const [first, second] = [...part(host).querySelectorAll<HTMLElement>('.fd-list-row')];
+    // INV/1, posted, 100; INV/2, a draft of 50: toned by its state, bold by its amount against the person's id.
+    expect([first.dataset['tone'], first.hasAttribute('data-bold')]).toEqual(['success', true]);
+    expect([second.dataset['tone'], second.hasAttribute('data-bold')]).toEqual([undefined, false]);
+    expect(first.querySelector('[data-action="remind"]')).not.toBeNull();
+    expect(second.querySelector('[data-action="remind"]')).toBeNull();
+    // Pressed: run with that one invoice, on the customer shown; then its records asked again.
+    const before = dataSource.calls.filter((call) => call.method === 'list').length;
+    (first.querySelector('[data-action="remind"]') as HTMLButtonElement).click();
+    await until(() => asked.length === 1);
+    expect(asked[0]).toEqual(expect.objectContaining({ id: 'remind', action: 'remind', recordId: 1, recordIds: [11] }));
+    await until(() => dataSource.calls.filter((call) => call.method === 'list').length > before);
+  });
+
+  it('show a row’s button only to the roles it names, as a list’s', async () => {
+    const roled = { ...rules, rowButtons: [{ ...rules.rowButtons[0], roles: ['accountant'] }] };
+    const { host } = await mount({ page: customer(roled), user: { id: 60, name: 'Mona', roles: ['sales'] } });
+    await until(() => rows(host).length === 2);
+    expect(part(host).querySelector('[data-action="remind"]')).toBeNull();
   });
 });
 

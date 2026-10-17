@@ -497,6 +497,22 @@ export interface RelatedNode {
    * given.
    */
   card?: ListCard;
+  /**
+   * Each row's tone while a condition on its record holds, the first that
+   * holds, as a list's (`ListNode.rowTones`): its words in that colour, a
+   * card's edge. Its conditions read the listed record — its own `fields`,
+   * its `id`, `user` and `context` — never this one's.
+   */
+  rowTones?: ToneWhen[];
+  /** Each row's words in bold while this holds on its record, as a list's. */
+  rowBold?: Modifier;
+  /**
+   * Buttons on each row and each card, as a list's: each shown by its
+   * `invisible` read on the row's record, a press running its steps with
+   * that one record (`recordIds`, of `model`) while this record is the one
+   * shown; then its records are asked for again.
+   */
+  rowButtons?: ButtonNode[];
   /** More that the records listed keep to — only posted invoices — as a link's filter: `valueFrom` reads this record. */
   filter?: FilterItem[];
   /** Their order: by the first, then the next. */
@@ -1804,6 +1820,9 @@ export const RelatedNodeSchema = z
     columns: z.array(fieldName).min(1),
     cells: z.record(fieldName, ListCellSchema).optional(),
     card: ListCardSchema.optional(),
+    rowTones: z.array(ToneWhenSchema).min(1).optional(),
+    rowBold: ModifierSchema.optional(),
+    rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
     filter: z.array(FilterItemSchema).min(1).optional(),
     sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
     limit: z.int().min(1).max(100).optional(),

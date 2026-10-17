@@ -33,7 +33,7 @@ import {
 import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/core';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
-import { listCommands, type ListCommands } from './list-commands';
+import { listCommands, setRowRules, type ListCommands, type RowRulesPatch } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
@@ -1720,7 +1720,7 @@ export function createDesigner(options: {
       apply((draft) => {
         const node = findNode(draft, id)?.node;
         if (!node || node.type !== 'related') throw new Refusal((w) => w.layout.noPart(id));
-        changeRelated(node, patch);
+        changeRelated(draft, node, patch);
       }, `related:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
@@ -1840,7 +1840,7 @@ function statusbarOf(page: Page, id: string): { invisible?: string; roles?: stri
 }
 
 /** What a related list's panel changes (`updateRelated`). */
-export interface RelatedPatch {
+export interface RelatedPatch extends RowRulesPatch {
   title?: string;
   model?: string;
   field?: string;
@@ -1854,7 +1854,7 @@ export interface RelatedPatch {
 }
 
 /** A related list changed as asked: names that are no field's refused, and what named a column taken away gone with it. */
-function changeRelated(node: RelatedNode, patch: RelatedPatch): void {
+function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch): void {
   const named = (name: string) => {
     if (!FIELD_NAME.test(name)) throw new Refusal((w) => w.relatedPart.notAName(name));
   };
@@ -1909,6 +1909,8 @@ function changeRelated(node: RelatedNode, patch: RelatedPatch): void {
     }
     node.card = JSON.parse(JSON.stringify(patch.card)) as ListCard;
   }
+  // Its rows' own rules, as a list's: each condition read on a row's record — its own fields, its id, the person.
+  setRowRules(node, patch, draft, { ...draft, fields: node.fields as Page['fields'] });
   // A field taken away with its column goes from the card too: its lines, its title, picture and status.
   if (patch.columns !== undefined && node.card) {
     const card: ListCard = node.card;

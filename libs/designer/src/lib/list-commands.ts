@@ -1,4 +1,4 @@
-import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Page, type ToneWhen } from '@fieldia/core';
+import { bulkSettable, importable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Modifier, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
@@ -13,7 +13,7 @@ import type { TableButton } from './table-commands';
  * names it any more.
  */
 
-export interface ListOptionsPatch {
+export interface ListOptionsPatch extends RowRulesPatch {
   sort?: { field: string; desc?: boolean }[];
   pageSize?: number;
   /** The fields the search bar looks in; empty for the columns. */
@@ -50,12 +50,6 @@ export interface ListOptionsPatch {
   gallery?: ListGallery | null;
   /** Whether people may hide a column, and how it starts: shown, or hidden; null when they may not. */
   optionalColumn?: { field: string; starts: 'show' | 'hide' | null };
-  /** Each row's tone while a condition on its record holds, the first that holds; null or none for no tone. */
-  rowTones?: ToneWhen[] | null;
-  /** Each row in bold while a condition on its record holds; null for never. */
-  rowBold?: string | null;
-  /** The buttons on each row, in order, as a table's (a button kept keeps its id and steps); null or none for none. */
-  rowButtons?: TableButton[] | null;
 }
 
 export interface ListActionPatch {
@@ -110,6 +104,64 @@ const actionName = (label: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '') || 'action';
+
+/** A list's rows' own rules, as `setListOptions` and a related list's panel (`updateRelated`) take them. */
+export interface RowRulesPatch {
+  /** Each row's tone while a condition on its record holds, the first that holds; null or none for no tone. */
+  rowTones?: ToneWhen[] | null;
+  /** Each row in bold while a condition on its record holds; null for never. */
+  rowBold?: string | null;
+  /** The buttons on each row, in order, as a table's (a button kept keeps its id and steps); null or none for none. */
+  rowButtons?: TableButton[] | null;
+}
+
+/**
+ * A list's or a related list's rows' own rules set as asked: each condition refused in words where it does not read on
+ * a row's record (`reads`: a page whose fields are its records' — the list page itself, or a related list's own
+ * `fields`), a button kept by its id, a new one named afresh in the page, each doing something.
+ */
+export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold?: Modifier; rowButtons?: ButtonNode[] }, options: RowRulesPatch, draft: Page, reads: Page): void {
+  const refuse = (when: string) => {
+    if (formulaProblem(reads, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(reads, when, w), w)));
+  };
+  if (options.rowTones !== undefined) {
+    const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when }));
+    for (const item of kept) if (typeof item.when === 'string') refuse(item.when);
+    if (kept.length) target.rowTones = kept;
+    else delete target.rowTones;
+  }
+  if (options.rowBold !== undefined) {
+    const said = options.rowBold?.trim();
+    if (said) {
+      refuse(said);
+      target.rowBold = said;
+    } else delete target.rowBold;
+  }
+  if (options.rowButtons !== undefined) {
+    const before = new Map((target.rowButtons ?? []).map((button) => [button.id, button]));
+    const ids = allIds(draft);
+    const kept: ButtonNode[] = (options.rowButtons ?? []).map((button) => {
+      const label = button.label.trim();
+      if (!label) throw new Refusal((w) => w.tables.buttonNeedsWords);
+      const was = button.id ? before.get(button.id) : undefined;
+      const id = was ? was.id : nextName((one) => ids.has(one), `${target.id}-row-button`, '-');
+      ids.add(id);
+      const made: ButtonNode = { ...(was ?? { type: 'button', id }), label };
+      if (button.action?.trim()) made.action = button.action.trim();
+      else delete made.action;
+      const hidden = button.invisible?.trim();
+      if (hidden) {
+        refuse(hidden);
+        made.invisible = hidden;
+      } else delete made.invisible;
+      // A button does something: an app action, or the steps it had.
+      if (!made.action && !made.steps?.length) made.action = actionName(label);
+      return made;
+    });
+    if (kept.length) target.rowButtons = kept;
+    else delete target.rowButtons;
+  }
+}
 
 /** The fields a filter reads, through its groups. */
 export function filterFields(items: readonly FilterItem[]): string[] {
@@ -310,43 +362,7 @@ export function listCommands(context: {
         if (options.gallery === null) delete list.gallery;
         else if (options.gallery !== undefined) list.gallery = { ...options.gallery };
         // A row's own rules: conditions on its record, refused in words where they do not read.
-        const refuse = (when: string) => {
-          if (formulaProblem(draft, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(draft, when, w), w)));
-        };
-        if (options.rowTones !== undefined) {
-          const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when }));
-          for (const item of kept) if (typeof item.when === 'string') refuse(item.when);
-          if (kept.length) list.rowTones = kept;
-          else delete list.rowTones;
-        }
-        if (options.rowBold !== undefined) {
-          const said = options.rowBold?.trim();
-          if (said) {
-            refuse(said);
-            list.rowBold = said;
-          } else delete list.rowBold;
-        }
-        if (options.rowButtons !== undefined) {
-          const before = new Map((list.rowButtons ?? []).map((button) => [button.id, button]));
-          const kept: ButtonNode[] = (options.rowButtons ?? []).map((button) => {
-            const label = button.label.trim();
-            if (!label) throw new Refusal((w) => w.tables.buttonNeedsWords);
-            const was = button.id ? before.get(button.id) : undefined;
-            const made: ButtonNode = { ...(was ?? { type: 'button', id: fresh(draft, `${list.id}-row-button`) }), label };
-            if (button.action?.trim()) made.action = button.action.trim();
-            else delete made.action;
-            const hidden = button.invisible?.trim();
-            if (hidden) {
-              refuse(hidden);
-              made.invisible = hidden;
-            } else delete made.invisible;
-            // A button does something: an app action, or the steps it had.
-            if (!made.action && !made.steps?.length) made.action = actionName(label);
-            return made;
-          });
-          if (kept.length) list.rowButtons = kept;
-          else delete list.rowButtons;
-        }
+        setRowRules(list, options, draft, draft);
         if (options.optionalColumn !== undefined) {
           const { field, starts } = options.optionalColumn;
           if (!list.columns.includes(field)) throw new Refusal((w) => w.refusals.notAColumn(field));

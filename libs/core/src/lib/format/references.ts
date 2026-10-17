@@ -900,8 +900,9 @@ export class ReferenceCheck {
   }
 
   /**
-   * A related list: on a record's page, its columns, order, search and cells of its own records' fields, its link to
-   * this record a link of theirs to this model where its fields name it, and its filter's `valueFrom` this record's.
+   * A related list: on a record's page, its columns, order, search, cells, card and rows' rules of its own records'
+   * fields, its link to this record a link of theirs to this model where its fields name it, and its filter's
+   * `valueFrom` this record's.
    */
   private checkRelated(node: RelatedNode, path: string) {
     // The quick check reads no shapes: a part with nothing to go by is said here.
@@ -914,6 +915,15 @@ export class ReferenceCheck {
     this.checkListed(node, fields, path);
     // On a phone its rows are cards, as a list's: of its own records' fields.
     if (node.card) this.checkListCard(node.card, `${path}.card`, fields);
+    // Its rows' own rules, as a list's, each read on the row's record: its own fields, its id, the person, the context.
+    const row: Scope = { fields };
+    node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], row));
+    this.checkModifiers(node, path, ['rowBold'], row);
+    node.rowButtons?.forEach((button, i) => {
+      this.claim(button.id, `${path}.rowButtons[${i}]`);
+      this.checkPress(button, `${path}.rowButtons[${i}]`);
+      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], row);
+    });
     const link = has(fields, node.field) ? fields[node.field] : undefined;
     if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
       this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);

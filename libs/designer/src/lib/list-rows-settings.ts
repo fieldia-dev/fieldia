@@ -1,6 +1,7 @@
-import type { ButtonNode, ListNode, Page, Tone, ToneWhen } from '@fieldia/core';
+import type { ButtonNode, ListNode, Modifier, Page, Tone, ToneWhen } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import type { RowRulesPatch } from './list-commands';
 import { formulaProblem } from './rules-formula';
 import { formulaBox, type FormulaBox } from './rules-formula-box';
 
@@ -9,19 +10,42 @@ import { formulaBox, type FormulaBox } from './rules-formula-box';
  * holds (the first that holds), its words in bold while one does, and the
  * buttons on each row — their words, the app's action and when each is hidden
  * — as a table of lines sets its own (table-panel.ts), read on the row's
- * record.
+ * record. A related list's panel has the same, read on its own records.
  */
 
 const TONES: Tone[] = ['danger', 'warning', 'success', 'info', 'muted'];
 const listOf = (page: Page) => page.layout as ListNode;
 
+/** Rows' own rules as a list holds them: a list page's list, or a related list. */
+interface RowRules {
+  rowTones?: ToneWhen[];
+  rowBold?: Modifier;
+  rowButtons?: ButtonNode[];
+}
+
+/** Where a list's rows' own rules are kept, and what their conditions read. */
+export interface RowsSource {
+  /** Its rules as the page holds them. */
+  rules(page: Page): RowRules;
+  /** Its rules changed; false where the change was refused. */
+  set(patch: RowRulesPatch): boolean;
+  /** A page whose fields are its records': the list page itself, or one of a related list's own fields. */
+  reads(page: Page): Page;
+}
+
+/** A list page's rows in its panel. */
 export function rowsSection(el: ElementFactory, designer: Designer) {
+  return rowSettings(el, designer, { rules: (page) => listOf(page), set: (patch) => designer.setListOptions(patch), reads: (page) => page });
+}
+
+/** Rows' own rules — tones, bold and buttons, read on each row's record — over where they are kept. */
+export function rowSettings(el: ElementFactory, designer: Designer, source: RowsSource) {
   const words = designer.words;
   const w = words.tables;
   const own = words.list.rows;
   const page = () => designer.getPage();
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const list = () => listOf(page());
+  const list = () => source.rules(page());
   const condition = (label: string, commit: (source: string) => void) => formulaBox(el, { words, label, placeholder: w.whenPlaceholder, check: (on, source) => formulaProblem(on, source, words), commit });
 
   // ---- each row's tone, the first that holds ----
@@ -29,7 +53,7 @@ export function rowsSection(el: ElementFactory, designer: Designer) {
   const addTone = el('button', { type: 'button', class: 'fd-button fd-button-link fd-table-add-tone' }, w.addTone);
   let drafting = false;
   const toneRows: { element: HTMLElement; tone: HTMLSelectElement; when: FormulaBox }[] = [];
-  const saveTones = (tones: ToneWhen[]) => designer.setListOptions({ rowTones: tones.length ? tones : null });
+  const saveTones = (tones: ToneWhen[]) => source.set({ rowTones: tones.length ? tones : null });
   addTone.addEventListener('click', () => {
     drafting = true;
     drawTones();
@@ -68,21 +92,21 @@ export function rowsSection(el: ElementFactory, designer: Designer) {
     toneRows.forEach((row, i) => {
       const item = items[i];
       if (!focused(row.tone)) row.tone.value = item?.tone ?? 'danger';
-      row.when.update(page(), item ? String(item.when) : row.when.input.value);
+      row.when.update(source.reads(page()), item ? String(item.when) : row.when.input.value);
     });
     tonesList.hidden = !count;
     addTone.hidden = drafting;
   }
 
   // ---- each row in bold while a condition holds ----
-  const bold = condition(w.boldWhen, (source) => designer.setListOptions({ rowBold: source || null }));
+  const bold = condition(w.boldWhen, (said) => source.set({ rowBold: said || null }));
   const boldRow = el('div', { class: 'fd-answer-rule-field fd-table-when' }, el('span', { class: 'fd-answer-rule-word' }, w.boldWhen), bold.element, bold.problem);
 
   // ---- the buttons on each row ----
   const buttonsList = el('ul', { class: 'fd-table-buttons', 'data-place': 'rowButtons' });
   const addButton = el('button', { type: 'button', class: 'fd-button fd-button-link' }, own.addButton);
   const plain = (buttons: ButtonNode[]) => buttons.map((b) => ({ id: b.id, label: b.label, ...(b.action ? { action: b.action } : {}), ...(typeof b.invisible === 'string' ? { invisible: b.invisible } : {}) }));
-  const saveButtons = (buttons: ReturnType<typeof plain>) => designer.setListOptions({ rowButtons: buttons.length ? buttons : null });
+  const saveButtons = (buttons: ReturnType<typeof plain>) => source.set({ rowButtons: buttons.length ? buttons : null });
   addButton.addEventListener('click', () => {
     saveButtons([...plain(list().rowButtons ?? []), { id: '', label: w.newButton }]);
     (buttonsList.lastElementChild?.querySelector('input') as HTMLInputElement | null)?.focus();
@@ -98,7 +122,7 @@ export function rowsSection(el: ElementFactory, designer: Designer) {
       label.addEventListener('input', () => label.value.trim() && change({ label: label.value }));
       const action = el('input', { class: 'fd-input fd-answer-rule-code', 'aria-label': w.action, spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
       action.addEventListener('change', () => change({ action: action.value.trim() }));
-      const hidden = condition(w.hiddenWhen, (source) => change({ invisible: source }));
+      const hidden = condition(w.hiddenWhen, (said) => change({ invisible: said }));
       const remove = iconButton(el, w.removeButton(items[index]?.label ?? ''), '×', () => saveButtons(plain(list().rowButtons ?? []).filter((_, i) => i !== index)));
       const element = el(
         'li',
@@ -115,7 +139,7 @@ export function rowsSection(el: ElementFactory, designer: Designer) {
       const item = items[i];
       if (!focused(row.label)) row.label.value = item.label;
       if (!focused(row.action)) row.action.value = item.action ?? '';
-      row.hidden.update(page(), typeof item.invisible === 'string' ? item.invisible : '');
+      row.hidden.update(source.reads(page()), typeof item.invisible === 'string' ? item.invisible : '');
       row.remove.setAttribute('aria-label', w.removeButton(item.label));
       row.remove.title = w.removeButton(item.label);
     });
@@ -135,8 +159,8 @@ export function rowsSection(el: ElementFactory, designer: Designer) {
     element,
     update(next: Page) {
       drawTones();
-      const said = listOf(next).rowBold;
-      bold.update(next, typeof said === 'string' ? said : '');
+      const said = source.rules(next).rowBold;
+      bold.update(source.reads(next), typeof said === 'string' ? said : '');
       drawButtons();
     },
   };

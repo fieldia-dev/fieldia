@@ -127,6 +127,24 @@ describe('a related list', () => {
     expect(found).toContain(`${at}.card.fields[0]: no field "due"`);
   });
 
+  it('takes its rows’ tones, bold and buttons, as a list does, read on its own records: their fields, their id, the person', () => {
+    const rules = {
+      rowTones: [{ tone: 'danger', when: "state == 'posted' and date < today()" }],
+      rowBold: 'user.id == 7',
+      rowButtons: [{ type: 'button', id: 'remind', label: 'Remind', action: 'remind', invisible: "state != 'posted' or id == 0" }],
+    };
+    expect(problems(customer(rules))).toEqual([]);
+    expect(RelatedNodeSchema.safeParse({ ...invoices, ...rules }).success).toBe(true);
+    // This page's fields are not its records': a condition reading one is refused, as one reading no field is.
+    const found = problems(customer({ rowTones: [{ tone: 'danger', when: 'company_id' }], rowBold: 'due', rowButtons: [{ type: 'button', id: 'remind', label: 'Remind', invisible: 'kind' }] })).join('\n');
+    expect(found).toMatch(/rowTones\[0\]\.when: .*"company_id"/);
+    expect(found).toMatch(/\.rowBold: .*"due"/);
+    expect(found).toMatch(/rowButtons\[0\]\.invisible: .*"kind"/);
+    expect(found).toContain(`${at}.rowButtons[0]: a button needs steps, an action, or both`);
+    // Its buttons' ids are the page's, once.
+    expect(problems(customer({ rowButtons: [{ type: 'button', id: 'f-company', label: 'Remind', action: 'remind' }] })).join('\n')).toMatch(/rowButtons\[0\].*f-company/);
+  });
+
   it('points at this record by a link of its records to this model, where its fields name the link', () => {
     expect(problems(customer({ fields: { ...invoices.fields, partner_id: { type: 'many2one', label: 'Vendor', relation: 'supplier' } } })).join('\n')).toContain(
       `${at}.field: "partner_id" links to supplier; the records listed point at this one by a many2one to partner`

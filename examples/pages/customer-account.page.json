@@ -155,6 +155,9 @@
           }
         },
         "card": { "title": "name", "status": "state", "lead": true, "fields": ["amount", "invoice_date", "due_date"] },
+        "rowTones": [{ "tone": "danger", "when": "state == 'sent' and due_date < today()" }],
+        "rowBold": "state == 'draft'",
+        "rowButtons": [{ "type": "button", "id": "invoice-remind", "label": "Send a reminder", "icon": "mail", "action": "send_reminder", "invisible": "state != 'sent'" }],
         "sort": [
           {
             "field": "invoice_date",

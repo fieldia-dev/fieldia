@@ -716,7 +716,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // part (copy, timer, 2.8) — 512.84 measured at 0.24.0, 485.55 after: 27.3 less, to 485.6.
 // The size pass joined with Wave 3 for 0.25, measured in the merged build: 512.84 at 0.24.0, 509.23 now — 3.6 less
 // (Wave 3's 23.64 more and the size pass's 27.29 less, their sum to a twentieth), to 509.3.
-const BUDGET_KB = 509.3;
+// A related list's rows' tones, bold and buttons, as a list's (their schema, their page check on its own records'
+// fields, its row buttons among the form's, a record read with another model's fields): 509.23 measured before,
+// 509.67 after — 0.4 more, to 509.7.
+const BUDGET_KB = 509.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -877,8 +880,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // every box, cell and value at rest writes a date and time with them.)
 // The size pass joined with Wave 3 for 0.25 (listed with the raw budget above): 167.12 at 0.24.0, 164.53 now — 2.6
 // less (Wave 3's 7.00 more, the size pass's 9.25 less: 0.34 under their sum, gzip finding more alike in one file), to
-// 164.6.
-const GZIP_BUDGET_KB = 164.6;
+// 164.6. A related list's rows' own rules: 164.61 after, to 164.7.
+const GZIP_BUDGET_KB = 164.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1215,8 +1218,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The size pass joined with Wave 3 for 0.25, measured in the merged build: lines 36.89 and 12.52 (a one2many's cards,
 // a block pasted, and their rules for paper — to 36.9 and 12.6); business 29.91 and 10.90 (a value to copy and a timer
 // with the statusbar's rules for paper — to 30.0 and 10.9); choice 10.59 and 4.31 and the new relations 19.58 and 7.34
-// as the size pass set them; the rest as Wave 3's above.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.2, 31.7], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
+// as the size pass set them; the rest as Wave 3's above. A related list's rows' tones, bold and buttons handed to its
+// list: list 98.29 and 31.71, to 98.3 and 31.8.
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.3, 31.8], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

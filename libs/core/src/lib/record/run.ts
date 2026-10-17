@@ -32,7 +32,7 @@ export interface ActionRequest {
   params?: { [key: string]: JsonValue };
   recordId: RecordId | null;
   values: Values;
-  /** The records chosen in a list, when the button belongs to one. */
+  /** The records chosen in a list, when the button belongs to one; a related list's row button's one record (of its `model`). */
   recordIds?: RecordId[];
   /** The line a button on a table's line was pressed on: the table's field, the line's key and values. */
   line?: { field: string; key: string; values: Values };

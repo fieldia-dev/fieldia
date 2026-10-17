@@ -14,7 +14,7 @@ const CUSTOMER = `page=customer-account&record=1&skin=underline&${NOW}`;
 const PROPERTY = `page=property&record=1&skin=underline&${NOW}`;
 
 type Link = { id: number; label: string };
-type Invoice = { name: string; partner_id: Link; invoice_date: string; state: string; amount: number };
+type Invoice = { name: string; partner_id: Link; invoice_date: string; due_date: string; state: string; amount: number };
 type Quotation = { name: string; partner_id: Link; date: string; state: string };
 type Viewing = { starts_at: string; home_id: Link; client: string; state: string };
 const records = async <T>(page: Page, model: string) => Object.entries(await page.evaluate((m) => (window as any).fieldiaDemo.dataSource.records[m], model)).map(([id, values]) => ({ id: Number(id), ...(values as T) }));
@@ -194,6 +194,33 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await page.emulateMedia({ media: 'screen' });
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
     await expect(shown).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
+  test('its rows as a list’s: an overdue invoice in red, a draft in bold, Send a reminder on one sent — given that invoice alone', async ({ page }) => {
+    const { problems, demo } = await open(page, 'plain', CUSTOMER);
+    const mine = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1).sort(latestFirst).slice(0, 5);
+    // Today as the form counts it: the overdue are those sent and due before it.
+    const today = await page.evaluate(() => (window as any).fieldiaDemo.handle.form.today() as string);
+    const invoices = part(page, 'invoices');
+    await expect(rows(invoices)).toHaveCount(5);
+    const overdue = (invoice: Invoice) => invoice.state === 'sent' && invoice.due_date < today;
+    for (const [i, invoice] of mine.entries()) {
+      const row = rows(invoices).nth(i);
+      if (overdue(invoice)) await expect(row).toHaveAttribute('data-tone', 'danger');
+      else await expect(row).not.toHaveAttribute('data-tone', /.+/);
+      if (invoice.state === 'draft') await expect(row).toHaveAttribute('data-bold', '');
+      else await expect(row).not.toHaveAttribute('data-bold', /.*/);
+      await expect(row.getByRole('button', { name: 'Send a reminder' })).toHaveCount(invoice.state === 'sent' ? 1 : 0);
+    }
+    expect(mine.some(overdue) || mine.some((invoice) => invoice.state === 'draft'), 'the demo’s first five show a tone or a bold').toBe(true);
+    const sent = mine.findIndex((invoice) => invoice.state === 'sent');
+    expect(sent, 'one of the first five is sent').toBeGreaterThanOrEqual(0);
+    await rows(invoices).nth(sent).getByRole('button', { name: 'Send a reminder' }).click();
+    await expect.poll(() => demo<{ action: string; recordId?: unknown; recordIds?: unknown[] }[]>('requests').then((requests) => requests.at(-1))).toEqual(expect.objectContaining({ action: 'send_reminder', recordId: 1, recordIds: [mine[sent].id] }));
+    // Its press is the button's, never its row's: no invoice opened.
+    await expect(dialog(page)).toHaveCount(0);
+    await screen(page, 'related-invoices-rows');
     expect(problems).toEqual([]);
   });
 

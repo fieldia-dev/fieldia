@@ -167,6 +167,7 @@ export const DEMOS = [
     blurb: 'Another kind of record listed inside this one: the customer’s invoices under its details, its quotations in a tab — a page at a time, searched, sorted and counted, their total under them, New making one for this customer, and View all opening the invoices list kept to this customer.',
     howTo: [
       'Under the details, Invoices says how many this customer has, and lists the latest five, their total under them.',
+      'An invoice sent and past its due date is in red, a draft in bold; one sent has Send a reminder on its row: the app is given that invoice alone.',
       'Press › beside the pager for the next five, or type “paid” in the search and pick Search Status for: paid.',
       'Click Amount’s header: the invoices in their amount’s order.',
       'Press New: a new invoice opens in a dialog, its customer filled in. Give it a number and an amount and save: it is in the list, and the count is one more.',

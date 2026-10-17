@@ -246,7 +246,8 @@ export function listView(context: ListContext): ListView {
   const cells = listCells({ page, node, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) });
   const show = cells.words;
   /** Each row's own tone, bold and buttons, read on its record as the form reads one — the person among it; a button's roles the form's. */
-  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values), () => form.today(), (button) => !form.node(button.id).invisible);
+  // A row's record read as the form reads one, of this list's fields: a related list's are its own records'.
+  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values, page.fields), () => form.today(), (button) => !form.node(button.id).invisible);
   /** The cards part, which the page waited for where the list has cards (on a phone, `card`) or a gallery; where it could not come, a table. */
   const cards = node.card || node.gallery ? cardsPart.loaded : undefined;
   /** What a record's card shows. */

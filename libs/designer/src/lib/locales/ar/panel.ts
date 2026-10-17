@@ -147,6 +147,7 @@ const NAMES: Record<string, string> = {
   'Captcha drawn in': 'اختبار كابتشا يُرسم في',
   'Records of': 'سجلات من',
   'Cards on a phone': 'بطاقات على الهاتف',
+  'Row tones and buttons': 'ألوان الصفوف وأزرارها',
   'Their link to this record': 'رابطها بهذا السجل',
   'Rows a page': 'الصفوف في الصفحة',
   New: 'جديد',
