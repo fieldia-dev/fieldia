@@ -60,6 +60,9 @@ ${code(
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
+    <tr><td>${c('card')} · ${c('gallery')}</td><td>Each record as a card where the list is as narrow as a phone, and a gallery of cards on the switcher on any width: see <a href="#shape">cards, a gallery, and columns people shape</a>.</td></tr>
+    <tr><td>${c('optionalColumns')}</td><td>The columns a person may hide, each ${c('"show"')} or ${c('"hide"')} at first: a Columns menu in the header to show, hide and order them, a header's edge to size them, kept for each person — see <a href="#shape">columns people shape</a>.</td></tr>
+    <tr><td>${c('rowTones')} · ${c('rowBold')} · ${c('rowButtons')}</td><td>Each row's tone and bold while a condition on its record holds, and buttons on each row, each shown by a condition on it, pressed with that record alone: see <a href="#shape">richer rows</a>.</td></tr>
   </tbody>
 </table>
 <p>A list shows records, so its page's ${c('data')} is a record's: the page check refuses a list of responses, and a column, a sort, a search field or a group that names no field.</p>
@@ -171,6 +174,33 @@ ${code(
 }`
 )}
 <p>A field one value cannot set — links of many, a table of lines, files, a read-only or worked-out field — is never offered, and the page check refuses one named. The fields a ${c('bulkEdit')} of ${c('true')} offers are ${c('bulkEditFields(page, list)')} from ${c('@fieldia/core')}. <a href="/demos/plain/?page=contacts&skin=underline">Try it on 1,284 contacts</a>.</p>
+
+<h2 id="shape">Cards, a gallery, and columns people shape</h2>
+<p><strong>On a phone, cards.</strong> With ${c('card')}, a list's rows become cards where the list is 520px wide or less: the record's title, a picture — or the person's initials where there is none — a few lines and its status as a pill, each by field. ${c('"card": {}')} takes them all from the columns: the name as the title, the first picture column as the photo, the first column drawn as a pill or a dot as the status, the next three as lines. A card is its row: its box ticks it (and the header's box, <em>Select all</em>, every card), a press opens it, its own buttons are under it, its tone is on its edge, the Group By headings run across the cards and the totals stay in sight under them as they scroll — an invoice on a phone shows its amount and its status, and the list's total with it.</p>
+<p><strong>A gallery, on any width.</strong> With ${c('gallery')}, the switcher offers <em>Gallery</em>: the same rows as cards side by side, their pictures large — homes, products, people. ${c('"opens": "gallery"')} opens the list on it; ${c('"size"')} is ${c('small')}, ${c('medium')} (unless said) or ${c('large')}. The arrow keys move along a line of cards and to the card above or below.</p>
+${code(
+  'json',
+  `
+{
+  "type": "list", "id": "homes", "columns": ["photo", "name", "offer", "price", "bedrooms", "district"],
+  "cells": { "photo": { "widget": "image" }, "offer": { "widget": "badge", "options": { "tones": { "sale": "success", "rent": "info" } } } },
+  "card": {
+    "title": "name", "image": "photo", "status": "offer", "labels": false, "lead": true,
+    "fields": ["price", ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }]]
+  },
+  "gallery": { "opens": "gallery" },
+  "rowButtons": [{ "type": "button", "id": "book", "label": "Book a viewing", "icon": "calendar", "action": "book_viewing" }]
+}`
+)}
+<p><strong>Richer rows.</strong> A column's cells may be drawn as a pill (${c('"widget": "badge"')}, in ${c('options.tones')} or ${c('options.colours')} by value, as a dot is), links as chips (${c('tags')}), a picture's thumbnail (${c('image')}) or a round one with a person's initials where there is none (${c('avatar')}), a number as a bar (${c('progressbar')}, of ${c('options.max')}, 100 unless said), hours and per cents as a table's cells write them (${c('duration')}, ${c('percentage')}), and a phone with a call and a WhatsApp link (${c('"widget": "phone", "options": { "links": true }')}). Each row takes a tone while a condition on its record holds, the first that holds (${c('rowTones')}), its words in bold while one does (${c('rowBold')}), and buttons of its own (${c('rowButtons')}): each shown by its ${c('invisible')} read on the row's record, a press running its steps with that record alone (${c('recordIds')}: its id), never opening it.</p>
+<p><strong>Columns people shape.</strong> With ${c('optionalColumns')} — the columns a person may hide, each ${c('"show"')} or ${c('"hide"')} as the list opens — the header's end has a <em>Columns</em> menu: a box to show or hide each of those, Move up and Move down (or Alt with an arrow) for every column, and Reset. A header's edge drags to size its column, and its grip takes the arrow keys; twice on it, the page's width again. The header and the first column stay in view as the rows scroll, down and sideways. What the person chose is kept in the viewer's ${c('preferences')} — the browser's storage, unless the app gives a store of its own — by page and list, as ${c('[{ colId, width, hide }]')} in their order, as a table of lines keeps its columns; a column the page has added since takes its place, one it took away is let go. Export writes the columns shown, in their order.</p>
+${code(
+  'json',
+  `
+{ "type": "list", "id": "contacts", "columns": ["name", "company", "country_id", "state", "phone", "email"],
+  "optionalColumns": { "company": "show", "country_id": "show", "phone": "hide", "email": "hide" } }`
+)}
+<p>The cards and the gallery come in a part of their own (${c('fieldia.cards.js')}), and so do the columns a person shapes (${c('fieldia.columns.js')}): a list that asks for neither loads neither. In the designer: a list's Rows, Cards and gallery in its panel; a column's way of drawing, its links and whether people may hide it in the column's. <a href="/demos/plain/?page=homes-gallery&skin=underline">Homes as a gallery</a> · <a href="/demos/plain/?page=contacts&skin=underline">contacts whose columns you shape</a> (narrow the window: cards).</p>
 
 <h2 id="map">On a map</h2>
 <p>With ${c('map')}, a list shows its records on a map as well, drawn by ${c('@fieldia/map')} on the provider the app chooses. The map and the table share one search and one choice: a pin lights its row and a row its pin, a home chosen on its card is ticked in the table, and the list's buttons act on it. A pin opens a card with the record's picture, a few of its fields, a box to choose it and a button to open it; pins that crowd become a bubble with their count. Once the map is moved, <em>Search this area</em> puts the area into the search bar as a search of its own; the map's own tools draw one instead — a polygon, a box or a circle, by mouse, finger or keys — searched as <em>In the area drawn</em>.</p>
