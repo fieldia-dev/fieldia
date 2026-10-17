@@ -1,4 +1,4 @@
-import { createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -53,6 +53,7 @@ import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
+import { customerCardPage, duplicateCustomers } from './duplicates';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -65,6 +66,8 @@ export const pages: Record<string, Page> = {
   // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
   contacts: contacts as Page,
   contact: contactPage,
+  // A customer's card that says the customers it may duplicate, and merges two: shared/duplicates.ts.
+  'customer-card': customerCardPage,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -366,6 +369,8 @@ export function sampleDataSource() {
     lists: appLists,
     // A test drive's free times, from the showroom's schedule, on the demos' clock (shared/test-drive.ts).
     slots: scheduleSlots({ showroom: showroom() }, { now: demoNow }),
+    // Records like the one typed — the same phone, email or tax id, a name close enough — for a page with `duplicates`.
+    duplicates: alikeRecords(),
     attachments: billAttachments(),
     // What this person may do with a contact: Karim's are his own, a blocked one's status the credit team's.
     can: { 'crm.contact': contactPermissions },
@@ -608,6 +613,8 @@ export function sampleDataSource() {
   if (params.get('store') === 'none') delete (source as { upload?: unknown }).upload;
   // The contacts' source as the address asks: ids cut short or none, no bulk writing, an export on the server.
   contactsAsAsked(params, source);
+  // The customer's card: a second Nile Traders, someone else's, to find and merge (shared/duplicates.ts).
+  if (params.get('page') === 'customer-card') Object.assign(source.records['partner'], duplicateCustomers());
   return source;
 }
 

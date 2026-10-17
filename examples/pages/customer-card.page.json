@@ -1,0 +1,51 @@
+{
+  "fieldia": "0.3",
+  "id": "customer-card",
+  "title": "Customer",
+  "data": { "kind": "record", "model": "partner" },
+  "phone": { "country": "EG" },
+  "duplicates": { "fields": ["name", "phone", "email", "vat"] },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "email": { "type": "char", "label": "Email" },
+    "vat": { "type": "char", "label": "Tax ID", "help": "The customer’s tax registration number." },
+    "website": { "type": "char", "label": "Website" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "country" },
+    "city": { "type": "char", "label": "City" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "placeholder": "Customer’s name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "card",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
+          { "type": "field", "id": "f-vat", "field": "vat" },
+          { "type": "field", "id": "f-website", "field": "website", "widget": "url" },
+          { "type": "field", "id": "f-city", "field": "city" },
+          { "type": "field", "id": "f-country", "field": "country_id" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Customer": "عميل",
+      "Customer’s name": "اسم العميل",
+      "Name": "الاسم",
+      "Phone": "الهاتف",
+      "Email": "البريد الإلكتروني",
+      "Tax ID": "الرقم الضريبي",
+      "The customer’s tax registration number.": "رقم التسجيل الضريبي للعميل.",
+      "Website": "الموقع الإلكتروني",
+      "Country": "الدولة",
+      "City": "المدينة"
+    }
+  }
+}
