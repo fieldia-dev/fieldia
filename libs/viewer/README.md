@@ -496,7 +496,7 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 174 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 165 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates… — comes in 20 parts
 beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
@@ -513,7 +513,7 @@ each loaded from the same folder the first time a page uses it:
 ```
 
 Its own words are English. For Arabic, German or French, add that language's
-script after it (about 8–10 KB gzipped each), then pass `locale`:
+script after it (about 10–12 KB gzipped each), then pass `locale`:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

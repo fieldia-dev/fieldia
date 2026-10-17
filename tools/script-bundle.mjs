@@ -714,8 +714,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // choice's search box and several answers as tags in the choice part (choice-tags, 4.7); a one2many's cards with their
 // rules in the lines part (cards, line-moves, 4.6); a value to copy and a live timer with their rules in the business
 // part (copy, timer, 2.8) — 512.84 measured at 0.24.0, 485.55 after: 27.3 less, to 485.6.
-// The size pass joined with Wave 3 for 0.25: provisional until every lane is in; set once from the merged build.
-const BUDGET_KB = 536.5;
+// The size pass joined with Wave 3 for 0.25, measured in the merged build: 512.84 at 0.24.0, 509.23 now — 3.6 less
+// (Wave 3's 23.64 more and the size pass's 27.29 less, their sum to a twentieth), to 509.3.
+const BUDGET_KB = 509.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -874,8 +875,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // asking for the choice part only where a long choice may be, 0.2 back, to 157.87 — 9.3 less, to 157.9. (0.24's time
 // zone code stays: its clock and its reader are what `Fieldia.wallTime`, `readDate` and `readDateText` give, and
 // every box, cell and value at rest writes a date and time with them.)
-// The size pass joined with Wave 3 for 0.25: provisional until every lane is in; set once from the merged build.
-const GZIP_BUDGET_KB = 174.2;
+// The size pass joined with Wave 3 for 0.25 (listed with the raw budget above): 167.12 at 0.24.0, 164.53 now — 2.6
+// less (Wave 3's 7.00 more, the size pass's 9.25 less: 0.34 under their sum, gzip finding more alike in one file), to
+// 164.6.
+const GZIP_BUDGET_KB = 164.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1209,8 +1212,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // with their own sheet, and the lines' moves they share (lines 29.9, 10.2: 23.88 and 8.28 before, 29.82 and 10.13
 // after); a value to copy and a live timer with their rules (business 29.6, 10.9: 26.60 and 9.82 before, 29.56 and
 // 10.83 after).
-// The size pass joined with Wave 3 for 0.25: provisional until every lane is in; set once from the merged build.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.2, 31.7], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.0, 12.6], business: [30.0, 11.0], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
+// The size pass joined with Wave 3 for 0.25, measured in the merged build: lines 36.89 and 12.52 (a one2many's cards,
+// a block pasted, and their rules for paper — to 36.9 and 12.6); business 29.91 and 10.90 (a value to copy and a timer
+// with the statusbar's rules for paper — to 30.0 and 10.9); choice 10.59 and 4.31 and the new relations 19.58 and 7.34
+// as the size pass set them; the rest as Wave 3's above.
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.2, 31.7], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1401,10 +1407,10 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Its Import, in the bar without its part; pressed, the import part comes, its dialog and its sheet with it.
   const importing = host.querySelector('.fd-list-import-button');
   if (!importing || importing.hidden) throw new Error('in a page, a list that asks for Import does not offer it');
-  hasIn('contacts with Import in their bar', 'cards, columns, list, phone');
+  hasIn('contacts with Import in their bar', 'cards, columns, list, phone, relations');
   importing.click();
   if (!(await until(() => doc.querySelector('.fd-import .fd-import-drop')))) throw new Error("in a page, Import's dialog is not drawn from its part");
-  hasIn('Import pressed', 'cards, columns, import, list, phone');
+  hasIn('Import pressed', 'cards, columns, import, list, phone, relations');
   if (!doc.getElementById('fieldia-import-styles')) throw new Error("in a page, Import's sheet is not put in");
   doc.querySelector('.fd-import .fd-dialog-close').click();
   if (doc.querySelector('.fd-import')) throw new Error("in a page, Import's dialog is not taken away as it closes");
@@ -1413,7 +1419,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Homes as a gallery: the cards part already in, the list opening on its cards.
   const homes = inPage.mountViewer(host, { page: read('homes-gallery.page.json'), dataSource: inPage.createMemoryDataSource({ records: { home: { 1: { name: 'Nile view flat', offer: 'sale', price: 4500000, currency: 'EGP' } } } }) });
   await homes.drawn;
-  hasIn('homes as a gallery', 'cards, columns, import, list, phone');
+  hasIn('homes as a gallery', 'cards, columns, import, list, phone, relations');
   if (host.querySelector('.fd-list')?.getAttribute('data-as') !== 'gallery' || !(await until(() => host.querySelector('.fd-list-card')))) throw new Error('in a page, a gallery does not open on its cards');
   homes.destroy();
   gone('homes');
@@ -1425,7 +1431,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
     dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } }, invoice: { ...invoiced, 3: { ...invoiced[1], name: 'INV/3', partner_id: { id: 1, label: 'Nile Traders' } } } } }),
   });
   await account.drawn;
-  hasIn('a customer with its invoices', 'cards, columns, import, list, phone');
+  hasIn('a customer with its invoices', 'cards, columns, import, list, phone, relations');
   if (!(await until(() => host.querySelector('[data-node="invoices"] .fd-list-row')))?.textContent.includes('INV/3') || host.querySelectorAll('[data-node="invoices"] .fd-list-row').length !== 1) throw new Error(`in a page, a related list does not list the records that point at its record: ${host.querySelector('[data-node="invoices"]')?.textContent ?? 'no related list'}`);
   if (!host.querySelector('[data-node="invoices"] .fd-list-row .fd-list-card .fd-list-card-title')) throw new Error("in a page, a related list's rows carry no card for a phone");
   account.destroy();
@@ -1512,7 +1518,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, quiet, slots, survey, text, themes');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, quiet, relations, slots, survey, text, themes');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
