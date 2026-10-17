@@ -43,6 +43,7 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-tail > .fd-list-row-button + .fd-list-row-button { margin: 0; }
 .fd-list-card-photo { position: relative; flex: none; overflow: hidden; border-radius: 8px; background: var(--fd-page); }
 .fd-list-card-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fd-list-card-initials::before { content: attr(data-initials); }
 .fd-list-card-initials { display: grid; place-items: center; width: 100%; height: 100%; color: var(--fd-accent); font-weight: 600; }
 .fd-list-card-photo[data-empty] { background: var(--fd-accent-soft); }
 .fd-list-card-body { display: grid; flex: 1; gap: 3px; min-width: 0; align-content: start; }

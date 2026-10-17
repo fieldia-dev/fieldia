@@ -1003,22 +1003,31 @@ export function listView(context: ListContext): ListView {
 
   // ---- cards: on a phone where the list has them, and in its gallery on any width ----------
 
-  /** Whether the list is as narrow as a phone's (520px or less): its rows are cards there, where it has cards. */
-  let narrow = false;
+  const View = doc.defaultView as (Window & typeof globalThis) | null;
+  /**
+   * Whether the list is as narrow as a phone's (520px or less): its rows are cards there, where it has cards. As narrow
+   * as the window, at first — a phone's list is drawn as cards from its first frame — then as wide as it is measured.
+   */
+  let narrow = !!node.card && !!View && View.innerWidth > 0 && View.innerWidth <= NARROW;
   /** The rows as cards — a gallery's, or a narrow list's — or as a table. */
   function drawMode() {
     const as = view === 'gallery' ? 'gallery' : node.card && spec && narrow ? 'cards' : null;
     if (as) element.setAttribute('data-as', as);
     else element.removeAttribute('data-as');
   }
-  const View = doc.defaultView as (Window & typeof globalThis) | null;
+  /** As wide as it was last measured: drawn so at the next frame, never while the browser tells of sizes (its loop said). */
+  let measured = narrow;
   const widths = node.card && spec && View?.ResizeObserver
     ? new View.ResizeObserver(([entry]) => {
         // A list put away (its tab not shown) is no narrower than it was.
         const width = entry.contentRect.width;
-        if (!width || narrow === width <= NARROW) return;
-        narrow = width <= NARROW;
-        drawMode();
+        if (!width || measured === width <= NARROW) return;
+        measured = width <= NARROW;
+        View.requestAnimationFrame(() => {
+          if (destroyed || narrow === measured) return;
+          narrow = measured;
+          drawMode();
+        });
       })
     : null;
 

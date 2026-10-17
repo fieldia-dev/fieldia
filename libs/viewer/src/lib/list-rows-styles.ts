@@ -10,6 +10,7 @@ export const LIST_ROW_STYLES = `
 .fd-list-chip { flex: none; padding: 0 8px; border-radius: 999px; background: var(--fd-accent-soft); color: var(--fd-text); font-size: 12.5px; line-height: 20px; white-space: nowrap; }
 .fd-list-thumb { display: inline-block; width: 48px; height: 32px; object-fit: cover; border-radius: 4px; vertical-align: middle; background: var(--fd-page); }
 .fd-list-avatar { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
+.fd-list-initials::before { content: attr(data-initials); }
 .fd-list-initials { background: color-mix(in srgb, hsl(var(--fd-face, 210) 55% 50%) 20%, var(--fd-surface)); color: color-mix(in srgb, hsl(var(--fd-face, 210) 60% 32%) 75%, var(--fd-text)); font-size: 11.5px; font-weight: 600; line-height: 1; }
 .fd-list-table td:has(> .fd-list-thumb, > .fd-list-avatar, > .fd-list-person) { padding-block: 3px; }
 .fd-list-person { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; vertical-align: middle; }

@@ -88,7 +88,7 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
       const img = el('img', { alt: '', loading: 'lazy', decoding: 'async' });
       img.src = source;
       photo.append(img);
-    } else photo.append(el('span', { class: 'fd-list-card-initials', 'aria-hidden': 'true' }, cells.initials(title)));
+    } else photo.append(el('span', { class: 'fd-list-card-initials', 'aria-hidden': 'true', 'data-initials': cells.initials(title) }));
     parts.push(photo);
   }
   const status = spec.status ? cells.pill(spec.status, values) : null;

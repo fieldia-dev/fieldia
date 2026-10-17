@@ -112,7 +112,8 @@ export function listCells(context: CellsContext): Cells {
     }
     const whose = said || named;
     if (!round || !whose) return said ? [el('bdi', {}, said)] : [];
-    const face = el('span', { class: 'fd-list-avatar fd-list-initials', 'aria-hidden': 'true' }, initials(whose));
+    // Drawn by the sheet, never in the cell's words: what is read or copied of the row is the name alone.
+    const face = el('span', { class: 'fd-list-avatar fd-list-initials', 'aria-hidden': 'true', 'data-initials': initials(whose) });
     face.style.setProperty('--fd-face', String(hueOf(whose)));
     return together(face);
   }

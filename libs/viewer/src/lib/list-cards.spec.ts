@@ -123,11 +123,13 @@ describe('a list’s richer rows', () => {
   it('draws a round picture with no picture as initials: the record’s for its own picture, a person’s beside their name', async () => {
     const host = await mount(withList({ columns: ['photo', 'name', 'agent'], cells: { photo: { widget: 'avatar' }, agent: { widget: 'avatar' } } }));
     const own = cellOf(rowOf(host, 'Maadi villa'), 'photo').querySelector('.fd-list-initials') as HTMLElement;
-    expect(own.textContent).toBe('MV');
+    expect(own.dataset['initials']).toBe('MV');
+    expect(own.textContent).toBe('');
     expect(own.getAttribute('aria-hidden')).toBe('true');
     const agent = cellOf(rowOf(host, 'Maadi villa'), 'agent');
-    expect(agent.querySelector('.fd-list-person .fd-list-initials')?.textContent).toBe('OS');
-    expect(agent.textContent).toBe('OSOmar Said');
+    expect(agent.querySelector<HTMLElement>('.fd-list-person .fd-list-initials')?.dataset['initials']).toBe('OS');
+    // The cell's words are the name alone: the initials are the sheet's to draw.
+    expect(agent.textContent).toBe('Omar Said');
     expect(cellOf(rowOf(host, 'Nile view flat'), 'photo').querySelector('img.fd-list-avatar')?.getAttribute('src')).toBe(SVG);
   });
 
@@ -215,7 +217,7 @@ describe('a list’s cards', () => {
     expect(card.querySelector('.fd-list-card-lines')?.getAttribute('data-labels')).toBe('hidden');
     expect(card.querySelector('.fd-list-card-lines')?.hasAttribute('data-lead')).toBe(true);
     // No photo: the title's initials in its place.
-    expect(rowOf(host, 'Maadi villa').querySelector('.fd-list-card-photo[data-empty] .fd-list-card-initials')?.textContent).toBe('MV');
+    expect(rowOf(host, 'Maadi villa').querySelector<HTMLElement>('.fd-list-card-photo[data-empty] .fd-list-card-initials')?.dataset['initials']).toBe('MV');
     // Back to the table.
     (switcher.querySelectorAll('button')[0] as HTMLButtonElement).click();
     expect(list(host).hasAttribute('data-as')).toBe(false);
@@ -259,12 +261,17 @@ describe('a list’s cards', () => {
     try {
       const host = await mount(withList({ card: {} }));
       expect(list(host).hasAttribute('data-as')).toBe(false);
+      // Drawn at the next frame, never while the browser tells of sizes.
+      const frame = () => new Promise((done) => requestAnimationFrame(done));
       told!([{ contentRect: { width: 390 } }]);
+      await frame();
       expect(list(host).dataset['as']).toBe('cards');
       // Put away (no width): as it was.
       told!([{ contentRect: { width: 0 } }]);
+      await frame();
       expect(list(host).dataset['as']).toBe('cards');
       told!([{ contentRect: { width: 900 } }]);
+      await frame();
       expect(list(host).hasAttribute('data-as')).toBe(false);
       // No gallery asked for: no switcher.
       expect((host.querySelector('.fd-list-views') as HTMLElement).hidden).toBe(true);
