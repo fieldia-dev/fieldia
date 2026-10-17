@@ -254,6 +254,7 @@ export const fr: ViewerLabels = {
   relatedNewOf: 'Nouveau dans {title}',
   relatedUnsaved: 'Rien ici tant que cet enregistrement n’est pas enregistré.',
   relatedNone: 'Aucun pour l’instant.',
+  relatedShown: '{n} sur {total}',
   actions: 'Actions',
   print: 'Imprimer',
   archive: 'Archiver',

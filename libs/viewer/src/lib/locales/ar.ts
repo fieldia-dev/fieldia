@@ -254,6 +254,7 @@ export const ar: ViewerLabels = {
   relatedNewOf: 'جديد في {title}',
   relatedUnsaved: 'لا شيء هنا حتى يُحفظ هذا السجل.',
   relatedNone: 'لا شيء بعد.',
+  relatedShown: '{n} من {total}',
   actions: 'إجراءات',
   print: 'طباعة',
   archive: 'أرشفة',

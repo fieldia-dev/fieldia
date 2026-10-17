@@ -254,6 +254,7 @@ export const de: ViewerLabels = {
   relatedNewOf: 'Neu in {title}',
   relatedUnsaved: 'Hier erscheint etwas, sobald dieser Datensatz gespeichert ist.',
   relatedNone: 'Noch keine.',
+  relatedShown: '{n} von {total}',
   actions: 'Aktionen',
   print: 'Drucken',
   archive: 'Archivieren',

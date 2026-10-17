@@ -251,10 +251,12 @@ export const LIST_STYLES = `
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-button { display: none; }
 /* ---- on paper --------------------------------------------------------------------------------------------------
-   Ctrl+P on a list: its rows as they stand, without its tools. Its Print: every record that matches in a sheet of its
-   own (list-print.ts), in the list's place, the list itself left out. */
-.fd-print-sheet { display: none; }
+   Ctrl+P on a list: its rows as they stand, without its tools (a related list's saying how many of how many). Its
+   Print: every record that matches in a sheet of its own (list-print.ts), in the list's place, the list left out. */
+.fd-print-sheet, .fd-list-shown { display: none; }
 @media print {
+  /* A related list's rows as shown, and how many of how many where they run past a page. */
+  .fd-form .fd-list-shown:not([hidden]) { display: block; margin: 4px 0 0; font-size: 12px; color: var(--fd-muted); }
   .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon { display: none !important; }
   .fd-form .fd-list-scroll { overflow: visible !important; }
   .fd-form .fd-list-table { width: 100%; }

@@ -3,11 +3,14 @@
  * its gallery on any width — their pictures, titles, pills and lines, the Group By headings across them and the totals
  * under them. Not ranked among the parts' sheets (PART_RANK): it is the list's, cut from it, and goes right after the
  * list's own sheet (fd-list-styles, itself after them all), as its rules reshape the list's table, a theme's table
- * (Fluent's, in the list's sheet) among it.
+ * (Fluent's, in the list's sheet) among it. On screen alone: a list printed from its cards, on a phone or in its
+ * gallery, prints as its table, its columns as shown — as its Print does.
  */
 export const CARD_STYLES = `
 /* A card's cell, the table's hidden; its words for the box in the header, a card's alone. */
 .fd-list-table .fd-list-card, .fd-list-check-words { display: none; }
+/* On screen alone: on paper a list is its table, its cards' and its gallery's rows printed as rows, as its Print's are. */
+@media not print {
 /* ---- cards: a narrow list's rows (card), and its gallery's on any width ---- */
 /* No longer a scroll box: as wide as the list, never as wide as the line of chips over the cards. */
 .fd-list[data-as] .fd-list-scroll { overflow: visible; min-width: 0; max-height: none; background: none; border: 0; border-radius: 0; padding: 0; }
@@ -91,6 +94,7 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-totals td:empty:not([title]) { display: none; }
 .fd-list[data-as] .fd-list-totals td[title]:empty::after { content: attr(title); color: var(--fd-muted); font-weight: 400; }
 .fd-list[data-as] .fd-list-totals td[data-label]::before { content: attr(data-label); margin-inline-end: 6px; color: var(--fd-muted); font-weight: 400; }
+}
 `;
 
 /** The cards' sheet in a document, once, right after the list's own. */

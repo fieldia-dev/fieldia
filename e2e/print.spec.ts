@@ -220,3 +220,70 @@ test.describe('a list of invoices printed', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('what is printed follows what is shown', () => {
+  const heads = (page: Page) => page.locator('.fd-list-table thead th[data-col]:visible');
+
+  test('Print on the contacts prints the columns the person shows, in their order, as Export writes them', async ({ page }) => {
+    const { problems } = await open(page, 'plain', `page=contacts&skin=underline&${NOW}`);
+    await expect(page.locator('.fd-list-table tbody tr.fd-list-row')).toHaveCount(10);
+    // Phone shown and moved up beside Name, Country hidden: as a person shapes them from the Columns menu.
+    await page.getByRole('button', { name: 'Columns' }).click();
+    const menu = page.getByRole('dialog', { name: 'Columns' });
+    await menu.getByLabel('Phone', { exact: true }).check();
+    await menu.getByLabel('Phone', { exact: true }).focus();
+    for (let i = 0; i < 7; i++) await page.keyboard.press('Alt+ArrowUp');
+    await menu.getByLabel('Country', { exact: true }).uncheck();
+    await page.keyboard.press('Escape');
+    const shown = ['Name', 'Phone', 'Company', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
+    await expect(heads(page)).toHaveText(shown);
+    await dialogOpen(page);
+    const print = page.getByRole('button', { name: 'Print' });
+    await print.click();
+    const sheet = page.locator('.fd-print-sheet');
+    await expect(sheet).toHaveCount(1);
+    await page.emulateMedia({ media: 'print' });
+    await expect(sheet.locator('thead th')).toHaveText(shown);
+    await expect(sheet.locator('.fd-print-about > div').last()).toHaveText('1,284 records');
+    // Each row's phone as people read it, where the list shows it.
+    await expect(sheet.locator('tbody td:nth-child(2)').filter({ hasText: /\S/ }).first()).toHaveText(/^\+\d/);
+    await printed(page);
+    await expect(sheet).toHaveCount(0);
+    await expect(print).not.toHaveAttribute('aria-busy', 'true');
+    expect(problems).toEqual([]);
+  });
+
+  test.describe('on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test('a list shown as cards prints as a table, by Ctrl+P and by its Print', async ({ page }) => {
+      const { problems } = await open(page, 'plain', `page=invoices&skin=underline&${NOW}`);
+      const list = page.locator('.fd-list');
+      await expect(list).toHaveAttribute('data-as', 'cards');
+      const row = page.locator('.fd-list-table tbody tr.fd-list-row').first();
+      await expect(row.locator('.fd-list-card')).toBeVisible();
+      // Ctrl+P: its rows as rows, its columns' cells, no card.
+      await printing(page);
+      await expect(row).toHaveCSS('display', 'table-row');
+      await expect(row.locator('.fd-list-card')).toBeHidden();
+      await expect(row.locator('td[data-col="name"]')).toBeVisible();
+      await expect(row.locator('td[data-col="amount"]')).toBeVisible();
+      await expect(page.locator('.fd-list-table thead th[data-col="amount"]')).toBeVisible();
+      await screen(page, 'print-invoices-from-cards', { viewport: true });
+      await printed(page);
+      await expect(row).not.toHaveCSS('display', 'table-row');
+      // Its Print: the printout's table, the list's columns.
+      await dialogOpen(page);
+      await page.getByRole('button', { name: 'Print' }).click();
+      const sheet = page.locator('.fd-print-sheet');
+      await expect(sheet).toHaveCount(1);
+      await page.emulateMedia({ media: 'print' });
+      await expect(sheet.locator('table.fd-print-table')).toHaveCSS('display', 'table');
+      await expect(sheet.locator('thead th')).toHaveText(['Number', 'Customer', 'City', 'Invoice date', 'Due date', 'Status', 'Amount']);
+      await printed(page);
+      await expect(sheet).toHaveCount(0);
+      expect(problems).toEqual([]);
+    });
+  });
+});
+

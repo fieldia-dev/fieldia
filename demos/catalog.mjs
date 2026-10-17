@@ -140,6 +140,7 @@ export const DEMOS = [
       'Search for a company, tick a few rows, press Edit, pick Owner and a person, then Update: say Yes to the question.',
       'Add &allIds=1000 to the address: “1,000 of 1,284 could be selected”, never “all”.',
       'Press Columns at the header’s end: tick Phone, move it up beside Name, and untick Country. Reload: the list is as you left it. Reset puts back the page’s.',
+      'Search for a company, then press Print: the contacts it finds on paper, in the columns you show, in their order — as Export writes them.',
       'Drag the edge of a header to make its column wider; scroll the list sideways: the names stay in view, the header over the rows.',
       'Narrow the window, or open the page on a phone: each contact is a card — a photo or their initials, their status as a pill, a phone with Call and WhatsApp.',
     ],

@@ -11,8 +11,9 @@ import { valueWords } from './value-words';
 /**
  * A list on paper (its bar's Print, `"print": true`): every record the
  * search finds — each page of them asked of the data source, as Export asks
- * for every match (`gather`) — the columns as the list shows them, each
- * value as its cell says it, under the list's Group By headings with their
+ * for every match (`gather`) — the columns as the list shows them (those a
+ * person chose, in their order, as Export writes them), each value as its
+ * cell says it, under the list's Group By headings with their
  * counts and their sums in their columns, the totals under them all; over
  * them the page's logo and words (its `print`), the list's title, its
  * filters in words, how many, and the day it was printed. In the list part.
@@ -31,6 +32,8 @@ export interface PrintList {
   fill: (template: string, values: Record<string, string | number>) => string;
   model: string;
   dataSource: DataSource;
+  /** The columns printed, in their order: those the list shows — the person's own (`optionalColumns`), as Export writes them. */
+  columns: string[];
   /** What is asked of each record: its columns, and what their words read (a currency). */
   reads: string[];
   /** A column's words for a record, as its cell says them. */
@@ -83,7 +86,7 @@ export interface Printout {
 export async function printout(list: PrintList, progress: (done: number, total: number) => void, most = PRINT_MOST): Promise<Printout> {
   const { el, labels, node, page } = list;
   const fields = page.fields;
-  const columns = node.columns;
+  const columns = list.columns;
   const number = (n: number) => formatNumber(n, 0, list.locale);
   let done = 0;
   let total = list.matching;

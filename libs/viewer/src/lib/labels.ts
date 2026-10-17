@@ -343,7 +343,8 @@ export interface ViewerLabels {
   pageMissing: string;
   /**
    * A related list inside a record (`related`): View all and New, named with its title where it has one (`{title}`),
-   * what it says before the record's first save, and with no records yet.
+   * what it says before the record's first save, and with no records yet; on paper, how many of how many it shows
+   * where they run past a page (`{n}` of `{total}`).
    */
   relatedAll: string;
   relatedAllOf: string;
@@ -351,6 +352,7 @@ export interface ViewerLabels {
   relatedNewOf: string;
   relatedUnsaved: string;
   relatedNone: string;
+  relatedShown: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
@@ -687,6 +689,7 @@ const en: ViewerLabels = {
   relatedNewOf: 'New in {title}',
   relatedUnsaved: 'Nothing here until this record is saved.',
   relatedNone: 'None yet.',
+  relatedShown: '{n} of {total}',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',

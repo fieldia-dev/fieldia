@@ -385,6 +385,8 @@ export function listView(context: ListContext): ListView {
   const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
   const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
+  // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
+  const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
 
   /** Mark the row of the record open, and only it. */
@@ -789,6 +791,10 @@ export function listView(context: ListContext): ListView {
     }
     // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
     range.textContent = fill(labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
+    if (shownOf) {
+      shownOf.hidden = rows.length >= total;
+      shownOf.textContent = fill(labels.relatedShown, { n: number(rows.length), total: number(total) });
+    }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
   }
@@ -1249,6 +1255,8 @@ export function listView(context: ListContext): ListView {
             fill,
             model,
             dataSource: source,
+            // As the person shows them, in their order: as Export writes them.
+            columns: shownColumns(),
             reads: fields,
             words: show,
             atEnd,
@@ -1455,7 +1463,7 @@ export function listView(context: ListContext): ListView {
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
-    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
+    el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   // Scrolled sideways, the first column kept in view is parted from those going under it.
   const scroller = element.querySelector('.fd-list-scroll') as HTMLElement;
