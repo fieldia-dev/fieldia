@@ -101,7 +101,8 @@ const placesFor = (n: number, field: number) => Math.max(field, Math.min(placesO
 
 /**
  * A value in a sheet's cell: a number, an amount and a day as numbers in the format the list reads them in — the
- * amount with its currency, as its cell writes it; yes or no in words; anything else as the list's cell says it.
+ * amount with its currency, as its cell writes it, a time on the clock the list shows it on; yes or no in words;
+ * anything else as the list's cell says it.
  */
 export function sheetCell(list: ExportList, name: string, values: Values): SheetCell {
   const def = list.fields[name];
@@ -119,9 +120,19 @@ export function sheetCell(list: ExportList, name: string, values: Values): Sheet
     const after = def.money?.at ? def.money.at === 'after' : !!where?.after;
     return { n: value, format: after ? `${number} ${literal(text)}` : `${literal(text)} ${number}` };
   }
-  if (typeof value === 'string' && (def.type === 'date' || def.type === 'datetime')) {
+  if (typeof value === 'string' && def.type === 'date') {
     const day = serialDay(value);
-    if (day !== null) return { n: day, format: def.type === 'date' ? 'd mmm yyyy' : 'd mmm yyyy hh:mm' };
+    if (day !== null) return { n: day, format: 'd mmm yyyy' };
+  }
+  // A time on the clock the list shows (its field's zone, else the browser's), as the CSV writes it: a sheet holds no
+  // zone, so the stored instant's own clock (UTC) would read hours off.
+  if (typeof value === 'string' && def.type === 'datetime') {
+    const at = new Date(value).getTime();
+    if (!Number.isNaN(at)) {
+      const wall = wallTime(at, def.timeZone);
+      const days = (Date.UTC(wall.year, wall.month - 1, wall.day) - Date.UTC(1899, 11, 30)) / 86400000;
+      return { n: days + (wall.hour * 60 + wall.minute) / 1440, format: 'd mmm yyyy hh:mm' };
+    }
   }
   return plainWords(list.words(name, values));
 }

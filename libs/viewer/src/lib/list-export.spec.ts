@@ -178,6 +178,18 @@ describe('a list’s export', () => {
     expect(files.get('xl/workbook.xml')).toContain('<sheet name="Contacts"');
   });
 
+  it('writes a time on the clock the list shows it on, in the workbook as in the CSV file: a sheet holds no zone', async () => {
+    // Seen at 05:30 UTC, in Tokyo (no summer time): 14:30 on the list's clock, and in both files.
+    const page = { ...contacts, fields: { ...contacts.fields, seen: { type: 'datetime', label: 'Last seen', timeZone: 'Asia/Tokyo' } } } as Page;
+    const records = { 1: { name: 'Nile Traders', state: 'customer', seen: '2026-10-15T05:30:00.000Z', orders: 1 } };
+    const host = await mount({ dataSource: createMemoryDataSource({ records: { contact: records } }) }, page);
+    const sheet = unzip(await bytes((await exportAs(host, 'xlsx')).blob as Blob)).get('xl/worksheets/sheet1.xml') as string;
+    const seen = Number(/<c r="D2"[^>]*><v>([^<]*)<\/v><\/c>/.exec(sheet)?.[1]);
+    expect(seen).toBeCloseTo(serialDay('2026-10-15 14:30:00') as number, 9);
+    const csv = await text((await exportAs(host, 'csv')).blob as Blob);
+    expect(csv.split('\r\n')[1]).toContain(',2026-10-15 14:30,');
+  });
+
   it('says how far it has got while it asks a page at a time, and that it is done', async () => {
     const said: string[] = [];
     const host = await mount({ host: { say: (message) => void said.push(message) } });
