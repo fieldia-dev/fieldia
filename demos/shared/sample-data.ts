@@ -171,6 +171,8 @@ export function pageFromQuery(params: URLSearchParams): Page {
   const labels = params.get('labels') as NonNullable<Page['look']>['labels'] | null;
   // A look for each kind of part, as JSON: `parts={"inputs":{"corners":"round"}}`.
   const parts = params.get('parts');
+  // A printout's words and logo over and under it, as JSON: `print={"footer":"Confidential · {name}"}`.
+  const print = params.get('print');
   return {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
@@ -178,6 +180,7 @@ export function pageFromQuery(params: URLSearchParams): Page {
     ...(scheme || labels || parts
       ? { look: { ...page.look, ...(scheme ? { scheme } : {}), ...(labels ? { labels } : {}), ...(parts ? { parts: JSON.parse(parts) } : {}) } }
       : {}),
+    ...(print ? { print: { ...page.print, ...JSON.parse(print) } } : {}),
   };
 }
 
@@ -664,7 +667,21 @@ export function sampleDataSource() {
   contactsAsAsked(params, source);
   // The customer's card: a second Nile Traders, someone else's, to find and merge (shared/duplicates.ts).
   if (params.get('page') === 'customer-card') Object.assign(source.records['partner'], duplicateCustomers());
+  // `?lines=40`: the posted invoice with that many lines, to see a long one on paper (e2e/print.spec.ts).
+  const lines = Number(params.get('lines'));
+  const posted = source.records['account.move']?.[4102];
+  if (lines > 0 && posted) posted['invoice_line_ids'] = longLines(posted['invoice_line_ids'], lines);
   return source;
+}
+
+/** A table's lines repeated to `count`, each its own: a long invoice's. */
+function longLines(given: unknown, count: number): unknown[] {
+  const lines = (given ?? []) as { key: string; id: number; values: Record<string, unknown> }[];
+  if (!lines.length) return lines;
+  return Array.from({ length: count }, (_, at) => {
+    const line = lines[at % lines.length];
+    return { key: `long${at}`, id: 49000 + at, values: { ...line.values, sequence: 10 * (at + 1), name: `${String(line.values['name'] ?? '')} (${at + 1})` } };
+  });
 }
 
 /** The samples' data source options with the real lanes' beside them: a model's records, rules and lists added to, never replaced. */

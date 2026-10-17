@@ -2,6 +2,8 @@ import { type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from './fixtures';
+import { squash } from './pdf-text';
+import { chromiumSheets, expectSheetsClean, firefoxSheets, headingsOf } from './print-support';
 import { open, screen } from './support';
 
 /**
@@ -164,6 +166,117 @@ test.describe('what is in front', () => {
     await page.emulateMedia({ media: 'screen' });
     await expect(page.locator('html')).not.toHaveClass(/\bfd-print-one\b/);
     await expect(behind).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('a record’s footer under every sheet, each heading with what follows it', () => {
+  // Sheets as each engine prints them, read (print-support.ts): Chromium's page.pdf, Firefox's own print to a file.
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit prints no PDF here: its layout for paper is checked below');
+  test.setTimeout(180_000);
+
+  const PAY = 'Pay by bank transfer to CIB, IBAN EG38 0010 0123 0000 0001 2345 6789, quoting INV/2026/00038. Thank you for your business.';
+  const FILE = 'Confidential: a file for its own people alone, kept by Zamalek Office Supplies S.A.E., 26 July Street, Cairo. Shred it after use.';
+  const footed = (query: string) => `${query}&print=${encodeURIComponent(JSON.stringify({ footer: FILE }))}`;
+  /** A block of `height` over the record: all of it pushed down the sheet, so its headings come to a sheet's foot. */
+  const pad = (height: number) => (page: Page) =>
+    page.evaluate((height) => {
+      const box = document.getElementById('print-pad') ?? Object.assign(document.createElement('div'), { id: 'print-pad' });
+      box.style.cssText = `height:${height}px;border:1px dashed #999;box-sizing:border-box`;
+      box.textContent = `${height}px over the record`;
+      // In the record's card, or over a page's groups or steps.
+      (document.querySelector('.fd-card') ?? document.querySelector('.fd-content > .fd-sections, .fd-content > div:not([hidden], .fd-print-end)'))?.prepend(box);
+    }, height);
+
+  /** Each print — the page, the block over it, its name — printed by this engine, its sheets read; its headings. */
+  async function sheetsOf(page: Page, browserName: string, playwright: Parameters<typeof firefoxSheets>[0], baseURL: string, prints: { query: string; name: string; pad?: number }[]) {
+    const { problems } = await open(page, 'plain', prints[0].query);
+    const headings = await headingsOf(page);
+    if (browserName === 'firefox') {
+      const all = await firefoxSheets(playwright, baseURL, prints.map(({ query, name, pad: height }) => ({ query, name: `firefox-${name}`, ...(height ? { before: pad(height) } : {}) })));
+      return { headings, all, problems };
+    }
+    const all: Awaited<ReturnType<typeof chromiumSheets>>[] = [];
+    for (const one of prints) {
+      if (one.query !== prints[0].query) await page.goto(`/plain/?${one.query}`);
+      if (one.pad) await pad(one.pad)(page);
+      all.push(await chromiumSheets(page, one.name));
+    }
+    return { headings, all, problems };
+  }
+
+  test('the invoice: its footer under each of its sheets, nothing under it, each tab with its first groups', async ({ page, browserName, playwright, baseURL }) => {
+    const { headings, all, problems } = await sheetsOf(page, browserName, playwright, baseURL!, [{ query: invoice(), name: 'print-footer-invoice' }]);
+    expect(headings).toEqual(expect.arrayContaining(['Invoice Lines', 'Journal Items', 'Currency Details', 'Other Info', 'Transaction Currency', 'Invoice']));
+    expect(all[0].length).toBeGreaterThanOrEqual(3);
+    expectSheetsClean(all[0], PAY, headings);
+    // The footer under each sheet, the head once, over the first.
+    const head = (line: { text: string }) => squash(line.text).includes(squash('Zamalek Office Supplies S.A.E.'));
+    expect(all[0].map((sheet) => sheet.lines.some(head))).toEqual(all[0].map((_, at) => at === 0));
+    expect(problems).toEqual([]);
+  });
+
+  test('pushed down a sheet a little at a time, the invoice leaves no heading alone at a sheet’s foot', async ({ page, browserName, playwright, baseURL }) => {
+    const pads = [80, 160, 240, 320, 400, 480, 560];
+    const { headings, all, problems } = await sheetsOf(page, browserName, playwright, baseURL!, pads.map((height) => ({ query: invoice(), name: `print-footer-invoice-${height}`, pad: height })));
+    all.forEach((sheets, at) => {
+      expect(sheets.length, `${pads[at]}px over it`).toBeGreaterThanOrEqual(3);
+      expectSheetsClean(sheets, PAY, headings);
+    });
+    expect(problems).toEqual([]);
+  });
+
+  test('a long invoice: its lines over several sheets, their header over them on each, its footer under each', async ({ page, browserName, playwright, baseURL }) => {
+    const { headings, all, problems } = await sheetsOf(page, browserName, playwright, baseURL!, [{ query: `${invoice()}&lines=40`, name: 'print-footer-long-invoice' }]);
+    const sheets = all[0];
+    expect(sheets.length).toBeGreaterThanOrEqual(5);
+    expectSheetsClean(sheets, PAY, headings);
+    // Every line, each once; on every sheet with lines, the table's header over the first of them.
+    const lines = sheets.flatMap((sheet) => sheet.lines.flatMap((line) => [...line.text.matchAll(/\((\d+)\)/g)].map((one) => one[1])));
+    expect(new Set(lines).size).toBe(40);
+    for (const [at, sheet] of sheets.entries()) {
+      const first = sheet.lines.findIndex((line) => /\(\d+\)/.test(line.text));
+      if (first < 0) continue;
+      expect(sheet.lines.slice(0, first).some((line) => /Product.*Label.*Account.*Quantity/.test(line.text)), `sheet ${at + 1}: the header over its lines`).toBe(true);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  test('an employee, a work item, a survey’s steps and a customer in Arabic: clean on every sheet, pushed down or not', async ({ page, browserName, playwright, baseURL }) => {
+    const records = [
+      { query: footed(`page=real-employee&record=4122&skin=underline&${NOW}`), name: 'employee' },
+      { query: footed(`page=real-employee&record=4122&skin=underline&${NOW}`), name: 'employee-pushed', pad: 300 },
+      { query: footed(`page=work-item&skin=quiet&${NOW}`), name: 'work-item', pad: 520 },
+      { query: footed(`page=survey&skin=outlined&${NOW}`), name: 'survey', pad: 640 },
+      { query: footed(`page=customer&skin=underline&locale=ar&dir=rtl&${NOW}`), name: 'customer-arabic', pad: 760 },
+    ];
+    for (const record of records) {
+      const { headings, all, problems } = await sheetsOf(page, browserName, playwright, baseURL!, [{ ...record, name: `print-footer-${record.name}` }]);
+      expect(all[0].length, record.name).toBeGreaterThanOrEqual(2);
+      expectSheetsClean(all[0], FILE, headings);
+      expect(problems).toEqual([]);
+    }
+  });
+});
+
+test.describe('a record’s footer on paper, in every engine', () => {
+  test('its content a table whose footer group the footer is — Safari’s once after it — the record’s groups side by side in lines', async ({ page, browserName }) => {
+    const { problems } = await open(page, 'plain', invoice());
+    await printing(page);
+    // Safari breaks no table's cell between sheets: there the footer follows the record, once.
+    const webkit = browserName === 'webkit';
+    await expect(page.locator('form.fd-form > .fd-content')).toHaveCSS('display', webkit ? 'block' : 'table');
+    const end = page.locator('form.fd-form > .fd-content > .fd-print-end');
+    await expect(end).toHaveCSS('display', webkit ? 'block' : 'table-footer-group');
+    await expect(end.locator('.fd-print-foot')).toHaveText(/quoting INV\/2026\/00038\. Thank you/);
+    await expect(end.locator('.fd-print-foot')).toBeVisible();
+    // The customer's group and the dates' side by side, each a box in the line.
+    const sides = page.locator('.fd-sheet-page .fd-grid[data-columns="2"] > .fd-section');
+    await expect(sides.first()).toHaveCSS('display', 'inline-block');
+    const [left, right] = [await sides.nth(0).boundingBox(), await sides.nth(1).boundingBox()];
+    expect(Math.abs((left?.y ?? 0) - (right?.y ?? 1))).toBeLessThan(2);
+    await printed(page);
+    await expect(page.locator('form.fd-form > .fd-content')).toHaveCSS('display', 'block');
     expect(problems).toEqual([]);
   });
 });
