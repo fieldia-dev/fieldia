@@ -29,8 +29,14 @@ export interface ListTotals {
   refresh(filter: ResolvedFilter[]): void;
   /** The rows ticked changed: their totals, or none. */
   ticked(ids: RecordId[], filter: ResolvedFilter[]): void;
-  /** Each group's sums in words, by its value (JSON), for the groups of `key` under `filter`: none when they cannot be asked. */
-  headings(key: GroupKey, filter: ResolvedFilter[]): Promise<Map<string, string>>;
+  /** Each group's sums in words, by its value (JSON), for the groups of `key` under `filter` — and why one is not, where none is honest: none when they cannot be asked. */
+  headings(key: GroupKey, filter: ResolvedFilter[]): Promise<Map<string, GroupSums>>;
+}
+
+/** A group's sums in words, as its heading says them; `why`, the sentence for an amount over several currencies, which has none. */
+export interface GroupSums {
+  words: string;
+  why?: string;
 }
 
 const KIND_WORDS: Record<Exclude<TotalKind, 'sum'>, keyof ViewerLabels> = { avg: 'totalAvg', min: 'totalMin', max: 'totalMax', count: 'totalCount' };
@@ -67,8 +73,11 @@ export function listTotals(context: TotalsContext): ListTotals | null {
     ...more,
   });
 
-  /** A column's total in words — short for a heading's amount ("EGP 4.3M") — or null where there is none to say honestly. */
-  function words(name: string, result: Pick<TotalsResult, 'totals' | 'currencies'>, short = false): string | null {
+  /**
+   * A column's total in words — in full, with its currency, wherever it is said: under the list, over the rows ticked,
+   * on a Group By heading ("EGP 591,500.00", never "EGP 591.5K") — or null where there is none to say honestly.
+   */
+  function words(name: string, result: Pick<TotalsResult, 'totals' | 'currencies'>): string | null {
     const kind = kindOf(name);
     const value = result.totals[name]?.[kind];
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -84,9 +93,12 @@ export function listTotals(context: TotalsContext): ListTotals | null {
     // Rounded to the column's places, as its cells write it: an average of whole numbers to two.
     const places = def.type === 'monetary' ? (def.digits?.[1] ?? placesOfCurrency(currencyOf(def, values))) : def.type === 'float' ? (def.digits?.[1] ?? 2) : kind === 'avg' ? 2 : 0;
     const rounded = Math.round(value * 10 ** places) / 10 ** places;
-    const shown: LineField = def.type === 'integer' && places ? ({ ...def, type: 'float', digits: [16, places] } as LineField) : short && def.type === 'monetary' ? { ...def, money: { ...def.money, short: true } } : def;
+    const shown: LineField = def.type === 'integer' && places ? ({ ...def, type: 'float', digits: [16, places] } as LineField) : def;
     return displayValue(shown, rounded, values, locale);
   }
+
+  /** An amount over records in more than one currency: no honest total, which is said, never a blank. */
+  const mixed = (name: string, result: Pick<TotalsResult, 'currencies' | 'count'>) => name in currencies && result.currencies?.[name] === null && result.count > 0;
 
   // ---- the table's foot: the ticked rows' totals, then every record's ----
 
@@ -114,10 +126,14 @@ export function listTotals(context: TotalsContext): ListTotals | null {
         for (const [name, cell] of cells) {
           const said = columns.includes(name) ? words(name, result) : null;
           const kindWord = kindOf(name) && kindOf(name) !== 'sum' ? labels[KIND_WORDS[kindOf(name) as Exclude<TotalKind, 'sum'>]] : '';
-          cell.replaceChildren(...(said === null ? [] : [...(kindWord ? [el('span', { class: 'fd-list-total-kind' }, kindWord), ' '] : []), el('bdi', {}, said)]));
-          // An amount in several currencies: no number, and why for whoever points at it.
-          const mixed = said === null && name in currencies && result.currencies?.[name] === null && result.count > 0;
-          if (mixed) cell.title = labels.totalMixed;
+          // An amount in several currencies: no number, and why in sight — a phone has no pointer to hover with — in a
+          // few words, the sentence as their title.
+          const several = said === null && mixed(name, result);
+          cell.replaceChildren(
+            ...(said === null ? [] : [...(kindWord ? [el('span', { class: 'fd-list-total-kind' }, kindWord), ' '] : []), el('bdi', {}, said)]),
+            ...(several ? [el('span', { class: 'fd-list-total-mixed' }, labels.totalMixedShort)] : [])
+          );
+          if (several) cell.title = labels.totalMixed;
           else cell.removeAttribute('title');
         }
       },
@@ -169,17 +185,20 @@ export function listTotals(context: TotalsContext): ListTotals | null {
       );
     },
     async headings(key, filter) {
-      const sums = new Map<string, string>();
+      const sums = new Map<string, GroupSums>();
       try {
         const result = await totals(request(filter, { groupBy: key.field, ...context.interval(key) }));
         for (const group of result.groups ?? []) {
+          let why: string | undefined;
           const parts = columns.flatMap((name) => {
-            const said = words(name, group, true);
-            if (said === null) return [];
+            const said = words(name, group);
+            const several = said === null && mixed(name, group);
+            if (several) why = labels.totalMixed;
+            if (said === null && !several) return [];
             const kind = kindOf(name);
-            return [[columns.length > 1 ? page.fields[name].label : '', kind === 'sum' ? '' : labels[KIND_WORDS[kind]], said].filter(Boolean).join(' ')];
+            return [[columns.length > 1 ? page.fields[name].label : '', kind === 'sum' || several ? '' : labels[KIND_WORDS[kind]], said ?? labels.totalMixedShort].filter(Boolean).join(' ')];
           });
-          if (parts.length) sums.set(JSON.stringify(group.value), `· ${parts.join(' · ')}`);
+          if (parts.length) sums.set(JSON.stringify(group.value), { words: `· ${parts.join(' · ')}`, ...(why ? { why } : {}) });
         }
       } catch {
         // No sums: the headings keep their names and counts.

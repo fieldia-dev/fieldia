@@ -1,15 +1,19 @@
-import { placesOf, placesOfCurrency, stripMarks, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
+import { placesOf, placesOfCurrency, stripMarks, wallClock, wallDay, wallTime, type DataSource, type ExportedFile, type Field, type ListedRecord, type Locale, type RecordId, type ResolvedFilter, type SortOrder, type Value, type Values } from '@fieldia/core';
 import { currencyOf, currencySymbol } from '@fieldia/widgets';
 import type { ViewerLabels } from './labels';
 import { xlsxOf, XLSX_TYPE, type SheetCell } from './xlsx';
 
 /**
  * A list's records in a file: an Excel workbook (xlsx.ts) or a CSV file, its
- * columns as the list shows them, in its order, under a header row; each
- * value as a person reads it in the list — a date as a date, money with its
- * currency, a choice by its label. The records are the rows ticked, or every
- * one the search finds, asked of the data source a page at a time; or the
- * source writes the file itself (`exportRecords`).
+ * columns as the list shows them, in its order, under a header row. In the
+ * workbook each value is as a person reads it in the list — a date as a date,
+ * money with its currency, a choice by its label. A CSV file has no formats:
+ * its numbers and amounts are written as a spreadsheet adds them (digits and
+ * the decimal mark, nothing else), each amount's currency in a column of its
+ * own (or in the header, where the field has one), its days and times as ISO
+ * 8601 writes them. The records are the rows ticked, or every one the search
+ * finds, asked of the data source a page at a time; or the source writes the
+ * file itself (`exportRecords`).
  */
 
 /** The most records a file written in the browser holds: past it, the first so many, and the list says so. */
@@ -122,11 +126,54 @@ export function sheetCell(list: ExportList, name: string, values: Values): Sheet
   return plainWords(list.words(name, values));
 }
 
-/** A value in a CSV file: as the list's cell says it, yes or no in words. */
-export function csvCell(list: ExportList, name: string, values: Values): string {
+/** A CSV file's decimal mark: a point, or a comma where the file's values are kept apart by semicolons (`csvSeparator`). */
+export const csvDecimal = (separator: string): string => (separator === ';' ? ',' : '.');
+
+/** Whether an amount's currency is the record's, each its own: then the file gives it a column of its own. */
+const ownCurrency = (def: Field) => def.type === 'monetary' && !def.currency && !!def.currencyField;
+
+/**
+ * A CSV file's columns: each of the list's, under its label — an amount's under its currency where the field has one
+ * ("Amount (EGP)"), else followed by a column of each record's currency ("Amount currency").
+ */
+export function csvHeaders(list: ExportList): string[] {
+  return list.columns.flatMap((name) => {
+    const def = list.fields[name];
+    if (ownCurrency(def)) return [def.label, list.labels.exportCurrency.replace('{column}', def.label)];
+    const fixed = def.type === 'monetary' ? currencyOf(def, {}) : null;
+    return [fixed && /^[A-Z]{3}$/.test(fixed) ? `${def.label} (${fixed})` : def.label];
+  });
+}
+
+/**
+ * A record's values in a CSV file, a column's or two (an amount and its currency): numbers and amounts as a
+ * spreadsheet adds them — digits, a minus, the decimal mark (`decimal`) and the field's places, no grouping and no
+ * sign; a day as 2026-10-15 and a time as 2026-10-15 14:30, on the clock the list shows; yes or no, and anything else,
+ * in the words the list says it with.
+ */
+export function csvCells(list: ExportList, name: string, values: Values, decimal = '.'): string[] {
+  const def = list.fields[name];
   const value = values[name];
-  if (list.fields[name].type === 'boolean' && value !== null && value !== undefined) return value ? list.labels.yes : list.labels.no;
-  return plainWords(list.words(name, values));
+  const own = ownCurrency(def);
+  const blank = value === null || value === undefined || value === '';
+  if (blank) return own ? ['', ''] : [''];
+  if (def.type === 'boolean') return [value ? list.labels.yes : list.labels.no];
+  if (typeof value === 'number' && Number.isFinite(value) && (def.type === 'integer' || def.type === 'float' || def.type === 'monetary')) {
+    const currency = def.type === 'monetary' ? currencyOf(def, values) : null;
+    const field = def.type === 'integer' ? 0 : def.type === 'monetary' ? (def.digits?.[1] ?? placesOfCurrency(currency)) : (def.digits?.[1] ?? 0);
+    const number = value.toFixed(placesFor(value, field)).replace('.', decimal);
+    return own ? [number, currency ?? ''] : [number];
+  }
+  if (typeof value === 'string' && def.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(value)) return [value.slice(0, 10)];
+  if (typeof value === 'string' && def.type === 'datetime') {
+    const at = new Date(value).getTime();
+    if (!Number.isNaN(at)) {
+      const wall = wallTime(at, def.timeZone);
+      return [`${wallDay(wall)} ${wallClock(wall)}`];
+    }
+  }
+  const words = plainWords(list.words(name, values));
+  return own ? [words, ''] : [words];
 }
 
 /** The records that go, asked of the source a page at a time (or by their ids), in the list's order: at most EXPORT_MOST. */
@@ -201,9 +248,10 @@ export async function exportList(list: ExportList, which: ExportWhich, format: E
   }
   const { records, total } = await gather(list, which, progress, most);
   const headers = list.columns.map((field) => list.fields[field].label);
+  const separator = csvSeparator(list.locale);
   const blob =
     format === 'csv'
-      ? new Blob([csvOf([headers, ...records.map((record) => list.columns.map((field) => csvCell(list, field, record.values)))], csvSeparator(list.locale))], { type: 'text/csv;charset=utf-8' })
+      ? new Blob([csvOf([csvHeaders(list), ...records.map((record) => list.columns.flatMap((field) => csvCells(list, field, record.values, csvDecimal(separator))))], separator)], { type: 'text/csv;charset=utf-8' })
       : new Blob([(await xlsxOf({ name: list.title, columns: headers, rows: records.map((record) => list.columns.map((field) => sheetCell(list, field, record.values))), rtl: list.rtl }, when)) as BlobPart], { type: XLSX_TYPE });
   saveFile(list.doc, name, blob);
   return { done: records.length, total };

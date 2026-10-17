@@ -92,10 +92,10 @@ describe('a list’s totals', () => {
     expect(totalRow(host, 'ticked')).toBeNull();
   });
 
-  it('gives no total for amounts in more than one currency, and says why to whoever points at it', async () => {
+  it('gives no total for amounts in more than one currency, and says why in sight, the sentence on pointing', async () => {
     const host = await mount();
     await until(() => totalRow(host, 'all'));
-    expect(totalRow(host, 'all')).toEqual(['', 'Total', '', '', '', 'Average 2.50']);
+    expect(totalRow(host, 'all')).toEqual(['', 'Total', '', '', 'Several currencies', 'Average 2.50']);
     expect(host.querySelector('.fd-list-totals tr[data-total="all"] td[data-field="amount"]')?.getAttribute('title')).toBe('In more than one currency: no total');
   });
 
@@ -109,17 +109,17 @@ describe('a list’s totals', () => {
     // A dollar ticked beside them: no honest sum of the three.
     tick(2);
     await until(() => totalRow(host, 'ticked')?.[1] === '3 selected');
-    expect(totalRow(host, 'ticked')?.[4]).toBe('');
+    expect(totalRow(host, 'ticked')?.[4]).toBe('Several currencies');
     button(host, 'Clear')!.click();
     await until(() => !totalRow(host, 'ticked'));
   });
 
-  it('sums each Group By heading in its own currency, short', async () => {
+  it('sums each Group By heading in its own currency, in full as the totals row writes it', async () => {
     const host = await mount();
     openMenu(host);
     button(host, 'City')!.click();
     await until(() => headings(host).length === 3 && headings(host)[0]?.includes('·'));
-    expect(headings(host)).toEqual(['Cairo (2) · Amount EGP 3.5K · Hours Average 3.00', 'Dubai (1) · Amount USD 400 · Hours Average 1.00', 'Giza (2) · Amount EGP 850.5 · Hours Average 3.00']);
+    expect(headings(host)).toEqual(['Cairo (2) · Amount EGP 3,500.00 · Hours Average 3.00', 'Dubai (1) · Amount USD 400.00 · Hours Average 1.00', 'Giza (2) · Amount EGP 850.50 · Hours Average 3.00']);
   });
 
   it('says a sum alone, with no column’s name, when one column is totalled', async () => {
@@ -128,7 +128,7 @@ describe('a list’s totals', () => {
     openMenu(host);
     button(host, 'City')!.click();
     await until(() => headings(host)[0]?.includes('·'));
-    expect(headings(host)[0]).toBe('Cairo (2) · EGP 3.5K');
+    expect(headings(host)[0]).toBe('Cairo (2) · EGP 3,500.00');
   });
 
   it('shows no totals — no row, no sums — from a source that cannot total, or a list that totals no column', async () => {

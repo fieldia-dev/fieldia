@@ -133,6 +133,8 @@ export const LIST_STYLES = `
 .fd-list-totals tr[data-total="ticked"] > * { background: var(--fd-accent-soft); color: var(--fd-accent); border-block-end: 1px solid var(--fd-border); }
 .fd-list-totals th { text-align: start; }
 .fd-list-total-kind { color: var(--fd-muted); font-weight: 400; font-size: 12.5px; }
+/* No honest total over several currencies, said in the cell where the total would stand: quieter than a total. */
+.fd-list-total-mixed { color: var(--fd-muted); font-weight: 400; font-size: 12.5px; }
 /* A date grouped by a span: its name, then its Year, Quarter, Month, Week and Day under it, each its own toggle. */
 .fd-search-spans { display: grid; gap: 1px; }
 .fd-search-spans-name { padding: 5px 6px; padding-inline-start: 26px; font-size: 14px; color: var(--fd-text); }

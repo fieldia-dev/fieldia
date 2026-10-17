@@ -12,8 +12,11 @@ export interface GroupKey {
   interval?: DateInterval;
 }
 
-/** A group as its heading shows it: its records' count, and its totals in words ("EGP 4.3M") where the list has them. */
-export type Heading = Group & { sums?: string };
+/**
+ * A group as its heading shows it: its records' count, and its totals in words ("EGP 591,500.00") where the list has
+ * them — `sumsWhy`, the sentence for one it cannot say ("Several currencies"), on pointing at them.
+ */
+export type Heading = Group & { sums?: string; sumsWhy?: string };
 
 export interface GroupContext {
   page: Page;
@@ -122,7 +125,7 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
     el('span', { class: 'fd-group-label' }, groupName(context, key, group)),
     ' ',
     el('span', { class: 'fd-group-count' }, `(${group.count})`),
-    ...(group.sums ? [' ', el('span', { class: 'fd-group-sums' }, group.sums)] : [])
+    ...(group.sums ? [' ', el('span', { class: 'fd-group-sums', ...(group.sumsWhy ? { title: group.sumsWhy } : {}) }, group.sums)] : [])
   );
   const tr = el('tr', { class: 'fd-list-group', 'data-level': String(level), 'aria-level': String(level + 1) }, el('td', { colspan: String(context.columns) }, toggle));
   tr.style.setProperty('--fd-level', String(level));
