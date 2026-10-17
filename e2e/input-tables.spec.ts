@@ -194,11 +194,13 @@ test.describe('the order grid', () => {
       const note = grid(page).locator('.fd-grid-paste-note');
       await expect(note).toHaveText(said);
       await expect(note).toHaveAttribute('role', 'status');
-      // What cannot be read, or goes past the last line, is named and left as it was.
+      // What cannot be read is named and left as it was; a row past the last line adds a line, as the plain table does.
       await choose(page, 5, 'qty');
       await paste(page, locale === 'ar' ? '٧\tabc\n٨\t٩' : '7\tabc\n8\t9');
       await expect.poll(async () => (await pairs(page))[5]).toEqual([7, 380]);
+      await expect.poll(async () => (await pairs(page))[6]).toEqual([8, 9]);
       await expect(note).toContainText(locale === 'ar' ? 'لم يُلصق في' : locale === 'fr' ? 'Non collé' : 'Not pasted: Unit price, line 3');
+      await expect(note).toContainText(locale === 'ar' ? 'أُضيف سطر واحد.' : locale === 'fr' ? '1 ligne ajoutée.' : '1 line added.');
       await screen(page, `input-tables-paste-${locale}`, { viewport: true });
     });
   }

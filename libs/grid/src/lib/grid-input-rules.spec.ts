@@ -44,11 +44,13 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(locale: 'en' | 'ar' = 'en') {
+async function mount(locale: 'en' | 'ar' = 'en', options?: Record<string, unknown>) {
   const host = document.createElement('div');
   document.body.append(host);
   const dataSource = createMemoryDataSource({ records: { 'sale.order': { 1: { line_ids: lines } } } });
-  handle = mountViewer(host, { page: order, dataSource, recordId: 1, widgets: gridWidgets, locale });
+  // The table's node with options of its own: its most lines (`max`).
+  const page = options ? (JSON.parse(JSON.stringify(order).replace('"totals":', `"options":${JSON.stringify(options)},"totals":`)) as Page) : order;
+  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets, locale });
   await handle.form.settled();
   await frames();
   const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
@@ -185,8 +187,8 @@ describe('a block pasted on a chosen cell', () => {
     (document.activeElement ?? document.body).dispatchEvent(event);
     return event;
   }
-  async function chosen(locale: 'en' | 'ar' = 'en') {
-    const mounted = await mount(locale);
+  async function chosen(locale: 'en' | 'ar' = 'en', options?: Record<string, unknown>) {
+    const mounted = await mount(locale, options);
     mounted.api.setFocusedCell(0, 'qty');
     await frames();
     return mounted;
@@ -202,15 +204,45 @@ describe('a block pasted on a chosen cell', () => {
     expect(note.textContent).toBe('Pasted into 4 cells.');
   });
 
-  it('reads Arabic digits, and leaves cells it cannot read, read-only ones, and rows past the last line, naming them', async () => {
+  it('reads Arabic digits, and leaves cells it cannot read and read-only ones, naming them; rows past the last line add lines', async () => {
     const { box, form } = await chosen();
     paste('٣\tabc\t9\n٤\t١٠٠\n5\t6');
     expect(formLines(form).map((l) => [l.values['qty'], l.values['price'], l.values['subtotal']])).toEqual([
       [3, 1890, 7560],
       [4, 100, 2280],
+      [5, 6, null],
     ]);
     // Each named, and why where its box says why: a read-only cell is only named.
-    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 3 cells. Not pasted: Unit price, line 1 (Unit price: “⁨abc⁩” is not a number); Subtotal, line 1 Only 2 lines are here, so the rest was not pasted');
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 5 cells. 1 line added. Not pasted: Unit price, line 1 (Unit price: “⁨abc⁩” is not a number); Subtotal, line 1');
+  });
+
+  it('adds a line for each row past the last, as the plain table does: no line for a row of nothing', async () => {
+    const { box, form } = await chosen();
+    paste('1\t10\n2\t20\n3\t30\n4\t40\n\t\n');
+    expect(formLines(form).map((l) => [l.values['qty'], l.values['price']])).toEqual([
+      [1, 10],
+      [2, 20],
+      [3, 30],
+      [4, 40],
+    ]);
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 8 cells. 2 lines added.');
+  });
+
+  it('adds lines up to the table’s most, and says what it left past them', async () => {
+    const { box, form } = await chosen('en', { max: 3 });
+    paste('1\t10\n2\t20\n3\t30\n4\t40');
+    expect(formLines(form).map((l) => [l.values['qty'], l.values['price']])).toEqual([
+      [1, 10],
+      [2, 20],
+      [3, 30],
+    ]);
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 6 cells. 1 line added. Only 3 lines are here, so the rest was not pasted');
+  });
+
+  it('says the lines added in the page’s language', async () => {
+    const { box } = await chosen('ar');
+    paste('1\t10\n2\t20\n3\t30');
+    expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لُصق في 6 من الخلايا. أُضيف سطر واحد.');
   });
 
   it('speaks the page’s language', async () => {

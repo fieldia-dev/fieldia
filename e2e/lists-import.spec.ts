@@ -177,23 +177,28 @@ test.describe('a customer’s contacts brought in from a file', () => {
   });
 });
 
+/** Rows copied as a spreadsheet puts them on the clipboard: from a box of their own, chosen whole and copied with the keys. */
+async function copy(page: Page, text: string) {
+  await page.evaluate((words) => {
+    const sheet = document.createElement('textarea');
+    sheet.id = 'e2e-copied';
+    sheet.value = words;
+    document.body.append(sheet);
+    sheet.focus();
+    sheet.select();
+  }, text);
+  await page.keyboard.press('ControlOrMeta+C');
+  await page.evaluate(() => document.getElementById('e2e-copied')?.remove());
+}
+
 test.describe('rows copied from a spreadsheet, pasted into a table of lines', () => {
   test('fill across and down from the cell, a line added for each row past the last, what did not go in named', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=rules&skin=outlined');
     const table = page.locator('[data-node="f-lines"] .fd-lines-table');
     await expect(table.locator('tbody tr')).toHaveCount(1);
     const item = table.locator('tbody tr').first().locator('td[data-column="item"] input');
-    // Three rows of item, quantity and price copied as a spreadsheet puts them on the clipboard, then pasted in the cell.
-    await page.evaluate((text) => {
-      const sheet = document.createElement('textarea');
-      sheet.id = 'e2e-copied';
-      sheet.value = text;
-      document.body.append(sheet);
-      sheet.focus();
-      sheet.select();
-    }, 'Toner, black\t3\t1,250.00\nStapler\t2\tabc\nPens, box of 12\t١٠\t45\n');
-    await page.keyboard.press('ControlOrMeta+C');
-    await page.evaluate(() => document.getElementById('e2e-copied')?.remove());
+    // Three rows of item, quantity and price copied from a spreadsheet, then pasted in the cell.
+    await copy(page, 'Toner, black\t3\t1,250.00\nStapler\t2\tabc\nPens, box of 12\t١٠\t45\n');
     await item.click();
     await page.keyboard.press('ControlOrMeta+V');
     await expect(table.locator('tbody tr')).toHaveCount(3);
@@ -205,6 +210,26 @@ test.describe('rows copied from a spreadsheet, pasted into a table of lines', ()
     await expect(note).toHaveText('Pasted into 8 cells. 2 lines added. Not pasted: Unit price, line 2 (Unit price: “⁨abc⁩” is not a number)');
     await expect(note).toHaveAttribute('role', 'status');
     await screen(page, 'lines-paste-block', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('on the grid: a line added for each row past the last, as the plain table does, said in the same note', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=order&skin=outlined');
+    const grid = page.locator('[data-node="f-lines"]');
+    const lines = () => page.evaluate(() => ((window as any).fieldiaDemo.handle.form.getState().values.line_ids ?? []) as { values: Record<string, unknown> }[]);
+    await expect(grid.locator('.ag-row[row-index="5"] .ag-cell[col-id="qty"]')).toBeVisible();
+    await expect.poll(async () => (await lines()).length).toBe(6);
+    // The last line's quantity chosen (clicked, its editor left with Escape), then two rows pasted on it.
+    const last = grid.locator('.ag-row[row-index="5"] .ag-cell[col-id="qty"]');
+    await copy(page, '7\tabc\n8\t9\n');
+    await last.click();
+    await page.keyboard.press('Escape');
+    await expect(last).toBeFocused();
+    await page.keyboard.press('ControlOrMeta+V');
+    await expect.poll(async () => (await lines()).map((line) => [line.values['qty'] ?? null, line.values['price'] ?? null]).slice(5)).toEqual([[7, 380], [8, 9]]);
+    await expect(grid.locator('.ag-row[row-index="6"] .ag-cell[col-id="qty"]')).toBeVisible();
+    await expect(grid.locator('.fd-grid-paste-note')).toHaveText('Pasted into 3 cells. 1 line added. Not pasted: Unit price, line 3 (Unit price: “⁨abc⁩” is not a number)');
+    await screen(page, 'grid-paste-lines-added', { viewport: true });
     expect(problems).toEqual([]);
   });
 });
