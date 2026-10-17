@@ -1,6 +1,6 @@
 import type { ActionStep } from './actions';
 import type { Field, LineField } from './field';
-import type { ButtonNode, FieldNode, LayoutNode, MenuItem, RootLayout, SheetNode, TabNode, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, LayoutNode, MenuItem, RelatedNode, RootLayout, SheetNode, TabNode, TabsNode } from './layout';
 
 /**
  * The checks of a record's head (`SheetHead`) and of the parts it brought to
@@ -111,12 +111,30 @@ export function checkHead(root: RootLayout, path: string, tools: HeadTools): voi
   });
 }
 
-/** A tab's icon shown alone, and the field it counts. */
+/** A tab's icon shown alone, and the field or the related list in it it counts. */
 function checkTab(tab: TabNode, path: string, tools: HeadTools) {
   if (tab.iconOnly && !tab.icon) tools.report(`${path}.iconOnly`, 'a tab shown by its icon alone needs an icon');
-  if (tab.count === undefined) return;
-  const def = tools.need(tab.count, `${path}.count`);
-  if (def && !COUNTED.has(def.type)) tools.report(`${path}.count`, `"${tab.count}" is a ${def.type}; a tab counts a number, a table's lines, links or files`);
+  const count = tab.count;
+  if (count === undefined) return;
+  if (typeof count !== 'string') {
+    if (!relatedInTab(tab, count.related)) tools.report(`${path}.count.related`, `"${count.related}" is no related list in this tab: a tab counts the records of one it holds`);
+    return;
+  }
+  const def = tools.need(count, `${path}.count`);
+  if (def && !COUNTED.has(def.type)) tools.report(`${path}.count`, `"${count}" is a ${def.type}; a tab counts a number, a table's lines, links or files`);
+}
+
+/** The related list of this id inside a tab — in its groups, or tabs of its own — whose records it counts; null where it holds none. */
+export function relatedInTab(tab: TabNode, id: string): RelatedNode | null {
+  const find = (nodes: readonly LayoutNode[]): RelatedNode | null => {
+    for (const node of nodes) {
+      if (node.type === 'related' && node.id === id) return node;
+      const inner = node.type === 'section' ? find(node.children) : node.type === 'tabs' ? find(node.children.flatMap((one) => one.children)) : null;
+      if (inner) return inner;
+    }
+    return null;
+  };
+  return find(tab.children);
 }
 
 function checkSheetHead(sheet: SheetNode, path: string, tools: HeadTools) {

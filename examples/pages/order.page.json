@@ -16,7 +16,7 @@
       "default": "draft"
     },
     "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner", "required": true },
-    "date_order": { "type": "date", "label": "Order date" },
+    "date_order": { "type": "datetime", "label": "Order date" },
     "validity_date": { "type": "date", "label": "Expiration" },
     "payment_term": {
       "type": "selection",
@@ -67,7 +67,7 @@
         "boxes": { "type": "integer", "label": "Boxes" }
       }
     },
-    "note": { "type": "text", "label": "Terms and conditions" }
+    "note": { "type": "html", "label": "Terms and conditions" }
   },
   "layout": {
     "type": "sheet",

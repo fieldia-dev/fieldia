@@ -6,6 +6,11 @@ export const GRID_CSS = /* css */ `
 .fd-grid-host { min-width: 0; }
 /* AG Grid keeps 150px of rows for its "no rows" message; ours has none, so one row's height is enough. */
 .fd-grid-lines .ag-grid-scrolling-rows.ag-layout-auto-height { min-height: 40px; }
+/* An empty table says so where its first line would be: in that one row's 40px under the header, centred. AG Grid's
+   overlay lies over the whole table and keeps clear of the header alone: centred there, the words fell across the
+   line between the body and a totals row under it. */
+.fd-grid-lines .ag-overlay-no-rows-wrapper { align-items: flex-start; }
+.fd-grid-lines .fd-grid-empty { display: block; margin: 10px 0 0; line-height: 20px; }
 /* AG Grid keeps room for a sideways scroll bar it has marked invisible; give the room back until it is needed. */
 .fd-grid-lines .ag-body-horizontal-scroll.ag-invisible { display: none; }
 /* When the lines scroll sideways the bar sits under them, never over the last line (AG Grid lays it over, as if no

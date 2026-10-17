@@ -7855,8 +7855,15 @@
           "type": "boolean"
         },
         "count": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            {
+              "$ref": "#/$defs/TabCount"
+            }
+          ]
         }
       },
       "required": [
@@ -7864,6 +7871,19 @@
         "id",
         "label",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "TabCount": {
+      "type": "object",
+      "properties": {
+        "related": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        }
+      },
+      "required": [
+        "related"
       ],
       "additionalProperties": false
     },
@@ -8543,6 +8563,13 @@
         },
         "create": {
           "type": "boolean"
+        },
+        "open": {
+          "type": "string",
+          "enum": [
+            "dialog",
+            "app"
+          ]
         },
         "colspan": {
           "type": "integer",

@@ -280,9 +280,11 @@ const SKINS_CSS = /* css */ `
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
 .fd-textarea { resize: vertical; min-height: 64px; }
-/* One line that wraps (a record's title): as tall as its words, never a grip to resize, read from its start; a word
-   broken only when it is longer than the line, at a hyphen where the page's language has one. */
-.fd-line-wraps { display: block; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; hyphens: auto; line-height: 1.25; }
+/* One line that wraps (a record's title): as tall as its words, never a grip to resize, read from its start; its words
+   whole, a word broken only when it is longer than the line (a web address, a German compound), at the line's end or
+   at a soft hyphen the words carry. Never hyphenated by the browser: "auto" broke words that fit the next line whole,
+   as Firefox does ("re-leasing"), and no rule hyphenates only a word too long for any line. */
+.fd-line-wraps { display: block; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; hyphens: manual; line-height: 1.25; }
 /* On a phone, a record's name a size smaller, so a long word fits a line beside its photo. */
 @container (max-width: 520px) { .fd-form .fd-title .fd-field .fd-line-wraps { font-size: 20px; } }
 .fd-select { appearance: auto; }
@@ -511,6 +513,13 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
 /* A tab with a problem in it, seen or not: a dot in the error colour after its words. */
 .fd-tab[data-problem]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 6px; border-radius: 50%; background: var(--fd-error); vertical-align: 0.15em; }
+/* A tab's count in a pill after its words, on any page: a record's head greys it (--fd-head-pill). */
+.fd-tab-count {
+  display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
+  background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
+}
+.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
+.fd-tab-count[hidden] { display: none; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 
 /* ---- buttons ---------------------------------------------------------- */

@@ -68,6 +68,7 @@ export const head: DesignerWords['head'] = {
   tabIconOnly: 'أيقونتها وحدها',
   countFrom: 'العدد من',
   noCount: 'بلا عدد',
+  countRelated: (name) => `قائمة مرتبطة: ${name}`,
   inHead: 'في رأس السجل',
   inHeadHint: 'علامات التبويب في نهاية الشريط، وصفحاتها جسم السجل.',
   canvasHead: 'رأس السجل: اختره لتضبطه',
@@ -91,6 +92,7 @@ export const head: DesignerWords['head'] = {
   pressedWordsNeedToggle: 'الكلمات وهو مضغوط تحتاج ما يضغطه',
   chevronNeedsMenu: 'السهم الخاص يحتاج قائمة يفتحها',
   countShape: (label) => `${q(label)} لا يُعدّ: علامة التبويب تعدّ رقمًا أو أسطرًا أو روابط أو ملفات`,
+  countNoRelated: (id) => `لا قائمة مرتبطة ${q(id)} في علامة التبويب هذه: علامة التبويب تعدّ سجلات قائمة تحملها`,
   tabsDirectlyInHead: 'علامات التبويب تدخل الرأس من داخل ورقة لها رأس مباشرة',
   accessKeyShape: 'مفتاح الوصول حرف واحد أو رقم من التسمية',
 };

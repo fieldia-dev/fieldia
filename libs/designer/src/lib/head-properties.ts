@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FieldNode, HeadLink, LayoutNode, Page, SheetNode } from '@fieldia/core';
+import type { ButtonNode, Field, FieldNode, HeadLink, LayoutNode, Page, RelatedNode, SheetNode } from '@fieldia/core';
 import { ICONS } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -341,7 +341,13 @@ export function buttonPartsSettings(el: ElementFactory, designer: Designer, id: 
   };
 }
 
-/** A tab's icon, shown alone or with its words, and the field whose count shows after it. */
+/** What a related list counted by a tab is, among the Count from's choices: its id after this, never a field's name. */
+const RELATED_COUNT = 'related:';
+
+/**
+ * A tab's icon, shown alone or with its words, and what its count after it counts: a field, or the records of a
+ * related list in the tab.
+ */
 export function tabPartsSettings(el: ElementFactory, designer: Designer, id: string): SettingRows {
   const w = designer.words.head;
   const icon = pick(el, w.tabIcon);
@@ -349,7 +355,9 @@ export function tabPartsSettings(el: ElementFactory, designer: Designer, id: str
   const iconOnly = tick(el, w.tabIconOnly);
   iconOnly.addEventListener('change', () => designer.setTabParts(id, { iconOnly: iconOnly.checked }));
   const count = pick(el, w.countFrom);
-  count.addEventListener('change', () => designer.setTabParts(id, { count: count.value || null }));
+  count.addEventListener('change', () =>
+    designer.setTabParts(id, { count: count.value.startsWith(RELATED_COUNT) ? { related: count.value.slice(RELATED_COUNT.length) } : count.value || null })
+  );
   const rows = [setting(el, 'content', 'Tab’s icon', icon, { words: w.tabIcon }), setting(el, 'content', 'Tab’s icon alone', iconOnly, { words: w.tabIconOnly }), setting(el, 'content', 'Count from', count, { words: w.countFrom })];
   return {
     rows,
@@ -359,7 +367,9 @@ export function tabPartsSettings(el: ElementFactory, designer: Designer, id: str
       fill(el, icon, [['', w.noIcon], ...ICON_NAMES().map((name) => [name, name] as [string, string])], tab.icon ?? '');
       iconOnly.checked = tab.iconOnly === true;
       const counted = allFields(designer, page).filter(([, f]) => ['integer', 'float', 'monetary', 'one2many', 'many2many', 'binary', 'image'].includes(f.type));
-      fill(el, count, [['', w.noCount], ...counted.map(([n, f]) => [n, f.label] as [string, string])], tab.count ?? '');
+      const lists = relatedListsIn(tab.children).map((list) => [`${RELATED_COUNT}${list.id}`, w.countRelated(list.title || list.model)] as [string, string]);
+      const now = typeof tab.count === 'string' ? tab.count : tab.count ? `${RELATED_COUNT}${tab.count.related}` : '';
+      fill(el, count, [['', w.noCount], ...counted.map(([n, f]) => [n, f.label] as [string, string]), ...lists], now);
     },
   };
 }
@@ -395,4 +405,9 @@ export function fieldHotkeySetting(el: ElementFactory, designer: Designer, id: s
       if (node?.type === 'field' && !focused(key)) key.value = (node.hotkey ?? '').toUpperCase();
     },
   };
+}
+
+/** The related lists a tab holds, in its groups and tabs of its own, in their order: what its count may count. */
+function relatedListsIn(nodes: readonly LayoutNode[]): RelatedNode[] {
+  return nodes.flatMap((node) => (node.type === 'related' ? [node] : node.type === 'section' ? relatedListsIn(node.children) : node.type === 'tabs' ? relatedListsIn(node.children.flatMap((tab) => tab.children)) : []));
 }

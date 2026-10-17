@@ -153,7 +153,12 @@ A page whose sheet has a `head` (a work item's: its kind's strip and badge,
 the title line, Save and Close, Follow, the band of fields and the tabs) is
 the dialog's own head and foot: the dialog draws neither, its ⤢ and × sit at
 the end of the head's badge row, and Escape and × ask before changes go. A
-head button whose steps save and then close resolves with `saved: true`.
+head button whose steps save and then close resolves with `saved: true`. The
+head's title is one line that wraps where it is too long for its line, as a
+sheet's title does: a `textarea` (`aria-multiline="false"`), read from its
+start, never cut, its words whole — the browser hyphenates none; only a word
+longer than the line (a web address) breaks, at its end or at a soft hyphen the
+words carry. Enter adds no line, and a line break pasted is a space.
 
 `side` is where it comes from: `'end'` (the default: the end of the line, the
 right, or the left right to left) or `'start'`, as the page reads; or
@@ -398,6 +403,24 @@ data source it is not shown. An answer that comes once another record is shown �
 pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
+
+With `"open": "app"`, a row and New go your app's own way first, as View all
+does: your `onOpen` (or your host's `open`) is asked with `{ page, as: 'dialog',
+recordId }` for a row and `{ page, as: 'dialog', recordId: null, values }` for
+New — this record filled in among the values (`{ partner_id: { id, label } }`) —
+`page` being the id of the page `pages` gives for `model`, else the model's
+name. Answer with how it ended, or `undefined` for the dialog after all; the list
+asks for its records again once it settles. Without `onOpen` or a host's `open`,
+the dialog as ever.
+
+A tab holding a related list may count its records: `"count": { "related":
+"quotations" }` on the tab, by the list's id, shows "Quotations 4" (read out
+"Quotations, 4"). The source's `list` is asked for one record with the list's
+own conditions as the record is shown, whether the tab is open or not, and its
+`total` is the count; once the list is drawn, its own count after New, a delete
+or a row's button stands for it. No count shows until it is known — before the
+answer, before the record's first save, while the list is hidden — and never
+another record's.
 
 ### Lists people read anywhere and shape themselves
 

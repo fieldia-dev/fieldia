@@ -12,8 +12,9 @@ import { setHidden } from './writes';
 /**
  * A related list's own settings, on the Content tab: its title; the model of the records it lists and their link to
  * this record; its columns, each a field of theirs — its words, its name and its kind; its records as cards on a phone,
- * and its rows' tones, bold and buttons, as a list's, of its own fields; how many rows a page holds; New; and View
- * all's page and where it opens. Its filter, order and cells are its JSON's. Its records show in Try it.
+ * and its rows' tones, bold and buttons, as a list's, of its own fields; how many rows a page holds; New; where a
+ * row's record and New's open; and View all's page and where it opens. Its filter, order and cells are its JSON's. Its
+ * records show in Try it.
  */
 
 /** The kinds a new column can be, plainly: a choice's options and a link's model are set in its JSON. */
@@ -140,6 +141,15 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
   });
   const create = el('input', { type: 'checkbox', 'aria-label': w.create }) as HTMLInputElement;
   create.addEventListener('change', () => change({ create: create.checked }));
+  // Where a row's record and New's open: a dialog of the model's page, or the app's own way first.
+  const rowsOpen = segmented<'dialog' | 'app'>(
+    el,
+    w.rowsOpen,
+    (['dialog', 'app'] as const).map((value) => ({ value, words: w.rowsOpenIn[value] })),
+    (value) => {
+      if (value) change({ open: value });
+    }
+  );
   const allPage = el('input', { class: 'fd-input', 'aria-label': w.viewAll, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   allPage.addEventListener('change', () => {
     const page = allPage.value.trim();
@@ -175,6 +185,7 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
     rowRules.update(page);
     rows.refresh();
     create.checked = node.create !== false;
+    rowsOpen.set(node.open ?? 'dialog');
     if (!focused(allPage)) {
       allPage.value = node.viewAll?.page ?? '';
       allPage.removeAttribute('aria-invalid');
@@ -193,6 +204,7 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
       onTab(rowRules.element, 'content', 'Row tones and buttons'),
       setting(el, 'content', 'Rows a page', rows.input, { hint: w.rowsHint, words: w.rows }),
       setting(el, 'content', 'New', el('label', { class: 'fd-q-required' }, create, el('span', {}, w.create)), { hint: w.createHint, words: w.newWord }),
+      setting(el, 'content', 'Rows and New open', rowsOpen.element, { hint: w.rowsOpenHint, words: w.rowsOpen }),
       setting(el, 'content', 'View all opens the page', allPage, { hint: w.viewAllHint, words: w.viewAll }),
       opensRow,
     ],

@@ -56,6 +56,7 @@ import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
+import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
 
@@ -126,6 +127,8 @@ export const pages: Record<string, Page> = {
   'map-week-order': mapWeekOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
+  // Tables of lines with none yet, a totals row under one: e2e/grid-empty.spec.ts opens it; no card in the gallery.
+  'empty-grids': emptyGridsPage,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
   reading: reading as Page,
   // A bug as a work item, in the look the demo's switch picks: quiet, values plain words until pointed at or clicked.
@@ -424,6 +427,7 @@ export function sampleDataSource() {
     records: {
       ...READING,
       ...WI_HEAD_RECORDS,
+      ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
       // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
@@ -542,7 +546,8 @@ export function sampleDataSource() {
           name: 'S00118',
           state: 'sent',
           partner_id: { id: 1, label: 'Nile Traders' },
-          date_order: '2026-10-02',
+          // When it was ordered, as Flectra keeps a sales order's: a date and time.
+          date_order: '2026-10-02T10:00',
           validity_date: '2026-11-01',
           payment_term: '30',
           line_ids: [

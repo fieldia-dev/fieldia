@@ -530,6 +530,16 @@ export interface RelatedNode {
   viewAll?: { page: string; as?: 'dialog' | 'panel' | 'page' };
   /** New, which makes one with its link to this record filled in; offered unless false, where the app gives a page for `model`. */
   create?: boolean;
+  /**
+   * Where a row's record and New's open: in a dialog of the page the app
+   * gives for `model` (`dialog`, the default), or the app's own way (`app`)
+   * — its `onOpen` (or its host's `open`) asked first, as View all's is, with
+   * `{ page, recordId }` for a row and `{ page, recordId: null, values }` for
+   * New, its link to this record among the values; `page` the id of the page
+   * the app gives for `model`, else `model` itself. Where the app's way does
+   * not take it, the dialog, as with `dialog`.
+   */
+  open?: 'dialog' | 'app';
   /** Grid columns it spans inside a section: the whole row unless said. */
   colspan?: number;
   invisible?: Modifier;
@@ -752,11 +762,20 @@ export interface TabNode {
   /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
   iconOnly?: boolean;
   /**
-   * A field whose count shows in a pill after it, as a work item's "Links 0":
-   * a number's value, a table's or links' lines, a field of files' files.
-   * Shown at 0 too, and read out with the tab's name ("Links, 0").
+   * A count in a pill after it, read out with the tab's name ("Links, 0"):
+   * a field's — a number's value, a table's or links' lines, a field of
+   * files' files, shown at 0 too, as a work item's "Links 0" — or the records
+   * a related list in this tab lists (`{ "related": "quotations" }`, by its
+   * id): asked of the data source as the record is shown, whether the tab is
+   * open or not, and again as the list adds or loses one; hidden until known,
+   * and on a record not saved yet.
    */
-  count?: string;
+  count?: string | TabCount;
+}
+
+/** What a tab counts other than a field: the records a related list in it lists, by the list's id. */
+export interface TabCount {
+  related: string;
 }
 
 export interface TabsNode {
@@ -1829,6 +1848,7 @@ export const RelatedNodeSchema = z
     searchFields: z.array(fieldName).min(1).optional(),
     viewAll: z.strictObject({ page: id, as: z.enum(['dialog', 'panel', 'page']).optional() }).optional(),
     create: z.boolean().optional(),
+    open: z.enum(['dialog', 'app']).optional(),
     colspan: span,
     invisible, roles, hideOn,
   })
@@ -1885,7 +1905,7 @@ export const TabNodeSchema = z.strictObject({
     return z.array(LayoutNodeSchema);
   },
   iconOnly: z.boolean().optional(),
-  count: fieldName.optional(),
+  count: z.union([fieldName, z.strictObject({ related: id }).meta({ id: 'TabCount' })]).optional(),
 }).meta({ id: 'TabNode' });
 
 export const TabsNodeSchema = z.strictObject({

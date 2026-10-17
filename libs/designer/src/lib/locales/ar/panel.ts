@@ -153,6 +153,7 @@ const NAMES: Record<string, string> = {
   New: 'جديد',
   'View all opens the page': '«عرض الكل» يفتح الصفحة',
   'View all opens in': '«عرض الكل» يُفتح في',
+  'Rows and New open': 'الصفوف و«جديد» تُفتح',
   'Possible duplicates': 'السجلات المكررة المحتملة',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
 };

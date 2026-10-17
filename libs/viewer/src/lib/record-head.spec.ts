@@ -42,7 +42,7 @@ describe('a record head', () => {
     // The number as an id is written, never grouped: then the title's own box.
     const line = host.querySelector('.fd-head-title') as HTMLElement;
     expect(line.querySelector('.fd-head-number')?.textContent).toBe('4127');
-    expect((line.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe(VALUES.title);
+    expect((line.querySelector('[data-node="#title"] textarea') as HTMLTextAreaElement).value).toBe(VALUES.title);
     expect(line.querySelector('.fd-head-copy')?.getAttribute('aria-label')).toBe('Copy title');
     // The classic header bar, statusbar, badges and the gear's own bar are not drawn.
     expect(host.querySelector('.fd-header, .fd-card, .fd-badges, .fd-record-bar')).toBeNull();
@@ -50,6 +50,25 @@ describe('a record head', () => {
     handle?.form.setValue('work_type', 'task');
     expect(head.style.getPropertyValue('--fd-kind')).toBe('#f2cb1d');
     expect(host.querySelector('.fd-head-badge')?.textContent).toBe('TASK 4127');
+  });
+
+  it('draws its title as one line that wraps, never cut: Enter adds no line, a pasted line break is a space', async () => {
+    const { part } = await draw();
+    const box = part('#title').querySelector('textarea') as HTMLTextAreaElement;
+    expect(box.classList.contains('fd-line-wraps')).toBe(true);
+    expect(box.getAttribute('aria-multiline')).toBe('false');
+    expect(box.rows).toBe(1);
+    // Enter is the form's, as in a one-line box: it never adds a line.
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    box.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    const lineBreak = new InputEvent('beforeinput', { inputType: 'insertLineBreak', bubbles: true, cancelable: true });
+    box.dispatchEvent(lineBreak);
+    expect(lineBreak.defaultPrevented).toBe(true);
+    box.value = 'Stock count\nshows 12';
+    box.dispatchEvent(new InputEvent('input', { inputType: 'insertFromPaste', bubbles: true }));
+    expect(box.value).toBe('Stock count shows 12');
+    expect(handle?.form.getState().values['title']).toBe('Stock count shows 12');
   });
 
   it('draws one kind named by the head, its strip in its own colour', async () => {
