@@ -487,8 +487,12 @@ export interface Form {
    * exactly the query (`SearchRequest.exact`).
    */
   search(field: string, query: string, limit?: number, options?: SearchOptions): Promise<RelatedRecord[]>;
-  /** The same, for a relation inside a one2many line, filtered by that line's values — or structured data of a line naming records of a model (`options.model`). */
-  searchLine(field: string, key: string, subfield: string, query: string, limit?: number, options?: SearchOptions): Promise<RelatedRecord[]>;
+  /**
+   * The same, for a relation inside a one2many line, filtered by that line's values — or structured data of a line
+   * naming records of a model (`options.model`). `key` null: a line not added yet, by the values one added now would
+   * start with (a row pasted past the last line, its names read before the line is made).
+   */
+  searchLine(field: string, key: string | null, subfield: string, query: string, limit?: number, options?: SearchOptions): Promise<RelatedRecord[]>;
   /**
    * The values of records a many2many links to, for a table of them: `fields`
    * of the records with these ids, in the order asked, read with the data
@@ -2080,18 +2084,23 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   }
 
   /** A line added: the person's, theirs; a step's, none of theirs, and the lines they changed stay theirs. */
+  /** What a line added now starts with: each line field's default, then what is worked out from its defaultFrom, then the record's lineDefaults. */
+  function newLineValues(field: string): Values {
+    const def = lineField(field);
+    const lineFields = def.fields as Record<string, LineField>;
+    const start = initialValues(lineFields, today());
+    Object.assign(start, firstValues(lineFields, lineScope(field, start)));
+    if (def.lineDefaults) Object.assign(start, readValueMap(def.lineDefaults, lineFields, recordScope()));
+    return start;
+  }
+
   function addLine(field: string, values: Values, by: ChangeBy): string {
     const def = lineField(field);
     const current = (state.values[field] as Line[] | null) ?? [];
     // A key no line holds: lines given (a line's own lines, back from its form) may hold new-… keys already.
     let key = `new-${++lineKeys}`;
     while (current.some((line) => line.key === key)) key = `new-${++lineKeys}`;
-    // Each line field's default, then what is worked out from its defaultFrom, then the record's lineDefaults, then what the line is given.
-    const lineFields = def.fields as Record<string, LineField>;
-    const start = initialValues(lineFields, today());
-    Object.assign(start, firstValues(lineFields, lineScope(field, start)));
-    if (def.lineDefaults) Object.assign(start, readValueMap(def.lineDefaults, lineFields, recordScope()));
-    const line: Line = { key, values: { ...start, ...structuredCopy(values) } };
+    const line: Line = { key, values: { ...newLineValues(field), ...structuredCopy(values) } };
     // A new line comes last, so it is numbered after the last.
     if (def.sequenceField && line.values[def.sequenceField] == null) {
       const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');
@@ -2908,7 +2917,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const def = lineField(field);
       const sub = def.fields[subfield];
       if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
-      const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
+      const line = key === null ? { values: newLineValues(field), id: null } : ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
       return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit, options);
     },

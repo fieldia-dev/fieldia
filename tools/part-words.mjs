@@ -64,7 +64,7 @@ export const PART_WORDS = {
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',
-      'pastedCells', 'pastedCellsOne', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
+      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
     ],
   },
   list: {

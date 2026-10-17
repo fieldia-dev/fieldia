@@ -942,4 +942,13 @@ describe('createForm — searching references and lines', () => {
     const key = form.addLine('line_ids', { category: 'coffee' });
     expect(await form.searchLine('line_ids', key, 'product_id', '')).toEqual([{ id: 2, label: 'Espresso' }]);
   });
+
+  it('searches a relation of a line not added yet by what a new line starts with, adding none', async () => {
+    const page = structuredClone(orderPage) as Page;
+    (page.fields['line_ids'] as { fields: Record<string, { default?: unknown }> }).fields['category'].default = 'tea';
+    const form = createForm({ page, dataSource: source() });
+    expect(await form.searchLine('line_ids', null, 'product_id', '')).toEqual([{ id: 1, label: 'Green tea' }]);
+    expect(form.getState().values['line_ids'] ?? []).toEqual([]);
+    expect(form.getState().dirty).toEqual([]);
+  });
 });
