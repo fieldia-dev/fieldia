@@ -2143,6 +2143,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         say: (message, tone) => actionHost.say(message, tone),
         ask: (message) => actionHost.ask(message),
         editValues: (request) => dialogs.editValues(request),
+        // A phone column's call and WhatsApp links, in the phone field's own words.
+        widgetLabels,
       };
       // The list comes in its part, which the page waited for; "Loading…" in its place where it could not come.
       const list = listPart.loaded ? listPart.loaded.listView(context) : waitingList(listPart, context);

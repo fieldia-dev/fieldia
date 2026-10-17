@@ -99,6 +99,18 @@ export interface ViewerLabels {
   viewList: string;
   viewMap: string;
   viewBoth: string;
+  /** A list's gallery on its switcher: its records as cards in a grid. */
+  viewGallery: string;
+  /**
+   * A list whose columns people shape: the Columns menu, its Move up and Move down (`{label}`, the column's), its
+   * Reset, a column's grip that sizes it, and the header of each row's own buttons.
+   */
+  columns: string;
+  moveColumnUp: string;
+  moveColumnDown: string;
+  resetColumns: string;
+  resizeColumn: string;
+  rowActions: string;
   selectRecord: string;
   noRecords: string;
   loadFailed: string;
@@ -357,6 +369,13 @@ const en: ViewerLabels = {
   viewList: 'List',
   viewMap: 'Map',
   viewBoth: 'List and map',
+  viewGallery: 'Gallery',
+  columns: 'Columns',
+  moveColumnUp: 'Move {label} up',
+  moveColumnDown: 'Move {label} down',
+  resetColumns: 'Reset columns',
+  resizeColumn: 'Resize {label}',
+  rowActions: 'Actions',
   selectRecord: 'Select {name}',
   noRecords: 'No records match.',
   loadFailed: 'Could not load the records.',

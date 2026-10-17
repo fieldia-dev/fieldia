@@ -1,3 +1,5 @@
+import { LIST_ROW_STYLES } from './list-rows-styles';
+
 /** The list's look, on the same tokens as the forms it opens. */
 export const LIST_STYLES = `
 .fd-list { display: grid; gap: 10px; min-width: 0; }
@@ -227,11 +229,11 @@ export const LIST_STYLES = `
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-button { display: none; }
 `;
 
-/** Puts the list's look in the document once. */
+/** Puts the list's look in the document once: its table's, then its richer rows' (list-rows-styles.ts). */
 export function installListStyles(doc: Document): void {
   if (doc.getElementById('fd-list-styles')) return;
   const style = doc.createElement('style');
   style.id = 'fd-list-styles';
-  style.textContent = LIST_STYLES;
+  style.textContent = LIST_STYLES + LIST_ROW_STYLES;
   doc.head.append(style);
 }
