@@ -156,7 +156,9 @@ the end of the head's badge row, and Escape and × ask before changes go. A
 head button whose steps save and then close resolves with `saved: true`. The
 head's title is one line that wraps where it is too long for its line, as a
 sheet's title does: a `textarea` (`aria-multiline="false"`), read from its
-start, never cut; Enter adds no line, and a line break pasted is a space.
+start, never cut, its words whole — the browser hyphenates none; only a word
+longer than the line (a web address) breaks, at its end or at a soft hyphen the
+words carry. Enter adds no line, and a line break pasted is a space.
 
 `side` is where it comes from: `'end'` (the default: the end of the line, the
 right, or the left right to left) or `'start'`, as the page reads; or

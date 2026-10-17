@@ -81,3 +81,69 @@ test.describe('a record’s title is one line', () => {
     expect(problems).toEqual([]);
   });
 });
+
+/**
+ * How a box lays its words out, read from a copy of it beside it — its own computed style, its width, its language —
+ * a word to a span: the words its lines split, and how many lines it takes.
+ */
+const laidOut = (box: ReturnType<typeof title>) =>
+  box.evaluate((area: HTMLTextAreaElement) => {
+    const style = getComputedStyle(area);
+    const copy = document.createElement('div');
+    for (const name of Array.from(style)) copy.style.setProperty(name, style.getPropertyValue(name));
+    Object.assign(copy.style, { position: 'absolute', insetBlockStart: '0', insetInlineStart: '0', visibility: 'hidden', height: 'auto', minHeight: '0', width: `${area.getBoundingClientRect().width}px` });
+    for (const part of area.value.split(/(\s+)/)) copy.append(Object.assign(document.createElement('span'), { textContent: part }));
+    (area.parentElement as HTMLElement).append(copy);
+    const lineHeight = parseFloat(style.lineHeight);
+    const split = [...copy.children].filter((span) => span.textContent?.trim() && span.getClientRects().length > 1).map((span) => span.textContent);
+    const lines = Math.round((copy.getBoundingClientRect().height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth)) / lineHeight);
+    copy.remove();
+    return { split, lines, hyphens: style.hyphens || style.getPropertyValue('-webkit-hyphens') };
+  });
+
+/** Words people write in a long name or title: none longer than a phone's line, some a browser that hyphenates would break. */
+const LONG_NAMES = [
+  'Nile Delta Shipping and Logistics, Developments and International Trading Establishment for Pharmaceuticals',
+  'Stock count shows 12 after releasing 3 of 15 items to order SO-2088, then Delivery confirmation pending from Alexandria',
+  'Printing a pick list cuts its last line when the warehouse orders reprinting from the regional distribution manager',
+];
+/** One word longer than any line: a German compound, then a web address. */
+const LONG_WORDS = ['Donaudampfschifffahrtsgesellschaftskapitänswitwenrentenversicherungsanstaltsverwaltung', 'https://portal.example.com/projects/warehouse/inventory/stock-counts/2026/october/SO-2088'];
+
+test.describe('a title’s words wrap whole, in every engine', () => {
+  for (const [width, height] of [[390, 844], [1440, 900]] as const) {
+    for (const [what, query, id] of [
+      ['a contact’s name', 'page=real-contact&record=7001&skin=underline', '#title'],
+      ['a work item’s title', 'page=wi-head&open=dialog', '#title'],
+    ] as const) {
+      test(`${what} at ${width}px: a word that fits a line is never broken or hyphenated; one longer than the line breaks, nothing cut`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        const popup = query.includes('open=dialog');
+        const problems: string[] = [];
+        page.on('pageerror', (error) => problems.push(error.message));
+        await page.goto(`/plain/?${query}`);
+        const box = (popup ? page.getByRole('dialog') : page).locator(`[data-node="${id}"] textarea`);
+        await expect(box).toBeVisible();
+        for (const name of LONG_NAMES) {
+          await box.fill(name);
+          await expect.poll(async () => (await laidOut(box)).lines).toBeGreaterThan(width === 390 ? 2 : 0);
+          expect((await laidOut(box)).split, `words of “${name}” split across lines`).toEqual([]);
+        }
+        // Broken only at a soft hyphen the words carry, never at one the browser picks.
+        expect((await laidOut(box)).hyphens).toBe('manual');
+        await box.evaluate((area) => area.scrollIntoView({ block: 'center' }));
+        await screen(page, `title-words-whole-${popup ? 'head' : 'sheet'}-${width}`, { viewport: true });
+        for (const [i, word] of LONG_WORDS.entries()) {
+          await box.fill(`Ask ${word} again`);
+          await expect.poll(() => box.evaluate((area) => area.scrollHeight <= area.clientHeight + 1 && area.scrollWidth <= area.clientWidth + 1)).toBe(true);
+          const long = await laidOut(box);
+          // Only the word too long for any line is broken: the short words around it stay whole.
+          expect(long.split.every((split) => split === word), `${long.split.join(', ')} split`).toBe(true);
+          await box.evaluate((area) => area.scrollIntoView({ block: 'center' }));
+          await screen(page, `title-long-word-${i + 1}-${popup ? 'head' : 'sheet'}-${width}`, { viewport: true });
+        }
+        expect(problems).toEqual([]);
+      });
+    }
+  }
+});
