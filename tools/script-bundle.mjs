@@ -829,7 +829,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // to 505.2.
 // A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, the page's
 // `lowerLabels` a setting of its own beside `records`: 505.18 measured before, 505.33 after — 0.2 more, to 505.4.
-const BUDGET_KB = 505.4;
+// A record's footer under every sheet and each heading kept with what follows it on paper (0.26, open-print): the print
+// rules' grids as blocks with their parts side by side in lines, the content a table whose footer group the footer is,
+// a box under each heading as tall as its start, a short group one box, measured as printing begins (print.ts) —
+// rules for paper that a part loaded at beforeprint brings too late — 500.98 measured before, 507.84 after: 6.9 more,
+// to 507.9.
+const BUDGET_KB = 507.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1011,7 +1016,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 162.68 after — 0.5 more, to 162.7.
 // A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.72
 // after, to 162.8.
-const GZIP_BUDGET_KB = 162.8;
+// A record's footer under every sheet and its headings kept with what follows them on paper (listed with the raw budget
+// above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
+const GZIP_BUDGET_KB = 163.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1419,6 +1426,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 15.85 and 6.54 to 15.69 and 6.46, its own lowering gone for the one rule, to 15.7 and 6.5. A list's Edit dialog
 // asking its labels as the list's page does, and a related list naming none for a page that only asks them small:
 // list 106.68 and 34.19 to 106.73 and 34.21, to 106.8 and 34.3.
+// A table of lines a block round it on paper, which every engine breaks between its rows (0.26, open-print): lines
+// 37.78 and 12.85 measured before, 37.85 and 12.87 after, its raw to 37.9.
 const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [106.8, 34.3], cards: [11.6, 3.7], columns: [18.3, 6.7], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {

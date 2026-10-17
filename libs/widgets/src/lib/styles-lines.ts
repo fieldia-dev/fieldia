@@ -93,7 +93,12 @@ export const LINES_CSS = /* css */ `
 .fd-line-section .fd-input { font-weight: 600; }
 .fd-line-note .fd-input { font-style: italic; }
 /* On paper: the lines, not the ticks to choose them nor the arrow that opens one. */
-@media print { .fd-form :is(.fd-line-pick, .fd-line-open, .fd-line-lead) { display: none !important; } }
+@media print {
+  .fd-form :is(.fd-line-pick, .fd-line-open, .fd-line-lead) { display: none !important; }
+  /* A block round the table on paper, which every engine breaks between its rows: Firefox moved a grid's part whole. */
+  .fd-form .fd-lines { display: block; }
+  .fd-form .fd-lines > * + * { margin-block-start: 6px; }
+}
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */
