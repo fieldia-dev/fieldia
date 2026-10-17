@@ -6,7 +6,7 @@ import { groupFilter, groupName, type GroupKey, type Heading } from './list-grou
 import type { ListTotals } from './list-totals';
 import type { ViewerLabels } from './labels';
 import { facetText } from './search-bar';
-import { valueWords } from './value-words';
+import { printWords } from './value-words';
 
 /**
  * A list on paper (its bar's Print, `"print": true`): every record the
@@ -40,6 +40,8 @@ export interface PrintList {
   words: (name: string, values: Values) => string;
   /** A column's words keep to its end: a number's. */
   atEnd: (name: string) => boolean;
+  /** A column's words are one thing, kept on one line: a number, an amount, a day, a phone number (`keepsWhole`). */
+  whole?: (name: string) => boolean;
   filter: ResolvedFilter[];
   sort: SortOrder[];
   /** The search as it stands: its filters said in words, its Group By. */
@@ -91,7 +93,8 @@ export async function printout(list: PrintList, progress: (done: number, total: 
   let done = 0;
   let total = list.matching;
   let left = most;
-  const cell = (tag: 'td' | 'th', name: string | null, text: string) => el(tag, { class: name && list.atEnd(name) ? 'fd-num' : undefined }, el('bdi', {}, text));
+  const classes = (name: string) => [list.atEnd(name) ? 'fd-num' : '', list.whole?.(name) ? 'fd-whole' : ''].filter(Boolean).join(' ') || undefined;
+  const cell = (tag: 'td' | 'th', name: string | null, text: string) => el(tag, { class: name ? classes(name) : undefined }, el('bdi', {}, text));
 
   /** The records a filter keeps, as rows: at most what is left of the most. */
   async function rows(filter: ResolvedFilter[], level: number): Promise<HTMLTableRowElement[]> {
@@ -142,8 +145,9 @@ export async function printout(list: PrintList, progress: (done: number, total: 
 
   // Over it: the page's logo and words, the list's title and the day; what the search is, in words, and how many.
   const own = page.print ?? {};
-  const header = own.header ? valueWords(list.doc, fields, own.header, list.locale) : null;
-  const footer = own.footer ? valueWords(list.doc, fields, own.footer, list.locale) : null;
+  // A line naming a record's value names none in a list of them: left out whole.
+  const header = own.header ? printWords(list.doc, fields, own.header, list.locale) : null;
+  const footer = own.footer ? printWords(list.doc, fields, own.footer, list.locale) : null;
   header?.update({});
   footer?.update({});
   const filters = list.facets.filter((facet) => facet.kind !== 'groupBy').map((facet) => facetText(facet, labels));

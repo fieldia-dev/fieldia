@@ -622,6 +622,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const span = drawn.style.getPropertyValue('--fd-span');
         if (span) box.style.setProperty('--fd-span', span);
         if (drawn.dataset['hideOn']) box.dataset['hideOn'] = drawn.dataset['hideOn'];
+        if (drawn.dataset['print']) box.dataset['print'] = drawn.dataset['print'];
         // The focus it held comes to its box, which says what failed: a keyboard keeps its place.
         const focused = drawn.contains(doc.activeElement);
         drawn.replaceWith(box);
@@ -1226,7 +1227,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           button.title = tab.label;
         }
         // On paper every tab shows, one after another, under its name.
-        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label });
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label, ...(tab.print === false ? { 'data-print': 'off' } : {}) });
         /**
          * A tab's parts are drawn when it is first shown, and kept up to date
          * only while it is shown: a page of many tabs costs one tab's work.
@@ -1360,9 +1361,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       return hiddenOn(node, kept(node, () => partItem(node, place)));
     }
 
-    /** A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. */
-    function hiddenOn(node: { hideOn?: readonly string[] }, element: HTMLElement): HTMLElement {
+    /**
+     * A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. And one its page
+     * leaves off paper (`"print": false`): the stylesheet for paper leaves it out.
+     */
+    function hiddenOn(node: { hideOn?: readonly string[]; print?: boolean }, element: HTMLElement): HTMLElement {
       if (node.hideOn?.length) element.dataset['hideOn'] = node.hideOn.join(' ');
+      if (node.print === false) element.dataset['print'] = 'off';
       return element;
     }
 
@@ -1817,9 +1822,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function recordName(): string {
     const state = form.getState();
     if (state.recordId == null) return '';
+    return ownName() || page.title || '';
+  }
+
+  /** The record's own name: its sheet's title field's words, empty where it has none (yet). */
+  function ownName(): string {
+    const state = form.getState();
     const field = page.layout.type === 'sheet' ? page.layout.title?.field : undefined;
-    const name = field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
-    return name || page.title || '';
+    return field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
   }
 
   /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */
@@ -2378,7 +2388,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     locale,
     fill,
     now: options.now ?? (() => new Date()),
-    name: recordName,
+    name: ownName,
     values: () => form.getState().values,
     drawAll: () => {
       // Each tabs' own drawing may draw tabs inside its own, which join the list as they come.

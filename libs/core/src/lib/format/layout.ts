@@ -227,6 +227,8 @@ export interface FieldNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
   readonly?: Modifier;
   required?: Modifier;
   // ---- the quiet look ----
@@ -546,6 +548,8 @@ export interface RelatedNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
 }
 
 /** A line along the roads between a map's layers: from one place to another, or through a layer's lines in their order. */
@@ -732,6 +736,8 @@ export interface SectionNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
   children: LayoutNode[];
@@ -758,6 +764,8 @@ export interface TabNode {
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
+  /** `false`: left out on paper (Ctrl+P, Print), its name with it, as an invoice's Journal Items: shown on screen as ever. */
+  print?: boolean;
   children: LayoutNode[];
   /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
   iconOnly?: boolean;
@@ -1492,6 +1500,8 @@ const invisible = ModifierSchema.optional();
 export const RolesSchema = z.array(z.string().regex(/^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/, 'a role is a name such as sales_team.group_sale_manager, with ! before it to hide the part from people holding it')).min(1).meta({ id: 'Roles' });
 const roles = RolesSchema.optional();
 const hideOn = z.array(ScreenWidthSchema).min(1).optional();
+/** `false`: a part left out on paper. */
+const print = z.boolean().optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
@@ -1580,7 +1590,7 @@ export const FieldNodeSchema = z.strictObject({
   bold: ModifierSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
   focus: z.boolean().optional(),
-  invisible, roles, hideOn,
+  invisible, roles, hideOn, print,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
   // The quiet look.
@@ -1850,7 +1860,7 @@ export const RelatedNodeSchema = z
     create: z.boolean().optional(),
     open: z.enum(['dialog', 'app']).optional(),
     colspan: span,
-    invisible, roles, hideOn,
+    invisible, roles, hideOn, print,
   })
   .meta({ id: 'RelatedNode' });
 
@@ -1880,7 +1890,7 @@ export const SectionNodeSchema = z.strictObject({
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
-  invisible, roles, hideOn,
+  invisible, roles, hideOn, print,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -1900,7 +1910,7 @@ export const TabNodeSchema = z.strictObject({
   id,
   label: z.string(),
   icon: z.string().optional(),
-  invisible, roles,
+  invisible, roles, print,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },

@@ -6302,6 +6302,9 @@
             "$ref": "#/$defs/ScreenWidth"
           }
         },
+        "print": {
+          "type": "boolean"
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -7732,6 +7735,9 @@
             "$ref": "#/$defs/ScreenWidth"
           }
         },
+        "print": {
+          "type": "boolean"
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -7850,6 +7856,9 @@
         },
         "roles": {
           "$ref": "#/$defs/Roles"
+        },
+        "print": {
+          "type": "boolean"
         },
         "children": {
           "type": "array",
@@ -8594,6 +8603,9 @@
           "items": {
             "$ref": "#/$defs/ScreenWidth"
           }
+        },
+        "print": {
+          "type": "boolean"
         }
       },
       "required": [

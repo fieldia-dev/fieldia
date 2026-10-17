@@ -82,9 +82,11 @@ describe('a record on paper', () => {
     const head = host.querySelector('.fd-print-head') as HTMLElement;
     expect(head.getAttribute('aria-hidden')).toBe('true');
     expect(head.querySelector('img')?.getAttribute('src')).toBe('/brand/logo.svg');
-    expect(head.querySelector('.fd-print-words')?.textContent).toBe('Zamalek Office Supplies\nCairo');
+    // The app's words a line each.
+    expect([...head.querySelectorAll('.fd-print-words .fd-print-line')].map((line) => line.textContent)).toEqual(['Zamalek Office Supplies', 'Cairo']);
     window.dispatchEvent(new Event('beforeprint'));
-    expect(head.querySelector('.fd-print-title')?.textContent).toBe('Invoice · INV/2026/0042');
+    // The record's own name, alone.
+    expect(head.querySelector('.fd-print-title')?.textContent).toBe('INV/2026/0042');
     // 08:05 in UTC is 11:05 in Cairo, the page's zone (EEST, summer time, on 16 October 2026).
     expect(head.querySelector('.fd-print-when')?.textContent).toMatch(/^Printed 16 Oct 2026, 11:05/);
     // The footer's {name} is the record's.
@@ -127,6 +129,54 @@ describe('a record on paper', () => {
     title.value = 'INV/2026/0042-B';
     window.dispatchEvent(new Event('beforeprint'));
     expect(words(host)).toContain('INV/2026/0042-B');
+  });
+});
+
+describe('the owner’s walk of 0.25 on paper', () => {
+  const draft = () =>
+    createMemoryDataSource({ records: { 'account.move': { 8: { name: '/', state: 'draft' }, 9: { name: null, state: 'draft' } }, partner: { 1: { name: 'Heliopolis Medical Center' } } } });
+  const sheet = invoice.layout as Extract<Page['layout'], { type: 'sheet' }>;
+  const staged: Page = { ...invoice, records: { one: 'invoice', other: 'invoices', a: 'an invoice' }, layout: { ...sheet, statusbar: { field: 'state' } } };
+
+  it('titles a record with no name yet by what its page calls its records and its stage, never its model’s title', async () => {
+    for (const [recordId, page, title] of [
+      [8, staged, 'Invoice · Draft'],
+      [9, staged, 'Invoice · Draft'],
+      [8, invoice, 'Invoice'],
+    ] as const) {
+      const host = await mount({ page, dataSource: draft(), recordId });
+      window.dispatchEvent(new Event('beforeprint'));
+      expect(host.querySelector('.fd-print-title')?.textContent).toBe(title);
+      window.dispatchEvent(new Event('afterprint'));
+      handle?.destroy();
+      handle = null;
+    }
+  });
+
+  it('leaves out a header or footer line whose value is empty, "/" or no words, whole; the others stay', async () => {
+    const page: Page = { ...invoice, print: { header: 'Zamalek\nOrder {reference}', footer: 'Quote {name} when you pay.\nThank you.' } };
+    const host = await mount({ page, dataSource: draft(), recordId: 8 });
+    window.dispatchEvent(new Event('beforeprint'));
+    const shown = (box: string) => [...host.querySelectorAll<HTMLElement>(`${box} .fd-print-line`)].filter((line) => !line.hidden).map((line) => line.textContent);
+    expect(shown('.fd-print-words')).toEqual(['Zamalek']);
+    expect(shown('.fd-print-foot')).toEqual(['Thank you.']);
+    // A name typed: its line back.
+    handle?.form.setValue('name', 'INV/2026/0043');
+    window.dispatchEvent(new Event('afterprint'));
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(shown('.fd-print-foot')).toEqual(['Quote INV/2026/0043 when you pay.', 'Thank you.']);
+  });
+
+  it('marks a tab, a group or a field its page leaves off paper, for the stylesheet to leave out', async () => {
+    const off: Page = JSON.parse(JSON.stringify(invoice));
+    const tabs = (off.layout as { children: { id: string; children?: { id: string; print?: boolean; children?: { print?: boolean }[] }[] }[] }).children[1];
+    tabs.children![1].print = false;
+    (off.layout as { children: { print?: boolean }[] }).children[0].print = false;
+    const host = await mount({ page: off });
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(panel(host, 'Payment').dataset['print']).toBe('off');
+    expect(panel(host, 'Details').dataset['print']).toBeUndefined();
+    expect((host.querySelector('[data-node="f-partner"]') as HTMLElement).dataset['print']).toBe('off');
   });
 });
 

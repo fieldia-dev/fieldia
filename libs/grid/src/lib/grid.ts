@@ -29,6 +29,7 @@ import {
   DRAWN_IN_CELLS,
   drawIcon,
   itemNumber,
+  keepsWhole,
   openLineDialog,
   kindTextField,
   lineForm,
@@ -1847,10 +1848,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let paper: HTMLTableElement | null = null;
   const NUMBERS = new Set(['integer', 'float', 'monetary']);
   function paperTable(): HTMLTableElement {
-    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false) => {
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false, whole = false) => {
       const cell = document.createElement(tag);
       cell.textContent = text;
       if (end) cell.className = 'fd-num';
+      // A day or a phone number on one line too, as a number is.
+      if (whole) cell.classList.add('fd-whole');
       return cell;
     };
     const parent = form.getState().values;
@@ -1876,7 +1879,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         continue;
       }
       const state = lineStates.get(line.key);
-      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column))));
+      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column), keepsWhole(def.fields[column].type, node.cells?.[column]?.widget))));
     }
     const current = lines();
     const items = current.filter((line) => !kindOf(line));

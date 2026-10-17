@@ -21,7 +21,7 @@ import {
   type Tone,
   type Values,
 } from '@fieldia/core';
-import { drawIcon, formatNumber, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
+import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -260,6 +260,10 @@ export function listView(context: ListContext): ListView {
   const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : []), ...(cards?.cardReads(spec) ?? []), ...rules.reads])];
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
+  /** Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number. */
+  const whole = (name: string) => keepsWhole(page.fields[name]?.type, cellOf(name)?.widget);
+  /** A cell's classes: at the end for a number, whole on paper for words read as one. */
+  const cellClass = (name: string) => [atEnd(name) ? 'fd-num' : '', whole(name) ? 'fd-whole' : ''].filter(Boolean).join(' ') || undefined;
   /** A column of a given width, its words cut with "…" past it: the person's, in pixels; else the page's, in characters of its words or in pixels. */
   const sized = (cell: HTMLTableCellElement, name: string) => {
     const own = choices?.width(name);
@@ -561,7 +565,7 @@ export function listView(context: ListContext): ListView {
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
       ...node.columns.map((column) =>
-        sized(el('td', { 'data-col': column, class: atEnd(column) ? 'fd-num' : undefined, 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
+        sized(el('td', { 'data-col': column, class: cellClass(column), 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
       ),
       // Its card, which the table hides and a narrow list or its gallery shows in place of the columns.
       ...(spec && cards ? [cards.drawCard({ page, node, el, locale, cells }, spec, record.values, name)] : []),
@@ -1270,6 +1274,7 @@ export function listView(context: ListContext): ListView {
             reads: fields,
             words: show,
             atEnd,
+            whole,
             filter: currentFilter(),
             sort,
             facets,

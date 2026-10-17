@@ -1,7 +1,7 @@
 import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf } from './date-text';
-import { cellText, currencyOf } from './display';
+import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
@@ -419,6 +419,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     td.colSpan = span;
     td.dataset['column'] = column;
     if (FIXED_WIDTH.has(sub.type)) td.dataset['fit'] = sub.type;
+    // Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number.
+    if (keepsWhole(sub.type, subNode.widget)) td.classList.add('fd-whole');
     // Its column's label, which a card shows before its value.
     td.dataset['label'] = sub.label;
     const label = document.createElement('label');

@@ -532,15 +532,23 @@ an engine that tells nothing as it prints gets them too):
   header left alone at a sheet's foot — each goes to the next sheet with the
   start of what follows it;
 - groups and fields side by side as the page sets them at the sheet's width,
-  a row of them never laid over the next, in Chromium and Firefox alike;
+  a row of them never laid over the next, in Chromium and Firefox alike; a
+  sheet breaks between any two groups, so one that fits stays where it is;
+- no required star, in any skin; a number, an amount, a day or a phone number
+  in a printed list's or table's cell on one line;
+- a part its page marks `"print": false` — a tab, a group, a field or a
+  related list — left out, as an invoice leaves out its journal items, and a
+  related list with no title of its own no empty band over its rows;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
-- over it, the record's title and the day it was printed (`now`, on the
-  page's `timeZone`), and — with a page's `print` — the app's logo and words
-  over it, and its footer under every sheet of it: nothing runs under the
-  footer, and under the last sheet it follows the record (in Chromium and
-  Firefox; in Safari, once after the record). Each `{field}` shows that
-  field's value;
+- over it, the record's own name — with none yet (a draft invoice's "/"),
+  what the page calls its records and the stage it is in, "Invoice · Draft" —
+  and the day it was printed (`now`, on the page's `timeZone`), and — with a
+  page's `print` — the app's logo and words over it, and its footer under every
+  sheet of it: nothing runs under the footer, and under the last sheet it
+  follows the record (in Chromium and Firefox; in Safari, once after the
+  record). Each `{field}` shows that field's value; a line whose value is
+  empty (or no words, as "/") is left out whole, never "quoting . Thank you";
 - with a dialog or a panel open over the page, its form alone: what a person
   printing looks at — never the page behind with the dialog over it.
 

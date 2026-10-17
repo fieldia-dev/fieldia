@@ -48,9 +48,15 @@ export const PRINT_CSS = /* css */ `
    out left out — but where the focus is, which stays — while what each heading keeps under it on paper is measured, as
    printing begins (print.ts), no frame drawn between: its columns and labels as paper lays them out. */
 .fd-form[data-fd-measure] { inline-size: 720px !important; max-inline-size: none !important; }
-.fd-form[data-fd-measure] .fd-tabpanel[hidden]:not([data-off]) { display: block !important; }
+.fd-form[data-fd-measure] .fd-tabpanel[hidden]:not([data-off], [data-print="off"]) { display: block !important; }
 .fd-form[data-fd-measure] .fd-print-box { display: block; white-space: pre-wrap; }
 .fd-form[data-fd-measure] .fd-richtext { min-height: 0 !important; }
+/* A printout's words a line each, one whose value is empty left out (print.ts); a blank line kept as one. */
+.fd-print-line { display: block; }
+.fd-print-line[hidden] { display: none; }
+.fd-print-line:empty { min-block-size: 1.4em; }
+/* Every line of it left out: no footer at all, never its rule over nothing. */
+.fd-print-foot:not(:has(> .fd-print-line:not([hidden]))) { display: none !important; }
 /* A footer's words as paper has them, here too: a list's printout measures its height out of sight (list-print.ts). */
 .fd-print-foot { padding-block-start: 8px; border-block-start: 1px solid var(--fd-border); font-size: 11px; line-height: 1.4; color: var(--fd-muted); white-space: pre-line; }
 @media print {
@@ -73,20 +79,26 @@ export const PRINT_CSS = /* css */ `
   .fd-form .fd-wizard > .fd-step ~ .fd-step { margin-block-start: 20px; }
   .fd-form .fd-card > * + * { margin-block-start: 18px; }
   .fd-form .fd-grid:not([data-tracks]) > :where(:not([hidden]) ~ :not([hidden])) { margin-block-start: var(--fd-gap-y); }
+  /* A grid's parts kept whole (a short group as one box) are its lines on paper: a sheet breaks between any two of them,
+     never carrying one that fits away with the last (a sheet's "two lines at its head" carried the sales order's
+     Delivery group to the next sheet with Tracking, the room for it left blank). Words inside a part keep two. */
+  .fd-form .fd-grid { orphans: 1; widows: 1; }
+  .fd-form .fd-grid > * { orphans: 2; widows: 2; }
   .fd-form div.fd-section > :where(:not([hidden]) ~ :not([hidden])) { margin-block-start: 14px; }
   .fd-form .fd-sections > :where(:not([hidden]) ~ :not([hidden])) { margin-block-start: var(--fd-gap-block, 24px); }
   .fd-form .fd-step > :where(:not([hidden]) ~ :not([hidden])) { margin-block-start: 18px; }
   .fd-form .fd-sheet-layout { display: block !important; max-width: none !important; }
-  /* Left out: what is pressed, chosen from or said for the screen. */
+  /* Left out: what is pressed, chosen from or said for the screen, and what its page leaves off paper (a tab's, a
+     group's, a field's or a related list's "print": false). */
   .fd-form :is(.fd-record-bar, .fd-actions, .fd-wizard-nav, .fd-progress, .fd-steps, .fd-tabbar, .fd-stats, .fd-side, .fd-attachment-preview,
     .fd-button, .fd-dialog-close, .fd-help, .fd-help-tip-wrap, .fd-lock-wrap, .fd-valid-mark, .fd-error, .fd-warning, .fd-section-chevron,
     .fd-status-box, .fd-banner, .fd-draft, .fd-says, .fd-toast, .fd-alert-actions, .fd-alert-close, .fd-combo-open, .fd-combo-clear,
     .fd-calendar-button, .fd-chip-remove, .fd-lines-tools, .fd-lines-grip, .fd-lines-adds, .fd-lines-control, .fd-richtext-bar, .fd-link-row,
-    .fd-link-avatar, .fd-link-nobody, .fd-count, .fd-choice-clear, [data-print-box]) { display: none !important; }
+    .fd-link-avatar, .fd-link-nobody, .fd-count, .fd-choice-clear, [data-print-box], [data-print="off"]) { display: none !important; }
 
   /* Every tab under its name, every step, every folded part open; one hidden by a condition stays hidden (and what is
      hidden on screen is hidden with !important, .fd-form [hidden]: so is what shows it here). */
-  .fd-form .fd-tabpanel[hidden]:not([data-off]) { display: block !important; }
+  .fd-form .fd-tabpanel[hidden]:not([data-off], [data-print="off"]) { display: block !important; }
   /* A tab's name over it, kept on the sheet with the start of what follows: its box as tall as its name and that start
      (--fd-print-keep, measured as printing begins: print.ts), which a sheet may not break and so takes to the next
      sheet where this one's foot has less, what follows drawn over it — Firefox keeps no heading with what follows it,
@@ -120,6 +132,8 @@ export const PRINT_CSS = /* css */ `
   .fd-form .fd-section-toggle { padding: 0; border: 0; background: none; color: inherit; font: inherit; }
   .fd-form :is(.fd-section-title, .fd-step-title, .fd-page-title, h2, h3) { color: var(--fd-accent); break-after: avoid; }
 
+  /* No required mark on paper, in any skin or theme: a star says what must be filled in, which paper cannot. */
+  .fd-form .fd-required > :is(.fd-label, .fd-address-label)::before, .fd-form .fd-required > :is(.fd-label, .fd-address-label)::after { content: none !important; }
   /* A box as its words: wrapped, never cut; a choice of several, the one picked. */
   .fd-form .fd-print-box { display: block; min-width: 0; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.35; padding-block: 2px; }
   .fd-form :is(.fd-input, .fd-combo, .fd-tags) { border-color: transparent !important; background: none !important; padding-inline: 0 !important; }
@@ -184,7 +198,7 @@ export const LEFT_OUT =
   '.fd-button, .fd-dialog-close, .fd-help, .fd-help-tip-wrap, .fd-lock-wrap, .fd-valid-mark, .fd-error, .fd-warning, .fd-section-chevron, ' +
   '.fd-status-box, .fd-banner, .fd-draft, .fd-says, .fd-toast, .fd-alert-actions, .fd-alert-close, .fd-combo-open, .fd-combo-clear, ' +
   '.fd-calendar-button, .fd-chip-remove, .fd-lines-tools, .fd-lines-grip, .fd-lines-adds, .fd-lines-control, .fd-richtext-bar, .fd-link-row, ' +
-  '.fd-link-avatar, .fd-link-nobody, .fd-count, .fd-choice-clear, [data-print-box]';
+  '.fd-link-avatar, .fd-link-nobody, .fd-count, .fd-choice-clear, [data-print-box], [data-print="off"]';
 
 /** Grids no band's count changes: one with tracks of its own (a work item's head), one sharing a cell (a part's own). */
 const OWN = '[data-tracks], [data-place="shared"] > *';
@@ -198,22 +212,28 @@ const ONE = `[data-columns="1"], ${OWN}`;
  * them; a table's field, a related list or tabs, which must break between sheets, is a block of its own width. The grid
  * a box of its own, its parts' gaps under the last line kept inside it; one line at a sheet's foot or head is enough
  * (Chromium kept two, carrying a group's first line away from its title).
+ *
+ * At the width `query` asks of the sheet — a media query, never a container's: a part's box made another kind (a block
+ * an inline box) by a container query is never drawn in Firefox's print, its room left blank (the sales order's
+ * customer group, 0.26's walk), where a media query's is. The form is as wide as the sheet on paper, so the sheet's
+ * width is its own. Without a query, at every width.
  */
-function sideBySide(query: string, grids: string): string {
+function sideBySide(query: string | null, grids: string): string {
   const parts = `:is(${grids})>`;
-  return (
-    `@container ${query}{${grids}{display:flow-root!important;margin-inline-end:calc(-1*var(--fd-print-gap));orphans:1;widows:1}` +
+  const rules =
+    `${grids}{display:flow-root!important;margin-inline-end:calc(-1*var(--fd-print-gap));orphans:1;widows:1}` +
     `${parts}*{display:inline-block;vertical-align:top;box-sizing:border-box;margin-block:0 var(--fd-gap-y);margin-inline:0 var(--fd-print-gap);` +
     `inline-size:calc(100%*min(var(--fd-span,1),var(--fd-cols))/var(--fd-cols) - var(--fd-print-gap) - .5px)}` +
-    `${parts}.fd-field{display:inline-grid}${parts}:is(.fd-field:has(thead),.fd-related,.fd-tabs){display:block}}`
-  );
+    `${parts}.fd-field{display:inline-grid}${parts}:is(.fd-field:has(thead),.fd-related,.fd-tabs){display:block}`;
+  return query ? `@media ${query}{${rules}}` : rules;
 }
 
 /**
  * The sheet's rules made as it loads (above): what paper leaves out, left out while a heading's room is measured — but
  * where the focus is, which stays — and, on paper, a grid of more than one column at the sheet's width — its own count
- * where the sheet is wide, its medium one (the underline skin's one) at most 760px, its narrow one at most 520px, a
- * part's own at more than 330px: --fd-cols as styles.ts and layout-styles.ts count it — its parts side by side. The gap
+ * where the sheet is wide, its medium one (the underline skin's one) at most 760px, its narrow one at most 520px: the
+ * columns --fd-cols counts as styles.ts and layout-styles.ts count them — its parts side by side; and a part sharing a
+ * cell's grid of its own (its columns counted by its own width, layout-styles.ts) side by side at every width. The gap
  * between them the grid's, a twelfths grid's as narrow as it may be (styles.ts).
  */
 export const PRINT_GRIDS_CSS =
@@ -225,5 +245,5 @@ export const PRINT_GRIDS_CSS =
     `.fd-form .fd-grid[data-columns-medium]:not([data-columns-medium="1"],${OWN}),.fd-form:not([data-fd-skin="underline"]) .fd-grid[data-columns]:not(${ONE},[data-columns-medium])`
   ) +
   sideBySide('(max-width:520px)', `.fd-form .fd-grid[data-columns-narrow]:not([data-columns-narrow="1"],${OWN})`) +
-  sideBySide('(min-width:331px)', '.fd-form [data-place="shared"] > .fd-grid[data-columns]:not([data-columns="1"],[data-tracks])') +
+  sideBySide(null, '.fd-form [data-place="shared"] > .fd-grid[data-columns]:not([data-columns="1"],[data-tracks])') +
   '}';
