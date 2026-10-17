@@ -25,9 +25,21 @@ describe('tags from a list', () => {
     expect(list(el).hidden).toBe(true);
   });
 
-  it('offers every option on focus, and those whose words match as one types', () => {
+  it('keeps its list closed when the program takes the focus into it (a dialog’s first field, a refused save)', () => {
     const { el } = tags();
     box(el).focus();
+    expect(document.activeElement).toBe(box(el));
+    expect(list(el).hidden).toBe(true);
+    expect(box(el).getAttribute('aria-expanded')).toBe('false');
+    // Alt+Down opens it, as a person asks with the keys.
+    box(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+    expect(list(el).hidden).toBe(false);
+  });
+
+  it('offers every option on a click, and those whose words match as one types', () => {
+    const { el } = tags();
+    box(el).focus();
+    box(el).click();
     expect(list(el).hidden).toBe(false);
     expect(box(el).getAttribute('aria-expanded')).toBe('true');
     expect(offered(el)).toEqual(['Kitchen', 'Quiet room', 'Gym', 'Library']);
@@ -41,6 +53,7 @@ describe('tags from a list', () => {
   it('adds the option reached with the arrows on Enter, then offers only the others', () => {
     const { el, value } = tags();
     box(el).focus();
+    box(el).click();
     press(box(el), 'ArrowDown');
     press(box(el), 'ArrowDown');
     const active = list(el).querySelector('[aria-selected=true]') as HTMLElement;

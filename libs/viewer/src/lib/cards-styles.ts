@@ -90,9 +90,9 @@ export const CARD_STYLES = `
 .fd-list[data-as] .fd-list-totals tr:not([hidden]) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; padding: 10px 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.08); }
 .fd-list[data-as] .fd-list-totals tr[data-total="ticked"]:not([hidden]) { margin-block-end: 6px; border-color: var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-list[data-as] .fd-list-totals :is(td, th) { display: block; position: static; padding: 0; border: 0 !important; background: none !important; white-space: normal; }
-/* A total that cannot be said honestly (amounts in more than one currency) says why in words: no pointer on a phone. */
-.fd-list[data-as] .fd-list-totals td:empty:not([title]) { display: none; }
-.fd-list[data-as] .fd-list-totals td[title]:empty::after { content: attr(title); color: var(--fd-muted); font-weight: 400; }
+/* A total that cannot be said honestly (amounts in more than one currency) says so in its own words, as the table does
+   ("Several currencies", list-totals.ts): no pointer on a phone. A column with no total takes no room. */
+.fd-list[data-as] .fd-list-totals td:empty { display: none; }
 .fd-list[data-as] .fd-list-totals td[data-label]::before { content: attr(data-label); margin-inline-end: 6px; color: var(--fd-muted); font-weight: 400; }
 }
 `;

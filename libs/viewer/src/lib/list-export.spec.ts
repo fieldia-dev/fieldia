@@ -92,7 +92,7 @@ async function exportAs(host: Element, format: 'xlsx' | 'csv') {
 }
 
 describe('a list’s export', () => {
-  it('writes every record the search finds as CSV: the columns in order under a header, each value as the list says it', async () => {
+  it('writes every record the search finds as CSV: the columns in order under a header, a spreadsheet’s numbers and days', async () => {
     const host = await mount();
     exportButton(host).click();
     expect(menu(host).hidden).toBe(false);
@@ -103,14 +103,29 @@ describe('a list’s export', () => {
     expect(file.name).toMatch(/^Contacts \d{4}-\d{2}-\d{2}\.csv$/);
     expect(file.blob?.type).toBe('text/csv;charset=utf-8');
     const csv = await text(file.blob as Blob);
+    // Amounts and counts as a spreadsheet adds them — digits and a point, no grouping, no sign — each amount's currency in
+    // a column of its own beside it; days and times as ISO writes them, on the clock the list shows.
     expect(csv.split('\r\n')).toEqual([
-      '\ufeffName,Status,Since,Last seen,"Credit, limit",Newsletter,Orders',
-      '"Amira ""AC"" Clinics",Lead,,,"JOD 18,000.000",No,0',
-      'Nile Traders,Customer,5 Mar 2024,"15 Oct 2026, 14:30","E£ 250,000.00",Yes,"1,284"',
-      '"Petra, Tours",Customer,31 Dec 2025,,,,7',
+      '\ufeffName,Status,Since,Last seen,"Credit, limit","Credit, limit currency",Newsletter,Orders',
+      '"Amira ""AC"" Clinics",Lead,,,18000.000,JOD,No,0',
+      'Nile Traders,Customer,2024-03-05,2026-10-15 14:30,250000.00,EGP,Yes,1284',
+      '"Petra, Tours",Customer,2025-12-31,,,,,7',
       '',
     ]);
     expect(handle?.element.querySelector('.fd-toast, [role="status"]')).not.toBeNull();
+  });
+
+  it('writes a decimal comma where the language does, as a spreadsheet there reads numbers; one currency in the header', async () => {
+    const page = { ...contacts, fields: { ...contacts.fields, credit: { type: 'monetary', label: 'Credit', currency: 'EUR' } } } as Page;
+    const host = await mount({ locale: 'de' }, page);
+    const csv = await text((await exportAs(host, 'csv')).blob as Blob);
+    expect(csv.split('\r\n')).toEqual([
+      '\ufeffName;Status;Since;Last seen;Credit (EUR);Newsletter;Orders',
+      '"Amira ""AC"" Clinics";Lead;;;18000,00;Nein;0',
+      'Nile Traders;Customer;2024-03-05;2026-10-15 14:30;250000,00;Ja;1284',
+      'Petra, Tours;Customer;2025-12-31;;;;7',
+      '',
+    ]);
   });
 
   it('writes the rows ticked alone, in the list’s order, when some are', async () => {

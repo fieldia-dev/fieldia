@@ -7,7 +7,7 @@ made from another project's work.
 
 **What:** the phone part's table of countries — each country's dialling code,
 the digit a number is dialled with at home, the lengths its numbers have by how
-they start, and how they are written in groups —
+they start, how its mobile numbers start, and how they are written in groups —
 `src/lib/phone-table.js` (`phone-table.ts` in the source), and so the phone
 part, `fieldia.phone.js`, in @fieldia/viewer's script bundle.
 

@@ -75,7 +75,8 @@ describe('booking slots', () => {
     expect(day(30).dataset['state']).toBe('holiday');
     expect(day(30).getAttribute('aria-label')).toBe(`${named(2026, 10, 30)}, Holiday: Staff training`);
     // The zone the times are on, said: not the machine's.
-    expect(el.querySelector('.fd-slots-zone')?.textContent).toBe('Times are Central European Time (CEST)');
+    // By its name all year: October holds both CEST and CET (the clocks go back on the 25th).
+    expect(el.querySelector('.fd-slots-zone')?.textContent).toBe('Times are Central European Time');
     expect(el.querySelector('.fd-slots-heading')?.textContent).toBe('Pick a day to see its free times.');
   });
 

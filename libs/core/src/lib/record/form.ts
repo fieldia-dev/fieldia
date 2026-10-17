@@ -37,6 +37,7 @@ import {
   type DuplicateMatch,
   type MergeResult,
 } from './data-source';
+import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
@@ -349,6 +350,14 @@ export interface Form {
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
+  /**
+   * What a value worked out from others waits for while one of them holds text that does not read (`unread`): a
+   * total of the page's own (`compute`) over a table whose line says "abc" in its Quantity, or an amount the app
+   * works out as the lines change (read-only, from a source with an onchange) — the line, as people count them, and
+   * its cell. Shown, it is a dash said in words, as the table's own total waits: never an amount worked out from the
+   * value that text replaced. Null when it shows its value.
+   */
+  waitsFor(field: string): WaitsFor | null;
   /**
    * Keep text a person left in a box that does not read (`FormState.unread`), by its path — `field`, or a line's
    * `field.lineKey.subfield` — with why in words; null once it reads, or is let go. Nothing is shown until the box
@@ -819,6 +828,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const editingNow = () => editing && !(started && state.can?.edit === false);
   const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing: editingNow(), context: options.context, parent: parentContext });
   const computed = compileComputed(page, today, about);
+  /** Each value worked out from others — by the page, or by the app as the lines change — and what it waits for. */
+  const workedOut = workedOutFrom(page, !!options.dataSource?.onchange && page.data.kind === 'record', !!options.parent);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
   const parts = new Map<string, FormNode>();
@@ -2662,6 +2673,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     loadChoices,
     loadDefinitions,
     addDefinition,
+
+    waitsFor(name) {
+      const from = workedOut.get(name);
+      return from ? waitingOn(page, from, state.values, state.unread) : null;
+    },
 
     problem(name) {
       fieldDef(name);

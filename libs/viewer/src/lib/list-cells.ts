@@ -137,7 +137,7 @@ export function listCells(context: CellsContext): Cells {
     return [track, el('span', { class: 'fd-list-meter-words' }, `${formatNumber(Math.round(share * 100), 0, locale)}\u00a0%`)];
   }
 
-  /** A number's call and WhatsApp links, where it reads as one (the phone part's, which the page waited for). */
+  /** A number's call link, and its WhatsApp one where it can be a mobile, where it reads as one (the phone part's, which the page waited for). */
   function phoneLinks(value: Value | undefined): Node[] {
     const words = context.widgetLabels;
     const to = typeof value === 'string' && words ? phoneLinksOf(value) : undefined;
@@ -156,7 +156,7 @@ export function listCells(context: CellsContext): Cells {
         'span',
         { class: 'fd-list-links' },
         link(to.call, 'call', fill(words.phoneCallNamed, { number: said }), false),
-        link(to.whatsapp, 'chat', fill(words.phoneWhatsAppNamed, { number: said }), true)
+        ...(to.whatsapp ? [link(to.whatsapp, 'chat', fill(words.phoneWhatsAppNamed, { number: said }), true)] : [])
       ),
     ];
   }

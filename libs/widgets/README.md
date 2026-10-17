@@ -74,9 +74,13 @@ language) or typed with it: "010 1234 5678" is read in the country picked,
 checked by its country — how long it is by how it starts, and whether any number
 there starts so — kept as E.164 (`"+201012345678"`), and shown at rest abroad's
 way (`"+20 10 1234 5678"`, the default) or at home's (`"010 1234 5678"`), a call
-and a WhatsApp link beside it. A letter is refused and said why; a number that
-does not read stays as typed with why ("too short for a +20 number (Egypt)"),
-and the save refuses it. No country is ever assumed: without one, a number is
+link beside it, and a WhatsApp link where it may be a mobile — by how its
+country's mobiles start (`canBeMobile`): Cairo's 02 2537 4100 is called, its
+010… also chatted with; where a country's mobiles cannot be told from its fixed
+lines (+1's), any number may be one. A letter is refused and said why; a number
+that does not read stays as typed with why ("too short for a +20 number
+(Egypt)", or, letters typed, "letters are not allowed in a phone number"), and
+the save refuses it. No country is ever assumed: without one, a number is
 written with its +. A page that says neither keeps its phone fields as text
 boxes. The country table (`phoneCountries`, `readPhone`, `writePhone`,
 `shownPhone`) comes in the phone part with the widget,

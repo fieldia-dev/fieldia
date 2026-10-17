@@ -42,6 +42,7 @@ import {
   type RunContext,
   type RunResult,
   type Values,
+  type WaitsFor,
   MESSAGES,
   hotkeyWords,
   uploadGoing,
@@ -765,6 +766,26 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
       if (asText && reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false]] as const) asText.element.addEventListener(event, () => point(on));
+      // A value worked out from others while one of them holds text that does not read — a total from a table whose
+      // line says "abc" in its Quantity, the app's Untaxed and Total — waits as the table's own total does: a dash, said
+      // in words, never the amount worked out from the value that text replaced. Made the first time it waits.
+      let waitMark: HTMLElement | null = null;
+      const waitWords = (waits: WaitsFor) =>
+        waits.line
+          ? fill(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText })
+          : fill(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText });
+      const drawWaiting = (words: string | null) => {
+        if (!words && !waitMark) return;
+        if (!waitMark) {
+          // Why, said to a screen reader and on pointing at it — and in sight where no label names what waits (a tax totals' table).
+          waitMark = el('span', { class: 'fd-value-waits', 'data-waits': '' }, el('span', { 'aria-hidden': 'true' }, '—'), el('span', { class: labelsAt === 'hidden' ? 'fd-value-waits-why' : 'fd-sr-only' }));
+          (asText?.element ?? widget.element).after(waitMark);
+        }
+        setHidden(waitMark, !words);
+        setAttr(waitMark, 'title', words);
+        setText(waitMark.lastElementChild as HTMLElement, words ?? '');
+        setAttr(wrapper, 'data-waits', words === null ? null : '');
+      };
       if (widget.destroy) cleanups.push(() => widget.destroy?.());
       // An answer rule's warning waits until the person leaves the field: no advice
       // mid-word. One already shown stays while they put it right, and goes once they have.
@@ -896,12 +917,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         if (!lockedNow) point(false);
         setAttr(wrapper, 'data-locked', quiet && showsLock ? '' : null);
         setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
+        const waits = form.waitsFor(node.field);
+        const waiting = waits ? waitWords(waits) : null;
+        drawWaiting(waiting);
         if (asText) {
-          setHidden(widget.element, readonly);
-          setHidden(asText.element, !readonly);
+          setHidden(widget.element, readonly || !!waiting);
+          setHidden(asText.element, !readonly || !!waiting);
           setAttr(wrapper, 'data-read-text', readonly ? '' : null);
           if (readonly) asText.update(state.values[node.field], state.values);
-        }
+        } else if (waitMark) setHidden(widget.element, !!waiting);
         widget.update({
           value: state.values[node.field],
           values: state.values,

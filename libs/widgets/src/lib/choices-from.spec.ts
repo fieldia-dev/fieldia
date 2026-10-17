@@ -186,7 +186,10 @@ describe('choices from the app’s list', () => {
     const { el, asked, settle } = mount(widget, extra, { country: 'eg' });
     asked[0].answer(CITIES['eg']);
     await settle();
-    (el.querySelector('input:not([type=checkbox]):not([type=radio])') as HTMLInputElement | null)?.focus();
+    // A box of choices opens its list for a person's click, never for the focus alone.
+    const box = el.querySelector('input:not([type=checkbox]):not([type=radio])') as HTMLInputElement | null;
+    box?.focus();
+    box?.click();
     expect(el.textContent).toContain('Alexandria');
   });
 });

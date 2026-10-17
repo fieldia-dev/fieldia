@@ -423,6 +423,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-copy:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-cell-error { color: var(--fd-error); font-size: 12px; }
 .fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* A value worked out from a field or a line holding text that does not read: a dash where the value goes, why on pointing at it. */
+.fd-value-waits:not([hidden]) { display: block; position: relative; min-height: var(--fd-control-height, 30px); padding: var(--fd-pad-y) var(--fd-pad-x); box-sizing: border-box; color: var(--fd-muted); cursor: help; }
+.fd-value-waits-why { margin-inline-start: 8px; font-size: 12.5px; }
 
 /* ---- rich text, json (files and pictures are the files part's: styles-files.ts) ---- */
 /* Asking first, in place, before a file or a table's line goes (askFirst): "Remove report.pdf?  Remove · Keep". */
@@ -591,8 +594,10 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-stat-words { display: grid; justify-items: start; }
 .fd-stat-value { font-weight: 700; font-size: 15px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
 .fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
-.fd-title-row { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
-.fd-title { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
+/* The title keeps room for its words (12em): where the avatar beside it would leave less — a phone, a theme's wider
+   Replace — the avatar goes under it, and the name is never broken mid-word ("Salm / a Adel"). */
+.fd-title-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between; }
+.fd-title { display: grid; gap: 4px; flex: 1 1 12em; min-width: 0; }
 .fd-avatar { flex: none; }
 .fd-avatar > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-form[data-fd-skin="underline"] .fd-avatar { grid-template-columns: minmax(0, 1fr); }

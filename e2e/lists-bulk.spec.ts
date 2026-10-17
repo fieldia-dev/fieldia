@@ -135,9 +135,21 @@ test.describe('a list people take away and change in bulk', () => {
     const download = await exportAs(page, 'CSV (.csv)');
     expect(download.suggestedFilename()).toBe(`Contacts ${today()}.csv`);
     const lines = readFileSync(await download.path(), 'utf8').split('\r\n');
-    expect(lines[0]).toBe('\ufeffName,Company,Country,Status,Owner,Last order,Lifetime value,Newsletter');
+    // The owner's walk: "E£ 51,086.00" was words a spreadsheet cannot add. An amount is a number now, its currency in a
+    // column of its own; a day is ISO's.
+    expect(lines[0]).toBe('\ufeffName,Company,Country,Status,Owner,Last order,Lifetime value,Lifetime value currency,Newsletter');
     expect(lines).toHaveLength(5);
-    for (const [i, row] of [0, 2, 3].entries()) expect(lines[i + 1].startsWith(`${await cell(page, row, 1).textContent()},${await cell(page, row, 2).textContent()},`)).toBe(true);
+    for (const [i, row] of [0, 2, 3].entries()) {
+      expect(lines[i + 1].startsWith(`${await cell(page, row, 1).textContent()},${await cell(page, row, 2).textContent()},`)).toBe(true);
+      const shown = ((await cell(page, row, 7).textContent()) ?? '').trim();
+      const [, day, amount, currency] = /,(\d{4}-\d{2}-\d{2})?,(-?\d+\.\d{2})?,([A-Z]{3})?,(?:Yes|No)$/.exec(lines[i + 1]) ?? [];
+      expect(lines[i + 1], 'an amount with its currency, or neither').toMatch(/,(\d{4}-\d{2}-\d{2})?,(-?\d+\.\d{2},[A-Z]{3}|,),(Yes|No)$/);
+      if (shown) {
+        expect(amount).toBe(shown.replace(/[^\d.-]/g, ''));
+        expect(['EGP', 'SAR', 'AED', 'USD', 'EUR', 'JOD']).toContain(currency);
+      } else expect(amount).toBeUndefined();
+      if ((await cell(page, row, 6).textContent())?.trim()) expect(day).toMatch(/^20\d\d-\d\d-\d\d$/);
+    }
     expect(problems).toEqual([]);
   });
 

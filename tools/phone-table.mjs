@@ -11,12 +11,16 @@
  *   worked out from every kind of number the country has (its fixed lines, mobiles, free calls…), to two digits, or
  *   three where several countries share a dialling code (+1's areas, +7's): enough to refuse a number one digit short,
  *   or one no number there starts with, and to say whose a +1 number is;
- * - how a number is written, in groups, at home and abroad, for the country whose dialling code it is.
+ * - how a number is written, in groups, at home and abroad, for the country whose dialling code it is;
+ * - the starts its mobile numbers can have, to three digits — Egypt's 10, 11, 12 and 15 — so a fixed line is offered
+ *   no WhatsApp: `*` where any number may be a mobile (+1's mobiles are written as its fixed lines) or the metadata
+ *   names no mobiles, `-` where none is.
  *
- * Each line: `CODE dial trunk rules [formats]`, where `rules` are `lengths:start|start…` joined with commas — a length
- * a digit, or a letter from `a` for 10 — and the starts a pattern of digits; formats come on the dialling code's first
- * country only, each `start/groups at home/groups abroad` joined with `!`, a group a letter (`a` one digit, `b` two…)
- * or a capital and a letter for a group of either length (`Gh`: seven or eight), the rest as it is written.
+ * Each line: `CODE dial trunk rule rules mobile [formats]`, where `rules` are `lengths:start|start…` joined with commas
+ * — a length a digit, or a letter from `a` for 10 — and the starts a pattern of digits; `mobile` a pattern of starts, or
+ * `*` or `-`; formats come on the dialling code's first country only, each `start/groups at home/groups abroad` joined
+ * with `!`, a group a letter (`a` one digit, `b` two…) or a capital and a letter for a group of either length (`Gh`:
+ * seven or eight), the rest as it is written.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -356,6 +360,34 @@ function patternsOf(entry) {
   return patterns.length ? patterns : [entry[2]];
 }
 
+/**
+ * The starts a country's mobile numbers can have, to three digits, as a pattern: `*` where any of its numbers can be
+ * one — its mobiles written as its fixed lines (+1's), or no mobiles named, their kind unknown — and `-` where none
+ * can. A start is taken where every number after it may be a mobile, or past three digits where some may: a number
+ * that may be a mobile is never refused its WhatsApp.
+ */
+function mobileStarts(entry) {
+  const types = entry[11] || [];
+  const mobile = types[1];
+  if (!Array.isArray(mobile)) return '*';
+  const pattern = mobile[0] || types[0]?.[0];
+  if (!pattern) return '*';
+  const mobiles = machine([pattern]);
+  const all = machine(patternsOf(entry));
+  const found = [];
+  const visit = (prefix, mine, any) => {
+    if (!mobiles.lengths(mine, prefix.length).length) return;
+    if (prefix.length >= 3) return void found.push(prefix);
+    const next = Array.from({ length: 10 }, (_, d) => [String(d), mobiles.step(mine, 1 << d), all.step(any, 1 << d)]);
+    // Every number after it may be a mobile, or there is none: decided here.
+    if (next.every(([, m, a]) => mobiles.lengths(m, prefix.length + 1).length || !all.lengths(a, prefix.length + 1).length)) return void found.push(prefix);
+    for (const [d, m, a] of next) visit(prefix + d, m, a);
+  };
+  visit('', mobiles.start, all.start);
+  if (found.includes('')) return '*';
+  return found.length ? startsPattern(found) : '-';
+}
+
 /** The prefixes a pattern of digits alone says ("0|80?": 0, 8, 80), up to three digits; none for one that rewrites the number (a group in brackets). */
 function dialledWith(pattern) {
   if (!pattern || /[()]/.test(pattern)) return [];
@@ -382,7 +414,7 @@ for (const [dial, countries] of Object.entries(meta.country_calling_codes).sort(
     const trunk = [...new Set([entry[5] || '', ...dialledWith(entry[7])])].filter(Boolean).join(',');
     const rule = usualRule(i === 0 ? entry : meta.countries[countries[0]]);
     const formats = i === 0 ? formatsOf(entry, rule) : '';
-    lines.push([code, dial, trunk || '-', rule.replace(/ /g, '_'), rules, ...(formats ? [formats] : [])].join(' '));
+    lines.push([code, dial, trunk || '-', rule.replace(/ /g, '_'), rules, mobileStarts(entry), ...(formats ? [formats] : [])].join(' '));
   });
 }
 const table = lines.join('\n');
@@ -395,9 +427,10 @@ writeFileSync(
  * tools/phone-table.mjs from libphonenumber's metadata (Google's PhoneNumberMetadata.xml, Apache-2.0, as
  * libphonenumber-js ${meta.version === 4 ? '1.12' : ''} ships it). Do not edit by hand: run the tool again.
  *
- * A line a country: \`CODE dial trunk rules [formats]\` — its ISO code, its dialling code, the digit a number is
- * dialled with at home (- for none), the lengths its numbers have by how they start (\`lengths:starts\`, a length a
- * digit or a letter from a for 10), and, on a dialling code's first country, how its numbers are written in groups.
+ * A line a country: \`CODE dial trunk rule rules mobile [formats]\` — its ISO code, its dialling code, the digit a
+ * number is dialled with at home (- for none), how the first group is written at home, the lengths its numbers have
+ * by how they start (\`lengths:starts\`, a length a digit or a letter from a for 10), the starts its mobiles can
+ * have (* any, - none), and, on a dialling code's first country, how its numbers are written in groups.
  */
 export const PHONE_TABLE = \`${table.replace(/\\/g, '\\\\')}\`;
 `

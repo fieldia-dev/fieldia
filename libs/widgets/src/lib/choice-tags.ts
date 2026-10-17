@@ -172,7 +172,8 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   const typingHere = () => document.activeElement === input && !readonly && input.value.trim() !== (single ? labelOf(current()) : '');
   const stopReading = typeof form.settling === 'function' ? form.settling(readNow, typingHere) : null;
 
-  if (!single) input.addEventListener('focus', () => !readonly && open());
+  // Its list drops open for a person — a click (or a tap), a word typed, Alt+Down or the arrows — never for the focus
+  // alone, which the program may put there (a dialog's first field, a refused save to the field to fix).
   input.addEventListener('click', () => !readonly && list.hidden && open());
   input.addEventListener('input', () => {
     hint.hide();

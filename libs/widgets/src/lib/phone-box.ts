@@ -15,9 +15,10 @@ import type { WidgetFactory } from './widgets';
  * assumed). The keys are the phone box's own (text-box.ts): a letter is refused, and said why, and the keys after it
  * held with it. Left, or read by a save, the number is checked by its country — its length by how it starts, and
  * whether any number there starts so — and kept as E.164 ("+201012345678"), written back as the page shows numbers
- * ("+20 10 1234 5678", or "010 1234 5678" at home); one that does not read stays as typed, marked, with why, and the
- * field keeps what it held, so a save refuses it. At rest a number that reads has a call link and a WhatsApp link
- * beside it; one that does not has none (hidden, never disabled). Read-only, the number and its links alone.
+ * ("+20 10 1234 5678", or "010 1234 5678" at home); one that does not read stays as typed, marked, with why — letters
+ * held after a refused one are said as letters — and the field keeps what it held, so a save refuses it. At rest a
+ * number that reads has a call link beside it, and a WhatsApp link where it may be a mobile (by how its country's
+ * mobiles start); one that does not read has none (hidden, never disabled). Read-only, the number and its links alone.
  */
 export const phoneWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document: doc, labels, locale = 'en' } = context;
@@ -79,11 +80,12 @@ export const phoneWidget: WidgetFactory = (context) => {
   function linksTo(number: string | null) {
     const to = number ? phoneLinks(number) : undefined;
     setHidden(call, !to);
-    setHidden(chat, !to);
+    // WhatsApp only for a number that may be a mobile: a fixed line is called (hidden, never disabled).
+    setHidden(chat, !to?.whatsapp);
     if (!to || !number) return;
     const said = writePhone(number, 'international');
     setAttr(call, 'href', to.call);
-    setAttr(chat, 'href', to.whatsapp);
+    setAttr(chat, 'href', to.whatsapp ?? null);
     setAttr(call, 'aria-label', fillIn(words.phoneCallNamed, { number: said }));
     setAttr(chat, 'aria-label', fillIn(words.phoneWhatsAppNamed, { number: said }));
   }
@@ -92,6 +94,7 @@ export const phoneWidget: WidgetFactory = (context) => {
   function why(reading: Exclude<PhoneReading, { number: string }>): string {
     const country = reading.country ? phoneCountry(reading.country) : undefined;
     const where = { label, dial: country ? `+${country.dial}` : '', country: country ? (names.byCode.get(country.code) ?? country.code) : '', start: reading.start ?? '' };
+    if (reading.problem === 'letters') return fillIn(words.phoneLetters, where);
     if (reading.problem === 'country') return fillIn(words.phoneNeedsCountry, where);
     if (reading.problem === 'code' || !country) return fillIn(words.phoneNoCode, { label, code: reading.start ?? '+' });
     return fillIn(reading.problem === 'short' ? words.phoneShort : reading.problem === 'long' ? words.phoneLong : words.phoneStart, where);

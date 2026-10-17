@@ -91,6 +91,11 @@ interface CellContext {
   dialogs?: WidgetDialogs;
   /** The widgets columns are typed with, by column — hours as HH:MM, a per cent — and their settings, a calendar's week numbers. */
   looks?: Record<string, { widget?: string; options?: FieldNode['options'] }>;
+  /**
+   * Whether a person's press (a click, a tap) on this cell just started its edit: the press was on its box, so a link's
+   * list drops open, as a click on the box opens it. Entered by the keys (Tab, Enter) or by the program, it stays closed.
+   */
+  pressed?(cell: Element): boolean;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -701,6 +706,10 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     // With a whole line open, every editor is attached: only the one clicked takes the focus.
     if (this.params.cellStartedEdit === false) return;
     this.widget.focus();
+    // Opened by a person's press on the cell, that press was on its box: a link's list drops open, as a click on a box
+    // opens it. A focus alone — Tab or Enter into the cell — opens none.
+    const combo = this.box.querySelector<HTMLElement>('[role="combobox"]');
+    if (combo && document.activeElement === combo && !this.startKey && this.params.cell.pressed?.(this.params.eGridCell)) combo.click();
     if (this.note) {
       this.note.setSelectionRange(this.note.value.length, this.note.value.length);
       this.resize();
@@ -885,7 +894,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     return { key: '__totals', values: { ...(items[0]?.values ?? {}), ...values } };
   };
   const element = document.createElement('div');
+  /** The last press of a person's pointer on the grid: on which cell, and when. */
+  let press: { cell: Element | null; at: number } | null = null;
+  element.addEventListener('pointerdown', (event) => (press = { cell: event.target instanceof Element ? event.target.closest('.ag-cell') : null, at: performance.now() }), true);
   const cell: CellContext = {
+    pressed: (on) => !!press && press.cell === on && performance.now() - press.at < 1000,
     form,
     field: name,
     fieldId: node.id,

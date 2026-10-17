@@ -66,6 +66,14 @@ fieldset.fd-section > :where(:not(legend, [hidden]) ~ :not([hidden])) { margin-b
   }
   .fd-form .fd-field[data-labels="beside"] > :not(.fd-label) { grid-column: 2; }
 }
+/* On a narrow form — a phone: 520px or less, the form's own narrow, as its columns and hideOn count it — a label beside
+   its value would take half the width and cut the value ("+20 100 912 4…", "salma.adel@glo…"): every label goes above
+   its value, as the underline skin's do there, and the value has the whole width. In every theme. */
+@container fd-form (max-width: 520px) {
+  .fd-form .fd-field[data-labels="beside"] { grid-template-columns: minmax(0, 1fr); }
+  .fd-form .fd-field[data-labels="beside"] > :not(.fd-label) { grid-column: 1 / -1; }
+  .fd-form .fd-field[data-labels="beside"] > .fd-label { grid-column: 1 / -1; padding-block-start: 0; }
+}
 /* Hidden: out of sight, still the box's name for a screen reader; the empty box shows it instead. */
 .fd-form .fd-field[data-labels="hidden"] > .fd-label {
   position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;

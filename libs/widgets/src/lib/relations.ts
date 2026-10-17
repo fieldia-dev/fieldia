@@ -431,9 +431,10 @@ function combobox(options: {
     // Come back to words the form keeps unread, or still being looked up: they are the person's own, and leaving
     // reads them again.
     if ((unreadNow() && input.value === unreadNow()?.text) || (pending && input.value === pending.text)) editing = true;
-    if (!readonly) lookUp('');
   });
-  // A click on the box opens its list, as a focus does: after Escape closed it, the focus has not left to come back.
+  // Its list drops open for a person — a click (or a tap) on the box, a word typed, Alt+Down or the arrows — never for
+  // the focus alone: the program takes the focus into a box (a dialog's first field, a refused save to the field to
+  // fix, a label's press) and the list would fall over the fields under it, unasked. Tab into it, the same.
   input.addEventListener('click', () => {
     if (!readonly && list.hidden && doc.activeElement === input) lookUp(editing ? input.value : '');
   });

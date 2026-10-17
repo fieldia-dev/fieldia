@@ -23,10 +23,12 @@ const PRESSABLE = 'button, [role="button"], a[href], summary';
 /**
  * The bars whose buttons hide and show as the record changes, so that one slides into another's place: a sheet's
  * header (Save, Discard, the record's buttons, its statusbar), a page's actions and foot, a wizard's Back and Next,
- * the bar over a record, a work item's head, a dialog's head and foot, a question's Cancel and OK. A line's × in a
- * table is not one of them: lines deleted one after another, each × coming up under the pointer, are deleted.
+ * the bar over a record, a work item's head, a dialog's head and foot, a question's Cancel and OK — and a booking's
+ * free times, which close up when the time pressed was just booked by someone else, the next one sliding under the
+ * pointer: the double-click's second click never books a time the person did not point at. A line's × in a table is
+ * not one of them: lines deleted one after another, each × coming up under the pointer, are deleted.
  */
-const BARS = '.fd-header, .fd-actions, .fd-wizard-nav, .fd-page-footer, .fd-record-bar, .fd-head-actions, .fd-form-dialog-head, .fd-form-dialog-foot';
+const BARS = '.fd-header, .fd-actions, .fd-wizard-nav, .fd-page-footer, .fd-record-bar, .fd-head-actions, .fd-form-dialog-head, .fd-form-dialog-foot, .fd-slots-chips';
 
 /** Where a press landed and what it landed on: the button, its place and its words. */
 interface Landed {

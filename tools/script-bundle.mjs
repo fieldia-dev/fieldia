@@ -721,7 +721,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 509.67 after — 0.4 more, to 509.7.
 // The owner's walk of 0.24 mended, its site lane (walkfix-site): a button pressed takes away the toasts earlier presses
 // left — 509.67 measured before, 509.73 after, to 509.8.
-const BUDGET_KB = 509.8;
+// The business owner's walk of 0.24 mended (0.25), in what every page carries: a value worked out from a table's lines
+// waits while a line holds text that does not read (core's waitsFor, the viewer's dash said in words), a booking's
+// times kept steady under a double-click, a list that drops open only for a person, a record's labels above their
+// values on a phone and its title kept whole, the words for a phone's letters, a list's several currencies and a CSV
+// file's currency column — 512.84 measured before, 515.53 after: 2.7 more, to 515.6.
+// The walk-fix engine lane joined: provisional until measured in the merged build.
+const BUDGET_KB = 513.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -883,7 +889,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The size pass joined with Wave 3 for 0.25 (listed with the raw budget above): 167.12 at 0.24.0, 164.53 now — 2.6
 // less (Wave 3's 7.00 more, the size pass's 9.25 less: 0.34 under their sum, gzip finding more alike in one file), to
 // 164.6. A related list's rows' own rules: 164.61 after, to 164.7.
-const GZIP_BUDGET_KB = 164.7;
+// The business owner's walk of 0.24 mended (listed with the raw budget above): 167.12 measured before, 167.95 after —
+// 0.8 more, to 168.0.
+// The walk-fix engine lane joined: provisional until measured in the merged build.
+const GZIP_BUDGET_KB = 165.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1011,7 +1020,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Wave 3's five lanes joined for 0.25, measured in the merged build — their words added up, and "{n} of {total}" for a
 // related list on paper: Arabic's 66.70 and 11.56, German's 28.75 and 9.87, French's 29.80 and 9.94 (54.23 and 9.70,
 // 23.15 and 8.30, 23.97 and 8.34 at 0.24.0) — each to the next 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [66.7, 11.6], de: [28.8, 9.9], fr: [29.8, 10.0] };
+// The business owner's walk of 0.24 mended (0.25) — a value that waits for a field or a line, a list's several
+// currencies said in sight, a CSV file's currency column, a phone's letters: 4 in each, as measured Arabic's 54.74 and
+// 9.78 (54.23 and 9.70 before), German's 23.44 and 8.37 (23.15 and 8.30), French's 24.26 and 8.40 (23.97 and 8.34):
+// Arabic's to 54.8, German's to 23.5, French's to 24.3 and, its 8.40 half a byte over, 8.5.
+// The walk-fix engine lane joined: provisional until measured in the merged build.
+const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [29.2, 10.0], fr: [30.2, 10.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1225,7 +1239,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 0.25: the phone's "Country", none picked yet, a quarter of the text's colour in its grey, to read on Apple's dark fill
 // (4.4:1 there), and its box keeping the page's autofill purpose ("mobile tel"): 34.83 and 15.25 (34.77, 15.21), its
 // raw to 34.9, 29 bytes over 34.8.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.3, 31.8], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
+// The business owner's walk of 0.24 mended (0.25): the list's — a CSV file's numbers, days and currency column, its
+// several currencies said in the cell and on a heading, its headings' sums in full — 72.41 and 23.71 measured before,
+// 73.63 and 24.11 after, to 73.7 and 24.2; the phone's table telling how each country's mobiles start, so a fixed line
+// is offered no WhatsApp, and its letters said — 34.77 and 15.21 before, 37.04 and 16.19 after, to 37.1 and 16.2.
+// The walk-fix engine lane joined: provisional until measured in the merged build.
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.8, 4.5], filters: [11.2, 4.2], date: [22.0, 8.4], list: [99.6, 32.3], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.3, 12.8], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [37.2, 16.3], slots: [14.9, 5.7], relations: [19.8, 7.5], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1244,7 +1263,7 @@ const PART_GIVES = {
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
-  phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
+  phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],

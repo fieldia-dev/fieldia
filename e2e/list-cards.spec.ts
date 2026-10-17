@@ -259,8 +259,9 @@ test.describe('lists on a phone', () => {
     const amount = page.locator('.fd-list-totals tr[data-total="all"] td[data-field="amount"]');
     await expect(amount).toHaveAttribute('title', 'In more than one currency: no total');
     await expect(amount).toBeVisible();
-    // Written after its name, where a pointer cannot point at it.
-    expect(await amount.evaluate((cell) => getComputedStyle(cell, '::after').content)).toMatch(/^("In more than one currency: no total"|attr\(title\))$/);
+    // In sight after its name, where a pointer cannot point at it: the table's words, the same on cards and headings.
+    await expect(amount).toHaveText('Several currencies');
+    await expect(amount.locator('.fd-list-total-mixed')).toBeInViewport();
     await screen(page, 'list-cards-invoices-mixed-phone', { viewport: true });
     expect(problems).toEqual([]);
   });

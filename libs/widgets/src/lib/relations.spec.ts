@@ -57,6 +57,49 @@ function type(input: HTMLInputElement, text: string) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+describe('a link’s list drops open for a person, never for the program', () => {
+  // A dialog's first field taken into, a refused save going to the field to fix: the focus put there by the program.
+  // The list stays closed over the fields under it; a person's click, a word typed, or Alt+Down opens it.
+  for (const [kind, nodeId] of [
+    ['many2one', 'n-country'],
+    ['many2many', 'n-tags'],
+    ['reference', 'n-origin'],
+  ] as const) {
+    it(`${kind}: focused by the program, its list stays closed; a click, typing or Alt+Down opens it`, async () => {
+      const { el } = mount(nodeId);
+      // A reference's model chosen first: its records are those of that model.
+      const model = el.querySelector('select');
+      if (model) {
+        model.value = 'ticket';
+        model.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
+      const list = () => [...el.querySelectorAll('[role=listbox]')].pop() as HTMLElement;
+      input.focus();
+      await settle();
+      expect(document.activeElement).toBe(input);
+      expect(list().hidden).toBe(true);
+      expect(input.getAttribute('aria-expanded')).toBe('false');
+      // A person's click on the box.
+      input.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await settle();
+      expect(list().hidden).toBe(false);
+      key(input, 'Escape');
+      expect(list().hidden).toBe(true);
+      // Alt+Down, the keys' way to open a list.
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+      await settle();
+      expect(list().hidden).toBe(false);
+      key(input, 'Escape');
+      input.blur();
+      // Typed into.
+      type(input, model ? 'ket' : 'J');
+      await settle();
+      expect(list().hidden).toBe(false);
+    });
+  }
+});
+
 describe('many2one', () => {
   it('keeps the list closed when a search still on its way comes back after Escape', async () => {
     const { el } = mount('n-country');
@@ -72,6 +115,7 @@ describe('many2one', () => {
     const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
     const list = el.querySelector('[role=listbox]') as HTMLElement;
     input.focus();
+    input.click();
     await settle();
     expect(list.hidden).toBe(false);
     key(input, 'Escape');
@@ -714,7 +758,7 @@ describe('a link field and its dialogs', () => {
   it('offers Create and edit… only for a typed name', async () => {
     const { el, input } = mountWithDialogs(fakeDialogs({}), manyCountries());
     input.focus();
-    input.dispatchEvent(new Event('focus'));
+    input.click();
     await settle();
     expect(options(el)).toHaveLength(9);
     expect(options(el)).not.toContain('Create and edit…');
@@ -769,7 +813,7 @@ describe('links to records and their dialogs', () => {
     const { form, el, input } = mountTags(dialogs);
     form.setValue('tag_ids', [{ id: 1, label: 'Art' }]);
     input.focus();
-    input.dispatchEvent(new Event('focus'));
+    input.click();
     await settle();
     // Art is chosen already: eight others, and more besides.
     expect(options(el)).toEqual(['Bars', 'Cafés', 'Dance', 'Eats', 'Fairs', 'Games', 'Hats', 'Jazz', 'Search more…']);

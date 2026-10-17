@@ -302,11 +302,13 @@ filled in.
 
 A column may total: `"cells": { "amount": { "total": "sum" } }` — `sum`,
 `avg`, `min` and `max` of a number, `count` of any column. The list shows a
-totals row under it, the sums on each Group By heading (`Cairo (12) · EGP
-4.3M`) and, while rows are ticked, their totals, all asked of the data
-source's optional `totals`: without it, none shows. An amount whose currency
-each record keeps is totalled in one currency only: over several, no total
-is shown rather than a wrong one.
+totals row under it, the sums on each Group By heading, in full as the totals
+row writes them (`Cairo (12) · EGP 4,312,550.00`), and, while rows are ticked,
+their totals, all asked of the data source's optional `totals`: without it, none
+shows. An amount whose currency each record keeps is totalled in one currency
+only: over several, no total is shown rather than a wrong one, and the cell (or
+the heading) says why in sight — *Several currencies*, the sentence on pointing
+at it, as a phone has no pointer to hover with.
 
 A named filter may be a period a date falls in, counted from today —
 `{ "id": "overdue", "label": "Overdue", "period": { "field": "due_date", "is": "overdue" } }`
@@ -327,7 +329,13 @@ or its pages read through); its buttons then get every id. **Export**, in its
 bar, writes the rows ticked — or, none ticked, every record the search finds —
 as an Excel workbook or a CSV file, in the browser (no library: the workbook is
 written in the list's part) or on your server (`exportRecords`), offered with
-`"export": true`. With `"bulkEdit": true` (or the fields) **Edit** sets one field
+`"export": true`. A CSV file's numbers and amounts are written as a spreadsheet
+adds them — digits and a decimal point, no grouping and no sign (`250000.00`;
+a decimal comma where the file is parted by semicolons, as a German or French
+spreadsheet reads it) — each amount's currency in a column of its own beside
+it (`Lifetime value currency`), or in the header where the field has one
+(`Amount (EGP)`), and its days and times as ISO 8601 writes them
+(`2026-10-15`, `2026-10-15 14:30`, on the clock the list shows). With `"bulkEdit": true` (or the fields) **Edit** sets one field
 to one value on the records chosen, after a question, by `writeMany` or a save
 per record, each record's `can` kept, and names what it could not change and
 why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).

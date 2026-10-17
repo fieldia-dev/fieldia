@@ -33,6 +33,9 @@ test.describe('a contact’s phone numbers', () => {
     await expect(link(page, 'f-mobile', 'Call')).toHaveAttribute('href', 'tel:+201005374100');
     await expect(link(page, 'f-mobile', 'WhatsApp')).toHaveAttribute('href', 'https://wa.me/201005374100');
     await expect(link(page, 'f-mobile', 'WhatsApp')).toHaveText('WhatsApp');
+    // The owner's walk: a Cairo landline had a WhatsApp link. It is called; a mobile is chatted with.
+    await expect(link(page, 'f-phone', 'Call')).toHaveAttribute('href', 'tel:+20225374100');
+    await expect(link(page, 'f-phone', 'WhatsApp')).toBeHidden();
     await screen(page, 'phone-contact');
     // Its people's numbers from other countries, abroad's way, on their cards.
     await page.locator('button[data-node="tab-contacts"]').click();
@@ -121,6 +124,21 @@ test.describe('a contact’s phone numbers', () => {
     await expect(mobile).toHaveValue('010 2345 6789');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(() => stored(page, 7001, 'mobile')).toBe('+201023456789');
+  });
+
+  test('the owner’s walk: "0151 abc" in Germany says letters are not allowed, never "too short"', async ({ page }) => {
+    const mobile = box(page, 'f-mobile');
+    await country(page, 'f-mobile').locator('select').selectOption('DE');
+    await mobile.click();
+    await mobile.press('Control+A');
+    await mobile.pressSequentially('0151 abc');
+    await mobile.press('Tab');
+    await expect(mobile).toHaveValue('0151 abc');
+    const error = node(page, 'f-mobile').locator('.fd-error');
+    await expect(error).toHaveText('Mobile: letters are not allowed in a phone number');
+    await expect(error).not.toContainText('too short');
+    await expect(link(page, 'f-mobile', 'WhatsApp')).toBeHidden();
+    await screen(page, 'phone-contact-letters');
   });
 
   test('says when a number has no country to be read in, or a code no country has', async ({ page }) => {

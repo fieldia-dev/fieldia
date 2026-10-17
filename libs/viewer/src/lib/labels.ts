@@ -312,6 +312,16 @@ export interface ViewerLabels {
   totalMax: string;
   totalCount: string;
   totalMixed: string;
+  /** The same, in the total's cell itself, in sight on a phone too: a few words, the sentence above as its title. */
+  totalMixedShort: string;
+  /**
+   * A value worked out from others while one of them holds text that does not read: a dash, and why — the field to
+   * fix (`{field}`), or the line of a table (`{n}`, `{lines}`) — to see it (`{own}`).
+   */
+  valueWaits: string;
+  valueWaitsLine: string;
+  /** A CSV file's column of the currency each amount of a column (`{column}`) is in. */
+  exportCurrency: string;
   yes: string;
   no: string;
   /** A list's groups: the one of records with no value, and the rest of a group's records (`{n}`). */
@@ -668,6 +678,10 @@ const en: ViewerLabels = {
   totalMax: 'Highest',
   totalCount: 'Count',
   totalMixed: 'In more than one currency: no total',
+  totalMixedShort: 'Several currencies',
+  valueWaits: 'Fix {field} to see {own}',
+  valueWaitsLine: 'Fix line {n} of {lines} to see {own}',
+  exportCurrency: '{column} currency',
   yes: 'Yes',
   no: 'No',
   none: 'None',

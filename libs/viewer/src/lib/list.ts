@@ -825,7 +825,10 @@ export function listView(context: ListContext): ListView {
   /** The groups under a key of the records a filter keeps, each with its sums where the list totals columns. */
   const headings = async (source: DataSource, key: GroupKey, filter: ResolvedFilter[]): Promise<Heading[]> => {
     const [groups, sums] = await Promise.all([source.groups?.({ model, field: key.field, filter, ...interval(key) }) ?? [], totals?.headings(key, filter)]);
-    return groups.map((group) => ({ ...group, sums: sums?.get(JSON.stringify(group.value)) }));
+    return groups.map((group) => {
+      const said = sums?.get(JSON.stringify(group.value));
+      return { ...group, ...(said ? { sums: said.words, ...(said.why ? { sumsWhy: said.why } : {}) } : {}) };
+    });
   };
 
   const grouped = (source: DataSource): GroupContext => ({

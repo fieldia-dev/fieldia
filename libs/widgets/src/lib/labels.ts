@@ -384,6 +384,7 @@ export interface WidgetLabels {
   phoneCallNamed: string;
   phoneWhatsApp: string;
   phoneWhatsAppNamed: string;
+  phoneLetters: string;
   phoneNeedsCountry: string;
   phoneNoCode: string;
   phoneShort: string;
@@ -403,7 +404,8 @@ export interface WidgetLabels {
    * (`{n}` free times, `…One` for one; `slotsOpen`, a day with free times, in the legend), the free times on a day
    * (`{day}`) or none, and a day to pick first; a time as a chip's name (`{from}` to `{to}`), the booking chosen
    * (`{day}`, `{from}`, `{to}`), a time picked being checked (`{time}`) or taken meanwhile; the zone the times are on
-   * (`{zone}`, its name; `{mark}`, its short name).
+   * (`{zone}`, its name all year; `{mark}`, its short name on the day held or shown — CEST, or CET after the clocks go
+   * back — which the booking chosen says beside its times).
    */
   slotsFinding: string;
   slotsFailed: string;
@@ -687,6 +689,7 @@ const en: WidgetLabels = {
   phoneCallNamed: 'Call {number}',
   phoneWhatsApp: 'WhatsApp',
   phoneWhatsAppNamed: 'Message {number} on WhatsApp',
+  phoneLetters: '{label}: letters are not allowed in a phone number',
   phoneNeedsCountry: '{label}: choose its country, or write it with + and the country code',
   phoneNoCode: '{label}: “{code}” is no country’s code',
   phoneShort: '{label}: too short for a {dial} number ({country})',
@@ -711,7 +714,7 @@ const en: WidgetLabels = {
   slotChosen: '{day}, {from} to {to}',
   slotChecking: 'Checking {time}…',
   slotTaken: '{time} was just booked by someone else. Pick another time.',
-  slotsZone: 'Times are {zone} ({mark})',
+  slotsZone: 'Times are {zone}',
 };
 
 /**

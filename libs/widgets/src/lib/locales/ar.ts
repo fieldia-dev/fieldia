@@ -262,6 +262,7 @@ export const ar: WidgetLabels = {
   phoneCallNamed: 'الاتصال بـ \u2066{number}\u2069',
   phoneWhatsApp: 'واتساب',
   phoneWhatsAppNamed: 'مراسلة \u2066{number}\u2069 على واتساب',
+  phoneLetters: '{label}: لا يُسمح بالحروف في رقم الهاتف',
   phoneNeedsCountry: '{label}: اختر بلد الرقم، أو اكتبه بعلامة + ورمز البلد',
   phoneNoCode: '{label}: «\u2066{code}\u2069» ليس رمز أي بلد',
   phoneShort: '{label}: أقصر من أرقام \u2066{dial}\u2069 ({country})',
@@ -286,5 +287,5 @@ export const ar: WidgetLabels = {
   slotChosen: '{day}، من {from} إلى {to}',
   slotChecking: 'جارٍ التحقق من {time}…',
   slotTaken: 'حجز شخص آخر الساعة {time} للتو. اختر وقتًا آخر.',
-  slotsZone: 'الأوقات حسب {zone} ({mark})',
+  slotsZone: 'الأوقات حسب {zone}',
 };

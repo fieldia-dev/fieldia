@@ -172,9 +172,10 @@ test('layout: the bank’s labels sit beside their boxes, and go above them once
   // The IBAN spans both columns: room again for its label beside it.
   expect(await labelAgainstBox(page, 'f-iban')).toBe('beside');
   await screen(page, 'layout-600-pay');
-  // A phone: one column, wide enough again.
+  // A phone: one column — and a label beside its box would take half of it, cutting the value: above it (0.25).
   await page.setViewportSize({ width: 390, height: 900 });
-  await expect.poll(() => labelAgainstBox(page, 'f-bank-name')).toBe('beside');
+  await expect.poll(() => labelAgainstBox(page, 'f-bank-name')).toBe('above');
+  expect(await labelAgainstBox(page, 'f-iban')).toBe('above');
 });
 
 test('layout: a box that is worked in opens its list over the fields below it', async ({ page }) => {
@@ -532,12 +533,14 @@ test('built: a card inside a box is a group of its own, unboxed, painting the gr
   expect(problems).toEqual([]);
 });
 
-test('built: labels beside, as the page asks, hold in the underline skin on a phone, and go above in a narrow box', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 900 });
+test('built: labels beside, as the page asks, in the underline skin; above every value on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await mountBuilt(page, [{ type: 'section', id: 's', title: 'Beside', columns: 2, children: [field('a'), field('b')] }, { type: 'section', id: 'pair', columns: { wide: 2, narrow: 2 }, children: [field('c'), field('d')] }], { look: { labels: 'beside', labelWidth: 110 } }, { skin: 'underline' });
   expect(await labelAgainstBox(page, 'a')).toBe('beside');
   expect(Math.round((await node(page, 'a').locator('.fd-label').boundingBox())!.width)).toBe(110);
-  // Two columns kept on a phone: each box too narrow for a label beside it.
+  // A phone: every label above its value, the value the whole width (0.25) — the page's "beside" too.
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect.poll(() => labelAgainstBox(page, 'a')).toBe('above');
   expect(await labelAgainstBox(page, 'c')).toBe('above');
   await expectNoSidewaysScroll(page);
   await screen(page, 'built-beside-phone');

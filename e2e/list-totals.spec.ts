@@ -76,9 +76,10 @@ test.describe('a list that adds up', () => {
     const all = await records(page);
     await page.locator('.fd-facet', { hasText: 'This year' }).getByRole('button').click();
     await expect(range(page)).toHaveText(`1–10 / ${all.length}`);
-    // Pounds and dollars: no honest sum, and why, to whoever points at it.
-    await expect(amountIn(totalRow(page))).toHaveText('');
+    // Pounds and dollars: no honest sum, and why in sight — a phone has no pointer to hover with — the sentence as its title.
+    await expect(amountIn(totalRow(page))).toHaveText('Several currencies');
     await expect(amountIn(totalRow(page))).toHaveAttribute('title', 'In more than one currency: no total');
+    await expect(amountIn(totalRow(page))).not.toContainText('EGP');
     await openMenu(page);
     await menu(page).getByRole('button', { name: 'City', exact: true }).click();
     await expect(chips(page)).toHaveText(['City']);
@@ -88,10 +89,9 @@ test.describe('a list that adds up', () => {
       const theirs = all.filter((invoice) => invoice.city === city.toLowerCase());
       const heading = headings(page).filter({ hasText: new RegExp(`^${city} `) });
       const currency = city === 'Dubai' ? 'USD' : 'EGP';
-      await expect(heading).toContainText(`${city} (${theirs.length}) · ${currency} `);
-      // Short, as a heading says it: within what its last figure rounds to.
-      const said = amountOf((await heading.locator('.fd-group-sums').textContent()) ?? '');
-      expect(Math.abs(said - sum(theirs)) / sum(theirs), `${city}'s sum`).toBeLessThan(0.05);
+      // In full, with its currency, as the totals row writes an amount: never rounded to "EGP 1.3M".
+      await expect(heading).toContainText(`${city} (${theirs.length}) · ${money(sum(theirs)).replace('EGP', currency)}`);
+      expect(amountOf((await heading.locator('.fd-group-sums').textContent()) ?? ''), `${city}'s sum`).toBe(sum(theirs));
     }
     await page.keyboard.press('Escape');
     await screen(page, 'list-totals-cities', { viewport: true });
@@ -109,7 +109,25 @@ test.describe('a list that filters by time', () => {
     expect(overdue.length, 'the demo has overdue invoices').toBeGreaterThan(1);
     await expect(range(page)).toHaveText(`1–${Math.min(10, overdue.length)} / ${overdue.length}`);
     await expect(chips(page)).toHaveText(['Overdue']);
+    // The owner's walk: overdue in pounds and dollars — why there is no total is said in the cell, not only on hover.
+    await expect(amountIn(totalRow(page))).toHaveText('Several currencies');
+    await expect(amountIn(totalRow(page))).toHaveAttribute('title', 'In more than one currency: no total');
+    await page.keyboard.press('Escape');
     await screen(page, 'list-totals-overdue', { viewport: true });
+    // Grouped by status, all of them Sent: that heading says it too.
+    await openMenu(page);
+    await menu(page).getByRole('button', { name: 'Status', exact: true }).click();
+    await expect(headings(page)).toHaveText([`Sent (${overdue.length}) · Several currencies`]);
+    await expect(headings(page).locator('.fd-group-sums')).toHaveAttribute('title', 'In more than one currency: no total');
+    await page.keyboard.press('Escape');
+    await screen(page, 'list-totals-overdue-by-status', { viewport: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await screen(page, 'list-totals-overdue-by-status-phone', { viewport: true });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openMenu(page);
+    // Status, ticked: taken off again.
+    await menu(page).getByRole('button', { name: /^✓ Status$/ }).click();
+    await expect(chips(page)).toHaveText(['Overdue']);
     // Overdue off, This month on.
     await menu(page).getByRole('button', { name: 'Overdue' }).click();
     await menu(page).getByRole('button', { name: 'This month' }).click();
@@ -155,7 +173,7 @@ test.describe('a Group By of a date, by its month, quarter or week', () => {
     await expect(headings(page)).toHaveCount(months.length);
     for (const [i, month] of months.entries()) {
       const theirs = thisYear.filter((invoice) => Number(invoice.invoice_date.slice(5, 7)) === i + 1);
-      await expect(headings(page).nth(i)).toContainText(`${month} 2026 (${theirs.length}) · EGP `);
+      await expect(headings(page).nth(i)).toContainText(`${month} 2026 (${theirs.length}) · ${money(sum(theirs))}`);
     }
     await page.keyboard.press('Escape');
     await screen(page, 'list-totals-months', { viewport: true });

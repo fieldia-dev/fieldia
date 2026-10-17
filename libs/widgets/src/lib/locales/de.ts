@@ -262,6 +262,7 @@ export const de: WidgetLabels = {
   phoneCallNamed: '{number} anrufen',
   phoneWhatsApp: 'WhatsApp',
   phoneWhatsAppNamed: '{number} auf WhatsApp schreiben',
+  phoneLetters: '{label}: Buchstaben sind in einer Telefonnummer nicht erlaubt',
   phoneNeedsCountry: '{label}: Wählen Sie das Land der Nummer, oder schreiben Sie sie mit + und der Landesvorwahl',
   phoneNoCode: '{label}: „{code}“ ist keine Landesvorwahl',
   phoneShort: '{label}: zu kurz für eine Nummer mit {dial} ({country})',
@@ -286,5 +287,5 @@ export const de: WidgetLabels = {
   slotChosen: '{day}, {from} bis {to}',
   slotChecking: '{time} wird geprüft…',
   slotTaken: '{time} wurde gerade von jemand anderem gebucht. Wählen Sie eine andere Zeit.',
-  slotsZone: 'Zeiten: {zone} ({mark})',
+  slotsZone: 'Zeiten: {zone}',
 };

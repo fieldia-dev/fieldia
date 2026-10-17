@@ -148,8 +148,11 @@ for (const variant of VARIANTS) {
       await expect(lineRows(page)).toHaveCount(7);
       await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       expect((await lines(page)).length).toBe(7);
-      // The product search opens its list on arrival: the first Escape closes it,
-      // the second takes the line that was only just added away again.
+      // Come to by Tab, the product's list stays closed until the person asks (a word typed, Alt+Down): Escape takes
+      // the line that was only just added away again.
+      await expect(grid(page).locator('.fd-grid-editor input[role="combobox"]')).toBeFocused();
+      await expect(grid(page).getByRole('listbox')).toBeHidden();
+      await page.keyboard.press('Alt+ArrowDown');
       await expect(grid(page).getByRole('listbox')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(grid(page).getByRole('listbox')).toBeHidden();
