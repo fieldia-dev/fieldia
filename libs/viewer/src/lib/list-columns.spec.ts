@@ -142,14 +142,16 @@ describe('columns a person shows, hides and orders', () => {
     expect(host.querySelector('thead th[data-pin]')?.getAttribute('data-col')).toBe('city');
   });
 
-  it('closes with Escape, the focus back on its button, and Reset puts back the page’s columns', async () => {
+  it('closes with Escape, the focus back on its button — the table not scrolled to it — and Reset puts back the page’s columns', async () => {
     const preferences = memoryPreferences();
     const host = await mount(preferences);
     menuButton(host).click();
     expect((menu(host).querySelector('.fd-list-columns-reset') as HTMLElement).hidden).toBe(true);
     box(host, 'company').click();
     expect((menu(host).querySelector('.fd-list-columns-reset') as HTMLElement).hidden).toBe(false);
+    const focused = jest.spyOn(menuButton(host), 'focus');
     menu(host).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(focused).toHaveBeenCalledWith({ preventScroll: true });
     expect(menu(host).hidden).toBe(true);
     expect(document.activeElement).toBe(menuButton(host));
     menuButton(host).click();

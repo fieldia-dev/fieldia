@@ -1359,9 +1359,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // quiet as they were.
 // A column moved by dragging its header (0.26, open-columns): its ghost, the columns sliding aside, the line where it
 // goes, Escape, a finger's long press, the table scrolled at its edges, its place said (the widgets' movedTo, carried
-// by the part) and its sheet — columns 10.96 and 4.05 to 17.42 and 6.42, to 17.5 and 6.5; the list part, which hands
-// each header to it, 103.42 and 33.50 to 103.48 and 33.51, under its own.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [17.5, 6.5], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// by the part) and its sheet — columns 10.96 and 4.05 to 17.42 and 6.42; with the Columns menu's button given the
+// focus back without scrolling the table to it, and the edge's scroll by the time a frame took, 17.53 and 6.48 — to
+// 17.6 and 6.5. The list part, which hands each header to it, 103.42 and 33.50 to 103.48 and 33.51, under its own.
+const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [17.6, 6.5], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

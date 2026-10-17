@@ -27,9 +27,9 @@ const SLOP = 5;
 const LONG_PRESS = 500;
 /** How far a resting finger may wander before it is a swipe the browser scrolls with, in pixels. */
 const WANDER = 10;
-/** Within this many pixels of a scrolled table's side, a column dragged scrolls it, up to SCROLL pixels a frame. */
+/** Within this many pixels of a scrolled table's side, a column dragged scrolls it, up to SCROLL pixels a millisecond. */
 const EDGE = 40;
-const SCROLL = 14;
+const SCROLL = 0.9;
 
 export interface ColumnsContext {
   page: Page;
@@ -215,7 +215,7 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     pagesOwn();
     context.changed(true);
     drawMenu();
-    button.focus();
+    focusButton();
     close(false);
   });
 
@@ -246,7 +246,14 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     menu.hidden = true;
     button.setAttribute('aria-expanded', 'false');
     doc.removeEventListener('pointerdown', outside, true);
-    if (refocus) button.focus();
+    if (refocus) focusButton();
+  }
+  /**
+   * The focus back on the menu's button, the table left where the person had scrolled it: the button stands at the
+   * header's end, past the columns just shown, and the browser would scroll the table to its end to bring it in.
+   */
+  function focusButton() {
+    button.focus({ preventScroll: true });
   }
   button.addEventListener('click', (event) => {
     // The header's own press is no sort, nor the row's.
@@ -445,9 +452,15 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
       line.style.top = `${head.top - top}px`;
       line.style.height = `${Math.max(0, bottom - head.top)}px`;
     };
-    /** Near the table's end, or over the first column held at its start, the table scrolls that way, faster the nearer. */
-    function roll() {
+    /**
+     * Near the table's end, or over the first column held at its start, the table scrolls that way, faster the nearer —
+     * by the time each frame took, so an engine drawing fewer frames (WebKit) scrolls as fast; until it is at that end.
+     */
+    let last = 0;
+    function roll(now: number) {
       rolling = 0;
+      const took = last ? Math.min(64, now - last) : 16;
+      last = 0;
       if (over || !scroller) return;
       const seen = rect(scroller);
       const fromStart = rtl ? seen.right - x : x - seen.left;
@@ -455,11 +468,14 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
       const start = Math.max(EDGE, lead + (name === pinned ? 0 : widthOf(pinned)));
       const way = fromEnd < EDGE ? 1 : fromStart < start ? -1 : 0;
       if (!way) return;
+      // How far it has gone from its start, right to left too (where scrollLeft runs below 0).
+      const gone = Math.abs(scroller.scrollLeft);
+      if (way > 0 ? gone >= scroller.scrollWidth - scroller.clientWidth - 0.5 : gone <= 0.5) return;
       const deep = way > 0 ? (EDGE - fromEnd) / EDGE : (start - fromStart) / start;
-      const was = scroller.scrollLeft;
-      scroller.scrollBy?.({ left: (rtl ? -way : way) * Math.ceil(SCROLL * Math.min(1, Math.max(0.25, deep))) });
-      if (scroller.scrollLeft === was) return;
+      // Safari may take a step in its own time: the next frame goes on whether this one has moved it yet or not.
+      scroller.scrollLeft += (rtl ? -way : way) * Math.ceil(took * SCROLL * Math.min(1, Math.max(0.5, deep)));
       draw();
+      last = now;
       rolling = view?.requestAnimationFrame(roll) ?? 0;
     }
     const keys = (event: KeyboardEvent) => {
