@@ -302,6 +302,17 @@ before the record's first save. No new data source member: `list` answers it.
 The page check holds its columns, order, search and cells to its own `fields`,
 its link to a many2one of theirs to this model, and it to a record's page.
 
+A list's Import makes records from a file's rows. `createMany({ model, records,
+fields })` makes many at once and answers each in order: `{ id }`, or `{ message,
+problem? }` for one it refused; without it the list saves each as a new record,
+`save(newRecordSave(model, fields, values))`. `importRecords({ model, file,
+columns, rows, fields, locale, dateOrder })` takes the file on the server once
+its columns are matched: answer `{ message }`, or `false` to let the browser
+import it. A page offers Import with its list's `import` (`true`, or the
+fields); `importFields(page, list)` says which fields a file's columns may fill.
+`createMemoryDataSource` gives `createMany`. See [many records made at
+once](https://fieldia.dev/data/#import).
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its

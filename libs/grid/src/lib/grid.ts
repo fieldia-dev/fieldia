@@ -16,7 +16,6 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 import {
   afterPress,
   cellText,
@@ -34,6 +33,8 @@ import {
   openLineDialog,
   kindTextField,
   lineForm,
+  linesPart,
+  type LinesPart,
   waitingTotal,
   WIDGET_LABELS,
   type WidgetDialogs,
@@ -419,8 +420,8 @@ class PickAllHeader implements IHeaderComp {
 /** The button that puts a copy of a line right after it. */
 class CopyRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
-  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string };
-  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
+  private params!: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string };
+  init(params: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string }) {
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.className = 'fd-line-copy';
@@ -434,11 +435,13 @@ class CopyRenderer implements ICellRendererComp<Line> {
   getGui() {
     return this.button;
   }
-  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
+  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string }) {
     this.params = params;
     const label = params.label(params.data);
     this.button.setAttribute('aria-label', label);
     this.button.title = label;
+    // Hidden, never disabled, while the table holds its most lines.
+    this.button.hidden = params.full();
     return true;
   }
 }
@@ -933,6 +936,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   pasteNote.setAttribute('role', 'status');
   pasteNote.setAttribute('aria-live', 'polite');
   pasteNote.hidden = true;
+  // The box a paste on a chosen cell lands in where the browser sends none to the cell (Safari): see `catching` below.
+  const catcher = document.createElement('textarea');
+  catcher.className = 'fd-grid-paste-catcher';
+  catcher.tabIndex = -1;
+  catcher.setAttribute('aria-hidden', 'true');
+  let destroyed = false;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
   // Lines chosen for the table's buttons for them: a bar of those buttons over the grid while any is.
@@ -976,10 +985,20 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const cardList = document.createElement('div');
   cardList.className = 'fd-line-cards';
   if (node.cards) element.dataset['cards'] = node.cards;
-  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, pasteNote, adds);
+  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, pasteNote, adds, catcher);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  /**
+   * The most lines the table may have (`options.max`), as the plain table counts it: none unless a whole number. At
+   * it, Add and a line's copy are hidden — never disabled — Enter or Tab at the last line's end adds none, and a
+   * block pasted past it says what it left.
+   */
+  const most = (() => {
+    const max = node.options?.['max'];
+    return typeof max === 'number' && Number.isInteger(max) && max >= 0 ? max : Infinity;
+  })();
+  const full = () => lines().length >= most;
   /** A line field no one types in: read-only, or worked out from the line's others. */
   const locked = (sub: LineField) => sub.readonly === true || sub.compute !== undefined;
   const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !locked(def.fields[c]));
@@ -1054,7 +1073,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     // In a note, or a paragraph opened over its cell, Enter is a new line (Ctrl/Cmd+Enter finishes it).
     if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && (kindOf(node.data) === 'note' || paragraphCell(node.data, column.getColId()))) return true;
     if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
-    if (node.rowIndex !== lines().length - 1) return false;
+    // At its most lines, the last line's end adds none: the key does what it does on any other line.
+    if (node.rowIndex !== lines().length - 1 || full()) return false;
     const shown = api.getAllDisplayedColumns();
     const lastCell = !shown.slice(shown.indexOf(column) + 1).some((c) => c.isCellEditable(node));
     if (event.key === 'Enter' || (event.key === 'Tab' && lastCell)) {
@@ -1321,7 +1341,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const copyLine = (key: string) => {
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
-    if (readonly || at < 0) return;
+    if (readonly || at < 0 || full()) return;
     const values = { ...all[at].values };
     if (sequence) delete values[sequence];
     const made = form.addLine(name, values);
@@ -1344,7 +1364,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressMovable: true,
       lockPosition: lineEnd,
       pinned: lineEnd,
-      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (line: Line | undefined) => fill(labels.copy, { name: lineName(line) }) } }),
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, full, label: (line: Line | undefined) => fill(labels.copy, { name: lineName(line) }) } }),
       suppressKeyboardEvent: keys,
     });
   }
@@ -1775,27 +1795,37 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   };
   /**
    * A block pasted on a chosen cell, as a spreadsheet copies one (tabs between
-   * cells, a line break between rows), fills across and down the lines there
-   * are, each cell read as its column reads what is typed. Cells that are
-   * read-only, or cannot read what is pasted, keep what they hold, and so do
-   * rows past the last line: all of them named in one note.
+   * cells, a line break between rows), fills across and down from it, each cell
+   * read as its column reads what is typed; rows past the last line add lines,
+   * as many as the table may have (`options.max`), as the plain table does.
+   * Cells that are read-only, or cannot read what is pasted, keep what they
+   * hold, and so do rows past the most lines: all of it said in one note.
    */
-  function pasteBlock(rowIndex: number, startColumn: string, text: string) {
+  function pasteBlock({ blockOf, readPastedCell, whyNotPasted }: LinesPart, rowIndex: number, startColumn: string, text: string) {
     const shownColumns = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
     const from = shownColumns.indexOf(startColumn);
     if (from < 0) return;
-    const all = lines();
     const dateOrder = dateOrderOf(form);
     let pasted = 0;
+    let added = 0;
     const missed: string[] = [];
     let beyond = false;
     blockOf(text).forEach((cells, r) => {
-      const line = all[rowIndex + r];
+      let line: Line | undefined = lines()[rowIndex + r];
       if (!line) {
-        beyond ||= cells.some((value) => value.trim() !== '');
-        return;
+        // A row of nothing adds no line; past the most lines, the rest is said.
+        if (cells.every((value) => !value.trim())) return;
+        if (lines().length >= most) return void (beyond = true);
+        const key = form.addLine(name);
+        added++;
+        line = lines().find((one) => one.key === key);
+        if (!line) return;
       }
+      const key = line.key;
       cells.forEach((value, c) => {
+        // The line as it is now: a cell pasted before may have set what this one reads by (its currency).
+        const line = lines().find((one) => one.key === key);
+        if (!line) return;
         const column = shownColumns[from + c];
         if (!column) return;
         const sub = def.fields[column];
@@ -1817,8 +1847,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
     const said = [
       ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
+      ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
       ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
-      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, all.length, locale)] : []),
+      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, lines().length, locale)] : []),
     ].join(' ');
     pasteNote.textContent = said;
     pasteNote.hidden = !said;
@@ -1827,6 +1858,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
    * A paste while one of this grid's cells is chosen (not edited). A browser sends a paste on what is not editable to
    * where its selection is, not to the focused cell: it is heard on the page, and taken when the focus is on a cell.
    */
+  /** A block pasted from this cell on: each cell read as its column reads what is typed, by the lines part's readers —
+   * asked for the first time a block is pasted (a grid nobody pastes on never loads them), then at once. */
+  const pasteFrom = (row: number, column: string, text: string) => {
+    const readers = linesPart.loaded;
+    if (readers) pasteBlock(readers, row, column, text);
+    else void linesPart.load().then((part) => !destroyed && pasteBlock(part, row, column, text), () => undefined);
+  };
   const onPaste = (event: ClipboardEvent) => {
     const focusedCell = document.activeElement;
     if (readonly || !(focusedCell instanceof HTMLElement) || !host.contains(focusedCell) || !focusedCell.classList.contains('ag-cell') || api.getEditingCells().length) return;
@@ -1834,9 +1872,44 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const text = event.clipboardData?.getData('text/plain');
     if (!focused || focused.rowPinned || !text) return;
     event.preventDefault();
-    pasteBlock(focused.rowIndex, focused.column.getColId(), text);
+    pasteFrom(focused.rowIndex, focused.column.getColId(), text);
   };
   document.addEventListener('paste', onPaste);
+  // Safari (WebKit) sends no paste to what cannot be typed in, as a chosen cell is: Ctrl or ⌘ and V on one moves the
+  // focus to a box of the grid's own, out of sight, as the keys go down — the browser pastes into it, and the block is
+  // taken from there onto the cell, which gets the focus back. Every other engine pastes this way too, as it pastes.
+  let catching: { row: number; column: string } | null = null;
+  host.addEventListener(
+    'keydown',
+    (event) => {
+      if (readonly || event.key.toLowerCase() !== 'v' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+      const target = event.target as HTMLElement;
+      const focused = api.getFocusedCell();
+      if (!target.classList?.contains('ag-cell') || !focused || focused.rowPinned || api.getEditingCells().length) return;
+      catching = { row: focused.rowIndex, column: focused.column.getColId() };
+      catcher.value = '';
+      catcher.focus({ preventScroll: true });
+    },
+    true
+  );
+  catcher.addEventListener('paste', (event) => {
+    const at = catching;
+    catching = null;
+    // Its own: the page's paste listener above is for a paste on a chosen cell itself.
+    event.stopPropagation();
+    event.preventDefault();
+    if (!at) return;
+    api.setFocusedCell(at.row, at.column);
+    const text = event.clipboardData?.getData('text/plain');
+    if (text) pasteFrom(at.row, at.column, text);
+  });
+  // Nothing pasted (an empty clipboard): the cell has the focus back as the keys come up.
+  catcher.addEventListener('keyup', () => {
+    if (!catching) return;
+    const at = catching;
+    catching = null;
+    api.setFocusedCell(at.row, at.column);
+  });
   // The note goes once the person moves on: a key on a cell, or the grid left.
   host.addEventListener('keydown', (event) => {
     if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;
@@ -1871,7 +1944,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         readonly = state.readonly;
         api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && ['__delete', '__handle', '__copy', '__pick'].includes(c.colId as string))));
       }
-      adds.hidden = readonly;
+      adds.hidden = readonly || full();
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
       const unreadNow = JSON.stringify(Object.entries(form.getState().unread ?? {}).filter(([path]) => path.startsWith(`${name}.`)));
@@ -1927,6 +2000,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
+      destroyed = true;
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();

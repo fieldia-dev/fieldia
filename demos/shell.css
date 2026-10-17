@@ -144,6 +144,8 @@ body.ht-open #demo-howto { display: block; }
 .ht-about { margin: 0 14px 12px; color: var(--dh-muted); }
 .ht-steps { margin: 0 14px; padding-top: 10px; border-top: 1px solid var(--dh-line); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dh-muted); }
 #demo-howto ol { margin: 8px 14px 12px; padding-inline-start: 18px; display: grid; gap: 8px; }
+.ht-files { margin: 0 14px 12px; font-size: 12.5px; color: var(--dh-muted); overflow-wrap: anywhere; }
+.ht-files a { color: var(--dh-link); font-weight: 600; }
 .ht-tested { margin: 0; padding: 10px 14px 12px; border-top: 1px solid var(--dh-line); color: var(--dh-muted); font-size: 12px; }
 #demo-howto-open { position: fixed; inset-block-end: 18px; inset-inline-end: 18px; z-index: 30; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--dh-line); background: var(--dh-surface); color: var(--dh-link); font: 700 18px system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14); }
 body.ht-open #demo-howto-open { display: none; }

@@ -30,6 +30,8 @@ interface DataSource {
   upload?(file: UploadFile, request: UploadRequest): Promise<UploadedFile>; // store one file as it is picked
   writeMany?(request: WriteManyRequest): Promise<WriteManyResult>; // one value in many records: a list's Edit
   exportRecords?(request: ExportRequest): Promise<ExportedFile | { message } | false>; // a list's export, on the server
+  createMany?(request: CreateManyRequest): Promise<CreateManyResult>; // many new records at once: a list's Import
+  importRecords?(request: ImportRequest): Promise<{ message } | false>; // a list's import, on the server
   slots?(request: SlotsRequest): Promise<SlotsResult>;        // the times free to book, day by day
 }`
 )}
@@ -53,6 +55,8 @@ interface DataSource {
     <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
     <tr><td>${c('writeMany')}</td><td>Someone presses Edit for many records of a list, and says Yes</td><td>Changing many at once in one call — without it, the list saves each in turn. See <a href="#many">many records at once</a></td></tr>
     <tr><td>${c('exportRecords')}</td><td>Someone exports a list</td><td>An export written on your server — without it, the browser writes it</td></tr>
+    <tr><td>${c('createMany')}</td><td>Someone imports a file's rows into a list</td><td>Making many records in one call — without it, the list saves each as a new record. See <a href="#import">many records made at once</a></td></tr>
+    <tr><td>${c('importRecords')}</td><td>Someone has matched a file's columns, before its rows are checked</td><td>An import taken on your server, a file of any size — without it, the browser imports it</td></tr>
     <tr><td>${c('upload')}</td><td>Someone picks or drops a file in a file or picture field, uploads a picture of a signature, or saves one drawn</td><td>Files kept in your store, the record holding only their links — see <a href="#upload">files stored as they are picked</a></td></tr>
     <tr><td>${c('slots')}</td><td>A date and time drawn as booking slots shows a month, a field it depends on changes, or someone picks a time</td><td>Booking a time from those free — see <a href="#slots">booking slots</a></td></tr>
   </tbody>
@@ -283,6 +287,25 @@ exportRecords?({ model, format: 'xlsx' | 'csv', columns: [{ field, label }], ids
   <li>${c('exportRecords')} gets the list's columns and words, the ticked ${c('ids')} (none: every record ${c('filter')} finds), the order and the file's name. Answer with the file and the browser saves it; with ${c('{ message }')} — <em>it will be emailed to you</em> — and the list says it; or with ${c('false')} to let the browser write this one after all, as for a small export.</li>
 </ul>
 
+<h2 id="import">Many records made at once: a list's Import</h2>
+<p>A list's Import (see <a href="/lists/#import">lists</a>) checks every row in the browser first, then writes those that pass. Two optional members make it faster and bigger; without them it still works, a ${c('save')} of each row as a new record, and its Undo uses ${c('delete')}.</p>
+${code(
+  'ts',
+  `
+// Many records, each with its own values, a few hundred at a time. Answer each in order:
+// the id it was made with, or why it was not (and the problem, as a save would throw it).
+createMany?({ model, records: Values[], fields }):
+  Promise<{ records: ({ id: RecordId } | { message: string; problem?: SaveProblem })[] }>;
+
+// A list's import taken on the server, asked once the person has matched the columns.
+importRecords?({ model, file, columns: [{ header, field | null }], rows, fields, locale, dateOrder }):
+  Promise<{ message: string } | false>;`
+)}
+<ul>
+  <li>${c('createMany')} is asked five hundred records at a time, each its row's values and the page's defaults, links as ${c('{ id, label }')}. A record left unanswered is taken as not made. Without it, each row is ${c('save(newRecordSave(model, fields, values))')}: ${c('id: null')}, every value, a many2many's links as one ${c('set')}. Refuse a record as its save would be refused; the list names it by its row in the file.</li>
+  <li>${c('importRecords')} gets the file as picked (a browser's ${c('File')}), its columns and the field each goes into, how many rows it holds, and the page's language and date order. Answer ${c('{ message }')} — <em>your file is being imported: you will get an email</em> — and the list says it; or ${c('false')} to let the browser import this one after all. The browser reads at most 50,000 rows: a bigger file is imported only where your source takes it.</li>
+</ul>
+
 <h2 id="rest">An adapter for a REST API</h2>
 ${code(
   'ts',
@@ -353,7 +376,7 @@ const dataSource = createMemoryDataSource({
   }),
 });`
 )}
-<p>Its ${c('list')} gives ${c('allIds')} when asked, and its ${c('writeMany')} refuses each record as its ${c('save')} would (the person's ${c('can')}, a version older than the record's); it has no ${c('exportRecords')}, so the browser writes an export, as without a server. Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
+<p>Its ${c('list')} gives ${c('allIds')} when asked, and its ${c('writeMany')} refuses each record as its ${c('save')} would (the person's ${c('can')}, a version older than the record's); its ${c('createMany')} makes each record as its ${c('save')} makes a new one; it has no ${c('exportRecords')} or ${c('importRecords')}, so the browser writes an export and reads an import, as without a server. Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(
   'ts',
   `

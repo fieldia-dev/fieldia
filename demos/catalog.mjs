@@ -125,15 +125,18 @@ export const DEMOS = [
   },
   {
     id: 'contacts',
-    name: 'Contacts to take away, change in bulk and shape',
+    name: 'Contacts to bring in, take away, change in bulk and shape',
     category: 'lists',
     query: 'page=contacts&skin=underline',
-    blurb: 'A list of 1,284 contacts: select every one that matches, export the rows ticked or all of them to Excel or CSV, and set one field on many at once — each record’s permissions kept, and what could not be changed named with why. Show, hide, order and size its columns, kept for you; on a phone, each contact is a card.',
+    blurb: 'A list of 1,284 contacts: import more from an Excel or CSV file — its columns matched to the fields, every row checked before anything is saved, the rows refused named with why, and Undo — select every one that matches, export the rows ticked or all of them, and set one field on many at once, each record’s permissions kept. Show, hide, order and size its columns, kept for you; on a phone, each contact is a card.',
     howTo: [
+      'Download the sample workbook below, press Import and drop it on the box: its columns are matched to the fields, and Full name and Notes are left out.',
+      'Pick Name for Full name, then Check 17 rows: 10 can be imported, and 7 cannot — an owner two users are called, a name missing, a status, a country and an owner nobody is called, a 31 February, a newsletter of “maybe” — each said by its row.',
+      'Press “Download the rows to fix” for a workbook of those seven, with why in a last column; then Import 10 records, and Undo the import under the list.',
+      'Import the sample CSV file: its semicolons and its Arabic names are read as they are, its days day first.',
       'Tick the box in the header, then press “Select all 1,284 that match”: turn a page, and its rows are ticked too.',
       'Press Export and pick Excel: the workbook has the columns as the list shows them, money with its currency and days as days.',
       'Search for a company, tick a few rows, press Edit, pick Owner and a person, then Update: say Yes to the question.',
-      'Choose Status for contacts that include one of Karim Nasser’s: the list says which it could not change, and why.',
       'Add &allIds=1000 to the address: “1,000 of 1,284 could be selected”, never “all”.',
       'Press Columns at the header’s end: tick Phone, move it up beside Name, and untick Country. Reload: the list is as you left it. Reset puts back the page’s.',
       'Drag the edge of a header to make its column wider; scroll the list sideways: the names stay in view, the header over the rows.',
@@ -182,6 +185,11 @@ export const DEMOS = [
       'Click a viewing: it opens in a dialog to change; saved, the list shows it changed.',
       'Press View all: every viewing of this home, in a dialog, to search, group and page through.',
       'Press › on the pager over the record, twice: the third home has had no viewings, and says so.',
+    ],
+    // Files to try it with, served beside the demos.
+    files: [
+      { href: 'samples/contacts-to-import.xlsx', label: 'contacts-to-import.xlsx' },
+      { href: 'samples/contacts-to-import.csv', label: 'contacts-to-import.csv' },
     ],
   },
   {

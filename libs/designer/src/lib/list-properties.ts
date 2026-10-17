@@ -601,6 +601,12 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ bulkEdit: bulk.checked })) bulk.checked = !!pageList().bulkEdit;
   });
   const bulkRow = el('div', { class: 'fd-prop', 'data-part': 'bulk-edit' }, el('label', { class: 'fd-q-required' }, bulk, el('span', {}, w.bulkEdit)), el('p', { class: 'fd-properties-hint' }, w.bulkEditHint));
+  // Import from Excel and CSV, off unless asked, after Export and Edit.
+  const imports = el('input', { type: 'checkbox', 'aria-label': w.importRows }) as HTMLInputElement;
+  imports.addEventListener('change', () => {
+    if (!designer.setListOptions({ import: imports.checked })) imports.checked = !!pageList().import;
+  });
+  const importRow = el('div', { class: 'fd-prop', 'data-part': 'import' }, el('label', { class: 'fd-q-required' }, imports, el('span', {}, w.importRows)), el('p', { class: 'fd-properties-hint' }, w.importHint));
   const searchWay = select(el, w.searchWay, [['bar', w.searchWays.bar], ['fields', w.searchWays.fields]]);
   searchWay.addEventListener('change', () => designer.setListOptions({ search: searchWay.value as 'bar' | 'fields' }));
   const filterBox = el('div', { class: 'fd-list-filter-fields' });
@@ -631,6 +637,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     sortsRow,
     exportRow,
     bulkRow,
+    importRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
     parentRow,
@@ -691,6 +698,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       sorts.checked = list.sortable !== false;
       exports.checked = list.export === true;
       bulk.checked = !!list.bulkEdit;
+      imports.checked = !!list.import;
       searchWay.value = list.search ?? 'bar';
       // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.
       filterFieldsRow.hidden = list.search !== 'fields';

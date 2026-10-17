@@ -903,8 +903,13 @@ export function installStyles(document: Document): void {
  * its corners and its calendar's days, and the quiet look still quietens its boxes. A list's (the list part's own
  * sheet, `fd-list-styles`, its totals, export and bulk edit's rules among it) is no ranked part's: it goes after them
  * all, where it stood at 0.23, and no theme's rule names what it added.
+ *
+ * A list's Import's (0.25) is new too, cut from no rule: it lays out its own parts alone (the place a file is
+ * dropped, its columns' table, the rows refused) in a dialog drawn by the main sheet. It goes after the phone's and
+ * the booking slots', for the same reason, and before the themes', so a theme still reshapes its dialog, its
+ * buttons and its boxes.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, themes: 7, quiet: 8, picker: 9, head: 10, groups: 11, text: 12, surveyLooks: 13 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, themes: 8, quiet: 9, picker: 10, head: 11, groups: 12, text: 13, surveyLooks: 14 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

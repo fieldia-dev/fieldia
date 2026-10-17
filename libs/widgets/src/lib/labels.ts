@@ -365,6 +365,9 @@ export interface WidgetLabels {
   notPastedWhy: string;
   pasteBeyondLines: string;
   pasteBeyondLinesOne: string;
+  /** A block pasted on a table of lines past its last line: the lines added for its rows. */
+  pasteAddedLines: string;
+  pasteAddedLinesOne: string;
   /** A list's filter box waiting for its value. */
   enterNumber: string;
   enterDate: string;
@@ -673,6 +676,8 @@ const en: WidgetLabels = {
   notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'Only {n} lines are here, so the rest was not pasted',
   pasteBeyondLinesOne: 'Only {n} line is here, so the rest was not pasted',
+  pasteAddedLines: '{n} lines added.',
+  pasteAddedLinesOne: '{n} line added.',
   enterNumber: 'Enter a number',
   enterDate: 'Enter a date, like {example}',
   enterValue: 'Enter a value to filter by',

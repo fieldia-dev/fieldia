@@ -1,5 +1,7 @@
 /** The grid's own touches on top of AG Grid's theme, scoped to Fieldia grids. */
 export const GRID_CSS = /* css */ `
+/* The box a paste on a chosen cell lands in where the browser sends none to the cell (Safari): in the page, out of sight. */
+.fd-grid-paste-catcher { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); opacity: 0; resize: none; pointer-events: none; }
 .fd-grid-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .fd-grid-host { min-width: 0; }
 /* AG Grid keeps 150px of rows for its "no rows" message; ours has none, so one row's height is enough. */

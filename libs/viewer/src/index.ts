@@ -1,7 +1,7 @@
 export * from './lib/viewer';
 export * from './lib/dialog';
 export { addLanguage, type LanguageWords } from './lib/add-language';
-export { cardsPart, columnsPart, filtersPart, headPart, installListStyles, listPart, loadParts, partsFor, type CardsPart, type ColumnsPart, type FiltersPart, type HeadPart, type ListPart } from './lib/viewer-parts';
+export { cardsPart, columnsPart, filtersPart, headPart, importPart, installListStyles, listPart, loadParts, partsFor, type CardsPart, type ColumnsPart, type FiltersPart, type HeadPart, type ImportPart, type ListPart } from './lib/viewer-parts';
 export type { ListViewContext, ListViewFactory, ListViewPart, OpenRowOptions } from './lib/list';
 export type { MapPart, MapPartContext, MapPartFactory } from './lib/map-part';
 export { accentShades, applyLook, contrast, skinFor, THEME_SKINS, TOKEN_NAMES, wearTokens, type AccentShades, type TokenName, type Tokens } from './lib/look';

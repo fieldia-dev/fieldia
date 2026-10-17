@@ -82,6 +82,7 @@ export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
 export { wideColumns } from './lib/format/columns';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
+export { IMPORT_KINDS, importFields, importable } from './lib/format/import-fields';
 export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';
 export type {
   ActionStep,
@@ -186,12 +187,15 @@ export type {
   ExportRequest,
   ExportedFile,
   ExportBytes,
+  CreateManyRequest,
+  CreateManyResult,
+  ImportRequest,
   SlotsRequest,
   SlotsResult,
   SlotDay,
   SlotDayState,
 } from './lib/record/data-source';
-export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf } from './lib/record/data-source';
+export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';

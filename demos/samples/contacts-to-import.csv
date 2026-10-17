@@ -1,0 +1,11 @@
+﻿Name;Company;Email;Country;Status;Owner;Last order;Newsletter
+Salma Al-Otaibi;Desert Rose Hotels;salma.alotaibi@desertrose.example;Saudi Arabia;Customer;Lina Khalil;22/09/2026;Yes
+سلمى العتيبي;فنادق وردة الصحراء;salma.ar@desertrose.example;Saudi Arabia;Lead;Lina Khalil;;نعم
+Jonas Weber;Maadi Labs;jonas.weber@maadilabs.example;Egypt;Lead;Karim Nasser;;No
+Chloé Martin;Tahrir Books;chloe.martin@tahrirbooks.example;Egypt;Customer;Sara Haddad;05/10/2026;Yes
+Ravi Sharma;Palm Court Dental;ravi.sharma@palmcourt.example;Jordan;Customer;Sara Haddad;17/08/2026;No
+Inès Haddad;Olive Grove Farms;ines.haddad@olivegrove.example;Jordan;Inactive;Sara Haddad;30/12/2025;No
+Ahmed Saleh;Sahel Resorts;ahmed.saleh@sahelresorts.example;Egypt;Customr;Lina Khalil;;Yes
+Anna Novak;Amira Clinics;anna.novak@amiraclinics.example;Egypte;Lead;Karim Nasser;;No
+Marco Bianchi;Nour Pharmacies;marco.bianchi@nourpharmacies.example;Egypt;Customer;Lina Khalil;09/31/2026;Yes
+Wei Chen;Cedar Logistics;wei.chen@cedarlogistics.example;Egypt;Lead;Sara Haddad;;sometimes

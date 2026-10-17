@@ -96,6 +96,57 @@ export interface DataSource {
    * does without this (a small export, say).
    */
   exportRecords?(request: ExportRequest): Promise<ExportedFile | { message: string } | false>;
+  /**
+   * Make many records at once, each with its own values: a list's Import of
+   * a file's rows, a thousand at a time. Answer for each record asked for,
+   * in its order: the id it was made with, or why it was not made, in the
+   * person's words. Without it, the list saves each in turn (`save` with no
+   * id).
+   */
+  createMany?(request: CreateManyRequest): Promise<CreateManyResult>;
+  /**
+   * Take a list's Import on the server, in place of the browser: a file too
+   * big for one, or a server that imports its own way. Asked once the person
+   * has matched the file's columns to the page's fields, before a row is
+   * checked: answer `{ message }` when the server takes the file (the list
+   * says it: "Your file is being imported: you will get an email"), or
+   * `false` to let the browser import it after all, as it does without this.
+   */
+  importRecords?(request: ImportRequest): Promise<{ message: string } | false>;
+}
+
+/** Many records made at once, each with its own values: a list's Import. */
+export interface CreateManyRequest {
+  model: string;
+  /** Each record's values, in the file's order: what its row fills in, and the page's defaults for the rest. Links as `{ id, label }`. */
+  records: Values[];
+  /** The fields' definitions, as a save gets them. */
+  fields: Fields;
+}
+
+export interface CreateManyResult {
+  /**
+   * One answer for each record asked for, in the same order: the id it was made with, or why it was not made — and,
+   * where the source has it, the problem as a save would throw it (a field's own words). A record left unanswered is
+   * taken as not made.
+   */
+  records: ({ id: RecordId } | { message: string; problem?: SaveProblem })[];
+}
+
+/** A file a list's Import hands to the server, its columns matched to the page's fields. */
+export interface ImportRequest {
+  model: string;
+  /** The file as the person picked it: a browser's File fits. */
+  file: UploadFile;
+  /** Each column of the file, in its order — its header's words, and the field it fills, null where it is left out. */
+  columns: { header: string; field: string | null }[];
+  /** How many rows it holds under its header. */
+  rows: number;
+  /** The fields' definitions, as a save gets them. */
+  fields: Fields;
+  /** The page's language and the order it writes dates in, so a server reads the cells as the page would. */
+  locale: string;
+  dateOrder: 'dmy' | 'mdy' | 'ymd';
 }
 
 /** The same value written in a field of each record: a list's bulk edit. */
@@ -655,4 +706,18 @@ export interface SlotsResult {
   days: Record<string, SlotDay>;
   /** The minutes a booking lasts, when the source knows better than the page: the service's own length. */
   length?: number;
+}
+
+/**
+ * A new record's save, made from its values alone — as a list's Import saves a row where the source has no
+ * `createMany`, and a memory source makes each of `createMany`'s: every value in `values`, the links of a many2many
+ * as one `set`, the rest as changes.
+ */
+export function newRecordSave(model: string, fields: Fields, values: Values): SaveRequest {
+  const changes: RecordChanges = { values: {}, lines: {}, links: {} };
+  for (const [name, value] of Object.entries(values)) {
+    if (fields[name]?.type === 'many2many') changes.links[name] = [{ op: 'set', ids: Array.isArray(value) ? (value as RelatedRecord[]).map((record) => record.id) : [] }];
+    else changes.values[name] = value;
+  }
+  return { model, id: null, fields, changes, values };
 }

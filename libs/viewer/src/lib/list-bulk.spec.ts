@@ -185,7 +185,7 @@ describe('Edit, for many records at once', () => {
     expect([1, 2, 3].map((id) => stateOf(source, id))).toEqual(['customer', 'customer', 'customer']);
     await until(() => host.querySelector('.fd-list-count')?.textContent === '1 selected');
     // What the source refuses is said in its words: a blocked contact's status.
-    report.querySelector('button')?.click();
+    [...report.querySelectorAll('button')].find((button) => button.textContent === 'Dismiss')?.click();
     expect(report.hidden).toBe(true);
     host.querySelector<HTMLButtonElement>('.fd-list-selection .fd-button-link:last-child')?.click();
     host.querySelector<HTMLButtonElement>('[aria-label="Next page"]')?.click();

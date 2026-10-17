@@ -12,6 +12,7 @@ import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
 import { BULK_KINDS, bulkSettable } from './bulk-edit';
+import { IMPORT_KINDS, importable } from './import-fields';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
@@ -628,6 +629,7 @@ export class ReferenceCheck {
     }
     if (list.choose === false && list.actions?.length) this.report(`${path}.actions`, 'a list’s buttons act on the rows chosen: with "choose": false there is no way to choose one');
     this.checkBulkEdit(list, path);
+    this.checkImport(list, path);
   }
 
   /**
@@ -673,6 +675,24 @@ export class ReferenceCheck {
       if (!def) return;
       if (!BULK_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; one value set in many records is words, a number, money, a yes or no, a date, a choice or a link`);
       else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Edit sets a field people can change`);
+    });
+  }
+
+  /** A list's Import: each field it names one a file's cell can fill, and at least one such field on the page. */
+  private checkImport(list: ListNode, path: string) {
+    if (!list.import) return;
+    if (list.import === true) {
+      if (!Object.values(this.page.fields).some((def) => importable(def))) this.report(`${path}.import`, 'Import fills the fields a file’s cell can, and this page has none: words, a number, money, yes or no, a date, a choice or a link people can change');
+      return;
+    }
+    const named = list.import;
+    named.forEach((name, i) => {
+      const at = `${path}.import[${i}]`;
+      if (named.indexOf(name) !== i) this.report(at, `"${name}" is offered twice`);
+      const def = this.need(name, at);
+      if (!def) return;
+      if (!IMPORT_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; a file's cell fills words, a number, money, a yes or no, a date, a choice, or a link or links by name`);
+      else if (def.readonly === true || def.compute) this.report(at, `"${name}" is ${def.compute ? 'worked out from other fields' : 'read-only'}; Import fills a field people can change`);
     });
   }
 

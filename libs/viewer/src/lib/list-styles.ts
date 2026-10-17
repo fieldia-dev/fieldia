@@ -82,6 +82,11 @@ export const LIST_STYLES = `
 .fd-list-every { font-weight: 600; }
 /* Export and the list's views at the bar's end, before its pager; how far a long task has got, before them. */
 .fd-list-export { margin-inline-start: auto; }
+/* Import beside Export, at the bar's end, before the pager. */
+.fd-list-import-button { margin-inline-start: auto; }
+.fd-list-import-button:not([hidden]) + .fd-list-export, .fd-list-progress:not(:empty) + .fd-list-import-button { margin-inline-start: 0; }
+.fd-list-import-button:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
+.fd-list-import-button svg { width: 16px; height: 16px; flex: none; }
 .fd-list-export:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
 .fd-list-export svg { width: 16px; height: 16px; flex: none; }
 .fd-list-export-what { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
@@ -93,6 +98,8 @@ export const LIST_STYLES = `
 .fd-list-report { display: grid; gap: 4px; justify-items: start; padding: 8px 12px; border: 1px solid var(--fd-warning); border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); color: var(--fd-text); font-size: 13.5px; }
 .fd-list-report-words { margin: 0; font-weight: 600; }
 .fd-list-report-list { margin: 0; padding-inline-start: 18px; max-height: 168px; overflow: auto; justify-self: stretch; }
+/* An import's end: the file to fix its rows in, Undo, and Dismiss. */
+.fd-list-report-tools { display: flex; flex-wrap: wrap; gap: 2px 14px; }
 .fd-pager { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
 .fd-pager-text { color: var(--fd-muted); font-size: 13.5px; font-variant-numeric: tabular-nums; margin-inline-end: 6px; white-space: nowrap; }
 .fd-pager-button { min-width: 32px; padding-inline: 0; font-size: 18px; line-height: 1; }

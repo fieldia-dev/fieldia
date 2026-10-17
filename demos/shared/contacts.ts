@@ -2,9 +2,9 @@ import type { DataSource, ListRequest, MemoryDataSource, Page, RecordPermissions
 import contactsPage from '../../examples/pages/contacts.page.json';
 
 /**
- * A list people take away and change in bulk: 1,284 contacts, made the same
- * way each time, so "Select all 1,284 that match", Export and Edit have a
- * list worth them. Some may not be changed by this person — Karim's are his
+ * A list people bring in, take away and change in bulk: 1,284 contacts, made
+ * the same way each time, so Import, "Select all 1,284 that match", Export and
+ * Edit have a list worth them (Import's sample files: demos/samples). Some may not be changed by this person — Karim's are his
  * own, a blocked contact's status is the credit team's — so an Edit says what
  * it could not change, and why.
  *

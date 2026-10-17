@@ -50,6 +50,7 @@
     "rowBold": "owner_id == user.id",
     "card": { "title": "name", "subtitle": "company", "image": "photo", "status": "state", "fields": ["phone", "owner_id", "lifetime_value"] },
     "export": true,
+    "import": true,
     "bulkEdit": ["state", "owner_id", "newsletter", "country_id"],
     "actions": [{ "type": "button", "id": "send-newsletter", "label": "Send newsletter", "action": "send_newsletter", "confirm": "Send the newsletter to the chosen contacts?" }]
   }

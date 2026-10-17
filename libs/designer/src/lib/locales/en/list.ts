@@ -41,6 +41,8 @@ export const list = {
   exportHint: 'People take the rows they tick, or every one the search finds, away as a file: the columns as the list shows them.',
   bulkEdit: 'Edit many rows at once',
   bulkEditHint: 'With rows ticked, Edit sets one field to one value in each, after a question: any column that can be changed.',
+  importRows: 'Import from Excel and CSV',
+  importHint: 'People make records from a file of their own: its columns matched to the fields, each row checked by the page’s rules before anything is saved, and Undo after.',
   searchWay: 'Search',
   searchWays: { bar: 'The search bar', fields: 'A keyword and each field’s values' },
   filterFields: 'Fields with their values to tick',

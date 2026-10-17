@@ -1163,6 +1163,17 @@ export interface ListNode {
    */
   bulkEdit?: boolean | string[];
   /**
+   * Import, in the list's bar: records made from an Excel workbook or a CSV
+   * file — its columns matched to the page's fields, each row read and
+   * checked by the page's own rules, the rows refused named with why before
+   * anything is written, and an Undo that deletes what it made. Off unless
+   * given: true offers every field a cell can fill — words, a number, money,
+   * yes or no, a date, a choice, a link or links by name; never read-only,
+   * worked out, a table of lines, a file — and a list of fields offers those,
+   * in its order.
+   */
+  import?: boolean | string[];
+  /**
    * Each record as a card — its title, a photo, a few lines, its status as a
    * pill — where the list is narrow (a phone: 520px or less), and in its
    * gallery. What it shows, by field; `{}` takes it all from the columns:
@@ -2118,6 +2129,7 @@ export const ListNodeSchema = z.strictObject({
   parentField: fieldName.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
+  import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   card: ListCardSchema.optional(),
   gallery: ListGallerySchema.optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),

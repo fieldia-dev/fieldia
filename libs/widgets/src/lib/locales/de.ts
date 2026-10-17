@@ -251,6 +251,8 @@ export const de: WidgetLabels = {
   notPastedWhy: '{cell} ({why})',
   pasteBeyondLines: 'Es gibt nur {n} Zeilen; der Rest wurde nicht eingefügt',
   pasteBeyondLinesOne: 'Es gibt nur {n} Zeile; der Rest wurde nicht eingefügt',
+  pasteAddedLines: '{n} Zeilen hinzugefügt.',
+  pasteAddedLinesOne: '{n} Zeile hinzugefügt.',
   enterNumber: 'Geben Sie eine Zahl ein',
   enterDate: 'Geben Sie ein Datum ein, z. B. {example}',
   enterValue: 'Geben Sie einen Filterwert ein',
