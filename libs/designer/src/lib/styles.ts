@@ -42,6 +42,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-check-severity { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; }
 .fd-check[data-severity="must"] .fd-check-severity { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-check[data-severity="should"] .fd-check-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
+.fd-check[data-severity="start"] .fd-check-severity { color: var(--fd-muted); background: var(--fd-page); }
 .fd-check-text { margin: 0; font-size: 13.5px; line-height: 1.45; }
 .fd-check-fix { min-height: 30px; padding-block: 2px; font-size: 13px; }
 /* Find anything: one box over all the editor can add, go to or do. */

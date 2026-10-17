@@ -33,8 +33,9 @@ function runFix(designer: Designer, check: PageCheck, goTo: GoTo) {
 
 /** A check as a row: how much it matters, what it is, and its fix. */
 function checkRow(el: ElementFactory, check: PageCheck, onFix: () => void, words: DesignerWords): HTMLElement {
-  const severity = check.severity === 'must' ? words.bar.mustFix : words.bar.shouldFix;
-  const row = el('div', { class: 'fd-check', 'data-severity': check.severity }, el('span', { class: 'fd-check-severity' }, severity), el('p', { class: 'fd-check-text' }, check.text));
+  // Where a page just begun starts is said as that, in neutral words: an empty survey is no mistake.
+  const severity = check.start ? words.bar.startHere : check.severity === 'must' ? words.bar.mustFix : words.bar.shouldFix;
+  const row = el('div', { class: 'fd-check', 'data-severity': check.start ? 'start' : check.severity }, el('span', { class: 'fd-check-severity' }, severity), el('p', { class: 'fd-check-text' }, check.text));
   if (check.fix) {
     const fix = el('button', { type: 'button', class: 'fd-button fd-check-fix' }, check.fix.label);
     fix.addEventListener('click', onFix);
@@ -110,7 +111,9 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
     const checks = designer.checks();
     count.textContent = checks.length ? String(checks.length) : '✓';
     element.setAttribute('aria-label', checks.length ? w.checksCount(checks.length) : w.checksClear);
-    element.dataset['state'] = checks.some((c) => c.severity === 'must') ? 'must' : checks.length ? 'should' : 'clear';
+    // Red for what must be fixed, amber for what reads wrong; neutral for where a page just begun starts (an empty survey).
+    const faults = checks.filter((c) => !c.start);
+    element.dataset['state'] = faults.some((c) => c.severity === 'must') ? 'must' : faults.length ? 'should' : checks.length ? 'start' : 'clear';
   }
   /** A count put off while someone types. */
   let waiting: ReturnType<typeof setTimeout> | undefined;

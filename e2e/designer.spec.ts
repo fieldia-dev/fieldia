@@ -25,6 +25,30 @@ test.describe('survey designer', () => {
     expect((page as unknown as { problems: string[] }).problems).toEqual([]);
   });
 
+  test('a survey from nothing opens blank: no title but the box’s “Untitled form”, and where to start said without red', async ({ page }) => {
+    // As the walk opened it from the Designer page: no "Event feedback", no red "Must fix".
+    const title = page.locator('.fd-designer input').first();
+    await expect(title).toHaveValue('');
+    await expect(title).toHaveAttribute('placeholder', 'Untitled form');
+    await expect(page.getByText('Event feedback')).toHaveCount(0);
+    const checks = page.locator('[data-checks]');
+    await expect(checks).toHaveAttribute('data-state', 'start');
+    await expect(checks.locator('.fd-checks-count')).toHaveText('1');
+    // The row says where to start, not that something must be fixed.
+    await checks.click();
+    const row = page.locator('.fd-checks .fd-check');
+    await expect(row).toHaveAttribute('data-severity', 'start');
+    await expect(row.locator('.fd-check-severity')).toHaveText('Start here');
+    await expect(row.locator('.fd-check-text')).toHaveText('The survey has no questions yet, so there is nothing to answer.');
+    await screen(page, 'designer-blank-checks', { viewport: true });
+    await page.keyboard.press('Escape');
+    // A question added: no check at all.
+    await page.locator('.fd-design-step').nth(0).getByRole('button', { name: 'Add question' }).click();
+    await page.keyboard.type('How was it?');
+    await page.keyboard.press('Escape');
+    await expect(checks).toHaveAttribute('data-state', 'clear');
+  });
+
   test('builds a branching survey, previews it, undoes, publishes and reopens', async ({ page }) => {
     await expect(page.locator('.fd-designer-status')).toHaveText('Draft, not published yet');
     const step1 = page.locator('.fd-design-step').nth(0);

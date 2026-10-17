@@ -23,8 +23,14 @@ describe('checks before publishing', () => {
     expect(pageChecks(survey().designer.getPage())).toEqual([]);
   });
 
-  it('stops a survey with nothing to answer', () => {
+  it('stops a survey with nothing to answer, said as where a survey from nothing starts', () => {
     expect(texts(blankPage('survey', 'Empty'))).toEqual(['must: The survey has no questions yet, so there is nothing to answer.']);
+    // Still held back from publishing (must), but no fault: the page was only begun.
+    expect(pageChecks(blankPage('survey', '')).map((c) => c.start)).toEqual([true]);
+    // Any other check is a fault, whatever it is.
+    const { designer } = survey();
+    designer.addQuestion('multiple-choice');
+    expect(pageChecks(designer.getPage()).every((c) => !c.start)).toBe(true);
   });
 
   it('says what a question still lacks: its words, and options of its own', () => {

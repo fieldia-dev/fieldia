@@ -37,6 +37,18 @@ function ready() {
 }
 
 describe('checks in the bar', () => {
+  it('a survey from nothing: its one check says where to start, in neutral words, never red; a question added clears it', () => {
+    const { host, designer } = mount(blankPage('survey', ''));
+    expect(checksButton(host).dataset['state']).toBe('start');
+    expect(checksButton(host).getAttribute('aria-label')).toBe('Checks: 1 to look at');
+    checksButton(host).click();
+    const row = document.querySelector('.fd-checks .fd-check') as HTMLElement;
+    expect([row.dataset['severity'], row.querySelector('.fd-check-severity')?.textContent]).toEqual(['start', 'Start here']);
+    const q = designer.addQuestion('short-answer') as string;
+    designer.updateQuestion(q, { label: 'Your name' });
+    expect(checksButton(host).dataset['state']).toBe('clear');
+  });
+
   it('counts what to look at, and says all clear when there is nothing', () => {
     const { host, designer } = ready();
     expect(checksButton(host).getAttribute('aria-label')).toBe('Checks: all clear');
