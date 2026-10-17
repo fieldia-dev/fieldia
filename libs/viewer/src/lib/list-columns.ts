@@ -62,6 +62,12 @@ export interface ColumnChoices {
   grip(name: string, header: HTMLElement): HTMLElement;
   /** A column's header pressed and dragged sideways moves the column to where it is let go (a finger's long press lifts it). */
   movable(name: string, header: HTMLElement): void;
+  /**
+   * The table's card, which scrolls sideways: the first column is held at its start and the Columns menu's cell at its
+   * end (the columns' sheet), each parted by a rule from the columns going under it while there are some there —
+   * `data-scrolled` once it has left its start, `data-more` while columns lie past its end.
+   */
+  scrolls(scroller: HTMLElement): void;
   /** Close the menu, as the list goes. */
   destroy(): void;
 }
@@ -652,6 +658,26 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     );
   }
 
+  // ---- the card the table scrolls in: what lies past each end it holds a column at ----
+
+  let sized: ResizeObserver | null = null;
+  function scrolls(scroller: HTMLElement) {
+    const mark = () => {
+      const gone = Math.abs(scroller.scrollLeft);
+      scroller.toggleAttribute('data-scrolled', gone > 0);
+      scroller.toggleAttribute('data-more', gone < scroller.scrollWidth - scroller.clientWidth - 1);
+    };
+    scroller.addEventListener('scroll', mark, { passive: true });
+    // The table grows and shrinks as columns are shown, hidden and sized, and the card with the window.
+    if (view && 'ResizeObserver' in view) {
+      sized = new view.ResizeObserver(mark);
+      sized.observe(scroller);
+      const table = scroller.querySelector('table');
+      if (table) sized.observe(table);
+    }
+    mark();
+  }
+
   return {
     shown,
     order: () => [...order],
@@ -659,9 +685,11 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     button,
     grip,
     movable,
+    scrolls,
     destroy() {
       doc.removeEventListener('pointerdown', outside, true);
       under?.cancel();
+      sized?.disconnect();
       menu.remove();
       voice.remove();
     },

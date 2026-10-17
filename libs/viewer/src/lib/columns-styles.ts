@@ -43,6 +43,11 @@ export const COLUMN_STYLES = `
 /* Scrolled sideways, a rule at the first column's end parts it from the columns going under it. */
 .fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-scrolled] [data-pin] { box-shadow: inset -1px 0 0 var(--fd-border-strong); }
 .fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-scrolled] [data-pin]:dir(rtl) { box-shadow: inset 1px 0 0 var(--fd-border-strong); }
+/* The Columns menu's cell held at the header's end, as the first column is at its start: in sight however wide the
+   table, a rule at its start while columns lie past it. The rows' end cells keep to their own places. */
+.fd-list[data-shaped]:not([data-as]) .fd-list-table thead th.fd-list-tail { position: sticky; inset-inline-end: 0; z-index: 4; }
+.fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-more] thead th.fd-list-tail { box-shadow: inset 1px 0 0 var(--fd-border-strong); }
+.fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-more] thead th.fd-list-tail:dir(rtl) { box-shadow: inset -1px 0 0 var(--fd-border-strong); }
 /* Under the rows' own backgrounds (a row pointed at, chosen, open), so they stay whole. */
 :where(.fd-list[data-shaped]) :where(.fd-list-row) > :is(td[data-pin], .fd-list-check, .fd-list-tree) { background: var(--fd-surface); }
 .fd-list[data-shaped]:not([data-as]) .fd-list-totals { position: sticky; bottom: 0; z-index: 2; }

@@ -1472,9 +1472,8 @@ export function listView(context: ListContext): ListView {
     report,
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
-  // Scrolled sideways, the first column kept in view is parted from those going under it.
-  const scroller = element.querySelector('.fd-list-scroll') as HTMLElement;
-  if (choices) scroller.addEventListener('scroll', () => scroller.toggleAttribute('data-scrolled', Math.abs(scroller.scrollLeft) > 0), { passive: true });
+  // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
+  choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
   widths?.observe(element);
   drawShape();

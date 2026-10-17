@@ -182,6 +182,27 @@ describe('columns a person shows, hides and orders', () => {
     expect(company.hasAttribute('data-width-px')).toBe(false);
   });
 
+  it('marks its card scrolled from its start, and while columns lie past its end, for the rules by the columns held there', async () => {
+    const host = await mount();
+    const scroller = host.querySelector('.fd-list-scroll') as HTMLElement;
+    // jsdom lays nothing out: a card of 500px over a table of 1000.
+    let left = 0;
+    Object.defineProperties(scroller, { scrollWidth: { value: 1000 }, clientWidth: { value: 500 }, scrollLeft: { get: () => left } });
+    const scrolled = (to: number) => {
+      left = to;
+      scroller.dispatchEvent(new Event('scroll'));
+      return [scroller.hasAttribute('data-scrolled'), scroller.hasAttribute('data-more')];
+    };
+    expect(scrolled(0)).toEqual([false, true]);
+    expect(scrolled(200)).toEqual([true, true]);
+    expect(scrolled(500)).toEqual([true, false]);
+    // Right to left, scrollLeft runs below 0.
+    expect(scrolled(-200)).toEqual([true, true]);
+    expect(scrolled(-500)).toEqual([true, false]);
+    // The Columns menu's cell is the header's last.
+    expect(host.querySelector('thead tr > th:last-child')?.contains(menuButton(host))).toBe(true);
+  });
+
   it('spans its Group By headings across the columns shown', async () => {
     const host = await mount();
     (host.querySelector('.fd-search-toggle') as HTMLButtonElement).click();

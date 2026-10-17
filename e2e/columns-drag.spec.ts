@@ -188,18 +188,27 @@ async function widen(page: Page) {
   await expect(heads(page)).toHaveText(WIDE);
   expect(await scrolledMost(page)).toBeGreaterThan(300);
 }
-/** The table scrolled sideways by a wheel over it, as far as `to` goes ('start' or 'end'). */
-async function wheelTo(page: Page, to: 'start' | 'end') {
+/** The table scrolled sideways by a wheel over it, as far as `to` goes ('start' or 'end'); right to left, leftwards to its end. */
+async function wheelTo(page: Page, to: 'start' | 'end', rtl = false) {
   const card = await boxOf(tableScroll(page));
   await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
   const most = await scrolledMost(page);
+  // Within a pixel: right to left an engine may stop half a pixel short of its most.
   await expect
     .poll(async () => {
-      await page.mouse.wheel(to === 'end' ? 400 : -400, 0);
-      return scrolledBy(page);
+      await page.mouse.wheel((to === 'end') !== rtl ? 400 : -400, 0);
+      return Math.abs(Math.abs(await scrolledBy(page)) - (to === 'end' ? most : 0)) <= 1;
     })
-    .toBe(to === 'end' ? most : 0);
+    .toBe(true);
 }
+/** Whether the Columns menu's button is in sight: what is under its middle is the button, no column drawn over it. */
+const buttonSeen = (page: Page) =>
+  columnsButton(page).evaluate((button) => {
+    const box = button.getBoundingClientRect();
+    return !!document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)?.closest('.fd-list-columns-button');
+  });
+/** The rule at the start of the Columns menu's cell, parting it from the columns under it: none where none is. */
+const tailRule = (page: Page) => page.locator('.fd-list-table thead th.fd-list-tail').evaluate((cell) => getComputedStyle(cell).boxShadow);
 /** The middle of what is seen of a header, the card's sides cutting it. */
 async function seenMiddle(page: Page, target: Locator) {
   const box = await boxOf(target);
@@ -214,7 +223,7 @@ test.describe('a table scrolled sideways', () => {
 
   test('Escape out of the Columns menu gives its button the focus and leaves the table where it was scrolled', async ({ page }) => {
     const { problems } = await contacts(page);
-    // A person scrolls to the header's end to reach the button; the columns shown push it on, out of sight.
+    // The columns shown widen the table past its card; the button, held at the header's end, is pressed where it is.
     await expect(columnsButton(page)).toHaveAccessibleName('Columns');
     await columnsButton(page).click();
     const menu = page.getByRole('dialog', { name: 'Columns' });
@@ -278,6 +287,67 @@ test.describe('a table scrolled sideways', () => {
     await expect(heads(page)).toHaveText(['Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter', 'Phone', 'Email', 'Company']);
     expect(problems).toEqual([]);
   });
+
+  for (const rtl of [false, true]) {
+    const way = rtl ? 'right to left' : 'left to right';
+
+    test(`${way}: the Columns button stays in sight at the header’s end as the table scrolls, a rule parting it from the columns under it`, async ({ page }) => {
+      const { problems } = await contacts(page, rtl ? '&locale=ar' : '');
+      // Wider than its card from the first: the page's own columns.
+      await expect(heads(page)).toHaveText(CONTACTS);
+      expect(await scrolledMost(page)).toBeGreaterThan(100);
+      expect(await scrolledBy(page)).toBe(0);
+      await expect.poll(() => buttonSeen(page)).toBe(true);
+      await expect(tableScroll(page)).toHaveAttribute('data-more', '');
+      expect(await tailRule(page)).not.toBe('none');
+      // On its side of the card: the right, right to left the left.
+      const card = await boxOf(tableScroll(page));
+      const cell = await boxOf(page.locator('.fd-list-table thead th.fd-list-tail'));
+      expect(Math.abs(rtl ? cell.x - card.x : card.x + card.width - (cell.x + cell.width))).toBeLessThanOrEqual(2);
+      await screen(page, `list-columns-button-held${rtl ? '-rtl' : ''}`, { viewport: true });
+      // Partway, by a wheel: still in sight.
+      await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
+      await page.mouse.wheel(rtl ? -120 : 120, 0);
+      await expect.poll(async () => Math.abs(await scrolledBy(page))).toBeGreaterThan(0);
+      await expect.poll(() => buttonSeen(page)).toBe(true);
+      // At the end: still in sight, nothing past it, no rule.
+      await wheelTo(page, 'end', rtl);
+      await expect.poll(() => buttonSeen(page)).toBe(true);
+      await expect(tableScroll(page)).not.toHaveAttribute('data-more', /.*/);
+      expect(await tailRule(page)).toBe('none');
+      // Back at the start, pressed: its menu opens, the table not scrolled to it.
+      await wheelTo(page, 'start', rtl);
+      await expect.poll(() => buttonSeen(page)).toBe(true);
+      await columnsButton(page).click();
+      await expect(columnsMenu(page)).toBeVisible();
+      expect(await scrolledBy(page)).toBe(0);
+      expect(problems).toEqual([]);
+    });
+
+    test(`${way}: beside the held Columns cell, the last column’s edge still sizes it and its header still drags`, async ({ page }) => {
+      const { problems } = await contacts(page, rtl ? '&locale=ar' : '');
+      await wheelTo(page, 'end', rtl);
+      await holdsStill(header(page, 'newsletter'));
+      const before = await boxOf(header(page, 'newsletter'));
+      // Its grip, at its end, against the Columns cell: dragged outwards at a hand's speed.
+      const grip = await boxOf(header(page, 'newsletter').locator('.fd-list-grip'));
+      await carry(page, { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }, grip.x + grip.width / 2 + (rtl ? -60 : 60));
+      await expect(page.locator('.fd-list-ghost')).toHaveCount(0);
+      await page.mouse.up();
+      await expect.poll(async () => Math.round((await boxOf(header(page, 'newsletter'))).width)).toBeGreaterThan(Math.round(before.width) + 40);
+      // The table grew: at its end again, the header carried back past Lifetime value's middle.
+      await wheelTo(page, 'end', rtl);
+      await holdsStill(header(page, 'newsletter'));
+      const value = await boxOf(header(page, 'lifetime_value'));
+      const from = await seenMiddle(page, header(page, 'newsletter'));
+      await carry(page, from, rtl ? value.x + value.width * 0.75 : value.x + value.width * 0.25);
+      await expect(page.locator('.fd-list-ghost')).toHaveText('Newsletter');
+      await page.mouse.up();
+      await expect(heads(page)).toHaveText(['Name', 'Company', 'Country', 'Status', 'Owner', 'Last order', 'Newsletter', 'Lifetime value']);
+      await expect.poll(() => buttonSeen(page)).toBe(true);
+      expect(problems).toEqual([]);
+    });
+  }
 
   test('a column carried over the first column, held in view, scrolls the table back to its start, and goes right after it', async ({ page }) => {
     const { problems } = await contacts(page);
