@@ -1,6 +1,6 @@
 import type { Value } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
-import { describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
 import { flagOf, phoneCountries, phoneCountry, phoneLinks, phoneParts, readPhone, shownPhone, typedCode, writePhone, type PhoneReading } from './phone-numbers';
 import { installPhoneStyles } from './styles-phone';
@@ -36,7 +36,8 @@ export const phoneWidget: WidgetFactory = (context) => {
   // Its code reads left to right on a right-to-left page too: +20, never 20+.
   const dial = make('span', { class: 'fd-phone-dial', 'aria-hidden': 'true', dir: 'ltr' });
   const picker = make('span', { class: 'fd-input fd-phone-country' }, flag, dial, select);
-  const input = make('input', { id, type: 'tel', class: 'fd-input fd-phone-input', autocomplete: 'tel', dir: 'ltr' });
+  // What the browser fills it in with: the page's own purpose ("mobile tel"), else a phone, as any phone box.
+  const input = make('input', { id, type: 'tel', class: 'fd-input fd-phone-input', dir: 'ltr', ...boxPurpose(node, { autocomplete: 'tel' }) });
   if (node.placeholder) input.placeholder = node.placeholder;
   const call = make('a', { class: 'fd-phone-link fd-phone-call', hidden: '' }, words.phoneCall);
   const chat = make('a', { class: 'fd-phone-link fd-phone-whatsapp', target: '_blank', rel: 'noopener noreferrer', hidden: '' }, words.phoneWhatsApp);

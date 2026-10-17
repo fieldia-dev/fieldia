@@ -4,7 +4,9 @@ import { installPartStyles, PART_RANK } from './styles';
  * The phone part's sheet (phone-box.ts): a number's country in a small box of its own before the number — its flag
  * and its dialling code, the browser's own list of countries laid over them — and a call and a WhatsApp link after
  * it, wrapping under it where the row is narrow. A number reads left to right on a right-to-left page too, kept to
- * the page's start. Read-only, the country goes and the number is words with its links.
+ * the page's start. Read-only, the country goes and the number is words with its links. "Country", none picked yet, is
+ * quieter than a code yet words to read on the box's own fill in every theme: Apple's dark muted grey is 4.4:1 on its
+ * fill, so a quarter of the text's colour goes into it.
  */
 export const PHONE_CSS = /* css */ `
 .fd-phone { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-width: 0; }
@@ -16,7 +18,7 @@ export const PHONE_CSS = /* css */ `
 }
 .fd-phone-flag { font-size: 1.1em; line-height: 1; }
 .fd-phone-dial { color: var(--fd-text); }
-.fd-phone-country[data-empty] .fd-phone-dial { color: var(--fd-muted); }
+.fd-phone-country[data-empty] .fd-phone-dial { color: color-mix(in srgb, var(--fd-muted) 75%, var(--fd-text)); }
 .fd-phone-select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; font: inherit; }
 .fd-phone-country:focus-within { border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
 .fd-phone-input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
