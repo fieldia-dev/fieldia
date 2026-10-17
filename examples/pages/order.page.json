@@ -67,7 +67,7 @@
         "boxes": { "type": "integer", "label": "Boxes" }
       }
     },
-    "note": { "type": "text", "label": "Terms and conditions" }
+    "note": { "type": "html", "label": "Terms and conditions" }
   },
   "layout": {
     "type": "sheet",
