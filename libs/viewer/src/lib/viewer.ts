@@ -1422,6 +1422,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           name: recordName,
           // What it counts itself — after New, a delete — is its tab's count too.
           onCount: (total) => relatedCounts.get(node.id)?.told(total),
+          // A row's record and New, the app's own way where the list says so: its host's open, else its onOpen, with the
+          // page it gives for the model (that page's id, else the model's own name); null where neither takes it.
+          route:
+            options.host?.open || options.onOpen
+              ? async (model, request) => {
+                  const asked = { ...request, page: (await findPage(options, { model }))?.id ?? model };
+                  return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
+                }
+              : undefined,
         });
         part.update(form.getState());
       };

@@ -1851,6 +1851,8 @@ export interface RelatedPatch extends RowRulesPatch {
   columns?: { name: string; field: LinkedField }[];
   limit?: number | null;
   create?: boolean;
+  /** Where a row's record and New's open: a dialog (the default, not written), or the app's own way. */
+  open?: NonNullable<RelatedNode['open']>;
   viewAll?: NonNullable<RelatedNode['viewAll']> | null;
   /** Its records as cards on a phone, as a list's: what a card shows ({} for the columns'); null for none. */
   card?: ListCard | null;
@@ -1901,6 +1903,8 @@ function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch): voi
   else if (patch.limit !== undefined) node.limit = patch.limit;
   if (patch.create === true) delete node.create;
   else if (patch.create === false) node.create = false;
+  if (patch.open === 'app') node.open = 'app';
+  else if (patch.open === 'dialog') delete node.open;
   if (patch.viewAll === null) delete node.viewAll;
   else if (patch.viewAll !== undefined) node.viewAll = { page: patch.viewAll.page, ...(patch.viewAll.as && patch.viewAll.as !== 'dialog' ? { as: patch.viewAll.as } : {}) };
   if (patch.card === null) delete node.card;

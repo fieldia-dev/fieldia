@@ -355,7 +355,9 @@ The page check holds its columns, order, search and cells to its own `fields`,
 its link to a many2one of theirs to this model, and it to a record's page. A
 tab holding one may count its records (`"count": { "related": "<its id>" }`,
 `TabCount`); the check holds that id to a related list inside the tab, and
-`relatedInTab(tab, id)` finds it there.
+`relatedInTab(tab, id)` finds it there. `"open": "app"` sends its rows and New
+the app's own way first (the viewer's `onOpen`), a dialog where it does not take
+them.
 
 A list's Import makes records from a file's rows. `createMany({ model, records,
 fields })` makes many at once and answers each in order: `{ id }`, or `{ message,

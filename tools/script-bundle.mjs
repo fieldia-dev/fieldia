@@ -814,7 +814,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // pill asked for the count through the list part, and the pill's look out of the head part into this sheet, where a
 // count on any page's tab is drawn (it was unstyled without a head) — 500.98 measured before, 502.13 after: 1.2 more,
 // to 502.2.
-const BUDGET_KB = 502.2;
+// A related list's rows and New the app's own way (open-small, `"open": "app"`): the app's way handed to the list,
+// with the page it gives for the model — 502.13 measured before, 502.28 after: 0.2 more, to 502.3.
+const BUDGET_KB = 502.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -988,7 +990,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // — 4.3 less, to 161.2.
 // A tab's count of a related list in it, and the pill's look on any page (listed with the raw budget above): 161.14
 // measured before, 161.65 after — 0.5 more, to 161.7.
-const GZIP_BUDGET_KB = 161.7;
+// A related list's rows and New the app's own way (listed with the raw budget above): 161.65 measured before, 161.72
+// after — 0.1 more, to 161.8.
+const GZIP_BUDGET_KB = 161.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1367,8 +1371,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to 34.66 and 10.07 — its title drawn as a line that wraps and its first line's room kept for what stands beside it —
 // to 34.7. (A tab's count's pill then moved to the main script's sheet, the head 34.36 and 10.01.)
 // A tab's count of a related list in it, asked of the source as the record is shown and drawn in the tab's pill
-// (open-small): list 103.42 and 33.50 to 104.25 and 33.78, to 104.3 and 33.8.
-const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [104.3, 33.8], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// (open-small): list 103.42 and 33.50 to 104.25 and 33.78, to 104.3 and 33.8. Its rows and New the app's own way
+// first (`"open": "app"`): 104.41 and 33.85, to 104.5 and 33.9.
+const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [104.5, 33.9], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

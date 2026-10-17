@@ -402,6 +402,15 @@ pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
 
+With `"open": "app"`, a row and New go your app's own way first, as View all
+does: your `onOpen` (or your host's `open`) is asked with `{ page, as: 'dialog',
+recordId }` for a row and `{ page, as: 'dialog', recordId: null, values }` for
+New — this record filled in among the values (`{ partner_id: { id, label } }`) —
+`page` being the id of the page `pages` gives for `model`, else the model's
+name. Answer with how it ended, or `undefined` for the dialog after all; the list
+asks for its records again once it settles. Without `onOpen` or a host's `open`,
+the dialog as ever.
+
 A tab holding a related list may count its records: `"count": { "related":
 "quotations" }` on the tab, by the list's id, shows "Quotations 4" (read out
 "Quotations, 4"). The source's `list` is asked for one record with the list's

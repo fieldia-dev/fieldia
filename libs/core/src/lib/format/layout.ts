@@ -530,6 +530,16 @@ export interface RelatedNode {
   viewAll?: { page: string; as?: 'dialog' | 'panel' | 'page' };
   /** New, which makes one with its link to this record filled in; offered unless false, where the app gives a page for `model`. */
   create?: boolean;
+  /**
+   * Where a row's record and New's open: in a dialog of the page the app
+   * gives for `model` (`dialog`, the default), or the app's own way (`app`)
+   * — its `onOpen` (or its host's `open`) asked first, as View all's is, with
+   * `{ page, recordId }` for a row and `{ page, recordId: null, values }` for
+   * New, its link to this record among the values; `page` the id of the page
+   * the app gives for `model`, else `model` itself. Where the app's way does
+   * not take it, the dialog, as with `dialog`.
+   */
+  open?: 'dialog' | 'app';
   /** Grid columns it spans inside a section: the whole row unless said. */
   colspan?: number;
   invisible?: Modifier;
@@ -1838,6 +1848,7 @@ export const RelatedNodeSchema = z
     searchFields: z.array(fieldName).min(1).optional(),
     viewAll: z.strictObject({ page: id, as: z.enum(['dialog', 'panel', 'page']).optional() }).optional(),
     create: z.boolean().optional(),
+    open: z.enum(['dialog', 'app']).optional(),
     colspan: span,
     invisible, roles, hideOn,
   })

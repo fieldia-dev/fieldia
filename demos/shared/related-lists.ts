@@ -267,14 +267,18 @@ export function sampleViewings(homes: Record<number, Values>, now = demoNow()): 
 
 /** The list pages the app opens by its own route — View all of a customer's invoices — by their ids. */
 const ROUTED = new Set(['invoices']);
+/** The record pages the app opens by its own route — a customer's quotation, a row's and New's (`"open": "app"`). */
+const ROUTED_RECORDS = new Set(['quotation']);
 
 /**
- * The app's own way to open a page a step or View all asks for (`onOpen`): a list of a customer's invoices goes to
- * that list's own address, its conditions in it (`filter=`), as an app's router would; anything else is the viewer's
- * to open (undefined).
+ * The app's own way to open a page a step, View all, or a related list's row or New asks for (`onOpen`): a list of a
+ * customer's invoices goes to that list's own address, its conditions in it (`filter=`); a quotation to its own page's,
+ * a new one's values in it (`record=new&values=`), as an app's router would; anything else is the viewer's to open
+ * (undefined).
  */
 export function openByRoute(params: URLSearchParams, request: OpenRequest): Promise<OpenResult> | undefined {
-  if (!ROUTED.has(request.page) || !request.filter) return undefined;
+  const list = ROUTED.has(request.page) && !!request.filter;
+  if (!list && !ROUTED_RECORDS.has(request.page)) return undefined;
   const next = new URLSearchParams();
   // The reader's look and language go along; the record does not.
   for (const key of ['skin', 'theme', 'locale', 'dir', 'now']) {
@@ -282,10 +286,26 @@ export function openByRoute(params: URLSearchParams, request: OpenRequest): Prom
     if (value) next.set(key, value);
   }
   next.set('page', request.page);
-  next.set('filter', JSON.stringify(request.filter));
+  if (list) next.set('filter', JSON.stringify(request.filter));
+  else {
+    next.set('record', request.recordId == null ? 'new' : String(request.recordId));
+    if (request.values) next.set('values', JSON.stringify(request.values));
+  }
   location.search = next.toString();
   // The page goes: nothing comes back.
   return new Promise<OpenResult>(() => undefined);
+}
+
+/** What a new record's address fills in (`values=`, as `openByRoute` writes a related list's New's), or none. */
+export function valuesFromQuery(params: URLSearchParams): Values | undefined {
+  const given = params.get('record') === 'new' ? params.get('values') : null;
+  if (!given) return undefined;
+  try {
+    const read = JSON.parse(given) as unknown;
+    return read && typeof read === 'object' && !Array.isArray(read) ? (read as Values) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The conditions a list's address keeps it to (`filter=`, as `openByRoute` writes them), or none. */

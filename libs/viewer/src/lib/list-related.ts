@@ -35,6 +35,12 @@ export interface RelatedContext {
   dialogs: Pick<WidgetDialogs, 'canOpen' | 'openRecord'>;
   /** A page opened as an `open` step opens one — the app's own way (`onOpen`) first: View all's. */
   open: (request: OpenRequest) => Promise<OpenResult>;
+  /**
+   * The app's own way to open a record of a model, for a list that says so (`open: 'app'`) — its host's `open`, else
+   * its `onOpen` — asked with the page it gives for the model; null where it does not take it. None where the app has
+   * neither.
+   */
+  route?: ((model: string, request: Omit<OpenRequest, 'page'>) => Promise<OpenResult | null>) | undefined;
   /** Told how many records it lists for the record shown, each time it counts them unsearched: a tab's count of it. */
   onCount?: (total: number) => void;
 }
@@ -95,13 +101,18 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
 export function relatedList(context: RelatedContext): RelatedPart {
   const { node, form, el, labels, fill, box, doc, locale, dialogs } = context;
   installListStyles(doc);
-  // Its records open, and New makes one, in a dialog of the page the app gives for their model; View all opens its page.
+  // Its records open, and New makes one, in a dialog of the page the app gives for their model — or the app's own way
+  // first, where the list says so (`open: 'app'`) and the app has one; View all opens its page.
+  const byApp = node.open === 'app' ? context.route : undefined;
   const opens = dialogs.canOpen(node.model);
-  const openRecord = opens ? (id: RecordId, name?: string) => dialogs.openRecord(node.model, { recordId: id, title: name || node.title || node.model }) : undefined;
-  const newRecord =
-    opens && node.create !== false
-      ? async (values: Values) => (await dialogs.openRecord(node.model, { values, title: node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null
-      : undefined;
+  /** A row's record, or a new one with its link to this record: the app's way where it takes it, else the dialog. True once saved. */
+  const show = async (recordId: RecordId | null, title: string, values?: Values): Promise<boolean> => {
+    const theirs = byApp ? await byApp(node.model, { as: 'dialog', recordId, title, ...(values ? { values } : {}) }) : null;
+    if (theirs) return theirs.saved;
+    return opens && (await dialogs.openRecord(node.model, { ...(recordId === null ? {} : { recordId }), ...(values ? { values } : {}), title })) !== null;
+  };
+  const openRecord = opens || byApp ? (id: RecordId, name?: string) => show(id, name || node.title || node.model) : undefined;
+  const newRecord = (opens || byApp) && node.create !== false ? (values: Values) => show(null, node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord, values) : undefined;
   const { viewAll } = node;
   const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
   const page = relatedListPage(context.page, node);

@@ -296,7 +296,8 @@
                 "searchFields": [
                   "name",
                   "state"
-                ]
+                ],
+                "open": "app"
               }
             ]
           }

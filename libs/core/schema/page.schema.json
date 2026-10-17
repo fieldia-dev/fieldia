@@ -8564,6 +8564,13 @@
         "create": {
           "type": "boolean"
         },
+        "open": {
+          "type": "string",
+          "enum": [
+            "dialog",
+            "app"
+          ]
+        },
         "colspan": {
           "type": "integer",
           "minimum": 1,

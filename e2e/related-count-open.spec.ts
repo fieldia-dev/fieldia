@@ -54,3 +54,33 @@ test.describe('a tab that counts the related list in it', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('a related list whose rows and New go the app’s own way', () => {
+  test('a quotation opens on its own page by the app’s route, never in a dialog; New opens a new one with this customer in it', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CUSTOMER);
+    const mine = (await theirs(page, 1)).sort((a, b) => b.date.localeCompare(a.date));
+    await tab(page).click();
+    const quotations = page.locator('[data-node="quotations"]');
+    await expect(rows(quotations).first().locator('td').first()).toHaveText(mine[0].name);
+    await rows(quotations).first().click();
+    // The app's route: the quotation's own page, at its own address.
+    await expect(page).toHaveURL(new RegExp(`[?&]page=quotation&record=${mine[0].id}(&|$)`));
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('[data-node="#title"] textarea')).toHaveValue(mine[0].name);
+    await expect(page.locator('[data-node="f-partner"] input')).toHaveValue('Nile Traders');
+    expect(problems).toEqual([]);
+    // Back to the customer, then New: a new quotation's page, the customer filled in through its values.
+    await page.goBack();
+    await tab(page).click();
+    await quotations.locator('.fd-related-tools button', { hasText: 'New' }).click();
+    await expect(page).toHaveURL(/[?&]page=quotation&record=new&values=/);
+    await expect(page.locator('[data-node="f-partner"] input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('');
+    await page.locator('[data-node="#title"] textarea').fill('S/2026/9001');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.locator('.fd-status')).toHaveText('Saved');
+    const made = (await records<Quotation>(page, 'quotation')).find((q) => q.name === 'S/2026/9001');
+    expect(made?.partner_id).toEqual({ id: 1, label: 'Nile Traders' });
+    await screen(page, 'related-open-app-new');
+  });
+});
