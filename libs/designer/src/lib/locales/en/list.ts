@@ -191,6 +191,12 @@ export const list = {
     buttons: 'Buttons on each row',
     addButton: 'Add a button on each row',
     buttonsHint: 'A press runs the button with its row’s record alone; the app is given its id. Hidden on a row while its condition holds there.',
+    says: 'Says',
+    toneSays: 'What this tone means',
+    boldSays: 'What bold means',
+    saysPlaceholder: 'Overdue',
+    boldPlaceholder: 'Your own contacts',
+    saysHint: 'Words for a key over the rows — each tone’s swatch, bold’s sample — read by a screen reader too. Without words, no key.',
   },
   // ---- the list's cards and gallery
   cards: {

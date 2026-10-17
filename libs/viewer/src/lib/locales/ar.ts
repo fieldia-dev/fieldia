@@ -261,6 +261,7 @@ export const ar: ViewerLabels = {
   relatedUnsaved: 'لا شيء هنا حتى يُحفظ هذا السجل.',
   relatedNone: 'لا شيء بعد.',
   relatedShown: '{n} من {total}',
+  rowsKey: 'مفتاح الصفوف',
   actions: 'إجراءات',
   print: 'طباعة',
   archive: 'أرشفة',

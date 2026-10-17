@@ -71,6 +71,19 @@ test.describe('columns people shape', () => {
       else await expect(rows(page).nth(i)).not.toHaveAttribute('data-bold', /.*/);
     }
     expect(await rows(page).filter({ hasText: 'Mona Adel' }).first().locator('td[data-col="name"]').evaluate((cell) => getComputedStyle(cell).fontWeight)).toBe('600');
+    // What the bold means, said over the rows (the walk of 0.25: nothing said so) and read out as a key.
+    const key = page.getByRole('list', { name: 'Key to the rows' });
+    await expect(key).toBeVisible();
+    await expect(key.getByRole('listitem')).toHaveText(['AaYour own contacts']);
+    expect(await key.locator('.fd-list-key-mark').evaluate((mark) => Number(getComputedStyle(mark).fontWeight))).toBeGreaterThanOrEqual(700);
+    await screen(page, 'list-rows-key', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('a list whose rows’ looks say no words has no key over them, as 0.25 drew it', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=customer-account&record=1&skin=underline');
+    await expect(page.locator('[data-node="invoices"] .fd-list-row').first()).toBeVisible();
+    await expect(page.locator('.fd-list-key')).toHaveCount(0);
     expect(problems).toEqual([]);
   });
 

@@ -296,6 +296,7 @@ export const de: ViewerLabels = {
   relatedNone: 'Noch keine.',
   relatedNoneNoun: 'Noch keine {records}.',
   relatedShown: '{n} von {total}',
+  rowsKey: 'Legende der Zeilen',
   relatedShownNoun: '{n} von {total} {records}',
   actions: 'Aktionen',
   print: 'Drucken',

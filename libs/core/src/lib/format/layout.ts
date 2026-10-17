@@ -275,6 +275,11 @@ export interface LineOrder {
 export interface ToneWhen {
   tone: Tone;
   when: Modifier;
+  /**
+   * A row's tone in words, for a list's and a related list's key over its rows ("Overdue"): its swatch and these words,
+   * read by a screen reader too. Without it, the tone has no key.
+   */
+  label?: string;
 }
 
 /**
@@ -508,6 +513,8 @@ export interface RelatedNode {
   rowTones?: ToneWhen[];
   /** Each row's words in bold while this holds on its record, as a list's. */
   rowBold?: Modifier;
+  /** What a row in bold means, in words, for the key over its rows, as a list's (`ListNode.rowBoldLabel`). */
+  rowBoldLabel?: string;
   /**
    * Buttons on each row and each card, as a list's: each shown by its
    * `invisible` read on the row's record, a press running its steps with
@@ -1269,6 +1276,12 @@ export interface ListNode {
   /** Each row's words in bold while this holds on its record — Flectra's decoration-bf. */
   rowBold?: Modifier;
   /**
+   * What a row in bold means, in words ("Your own contacts"): with it, a key over the rows says so — a bold sample and
+   * these words — beside each `rowTones` item's `label` with its swatch, read by a screen reader too. Without labels,
+   * no key.
+   */
+  rowBoldLabel?: string;
+  /**
    * Buttons on each row and each card, each shown by its `invisible` read
    * on the row's record (its fields and `id`); a press runs its steps with
    * that record alone, as a button for the rows chosen runs with them.
@@ -1505,7 +1518,7 @@ const print = z.boolean().optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
-export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema }).meta({ id: 'ToneWhen' });
+export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema, label: z.string().min(1).optional() }).meta({ id: 'ToneWhen' });
 export const PlaceholderWhenSchema = z.strictObject({ when: ModifierSchema, text: z.string() }).meta({ id: 'PlaceholderWhen' });
 
 export const CellRulesSchema = z
@@ -1851,6 +1864,7 @@ export const RelatedNodeSchema = z
     card: ListCardSchema.optional(),
     rowTones: z.array(ToneWhenSchema).min(1).optional(),
     rowBold: ModifierSchema.optional(),
+    rowBoldLabel: z.string().min(1).optional(),
     rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
     filter: z.array(FilterItemSchema).min(1).optional(),
     sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
@@ -2207,6 +2221,7 @@ export const ListNodeSchema = z.strictObject({
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
   rowTones: z.array(ToneWhenSchema).min(1).optional(),
   rowBold: ModifierSchema.optional(),
+  rowBoldLabel: z.string().min(1).optional(),
   rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'ListNode' });
 

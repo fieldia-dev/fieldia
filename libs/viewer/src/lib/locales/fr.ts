@@ -286,6 +286,7 @@ export const fr: ViewerLabels = {
   relatedUnsaved: 'Rien ici tant que cet enregistrement n’est pas enregistré.',
   relatedNone: 'Aucun pour l’instant.',
   relatedShown: '{n} sur {total}',
+  rowsKey: 'Légende des lignes',
   relatedShownNoun: '{n} sur {total} {records}',
   actions: 'Actions',
   print: 'Imprimer',

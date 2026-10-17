@@ -934,6 +934,24 @@ export function listView(context: ListContext): ListView {
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}) });
 
+  /**
+   * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each
+   * tone's swatch and its words, a sample in bold and its words — a list a screen reader reads, named "Key to the rows".
+   * Without words, none: a list as 0.25 drew it.
+   */
+  function rowsKey(): HTMLElement | null {
+    const tones = (node.rowTones ?? []).filter((one) => one.label);
+    const bold = node.rowBold !== undefined && node.rowBold !== false && node.rowBoldLabel ? node.rowBoldLabel : null;
+    if (!tones.length && !bold) return null;
+    const item = (mark: HTMLElement, words: string) => el('li', { class: 'fd-list-key-item' }, mark, el('span', {}, words));
+    return el(
+      'ul',
+      { class: 'fd-list-key', 'aria-label': labels.rowsKey },
+      ...tones.map((one) => item(el('span', { class: 'fd-list-key-mark', 'data-tone': one.tone, 'aria-hidden': 'true' }), one.label as string)),
+      ...(bold ? [item(el('span', { class: 'fd-list-key-mark', 'data-bold': '', 'aria-hidden': 'true' }, 'Aa'), bold)] : [])
+    );
+  }
+
   // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
   /** The views this list offers, by name, in the order the app registered them: by the page option of its name, unless the view says. */
@@ -1461,6 +1479,7 @@ export function listView(context: ListContext): ListView {
   }
 
   const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
+  const key = rowsKey();
   const element = el(
     'div',
     {
@@ -1478,6 +1497,7 @@ export function listView(context: ListContext): ListView {
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
+    ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.

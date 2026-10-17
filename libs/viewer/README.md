@@ -492,7 +492,10 @@ the totals under the cards and in sight while they scroll.
 `"options": { "links": true }` (a call and a WhatsApp link). Each row's tone
 while a condition on its record holds (`rowTones`), its bold (`rowBold`), and
 buttons on each row (`rowButtons`, each shown by its `invisible` read on the
-row's record, pressed with that record alone).
+row's record, pressed with that record alone). A tone's `label` and
+`rowBoldLabel` ("Your own contacts") say what they mean in a key over the rows —
+a swatch, a bold sample — read by a screen reader as a list; without words, no
+key.
 
 **Columns people control.** With `optionalColumns` — the columns a person may
 hide, each `show` or `hide` at first — the header has a **Columns** menu: show,

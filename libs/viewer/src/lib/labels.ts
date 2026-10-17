@@ -415,6 +415,8 @@ export interface ViewerLabels {
   relatedNone: string;
   relatedNoneNoun?: string;
   relatedShown: string;
+  /** The key over a list's rows: what their tones and their bold mean, where the page says (`rowTones` labels, `rowBoldLabel`). */
+  rowsKey: string;
   relatedShownNoun?: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
@@ -818,6 +820,7 @@ const en: ViewerLabels = {
   relatedNone: 'None yet.',
   relatedNoneNoun: 'No {records} yet.',
   relatedShown: '{n} of {total}',
+  rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
   actions: 'Actions',
   print: 'Print',
