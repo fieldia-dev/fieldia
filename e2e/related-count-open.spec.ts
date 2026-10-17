@@ -37,8 +37,8 @@ test.describe('a tab that counts the related list in it', () => {
     await tab(page).click();
     await expect(rows(page.locator('[data-node="quotations"]'))).toHaveCount(Math.min(5, mine.length));
     await expect(pill(page)).toHaveText(String(mine.length));
-    // The next customer: its own count, never the last one's.
-    await page.getByRole('button', { name: 'Next record' }).click();
+    // The next customer (the page names its records: its pager says so): its own count, never the last one's.
+    await page.getByRole('button', { name: 'Next customer' }).click();
     await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Amira Clinics');
     const next = await theirs(page, 20);
     await expect(pill(page)).toHaveText(String(next.length));
