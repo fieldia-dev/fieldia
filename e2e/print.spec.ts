@@ -138,6 +138,36 @@ test.describe('an invoice printed', () => {
   });
 });
 
+test.describe('what is in front', () => {
+  test('with the invoice open in a dialog, Ctrl+P prints the dialog’s record alone: not the page behind it, nor its frame', async ({ page, browserName }) => {
+    // Two forms on the page — the record, and the record again in the dialog over it — so not `open`'s one form.
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
+    page.on('console', (message) => message.type() === 'error' && problems.push(`console: ${message.text()}`));
+    await page.goto(`/plain/?${invoice()}&open=dialog`);
+    const dialog = page.locator('.fd-form-dialog');
+    await expect(dialog.locator('.fd-sheet-page')).toBeVisible();
+    const front = dialog.locator('form.fd-form');
+    const behind = page.locator('#app > form.fd-form');
+    await printing(page);
+    await expect(page.locator('html')).toHaveClass(/\bfd-print-one\b/);
+    await expect(front).toHaveClass(/\bfd-print-this\b/);
+    await expect(behind).toBeHidden();
+    await expect(dialog.locator('.fd-form-dialog-title')).toBeHidden();
+    await expect(front.locator('.fd-print-head .fd-print-title')).toHaveText('Account Entry · INV/2026/00038');
+    await expect(front.locator('.fd-tabpanel[data-fd-tab="Journal Items"]')).toBeVisible();
+    // As wide as the sheet, not the dialog's frame.
+    expect((await front.boundingBox())?.width).toBeGreaterThan(600);
+    await screen(page, 'print-front-dialog');
+    if (browserName === 'chromium') expect(await pdf(page, 'print-front-dialog')).toBeGreaterThanOrEqual(2);
+    else await printed(page);
+    await page.emulateMedia({ media: 'screen' });
+    await expect(page.locator('html')).not.toHaveClass(/\bfd-print-one\b/);
+    await expect(behind).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('a list of invoices printed', () => {
   test('Print prints every invoice the search finds, grouped, with its sums, the totals and the search in words', async ({ page, browserName }) => {
     const { problems } = await open(page, 'plain', `page=invoices&skin=underline&${NOW}`);
@@ -165,6 +195,9 @@ test.describe('a list of invoices printed', () => {
     await expect(sheet.locator('tbody tr.fd-print-group')).toHaveCount(7);
     await expect(sheet.locator('tbody tr.fd-print-group').first()).toContainText(/^Amira Clinics \(8\)\s*EGP\s1,608,000\.00$/);
     await expect(sheet.locator('tfoot tr')).toContainText(/Total\s*EGP\s8,909,650\.00/);
+    // Its footer at the foot of every sheet where the engine keeps room for it there (Chromium's, Firefox's), its room kept.
+    await expect(sheet).toHaveAttribute('data-print-room', '');
+    if (browserName !== 'webkit') await expect(sheet.locator('.fd-print-foot')).toHaveCSS('position', 'fixed');
     await screen(page, 'print-invoices-list');
     if (browserName === 'chromium') expect(await pdf(page, 'print-invoices-list')).toBe(2);
     else await printed(page);

@@ -330,7 +330,10 @@ an engine that tells nothing as it prints gets them too):
   headings; the page's language and direction;
 - over it, the record's title and the day it was printed (`now`, on the
   page's `timeZone`), and — with a page's `print` — the app's logo and words,
-  and words under it. Each `{field}` shows that field's value.
+  and words under it, once after the record. Each `{field}` shows that
+  field's value;
+- with a dialog or a panel open over the page, its form alone: what a person
+  printing looks at — never the page behind with the dialog over it.
 
 ```json
 "print": {
@@ -370,7 +373,9 @@ holds it) or `bytes` (a Blob, an ArrayBuffer, a Uint8Array).
 the search finds — each page of them asked of the data source, as Export's
 every match is — the columns as the list shows them, under its Group By
 headings with their counts and sums, the totals under them; over them the
-list's title, its filters in words, how many and the day. See
+list's title, its filters in words, how many and the day; its footer at the
+foot of every sheet where the browser keeps room for it there (Chromium,
+Firefox), else once after the rows. See
 [on paper](https://fieldia.dev/record/#print).
 
 ## With no build step
