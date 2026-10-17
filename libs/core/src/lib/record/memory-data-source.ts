@@ -153,7 +153,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const calls: MemoryDataSource['calls'] = [];
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
-  let lineIds = 1000;
+  // A new line's id comes after every line id of the records given (kept from an earlier visit, say), never one of them.
+  let lineIds = Math.max(1000, highestLineId(records));
   let fileIds = 0;
   /** Each file's tries at the store, by its name and size: what `storage.fails` is told. */
   const tries = new Map<string, number>();
@@ -586,8 +587,24 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   };
 }
 
+/** The highest numeric id of a line among the records given — their tables of lines, and lines inside lines — or 0. */
+function highestLineId(records: Record<string, Record<string, Values>>): number {
+  let highest = 0;
+  const look = (value: unknown): void => {
+    if (!Array.isArray(value)) return;
+    for (const item of value) {
+      if (!item || typeof item !== 'object' || !('key' in item) || !('values' in item)) continue;
+      const id = (item as Line).id;
+      if (typeof id === 'number' && id > highest) highest = id;
+      for (const inner of Object.values((item as Line).values ?? {})) look(inner);
+    }
+  };
+  for (const table of Object.values(records)) for (const values of Object.values(table)) for (const value of Object.values(values)) look(value);
+  return highest;
+}
+
 /** A link: a record's id and its name. */
-const isLink = (value: unknown): value is RelatedRecord => !!value && typeof value === 'object' && !Array.isArray(value) && 'id' in value && 'label' in value && !('values' in value);
+const isLink =(value: unknown): value is RelatedRecord => !!value && typeof value === 'object' && !Array.isArray(value) && 'id' in value && 'label' in value && !('values' in value);
 
 /** Words as a search finds them: folded (foldForSearch), and a path's separators — \\ or /, with spaces round them or not — as one. */
 const findable = (text: string) => foldForSearch(text).replace(/\s*[\\/]\s*/g, '\\');

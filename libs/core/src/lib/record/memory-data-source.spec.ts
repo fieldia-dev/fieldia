@@ -63,6 +63,16 @@ describe('createMemoryDataSource — implements every DataSource method', () => 
     expect(result.values).toEqual(stored);
   });
 
+  it('numbers a new line after the lines of the records it was given, so a saved line is never another one', async () => {
+    // Records kept from an earlier visit (a demo's tab), their lines numbered by a source before this one.
+    const ds = createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', child_ids: [{ key: 'a', id: 1001, values: { name: 'Mona' } }, { key: 'b', id: 1004, values: { name: 'Omar' } }] } } } });
+    await ds.save({ model: 'partner', id: 1, fields, values: {}, changes: { values: {}, lines: { child_ids: [{ op: 'create', key: 'new1', values: { name: 'Hana' } }] }, links: {} } });
+    const ids = (ds.records['partner'][1]['child_ids'] as { id: number }[]).map((line) => line.id);
+    expect(ids).toEqual([1001, 1004, 1005]);
+    await ds.save({ model: 'partner', id: 1, fields, values: {}, changes: { values: {}, lines: { child_ids: [{ op: 'update', id: 1001, values: { name: 'Mona A.' } }] }, links: {} } });
+    expect((ds.records['partner'][1]['child_ids'] as { values: { name: string } }[]).map((line) => line.values.name)).toEqual(['Mona A.', 'Omar', 'Hana']);
+  });
+
   it('updates a line by id, and handles set and clear', async () => {
     const ds = source();
     await ds.save({
