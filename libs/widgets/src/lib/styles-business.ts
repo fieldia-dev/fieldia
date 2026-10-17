@@ -1,10 +1,10 @@
 /**
  * The business widgets' part of the stylesheet: the title's line, a state's
- * dot and its menu, a copy button, a range of dates, a running timer and a
- * document shown inline. Scoped, and written with logical properties, as the
- * rest of it is; it comes after the inputs' part. The business part's widgets
- * — a statusbar, priority stars, an analytic distribution, tax totals and
- * payments — bring their rules with them (styles-business-part.ts); a colour's
+ * dot and its menu, a range of dates and a document shown inline. Scoped, and
+ * written with logical properties, as the rest of it is; it comes after the
+ * inputs' part. The business part's widgets — a statusbar, priority stars, an
+ * analytic distribution, tax totals, payments, a value to copy and a running
+ * timer — bring their rules with them (styles-business-part.ts); a colour's
  * and properties' come with their kinds in the survey part (styles-survey.ts).
  */
 export const BUSINESS_CSS = /* css */ `
@@ -38,11 +38,6 @@ export const BUSINESS_CSS = /* css */ `
 .fd-dot-item[aria-checked="true"] { font-weight: 600; }
 /* The state picked, ticked at the menu's end too: told by more than its weight. */
 .fd-dot-item[aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; padding-inline-start: 16px; color: var(--fd-accent); }
-/* A value to copy: its box, the button after it. */
-.fd-copy { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
-.fd-copy-long { align-items: flex-start; }
-.fd-copy-button { flex: none; }
 /* A range of dates: two boxes, from → to, in one row that wraps on a phone, its calendar under it marking the days between. */
 .fd-range { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 /* Too narrow for a date and the calendar's button beside it, the button goes under: a date is never cut. */
@@ -56,13 +51,6 @@ export const BUSINESS_CSS = /* css */ `
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
 .fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
 .fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }
-/* A timer: its time in even digits, a green dot beating while it runs. */
-.fd-timer { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
-.fd-timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fd-border-strong); }
-.fd-timer[data-running] .fd-timer-dot { background: var(--fd-success); animation: fd-timer-beat 1s ease-in-out infinite alternate; }
-.fd-timer[data-running] .fd-timer-time { color: var(--fd-success); }
-@keyframes fd-timer-beat { to { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) { .fd-timer[data-running] .fd-timer-dot { animation: none; } }
 /* A document shown inline: the browser's own viewer, as wide as the field. */
 .fd-embed { display: grid; gap: 8px; min-width: 0; }
 .fd-embed-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }

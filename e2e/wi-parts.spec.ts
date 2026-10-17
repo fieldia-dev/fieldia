@@ -165,7 +165,7 @@ test.describe('the backlog demo, its parts as chunks', () => {
 test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
   const bug = JSON.parse(readFileSync(join(__dirname, '..', 'examples', 'pages', 'work-item-bug.page.json'), 'utf8'));
 
-  test('a work item’s bug asks for its head, text, path picker, own lists, look and attachments from beside fieldia.js, drawn whole once they came', async ({ page }) => {
+  test('a work item’s bug asks for its head, text, path picker, own lists, tags, look and attachments from beside fieldia.js, drawn whole once they came', async ({ page }) => {
     const problems = watch(page);
     const requested: string[] = [];
     page.on('request', (request) => requested.push(new URL(request.url()).pathname));
@@ -192,7 +192,8 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     // The text part's: the links boxes in sight, the Markdown texts drawn (empty on a new bug, they take no room at rest).
     await expect(page.locator('#app .fd-links-box').first()).toBeVisible();
     expect(await page.locator('#app .fd-md-field').count()).toBeGreaterThan(0);
-    // And its look's: the Fluent theme and the quiet skin its page names.
+    // Its tags', a link to other records: the relations part. And its look's: the Fluent theme and the quiet skin its page
+    // names.
     expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path)).sort()).toEqual([
       '/script/fieldia.choice.js',
       '/script/fieldia.files.js',
@@ -200,6 +201,7 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
       '/script/fieldia.js',
       '/script/fieldia.path.js',
       '/script/fieldia.quiet.js',
+      '/script/fieldia.relations.js',
       '/script/fieldia.text.js',
       '/script/fieldia.themes.js',
     ]);

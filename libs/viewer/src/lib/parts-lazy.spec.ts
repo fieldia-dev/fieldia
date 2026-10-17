@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, datePart, filesPart, linesPart, pathPart, quietPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, filesPart, linesPart, pathPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -66,8 +66,9 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([listPart, filtersPart]);
     // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box), and its quiet skin's look.
     expect(partsFor(BUG)).toEqual([headPart, quietPart]);
-    // The classic formatted text, the plain many2one: no part.
-    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([]);
+    // The classic formatted text: no part. The plain many2one: its box, the relations part's.
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }), fields))).toEqual([]);
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([relationsPart]);
     // The app's own widget for the field: no part.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields), { 'many2one.path': own })).toEqual([]);
@@ -147,7 +148,8 @@ describe('the parts a page draws from', () => {
     };
     const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
     for (const [name, widget] of [['state', 'statusbar'], ['stage', 'statusbar'], ['state', 'priority'], ['hours', 'duration'], ['hours', 'percentage'], ['split', 'distribution'], ['split', 'tax-totals'], ['split', 'payments']]) {
-      expect(partsFor(page(sections(field(name, { widget })), fields))).toEqual([businessPart]);
+      // An analytic distribution's lines each draw a link's box: the relations part beside the business part.
+      expect(partsFor(page(sections(field(name, { widget })), fields))).toEqual(widget === 'distribution' ? [businessPart, relationsPart] : [businessPart]);
     }
     // A table's lines draw each cell with its column's widget: hours in a column.
     // A table's own part first (the lines part), then its cells'.
@@ -156,9 +158,9 @@ describe('the parts a page draws from', () => {
     const sheet = (more: Record<string, unknown> = {}) => page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state' }, children: [], ...more }, { ...fields, name: { type: 'char', label: 'Name' } });
     expect(partsFor(sheet())).toEqual([businessPart]);
     expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart]);
-    // None: the same fields plainly, a state's dot (the main script's), a sheet with no statusbar, the app's own statusbar,
-    // a headed sheet (its state is its head's).
-    expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([linesPart]);
+    // None: the same fields plainly (a stage a link's box, the relations part's), a state's dot (the main script's), a sheet
+    // with no statusbar, the app's own statusbar, a headed sheet (its state is its head's).
+    expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([relationsPart, linesPart]);
     expect(partsFor(sheet({ statusbar: undefined }))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([]);
@@ -253,6 +255,41 @@ describe('the parts a page draws from', () => {
         else expect(status.parentElement).toBe(handle.element);
       }
     });
+  });
+
+  it('the relations part for a link to other records, wherever its box is drawn; the choice part for a long choice or tags, a property’s too', () => {
+    const many = Array.from({ length: 16 }, (_, i) => ({ value: String(i), label: `Floor ${i}` }));
+    const fields = {
+      partner: { type: 'many2one', label: 'Customer', relation: 'partner' },
+      tag_ids: { type: 'many2many', label: 'Tags', relation: 'tag' },
+      labels: { type: 'char', label: 'Labels' },
+      doc: { type: 'reference', label: 'Document', models: [{ value: 'partner', label: 'Customer' }] },
+      floor: { type: 'selection', label: 'Floor', options: many },
+      rooms: { type: 'selection', label: 'Rooms', multiple: true, options: [{ value: 'a', label: 'A' }] },
+      lines: { type: 'one2many', label: 'Lines', relation: 'line', fields: { partner: { type: 'many2one', label: 'Customer', relation: 'partner' } } },
+      short: { type: 'properties', label: 'Short', definitions: [{ name: 'size', label: 'Size', type: 'selection', options: [{ value: 's', label: 'S' }] }] },
+      long: { type: 'properties', label: 'Long', definitions: [{ name: 'floor', label: 'Floor', type: 'selection', options: many }] },
+      given: { type: 'properties', label: 'Given', definitionsFrom: { list: 'definitions' } },
+    };
+    const field = (name: string, more: Record<string, unknown> = {}) => ({ type: 'field', id: `f-${name}`, field: name, ...more });
+    for (const shown of [field('partner'), field('tag_ids'), field('tag_ids', { widget: 'checkboxes' }), field('labels', { widget: 'tags' }), field('doc')]) {
+      expect(partsFor(page(sections(shown), fields))).toEqual([relationsPart]);
+    }
+    // A table's cell drawn with its column's widget: a link's box.
+    expect(partsFor(page(sections(field('lines')), fields))).toEqual([linesPart, relationsPart]);
+    // A path picker is its own part's; the app's own link box needs none.
+    expect(partsFor(page(sections(field('partner', { widget: 'path' })), fields))).toEqual([pathPart]);
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    expect(partsFor(page(sections(field('partner')), fields), { many2one: own })).toEqual([]);
+    // A long choice, searched, and several chosen as tags: the choice part's; a short choice or one not searched, none.
+    expect(partsFor(page(sections(field('floor')), fields))).toEqual([choicePart]);
+    expect(partsFor(page(sections(field('rooms', { widget: 'tags' })), fields))).toEqual([choicePart]);
+    expect(partsFor(page(sections(field('floor', { options: { search: false } }), field('rooms')), fields))).toEqual([]);
+    // Properties: the survey part's, a date's part — and the choice part where one may be a long choice: a definition of
+    // the page's own, or any the data source gives.
+    expect(partsFor(page(sections(field('short')), fields))).toEqual([surveyPart, datePart]);
+    expect(partsFor(page(sections(field('long')), fields))).toEqual([surveyPart, datePart, choicePart]);
+    expect(partsFor(page(sections(field('given')), fields))).toEqual([surveyPart, datePart, choicePart]);
   });
 
   it('the survey part for a ranking, a matrix, a slider, pictures, a colour, properties, an address or a progress bar, wherever drawn: a field, a table’s cells', () => {

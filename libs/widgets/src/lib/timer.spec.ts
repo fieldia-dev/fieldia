@@ -1,5 +1,5 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
-import { formatClock } from './timer';
+import { formatClock } from './business-plain';
 import { createWidget } from './widgets';
 
 /** The field, beside a date and time it may start from. */

@@ -2,7 +2,8 @@ import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
 import { moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
-import { createWidget, type Widget, type WidgetFactory } from './widgets';
+import { installCardsStyles } from './styles-cards';
+import type { createWidget, Widget, WidgetFactory } from './widgets';
 
 /**
  * A repeating group on a one2many (`one2many.cards`): each line a small card
@@ -13,6 +14,10 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * aloud. `options.min` cards at least — a new form starts with them — and
  * `options.max` at most. ↑ and ↓ move a card, where it went said aloud; Copy puts a copy of a card, its answers too,
  * right after it.
+ *
+ * In the lines part (lines-part.ts), loaded the first time a page shows cards: its lines as plain words meanwhile
+ * (lines-plain.ts). Each card's fields are drawn with the registry's `createWidget`, handed to it rather than imported:
+ * a part never imports widgets.ts.
  */
 
 interface Card {
@@ -26,7 +31,10 @@ interface Card {
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
 
-export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale, dialogs, widgets, onError }) => {
+export const cardsWidget =
+  (create: typeof createWidget): WidgetFactory =>
+  ({ form, name, field, node, id, document, labels, locale, dialogs, widgets, onError }) => {
+  installCardsStyles(document);
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const def = field as Extract<Field, { type: 'one2many' }>;
@@ -84,7 +92,7 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
       // Each with its column's widget, as the table's cells say (a phone read the world over), as a table draws it.
       const cell = node.cells?.[column];
       const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...(cell?.widget ? { widget: cell.widget } : {}), ...(cell?.options ? { options: cell.options } : {}) };
-      const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
+      const widget = create({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
       const label = make('label', { class: 'fd-repeat-label', for: cellId }, sub.label);
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());
       const error = make('div', { class: 'fd-cell-error', hidden: '' });

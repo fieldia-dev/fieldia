@@ -3,7 +3,7 @@ import { phoneSettings } from './phone-settings';
 import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetDialogs } from './widgets';
-import { detailLines, linkAvatar } from './relations';
+import { detailLines, linkAvatar } from './link-avatar';
 
 /**
  * A read-only value drawn as its words, as Flectra draws one: a choice by its

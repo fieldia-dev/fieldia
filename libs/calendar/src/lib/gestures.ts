@@ -1,5 +1,5 @@
 import { linesIn, type CalendarCore, type Column } from './calendar-core';
-import { addMinutes, atMinutes, minutesOf } from './dates';
+import { addMinutes, atMinutes, dayOn, minutesOf, readDay } from './dates';
 import { moved, whereTo, type CalendarEvent } from './events';
 import { fill } from './labels';
 
@@ -83,8 +83,8 @@ export function pressEvent(cal: CalendarCore, e: PointerEvent, event: CalendarEv
   const timedHere = home.classList.contains('fd-cal-col');
   const homeTop = timedHere ? home.getBoundingClientRect().top : 0;
   /** Minutes between the record's start (on this day) and where it was taken hold of. */
-  const day = new Date(`${(block.dataset['focus'] ?? '').split(':').pop()}T00:00:00`);
-  const segStart = cal.segment(event, day)?.start ?? event.start;
+  const day = readDay((block.dataset['focus'] ?? '').split(':').pop() ?? '');
+  const segStart = (day && cal.segment(event, day)?.start) || event.start;
   const grabbed = timedHere ? Math.round((startY - homeTop) / (cal.hour / 60)) - (minutesOf(segStart) - state.shownHours.start * 60) : 0;
   /** How far into the record this day's part begins: a record from the night before is taken by its morning's part. */
   const into = Math.round((segStart.getTime() - event.start.getTime()) / 60000);
@@ -149,7 +149,7 @@ function landingAt(cal: CalendarCore, x: number, y: number, event: CalendarEvent
   const cell = under?.closest<HTMLElement>('[data-day]');
   if (!cell || !body.contains(cell) || cell.classList.contains('fd-cal-col')) return null;
   const [y4, mo, d] = (cell.dataset['day'] ?? '').split('-').map(Number);
-  const start = new Date(y4, mo - 1, d, event.start.getHours(), event.start.getMinutes());
+  const start = dayOn(y4, mo - 1, d, minutesOf(event.start));
   if (block.parentElement !== cell) cell.append(block);
   const column = cell.dataset['column'] !== undefined ? (state.columns[Number(cell.dataset['column'])] ?? null) : null;
   return { start, column };

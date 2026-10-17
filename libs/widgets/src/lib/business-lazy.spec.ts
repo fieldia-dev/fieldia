@@ -1,12 +1,13 @@
 import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
-import { businessPart, type PartFactory } from './widget-parts';
+import { businessPart, relationsPart, type PartFactory } from './widget-parts';
 import { plainNumber } from './business-plain';
 import { builtInWidgets, createWidget, widgetPart, type Widget } from './widgets';
 
 /**
  * Flectra's business widgets in the business part (business-part.ts): each
- * kind's factory says so, and a widget made before the part came — by
+ * kind's factory says so — an analytic distribution's with the relations
+ * part beside it, for its lines' links — and a widget made before the part came — by
  * something that did not wait for it, as the viewer does — shows its value
  * plainly (business-plain.ts), then the part's own widget takes its place
  * with the last value, the focus, and anything typed meanwhile. This file
@@ -25,6 +26,8 @@ const fields: Record<string, Field> = {
   totals: { type: 'json', label: 'Totals' },
   paid: { type: 'json', label: 'Payments' },
   currency_id: { type: 'many2one', label: 'Currency', relation: 'res.currency' },
+  code: { type: 'char', label: 'Code' },
+  clock: { type: 'float', label: 'Time spent' },
 };
 const NODES: FieldNode[] = [
   { type: 'field', id: 'f-state', field: 'state', widget: 'statusbar' },
@@ -36,6 +39,8 @@ const NODES: FieldNode[] = [
   { type: 'field', id: 'f-split', field: 'split', widget: 'distribution' },
   { type: 'field', id: 'f-totals', field: 'totals', widget: 'tax-totals', options: { currencyField: 'currency_id' } },
   { type: 'field', id: 'f-paid', field: 'paid', widget: 'payments', options: { currencyField: 'currency_id' } },
+  { type: 'field', id: 'f-code', field: 'code', widget: 'copy' },
+  { type: 'field', id: 'f-clock', field: 'clock', widget: 'timer' },
 ];
 const page = { fieldia: '0.1', id: 'p', title: 'P', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 's', children: NODES } } as unknown as Page;
 const VALUES = {
@@ -49,18 +54,23 @@ const VALUES = {
   totals: { untaxed: 1000, groups: [{ name: 'VAT 14%', amount: 140 }], total: 1140 },
   paid: [{ date: '2026-10-15', amount: 500, name: 'PAY/1' }],
   currency_id: { id: 1, label: 'EGP' },
+  code: 'INV/2026/0001',
+  clock: 1.5,
 };
 
 afterEach(() => document.body.replaceChildren());
 
 describe('the business widgets’ part', () => {
   it('is named by each business kind’s factory, and by no other', () => {
-    for (const node of NODES) {
+    for (const node of NODES.filter((one) => one.widget !== 'distribution')) {
       expect((builtInWidgets[`${fields[node.field].type}.${node.widget}`] as PartFactory).partOf(node)).toBe(businessPart);
       expect(widgetPart(fields[node.field], node)).toBe(businessPart);
     }
-    // The same fields drawn plainly; and an app's own statusbar.
-    for (const node of NODES) expect(widgetPart(fields[node.field], { ...node, widget: undefined })).toBeUndefined();
+    // An analytic distribution's lines each draw a link's box: the business part, in once the relations part is too.
+    const split = widgetPart(fields['split'], NODES.find((node) => node.widget === 'distribution') as FieldNode);
+    expect([split?.name, split === businessPart, split?.loaded]).toEqual(['business', false, undefined]);
+    // The same fields drawn plainly — a stage as a link to its record, in the relations part; and an app's own statusbar.
+    for (const node of NODES) expect(widgetPart(fields[node.field], { ...node, widget: undefined })).toBe(node.field === 'stage' ? relationsPart : undefined);
     const own = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(widgetPart(fields['state'], NODES[0], { 'selection.statusbar': own })).toBeUndefined();
     // A state's dot stays in the main script: a work item's State is one, and its list is the pickers' (pick-list.ts).
@@ -136,6 +146,9 @@ describe('a business widget made before its part came', () => {
     expect(element('f-split').textContent).toBe('60% · 40%');
     expect(words('f-totals')).toBe('Total E£ 1,140.00');
     expect(words('f-paid')).toBe('Paid on 15 Oct 2026 E£ 500.00');
+    // A timer's time, standing still; a value to copy in a plain text box, which keeps it.
+    expect(element('f-clock').textContent).toBe('01:30:00');
+    expect((element('f-code') as HTMLInputElement).value).toBe('INV/2026/0001');
     // Hours and a per cent in a plain box that reads them as they are typed.
     const hours = element('f-hours') as HTMLInputElement;
     const share = element('f-share') as HTMLInputElement;
@@ -154,6 +167,10 @@ describe('a business widget made before its part came', () => {
     expect(form.getState().unread['hours']).toBeUndefined();
     await businessPart.load();
     await Promise.resolve();
+    // The distribution waits for its links' part too: its shares in words until it has come.
+    expect(element('f-split').textContent).toBe('60% · 40%');
+    await relationsPart.load();
+    await Promise.resolve();
     // Each the part's own, in its place (a box's hint beside it), with the value it was given.
     expect([...host.children].filter((child) => !child.matches('.fd-refusal-hint'))).toEqual(NODES.map((node) => widgets[node.id].element));
     expect(host.querySelector('[data-fd-plain]')).toBeNull();
@@ -162,6 +179,8 @@ describe('a business widget made before its part came', () => {
     expect(element('f-split').querySelectorAll('tbody tr')).toHaveLength(2);
     expect(element('f-totals').classList.contains('fd-tax-totals')).toBe(true);
     expect(element('f-paid').querySelectorAll('.fd-payment')).toHaveLength(1);
+    expect(element('f-clock').querySelector('.fd-timer-time')?.textContent).toBe('01:30:00');
+    expect((element('f-code').querySelector('input') as HTMLInputElement).value).toBe('INV/2026/0001');
     expect((element('f-share').querySelector('input') as HTMLInputElement).value).toBe('35');
     // The hours' own box has the focus and the text as it stood: typing goes on where it was.
     const box = element('f-hours') as HTMLInputElement;

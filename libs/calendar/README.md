@@ -57,6 +57,16 @@ A list page with `calendar` offers **Calendar** beside its table:
 | `hours` | The hours the day and week show, `0` to `24`: 8 to 20 unless said. A record outside them stretches them. |
 | `slot` | The minutes a drag moves by and a slot holds: `15`, `30` (unless said) or `60`. |
 
+**On a zone's clock.** A calendar is on the clock of the zone its start
+field names (`timeZone` on a date and time field), else its page's
+(`"timeZone": "Europe/Berlin"`), else the reader's own. Its week, today, the
+hours each record sits at and the line for now are that zone's wherever it is
+looked at from, its short name ("CEST") beside the span where it is not the
+reader's own; a slot pressed, a drag, a stretch and Move to… write the instant
+that time is there, and a record moved keeps the time it really lasts across a
+change of the clocks. In the hour the clocks repeat, a time is the first of the
+two; in the hour they skip, it is as far past the change (02:30 is 03:30).
+
 The page check refuses a field the page lacks or one of the wrong kind, an end
 of another kind than its start, a `view` that is not among `views`, and hours
 that end before they start.

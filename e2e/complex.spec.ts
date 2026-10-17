@@ -78,7 +78,8 @@ for (const variant of VARIANTS) {
       const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
       await page.locator('.fd-avatar input[type=file]').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
       await expect(page.locator('.fd-avatar img')).toBeVisible();
-      expect((await record(page)).image).toMatchObject({ name: 'logo.png', type: 'image/png', size: png.length });
+      // The preview shows the file as it is picked; the field holds it once the store has it.
+      await expect.poll(async () => (await record(page)).image).toMatchObject({ name: 'logo.png', type: 'image/png', size: png.length });
       await screen(page, `${variant}-customer-avatar`);
     });
 

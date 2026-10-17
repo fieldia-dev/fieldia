@@ -1,8 +1,8 @@
-import { saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
+import { isOwnZone, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
-import { moneyReads } from '@fieldia/widgets';
+import { moneyReads, zoneName } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
-import { addDays, addMinutes, atMinutes, dayKey, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, writeWhen, type Range } from './dates';
+import { addDays, addMinutes, atMinutes, dayKey, dayOn, firstDayOf, format, minutesOf, rangeOf, sameDay, startOfDay, stepFrom, fromWall, toWall, writeWhen, zoneOfCalendar, type Range } from './dates';
 import { colourOf, comma, eventsOf, keyOf, kindOf, sideBySide, type CalendarEvent, type Resource } from './events';
 import { pressEvent, pressSlot, stretch } from './gestures';
 import { onDayKey, onEventKey, onSlotKey } from './keys';
@@ -41,8 +41,11 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const source = context.dataSource;
   const model = page.data.kind === 'record' ? page.data.model : '';
   const labels: CalendarLabels = calendarLabels(locale, settings.labels?.[locale]);
-  const now = () => settings.now?.() ?? new Date();
   const kind = kindOf(page, spec);
+  /** The zone its clock is: its start's, else its page's, else the reader's own (dates.ts). */
+  const zone = zoneOfCalendar(page, spec);
+  /** The moment it is now (the app's, as a demo or a test pins it), on the calendar's clock: today is that zone's day. */
+  const now = () => toWall(settings.now?.() ?? new Date(), zone);
   const views = (spec.views?.length ? spec.views : ALL_VIEWS).filter((v, i, all) => all.indexOf(v) === i);
   const firstDay = firstDayOf(locale, spec.firstDay);
   const slot = spec.slot ?? 30;
@@ -108,7 +111,16 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   back.addEventListener('click', () => go(stepFrom(state.view, state.anchor, -1)));
   on.addEventListener('click', () => go(stepFrom(state.view, state.anchor, 1)));
   newButton.addEventListener('click', () => void createAt(...newPlace()));
-  const bar = make('div', { class: 'fd-cal-bar' }, make('div', { class: 'fd-cal-nav', role: 'group', 'aria-label': labels.moveThrough }, today, back, on), title, ranges, newButton);
+  // The zone its times are on, where it is not the reader's own: its short name ("CEST"), its long one read out.
+  const shownZone = zone && !isOwnZone(zone) ? make('span', { class: 'fd-cal-zone', role: 'note' }) : null;
+  const nameZone = (at = (settings.now?.() ?? new Date()).getTime()) => {
+    if (!shownZone || !zone) return;
+    shownZone.textContent = zoneName(at, zone, locale);
+    shownZone.title = zoneName(at, zone, locale, 'longGeneric');
+    shownZone.setAttribute('aria-label', shownZone.title);
+  };
+  nameZone();
+  const bar = make('div', { class: 'fd-cal-bar' }, make('div', { class: 'fd-cal-nav', role: 'group', 'aria-label': labels.moveThrough }, today, back, on), title, ...(shownZone ? [shownZone] : []), ranges, newButton);
 
   // What a move says, with Undo; what went wrong, at once; how many it shows, when it cannot show all.
   const said = make('div', { class: 'fd-cal-said', role: 'status' });
@@ -129,8 +141,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const range = (): Range => rangeOf(state.view, state.anchor, firstDay);
   /** The records in the span: starting before it ends, and ending after it starts (or starting in it, with no end). */
   function spanFilter({ from, to }: Range): ResolvedFilter[] {
-    const last = kind === 'date' ? dayKey(addDays(to, -1)) : writeWhen(to, kind);
-    const first = writeWhen(from, kind);
+    const last = kind === 'date' ? dayKey(addDays(to, -1)) : writeWhen(to, kind, zone);
+    const first = writeWhen(from, kind, zone);
     const starts: ResolvedFilter = { field: spec.start, op: kind === 'date' ? '<=' : '<', value: last };
     if (!spec.end) return [starts, { field: spec.start, op: '>=', value: first }];
     return [starts, { any: [{ field: spec.end, op: kind === 'date' ? '>=' : '>', value: first }, { field: spec.start, op: '>=', value: first }] }];
@@ -202,6 +214,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
 
   function drawTitle({ from, to }: Range) {
     const { view } = state;
+    // Its name in summer or winter, as the span shown starts in it.
+    nameZone(fromWall(from, zone));
     const last = addDays(to, -1);
     if (view === 'day') title.textContent = format(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(from);
     else if (view === 'month') title.textContent = format(locale, { month: 'long', year: 'numeric' }).format(state.anchor);
@@ -371,7 +385,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     // The hours down the side, then a column of slots for each day or person, its records over them.
     const side = make('div', { class: 'fd-cal-hours', 'aria-hidden': 'true' });
     for (let h = from; h < to; h++) {
-      const label = make('span', { class: 'fd-cal-hour' }, time(atMinutes(new Date(2026, 0, 1), h * 60)));
+      const label = make('span', { class: 'fd-cal-hour' }, time(atMinutes(dayOn(2026, 0, 1), h * 60)));
       label.style.top = `${(h - from) * HOUR}px`;
       side.append(label);
     }
@@ -539,7 +553,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     const cursorKey = shown.days.some((d) => sameDay(d, state.cursor.day)) ? dayKey(state.cursor.day) : dayKey(shown.days.find(isToday) ?? state.anchor);
     for (const day of shown.days) {
       const mine = events.filter((event) => covers(event, day));
-      const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getMonth() !== state.anchor.getMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
+      const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getUTCMonth() !== state.anchor.getUTCMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
       const number = make(
         'button',
         { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
@@ -639,8 +653,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     } else {
       const from = wholeDay ? startOfDay(start) : start;
       const until = end ?? (wholeDay ? addDays(from, 1) : addMinutes(from, NEW_LENGTH));
-      values[spec.start] = writeWhen(from, 'datetime');
-      if (spec.end) values[spec.end] = writeWhen(until, 'datetime');
+      values[spec.start] = writeWhen(from, 'datetime', zone);
+      if (spec.end) values[spec.end] = writeWhen(until, 'datetime', zone);
     }
     if (spec.resource && column?.resource && column.resource.key !== '') values[spec.resource] = column.resource.value;
     await context.create(values);

@@ -1,6 +1,6 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Line, type Page, type Value } from '@fieldia/core';
 import { plainLinesWidget } from './lines-plain';
-import { linesPart, type PartFactory } from './widget-parts';
+import { linesPart, relationsPart, type PartFactory } from './widget-parts';
 import { builtInWidgets, createWidget, linesWidget, widgetPart, type Widget, type WidgetFactory } from './widgets';
 
 /**
@@ -86,10 +86,10 @@ describe('the lines part', () => {
     expect(widgetPart(fieldOf('line_ids'), node('line_ids'))).toBe(linesPart);
     expect(widgetPart(fieldOf('tag_ids'), node('tag_ids', { columns: ['name'] }))).toBe(linesPart);
     expect(widgetPart(fieldOf('tag_ids'), node('tag_ids', { widget: 'table', columns: ['name'] }))).toBe(linesPart);
-    // Cards, tags and ticks: the main script's own.
-    expect(widgetPart(fieldOf('line_ids'), node('line_ids', { widget: 'cards' }))).toBeUndefined();
-    expect(widgetPart(fieldOf('tag_ids'), node('tag_ids'))).toBeUndefined();
-    expect(widgetPart(fieldOf('tag_ids'), node('tag_ids', { widget: 'checkboxes' }))).toBeUndefined();
+    // Cards: the lines part's too. Tags and ticks: a link's, the relations part's.
+    expect(widgetPart(fieldOf('line_ids'), node('line_ids', { widget: 'cards' }))).toBe(linesPart);
+    expect(widgetPart(fieldOf('tag_ids'), node('tag_ids'))).toBe(relationsPart);
+    expect(widgetPart(fieldOf('tag_ids'), node('tag_ids', { widget: 'checkboxes' }))).toBe(relationsPart);
     // The app's own widget for the lines (a grid): none.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(widgetPart(fieldOf('line_ids'), node('line_ids', { widget: 'grid' }), { 'one2many.grid': own })).toBeUndefined();

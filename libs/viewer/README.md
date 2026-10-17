@@ -496,9 +496,10 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 169 KB gzipped). What a page uses beyond
-plain fields — a list's screen, a table of lines, a date's box, a phone, a
-theme, possible duplicates… — comes in 19 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
+(core, widgets and viewer; about 174 KB gzipped). What a page uses beyond
+plain fields — a list's screen, a table of lines, a date's box, a link to
+another record, a phone, a theme, possible duplicates… — comes in 20 parts
+beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
 each loaded from the same folder the first time a page uses it:
 
 ```html

@@ -1,4 +1,4 @@
-import type { FieldNode, Page, Value } from '@fieldia/core';
+import type { Field, FieldNode, Page, Value } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
 import type * as PathModule from './path-part';
@@ -11,13 +11,14 @@ import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
 import type * as SlotsModule from './slots-part';
+import type * as RelationsModule from './relations-part';
 import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } from './widgets';
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
 /** The path part: a path picker, with its suggestions and its tree. */
 export type PathPart = typeof PathModule;
-/** The choice part: a choice in Fieldia's own list. */
+/** The choice part: a choice in Fieldia's own list, a long one searched as it is typed, and several chosen as tags. */
 export type ChoicePart = typeof ChoiceModule;
 /** The date part: Fieldia's own box for a date, a date and time and a time of day, a date's calendar, a range of dates. */
 export type DatePart = typeof DateModule;
@@ -33,12 +34,14 @@ export type SurveyPart = typeof SurveyModule;
 export type PhonePart = typeof PhoneModule;
 /** The slots part: a booking's time picked from the times free, on a month shaded by how its days are booked. */
 export type SlotsPart = typeof SlotsModule;
+/** The relations part: links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags. */
+export type RelationsPart = typeof RelationsModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
 /** A path picker, loaded the first time a page shows one. */
 export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-part'));
-/** A choice in Fieldia's own list, loaded the first time a page shows one. */
+/** A choice in Fieldia's own list, a long one searched as it is typed, or several chosen as tags, loaded the first time a page shows one. */
 export const choicePart: Part<ChoicePart> = lazyPart('choice', () => import('./choice-part'));
 /** Fieldia's own date box and its calendar, loaded the first time a page shows a date, a date and time, a time of day or a range. */
 export const datePart: Part<DatePart> = lazyPart('date', () => import('./date-part'));
@@ -88,16 +91,28 @@ export function loadPhonePart(): Promise<PhonePart> {
   return phonePart.load();
 }
 
+/**
+ * Links to other records — a many2one's and a reference's box, a many2many's tags and checkboxes, a char field's tags —
+ * loaded the first time a page shows one.
+ */
+export const relationsPart: Part<RelationsPart> = lazyPart('relations', () => import('./relations-part'));
+
 /** A factory whose widget comes in a part, for a field `when` says (every one unless it says). */
 export type PartFactory = WidgetFactory & {
-  /** The part a field's widget comes in, or undefined when it needs none; `page`, the page it is on, where `when` reads it. */
-  partOf(node: FieldNode, page?: Page): Part | undefined;
+  /**
+   * The part a field's widget comes in, or undefined when it needs none; `page`, the page it is on, and `field`, the field
+   * it draws (a page's, or a table's column), where `when` reads them.
+   */
+  partOf(node: FieldNode, page?: Page, field?: Field): Part | undefined;
 };
 
-/** A field's widget drawn by `part`'s factory, or `plain` where `when` says it needs no part — by its node, or its page's settings. */
-export function partFactory<M>(part: Part<M>, real: (module: M) => WidgetFactory, plain: WidgetFactory, when: (node: FieldNode, page?: Page) => boolean = () => true): PartFactory {
-  const factory: WidgetFactory = (context) => (when(context.node, context.form.page) ? partWidget(part, context, (module) => real(module)(context), plain) : plain(context));
-  return Object.assign(factory, { partOf: (node: FieldNode, page?: Page) => (when(node, page) ? part : undefined) });
+/**
+ * A field's widget drawn by `part`'s factory, or `plain` where `when` says it needs no part — by its node, its page's
+ * settings, or the field itself (a choice of many options, searched).
+ */
+export function partFactory<M>(part: Part<M>, real: (module: M) => WidgetFactory, plain: WidgetFactory, when: (node: FieldNode, page?: Page, field?: Field) => boolean = () => true): PartFactory {
+  const factory: WidgetFactory = (context) => (when(context.node, context.form.page, context.field) ? partWidget(part, context, (module) => real(module)(context), plain) : plain(context));
+  return Object.assign(factory, { partOf: (node: FieldNode, page?: Page, field?: Field) => (when(node, page, field) ? part : undefined) });
 }
 
 /** The inputs nothing is typed in: a tick, a choice, a file, a colour picker, a slider. */

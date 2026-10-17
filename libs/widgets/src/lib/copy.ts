@@ -1,5 +1,6 @@
 import { describeState, maker, setText, wordsFor } from './kind-parts';
 import { counted } from './limits';
+import { installBusinessStyles } from './styles-business-part';
 import { textBox } from './text-box';
 import type { WidgetFactory } from './widgets';
 
@@ -13,6 +14,7 @@ import type { WidgetFactory } from './widgets';
  */
 export const copyWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, labels, locale } = context;
+  installBusinessStyles(document);
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const long = field.type === 'text';

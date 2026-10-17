@@ -1,5 +1,5 @@
 import type { Line, Page } from '@fieldia/core';
-import { datePart, linesPart, type WidgetFactory } from '@fieldia/widgets';
+import { datePart, linesPart, relationsPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { mountViewer, type ViewerHandle } from './viewer';
 import { partsFor } from './viewer-parts';
@@ -47,10 +47,11 @@ describe('the lines part', () => {
     expect(partsFor(page(field('tag_ids', { widget: 'table', columns: ['name'] })))).toEqual([linesPart]);
     // A table inside a group, a tab or a page's steps: wherever the page names it.
     expect(partsFor(page({ type: 'section', id: 'g', title: 'Lines', children: [field('plain_ids')] }))).toEqual([linesPart]);
-    // None: a page without one, a one2many as cards, a many2many as tags, the app's own table (a grid).
+    // A one2many as cards: the lines part's too.
+    expect(partsFor(page(field('plain_ids', { widget: 'cards' })))).toEqual([linesPart]);
+    // None: a page without one, a many2many as tags (a link's, the relations part's), the app's own table (a grid).
     expect(partsFor(page(field('name')))).toEqual([]);
-    expect(partsFor(page(field('plain_ids', { widget: 'cards' })))).toEqual([]);
-    expect(partsFor(page(field('tag_ids')))).toEqual([]);
+    expect(partsFor(page(field('tag_ids')))).toEqual([relationsPart]);
     expect(partsFor(page(field('plain_ids', { widget: 'grid' })), { 'one2many.grid': own })).toEqual([]);
     expect(partsFor(page(field('plain_ids')), { one2many: own })).toEqual([]);
   });
@@ -58,7 +59,8 @@ describe('the lines part', () => {
   it('a page without one is drawn at once and never asks for it', async () => {
     const host = document.createElement('div');
     document.body.append(host);
-    const handle = mountViewer(host, { page: page(field('name'), field('plain_ids', { widget: 'cards' })) });
+    const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
+    const handle = mountViewer(host, { page: page(field('name'), field('plain_ids', { widget: 'grid' })), widgets: { 'one2many.grid': own } });
     handles.push(handle);
     expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     await handle.drawn;

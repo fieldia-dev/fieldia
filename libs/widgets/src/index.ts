@@ -1,7 +1,10 @@
 export * from './lib/widgets';
 export * from './lib/styles';
 export * from './lib/labels';
-export * from './lib/relations';
+// Links to other records: each widget the relations part's (relations.ts), drawn plainly until it comes; what a link
+// shows of its record at rest, the main script's. (A char field's tags, `charTagsWidget`, is the registry's.)
+export { many2oneWidget, tagsWidget, linkCheckboxesWidget, referenceWidget } from './lib/relations-plain';
+export { linkAvatar, detailLines } from './lib/link-avatar';
 export * from './lib/lines';
 export { stillShown, whileShown } from './lib/shown';
 // File and picture fields, files on their way, photos made smaller and a signature's pad come in the files part, loaded
@@ -27,6 +30,9 @@ export * from './lib/label';
 
 export * from './lib/icons';
 export * from './lib/focus-trap';
+// A list floating under its box, over everything else — the links', the choices' and the path picker's lists, each in a
+// part of its own, float with it — for an app's own widget too.
+export { floatUnder, type FloatPlace } from './lib/float';
 export { afterPress, watchPresses } from './lib/press';
 export { countriesIn } from './lib/countries';
 export * from './lib/read-text';
@@ -39,7 +45,7 @@ export type { FormattedText, FormattedTextOptions, TextEditor, TextReference, Te
 export type { MenuChoice, TextMenu } from './lib/text-menu';
 export { linkedWords } from './lib/linked-words';
 export { TEXT_TOOLS, RICH_TOOLS, MARKDOWN_TOOLS, type TextTool } from './lib/text-tool-names';
-export { lazyPart, settleParts, type Part } from './lib/parts';
+export { lazyPart, partWith, partsOf, settleParts, type Part } from './lib/parts';
 // Fieldia's own date box, its calendar and a range of dates come in the date part, loaded the first time a page shows
 // one: `(await datePart.load()).withCalendar(…)`. Their types are here; their code is not. The reader they type with is.
 export type { CalendarOptions } from './lib/calendar';
@@ -59,7 +65,7 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // country's numbers: `(await phonePart.load()).readPhone(…)`, `.writePhone(…)`. Whether a field reads so is here.
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
-export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, surveyPart, phonePart, slotsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type SlotsPart, type PartFactory } from './lib/widget-parts';
+export { textPart, pathPart, choicePart, datePart, linesPart, loadLinesPart, loadPhonePart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type SlotsPart, type RelationsPart, type PartFactory } from './lib/widget-parts';
 export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.

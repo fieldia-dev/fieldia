@@ -45,7 +45,7 @@ export const AREAS = [
 
 /** Each area's demos, by id: every demo of the catalog in exactly one. */
 const AREA_OF = {
-  sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive'],
+  sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
   crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
@@ -605,6 +605,18 @@ export const DEMOS = [
       'The next Wednesday is fully booked for the hatchback: hatched, with no times.',
       'Type a time in Call back at: it is on Berlin’s clock, CEST or CET beside it. Try 25/10/2026 02:30: it comes twice that night, and the box asks which.',
       'Open the Code drawer: the demo’s schedule, and the slots() your server gives.',
+    ],
+  },
+  {
+    id: 'test-drives',
+    name: 'The showroom’s week of test drives, on a calendar',
+    category: 'lists',
+    query: 'page=test-drives&skin=outlined',
+    blurb: 'The Berlin showroom’s week of test drives on a calendar, coloured by car. Every time is on Berlin’s clock, its name beside the week, wherever you look from: the week, today and the red line for now are Berlin’s, and a drive dragged to another time, or made from an empty slot, is booked at that time in Berlin.',
+    howTo: [
+      'Look from another time zone (your own, if you are not in Berlin): each drive is at its Berlin time, and CEST or CET stands beside the week.',
+      'Drag a drive to another time or day: it keeps its 45 minutes, and the line under the bar says where it went, with Undo.',
+      'Press a day’s name: that day, a column for each car. Press an empty slot: a test drive opens at that time in Berlin, the car filled in.',
     ],
   },
   {

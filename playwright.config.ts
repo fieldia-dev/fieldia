@@ -24,11 +24,13 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * over the browser's list of countries, booking slots and a date and time on a zone's clock, which each engine's Intl
  * writes and each engine's keys move, a phone's frame round a demo, and fieldia.dev's bar and story on a phone
  * (phone-frame), and what a phone's finger meets — a press that lands where it began, a title that wraps — possible
- * duplicates, a note under a box and a merge's screen of radios, each engine drawing its own, and a page laid out for
- * paper (print), each engine laying it out its own way. Chromium runs everything. `npx playwright test
+ * duplicates, a note under a box and a merge's screen of radios, each engine drawing its own, a page laid out for
+ * paper (print), each engine laying it out its own way, a calendar on a named zone's clock seen from other zones,
+ * which each engine's Intl reads, and a link's box typed in before its part came, which each engine hands over its
+ * own way. Chromium runs everything. `npx playwright test
  * --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'lists-import', 'list-cards', 'related-list', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing', 'duplicates', 'print'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'lists-import', 'list-cards', 'related-list', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing', 'duplicates', 'print', 'calendar-zone', 'relations-part'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

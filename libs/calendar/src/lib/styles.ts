@@ -13,6 +13,8 @@ export const CALENDAR_CSS = `
 .fd-cal-step svg { width: 16px; height: 16px; }
 .fd-cal-step:dir(rtl) svg { transform: scaleX(-1); }
 .fd-cal-title { margin: 0; flex: 1 1 12em; min-width: 0; font-size: 1.05rem; font-weight: 600; }
+/* The zone the times are on, after the span, where it is not the reader's own: its short name, as a date box says it. */
+.fd-cal-zone { flex: none; padding: 1px 8px; border: 1px solid var(--fd-border); border-radius: 999px; font-size: 12.5px; color: var(--fd-muted); white-space: nowrap; }
 .fd-cal-ranges { display: inline-flex; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); overflow: hidden; }
 .fd-cal-ranges .fd-button { border: 0; border-radius: 0; padding-inline: 10px; }
 .fd-cal-ranges .fd-button + .fd-button { border-inline-start: 1px solid var(--fd-border); }

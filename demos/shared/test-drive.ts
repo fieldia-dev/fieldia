@@ -1,5 +1,6 @@
 import { dayIn, instantsAt, wallOf, type MemorySchedule, type Page, type Values } from '@fieldia/core';
 import testDrive from '../../examples/pages/test-drive.page.json';
+import testDrives from '../../examples/pages/test-drives.page.json';
 import { demoNow } from './calendar';
 
 /**
@@ -74,4 +75,6 @@ export function testDriveRecords(now = demoNow()): Record<string, Record<number,
 
 export const testDriveDemo = {
   page: testDrive as Page,
+  /** The showroom's week of test drives on a calendar, on Berlin's clock as the booking page is: each opens in it. */
+  list: testDrives as Page,
 };

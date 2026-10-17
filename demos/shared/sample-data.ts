@@ -147,6 +147,8 @@ export const pages: Record<string, Page> = {
   ...listingHandover.pages,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
+  // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
+  'test-drives': testDriveDemo.list,
 };
 
 /**
@@ -196,6 +198,7 @@ const RECORD_PAGES: Record<string, string> = {
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
   ...calendarDemo.recordPages,
+  'test-drives': 'test-drive',
   // An invoice from the invoices list, and from a customer's (View all, by the app's route — or in its dialog, over
   // the customer, where the app has no route); a home's viewings, in View all's dialog over the home.
   invoices: 'invoice',
@@ -305,7 +308,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, ...relatedLists.related };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, 'drive.booking': testDriveDemo.page, ...relatedLists.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };

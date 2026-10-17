@@ -922,8 +922,13 @@ export function installStyles(document: Document): void {
  * changes nothing (Import's first, as the lanes met). The ranks from the themes' on move on by two. A list's cards'
  * and the columns a person shapes (0.25, `fd-list-cards-styles`, `fd-list-columns-styles`) are the list's, cut from
  * it: no ranked part's, they go right after the list's own sheet, after all of these.
+ *
+ * A repeating group of cards' (0.25, the lines part's; `cards`, a table of lines drawn as cards — never a list's cards,
+ * which are the list's, above): its rules stood at the head of the page's own looks, just after the survey kinds'
+ * looks and a line's grip, so its sheet goes after the survey kinds' looks, last of the parts' — before the grip's
+ * rule, which names nothing of a card.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {
