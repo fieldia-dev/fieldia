@@ -108,6 +108,16 @@ test.describe('a customer typed twice', () => {
     await expect(node(page, 'f-phone').locator('.fd-duplicates').getByRole('button')).toHaveText(['Open it', 'It’s a new customer']);
     await screen(page, 'record-names-duplicate', { viewport: true });
   });
+
+  test('a refused save asks to check its fields by labels small, one that begins its sentence as written', async ({ page }) => {
+    await page.setViewportSize(WIDE);
+    ({ problems } = await open(page, 'plain', 'page=customer-card&record=new&skin=underline'));
+    await node(page, 'f-email').locator('input').fill('mona@example.com');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.locator('.fd-announce')).toHaveText('Not saved. Check: name');
+    await expect(node(page, '#title').locator('.fd-error')).toHaveText('Name is required');
+    await screen(page, 'record-names-check', { viewport: true });
+  });
 });
 
 test.describe('the screen designer', () => {

@@ -91,7 +91,7 @@ test.describe('a customer typed twice', () => {
     await expect(screenBox.locator('tbody th')).toHaveText(['Name', 'Phone', 'Email', 'Tax ID', 'Website', 'City']);
     await expect(screenBox.getByRole('radio', { name: 'Tax ID 312-645-987' })).toBeChecked();
     await expect(screenBox.getByRole('radio', { name: 'Phone +20 2 2345 6789' })).toBeChecked();
-    await expect(screenBox.locator('.fd-merge-same')).toHaveText('The same in both: Country.');
+    await expect(screenBox.locator('.fd-merge-same')).toHaveText('The same in both: country.');
     await expect(screenBox.locator('.fd-merge-what')).toHaveText(/Nile Traders keeps the values picked and the rest of its own\. The messages, activities and links of Nile Traders Co\. move to Nile Traders, and Nile Traders Co\. is taken away\./);
     await expect(screenBox.getByRole('radio', { name: 'Keep Nile Traders', exact: true })).toBeFocused();
     await screen(page, 'duplicates-merge', { viewport: true });
