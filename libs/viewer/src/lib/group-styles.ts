@@ -53,6 +53,8 @@ export const GROUP_CSS = /* css */ `
 .fd-form .fd-grid[data-maximising] > * { grid-column: 1 / -1 !important; }
 .fd-form .fd-section[data-maximised] { min-height: 60vh; }
 
+/* On paper: a group's heading, not its tools. */
+@media print { .fd-form .fd-section-tools { display: none !important; } }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

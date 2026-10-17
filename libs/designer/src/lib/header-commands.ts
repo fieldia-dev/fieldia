@@ -19,8 +19,14 @@ export type HeaderPart = ButtonNode | StatButton | Badge | Ribbon | Alert | Menu
 /** A part's words: an alert's message, any other's label; a built-in item of the gear menu with none of its own, none. */
 export const wordsOf = (part: HeaderPart): string => ('message' in part ? part.message : (part.label ?? ''));
 
-/** What a new item of the gear menu is: one of the record's own, the app's action, or a report under Print. */
-export type MenuItemKind = NonNullable<MenuItem['builtin']> | 'action' | 'print';
+/**
+ * What a new item of the gear menu is: one of the record's own — `printPage`, the record as the page prints it (the
+ * built-in `print`) — the app's action, or a report under Print (the app's own, `print`).
+ */
+export type MenuItemKind = Exclude<NonNullable<MenuItem['builtin']>, 'print'> | 'printPage' | 'action' | 'print';
+
+/** The kind of a gear menu's built-in item, as the designer names it: the built-in Print is `printPage`, apart from a report. */
+export const builtinKind = (builtin: NonNullable<MenuItem['builtin']>): MenuItemKind => (builtin === 'print' ? 'printPage' : builtin);
 
 export interface HeaderPartPatch {
   label?: string;
@@ -255,8 +261,11 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
           }
           if (patch.group !== undefined) {
             if (kind !== 'menu') throw new Refusal((w) => w.refusals.onlyMenuGroup);
-            if (patch.group === 'print') (part as MenuItem).group = 'print';
-            else delete (part as MenuItem).group;
+            // Only what is not the item's own place is written: the built-in Print is under Print unless it says otherwise.
+            const item = part as MenuItem;
+            const own = item.builtin === 'print' ? 'print' : 'actions';
+            if (patch.group === own) delete item.group;
+            else item.group = patch.group;
           }
           if (patch.style !== undefined) {
             if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonStyle);
@@ -412,7 +421,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
         if (kind === 'action' || kind === 'print') {
           if (!words) throw new Refusal((w) => w.refusals.menuNeedsWords);
           item = { id: created, label: words, ...(kind === 'print' ? { group: 'print' as const } : {}), action: actionName(words) };
-        } else item = { id: created, ...(words ? { label: words } : {}), builtin: kind };
+        } else item = { id: created, ...(words ? { label: words } : {}), builtin: kind === 'printPage' ? 'print' : kind };
         root.toolbar = { ...root.toolbar, menu: [...(root.toolbar?.menu ?? []), item] };
       });
       if (!ok) return false;

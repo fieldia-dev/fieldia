@@ -181,3 +181,11 @@ body.dc-open { padding-block-end: 46vh; }
 .dc-code .tok-tag { color: var(--tok-tag); }
 .dc-code .tok-attr { color: var(--tok-attr); }
 .dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: var(--dh-code-bg); font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--dh-code-ink); white-space: pre; }
+/* On paper, the demo alone: the frame round it (its header, menu, how-to and code) is the app's, and an app leaves its
+   own out as it likes; the form prints itself (Fieldia's @media print rules). */
+@media print {
+  #demo-head, #demo-nav, #demo-howto, #demo-howto-open, #demo-code { display: none !important; }
+  /* No room round the demo on paper: the screen's 48px under it is a blank last sheet in Firefox. */
+  #app { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  html, body { background: #fff !important; }
+}

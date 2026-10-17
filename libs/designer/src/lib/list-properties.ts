@@ -607,6 +607,12 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ import: imports.checked })) imports.checked = !!pageList().import;
   });
   const importRow = el('div', { class: 'fd-prop', 'data-part': 'import' }, el('label', { class: 'fd-q-required' }, imports, el('span', {}, w.importRows)), el('p', { class: 'fd-properties-hint' }, w.importHint));
+  // Print every record the search finds, off unless asked, as Export is.
+  const prints = el('input', { type: 'checkbox', 'aria-label': w.printRows }) as HTMLInputElement;
+  prints.addEventListener('change', () => {
+    if (!designer.setListOptions({ print: prints.checked })) prints.checked = pageList().print === true;
+  });
+  const printRow = el('div', { class: 'fd-prop', 'data-part': 'print' }, el('label', { class: 'fd-q-required' }, prints, el('span', {}, w.printRows)), el('p', { class: 'fd-properties-hint' }, w.printHint));
   const searchWay = select(el, w.searchWay, [['bar', w.searchWays.bar], ['fields', w.searchWays.fields]]);
   searchWay.addEventListener('change', () => designer.setListOptions({ search: searchWay.value as 'bar' | 'fields' }));
   const filterBox = el('div', { class: 'fd-list-filter-fields' });
@@ -638,6 +644,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     exportRow,
     bulkRow,
     importRow,
+    printRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
     parentRow,
@@ -699,6 +706,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       exports.checked = list.export === true;
       bulk.checked = !!list.bulkEdit;
       imports.checked = !!list.import;
+      prints.checked = list.print === true;
       searchWay.value = list.search ?? 'bar';
       // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.
       filterFieldsRow.hidden = list.search !== 'fields';

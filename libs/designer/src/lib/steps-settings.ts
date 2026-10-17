@@ -174,6 +174,9 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     case 'delete':
       parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.recordHint));
       break;
+    case 'print':
+      parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.printHint));
+      break;
     case 'post': {
       text(w.words, 'message', w.postPlaceholder);
       parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.postHint));

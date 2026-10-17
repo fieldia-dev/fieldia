@@ -401,10 +401,78 @@ Export writes the columns shown, in their order. The cards and the columns come
 in parts of their own (`fieldia.cards.js`, `fieldia.columns.js`), only where a
 list asks. See [lists people shape](https://fieldia.dev/lists/#shape).
 
+## On paper
+
+Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a
+clean page, by the stylesheet's `@media print` rules (in every page's sheet:
+an engine that tells nothing as it prints gets them too):
+
+- every tab one after another under its name, every wizard step, every folded
+  group open (but what a condition hides);
+- no buttons, bars, gear, pager, tabs' strip, help or locks; each box written
+  as the words a person reads in it — a choice by its label, a link by its
+  name, money with its currency, a date as the page writes it on its clock —
+  wrapping rather than cut; a choice of several, the one picked; a statusbar,
+  the stage the record is in;
+- a table of lines whole (a grid's every line and column, in a plain table as
+  wide as the sheet), its header again on each sheet; no field, line or
+  heading cut across two sheets;
+- light colours whatever the screen's scheme, the theme's accent kept for the
+  headings; the page's language and direction;
+- over it, the record's title and the day it was printed (`now`, on the
+  page's `timeZone`), and — with a page's `print` — the app's logo and words,
+  and words under it, once after the record. Each `{field}` shows that
+  field's value;
+- with a dialog or a panel open over the page, its form alone: what a person
+  printing looks at — never the page behind with the dialog over it.
+
+```json
+"print": {
+  "header": "Zamalek Office Supplies S.A.E.\n26 July Street, Zamalek, Cairo",
+  "footer": "Pay by bank transfer, quoting {name}. Thank you for your business.",
+  "logo": "https://example.com/logo.svg"
+}
+```
+
+What a stylesheet cannot do is done as printing begins (the window's
+`beforeprint`) and undone at `afterprint`: each tab not opened yet is drawn,
+and each box's words written beside it for the paper alone.
+
+**Print this record alone** — the app's page round it left out — with the gear
+menu's built-in item (`{ "id": "m-print", "builtin": "print" }`, under Print as
+"This record"), a `{ "do": "print" }` step, or `viewer.print()`; each settles
+once the browser's printing is done.
+
+**The app's own PDF.** An item under Print runs your action; answer with its
+file and the viewer shows it over the record, in the browser's own viewer with
+Download (the files part's), or saves it (`show: "download"`, or a kind no
+browser shows):
+
+```ts
+onAction: async ({ action, recordId }) => {
+  if (action === 'print_invoice') {
+    const answer = await fetch(`/report/invoice/${recordId}.pdf`);
+    return { file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: await answer.blob() } };
+  }
+}
+```
+
+`file` takes `url` (your server's address), `data` (base64, as a file field
+holds it) or `bytes` (a Blob, an ArrayBuffer, a Uint8Array).
+
+**A list's Print** (`"print": true`, off unless set, as Export is): every record
+the search finds — each page of them asked of the data source, as Export's
+every match is — the columns as the list shows them, under its Group By
+headings with their counts and sums, the totals under them; over them the
+list's title, its filters in words, how many and the day; its footer at the
+foot of every sheet where the browser keeps room for it there (Chromium,
+Firefox), else once after the rows. See
+[on paper](https://fieldia.dev/record/#print).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 168 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 169 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a phone, a
 theme… — comes in 17 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
 each loaded from the same folder the first time a page uses it:

@@ -33,7 +33,7 @@ export const canvas: DesignerWords['canvas'] = {
   addAlert: 'إضافة تنبيه',
   addMenuItem: 'إضافة إلى قائمة الترس',
   gearMenu: 'قائمة الترس',
-  menuKinds: { archive: 'أرشفة', unarchive: 'إلغاء الأرشفة', duplicate: 'استنساخ', delete: 'حذف', action: 'أحد إجراءات التطبيق', print: 'تقرير تحت «طباعة»' },
+  menuKinds: { archive: 'أرشفة', unarchive: 'إلغاء الأرشفة', duplicate: 'استنساخ', delete: 'حذف', printPage: 'هذا السجل مطبوعًا', action: 'أحد إجراءات التطبيق', print: 'تقرير تحت «طباعة»' },
   menuNote: 'تعمل الأرشفة والاستنساخ والحذف عبر مصدر بيانات التطبيق.',
   statusFrom: 'مراحل الحالة من',
   statusNote: 'حقل يحمل عنصرًا واحدًا من قائمة: تصبح اختياراته هي المراحل.',

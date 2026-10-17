@@ -172,6 +172,8 @@ export const FILES_CSS = /* css */ `
 .fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
 .fd-signature-typed { flex: 1 1 200px; min-width: 0; }
 .fd-signature-footer { margin-block-start: -4px; color: var(--fd-muted); font-size: 12.5px; }
+/* On paper: a file's name and picture, not the ways to pick, switch or remove one. */
+@media print { .fd-form :is(.fd-file-remove, .fd-file-pick, .fd-file-views, .fd-file-limits) { display: none !important; } }
 `;
 
 /** The sheet in a document, once, in its place among Fieldia's. */

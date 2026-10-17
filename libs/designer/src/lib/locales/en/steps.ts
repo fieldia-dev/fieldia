@@ -48,6 +48,7 @@ export const steps = {
     duplicate: 'Duplicate the record',
     delete: 'Delete the record',
     post: 'Post in its conversation',
+    print: 'Print the page',
   },
   /** A step by its place, for a screen reader: "Step 2 of 3". */
   stepOf: (n: number, count: number) => `Step ${n} of ${count}`,
@@ -96,6 +97,7 @@ export const steps = {
   duplicate: 'Duplicate the record and show the copy',
   delete: 'Delete the record',
   post: (message: string, kind: 'note' | 'message') => `${kind === 'message' ? 'Send its followers' : 'Post a note'}: ${message}`,
+  print: 'Print the page, every tab and step of it',
   /** A step that runs only when a condition holds. */
   when: (sentence: string, condition: string) => `${sentence} when ${condition}`,
   never: (sentence: string) => `${sentence} — never, for now`,
@@ -169,6 +171,7 @@ export const steps = {
   inNewTab: 'In a new tab',
   reloadHint: 'After the app changed the record on its server — say, a run of its action: the form shows it as it is now.',
   recordHint: 'Through the app’s data source when it can; otherwise the app’s action of the same name is run.',
+  printHint: 'The browser’s own Print, to paper or a PDF: every tab under its name, every step and folded part open, the values as words, buttons left out.',
   postPlaceholder: 'Closing note: {lost_reason}',
   postHint: 'Put a field’s name in braces to show its value: {name}.',
   postAs: 'As',

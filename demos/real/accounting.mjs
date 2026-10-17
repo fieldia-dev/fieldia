@@ -6,11 +6,13 @@ export default [
     category: 'real',
     query: 'page=real-invoice&record=4101&skin=underline',
     blurb:
-      'One page that is an invoice, a bill, a credit note or a journal entry, by its type. Lines with sections and notes, taxes and totals the server works out, journal items, the payment dialog, alerts and the conversation.',
+      'One page that is an invoice, a bill, a credit note or a journal entry, by its type. Lines with sections and notes, taxes and totals the server works out, journal items, the payment dialog, alerts and the conversation; printed with the firm’s logo, or as the app’s own PDF.',
     howTo: [
       'Add a line: pick a product and watch its price, taxes, the totals and the Journal Items tab follow.',
       'Press Confirm: the invoice gets its number, INV/2026/00042, and the Register Payment button.',
       'Register Payment opens its dialog: pay part of it and choose to keep the rest open or mark it fully paid.',
+      'Under the gear, Print › This record: the invoice on paper — the firm’s logo and address over it, every tab one after another, the lines whole, no buttons — or press Ctrl+P.',
+      'Print › Invoice: the app’s own PDF of it, shown over the record, with Download.',
       'Open another record: record=4102 is a USD invoice partly paid, 4103 a vendor bill (a possible duplicate), 4104 a journal entry, 4105 a paid credit note.',
     ],
   },

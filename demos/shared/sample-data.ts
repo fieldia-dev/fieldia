@@ -263,6 +263,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     // pager over the record moves to the next, its related lists that one's.
     ...(params.get('page') === 'customer-account' ? { records: [1, ...Array.from({ length: 12 }, (_, i) => 20 + i)] } : {}),
     ...(params.get('page') === 'property' ? { records: Array.from({ length: 64 }, (_, i) => i + 1) } : {}),
+    // A printout's day is the demos' too where the address pins it (`?now=`, as the browser tests pin it).
+    ...(params.get('page') === 'real-invoice' && params.get('now') ? { now: demoNow } : {}),
   };
 }
 

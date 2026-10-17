@@ -25,6 +25,7 @@ export const refusals: DesignerWords['refusals'] = {
   invalid: (path, _message) => `تعذّر هذا التعديل: لن تبقى الصفحة صالحة عند ${q(path)}`,
   cannotPublish: 'في هذه الصفحة مشكلات تمنع نشرها',
   surveyHasNoRecords: 'لا سجلات في الاستبيان للربط بها أو عرضها: هذا النوع لشاشات التطبيق',
+  logoAddress: 'الشعار عنوانُ صورة: عنوانها على الويب، أو مسار في تطبيقك، أو الصورة نفسها مضمّنة',
   botCheckForResponses: 'التحقق من الروبوتات لنموذج يرسله أي شخص ويجمع الإجابات: شاشة التطبيق خلف تسجيل الدخول',
   onThePageAlready: (label) => `${q(label)} موجود في الصفحة بالفعل`,
   optionsFromModel: (label) => `خيارات ${q(label)} تأتي من نموذج البيانات`,

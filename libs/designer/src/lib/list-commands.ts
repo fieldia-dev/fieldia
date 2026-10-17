@@ -42,6 +42,8 @@ export interface ListOptionsPatch {
   bulkEdit?: boolean | string[];
   /** Import of a file's rows as new records: true for every field a cell can fill (keeping the fields named, if it names them), the fields it offers, or false for none. */
   import?: boolean | string[];
+  /** Print of every record the search finds: true offers it, false takes it away. */
+  print?: boolean;
   /** What each record's card shows, on a phone and in the gallery ({} for the columns'); null for no cards. */
   card?: ListCard | null;
   /** A gallery of cards on the switcher; null for none. */
@@ -226,6 +228,8 @@ export function listCommands(context: {
         else if (options.sortable === false) list.sortable = false;
         if (options.export === true) list.export = true;
         else if (options.export === false) delete list.export;
+        if (options.print === true) list.print = true;
+        else if (options.print === false) delete list.print;
         if (options.bulkEdit === false) delete list.bulkEdit;
         else if (options.bulkEdit === true) {
           if (!Array.isArray(list.bulkEdit)) list.bulkEdit = true;

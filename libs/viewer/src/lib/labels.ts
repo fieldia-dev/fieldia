@@ -137,6 +137,21 @@ export interface ViewerLabels {
   exported: string;
   exportedOne: string;
   /**
+   * On paper: a list's Print (`printList`), how far it has got (`{done}` of `{n}`), how it ended; a printout's words
+   * over its rows — the filters (`{filters}`), the groups (`{groups}`), how many (`{n}`: more, or one) — and the day it
+   * was printed (`{date}`), over a record too; the gear menu's built-in Print (`printRecord`), under its Print heading.
+   */
+  printList: string;
+  printing: string;
+  printCut: string;
+  printFailed: string;
+  printFilters: string;
+  printGroups: string;
+  printCount: string;
+  printCountOne: string;
+  printedOn: string;
+  printRecord: string;
+  /**
    * A list's Edit of many records: its button, its dialog (`{n}` records: one, or more), its question, how far it has
    * got, and what was not changed and why (`{name}`: `{why}`).
    */
@@ -478,6 +493,16 @@ const en: ViewerLabels = {
   exportFailed: 'Could not export the records.',
   exported: '{n} records exported.',
   exportedOne: '{n} record exported.',
+  printList: 'Print',
+  printing: 'Getting {done} of {n} to print…',
+  printCut: 'Only the first {n} of {total} were printed.',
+  printFailed: 'Could not get the records to print.',
+  printFilters: 'Filters: {filters}',
+  printGroups: 'Grouped by {groups}',
+  printCount: '{n} records',
+  printCountOne: '{n} record',
+  printedOn: 'Printed {date}',
+  printRecord: 'This record',
   bulkEdit: 'Edit',
   bulkTitle: 'Edit {n} records',
   bulkTitleOne: 'Edit {n} record',

@@ -94,6 +94,11 @@ export const LIST_STYLES = `
 .fd-list-progress:empty { display: none; }
 .fd-list-progress:not(:empty) { margin-inline-start: auto; }
 .fd-list-progress:not(:empty) + .fd-list-export { margin-inline-start: 0; }
+/* Print beside Export, or at the bar's end in its place. */
+.fd-list-print-button svg { width: 16px; height: 16px; flex: none; }
+.fd-list-export[hidden] + .fd-list-print-button { margin-inline-start: auto; }
+.fd-list-progress:not(:empty) + .fd-list-export[hidden] + .fd-list-print-button { margin-inline-start: 0; }
+.fd-list-print-button:not([hidden]) ~ .fd-pager { margin-inline-start: 0; }
 /* What an Edit could not change, and why: under the bar until it is dismissed. */
 .fd-list-report { display: grid; gap: 4px; justify-items: start; padding: 8px 12px; border: 1px solid var(--fd-warning); border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); color: var(--fd-text); font-size: 13.5px; }
 .fd-list-report-words { margin: 0; font-weight: 600; }
@@ -245,6 +250,34 @@ export const LIST_STYLES = `
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb:vertical { border-width: 3px 3px 3px 4px; }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--fd-text) 40%, var(--fd-surface)); }
 .fd-form[data-fd-theme="fluent"] .fd-list-scroll::-webkit-scrollbar-button { display: none; }
+/* ---- on paper --------------------------------------------------------------------------------------------------
+   Ctrl+P on a list: its rows as they stand, without its tools. Its Print: every record that matches in a sheet of its
+   own (list-print.ts), in the list's place, the list itself left out. */
+.fd-print-sheet { display: none; }
+@media print {
+  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon { display: none !important; }
+  .fd-form .fd-list-scroll { overflow: visible !important; }
+  .fd-form .fd-list-table { width: 100%; }
+  .fd-form .fd-list-table :is(td, th) { white-space: normal; overflow-wrap: break-word; }
+  .fd-form .fd-list > .fd-print-sheet { display: block; }
+  .fd-print-about { display: grid; gap: 2px; margin-block-end: 12px; font-size: 12px; color: var(--fd-muted); }
+  .fd-print-sheet .fd-print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .fd-print-sheet .fd-print-table :is(th, td) { padding: 4px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }
+  .fd-print-sheet .fd-print-table th { font-weight: 600; border-block-end-color: var(--fd-border-strong); }
+  .fd-print-sheet .fd-print-table .fd-num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fd-print-sheet .fd-print-table tr > :first-child { padding-inline-start: calc(6px + var(--fd-level, 0) * 14px); }
+  .fd-print-sheet .fd-print-group > td { padding-block-start: 10px; font-weight: 600; color: var(--fd-accent); border-block-end-color: var(--fd-border-strong); break-after: avoid; }
+  /* Its footer at the foot of every sheet where an engine keeps room on each — the printout padded at each sheet's foot,
+     its padding cloned there — as Chromium's and Firefox's do, a fixed footer repeated on every sheet over that room.
+     Elsewhere, or where its room was never measured, once after the rows. (A record's is printed once, after it.) */
+  @supports (box-decoration-break: clone) {
+    .fd-print-sheet[data-print-room] { padding-block-end: var(--fd-print-room) !important; box-decoration-break: clone; }
+    .fd-print-sheet[data-print-room] > .fd-print-foot { position: fixed; inset-block-end: 0; inset-inline: 0; margin: 0; background: #fff; }
+  }
+  /* The totals once, under the last row: not again at each sheet's foot, where they would read as that sheet's. */
+  .fd-print-sheet .fd-print-table tfoot { display: table-row-group; }
+  .fd-print-sheet .fd-print-table tfoot td { font-weight: 600; border-block: 2px solid var(--fd-border-strong) 0; }
+}
 `;
 
 /** Puts the list's look in the document once: its table's, then its richer rows' (list-rows-styles.ts). */

@@ -2,7 +2,7 @@ import type { Alert, ButtonNode, FieldNode, MenuItem, Page, Ribbon, SheetNode, S
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
-import { findHeaderPart, wordsOf } from './header-commands';
+import { builtinKind, findHeaderPart, wordsOf } from './header-commands';
 import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
 import { setting } from './panel-controls';
@@ -41,7 +41,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const kindNow = findHeaderPart(designer.getPage(), id)?.kind;
   const pressed = kindNow === 'button' || kindNow === 'stat' || kindNow === 'menu' ? whenClicked(el, designer, id) : null;
   // An item of the gear menu: one of the record's own, and the group it is in.
-  const builtin = select(el, w.builtin, (['none', 'archive', 'unarchive', 'duplicate', 'delete'] as const).map((value) => [value, w.builtins[value]]));
+  const builtin = select(el, w.builtin, (['none', 'archive', 'unarchive', 'duplicate', 'delete', 'print'] as const).map((value) => [value, w.builtins[value]]));
   builtin.addEventListener('change', () => designer.updateHeaderPart(id, { builtin: builtin.value === 'none' ? '' : (builtin.value as NonNullable<MenuItem['builtin']>) }));
   const builtinRow = setting(el, 'content', 'The record’s own', builtin, { hint: w.builtinHint, words: w.builtin });
   const group = select(el, w.menuGroup, [['actions', w.menuGroups.actions], ['print', w.menuGroups.print]]);
@@ -158,9 +158,9 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       if (kind === 'menu') {
         const item = part as MenuItem;
         builtin.value = item.builtin ?? 'none';
-        group.value = item.group ?? 'actions';
+        group.value = item.group ?? (item.builtin === 'print' ? 'print' : 'actions');
         // A built-in's own words stand in while it has none, and its question while it asks none of its own.
-        words.placeholder = item.builtin ? designer.words.canvas.menuKinds[item.builtin] : '';
+        words.placeholder = item.builtin ? designer.words.canvas.menuKinds[builtinKind(item.builtin)] : '';
         if (!focused(asks)) asks.value = item.confirm ?? '';
       }
       if (kind === 'button') {

@@ -32,6 +32,8 @@ import { csvOf, csvSeparator, exportList, saveFile, type ExportFormat, type Expo
 import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
+import { keepFootRoom, printout, PRINT_MOST } from './list-print';
+import { printAlone } from './print';
 import { searchBar } from './search-bar';
 import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
@@ -1217,6 +1219,72 @@ export function listView(context: ListContext): ListView {
     });
   }
 
+  // Print, in the list's bar: every record the search finds on paper, under its Group By headings, with its totals.
+  // Asked for by the page (`print: true`), as Export is.
+  const printOn = node.print === true && !!context.dataSource?.list;
+  // A printer, unless the app's icons have their own "print".
+  const printIcon = drawIcon(doc, 'print', { print: '<path d="M7 9V3h10v6"/><path d="M7 17H4.5A1.5 1.5 0 0 1 3 15.5v-5A1.5 1.5 0 0 1 4.5 9h15a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 14h10v7H7z"/>', ...context.icons });
+  printIcon?.setAttribute('aria-hidden', 'true');
+  const printButton = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-list-print-button' }, ...(printIcon ? [printIcon] : []), labels.printList);
+  printButton.hidden = !printOn;
+  printButton.addEventListener('click', () => void printAll());
+
+  /** Every record that matches on paper: asked of the source (list-print.ts), then the browser's print of it alone. */
+  function printAll(): Promise<void> {
+    const source = context.dataSource;
+    if (!source?.list) return Promise.resolve();
+    return busy(printButton, async () => {
+      const grouping = groupedNow && source.groups ? groupByFields(facets).map((text) => groupKey(page, text)) : [];
+      progress.textContent = fill(labels.printing, { done: number(0), n: number(matching) });
+      let out: Awaited<ReturnType<typeof printout>>;
+      try {
+        out = await printout(
+          {
+            page,
+            node,
+            doc,
+            el,
+            labels,
+            locale,
+            fill,
+            model,
+            dataSource: source,
+            reads: fields,
+            words: show,
+            atEnd,
+            filter: currentFilter(),
+            sort,
+            facets,
+            grouping,
+            groups: (key, filter) => headings(source, key, filter),
+            count,
+            totals,
+            matching,
+            now,
+          },
+          (done, n) => {
+            if (!destroyed) progress.textContent = fill(labels.printing, { done: number(done), n: number(n) });
+          },
+          PRINT_MOST
+        );
+      } catch {
+        if (!destroyed) context.say?.(labels.printFailed, 'danger');
+        return;
+      }
+      if (destroyed) return;
+      // Its logo drawn before the browser lays the sheet out for paper.
+      await Promise.all([...out.sheet.querySelectorAll('img')].map((image) => (typeof image.decode === 'function' ? image.decode().catch(() => undefined) : undefined)));
+      if (destroyed) return;
+      if (out.done < out.total) context.say?.(fill(labels.printCut, { n: number(out.done), total: number(out.total) }), 'warning');
+      progress.textContent = '';
+      // In the list's place on paper, inside its form: its language, its direction and its accent.
+      element.append(out.sheet);
+      // Its footer at the foot of every sheet, its room kept there.
+      keepFootRoom(out.sheet.querySelector<HTMLElement>(':scope > .fd-print-foot'));
+      await printAlone(doc, out.sheet, () => out.sheet.remove());
+    });
+  }
+
   /** Edit: the field and its value asked, the question, then each record chosen written; what was not, said under the bar. */
   /** Asked, or writing: a second press meanwhile does nothing. */
   let editing = false;
@@ -1369,7 +1437,7 @@ export function listView(context: ListContext): ListView {
     return names;
   }
 
-  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, views, ...(fieldsSearch ? [] : [pager]));
+  const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
   const element = el(
     'div',
     {

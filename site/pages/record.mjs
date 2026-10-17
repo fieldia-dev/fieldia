@@ -37,6 +37,7 @@ ${code(
     <tr><td>${c('archive')} · ${c('unarchive')}</td><td>Asks first, then archives through your data source's ${c('archive')}, or your app's action ${c('archive')}; the record is loaded again. Archive shows while the record's ${c('active')} is not false, Unarchive while it is.</td></tr>
     <tr><td>${c('duplicate')}</td><td>Saves what changed, copies the record through ${c('copy')} — or your action ${c('duplicate')}, answering with the copy's ${c('record')} — and shows the copy.</td></tr>
     <tr><td>${c('delete')}</td><td>Asks first, then deletes through ${c('delete')}, or your action ${c('delete')}. The pager moves to the next record; with none left, the breadcrumbs go back; else the form starts a new one.</td></tr>
+    <tr><td>${c('print')}</td><td>Under Print, as <em>This record</em>: the record on paper, alone, as <a href="#print">the page prints</a>.</td></tr>
   </tbody>
 </table>
 <p>Give a built-in steps of its own and they run instead, without its question: Flectra's employee form, whose Archive opens the departure wizard, is ${c('{ "id": "m-archive", "builtin": "archive", "steps": [{ "do": "open", "page": "hr-departure-wizard", "record": "id" }] }')}. The same steps — ${c('archive')}, ${c('unarchive')}, ${c('duplicate')}, ${c('delete')} — run from any button or moment, as <a href="/actions/#steps">Actions</a> says.</p>
@@ -155,6 +156,39 @@ import { chatterAttachments } from '@fieldia/chatter';
 
 mountViewer(host, { page, dataSource: { ...dataSource, attachments: chatterAttachments(source) } });`
 )}
+
+<h2 id="print">On paper</h2>
+<p>Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a clean page: every tab one after another under its name, every wizard step and folded group open (but what a condition hides); no buttons, bars, gear, pager or help; each box written as the words a person reads in it — a choice by its label, a link by its name, money with its currency, a date on the page's clock — wrapping rather than cut; a table of lines whole, its header again on each sheet, a grid's every line and column; nothing cut across two sheets; light colours, the theme's accent kept for the headings; the page's language and direction. Over it, the record's title and the day it was printed; with the page's ${c('print')}, your logo and words over it and words under it, each ${c('{field}')} showing its value. With a dialog or a panel open over the page, its form alone prints — what a person printing looks at — never the page behind it:</p>
+${code(
+  'json',
+  `
+{
+  "print": {
+    "header": "Zamalek Office Supplies S.A.E.\\n26 July Street, Zamalek, Cairo",
+    "footer": "Pay by bank transfer, quoting {name}. Thank you for your business.",
+    "logo": "https://example.com/logo.svg"
+  },
+  "layout": {
+    "type": "sheet", "id": "sheet",
+    "toolbar": { "menu": [
+      { "id": "m-print", "builtin": "print" },
+      { "id": "m-pdf", "label": "Invoice", "group": "print", "action": "print_invoice" }
+    ] },
+    "children": []
+  }
+}`
+)}
+<p>The built-in ${c('print')} item, under Print as <em>This record</em> — or a ${c('{ "do": "print" }')} step, or ${c('viewer.print()')} — prints the record alone, the page round it in your app left out. An item under Print may run your action instead; answer it with the file your server made, and it opens over the record in the browser's own PDF viewer, with Download — or is saved, with ${c('show: "download"')}:</p>
+${code(
+  'ts',
+  `
+onAction: async ({ action, recordId }) => {
+  if (action !== 'print_invoice') return;
+  const answer = await fetch(\`/report/invoice/\${recordId}.pdf\`);
+  return { file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: await answer.blob() } };
+}`
+)}
+<p>${c('file')} takes your server's ${c('url')}, its ${c('data')} as base64, or its ${c('bytes')}. The print rules are in every page's sheet — about 1.3 KB gzipped — so a print the browser lays out by itself gets them too; what a stylesheet cannot do (drawing a tab never opened, writing a box's words) is done at the window's ${c('beforeprint')} and undone at ${c('afterprint')}. <a href="/demos/plain/?page=real-invoice&amp;record=4102&amp;skin=underline">Print an invoice</a>, or a <a href="/lists/#print">list of them</a>.</p>
 
 <h2 id="chatter">The chatter beside it</h2>
 <p>As Flectra's chatter, the side panel sits beside the sheet on a form 1534px wide or more, the page growing by its width so the sheet keeps its own; on a narrower one it goes under the sheet, which takes the whole width. ${c('"sidePanelBeside": "always"')} keeps it beside, narrower, down to 600px, the sheet's columns stacking inside it as they need. A grid of many columns beside it can ${c('"fit": "shrink"')}: its columns go narrower, their headers wrapping, before it scrolls.</p>

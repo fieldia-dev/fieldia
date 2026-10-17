@@ -35,6 +35,11 @@ export interface ListTotals {
   ticked(ids: RecordId[], filter: ResolvedFilter[]): void;
   /** Each group's sums in words, by its value (JSON), for the groups of `key` under `filter`: none when they cannot be asked. */
   headings(key: GroupKey, filter: ResolvedFilter[]): Promise<Map<string, string>>;
+  /**
+   * For paper, each column's total in words as its totals cell says it — "Average 12.50" — by column: of every record
+   * `filter` keeps (under ''), or with `key` of each of its groups, by the group's value (JSON). None where it cannot be asked.
+   */
+  byColumn(filter: ResolvedFilter[], key?: GroupKey): Promise<Map<string, Map<string, string>>>;
 }
 
 const KIND_WORDS: Record<Exclude<TotalKind, 'sum'>, keyof ViewerLabels> = { avg: 'totalAvg', min: 'totalMin', max: 'totalMax', count: 'totalCount' };
@@ -175,6 +180,25 @@ export function listTotals(context: TotalsContext): ListTotals | null {
           if (mine === tickedAsked) chosen.row.hidden = true;
         }
       );
+    },
+    async byColumn(filter, key) {
+      const found = new Map<string, Map<string, string>>();
+      const cells = (result: Pick<TotalsResult, 'totals' | 'currencies'>) =>
+        new Map(
+          columns.flatMap((name) => {
+            const said = words(name, result);
+            const kind = kindOf(name);
+            return said === null ? [] : [[name, kind === 'sum' ? said : `${labels[KIND_WORDS[kind]]} ${said}`] as [string, string]];
+          })
+        );
+      try {
+        const result = await totals(request(filter, key ? { groupBy: key.field, ...context.interval(key) } : {}));
+        if (!key) found.set('', cells(result));
+        for (const group of key ? (result.groups ?? []) : []) found.set(JSON.stringify(group.value), cells(group));
+      } catch {
+        // No totals on paper either: the rows alone.
+      }
+      return found;
     },
     async headings(key, filter) {
       const sums = new Map<string, string>();

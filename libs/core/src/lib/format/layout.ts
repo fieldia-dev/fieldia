@@ -905,8 +905,11 @@ export interface Statusbar {
  * press runs its steps, then its `action`, as a button's. A built-in one
  * (`builtin`) needs neither: it archives, brings back, duplicates or deletes
  * the record, in the page's own words, asking first before it archives or
- * deletes. Given steps or an action of its own, it runs those instead — an
- * Archive that opens a departure wizard.
+ * deletes — or prints it, as the page prints (a `print` step), under Print.
+ * Given steps or an action of its own, it runs those instead — an Archive
+ * that opens a departure wizard. The app's own report under Print is an
+ * `action` whose answer hands the viewer its file (`ActionResult.file`): its
+ * PDF shown over the record, or saved.
  */
 export interface MenuItem {
   id: string;
@@ -914,10 +917,12 @@ export interface MenuItem {
   label?: string;
   /**
    * One of the record's own: `archive` (shown while the record's `active` is
-   * not false), `unarchive` (shown while it is), `duplicate` or `delete`.
+   * not false), `unarchive` (shown while it is), `duplicate`, `delete`, or
+   * `print`: the record on paper as the page prints it (under Print unless
+   * its `group` says otherwise).
    */
-  builtin?: 'archive' | 'unarchive' | 'duplicate' | 'delete';
-  /** Under Print, as Flectra's reports, or among the actions (the default). */
+  builtin?: 'archive' | 'unarchive' | 'duplicate' | 'delete' | 'print';
+  /** Under Print, as Flectra's reports, or among the actions (the default; Print for the built-in `print`). */
   group?: 'actions' | 'print';
   steps?: ActionStep[];
   /** The app's action's name, run after the steps, such as a server action (Debit Note). */
@@ -1173,6 +1178,14 @@ export interface ListNode {
    * in its order.
    */
   import?: boolean | string[];
+  /**
+   * Print, in the list's bar: every record the search finds — every page of
+   * them, asked of the data source — under the list's title, its filters in
+   * words and the day, the columns as the list shows them, under their Group
+   * By headings with their sums, and the totals under them. Off unless true,
+   * as Export is.
+   */
+  print?: boolean;
   /**
    * Each record as a card — its title, a photo, a few lines, its status as a
    * pill — where the list is narrow (a phone: 520px or less), and in its
@@ -1938,7 +1951,7 @@ export const MenuItemSchema = z
   .strictObject({
     id,
     label: z.string().optional(),
-    builtin: z.enum(['archive', 'unarchive', 'duplicate', 'delete']).optional(),
+    builtin: z.enum(['archive', 'unarchive', 'duplicate', 'delete', 'print']).optional(),
     group: z.enum(['actions', 'print']).optional(),
     steps: ActionStepsSchema.optional(),
     action: z.string().min(1).optional(),
@@ -2130,6 +2143,7 @@ export const ListNodeSchema = z.strictObject({
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
   import: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
+  print: z.boolean().optional(),
   card: ListCardSchema.optional(),
   gallery: ListGallerySchema.optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),

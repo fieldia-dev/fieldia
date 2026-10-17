@@ -1645,6 +1645,81 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     adds.append(button);
     return { id: own.id, button };
   });
+  /** A cell's words, as its cell shows them: what was typed and does not read, a dash while it waits, a distribution's accounts by name. */
+  function cellWords(line: Line, column: string, parent: Values): string {
+    // A distribution says its accounts by their names, as its cell does, once they are found.
+    const shares = distributions.get(column);
+    if (!shares) return unreadAt(line, column)?.text ?? (cellWaits(line, column) ? '—' : cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]));
+    const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
+    if (unknown.length) shares.find(line, unknown);
+    return distributionWords(line.values[column] as Value, locale, shares.nameOf);
+  }
+
+  /**
+   * The lines on paper: a plain table of every line, as the grid shows them — its columns shown, a section or a note
+   * across the row, the totals under them — in the grid's place while the page prints (the stylesheet's @media print).
+   * A grid draws only the lines and columns it has room for on screen, and keeps the screen's widths: paper takes
+   * every one, as wide as the sheet. Made as printing begins, gone once it is done.
+   */
+  let paper: HTMLTableElement | null = null;
+  const NUMBERS = new Set(['integer', 'float', 'monetary']);
+  function paperTable(): HTMLTableElement {
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false) => {
+      const cell = document.createElement(tag);
+      cell.textContent = text;
+      if (end) cell.className = 'fd-num';
+      return cell;
+    };
+    const parent = form.getState().values;
+    const shown = columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false);
+    const atEnd = (column: string) => NUMBERS.has(def.fields[column].type);
+    const table = document.createElement('table');
+    table.className = 'fd-print-table';
+    const head = document.createElement('tr');
+    head.append(...shown.map((column) => make('th', def.fields[column].label, atEnd(column))));
+    table.createTHead().append(head);
+    const body = table.createTBody();
+    for (const line of lines()) {
+      const row = body.insertRow();
+      const kind = kindOf(line);
+      if (kind && kinds) {
+        row.className = `fd-line-${kind}`;
+        const cell = make('td', String(line.values[kinds.text] ?? ''));
+        cell.colSpan = shown.length;
+        row.append(cell);
+        continue;
+      }
+      const state = lineStates.get(line.key);
+      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column))));
+    }
+    const current = lines();
+    const items = current.filter((line) => !kindOf(line));
+    const sums = totals.filter((column) => shown.includes(column));
+    if (sums.length) {
+      const foot = table.createTFoot().insertRow();
+      foot.append(
+        ...shown.map((column) => {
+          if (!sums.includes(column)) return make('td');
+          const total = totalOf(current, column);
+          return make('td', 'waits' in total ? fill(labels.totalWaits, { n: total.waits }) : cellText(def.fields[column], total.sum, items[0]?.values ?? {}, locale, parent, node.cells?.[column]), atEnd(column));
+        })
+      );
+    }
+    return table;
+  }
+  const printing = () => {
+    paper?.remove();
+    paper = paperTable();
+    element.append(paper);
+  };
+  const printed = () => {
+    paper?.remove();
+    paper = null;
+  };
+  const view = document.defaultView;
+  view?.addEventListener('beforeprint', printing);
+  view?.addEventListener('afterprint', printed);
+
   /** What the cards were last drawn from: drawn again only when it changes. */
   let cardsDrawn = '';
   /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
@@ -1673,14 +1748,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
       const first = titleColumn(shownHere);
       const rest = shownHere.filter((column) => column !== first);
-      const text = (column: string) => {
-        // A distribution says its accounts by their names, as its cell does, once they are found.
-        const shares = distributions.get(column);
-        if (!shares) return unreadAt(line, column)?.text ?? (cellWaits(line, column) ? '—' : cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]));
-        const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
-        if (unknown.length) shares.find(line, unknown);
-        return distributionWords(line.values[column] as Value, locale, shares.nameOf);
-      };
+      const text = (column: string) => cellWords(line, column, parent);
       const title = document.createElement(dialogs ? 'button' : 'div');
       title.className = 'fd-line-card-title';
       title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
@@ -2001,6 +2069,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     },
     destroy() {
       destroyed = true;
+      view?.removeEventListener('beforeprint', printing);
+      view?.removeEventListener('afterprint', printed);
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();

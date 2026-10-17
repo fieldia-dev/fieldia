@@ -192,6 +192,16 @@ export interface PostStep extends StepBase {
   kind?: 'note' | 'message';
 }
 
+/**
+ * Print the record, or the page, as the page prints: every tab one after
+ * another under its name, every step and folded section open, the values as
+ * words, the record's title and the day at the top — the browser's own print,
+ * to paper or to a PDF. A gear menu's built-in Print is this step.
+ */
+export interface PrintStep extends StepBase {
+  do: 'print';
+}
+
 export type ActionStep =
   | OpenStep
   | SetStep
@@ -211,7 +221,8 @@ export type ActionStep =
   | UnarchiveStep
   | DuplicateStep
   | DeleteStep
-  | PostStep;
+  | PostStep
+  | PrintStep;
 
 /**
  * The moments of a form that run steps. A change is a person's: values set by
@@ -276,6 +287,7 @@ export const ActionStepSchema = z
     z.strictObject({ do: z.literal('duplicate'), when }),
     z.strictObject({ do: z.literal('delete'), when }),
     z.strictObject({ do: z.literal('post'), when, message: z.string().min(1), kind: z.enum(['note', 'message']).optional() }),
+    z.strictObject({ do: z.literal('print'), when }),
   ])
   .meta({ id: 'ActionStep' });
 

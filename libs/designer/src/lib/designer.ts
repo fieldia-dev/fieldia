@@ -366,6 +366,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setPageInfo(info: { title?: string; description?: string }): boolean;
   /** A public page's bot check (`botCheck`): a hidden box, the fewest seconds, the slot its captcha is drawn in; null takes it off. A page of responses only. */
   setBotCheck(check: BotCheck | null): boolean;
+  /** What a printout of the page carries (`print`): its header and footer words, the app's logo by its address; empty or null takes one away. */
+  setPrint(patch: { header?: string | null; footer?: string | null; logo?: string | null }): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1393,6 +1395,25 @@ export function createDesigner(options: {
           }
         },
         `page:${Object.keys(info).join(',')}`
+      );
+    },
+
+    setPrint(patch) {
+      return apply(
+        (draft) => {
+          const print = { ...draft.print };
+          for (const key of ['header', 'footer', 'logo'] as const) {
+            if (patch[key] === undefined) continue;
+            const value = patch[key]?.trim() ?? '';
+            if (!value) delete print[key];
+            // An address an image is drawn from: never a script's, nor words.
+            else if (key === 'logo' && !/^(https?:\/\/|data:image\/|\/|\.{0,2}\/?[^:\s]+$)/i.test(value)) throw new Refusal((w) => w.refusals.logoAddress);
+            else print[key] = key === 'logo' ? value : (patch[key] as string);
+          }
+          if (Object.keys(print).length) draft.print = print;
+          else delete draft.print;
+        },
+        `print:${Object.keys(patch).join(',')}`
       );
     },
 

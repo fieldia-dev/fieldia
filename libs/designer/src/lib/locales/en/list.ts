@@ -43,6 +43,8 @@ export const list = {
   bulkEditHint: 'With rows ticked, Edit sets one field to one value in each, after a question: any column that can be changed.',
   importRows: 'Import from Excel and CSV',
   importHint: 'People make records from a file of their own: its columns matched to the fields, each row checked by the page’s rules before anything is saved, and Undo after.',
+  printRows: 'Print every row found',
+  printHint: 'Print, in the list’s bar: every record the search finds on paper, under its groups with their sums, the totals under them, the filters said over them.',
   searchWay: 'Search',
   searchWays: { bar: 'The search bar', fields: 'A keyword and each field’s values' },
   filterFields: 'Fields with their values to tick',

@@ -124,6 +124,7 @@ export const changes = {
   filledIn: (name: string) => `${name}: what the browser fills it in with changed`,
   keyboard: (name: string) => `${name}: its keyboard on a phone changed`,
   botCheck: (now: 'on' | 'off' | 'changed') => ({ on: 'The bot check is on', off: 'The bot check is off', changed: 'The bot check changed' })[now],
+  printout: 'The printout’s header, footer or logo changed',
   thePage: 'the page',
   // ---- the look
   look: {

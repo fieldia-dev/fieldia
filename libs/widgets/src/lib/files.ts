@@ -7,6 +7,7 @@ import { bytesOf, extension, INLINE_FILE_WARNING, kindOf, readFile, source } fro
 export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
+import type { WidgetLabels } from './labels';
 import { formBehind } from './handed';
 import { stillShown } from './shown';
 import { installFilesStyles } from './styles-files';
@@ -80,6 +81,102 @@ function namedOnCard(make: Make, name: string) {
   for (let i = name.indexOf(' '); i >= 0; i = name.indexOf(' ', i + 1)) if (Math.abs(i + 1 - half) < off) [at, off] = [i + 1, Math.abs(i + 1 - half)];
   const rtl = /^\P{L}*[\p{sc=Arabic}\p{sc=Hebrew}]/u.test(name);
   return make('span', { class: 'fd-file-name', dir: rtl ? 'rtl' : 'ltr', title: name }, make('span', {}, name.slice(0, at)), make('span', { dir: rtl ? 'ltr' : 'rtl' }, make('bdi', {}, name.slice(at))));
+}
+
+/** What a dialog of files needs: the files and the one shown first, its words, where it opens, and where the focus goes once it closes. */
+export interface ViewFiles {
+  doc: Document;
+  words: WidgetLabels;
+  /** Its title's id. */
+  id: string;
+  /** The files; one whose `size` is not a number (NaN: an address that said none) is shown without it. */
+  files: readonly FileValue[];
+  at: number;
+  /** What it opens over: the form round it, whose skin, scheme and direction it wears, else the page's body. */
+  home: Element;
+  /** Where the focus goes once it is closed, by the file last shown. */
+  back?: (at: number) => HTMLElement | null | undefined;
+  /** Told once it is closed: an address made for it can be let go. */
+  closed?: () => void;
+}
+
+/**
+ * Files open in a dialog over the page, one at a time: a picture whole, a PDF
+ * in the browser's own viewer, text as it is, and anything else by its name
+ * and size — with Download, Previous and Next (and the arrows) through several,
+ * and × or Escape to close. A file field's files open in it; so does a file
+ * the app hands back from an action (the viewer's host, `ActionResult.file`),
+ * its PDF of a record shown over the record.
+ */
+export function viewFiles(context: ViewFiles): void {
+  const { doc, words, files: all } = context;
+  const make = maker(doc);
+  let at = context.at;
+  let url = '';
+  const title = make('h2', { id: context.id, class: 'fd-form-dialog-title' });
+  const meta = make('span', { class: 'fd-help' });
+  const step = (by: number, label: string, arrow: string) => {
+    const button = make('button', { type: 'button', class: 'fd-button fd-file-step', 'aria-label': label }, arrow);
+    button.hidden = all.length < 2;
+    button.addEventListener('click', () => show(at + by));
+    return button;
+  };
+  const download = make('a', { class: 'fd-button' }, words.download);
+  const close = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': words.close }, '×');
+  const body = make('div', { class: 'fd-file-viewer-body' });
+  const box = make(
+    'div',
+    // A page's dialog, as the viewer's are.
+    { class: 'fd-form-dialog fd-file-viewer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' },
+    make('div', { class: 'fd-form-dialog-head' }, title, meta, step(-1, words.previous, '‹'), step(1, words.next, '›'), download, close),
+    body
+  );
+  const backdrop = make('div', { class: 'fd-dialog-backdrop' }, box);
+  const free = () => url.startsWith('blob:') && URL.revokeObjectURL(url);
+  /** Its size in words, where it is known: an app's file at its own address may not say. */
+  const sized = (file: FileValue) => (Number.isFinite(file.size) ? formatBytes(file.size) : '');
+  const none = (file: FileValue) => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, words.noPreview));
+  function show(to: number) {
+    at = (to + all.length) % all.length;
+    const file = all[at];
+    free();
+    const data = bytesOf(file);
+    url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
+    title.textContent = file.name;
+    meta.replaceChildren(...(sized(file) ? [make('span', { class: 'fd-file-size' }, sized(file))] : []), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
+    download.href = url;
+    download.download = file.name;
+    const kind = kindOf(file);
+    if (kind === 'image') return body.replaceChildren(picture(make, url, () => none(file), { alt: file.name }));
+    if (kind === 'pdf') return body.replaceChildren(make('iframe', { src: url, title: file.name }));
+    if (!asText(file)) return body.replaceChildren(none(file));
+    const pre = make('pre', { tabindex: '0' });
+    body.replaceChildren(pre);
+    // The first 200 KB: enough to see what it is.
+    (data ? Promise.resolve(new TextDecoder().decode(data.subarray(0, 2e5))) : fetch(url).then((r) => r.text())).then(
+      (text) => (pre.textContent = text.slice(0, 2e5)),
+      () => pre.replaceWith(none(file))
+    );
+  }
+  const done = () => {
+    free();
+    backdrop.remove();
+    context.back?.(at)?.focus();
+    context.closed?.();
+  };
+  close.addEventListener('click', done);
+  backdrop.addEventListener('click', (event) => event.target === backdrop && done());
+  box.addEventListener('keydown', (event) => {
+    const by = ({ ArrowLeft: -1, ArrowRight: 1 } as Record<string, number>)[event.key];
+    if (event.key === 'Escape') done();
+    else if (by && all.length > 1 && (event.target as Element).tagName !== 'PRE') show(at + (rightToLeft(context.home) ? -by : by));
+    else keepTabIn(box, event);
+  });
+  installFilesStyles(doc);
+  show(at);
+  // Over the page, wearing the form's skin, scheme and direction.
+  (context.home.closest('.fd-form') ?? doc.body).append(backdrop);
+  box.focus();
 }
 
 function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
@@ -326,70 +423,9 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     }
     showAs(chosen === 'list' || chosen === pictures ? chosen : own === pictures ? own : 'list');
 
-    /** A file open in a dialog, the arrows and Previous and Next going through them all. */
+    /** A file open in a dialog, the arrows and Previous and Next going through them all; back on its button once closed. */
     function view(at: number, opener: HTMLElement) {
-      const all = files;
-      let url = '';
-      const title = make('h2', { id: `${id}-view`, class: 'fd-form-dialog-title' });
-      const meta = make('span', { class: 'fd-help' });
-      const step = (by: number, words: string, arrow: string) => {
-        const button = make('button', { type: 'button', class: 'fd-button fd-file-step', 'aria-label': words }, arrow);
-        button.hidden = all.length < 2;
-        button.addEventListener('click', () => show(at + by));
-        return button;
-      };
-      const download = make('a', { class: 'fd-button' }, words.download);
-      const close = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': words.close }, '×');
-      const body = make('div', { class: 'fd-file-viewer-body' });
-      const box = make(
-        'div',
-        // A page's dialog, as the viewer's are.
-        { class: 'fd-form-dialog fd-file-viewer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' },
-        make('div', { class: 'fd-form-dialog-head' }, title, meta, step(-1, words.previous, '‹'), step(1, words.next, '›'), download, close),
-        body
-      );
-      const backdrop = make('div', { class: 'fd-dialog-backdrop' }, box);
-      const free = () => url.startsWith('blob:') && URL.revokeObjectURL(url);
-      const none = (file: FileValue) => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), formatBytes(file.size), make('p', {}, words.noPreview));
-      function show(to: number) {
-        at = (to + all.length) % all.length;
-        const file = all[at];
-        free();
-        const data = bytesOf(file);
-        url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
-        title.textContent = file.name;
-        meta.replaceChildren(make('span', { class: 'fd-file-size' }, formatBytes(file.size)), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
-        download.href = url;
-        download.download = file.name;
-        const kind = kindOf(file);
-        if (kind === 'image') return body.replaceChildren(picture(make, url, () => none(file), { alt: file.name }));
-        if (kind === 'pdf') return body.replaceChildren(make('iframe', { src: url, title: file.name }));
-        if (!asText(file)) return body.replaceChildren(none(file));
-        const pre = make('pre', { tabindex: '0' });
-        body.replaceChildren(pre);
-        // The first 200 KB: enough to see what it is.
-        (data ? Promise.resolve(new TextDecoder().decode(data.subarray(0, 2e5))) : fetch(url).then((r) => r.text())).then(
-          (words) => (pre.textContent = words.slice(0, 2e5)),
-          () => pre.replaceWith(none(file))
-        );
-      }
-      const done = () => {
-        free();
-        backdrop.remove();
-        (opener.isConnected ? opener : list.querySelectorAll<HTMLElement>('.fd-file-open')[at])?.focus();
-      };
-      close.addEventListener('click', done);
-      backdrop.addEventListener('click', (event) => event.target === backdrop && done());
-      box.addEventListener('keydown', (event) => {
-        const by = ({ ArrowLeft: -1, ArrowRight: 1 } as Record<string, number>)[event.key];
-        if (event.key === 'Escape') done();
-        else if (by && all.length > 1 && (event.target as Element).tagName !== 'PRE') show(at + (rightToLeft(element) ? -by : by));
-        else keepTabIn(box, event);
-      });
-      show(at);
-      // Over the page, wearing the form's skin, scheme and direction.
-      (element.closest('.fd-form') ?? doc.body).append(backdrop);
-      box.focus();
+      viewFiles({ doc, words, id: `${id}-view`, files, at, home: element, back: (last) => (opener.isConnected ? opener : list.querySelectorAll<HTMLElement>('.fd-file-open')[last]) });
     }
 
     return {

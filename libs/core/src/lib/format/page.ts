@@ -100,6 +100,21 @@ export interface BotCheck {
   captcha?: string;
 }
 
+/**
+ * What a printout of the page carries besides the page itself, at its top and its foot: the app's logo and words
+ * over every printout — a company's name and address — and words under it — its terms, a bank account. Each `{field}`
+ * shows that field's value, as a text part's words do. Every page prints, with or without it: every tab, step and
+ * folded section, the values as words, the record's title and the day printed at the top.
+ */
+export interface PagePrint {
+  /** Words at the top of the printout, beside the logo: "Nile Traders · 12 Corniche St, Cairo". */
+  header?: string;
+  /** Words at its foot: "Paid within 30 days to CIB, IBAN EG38 0019 …". */
+  footer?: string;
+  /** The app's logo, by its address (`https://…`, `/logo.svg`, `data:image/…`): at the top, before the header's words. */
+  logo?: string;
+}
+
 export interface Page {
   /**
    * The format the page is written in, so a reader can tell one it cannot read yet (a newer Fieldia's) from one it can
@@ -144,6 +159,8 @@ export interface Page {
    * (`timeZone`). Left out, the browser's own zone, as before.
    */
   timeZone?: string;
+  /** What a printout of the page carries at its top and its foot: the app's logo and words over it, words under it. */
+  print?: PagePrint;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -213,6 +230,18 @@ export const PageSchema = z
       .optional(),
     phone: PagePhoneSchema.optional(),
     timeZone: TimeZoneSchema.optional(),
+    print: z
+      .strictObject({
+        header: z.string().min(1).max(500).optional(),
+        footer: z.string().min(1).max(1000).optional(),
+        // An address an image is drawn from: the web's, the app's own (a path), or the picture itself — never a script's.
+        logo: z
+          .string()
+          .regex(/^(https?:\/\/|data:image\/|\/|\.{0,2}\/?[^:\s]+$)/i, { error: 'a logo is an image’s address: https://…, a path, or data:image/…' })
+          .optional(),
+      })
+      .meta({ id: 'PagePrint' })
+      .optional(),
   })
   .meta({
     title: 'Fieldia page',

@@ -108,10 +108,11 @@ export type {
   DuplicateStep,
   DeleteStep,
   PostStep,
+  PrintStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
-export type { Page, PageData, PageLook, BotCheck } from './lib/format/page';
+export type { Page, PageData, PageLook, BotCheck, PagePrint } from './lib/format/page';
 export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
@@ -227,7 +228,7 @@ export {
   type FormConflict,
   type SearchOptions,
 } from './lib/record/form';
-export type { ActionHost, ActionResult, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
+export type { ActionFile, ActionHost, ActionResult, AskHow, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export {
   stripMarks,

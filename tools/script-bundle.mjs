@@ -688,8 +688,18 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // phone parts asked for by another part (loadLinesPart, loadPhonePart) — the dialog, the file's reading, the check and
 // the writing in fieldia.import.js, the cells' readers in fieldia.lines.js (listed with the part budgets below):
 // 512.84 measured before, 517.96 after — 5.1 more, to 518.0.
+// On paper (0.25, Wave 3's print lane): the page's rules for paper, in every page's sheet (4.3 of it: a part loaded
+// as printing begins comes too late — Chromium lays the page out for paper as its beforeprint is told, a sheet put in
+// then is taken, one a task later is not, and Playwright's WebKit tells no beforeprint at all), what is done as
+// printing begins and undone after (each tab not drawn yet drawn, each box's words beside it, the printout's head:
+// print.ts), the page's `print` setting, a list's `print`, the built-in Print and the `print` step checked and run, an
+// action's file handed to the host, and their English words — 512.84 measured before, 521.06 after: 8.2 more, to 521.1.
+// A list's printout and an action's file shown are the list's and the files part's (listed with the part budgets below).
+// With a dialog's form in front only it prints (the page behind, and the dialog's frame, left off the paper), a column
+// of parts and the card laid out as blocks on paper (Firefox moved a grid's part it could not break to the next sheet
+// whole), and a footer's words measured as paper writes them: 521.06 measured before, 522.19 after — 1.2 more, to 522.2.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const BUDGET_KB = 518.0;
+const BUDGET_KB = 528.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -835,8 +845,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // before, 167.73 after — 0.6 more, to 167.8.
 // A list's Import (0.25), its words the most of it (listed with the raw budget above): 167.12 measured before, 168.93
 // after — 1.8 more, to 169.0.
+// On paper (0.25, Wave 3's print lane; listed with the raw budget above), the rules for paper 0.9 of it: 167.12
+// measured before, 169.29 after — 2.2 more, to 169.3. The form in front and blocks on paper: 169.57 after, to 169.6.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const GZIP_BUDGET_KB = 170.5;
+const GZIP_BUDGET_KB = 173.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -954,8 +966,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // of lines' lines added by a paste, two: Arabic's 54.23 and 9.70 measured before, 62.59 and 10.92 after, to 62.6 and
 // 11.0; German's 23.15 and 8.30 to 26.81 and 9.30, to 26.9 and 9.4; French's 23.97 and 8.34 to 27.80 and 9.36, to
 // 27.9 and 9.4.
+// On paper (0.25): a list's Print, how far it has got and how it ended, a printout's filters, groups and count, the day
+// it was printed, and the gear's This record — ten in each, as measured: Arabic's 55.07 and 9.82, German's 23.53 and
+// 8.39, French's 24.42 and 8.46 (54.23 and 9.70, 23.15 and 8.30, 23.97 and 8.34 before) — each to the next 0.1 over.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const ADD_ON_BUDGET_KB = { ar: [63.5, 11.2], de: [27.3, 9.5], fr: [28.4, 9.6] };
+const ADD_ON_BUDGET_KB = { ar: [64.5, 11.4], de: [27.8, 9.6], fr: [28.9, 9.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1134,8 +1149,16 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // writers for the file to fix are the list part's own, handed over, never copied. A block pasted on a table of lines
 // (lines-table) and the cells' readers moved there from @fieldia/grid (cell-paste), which the grid and Import load the
 // lines part for: lines 23.88 and 8.28 measured before, 30.83 and 10.64 after, to 30.9 and 10.7.
+// On paper (0.25, Wave 3's print lane), measured (before in brackets): a list's Print — every record that matches asked
+// a page at a time, under its groups with their sums, the totals, the search in words, its printout's sheet and its
+// list's rules for paper — list 78.49 and 25.51 (72.41, 23.71); an action's file shown over the record, or saved, by
+// the dialog a file field's file opens in (viewFiles, showAppFile) — files 32.37 and 11.92 (30.89, 11.26); and each
+// part's own rules for paper in its own sheet: business 26.94 and 9.89 (26.60, 9.82), head 34.24 and 9.93 (34.00,
+// 9.89), lines 23.97 and 8.31 (23.88, 8.28), phone 34.83 and 15.24 (34.77, 15.21), survey 35.61 and 12.33 (35.50,
+// 12.29), text 55.87 and 18.59 (55.60, 18.52) — each to the next 0.1 over where it passed its own. A list's printout's
+// footer at the foot of every sheet, its room measured and kept there: list 79.13 and 25.72 (78.49, 25.51).
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [91.3, 30.0], cards: [11.6, 3.7], columns: [10.7, 4.0], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [30.9, 10.7], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.5, 32.2], cards: [11.6, 3.7], columns: [10.7, 4.0], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [31.0, 10.8], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1152,7 +1175,7 @@ const PART_GIVES = {
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget'],
-  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
+  files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
