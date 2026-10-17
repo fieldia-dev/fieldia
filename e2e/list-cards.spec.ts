@@ -223,6 +223,35 @@ test.describe('lists on a phone', () => {
     expect(problems).toEqual([]);
   });
 
+  for (const [skin, scheme] of [
+    ['underline', 'dark'],
+    ['outlined', 'light'],
+    ['quiet', 'dark'],
+  ] as const) {
+    test(`${skin}, ${scheme}: an amount, a day and a phone number on a card never break inside; the call links wrap as one (the walk of 0.25)`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      const { problems } = await open(page, 'plain', `page=contacts&skin=${skin}&scheme=${scheme}`);
+      await expect(page.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+      // Every whole value on one line, the bold card's "E£ 473,734.00" too (0.25: "E£ 473,734." over "00").
+      const values = page.locator('.fd-list-card-lines > div[data-whole] dd > bdi');
+      await expect(values.first()).toBeVisible();
+      const broken = await values.evaluateAll((all) =>
+        all.filter((value) => value.textContent?.trim()).filter((value) => { const lines = new Set([...value.getClientRects()].map((rect) => Math.round(rect.top))); return lines.size > 1; }).map((value) => value.textContent)
+      );
+      expect(broken).toEqual([]);
+      const amount = page.locator('.fd-list-card-lines [data-field="lifetime_value"] dd > bdi', { hasText: '473,734.00' }).first();
+      await expect(amount).toBeVisible();
+      // The links together: both on one line, never one over the other.
+      const links = page.locator('.fd-list-card .fd-list-links').first();
+      const tops = await links.locator('a').evaluateAll((all) => all.map((a) => Math.round(a.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+      await expectNoSidewaysScroll(page);
+      await amount.scrollIntoViewIfNeeded();
+      await screen(page, `list-cards-whole-${skin}-${scheme}`, { viewport: true });
+      expect(problems).toEqual([]);
+    });
+  }
+
   test('an invoice’s card shows its amount and its status, and the list’s total is in sight from the first screen as it scrolls', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=invoices&skin=underline');
     await expect(rows(page)).toHaveCount(10);

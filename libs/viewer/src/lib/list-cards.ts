@@ -1,4 +1,5 @@
 import { cardLines, type CardLinePart, type ListNode, type Locale, type Page, type PluralWords, type Value, type Values } from '@fieldia/core';
+import { keepsWhole } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { Cells } from './list-cells';
 
@@ -104,7 +105,9 @@ export function drawCard(context: CardContext, spec: CardSpec, values: Values, f
       const label = line.map(({ part }) => page.fields[part.field]?.label ?? part.field).join(' · ');
       const only = line.length === 1 && line[0].part.unit === undefined && DRAWN.has(node.cells?.[line[0].part.field]?.widget ?? '') ? line[0].part.field : null;
       const value = only ? cells.draw(only, values, title) : line.flatMap(({ said }, i) => [...(i ? [' · '] : []), el('bdi', {}, said)]);
-      return el('div', { 'data-field': line[0].part.field }, el('dt', {}, label), el('dd', {}, ...value));
+      // Words read as one — a number, an amount, a day, a phone number — never broken inside (cards-styles.ts).
+      const whole = line.every(({ part }) => keepsWhole(page.fields[part.field]?.type, node.cells?.[part.field]?.widget));
+      return el('div', { 'data-field': line[0].part.field, 'data-whole': whole ? '' : undefined }, el('dt', {}, label), el('dd', {}, ...value));
     });
   if (lines.length) {
     const list = el('dl', { class: 'fd-list-card-lines', 'data-labels': spec.labels ? undefined : 'hidden', 'data-lead': spec.lead ? '' : undefined }, ...lines);
