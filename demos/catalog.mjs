@@ -275,7 +275,7 @@ export const DEMOS = [
       'Press New invoice: a new invoice opens in a dialog, its customer filled in. Give it a number and an amount and save: it is in the list, and the count is one more.',
       'Press View all invoices: the invoices list opens, kept to this customer’s.',
       'The Quotations tab says how many quotations this customer has before it is opened. Open it: its own list, the lost ones left out. Press › on the pager over the record: the next customer’s invoices and quotations, and their count on the tab, never the last one’s.',
-      'In the Quotations tab, click a quotation: it opens on its own page, by the app’s own route, not in a dialog. Back, then New: a new quotation’s page, this customer filled in.',
+      'In the Quotations tab, click a quotation: it opens on its own page, by the app’s own route, not in a dialog. Back, then New quotation: a new quotation’s page, this customer filled in.',
       'Start a new customer (record=new): the lists say nothing points at it until it is saved.',
     ],
   },
