@@ -4,6 +4,7 @@
   "title": "Book a test drive",
   "description": "At the Berlin showroom: its times are on Berlin's clock, wherever you book from.",
   "timeZone": "Europe/Berlin",
+  "phone": { "country": "DE" },
   "data": { "kind": "record", "model": "drive.booking" },
   "fields": {
     "customer": { "type": "char", "label": "Name", "required": true },

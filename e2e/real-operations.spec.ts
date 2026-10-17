@@ -176,10 +176,14 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-moves').locator('.fd-lines-add')).toHaveText(['+ Add a Product']);
       if (variant === 'plain') await screen(page, 'real-transfer');
 
-      await page.getByRole('button', { name: 'Mark as Todo' }).click();
-      await expect(toast(page, 'WH/IN/00042: marked as to do.')).toBeVisible();
+      // Its button in the words people use, naming the stage it moves the receipt to: never "Mark as Todo".
+      await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Draft');
+      await expect(page.getByRole('button', { name: /Todo/ })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Mark as ready' }).click();
+      await expect(toast(page, 'WH/IN/00042: ready to receive.')).toBeVisible();
       await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
-      await expect(page.getByRole('button', { name: 'Mark as Todo' })).toBeHidden();
+      if (variant === 'plain') await screen(page, 'real-transfer-ready', { viewport: true });
+      await expect(page.getByRole('button', { name: 'Mark as ready' })).toBeHidden();
       await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveText('16.00');
       await settled(page);
 
@@ -234,17 +238,17 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('Escape');
 
       // Ready: the Quantity column shows; more than the demand is red.
-      await page.getByRole('button', { name: 'Mark as Todo' }).click();
+      await page.getByRole('button', { name: 'Mark as ready' }).click();
       await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
       await settled(page);
       await typeIn(page, 'f-moves', 2, 'quantity', '20');
       await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveClass(/fd-tone-danger/);
       expect(problems).toEqual([]);
 
-      // Without the stock user's group: no Validate, and no Mark as Todo without the internal user's.
+      // Without the stock user's group: no Validate, and no Mark as ready without the internal user's.
       ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user`));
       await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
-      await expect(page.getByRole('button', { name: 'Mark as Todo' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Mark as ready' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Validate', exact: true })).toHaveCount(0);
       expect(problems).toEqual([]);
 
@@ -376,7 +380,7 @@ test('the receipt at a phone’s width: nothing scrolls sideways, and the button
   const { problems } = await open(page, 'plain', TRANSFER);
   await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
   await expectNoSidewaysScroll(page);
-  await page.getByRole('button', { name: 'Mark as Todo' }).click();
+  await page.getByRole('button', { name: 'Mark as ready' }).click();
   await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
   await expectNoSidewaysScroll(page);
   await screen(page, 'real-transfer-phone');

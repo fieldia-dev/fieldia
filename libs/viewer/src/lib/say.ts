@@ -13,13 +13,15 @@ const MOST = 4;
  * skin, scheme and direction. Each goes by itself after a moment, but not
  * while the pointer or the focus is on it, and at once with its ×. They show
  * over a dialog or panel too, and while a modal one is open, a screen reader —
- * which hears only inside it — is told them there as well, unseen.
+ * which hears only inside it — is told them there as well, unseen. `clear`
+ * takes away what was said before: a button pressed again speaks for itself,
+ * never under "Customer blocked" once it has made the customer active again.
  */
-export function sayer(root: HTMLElement, el: El, dismiss: string): (message: string, tone: Tone) => void {
+export function sayer(root: HTMLElement, el: El, dismiss: string): ((message: string, tone: Tone) => void) & { clear(): void } {
   // There before anything is said, so a screen reader hears what comes into it.
   const region = el('div', { class: 'fd-says', role: 'status', 'aria-live': 'polite' });
   root.append(region);
-  return (message, tone) => {
+  const say = (message: string, tone: Tone) => {
     const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': dismiss }, '×');
     const toast = el('div', { class: 'fd-say', 'data-tone': tone }, el('span', {}, message), close);
     // Its edge in its tone's colour, from the scheme's own: a danger is the error colour.
@@ -44,6 +46,7 @@ export function sayer(root: HTMLElement, el: El, dismiss: string): (message: str
     echo(region, el, message);
     wait();
   };
+  return Object.assign(say, { clear: () => region.replaceChildren() });
 }
 
 /** The words again, unseen, in a live region of the topmost modal dialog the region is not in. */

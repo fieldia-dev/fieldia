@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { DEMOS, FRAMEWORKS, OPENED, demoHref } from '../demos/catalog.mjs';
-import { readdirSync, readFileSync } from 'node:fs';
+import { DEMOS, FRAMEWORKS, GITHUB, OPENED, demoHref, sourceOf } from '../demos/catalog.mjs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -277,6 +277,59 @@ test.describe('the demo frame', () => {
     await screen(page, 'demo-frame-phone', { viewport: true });
     await menu(page).getByRole('button', { name: 'Close the menu' }).click();
     await expect(menu(page)).not.toBeInViewport();
+  });
+
+  test('says under every demo’s name the first thing to try, and links its source on GitHub, a file that is there', async ({ page }) => {
+    // What the gallery promises — read how to try it, and open its code — on the page itself, for everyone: a walk
+    // in a test browser sees it too.
+    for (const demo of DEMOS) expect(existsSync(sourceOf(demo)), `${demo.id}: ${sourceOf(demo)}`).toBe(true);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const demo of DEMOS.filter((d) => ['customer', 'test-drive', 'template-invoice', 'backlog', 'two-tabs', 'script', 'code'].includes(d.id))) {
+      await page.goto(`/${demoHref(demo)}`);
+      const line = page.locator('#demo-head .dh-try');
+      await expect(line.locator('.dh-try-step'), demo.id).toHaveText(demo.howTo[0]);
+      await expect(line.getByRole('link', { name: 'Its source on GitHub' }), demo.id).toHaveAttribute('href', `${GITHUB}/blob/main/${sourceOf(demo)}`);
+      await expect(line, demo.id).toBeInViewport();
+    }
+    await page.goto('/plain/?page=customer&skin=underline');
+    await screen(page, 'demo-frame-try-this', { viewport: true });
+    // A person visiting: All the steps opens the panel of them.
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.goto('/plain/?page=customer&skin=underline');
+    const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    await expect(howTo).toBeHidden();
+    await page.locator('#demo-head').getByRole('button', { name: 'All 5 steps' }).click();
+    await expect(howTo).toBeVisible();
+    await expect(howTo.locator('li')).toHaveCount(5);
+  });
+
+  test('a theme’s ground fills the window under a short page, light and dark, as the walk saw it stop mid-screen', async ({ page }) => {
+    const ground = () =>
+      page.evaluate(() => {
+        const form = document.querySelector('#app .fd-form') as HTMLElement;
+        // The page's own colour at the window's foot, under the form.
+        return [getComputedStyle(form).backgroundColor, getComputedStyle(document.body).backgroundColor, form.getBoundingClientRect().bottom < innerHeight];
+      });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const [query, scheme, name] of [
+      ['page=template-task&theme=apple&record=new&scheme=dark', 'dark', 'apple-task'],
+      ['page=template-leave-request&theme=bootstrap&record=new&scheme=dark', 'dark', 'bootstrap-time-off'],
+      ['page=customer&skin=underline&theme=ant&scheme=dark', 'dark', 'ant-customer'],
+      ['page=template-invoice&theme=odoo&record=new', 'light', 'odoo-invoice'],
+    ] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto(`/plain/?${query}`);
+      await expect(page.locator('#app .fd-form[data-fd-theme]')).toBeVisible();
+      await expect(page.locator('html')).toHaveClass(/demo-themed/);
+      const [form, body, short] = await ground();
+      expect(body, name).toBe(form);
+      if (name !== 'ant-customer') expect(short, `${name} is a short page`).toBe(true);
+      await screen(page, `theme-ground-${name}`, { viewport: true });
+    }
+    // No theme: the frame's own page, as before.
+    await page.goto('/plain/?page=template-task&record=new&scheme=dark');
+    await expect(page.locator('html')).not.toHaveClass(/demo-themed/);
   });
 
   test('gives a test browser the header alone, so its measurements are of the demo', async ({ page }) => {

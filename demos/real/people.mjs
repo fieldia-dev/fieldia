@@ -6,7 +6,7 @@ export default [
     category: 'real',
     query: 'page=real-clinic-appointment&record=4001&skin=underline',
     blurb:
-      'An aesthetic clinic’s appointment: its statusbar and nine header buttons, each shown only in the states it belongs to, resources as tags, the check-in times, the deposit and the no-show risk, and the conversation beside it.',
+      'An aesthetic clinic’s appointment: its stages along the top and nine buttons, each shown only when it applies, rooms and equipment as tags, the check-in times, the deposit and the no-show risk, and the conversation with your team beside it.',
     howTo: [
       'Press Confirm, then Check In: the status moves along, the arrival time and the Checked In stage are filled, and other buttons take their place.',
       'Press Take to Room, then Open Session: the session is made and the patient counted as in the room.',
@@ -36,7 +36,7 @@ export default [
     category: 'real',
     query: 'page=real-employee&record=4122&skin=underline',
     blurb:
-      'An employee’s record as HR keeps it: a photo, tags, smart buttons for time off, the org chart and equipment, extra properties, a resume and skills, work, private and HR settings tabs, and the people she manages.',
+      'An employee’s record as HR keeps it: a photo, tags, counters for time off, the team chart and equipment, extra details, a resume and skills, work, private and HR settings tabs, and the people she manages.',
     howTo: [
       'Open Private Information and change Marital Status to Single: the spouse’s fields go.',
       'Pick another Department: the Manager follows it.',

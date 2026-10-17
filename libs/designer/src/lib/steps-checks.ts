@@ -59,6 +59,9 @@ function stepPathIn(rest: string): StepPath {
   return path;
 }
 
+/** What an expression on a record reads besides its fields, as @fieldia/core's expressions name them (BUILT_IN_NAMES). */
+const BUILT_IN_NAMES = new Set(['id', 'user', 'editing', 'context']);
+
 export function stepChecks(page: Page, issues: readonly PageIssue[], words: DesignerWords = en): { checks: PageCheck[]; covers(path: string): boolean } {
   const w = words.steps;
   const checks: PageCheck[] = [];
@@ -86,8 +89,10 @@ export function stepChecks(page: Page, issues: readonly PageIssue[], words: Desi
   }
   if (issues.length) return { checks, covers: (path) => covered.includes(path) };
 
-  // A page the designer keeps: what its steps name that is no longer on it.
+  // A page the designer keeps: what its steps name that is no longer on it — never the names every record's expressions
+  // read besides its fields (the record's own id, the person, editing, the app's context), which are always there.
   const shown = shownFields(page);
+  const always = (name: string) => BUILT_IN_NAMES.has(name) && !page.fields[name];
   const label = (name: string) => page.fields[name]?.label || name;
   const severity = (gone: string[]) => (page.data.kind === 'responses' || gone.some((name) => !page.fields[name]) ? 'must' : 'should');
   for (const entry of pageSteps(page, words)) {
@@ -96,7 +101,7 @@ export function stepChecks(page: Page, issues: readonly PageIssue[], words: Desi
       continue;
     }
     for (const { step, path } of eachStep(stepsAt(page, entry.place))) {
-      const gone = [...new Set([...fieldsNamed(step), ...fieldsRead(step)])].filter((name) => !shown.has(name));
+      const gone = [...new Set([...fieldsNamed(step), ...fieldsRead(step)])].filter((name) => !shown.has(name) && !always(name));
       if (!gone.length) continue;
       checks.push({
         at: entry.part,

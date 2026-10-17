@@ -12,7 +12,8 @@ import { node, open, screen } from './support';
 
 type Values = Record<string, unknown>;
 const values = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values as Values);
-const box = (page: Page, id: string) => node(page, id).locator('input, textarea, select').first();
+/** A field's own box: a phone's number box, past its country's list (the sign-up reads phones the world over). */
+const box = (page: Page, id: string) => node(page, id).locator('.fd-phone-input, input:not(.fd-phone-select *), textarea, select:not(.fd-phone-select)').first();
 const responses = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses as { values: Values; bot?: Record<string, unknown> }[]);
 
 /** What the browser does as a person picks a saved address in one box: each box it fills, written whole, as this engine writes it. */
@@ -21,7 +22,8 @@ async function autofill(page: Page, fills: Record<string, string>) {
   await page.evaluate(
     ([fills, engine]) => {
       for (const [id, text] of Object.entries(fills)) {
-        const target = document.querySelector(`[data-node="${id}"] input, [data-node="${id}"] select`) as HTMLInputElement;
+        // A phone's number box, not its country's list before it.
+        const target = (document.querySelector(`[data-node="${id}"] .fd-phone-input`) ?? document.querySelector(`[data-node="${id}"] input, [data-node="${id}"] select`)) as HTMLInputElement;
         if (engine === 'firefox') target.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertReplacementText', data: text, cancelable: false, bubbles: true }));
         target.value = text;
         target.dispatchEvent(engine === 'firefox' ? new InputEvent('input', { inputType: 'insertReplacementText', data: text, bubbles: true }) : new InputEvent('input', { bubbles: true }));
@@ -52,7 +54,8 @@ test.describe('the sign-up, filled in by the browser', () => {
     // Picked in the name's box: the browser fills the others too, while the person is still in the name's.
     await box(page, 'f-name').click();
     await autofill(page, { 'f-name': 'Sara Hassan', 'f-email': ' sara@example.com', 'f-company': 'Nile Trading', 'f-phone': '+20 100 123 4567', 'f-rate': 'about 40' });
-    await expect.poll(() => values(page)).toMatchObject({ full_name: 'Sara Hassan', email: 'sara@example.com', company: 'Nile Trading', phone: '+20 100 123 4567', hourly_rate: null });
+    // The phone read the world over: kept as one number, +201001234567, whatever way it was written.
+    await expect.poll(() => values(page)).toMatchObject({ full_name: 'Sara Hassan', email: 'sara@example.com', company: 'Nile Trading', phone: '+201001234567', hourly_rate: null });
     await expect(box(page, 'f-email')).toHaveValue('sara@example.com');
     // A rate the box cannot read stays as filled in, and its field says why at once, as one typed in and left.
     await expect(box(page, 'f-rate')).toHaveValue('about 40');
@@ -63,7 +66,7 @@ test.describe('the sign-up, filled in by the browser', () => {
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.locator('.fd-done')).toBeVisible();
     const sent = await demo<{ values: Values }[]>('dataSource.responses');
-    expect(sent[0].values).toMatchObject({ full_name: 'Sara Hassan', email: 'sara@example.com', company: 'Nile Trading', phone: '+20 100 123 4567', hourly_rate: 40, role: 'designer' });
+    expect(sent[0].values).toMatchObject({ full_name: 'Sara Hassan', email: 'sara@example.com', company: 'Nile Trading', phone: '+201001234567', hourly_rate: 40, role: 'designer' });
   });
 });
 
@@ -181,9 +184,18 @@ test.describe('the sign-up’s bot check', () => {
       { honeypot: false, tooFast: true, seconds: 0, captcha: null },
       { honeypot: true, tooFast: false, seconds: 10, captcha: null },
     ]);
-    // Under the form, what the app was told with each.
-    await expect(page.locator('.demo-bot-log li')).toHaveCount(3);
-    await expect(page.locator('.demo-bot-log li').nth(2)).toContainText('"honeypot":true');
+    // Under the form, what the app was told with each, in words — the report itself under Details.
+    const told = page.locator('.demo-bot-log li');
+    await expect(told).toHaveCount(3);
+    await expect(told.locator('> p')).toHaveText([
+      /^Looks like a person: sent [\d.]+ s after the page opened; the captcha was ticked\.$/,
+      'Looks like a bot: sent 0 s after the page opened, sooner than a person can; the captcha was not ticked.',
+      'Looks like a bot: a hidden field was filled, which no person sees; sent 10 s after the page opened; the captcha was not ticked.',
+    ]);
+    await expect(told.nth(2).locator('code')).toBeHidden();
+    await told.nth(2).getByText('Details').click();
+    await expect(told.nth(2).locator('code')).toBeVisible();
+    await expect(told.nth(2).locator('code')).toContainText('"honeypot":true');
     await screen(page, 'bot-check-told');
   });
 });

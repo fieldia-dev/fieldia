@@ -61,7 +61,9 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', w.data), problems: tab('problems', w.problems) };
   const count = el('span', { class: 'fd-try-count' });
   const toAnswer = el('span', { class: 'fd-try-to-answer' });
-  tabs.problems.append(' ', count, ' ', toAnswer);
+  // Its word kept apart: with nothing wrong but questions still to answer, the tab says only "4 to answer".
+  const problemsWord = el('span', { class: 'fd-try-word' }, w.problems);
+  tabs.problems.replaceChildren(problemsWord, ' ', count, ' ', toAnswer);
   const said = el('span', { class: 'fd-try-said', role: 'status' });
   const copy = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-copy' }, w.copyData);
   const fold = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-fold', 'aria-controls': `${id}-panels` });
@@ -119,6 +121,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
     count.hidden = !problems;
     toAnswer.textContent = unanswered ? fill(w.toAnswer, { n: unanswered }) : '';
     toAnswer.hidden = !unanswered;
+    problemsWord.hidden = !problems && unanswered > 0;
     none.hidden = rows.length > 0;
     list.replaceChildren(
       ...rows.filter(() => open('problems')).map((row) => {

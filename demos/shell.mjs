@@ -1,13 +1,14 @@
 /**
  * The frame around every demo page: a header with the demo's name, its
- * framework and its look; and, for a person visiting, the menu of all demos,
- * the "how to try it" panel, and the code drawer with the page's JSON and how
- * to mount it in each framework. Browser tests (navigator.webdriver) get the
- * header alone, so what they measure is the demo, not the frame around it.
+ * framework and its look, the first thing to try and its source on GitHub;
+ * and, for a person visiting, the menu of all demos, the "how to try it"
+ * panel, and the code drawer with the page's JSON and how to mount it in each
+ * framework. Browser tests (navigator.webdriver) get the header alone, so what
+ * they measure is the demo, not the frame around it.
  * `embed=1`: the demo alone, no frame at all, as fieldia.dev's feature pages
  * show it inside their own.
  */
-import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref, openedAt } from './catalog.mjs';
+import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, GITHUB, demoAt, demoHref, openedAt, sourceOf } from './catalog.mjs';
 import { highlight } from './highlight.mjs';
 import { backlogSnippets, listMapSnippets, saveSafetySnippets, slotsSnippets, snippets, uploadsSnippets } from './snippets.mjs';
 
@@ -101,7 +102,20 @@ function drawHeader() {
     <div class="dh-title-row">
       <h1 class="dh-title">${esc(demo?.name ?? opened?.name ?? '')}</h1>
       ${skins}
-    </div>`;
+    </div>
+    ${tryThis()}`;
+}
+
+/**
+ * Under the demo's name, for everyone: the first thing to try, all its steps a press away (the how-to panel, for a
+ * person visiting), and the file it is written in on GitHub — its page's JSON, or its app's code.
+ */
+function tryThis() {
+  if (!demo) return '';
+  const steps = demo.howTo ?? [];
+  const all = visitor && steps.length > 1 ? ` <button type="button" class="dh-try-all" aria-controls="demo-howto">All ${steps.length} steps</button>` : '';
+  const source = `<a class="dh-source" href="${GITHUB}/blob/main/${esc(sourceOf(demo))}" target="_blank" rel="noopener">Its source on GitHub<span aria-hidden="true"> ↗</span></a>`;
+  return `<p class="dh-try">${steps.length ? `<span class="dh-try-word">Try this:</span> <span class="dh-try-step">${esc(steps[0])}</span>${all}` : ''} ${source}</p>`;
 }
 
 // ---- the menu of every demo ----------------------------------------------------------------
@@ -184,6 +198,11 @@ function drawHowTo() {
     opener.focus();
   });
   opener.addEventListener('click', () => setOpen(true));
+  // The header's "All the steps": the panel, open, its steps in view.
+  head?.querySelector('.dh-try-all')?.addEventListener('click', () => {
+    setOpen(true);
+    panel.querySelector('.ht-close')?.focus();
+  });
 }
 
 // ---- the code drawer ------------------------------------------------------------------------------
@@ -331,6 +350,51 @@ if (visitor) {
   drawCode();
 }
 
+// ---- a theme's ground, the whole window's ---------------------------------------------------------------------------
+/**
+ * A theme paints its form on a ground of its own (its `--fd-page`): drawn as a box in the frame's page, a short page's
+ * would stop mid-window over the frame's own, darker one. So the page round the form wears the theme's ground instead,
+ * edge to edge, as an app in that theme is drawn; the header keeps its own. Read from the form as the theme comes
+ * (its part loads as it is first worn), and again as the reader's scheme changes.
+ */
+function themeGround() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  const root = document.documentElement;
+  /** Whether a colour, as rgb(), is a dark one: what a light scheme's words could not be read on. */
+  const dark = (colour) => {
+    const [r, g, b] = (colour.match(/[\d.]+/g) ?? []).map(Number);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
+  };
+  /** The frame's own page, in its scheme: what the words round the form (a log under it, a bar over it) are drawn for. */
+  const framePage = () => {
+    const probe = document.createElement('i');
+    probe.style.background = 'var(--dh-page)';
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return colour;
+  };
+  const paint = () => {
+    const form = app.querySelector('.fd-form[data-fd-theme]');
+    const ground = form ? getComputedStyle(form).backgroundColor : '';
+    // Only a ground of the frame's own kind, light on light or dark on dark: the words round the form stay readable
+    // when a page asks its form for a scheme of its own.
+    const on = !!ground && ground !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(ground) && dark(ground) === dark(framePage());
+    root.classList.toggle('demo-themed', on);
+    if (on) root.style.setProperty('--demo-ground', ground);
+    else root.style.removeProperty('--demo-ground');
+  };
+  // Only these two names, of any element in the demo: what a theme and a scheme are worn by, never the typing.
+  new MutationObserver(paint).observe(app, { subtree: true, attributes: true, attributeFilter: ['data-fd-theme', 'data-scheme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paint);
+  // And once the form is there, which may have worn its theme before it was put in the page.
+  let tries = 0;
+  const look = () => (app.querySelector('.fd-form') ? paint() : ++tries < 150 && setTimeout(look, 100));
+  look();
+}
+if (FRAMEWORKS.some((f) => f.id === app)) themeGround();
+
 // ---- a dialog's page, shown on its own ------------------------------------------------------------------------------
 /**
  * A page made to open as a dialog — its own footer of buttons, as "Register a payment" — closes once its button's
@@ -372,7 +436,7 @@ function standingAlone(handle) {
     panel.innerHTML = `
       <h2 id="demo-done-h" tabindex="-1">${done ? 'Done' : 'Cancelled'}</h2>
       ${(done ? (words.length ? words : ['Saved.']) : ['Nothing was made.']).map((w) => `<p class="demo-done-said">${esc(w)}</p>`).join('')}
-      <p class="demo-done-note">${esc(page.title ?? 'This page')} opens as a dialog in an app: there it closes here, and the record it was opened from shows what was done. On its own, it stops here, so nothing is made twice.</p>
+      <p class="demo-done-note">${done ? `In an app, “${esc(page.title ?? 'this window')}” opens over the record it is for, closes now, and that record shows what was done. Shown here on its own, it stops here instead, so nothing is done twice.` : `In an app, “${esc(page.title ?? 'this window')}” opens over the record it is for and closes now, leaving it as it was. Shown here on its own, it stops here instead.`}</p>
       <button type="button" class="demo-done-again">Start over</button>`;
     app.hidden = true;
     app.after(panel);

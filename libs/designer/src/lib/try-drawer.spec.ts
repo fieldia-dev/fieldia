@@ -59,8 +59,10 @@ describe('Try it’s drawer of data and problems', () => {
     const { tab, problems, fill, fieldOf, drawer } = setup();
     const count = () => drawer().querySelector('.fd-try-count') as HTMLElement;
     const toAnswer = () => drawer().querySelector('.fd-try-to-answer') as HTMLElement;
-    // Untouched, its required questions are only not answered yet: said neutrally, never a red count of problems.
-    expect([count().hidden, toAnswer().hidden, toAnswer().textContent]).toEqual([true, false, '2 to answer']);
+    // Untouched, its required questions are only not answered yet: said neutrally, never a red count of problems — and
+    // the tab is named by them alone, "2 to answer", with no "Problems" before it.
+    const word = () => drawer().querySelector('.fd-try-word') as HTMLElement;
+    expect([count().hidden, toAnswer().hidden, toAnswer().textContent, word().hidden]).toEqual([true, false, '2 to answer', true]);
     // Not tabs: the page tried keeps the only tabs here.
     expect(drawer().querySelector('[role=tab], [role=tablist]')).toBeNull();
     tab('Problems').click();
@@ -72,7 +74,7 @@ describe('Try it’s drawer of data and problems', () => {
     fill('Name', 'Mona');
     expect(problems()).toEqual(['EmailEnter an email address, like name@example.com', 'CommentsComments is required']);
     // A real problem in red, counted; the question still to answer said apart, in muted words.
-    expect([count().hidden, count().textContent, toAnswer().textContent]).toEqual([false, '1', '1 to answer']);
+    expect([count().hidden, count().textContent, toAnswer().textContent, word().hidden]).toEqual([false, '1', '1 to answer', false]);
     expect([...drawer().querySelectorAll('.fd-try-problem')].map((row) => row.hasAttribute('data-unanswered'))).toEqual([false, true]);
     (drawer().querySelector('.fd-try-problem') as HTMLButtonElement).click();
     expect(document.activeElement).toBe(fieldOf('Email'));

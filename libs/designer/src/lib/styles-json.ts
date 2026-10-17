@@ -71,6 +71,9 @@ export const DESIGNER_JSON_CSS = /* css */ `
 /* Required questions not answered yet: said, not alarmed — the red count is for real problems. */
 .fd-try-to-answer { font-size: 12px; font-weight: 600; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
 .fd-try-to-answer[hidden] { display: none; }
+/* Nothing wrong yet, questions still to answer: the tab is named by them alone, "4 to answer", in the tab's own words. */
+.fd-try-word[hidden] { display: none; }
+.fd-try-word[hidden] ~ .fd-try-to-answer { font-size: inherit; font-weight: inherit; color: inherit; }
 .fd-try-said { font-size: 12.5px; color: var(--fd-muted); }
 .fd-try-said:empty { display: none; }
 .fd-try-copy, .fd-try-fold { min-height: 30px; padding: 2px 6px; font-size: 13px; font-weight: 600; }

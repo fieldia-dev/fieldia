@@ -24,7 +24,8 @@ const store = createMemoryPageStore();
 // `?start=template-<id>`: a survey of the template library, in steps, to change. Screens are the screen editor's (screen/).
 const asked = params.get('start') ?? '';
 const template = asked.startsWith('template-') && pages[asked]?.layout.type === 'wizard' ? pages[asked] : undefined;
-const start = template ? (structuredClone(template) as Page) : params.get('start') === 'survey' ? pages['survey'] : params.get('start') === 'big' ? bigSurvey() : blankPage('survey', arabic ? 'رأي الحضور' : 'Event feedback', { locale });
+// With nothing asked for, a survey from nothing: no title yet (its box says "Untitled form"), no question.
+const start = template ? (structuredClone(template) as Page) : params.get('start') === 'survey' ? pages['survey'] : params.get('start') === 'big' ? bigSurvey() : blankPage('survey', '', { locale });
 // The app's own kind, an IBAN, and the widget that draws it; and a stand-in for the app's own assistant.
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
 const opened = timeFirstPaint('designer');

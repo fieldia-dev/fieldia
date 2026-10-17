@@ -277,3 +277,6 @@ tr:last-child td { border-bottom: none; }
 .theme-cell .fd-form { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); border: 1px solid var(--line); }
 /* A form shown in the docs keeps its own title: the docs' heading sizes are for the docs. */
 .prose .fd-form .fd-page-title { font-size: 22px; line-height: 1.25; margin: 0; letter-spacing: normal; }
+/* The gallery's word for developers, after the tools a business owner uses: quieter, and lower down. */
+.gallery-dev { max-width: 80ch; margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+.gallery-dev b { color: var(--ink); font-weight: 600; }

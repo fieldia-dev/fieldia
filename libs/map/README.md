@@ -200,8 +200,10 @@ a bubble stands.
 ## Areas by colour, reach and fences
 
 Districts, zones or municipalities shaded in up to five steps of the page's
-accent, with a legend. The borders are the app's: GeoJSON polygons given once
-by name, loaded the first time a map shades them.
+accent, with a legend — and, where crowded pins are drawn as one round mark
+with their count, a row under the shades saying what that mark counts, so a
+bubble of 92 is never read as a shade. The borders are the app's: GeoJSON
+polygons given once by name, loaded the first time a map shades them.
 
 ```ts
 mapListViews({ provider, regions: { districts: () => fetch('/geo/districts.json').then((r) => r.json()) } });

@@ -1,4 +1,4 @@
-import { dayIn, instantsAt, wallOf, type MemorySchedule, type Page, type Values } from '@fieldia/core';
+import { dayIn, instantsAt, wallOf, type Form, type MemoryDataSource, type MemorySchedule, type Page, type Values } from '@fieldia/core';
 import testDrive from '../../examples/pages/test-drive.page.json';
 import testDrives from '../../examples/pages/test-drives.page.json';
 import { demoNow } from './calendar';
@@ -78,3 +78,71 @@ export const testDriveDemo = {
   /** The showroom's week of test drives on a calendar, on Berlin's clock as the booking page is: each opens in it. */
   list: testDrives as Page,
 };
+
+/** The time a person is most likely to pick, which someone else takes first: 10:00 where it is free. */
+const LIKELY = '10:00';
+
+/**
+ * Over the test drive, for a person trying it: "Someone else books 10:00" — a drive booked on another screen, for the
+ * car and the day shown, at a time shown (10:00 where it is free, else the first). This screen is not told, as another
+ * screen's booking would leave it: its times stay as they were drawn. Press that time, and the page says it was just
+ * booked and books nothing; the times are asked again, without it.
+ */
+export function meanwhileBar(dataSource: MemoryDataSource): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'demo-bar demo-panel-bar demo-meanwhile-bar fd-theme';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'fd-button';
+  const said = document.createElement('span');
+  said.className = 'demo-meanwhile-said';
+  said.setAttribute('role', 'status');
+  bar.append(button, said);
+  /** The times taken from this bar, by their instant: never booked twice. */
+  const taken = new Set<string>();
+  const form = () => (window as unknown as { fieldiaDemo?: { handle?: { form?: Form } } }).fieldiaDemo?.handle?.form;
+  /** The time it would book: among those the screen shows, not this record's own nor one it took. */
+  const next = () => {
+    const chips = [...document.querySelectorAll<HTMLButtonElement>('[data-node="f-start"] .fd-slots-chip')].filter((chip) => chip.getAttribute('aria-pressed') !== 'true' && !taken.has(chip.dataset['at'] ?? ''));
+    return chips.find((chip) => chip.textContent === LIKELY) ?? chips[0] ?? null;
+  };
+  let showing: HTMLButtonElement | null = null;
+  /** What happened last on the other screen, once something has; and the time it took, while this screen still shows it. */
+  let last = '';
+  let pending: { at: string; time: string } | null = null;
+  const draw = () => {
+    // The time taken pressed here: the field says it was just booked, and it is gone from the times.
+    const told = document.querySelector('[data-node="f-start"] .fd-slots-said')?.textContent ?? '';
+    if (pending && told.includes(pending.time) && !document.querySelector(`[data-node="f-start"] .fd-slots-chip[data-at="${pending.at}"]`)) {
+      last = `Tom Schulz booked ${pending.time} first, on another screen: this page said so, and booked nothing.`;
+      pending = null;
+    }
+    showing = next();
+    button.hidden = !showing;
+    if (showing) button.textContent = `Someone else books ${showing.textContent}`;
+    said.textContent = last || (showing ? 'Another customer may be booking this car on another screen right now.' : 'Pick a car and a day: then someone else, on another screen, can book one of its times before you do.');
+  };
+  button.addEventListener('click', () => {
+    const chip = showing;
+    const car = form()?.getState().values['car'];
+    if (!chip || !car) return;
+    const at = Number(chip.dataset['at']);
+    const bookings = dataSource.records['drive.booking'] ?? (dataSource.records['drive.booking'] = {});
+    const id = Math.max(0, ...Object.keys(bookings).map(Number)) + 1;
+    bookings[id] = { customer: 'Tom Schulz', phone: null, email: null, car, start: iso(at), stop: iso(at + 45 * 60000), licence: false, call_back: null, notes: null };
+    taken.add(String(at));
+    pending = { at: String(at), time: chip.textContent ?? '' };
+    last = `Tom Schulz booked ${chip.textContent} on another screen, just now. Yours still shows it: press ${chip.textContent} and see.`;
+    draw();
+  });
+  // The times follow the car and the day picked: the bar follows them.
+  const watch = new MutationObserver(draw);
+  const look = (tries = 0) => {
+    const app = document.getElementById('app');
+    if (app) watch.observe(app, { subtree: true, childList: true });
+    else if (tries < 50) setTimeout(() => look(tries + 1), 100);
+    draw();
+  };
+  look();
+  return bar;
+}

@@ -441,7 +441,7 @@
         {
           "feature": "Mark as Todo (action_confirm)",
           "status": "covered",
-          "how": "steps save, call, save; the app confirms and reserves: a receipt is Ready at once, every quantity its demand"
+          "how": "steps save, call, save; the app confirms and reserves: a receipt is Ready at once, every quantity its demand. Named \"Mark as ready\", the stage it moves to, rather than Flectra's \"Mark as Todo\""
         },
         {
           "feature": "Check Availability (action_assign, invisible not show_check_availability)",
@@ -666,7 +666,7 @@
         {
           "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
           "status": "covered",
-          "how": "hotkeys as Flectra's: Mark as Todo q, Check Availability w, Validate v, Print o, Return k, Cancel x, Put in Pack shift+g"
+          "how": "hotkeys as Flectra's: Mark as ready q, Check Availability w, Validate v, Print o, Return k, Cancel x, Put in Pack shift+g"
         },
         {
           "feature": "js_class custom form controller",

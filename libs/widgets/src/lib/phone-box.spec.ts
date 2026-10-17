@@ -85,6 +85,9 @@ describe('a phone read the world over', () => {
     expect(read.el.matches('.fd-phone')).toBe(true);
     expect(read.input.id).toBe('fd-mobile');
     expect(read.input.type).toBe('tel');
+    expect(read.input.autocomplete).toBe('tel');
+    // The page's own autofill purpose kept, as a plain phone box keeps it: a sign-up's "mobile tel".
+    expect(mount({ autocomplete: 'mobile tel' }, { phone: { country: 'EG' } }).input.autocomplete).toBe('mobile tel');
   });
 
   it('starts on the country the page or the field says, and on none when neither does', () => {

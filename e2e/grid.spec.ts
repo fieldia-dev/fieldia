@@ -345,6 +345,9 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-grid-section-added`);
     });
     test('a line is dragged by its handle to a new place, and the lines are numbered again', async ({ page }) => {
+      // The whole grid in the window, as a hand drags in it, unscrolled: the demo's header over the page would leave the
+      // lamp's row at a 720px window's fold, and the full-page screen mid-drag puts a scrolled page back to its top.
+      await page.setViewportSize({ width: 1280, height: 900 });
       const handle = cell(page, LAMP, '__handle').locator('.ag-drag-handle');
       await expect(handle).toBeVisible();
       const from = (await handle.boundingBox())!;

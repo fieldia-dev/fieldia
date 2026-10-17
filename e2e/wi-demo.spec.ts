@@ -303,6 +303,28 @@ test.describe('the backlog in other languages, dark, and on a phone', () => {
     expect(problems).toEqual([]);
   });
 
+  test('narrower than the tracker’s screens, 1440 and 1280: every column whole in the card, no state cut to “Ac…”, no header to “W…”', async ({ page }) => {
+    for (const [width, height] of [[1440, 900], [1280, 800]] as const) {
+      await page.setViewportSize({ width, height });
+      const problems = await openBacklog(page);
+      const card = page.locator('.fd-list-scroll');
+      // The grid fits its card: nothing to scroll sideways, so no column stops at its edge.
+      expect(await card.evaluate((c) => c.scrollWidth - c.clientWidth), `${width}: the grid fits its card`).toBeLessThanOrEqual(0);
+      const edge = (await card.boundingBox())!;
+      const state = (await page.locator('thead th[data-field="state"]').boundingBox())!;
+      const tags = (await page.locator('thead th[data-field="tags"]').boundingBox())!;
+      expect(state.x + state.width, `${width}: State whole`).toBeLessThanOrEqual(edge.x + edge.width);
+      expect(tags.x + tags.width, `${width}: Tags whole`).toBeLessThanOrEqual(edge.x + edge.width + 1);
+      await expect(row(page, 4127).locator('td').nth(4)).toContainText('Active');
+      // Every header's words whole: Work Item Type and Story Points too.
+      const cut = await page.locator('thead .fd-list-head').evaluateAll((heads) => heads.filter((h) => h.scrollWidth > h.clientWidth).map((h) => h.textContent));
+      expect(cut, `${width}: headers cut`).toEqual([]);
+      await expectNoSidewaysScroll(page);
+      await screen(page, `wi-demo-backlog-${width}`, { viewport: true });
+      expect(problems).toEqual([]);
+    }
+  });
+
   test('390px wide: the page and the list fit, nothing scrolls sideways but the table', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const problems = await openBacklog(page);

@@ -50,6 +50,12 @@ describe('what a page’s steps would trip over, in Checks', () => {
     expect(designer.getPage().fields['price']).toBeUndefined();
   });
 
+  it('never says a step reads the record’s own id, the person or editing as a field gone: they are always there', () => {
+    // A number made from the record's id once saved, as the invoice template's Confirm writes it.
+    const designer = createDesigner({ page: order(undefined, { steps: [{ do: 'save' }, { do: 'set', field: 'customer', value: "'INV/' + id", when: 'not editing and user.id' }] }) });
+    expect(designer.checks()).toEqual([]);
+  });
+
   it('offers no fix that would leave a button with nothing to do: the check picks it', () => {
     const designer = createDesigner({ page: order(undefined, { action: undefined, steps: [{ do: 'clear', field: 'price' }] }) });
     designer.removeNode('f-price');

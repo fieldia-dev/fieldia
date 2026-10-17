@@ -61,6 +61,107 @@ export const areaOf = (id) => Object.keys(AREA_OF).find((area) => AREA_OF[area].
 /** Every demo id each area names, as written: for the test that no demo is in two or none. */
 export const AREA_IDS = AREA_OF;
 
+/**
+ * What a person may type to find each demo besides its name and its words: what it does and the common words for it —
+ * "booking" for a test drive booked, "mobile" for a phone number, "bill" for an invoice. The gallery's search reads
+ * them with the card's name, blurb, area and feature; every demo has some (a browser test holds each to it).
+ */
+const SEARCH_WORDS = {
+  customer: 'client account contact company blocked block status sales invoices counters conversation messages notes team',
+  order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
+  customers: 'clients accounts contacts list search filter group favourites sort archive table',
+  invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
+  contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize print cards',
+  'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
+  'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print',
+  property: 'property home house real estate listing viewings visits appointments related records inside agent client',
+  'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
+  'test-drives': 'calendar week schedule bookings test drives cars showroom time zone berlin diary agenda',
+  backlog: 'bug bugs issue issues ticket tickets tracker jira azure devops work item sprint popup dialog window backlog',
+  'work-item': 'bug issue ticket tracker azure devops work item quiet look state reason locked workflow',
+  fields: 'every field kinds inputs text number money currency choice dropdown date calendar file upload attachment picture image rich text tags',
+  'listing-photos': 'photos pictures images upload uploads camera phone property real estate listing gallery retry cancel slow',
+  kinds: 'survey questionnaire slider tags address picture choice ranking repeat quiz score signature sign moving day time weight hearts nps net promoter recommend scale',
+  business: 'fields task project priority stars status timer stopwatch hours timesheet date range tags copy pdf analytic accounts tax payments properties',
+  code: 'code editor programming json python sql javascript syntax highlight vs code codemirror developer',
+  signup: 'sign up signup register registration form workshop event attendee phone mobile number telephone autofill bot spam captcha honeypot',
+  layout: 'employee staff hire hiring hr personnel columns tabs photo bank pay contract',
+  survey: 'survey questionnaire feedback poll steps wizard skip branching product',
+  delivery: 'address shipping billing reuse saved form twice nested',
+  rules: 'order totals calculate calculation discount warning validation checks email postcode rules',
+  lists: 'country city cities dropdown choices options delivery address shipping server',
+  'map-delivery': 'map place location address pin gps coordinates delivery openstreetmap where you are',
+  'map-address': 'address autocomplete suggestions lookup street search type ahead location',
+  'map-zone': 'map area zone shape polygon circle box draw delivery region territory',
+  'map-homes': 'homes houses property properties real estate listings flats apartments villas rent rental sale price map pins search area shortlist',
+  'map-embed': 'homes houses property real estate listings map website own page embed filter',
+  'map-homes-arabic': 'homes houses property real estate map arabic right to left rtl',
+  'map-couriers': 'couriers drivers riders fleet delivery map vehicles car scooter bike tracking free busy',
+  'map-order': 'order delivery tracking courier driver eta arrival map food kitchen live where is my order',
+  'map-round': 'route round stops van delivery driver map order lines numbered',
+  'map-zones': 'orders districts areas regions map shaded legend count delivery week cairo',
+  'map-heat': 'orders heat map heatmap revenue money where sales',
+  'clinic-calendar': 'clinic doctor doctors appointment appointments booking bookings reservation schedule calendar diary agenda patients visits week month',
+  'booking-week': 'booking bookings appointment appointments reservation reservations schedule calendar week agent viewings meetings diary',
+  'booking-week-arabic': 'booking appointment calendar week schedule arabic right to left rtl',
+  'test-drive': 'booking book booked appointment appointments reservation reserve schedule slot slots time times calendar car cars dealer showroom drive time zone berlin',
+  'map-kitchen': 'kitchen restaurant delivery fee districts map courier zone geofence food',
+  custom: 'custom widget component own part badge print react vue angular developer extend',
+  contained: 'error errors bug crash failure fails broken part safe developer',
+  'quick-order': 'order phone call telephone stock inventory customer new side panel steps confirm',
+  'two-tabs': 'conflict conflicts two tabs edited same time collaboration save overwrite lead version',
+  'viewer-role': 'read only readonly permissions roles access viewer rights lead',
+  'customer-locked': 'read only readonly edit lock locked view mode customer',
+  reading: 'invoice bill dense read only accounting counters alerts tags keyboard shortcuts',
+  'vendor-bill': 'vendor bill bills supplier purchase invoice pdf next previous archive duplicate delete print debit note',
+  'customers-arabic': 'customers clients list arabic right to left rtl',
+  'customer-arabic': 'customer client arabic right to left rtl translation',
+  'signup-french': 'translation translations french language languages localisation localization i18n',
+  'signup-keys': 'keyboard keys enter tab next field fast typing data entry',
+  'customer-toast': 'save saving saved toast notification message',
+  script: 'script tag html no build plain web page cdn embed call back callback',
+  'template-contact-us': 'contact us enquiry inquiry message email phone mobile form website',
+  'template-newsletter': 'newsletter subscribe subscription mailing list email marketing',
+  'template-customer-feedback': 'feedback review rating stars satisfaction nps recommend survey',
+  'template-event-registration': 'event registration register tickets conference attendee sessions sign up',
+  'template-job-application': 'job application apply career careers hiring recruitment cv resume candidate',
+  'template-support-request': 'support help ticket issue bug problem helpdesk screenshot urgent',
+  'template-appointment-booking': 'appointment booking book reservation schedule time slot service reminder',
+  'template-patient-intake': 'patient intake clinic medical health history allergies consent signature doctor hospital',
+  'template-course-evaluation': 'course evaluation training class feedback rating grid teacher school',
+  'template-quote-request': 'quote quotation estimate request enquiry services budget brief proposal',
+  'template-property-enquiry': 'property real estate home house flat apartment rent buy viewing enquiry agent',
+  'template-invoice': 'invoice bill billing customer payment pay paid confirm lines tax totals',
+  'template-purchase-order': 'purchase order po buy buying vendor supplier procurement receive received confirm',
+  'template-expense-claim': 'expense expenses claim reimbursement receipts travel approve approval',
+  'template-leave-request': 'leave time off holiday holidays vacation absence sick days off request approve',
+  'template-customer': 'customer client account contact company person address',
+  'template-product': 'product item catalogue catalog price cost margin stock inventory service',
+  'template-employee-onboarding': 'employee onboarding new hire staff hr equipment first day manager pay',
+  'template-task': 'task to do todo project stage priority checklist deadline assign',
+  'real-sale-order': 'sales order quotation quote erp lines products delivery invoicing confirm email customer',
+  'real-sale-invoice-wizard': 'invoice bill down payment deposit advance order invoicing percentage',
+  'real-product': 'product item catalogue price cost stock inventory purchase vendor variants warehouse',
+  'real-sale-contract': 'contract agreement sla milestones renew terminate customer',
+  'real-invoice': 'invoice bill credit note journal entry accounting payment tax customer vendor',
+  'real-register-payment': 'payment pay paid register bank cash cheque check postdated currency',
+  'real-expense': 'expense expenses report claim reimbursement vat receipts approve employee',
+  'real-contact': 'contact customer supplier vendor client company person address phone mobile number telephone tax bank credit limit',
+  'real-opportunity': 'opportunity lead deal pipeline crm sales won lost probability revenue',
+  'real-tender': 'tender bid bidding government procurement lots compliance competitors',
+  'real-clinic-appointment': 'clinic appointment booking patient doctor aesthetic session check in deposit no show',
+  'real-time-off': 'time off leave holiday vacation absence sick approve approval hr',
+  'real-employee': 'employee staff hr personnel record file manager department org chart skills resume',
+  'real-maintenance-request': 'maintenance repair request equipment breakdown preventive service technician',
+  'real-task': 'task project timesheet hours sub tasks approval stage',
+  'real-transfer': 'warehouse receipt goods received receiving stock inventory transfer delivery backorder',
+  'real-manufacturing-order': 'manufacturing production make build bill of materials bom components work order factory',
+  'real-legal-case': 'legal case law firm lawyer court hearing matter dispute trust billing',
+  'real-survey': 'survey settings questions questionnaire exam quiz certification scoring',
+};
+/** A demo's own search words, as the gallery reads them. */
+export const wordsOf = (id) => SEARCH_WORDS[id] ?? '';
+
 /** The flagships, first in the gallery and in the menu. */
 export const FEATURED = ['customer', 'order', 'customers', 'fields'];
 
@@ -70,9 +171,9 @@ export const DEMOS = [
     name: 'Customer record',
     category: 'records',
     query: 'page=customer&skin=underline',
-    blurb: 'A business record on a sheet: a statusbar, stat buttons, badges and an alert, tabs, a table of contacts, links to other records, and the conversation beside it.',
+    blurb: 'A customer on one page: where they stand — draft, active or blocked — their sales and invoices counted at the top, a key-account badge and a warning, tabs, their contacts in a table, links to other records, and the conversation with your team beside it.',
     howTo: [
-      'Press Block and answer OK: the customer is blocked and saved, and the Blocked ribbon appears on the sheet. Activate brings them back.',
+      'Press Block and answer OK: the customer is blocked and saved, and a Blocked banner crosses their page. Activate brings them back.',
       'Press Ctrl+Enter (⌘+Enter on a Mac) to save from wherever the cursor is.',
       'Open the Contacts tab and add a contact in the table.',
       'Type in Country and pick one from the list: a link to another record.',
@@ -84,7 +185,7 @@ export const DEMOS = [
     name: 'Sales order',
     category: 'records',
     query: 'page=order&skin=underline',
-    blurb: 'Header groups, then a grid of lines that works like a spreadsheet: keys that move cell to cell, sections and notes, lines moved by hand, and totals that follow.',
+    blurb: 'A sales order: the customer and its terms, then its lines like a spreadsheet — keys that move from cell to cell, sections and notes between lines, lines dragged into order — and totals that follow every change.',
     howTo: [
       'Click a Quantity cell and type: the subtotal and the totals under the grid follow as you type.',
       'Press Enter to go down, Tab to go across; Tab past the last cell adds a line.',
@@ -98,7 +199,7 @@ export const DEMOS = [
     name: 'Customer list',
     category: 'lists',
     query: 'page=customers&skin=underline',
-    blurb: 'A list of records with the search bar: suggestions as you type, filters, group by and favourites; headers that sort, pages, buttons for the records chosen, and rows that open.',
+    blurb: 'Your customers in a list: a search that suggests as you type, filters, grouping and saved searches; columns that sort, pages to turn, actions for the customers ticked, and a click to open one.',
     howTo: [
       'Type "egy" in the search box and pick "Search Country for: egy" with the arrow keys and Enter.',
       'Open the menu at the end of the box: turn on Active, then group by Country and Status, and open the groups.',
@@ -113,7 +214,7 @@ export const DEMOS = [
     name: 'Invoices that add up',
     category: 'lists',
     query: 'page=invoices&skin=underline',
-    blurb: 'A list that adds up and filters by time: a total under it, sums on each Group By heading and for the rows ticked, each amount totalled in its own currency; filters of a period — this month, overdue — right every day; invoices grouped by their month, quarter or week; and every match printed, grouped and totalled.',
+    blurb: 'Invoices that add up: a total under the list, a sum on each group and for the invoices ticked, each currency added up on its own; this month, overdue and other periods counted from today; invoices grouped by month, quarter or week; and every one that matches printed, grouped and totalled.',
     howTo: [
       'The list opens on This year: the total of this year’s invoices is under the Amount column.',
       'Tick three invoices: a row over the total says “3 selected” and adds up those three.',
@@ -219,7 +320,7 @@ export const DEMOS = [
     // Its code is the app's own: the list mounted in its page, a row's bug opened in the popup. It follows the reader's scheme.
     code: 'backlog',
     schemes: true,
-    blurb: 'A backlog of bugs and one opened in a large popup over it, as a work tracker draws it: its kind’s strip and badge, a quiet head with State, Reason, Area and Iteration, three columns of groups, a discussion, links, and its history.',
+    blurb: 'A team’s list of bugs, and one opened in a large window over it, as a work tracker shows it: its type’s colour, a quiet top with its state, reason, area and sprint, three columns of details, a discussion, links, and its history.',
     howTo: [
       'Click a bug in the backlog: it opens in a large popup over the list.',
       'Open Area and Iteration: Suggestions first, then the tree with each sprint’s dates.',
@@ -233,7 +334,7 @@ export const DEMOS = [
     name: 'Work item, quiet',
     category: 'records',
     query: 'page=work-item&skin=quiet',
-    blurb: 'A bug in the quiet look, as Azure DevOps draws a work item: each value plain words until pointed at, then a light box, then its editor once clicked; a field locked by the workflow says why. Switch to Underline or Outlined above the form to see the same bug in boxes.',
+    blurb: 'A bug in the quiet look, as Azure DevOps shows a work item: each value plain words until you point at it, then a light box, then its editor once clicked; a field the workflow locks says why. Switch to Underline or Outlined above the form to see the same bug in boxes.',
     howTo: [
       'Point at Area: a light box and its chevron appear, and nothing moves. Click it: its options open.',
       'Click State and pick Active from its dots: Reason, locked while the bug was resolved, opens to change.',
@@ -247,7 +348,7 @@ export const DEMOS = [
     name: 'Every field',
     category: 'fields',
     query: 'page=fields&skin=outlined',
-    blurb: 'One record using every widget Fieldia has: text, numbers and money, choices, dates, links to other records, lines, files and images, rich text and structured data, in sections that fold.',
+    blurb: 'One record with every kind of field: text, numbers and money, choices, dates, links to other records, lines, files and pictures, formatted text and structured data, in sections that fold.',
     howTo: [
       'Fold a section by its title, and open it again.',
       'Type a number into Budget: it is grouped as you type, and its currency can be picked beside it.',
@@ -280,7 +381,7 @@ export const DEMOS = [
     name: 'Office move',
     category: 'fields',
     query: 'page=kinds&skin=outlined',
-    blurb: 'The newer kinds of question in one survey: sliders, a tag box, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points, and a signature — and a moving day with a day that keeps its limits, a time, a weight in kilograms, hearts and an NPS scale.',
+    blurb: 'Newer kinds of question in one survey: sliders, tags, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points and a signature — and a moving day that keeps its limits, a time, a weight in kilograms, hearts and a 0 to 10 “would you recommend us” scale.',
     howTo: [
       'Drag a slider, or move it with the arrow keys: its value shows beside it.',
       'On Moving day, pick a Friday, or a day three months away: each is refused, saying why.',
@@ -292,10 +393,10 @@ export const DEMOS = [
   },
   {
     id: 'business',
-    name: 'Business widgets',
+    name: 'Business fields',
     category: 'fields',
     query: 'page=business&skin=underline',
-    blurb: 'The widgets an ERP’s screens lean on, on one fit-out task: priority stars and a state’s dot on the title’s line, a live timer, hours as HH:MM, a range of dates, tag colours, values to copy, a PDF shown inline, an analytic distribution, tax totals, payments, and properties the task’s project defines.',
+    blurb: 'The fields business screens lean on, on one fit-out task: priority stars and a status dot by the title, a running timer, hours as HH:MM, a range of dates, coloured tags, values to copy, a PDF shown in the page, costs split across accounts, tax totals, payments, and the extra details each project adds.',
     howTo: [
       'Click the third star by the title: the priority goes up; click it again and it goes back to none.',
       'Open the dot after the title and pick Blocked: it turns red.',
@@ -312,7 +413,7 @@ export const DEMOS = [
     // VS Code's editor is in the plain demo alone: the code page is shown there.
     app: 'plain',
     query: 'page=code&skin=outlined',
-    blurb: 'Code fields coloured in their own language, in either editor Fieldia supports: CodeMirror, light and quick, or VS Code’s own editor. The Editor switch at the top shows every field in one or the other, or each where it fits. Each language’s grammar loads only when a field shows it.',
+    blurb: 'Code fields coloured in their own language, in either of two editors: CodeMirror, light and quick, or VS Code’s own. The Editor switch at the top shows every field in one or the other, or each where it fits; each language loads only when a field shows it.',
     howTo: [
       'Press VS Code at the top: every field is drawn in VS Code’s editor. Press CodeMirror: the same fields in CodeMirror, to compare.',
       'Type in the cleanup script: Python’s keywords take their colour as you type.',
@@ -326,7 +427,7 @@ export const DEMOS = [
     name: 'Workshop sign-up',
     category: 'forms',
     query: 'page=signup&skin=outlined',
-    blurb: 'A form in sections, with questions that show only when they apply, checks as you type, your browser’s autofill, a check for bots, and a response sent when it is done.',
+    blurb: 'A sign-up in sections: questions that appear only when they apply, checks as you type, a phone number from any country, your browser filling in what it knows, a check for bots, and the response sent when it is done.',
     howTo: [
       'Choose "Something else" as your role: a question appears to say what it is.',
       'Choose Manager: a question about your team appears instead.',
@@ -355,7 +456,7 @@ export const DEMOS = [
     name: 'Product survey',
     category: 'forms',
     query: 'page=survey&skin=outlined',
-    blurb: 'A wizard that skips the steps that do not apply: one path for people who use the product, another for those who do not, a list of steps to click, and a step that can be skipped.',
+    blurb: 'A survey in steps that skips what does not apply: one path for people who use the product, another for those who do not, steps to click back to, and a step that can be skipped.',
     howTo: [
       'Answer that you use the product: "Your experience" comes next; answer that you do not, and "Why not" comes instead.',
       'Click a step in the list to go back to it.',
@@ -380,7 +481,7 @@ export const DEMOS = [
     name: 'Totals and answer rules',
     category: 'forms',
     query: 'page=rules&skin=outlined',
-    blurb: 'An order whose subtotals, total and amount to pay work themselves out as you type, a discount that sets itself past a threshold, and answer rules: one that only warns, and ones that stop the form.',
+    blurb: 'An order whose subtotals, total and amount to pay work themselves out as you type, a discount that sets itself past a threshold, and checks on the answers: one that only warns, and ones that stop the form.',
     howTo: [
       'Change a quantity or a price: the line’s subtotal, the total and the amount to pay follow.',
       'Add a line that takes the total past EGP 1,000: the discount sets itself to 10%. Change it if you like: it stays as you set it.',
@@ -393,7 +494,7 @@ export const DEMOS = [
     name: 'Delivery address',
     category: 'forms',
     query: 'page=lists&skin=outlined',
-    blurb: 'Choices that come from the app’s own lists, as a server keeps them: the countries delivered to, and each one’s cities, loaded again when the country changes.',
+    blurb: 'Choices from your own lists: the countries you deliver to and each one’s cities, asked for again when the country changes.',
     howTo: [
       'Watch the countries load as the form opens: the app answers after a moment, as a server does.',
       'Pick Egypt: its cities load. Pick Alexandria.',
@@ -430,7 +531,7 @@ export const DEMOS = [
     name: 'An area on a map',
     category: 'fields',
     query: 'page=map-zone&skin=outlined',
-    blurb: 'A delivery zone drawn as a polygon, a box or a circle, or chosen from named ones, kept as GeoJSON. Its points, corners and edge drag to change it.',
+    blurb: 'A delivery zone drawn on a map — a shape of your own, a box or a circle — or picked from named ones. Drag its corners and edges to change it.',
     howTo: [
       'Press Polygon and click points on the map; click the first point again, double-click, or press Enter to close it.',
       'Press Box and drag across the map, or Circle and drag out from its centre.',
@@ -494,7 +595,7 @@ export const DEMOS = [
     name: 'Couriers on a map',
     category: 'lists',
     query: 'page=map-couriers&skin=outlined',
-    blurb: 'Couriers as icons: a car, a scooter or a bike by each record, facing the way it goes, green when free and amber when delivering. The page says it all, with no code for the pins.',
+    blurb: 'Couriers on a map: a car, a scooter or a bike for each, facing the way it goes, green when free and amber when delivering — all set by the page itself.',
     howTo: [
       'Tab to the map, then on through the couriers: each is read out by name. Enter opens their card; Escape closes it.',
       'Ctrl-click (⌘-click) a courier: they are chosen, a tick on their icon.',
@@ -507,7 +608,7 @@ export const DEMOS = [
     name: 'An order on its way',
     category: 'records',
     query: 'page=map-order&skin=outlined&readonly=1',
-    blurb: 'A map on an order’s page, its layers named by the page: the kitchen, your door, and the courier with the minutes left under their photo, gliding along the road as their place comes in, the road behind them fading.',
+    blurb: 'A map on an order’s page: the kitchen, your door, and the courier with the minutes left under their photo, gliding along the road as their place comes in, the road behind them fading.',
     howTo: [
       'Watch the courier: a new place every two seconds, the pin gliding along the road, Arrives in counting down.',
       'Drag the map away: it stops following the courier, and Follow brings it back.',
@@ -520,7 +621,7 @@ export const DEMOS = [
     name: 'A delivery round',
     category: 'records',
     query: 'page=map-round&skin=outlined',
-    blurb: 'A map with a place for each line of the record: a van’s stops, numbered on the map in their order and greyed once delivered, and the way from the van through them.',
+    blurb: 'A van’s delivery round on a map: its stops numbered in their order and greyed once delivered, and the way from the van through them.',
     howTo: [
       'Tick Delivered on the third stop in the table: its number greys on the map.',
       'Delete the fourth stop from the table: it leaves the map, and the way is found again without it.',
@@ -559,7 +660,7 @@ export const DEMOS = [
     name: 'A clinic’s appointments',
     category: 'lists',
     query: 'page=clinic-calendar&skin=outlined',
-    blurb: 'A clinic’s day on a calendar, a column for each doctor, each visit coloured by its service. Drag a visit to another time or doctor, stretch it by its lower edge, or press an empty slot for a new one; Undo puts a move back. The week, the month and an agenda are a press away, and the list’s own search and filters keep to the calendar.',
+    blurb: 'A clinic’s day on a calendar, a column for each doctor, each visit coloured by its service. Drag a visit to another time or doctor, stretch it by its lower edge, or press an empty time for a new one; Undo puts a move back. The week, the month and an agenda are a press away, and the search and filters work on the calendar too.',
     howTo: [
       'Drag a visit to another doctor’s column, or to later in the day: it is saved at once, and Undo puts it back.',
       'Drag a visit’s lower edge down: it takes longer.',
@@ -599,11 +700,12 @@ export const DEMOS = [
     category: 'fields',
     query: 'page=test-drive&skin=outlined&record=new',
     code: 'slots',
-    blurb: 'A showroom in Berlin takes test drives: pick a car, then a day on the month — shaded by how it is booked, full days hatched, closed days faint, a staff day marked — and one of its free times. Every time is on Berlin’s clock, named beside it, wherever you book from; a time someone booked meanwhile is said, never booked over.',
+    blurb: 'A showroom in Berlin takes test drives: pick a car, then a day on the month — shaded by how it is booked, full days hatched, closed days faint, a staff day marked — and one of its free times. Every time is on Berlin’s clock, named beside it, wherever you book from; a time someone else books meanwhile is said, never booked twice.',
     howTo: [
       'Pick a car, then a day: its free times show beside the month. Another car has times of its own.',
       'Without a mouse: Tab to the month, move with the arrows (Page Up and Page Down by month), and its times follow; Enter goes to them, the arrows move among them, Enter books one.',
       'The next Wednesday is fully booked for the hatchback: hatched, with no times.',
+      'Press Someone else books 10:00 over the form: on another screen, Tom books that time first. Now press 10:00 yourself: the page says it was just booked, and books nothing.',
       'Type a time in Call back at: it is on Berlin’s clock, CEST or CET beside it. Try 25/10/2026 02:30: it comes twice that night, and the box asks which.',
       'Open the Code drawer: the demo’s schedule, and the slots() your server gives.',
     ],
@@ -625,7 +727,7 @@ export const DEMOS = [
     name: 'A kitchen’s map',
     category: 'records',
     query: 'page=map-kitchen&skin=outlined',
-    blurb: 'A kitchen’s evening on one map: the districts shaded by their delivery fee, the area within fifteen minutes’ drive, and the courier on the way. As the courier reaches the drop-off zone, the page’s own steps run: a fence.',
+    blurb: 'A kitchen’s evening on one map: the districts shaded by their delivery fee, the area within fifteen minutes’ drive, and the courier on the way. As the courier reaches the drop-off zone, the page notices by itself and ticks it.',
     howTo: [
       'Click Mohandessin on the map: Tonight’s offer goes to Mohandessin, and its border is drawn strong.',
       'Watch the courier ride to Zamalek: as they cross into the drop-off zone, the page says so and In the drop-off zone is ticked.',
@@ -638,9 +740,9 @@ export const DEMOS = [
     name: 'Your own parts',
     category: 'fields',
     query: 'page=custom&skin=outlined',
-    blurb: 'A conference badge: the name goes into a field your app draws itself, which shows the badge as it will be printed, and the printing desk under it is a panel your app fills, with a count of its own. In each framework, each is written as one of that framework’s own components.',
+    blurb: 'A conference badge: the name goes into a field your app draws itself, which shows the badge as it will be printed, and the printing desk under it is a panel your app fills, with a count of its own. In React, Vue and Angular, each is that framework’s own component.',
     howTo: [
-      'Type a name: the app’s own widget shows the badge as it will be printed, as you type.',
+      'Type a name: the app’s own field shows the badge as it will be printed, as you type.',
       'Press Print the badge in the desk below: its count is the desk’s own, and it keeps it as the form changes; its words follow the name.',
       'Clear the name and press Submit: the app’s own field is checked like any other, and says what it needs.',
       'Switch framework at the top: the same parts are written as React, Vue and Angular components.',
@@ -653,7 +755,7 @@ export const DEMOS = [
     // Its parts fail on purpose, and the console is told so: what it shows, not a fault (e2e/demos-shell.spec.ts).
     failsOnPurpose: true,
     query: 'page=contained&skin=outlined',
-    blurb: 'Your own parts can have bugs. Here the app’s price tag fails for four-digit prices, and its delivery planner fails as it loads. Each shows a small box that names it, the error goes to the console and to onError, and the rest of the form works and saves.',
+    blurb: 'Your own parts can have bugs. Here the app’s price tag fails for four-digit prices, and its delivery planner fails as it loads. Each shows a small box that names it, your app is told, and the rest of the form works and saves.',
     howTo: [
       'Look under Quote: the delivery planner failed as it loaded, and a box says so in its place.',
       'Type 1200 in Price: the price tag fails, and a box naming Price takes its place.',
@@ -667,7 +769,7 @@ export const DEMOS = [
     name: 'Order by phone, in steps',
     category: 'behaviour',
     query: 'page=quick-order&skin=outlined',
-    blurb: 'What the buttons and moments of a page do, written as steps: a new customer made in a side panel and set on the order, the stock checked by the app as a product is picked, a customer’s record opened in the order’s place, a question before the order is sent, and words after.',
+    blurb: 'An order taken by phone, its buttons doing the work: a new customer made in a side panel and set on the order, the stock checked as a product is picked, the customer’s page opened in the order’s place, a question before the order is sent, and a word after.',
     howTo: [
       'Type a name under “Who is calling” and press New customer: a side panel opens with the name in it. Save it: the customer is set on the order, and “Customer added” shows at the foot of the screen.',
       'Pick a product: the app checks the stock, says how many are left, and gives the price; the total follows the quantity.',
@@ -703,7 +805,7 @@ export const DEMOS = [
     query: 'role=viewer',
     code: 'save-safety',
     schemes: true,
-    blurb: 'The same lead opened by Omar, a viewer: its source says he may only read it, so there is no Save and no Archive, Duplicate or Delete — hidden, not greyed out — the commission is not shown at all, and the record says why.',
+    blurb: 'The same lead opened by Omar, a viewer: the app says he may only read it, so there is no Save and no Archive, Duplicate or Delete — hidden, not greyed out — the commission is not shown at all, and the record says why.',
     howTo: [
       'Read the line over the lead: why Omar may only read it, from the data source.',
       'Click a field: nothing can be typed. Ctrl+Enter saves nothing.',
@@ -728,12 +830,12 @@ export const DEMOS = [
     name: 'A dense record that reads at a glance',
     category: 'records',
     query: 'page=reading&skin=underline&editSwitch=1',
-    blurb: 'A dense invoice as an ERP draws it: read-only values as words, stat buttons with money, hours and two values, a customer with the address under it, coloured tags, parts on one line, alerts holding a date, keys on buttons and ribbons by condition.',
+    blurb: 'A busy invoice that still reads at a glance: values as plain words, counters at the top with money, hours and two figures, the customer with the address under it, coloured tags, several details on one line, warnings that hold a date, keyboard keys on its buttons, and banners such as Paid when they apply.',
     howTo: [
       'Hold Alt: each header button shows its key. Alt+Shift+G sets the invoice back to Draft, Alt+V confirms it.',
       'Read the alerts: the lock date and the customer sit inside their words, and the duplicate alert has a button inside.',
       'Press Done: the parts for editing only — Add Credit Note, the note under the tags — go, and every field reads as words.',
-      'Click Draft on the statusbar: the time spent in each step shows on it, and Confirm takes the place of Send & Print.',
+      'Click Draft on the stages along the top: the time spent in each step shows on it, and Confirm takes the place of Send & Print.',
       'Open the Trust tab: an alert sits among its fields, with the amount inside its sentence.',
     ],
   },
@@ -742,12 +844,12 @@ export const DEMOS = [
     name: 'Around a record',
     category: 'records',
     query: 'page=vendor-bill&record=3&skin=underline',
-    blurb: 'A vendor bill with what sits around it: the breadcrumbs and the pager over the bills the app gives, a gear menu with Print, Debit Note, Archive, Duplicate and Delete, the vendor’s PDF beside the sheet, and the conversation beside it on any screen it fits.',
+    blurb: 'A vendor bill with what sits around it: the way back to the list and arrows to step through the bills, a menu with Print, Debit Note, Archive, Duplicate and Delete, the vendor’s PDF beside it, and the conversation with your team beside that on any screen it fits.',
     howTo: [
-      'Press the pager’s › (or Alt+N): the next bill comes, “4 / 4” after it, and round to the first; the PDF beside it follows.',
+      'Press › beside “3 / 4” at the top (or Alt+N): the next bill comes, “4 / 4” after it, and round to the first; the PDF beside it follows.',
       'Open the gear menu with the arrow keys: Print, then Debit Note, Archive, Duplicate and Delete. Press Debit Note: the note is said and posted in the conversation.',
-      'Press Duplicate: the copy shows as “… (copy)”, a draft, and the pager counts five.',
-      'On BILL/2026/10/0002, press Archive and say yes: the Archived ribbon shows and the menu offers Unarchive.',
+      'Press Duplicate: the copy shows as “… (copy)”, a draft, and the count beside the arrows is five.',
+      'On BILL/2026/10/0002, press Archive and say yes: an Archived banner crosses it and the menu offers Unarchive.',
       'Make the window narrow: the PDF goes under the sheet, the conversation stays beside it until a phone’s width.',
     ],
   },
@@ -768,9 +870,9 @@ export const DEMOS = [
     name: 'Customer record in Arabic',
     category: 'behaviour',
     query: 'page=customer&skin=underline&locale=ar&dir=rtl',
-    blurb: 'The record sheet laid out right to left, with Fieldia’s own words, messages and dates in Arabic.',
+    blurb: 'The customer’s page laid out right to left, with Fieldia’s own words, messages and dates in Arabic.',
     howTo: [
-      'Notice the sheet mirrored: the title, the statusbar and the tabs start on the right.',
+      'Notice the page mirrored: the title, the stages and the tabs start on the right.',
       'Empty a required field and save: the message comes in Arabic.',
     ],
   },
@@ -779,7 +881,7 @@ export const DEMOS = [
     name: 'Your app’s own translations',
     category: 'behaviour',
     query: 'page=signup&skin=outlined&translate=fr',
-    blurb: 'The sign-up in French through a catalog the app keeps itself: every word of the page goes through it, and nothing typed does.',
+    blurb: 'The sign-up in French through your app’s own list of translations: every word of the page goes through it, and nothing typed does.',
     howTo: [
       'Read the page: its title, sections and questions come from the app’s French catalog.',
       'Type in a field: what you type is left as it is.',
@@ -811,7 +913,7 @@ export const DEMOS = [
     category: 'script',
     app: 'script',
     query: '',
-    blurb: 'Fieldia with no build step: one script tag, a page as JSON and one call to Fieldia.mountViewer, on a call-back form.',
+    blurb: 'A call-back form on a plain web page, nothing to install: one line brings Fieldia in, the form is written as data, and one more line shows it.',
     howTo: [
       'Fill in the form and send it.',
       'Read the page’s source: one script tag, a page as JSON, and one call.',
@@ -822,6 +924,30 @@ export const DEMOS = [
   // A working ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
   ...REAL_DEMOS,
 ];
+
+/** Where the code of the demos that are not one page of JSON lives in the repository: an app of its own, or a page made in code. */
+const SOURCES = {
+  backlog: 'demos/backlog/main.ts',
+  'map-embed': 'demos/map-embed/main.ts',
+  'two-tabs': 'demos/save-safety/main.ts',
+  'viewer-role': 'demos/save-safety/main.ts',
+  script: 'demos/script/index.html',
+  code: 'demos/shared/code-page.ts',
+  custom: 'demos/shared/custom-page.ts',
+  contained: 'demos/shared/contained.ts',
+};
+/** The repository on GitHub, at its main line. */
+export const GITHUB = 'https://github.com/fieldia-dev/fieldia';
+
+/**
+ * The file a demo is written in, in the repository: its page's JSON (examples/pages, or examples/templates for a
+ * template), or the code of an app of its own. A browser test holds each to a file that is there.
+ */
+export function sourceOf(demo) {
+  if (SOURCES[demo.id]) return SOURCES[demo.id];
+  const page = new URLSearchParams(demo.query ?? '').get('page') ?? 'signup';
+  return page.startsWith('template-') ? `examples/templates/${page.slice('template-'.length)}.page.json` : `examples/pages/${page}.page.json`;
+}
 
 /** A demo's address, from a demo page or from the site's /demos/: its framework's folder and its query. */
 export function demoHref(demo, framework = 'plain') {

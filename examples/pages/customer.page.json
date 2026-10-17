@@ -69,7 +69,11 @@
         "type": "button",
         "id": "activate",
         "label": "Activate",
-        "steps": [{ "do": "set", "field": "state", "value": "'active'" }, { "do": "save" }],
+        "steps": [
+          { "do": "set", "field": "state", "value": "'active'" },
+          { "do": "save" },
+          { "do": "say", "message": "Customer active again: new orders are taken.", "tone": "success" }
+        ],
         "action": "activate",
         "style": "primary",
         "invisible": "state == 'active'"

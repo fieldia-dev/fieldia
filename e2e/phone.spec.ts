@@ -139,6 +139,29 @@ test.describe('a contact’s phone numbers', () => {
   });
 });
 
+/**
+ * Wherever a demo asks for a phone, the country phone field: the sign-up for a day in Cairo reads a number in Egypt,
+ * the Berlin showroom's test drive in Germany, and the contact-us template, for any business, in no country until one
+ * is picked or the number comes with its +.
+ */
+for (const [what, query, home, typed, kept] of [
+  ['the sign-up', 'page=signup&skin=outlined', '+20', '0100 123 4567', '+201001234567'],
+  ['the test drive', 'page=test-drive&skin=outlined&record=new', '+49', '030 1234567', '+49301234567'],
+  ['contact us', 'page=template-contact-us&theme=apple', 'Country', '+44 20 7946 0958', '+442079460958'],
+] as const) {
+  test(`${what} asks for its phone in the country phone field: ${home}, the number kept as one`, async ({ page }) => {
+    await page.setViewportSize(WIDE);
+    ({ problems } = await open(page, 'plain', query));
+    await expect(country(page, 'f-phone')).toBeVisible();
+    await expect(country(page, 'f-phone')).toContainText(home);
+    await box(page, 'f-phone').pressSequentially(typed);
+    await box(page, 'f-phone').press('Tab');
+    await expect.poll(() => value(page, 'phone')).toBe(kept);
+    await node(page, 'f-phone').scrollIntoViewIfNeeded();
+    await screen(page, `phone-field-${what.replace(/\W+/g, '-')}`, { viewport: true });
+  });
+}
+
 test('in Arabic, right to left: the countries by their Arabic names, the number left to right at the start of its box', async ({ page }) => {
   await page.setViewportSize(WIDE);
   ({ problems } = await open(page, 'plain', 'page=real-contact&record=7001&skin=underline&locale=ar&dir=rtl'));

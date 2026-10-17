@@ -28,6 +28,8 @@ export const bar = {
   checks: 'Checks',
   mustFix: 'Must fix',
   shouldFix: 'Should fix',
+  /** A check that says where a page just begun starts — an empty survey's first question — not a fault. */
+  startHere: 'Start here',
   checksDialog: 'Checks before publishing',
   toLookAt: (n: number) => `${n} to look at before publishing`,
   allClear: 'All clear',

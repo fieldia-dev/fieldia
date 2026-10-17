@@ -32,6 +32,11 @@ export interface PageCheck {
   at: string | null;
   /** `must`: it would stop people, or hide what was meant to show. `should`: it only reads wrong. */
   severity: 'must' | 'should';
+  /**
+   * What a page just begun still lacks — a survey with no question yet — said as where to start, not as a fault: it
+   * still holds back Publish (`must`), but the Checks button is not red for it, nor is its row.
+   */
+  start?: true;
   text: string;
   fix?: { label: string; action: CheckFix };
 }
@@ -94,7 +99,7 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
   found.push(...formChecks(page, options.forms ?? null, words));
   const survey = page.data.kind === 'responses';
   const placed = placedFields(page);
-  if (survey && placed.length === 0) found.push({ at: null, severity: 'must', text: w.noQuestions });
+  if (survey && placed.length === 0) found.push({ at: null, severity: 'must', text: w.noQuestions, start: true });
 
   // What a question still lacks.
   for (const p of placed) {

@@ -56,3 +56,7 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 /* The listing's bar: the shell's own colours, so it follows the reader's scheme. */
 .demo-photos-bar { background: var(--dh-surface, #fff); border-color: var(--dh-line, #e3e6ea); color: var(--dh-ink, #1f2933); }
 .demo-photos-said { flex: 1 1 24em; color: var(--dh-muted, #5b6470); font-size: 13px; }
+/* The test drive's bar (shared/test-drive.ts): its button gone until there is a time shown to take — a button's own
+   display would beat [hidden]. */
+.demo-meanwhile-bar [hidden] { display: none; }
+.demo-meanwhile-said { flex: 1 1 24em; font-size: 13.5px; color: var(--dh-muted, #5b6470); }

@@ -16,6 +16,7 @@ import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
+import { meanwhileBar } from '../shared/test-drive';
 import type { PartFailure } from '@fieldia/widgets';
 
 const params = new URLSearchParams(location.search);
@@ -89,6 +90,8 @@ class PlannerComponent {
 /** "A part that fails": what onError is told, listed under the form (shared/contained.ts). */
 const failures = params.get('page') === 'contained' ? errorLog(document) : null;
 if (failures) document.getElementById('app')?.after(failures.element);
+// The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
+if (params.get('page') === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 
 const chatter = sampleChatter();
 

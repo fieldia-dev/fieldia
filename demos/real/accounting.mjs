@@ -6,7 +6,7 @@ export default [
     category: 'real',
     query: 'page=real-invoice&record=4101&skin=underline',
     blurb:
-      'One page that is an invoice, a bill, a credit note or a journal entry, by its type. Lines with sections and notes, taxes and totals the server works out, journal items, the payment dialog, alerts and the conversation; printed with the firm’s logo, or as the app’s own PDF.',
+      'One page that is an invoice, a bill, a credit note or a journal entry, by its type: lines with sections and notes, taxes and totals worked out as you go, the accounting entries, the payment window, warnings and the conversation with your team; printed with the firm’s logo, or as your app’s own PDF.',
     howTo: [
       'Add a line: pick a product and watch its price, taxes, the totals and the Journal Items tab follow.',
       'Press Confirm: the invoice gets its number, INV/2026/00042, and the Register Payment button.',
@@ -36,11 +36,11 @@ export default [
     category: 'real',
     query: 'page=real-expense&record=4101&skin=underline',
     blurb:
-      'An employee’s expenses of several items: a shared header that cascades to every line, prices that include their VAT, and its own approval — submit, approve, post a bill to reimburse, pay it.',
+      'An employee’s expenses of several items: details at the top that every line takes, prices that include their VAT, and its own approval — submit, approve, post a bill to pay them back, pay it.',
     howTo: [
       'Type a vendor in Vendor Name: every line takes it.',
       'Add a line with a price: its VAT is taken out of it, and the totals follow.',
-      'Press Submit, Approve, then Post: the status bar moves along and the Entries button appears.',
+      'Press Submit, Approve, then Post: the stages along the top move on and the Entries button appears.',
       'Register Payment pays the employee in a dialog; paid in full, the Paid ribbon shows.',
     ],
   },

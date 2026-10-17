@@ -4,6 +4,7 @@
   "title": "Workshop sign-up",
   "description": "One day on building forms that people finish. Cairo, 14 November.",
   "data": { "kind": "responses" },
+  "phone": { "country": "EG" },
   "fields": {
     "full_name": { "type": "char", "label": "Full name", "required": true, "size": 80 },
     "email": {
@@ -66,7 +67,7 @@
             "required": "role == 'other'"
           },
           { "type": "field", "id": "f-team", "field": "team_size", "invisible": "role != 'manager'" },
-          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel" }
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel", "colspan": 2 }
         ]
       },
       {

@@ -561,7 +561,7 @@ function pickingAction(request: ActionRequest): ActionResult | undefined {
     case 'action_confirm': {
       const lines = linesOf(values, 'move_ids_without_package');
       if (!lines.length) return { stop: 'Please add some items to move.' };
-      return { values: reserve(values), say: { message: `${name}: marked as to do.`, tone: 'success' } };
+      return { values: reserve(values), say: { message: `${name}: ready to receive.`, tone: 'success' } };
     }
     case 'action_assign':
       return { values: reserve(values) };

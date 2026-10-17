@@ -1220,6 +1220,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // with the statusbar's rules for paper — to 30.0 and 10.9); choice 10.59 and 4.31 and the new relations 19.58 and 7.34
 // as the size pass set them; the rest as Wave 3's above. A related list's rows' tones, bold and buttons handed to its
 // list: list 98.29 and 31.71, to 98.3 and 31.8.
+// 0.25: the phone's "Country", none picked yet, a quarter of the text's colour in its grey, to read on Apple's dark fill
+// (4.4:1 there), and its box keeping the page's autofill purpose ("mobile tel"): 34.83 and 15.25 (34.77, 15.21), its
+// raw to 34.9, 29 bytes over 34.8.
 const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.3, 31.8], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {

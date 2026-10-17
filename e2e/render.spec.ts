@@ -38,7 +38,8 @@ for (const skin of ['underline', 'outlined']) {
     test(`plain: every input keeps room to type in, ${skin} at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await open(page, 'plain', `page=signup&skin=${skin}`);
-      const narrow = await page.locator('.fd-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .fd-field select').evaluateAll((inputs) =>
+      // A phone's country list lies unseen over its flag and code (the picker's box is what shows): no box to type in.
+      const narrow = await page.locator('.fd-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .fd-field select:not(.fd-phone-select)').evaluateAll((inputs) =>
         inputs
           .filter((input) => (input as HTMLElement).offsetParent !== null)
           .map((input) => ({ name: input.closest('.fd-field')?.querySelector('.fd-label')?.textContent, width: Math.round(input.getBoundingClientRect().width) }))

@@ -229,11 +229,24 @@ test.describe('customer sheet', () => {
     await screen(page, `${variant}-customer-blocked`);
     expect((await demo<Record<string, unknown>>('dataSource.records.partner.1'))['state']).toBe('blocked');
 
-    // Activate brings them back, saved.
+    // Activate brings them back, saved: Block's words go — never "Customer blocked" over an active customer — and
+    // Activate says its own.
     await page.getByRole('button', { name: 'Activate' }).click();
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');
     await expect(page.locator('.fd-ribbon')).toBeHidden();
+    await expect(page.locator('.fd-say')).toHaveText(['Customer active again: new orders are taken.×']);
+    await screen(page, `${variant}-customer-activated`);
     await expect.poll(async () => (await demo<Record<string, unknown>>('dataSource.records.partner.1'))['state']).toBe('active');
+  });
+
+  test('Block, then Activate at once: only what Activate says stays, never “Customer blocked” over an active customer', async ({ page }) => {
+    await open(page, variant, 'page=customer&skin=underline');
+    await page.getByRole('button', { name: 'Block', exact: true }).click();
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(page.locator('.fd-say')).toHaveText(['Customer blocked: new orders will be refused.×']);
+    await page.getByRole('button', { name: 'Activate' }).click();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Active');
+    await expect(page.locator('.fd-say')).toHaveText(['Customer active again: new orders are taken.×']);
   });
 
   test('stat buttons hand their action to the app', async ({ page }) => {

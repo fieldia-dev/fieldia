@@ -6,7 +6,7 @@ export default [
     category: 'real',
     query: 'page=real-contact&record=7001&skin=underline',
     blurb:
-      "A contact, person or company, as sales, purchasing, invoicing and the sales pipeline all see it: Individual or Company reshapes the page, contacts and addresses as cards, Sales & Purchase, Invoicing with bank accounts and the credit limit, Egyptian tax numbers, warnings, smart buttons and the chatter.",
+      'A contact, person or company, as sales, purchasing, invoicing and the sales pipeline all see it: Individual or Company reshapes the page, contacts and addresses as cards, Sales & Purchase, Invoicing with bank accounts and the credit limit, tax numbers, warnings, counters of their orders and invoices, and the conversation with your team.',
     howTo: [
       'Pick Individual over the name: Job Position, Title and the address type appear, Industry goes, and the address block loses its heading.',
       'Open Contacts & Addresses: the people and addresses of Nile Crest are cards; add one with Add, or press ↗ on a card for its own form — pick Invoice Address there and the address takes the job’s place.',
