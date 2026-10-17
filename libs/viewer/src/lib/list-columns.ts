@@ -137,10 +137,10 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
   const ready = () => {
     if (!voice.isConnected) context.host().append(voice);
   };
-  /** "Phone moved to place 2 of 8": its place among `among`, as the person sees them. */
+  /** "Phone moved to place 2 of 8": its place among `among`, as the person sees them; its label as `naming` writes it. */
   const said = (name: string, among: string[]) => {
     const words = context.widgetLabels?.movedTo;
-    if (words) voice.textContent = fill(words, { label: label(name), n: among.indexOf(name) + 1, total: among.length });
+    if (words) voice.textContent = fill(words, { label: labelAt(words, 'label', page.lowerLabels, context.locale)(label(name)), n: among.indexOf(name) + 1, total: among.length });
   };
 
   // ---- the Columns menu: a box for each column the person may hide, Move up and Move down for every one, Reset ----

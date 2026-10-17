@@ -60,6 +60,8 @@ export const GRID_CSS = /* css */ `
   .fd-print-table .fd-line-section td { font-weight: 600; }
   .fd-print-table .fd-line-note td { font-style: italic; }
   .fd-print-table tfoot td { font-weight: 600; border-block-end: 0; }
+  /* A header's ghost, carried while its column is dragged, is the screen's alone. */
+  .ag-dnd-ghost { display: none !important; }
 }
 /* Lines as cards (cards: narrow on a phone, or always), in the grid's place. */
 .fd-grid-lines[data-cards] { container: fd-grid / inline-size; }

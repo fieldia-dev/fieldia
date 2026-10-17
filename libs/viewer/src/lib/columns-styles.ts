@@ -62,6 +62,15 @@ export const COLUMN_STYLES = `
 .fd-list-drop { position: absolute; z-index: 40; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--fd-accent); pointer-events: none; }
 .fd-list-drop[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .fd-list-table[data-sliding] :is(th, td) { transition: none; } }
+/* On paper: the table as it stands, its columns in the person's order — nothing held in view (the first column held
+   past the boxes left out before it would stand over the next), no menu, no drag's ghost or line, a lifted column's
+   cells as the others'. */
+@media print {
+  .fd-form .fd-list[data-shaped] .fd-list-scroll { max-height: none !important; }
+  .fd-form .fd-list[data-shaped] :is(.fd-list-table th, .fd-list-table td, .fd-list-totals) { position: static !important; box-shadow: none !important; transform: none !important; }
+  .fd-form .fd-list[data-shaped] .fd-list-table [data-lifted] { background: none !important; opacity: 1; }
+  .fd-form :is(.fd-list-columns-menu, .fd-list-ghost, .fd-list-drop, .fd-list-grip) { display: none !important; }
+}
 
 `;
 

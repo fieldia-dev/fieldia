@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from './fixtures';
@@ -366,6 +366,116 @@ test.describe('what is printed follows what is shown', () => {
     expect(problems).toEqual([]);
   });
 
+  /** Where an element is on the screen; it must be there. */
+  const boxOf = async (target: Locator) => {
+    const box = await target.boundingBox();
+    if (!box) throw new Error('not on screen');
+    return box;
+  };
+  /** A hand's drag along a header's row: pressed in the middle of `from`, moved in steps to `to`. Let go by the caller. */
+  async function carry(page: Page, from: Locator, to: number) {
+    const box = await boxOf(from);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to, box.y + box.height / 2, { steps: 24 });
+  }
+
+  test('a column dragged by its header prints in its new place, by Ctrl+P and by Print, the records named; never the Columns cell, a drag’s ghost or its line', async ({ page, browserName }) => {
+    const { problems } = await open(page, 'plain', `page=contacts&skin=underline&${NOW}`);
+    await expect(page.locator('.fd-list-table tbody tr.fd-list-row')).toHaveCount(10);
+    const header = (column: string) => page.locator(`.fd-list-table thead th[data-col="${column}"]`);
+    // Company carried before Name at a hand's speed and let go: the first column now, the one held in view.
+    await carry(page, header('company'), (await boxOf(header('name'))).x + 10);
+    await page.mouse.up();
+    const shown = ['Company', 'Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
+    await expect(heads(page)).toHaveText(shown);
+    if (browserName === 'chromium') {
+      // On Chromium's paper: the header in that order, every row's words clear of one another — the first column at
+      // the table's start, not held where the boxes left out stood — and no Columns button.
+      const sheets = await chromiumSheets(page, 'print-contacts-dragged');
+      const lines = sheets[0].lines;
+      // (A sheet's width is narrower than the screen's: a header of two words may take two lines.)
+      expect(lines.some((line) => /^Company\s+Name\s+Country\s+Status\s+Owner\b/.test(line.text.trim()))).toBe(true);
+      expect(lines.filter((line) => line.over)).toEqual([]);
+    }
+    // Ctrl+P: the rows as they stand, in the person's order, the column after the fields (its Columns cell) left out.
+    await printing(page);
+    await expect(heads(page)).toHaveText(shown);
+    await expect(page.getByRole('button', { name: 'Columns' })).toBeHidden();
+    await expect(page.locator('.fd-list-table .fd-list-tail:visible')).toHaveCount(0);
+    const table = await boxOf(page.locator('.fd-list-table'));
+    const first = await boxOf(header('company'));
+    expect(Math.abs(first.x - table.x)).toBeLessThanOrEqual(1);
+    expect(first.x + first.width).toBeLessThanOrEqual((await boxOf(header('name'))).x + 0.5);
+    await screen(page, 'print-contacts-dragged');
+    await printed(page);
+    // A drag under way as printing begins: its ghost and its line are the screen's, the lifted column's cells as the others'.
+    await carry(page, header('country_id'), (await boxOf(header('owner_id'))).x + 40);
+    await expect(page.locator('.fd-list-ghost')).toBeVisible();
+    await expect(page.locator('.fd-list-drop')).toBeVisible();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.fd-list-ghost')).toBeHidden();
+    await expect(page.locator('.fd-list-drop')).toBeHidden();
+    const lifted = page.locator('.fd-list-table tbody td[data-col="country_id"][data-lifted]').first();
+    await expect(lifted).toHaveCSS('opacity', '1');
+    await expect(lifted).toHaveCSS('transform', 'none');
+    await page.emulateMedia({ media: 'screen' });
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await expect(heads(page)).toHaveText(shown);
+    // Its Print: the printout's columns in the person's order, its records called what the page calls them.
+    await dialogOpen(page);
+    const print = page.getByRole('button', { name: 'Print' });
+    await print.click();
+    const sheet = page.locator('.fd-print-sheet');
+    await expect(sheet).toHaveCount(1);
+    await page.emulateMedia({ media: 'print' });
+    await expect(sheet.locator('thead th')).toHaveText(shown);
+    await expect(sheet.locator('.fd-print-about > div').last()).toHaveText('1,284 contacts');
+    await printed(page);
+    await expect(sheet).toHaveCount(0);
+    await expect(print).not.toHaveAttribute('aria-busy', 'true');
+    expect(problems).toEqual([]);
+  });
+
+  test('a grid’s column dragged by its header prints in its new place: the lines’ paper table in the order the screen shows', async ({ page, browserName }) => {
+    // WebKit says "ResizeObserver loop completed with undelivered notifications" as a grid is laid out for paper (0.25.0 too).
+    test.skip(browserName === 'webkit', 'WebKit reports a ResizeObserver loop as a grid is laid out for paper, as at 0.25.0');
+    const { problems } = await open(page, 'plain', `page=order&skin=underline&${NOW}`);
+    const grid = page.locator('[data-node="f-lines"]');
+    const cellHead = (column: string) => grid.locator(`.ag-header-cell[col-id="${column}"]`);
+    await expect(grid.locator('.ag-row[row-index="5"] .ag-cell[col-id="subtotal"]')).toHaveText('E£ 4,560.00');
+    /** The grid's own columns in the order a person sees them (AG Grid moves header cells on screen, not in the markup), and their headers' words. */
+    const seen = () =>
+      grid.locator('.ag-header-cell[col-id]:not([col-id^="__"])').evaluateAll((cells) =>
+        cells
+          .map((cell) => ({ id: cell.getAttribute('col-id') as string, words: cell.querySelector('.ag-header-cell-text')?.textContent?.trim() ?? '', x: cell.getBoundingClientRect().x }))
+          .sort((p, q) => p.x - q.x)
+          .map(({ id, words }) => ({ id, words }))
+      );
+    const before = await seen();
+    expect(before.findIndex((one) => one.id === 'price')).toBe(before.findIndex((one) => one.id === 'qty') + 1);
+    // Unit price carried before Quantity once the grid holds still, and let go.
+    let last = '';
+    await expect
+      .poll(async () => {
+        const now = JSON.stringify(await cellHead('price').boundingBox());
+        const still = now === last;
+        last = now;
+        return still;
+      })
+      .toBe(true);
+    await carry(page, cellHead('price'), (await boxOf(cellHead('qty'))).x + 10);
+    await page.mouse.up();
+    const swap = (one: { id: string }) => (one.id === 'qty' ? 'price' : one.id === 'price' ? 'qty' : one.id);
+    const moved = before.map((one) => before.find((other) => other.id === swap(one)) as { id: string; words: string });
+    await expect.poll(seen).toEqual(moved);
+    await printing(page);
+    await expect(grid.locator('.fd-print-table thead th')).toHaveText(moved.map((one) => one.words));
+    await printed(page);
+    expect(problems).toEqual([]);
+  });
+
   test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 } });
 
@@ -400,3 +510,52 @@ test.describe('what is printed follows what is shown', () => {
   });
 });
 
+test.describe('a work item’s head title and a tab’s count on paper', () => {
+  // Sheets as each engine prints them, read (print-support.ts): Chromium's page.pdf, Firefox's own print to a file.
+  test.skip(({ browserName }) => browserName === 'webkit', 'WebKit prints no PDF here');
+  test.setTimeout(120_000);
+
+  const TITLE = 'Checkout fails for customers paying by bank transfer when the order total holds several currencies and a discount code was applied before the shipping address changed';
+  const WORK_ITEM = `page=wi-head&${NOW}`;
+  const retitle = (page: Page) => page.locator('[data-node="#title"] textarea').fill(TITLE);
+  const sheetsOf = async (page: Page, browserName: string, playwright: Parameters<typeof firefoxSheets>[0], baseURL: string, query: string, name: string, before?: (page: Page) => Promise<unknown>) => {
+    if (browserName === 'firefox') return (await firefoxSheets(playwright, baseURL, [{ query, name: `firefox-${name}`, ...(before ? { before } : {}) }]))[0];
+    await before?.(page);
+    return chromiumSheets(page, name);
+  };
+
+  test('its title — a box of one line that wraps — prints as its words, wrapped whole over lines, nothing beside it', async ({ page, browserName, playwright, baseURL }) => {
+    const { problems } = await open(page, 'plain', WORK_ITEM);
+    await expect(page.locator('[data-node="#title"] textarea')).toBeVisible();
+    const sheets = await sheetsOf(page, browserName, playwright, baseURL!, WORK_ITEM, 'print-work-item-title', retitle);
+    const lines = sheets[0].lines;
+    // Under the printout's head (which names the record too): its number, then its words.
+    const first = lines.findIndex((line) => /^4127\s+Checkout fails/.test(line.text.trim()));
+    expect(first, 'the title after its number').toBeGreaterThanOrEqual(0);
+    let last = first;
+    while (last < lines.length - 1 && !squash(lines.slice(first, last + 1).map((line) => line.text).join(' ')).includes(squash(TITLE))) last++;
+    const words = lines.slice(first, last + 1).map((line) => line.text.trim());
+    expect(squash(words.join(' ')), 'every word of it, in order').toBe(squash(`4127 ${TITLE}`));
+    expect(words.length, 'over more than one line').toBeGreaterThan(1);
+    // Whole words at each line's end: none broken by a hyphen, and no Copy title beside it.
+    expect(words.join(' ').split(/\s+/)).toEqual(['4127', ...TITLE.split(' ')]);
+    expect(problems).toEqual([]);
+  });
+
+  test('a tab’s count of its related list is the screen’s: on paper the tab’s name alone heads what it holds', async ({ page, browserName, playwright, baseURL }) => {
+    const CUSTOMER = `page=customer-account&record=1&skin=underline&${NOW}`;
+    const { problems } = await open(page, 'plain', CUSTOMER);
+    const pill = page.locator('[data-node="tab-quotations"] .fd-tab-count');
+    await expect(pill).toHaveText(/^\d+$/);
+    // Its name over what it holds on each engine's paper, and no number beside it.
+    const lines = (await sheetsOf(page, browserName, playwright, baseURL!, CUSTOMER, 'print-tab-count')).flatMap((sheet) => sheet.lines.map((line) => line.text.trim()));
+    expect(lines).toContain('Quotations');
+    expect(lines.filter((line) => /^Quotations\s*\d/.test(line))).toEqual([]);
+    // The tab bar and its pill left out; the tab drawn under its name.
+    await printing(page);
+    await expect(pill).toBeHidden();
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="Quotations"]')).toBeVisible();
+    await printed(page);
+    expect(problems).toEqual([]);
+  });
+});

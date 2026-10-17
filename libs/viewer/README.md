@@ -503,9 +503,11 @@ held at the header's end, in sight however wide the table.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
 Export and Print write the columns shown, in their order; on paper a list is
-its table, cards and a gallery printed as rows. The cards and the columns come
-in parts of their own (`fieldia.cards.js`, `fieldia.columns.js`), only where a
-list asks. See [lists people shape](https://fieldia.dev/lists/#shape).
+its table in that order — its first column at the table's start, nothing held
+in view, no Columns cell — cards and a gallery printed as rows. The cards and
+the columns come in parts of their own (`fieldia.cards.js`,
+`fieldia.columns.js`), only where a list asks. See
+[lists people shape](https://fieldia.dev/lists/#shape).
 
 ## On paper
 
@@ -515,16 +517,17 @@ an engine that tells nothing as it prints gets them too):
 
 - every tab one after another under its name, every wizard step, every folded
   group open (but what a condition hides);
-- no buttons, bars, gear, pager, tabs' strip, help or locks; each box written
-  as the words a person reads in it — a choice by its label, a link by its
-  name, money with its currency, a date as the page writes it on its clock —
-  wrapping rather than cut; a choice of several, the one picked; a statusbar,
-  the stage the record is in;
+- no buttons, bars, gear, pager, tabs' strip (a tab's count with it), help or
+  locks; each box written as the words a person reads in it — a choice by its
+  label, a link by its name, money with its currency, a date as the page writes
+  it on its clock — wrapping rather than cut; a choice of several, the one
+  picked; a statusbar, the stage the record is in;
 - a table of lines whole (a grid's every line and column, in a plain table as
-  wide as the sheet), broken between its lines with its header again on each
-  sheet; no field, line or heading cut across two sheets, and no tab's name, a
-  group's title or a table's header left alone at a sheet's foot — each goes
-  to the next sheet with the start of what follows it;
+  wide as the sheet, its columns in the order the person sees them), broken
+  between its lines with its header again on each sheet; no field, line or
+  heading cut across two sheets, and no tab's name, a group's title or a table's
+  header left alone at a sheet's foot — each goes to the next sheet with the
+  start of what follows it;
 - groups and fields side by side as the page sets them at the sheet's width,
   a row of them never laid over the next, in Chromium and Firefox alike;
 - light colours whatever the screen's scheme, the theme's accent kept for the

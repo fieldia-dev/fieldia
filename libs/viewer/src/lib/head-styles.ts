@@ -309,9 +309,10 @@ button.fd-head-updated:hover { text-decoration: underline; }
   .fd-head-updated { align-self: flex-start; white-space: normal; text-align: start; }
   .fd-head-tabs { align-self: flex-start; }
 }
-/* On paper: the work item's head and band without their buttons, the body under them, the side panel left out. */
+/* On paper: the work item's head and band without their buttons (Copy title too: its title's words the line's whole
+   width), the body under them, the side panel left out. */
 @media print {
-  .fd-form .fd-head-actions { display: none !important; }
+  .fd-form :is(.fd-head-actions, .fd-head-copy) { display: none !important; }
   .fd-form .fd-head-layout { display: block !important; }
   .fd-form :is(.fd-head-band, .fd-head-body) { background: none !important; }
 }

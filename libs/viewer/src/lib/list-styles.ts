@@ -259,7 +259,8 @@ export const LIST_STYLES = `
 @media print {
   /* A related list's rows as shown, and how many of how many where they run past a page. */
   .fd-form .fd-list-shown:not([hidden]) { display: block; margin: 4px 0 0; font-size: 12px; color: var(--fd-muted); }
-  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon { display: none !important; }
+  /* Its tools, and the column after the fields — each row's buttons and the Columns menu's cell — with them. */
+  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon, .fd-form .fd-list-tail { display: none !important; }
   .fd-form .fd-list-scroll { overflow: visible !important; }
   .fd-form .fd-list-table { width: 100%; }
   .fd-form .fd-list-table :is(td, th) { white-space: normal; overflow-wrap: break-word; }

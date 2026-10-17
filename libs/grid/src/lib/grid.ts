@@ -1630,7 +1630,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (before.join() === now.join()) return;
     // Let go out of the grid, AG Grid tells of no move: the column stays where it was seen, so it is kept there.
     remember('uiColumnMoved');
-    if (before.indexOf(id) !== now.indexOf(id)) voice.textContent = fill(labels.movedTo, { label: def.fields[id]?.label ?? id, n: now.indexOf(id) + 1, total: now.length });
+    // Its label small inside the sentence where the page asks (`lowerLabels`), as every sentence naming a field.
+    if (before.indexOf(id) !== now.indexOf(id)) voice.textContent = fill(labels.movedTo, { label: labelAt(labels.movedTo, 'label', form.page.lowerLabels, locale)(def.fields[id]?.label ?? id), n: now.indexOf(id) + 1, total: now.length });
   });
   // A finger on a header: AG Grid's press waits until it has rested there a moment, and is handed on then.
   const handedOn = new WeakSet<Event>();
@@ -1802,7 +1803,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       return cell;
     };
     const parent = form.getState().values;
-    const shown = columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false);
+    // In the order the person sees them — a header dragged, or the order kept for them — as the screen shows them.
+    const seen = seenColumns();
+    const at = (column: string) => (seen.includes(column) ? seen.indexOf(column) : seen.length + columns.indexOf(column));
+    const shown = columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false).sort((a, b) => at(a) - at(b));
     const atEnd = (column: string) => NUMBERS.has(def.fields[column].type);
     const table = document.createElement('table');
     table.className = 'fd-print-table';

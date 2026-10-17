@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type ListNode, type Page } from '@fieldia/core';
-import { memoryPreferences, type PreferenceStore } from '@fieldia/widgets';
+import { memoryPreferences, WIDGET_LABELS, type PreferenceStore } from '@fieldia/widgets';
 import { columnsKey } from './list-columns';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
@@ -393,5 +393,21 @@ describe('a column moved by dragging its header', () => {
     menuButton(host).click();
     (item(host, 'value').querySelector('[data-move="up"]') as HTMLButtonElement).click();
     expect(voiceOf(host)).toBe('Value moved to place 4 of 5');
+  });
+
+  it('says the label small inside a sentence that puts it there where the page asks (lowerLabels), as written at its start', async () => {
+    const own = WIDGET_LABELS.en.movedTo;
+    try {
+      const host = await mount(memoryPreferences(), { ...contacts, lowerLabels: true });
+      menuButton(host).click();
+      (item(host, 'value').querySelector('[data-move="up"]') as HTMLButtonElement).click();
+      expect(voiceOf(host)).toBe('Value moved to place 4 of 5');
+      // An app's own words, the label inside them.
+      WIDGET_LABELS.en.movedTo = 'Moved {label} to place {n} of {total}';
+      (item(host, 'city').querySelector('[data-move="up"]') as HTMLButtonElement).click();
+      expect(voiceOf(host)).toBe('Moved city to place 4 of 5');
+    } finally {
+      WIDGET_LABELS.en.movedTo = own;
+    }
   });
 });
