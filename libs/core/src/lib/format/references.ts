@@ -31,6 +31,8 @@ const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'moneta
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
 /** The kinds of field a list's filter bar can list the values of. */
 const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
+/** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
+const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
 /** What a calendar's start and end can be: a day, or a day and a time. */
 const CALENDAR_TIMES: ReadonlySet<string> = new Set(['date', 'datetime']);
 /** What a record's words on a calendar can be. */
@@ -530,6 +532,46 @@ export class ReferenceCheck {
     if (list.map) this.walkListMap(list.map, `${path}.map`);
     if (list.calendar) this.walkListCalendar(list, `${path}.calendar`);
     this.checkListCells(list, path);
+    this.checkListRows(list, path);
+  }
+
+  /**
+   * A list's cards, gallery, columns people choose and rows' own rules: a
+   * card's fields the page's, its picture one that can hold a picture; the
+   * optional columns among the columns; a row's tones, bold and buttons
+   * reading the list's record (its fields, `id`, `user`); and the list
+   * opening on one thing.
+   */
+  private checkListRows(list: ListNode, path: string) {
+    const card = list.card;
+    if (card) {
+      const at = `${path}.card`;
+      for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) this.need(card[key] as string, `${at}.${key}`);
+      if (card.image !== undefined) {
+        const def = this.need(card.image, `${at}.image`);
+        if (def && !PICTURES.has(def.type)) this.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
+      }
+      card.fields?.forEach((line, i) =>
+        (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`))
+      );
+    }
+    for (const column of Object.keys(list.optionalColumns ?? {})) {
+      if (!list.columns.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is no column of this list: a person shows or hides its columns`);
+    }
+    // A column a person may hide, every one hidden at first: the list would open with no column but its own.
+    if (list.optionalColumns && list.columns.every((column) => list.optionalColumns?.[column] === 'hide')) this.report(`${path}.optionalColumns`, 'every column starts hidden: show one at least, as the list opens');
+    if (list.gallery?.opens === 'gallery') {
+      if (list.map?.view && list.map.view !== 'list') this.report(`${path}.gallery.opens`, 'the list opens on its map (map.view) and on its gallery: say one');
+      if (list.calendar?.opens === 'calendar') this.report(`${path}.gallery.opens`, 'the list opens on its calendar and on its gallery: say one');
+    }
+    list.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when']));
+    this.checkModifiers(list, path, ['rowBold']);
+    list.rowButtons?.forEach((button, i) => {
+      this.claim(button.id, `${path}.rowButtons[${i}]`);
+      this.checkPress(button, `${path}.rowButtons[${i}]`);
+      // Shown by a condition on each row's record.
+      this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible']);
+    });
   }
 
   /**
