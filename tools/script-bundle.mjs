@@ -22,6 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
+import { englishKeys, PART_WORDS, partWordsProblems, readerSource, withoutWords, WORD_TABLES } from './part-words.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle');
@@ -59,6 +60,27 @@ const englishOnly = {
   name: 'english-only',
   setup(builder) {
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/)?locales\/all\.ts$/ }, () => ({ contents: 'export const LANGUAGES = {};', loader: 'ts' }));
+  },
+};
+
+/**
+ * The English words only a part reads out of the main script (tools/part-words.mjs): each table's English is built
+ * without them, and each part's script carries its own (`partScript`), put in the tables as it comes. The packages'
+ * tables keep every word.
+ */
+const TABLE_FILES = Object.fromEntries(Object.entries(WORD_TABLES).map(([table, file]) => [join(WORKSPACE, file), table]));
+/** Each table's keys, as its English has them. */
+const TABLE_KEYS = Object.fromEntries(Object.entries(WORD_TABLES).map(([table, file]) => [table, englishKeys(readFileSync(join(WORKSPACE, file), 'utf8'), file)]));
+/** The words the main script leaves out, by table: every part's. */
+const CUT = Object.fromEntries(Object.keys(WORD_TABLES).map((table) => [table, [...new Set(Object.values(PART_WORDS).flatMap((words) => words[table] ?? []))]]));
+const partWordsOut = {
+  name: 'part-words-out',
+  setup(builder) {
+    builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/(record\/messages|labels)\.ts$/ }, ({ path }) => {
+      const table = TABLE_FILES[path];
+      if (!table) return undefined;
+      return { contents: withoutWords(readFileSync(path, 'utf8'), CUT[table], WORD_TABLES[table]), loader: 'ts' };
+    });
   },
 };
 
@@ -163,7 +185,7 @@ const mainScript = async (table) => {
   const { metafile } = await build({
     ...common,
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, partWordsOut, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -178,6 +200,37 @@ const mainScript = async (table) => {
  * libphonenumber's metadata (Apache-2.0), its notice in libs/widgets/THIRD_PARTY_NOTICES.md, beside the bundle too.
  */
 const NOTICES = { phone: " · its phone numbers' table derived from libphonenumber's metadata, (C) 2009 The Libphonenumber Authors, Apache-2.0: see THIRD_PARTY_NOTICES.md" };
+/** Every English word of the three tables, as the packages have them. */
+const ENGLISH = await (async () => {
+  const { outputFiles } = await build({
+    ...common,
+    sourcemap: false,
+    write: false,
+    globalName: 'words',
+    plugins: [englishOnly],
+    stdin: {
+      contents: [
+        `export { MESSAGES as messages } from './libs/core/src/lib/record/messages';`,
+        `export { WIDGET_LABELS as widgets } from './libs/widgets/src/lib/labels';`,
+        `export { VIEWER_LABELS as viewer } from './libs/viewer/src/lib/labels';`,
+      ].join('\n'),
+      resolveDir: WORKSPACE,
+      loader: 'ts',
+    },
+  });
+  const sandbox = {};
+  runInNewContext(outputFiles[0].text, sandbox);
+  return Object.fromEntries(Object.keys(WORD_TABLES).map((table) => [table, sandbox.words[table].en]));
+})();
+/** A part's own English words (PART_WORDS), as its script hands them to the main script: by table, none left empty. */
+const partEnglish = (part) =>
+  Object.fromEntries(Object.entries(PART_WORDS[part] ?? {}).filter(([, keys]) => keys.length).map(([table, keys]) => [table, Object.fromEntries(keys.map((key) => [key, ENGLISH[table][key]]))]));
+/** Words by table as a script's object, in ASCII as esbuild writes the rest (a character past it as its escape), each key bare. */
+const wordsLiteral = (tables) => {
+  const ascii = (text) => JSON.stringify(text).replace(/[\u007f-\uffff]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+  const object = (entries) => `{${entries.map(([key, value]) => `${/^[A-Za-z_]\w*$/.test(key) ? key : ascii(key)}:${value}`).join(',')}}`;
+  return object(Object.entries(tables).map(([table, words]) => [table, object(Object.entries(words).map(([key, text]) => [key, ascii(text)]))]));
+};
 const partScript = (part, inMain, table) =>
   build({
     ...common,
@@ -186,7 +239,8 @@ const partScript = (part, inMain, table) =>
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
     banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev${NOTICES[part] ?? ''} */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
-    footer: { js: 'return part; }]);' },
+    // Its own English words after its code, which the main script puts in the tables before it makes the code.
+    footer: { js: Object.keys(partEnglish(part)).length ? `return part; }, ${wordsLiteral(partEnglish(part))}]);` : 'return part; }]);' },
     outfile: join(BUNDLE, `fieldia.${part}.js`),
     metafile: true,
   });
@@ -241,6 +295,17 @@ for (const part of PARTS) {
     if (twice.length) throw new Error(`fieldia.${part}.js and fieldia.${other}.js both carry ${twice.join(', ')}: a part's code belongs to one part`);
   }
 }
+// The words the main script leaves out (tools/part-words.mjs) are read by none of its modules, and each one by the
+// modules of the parts that bring it alone: read here from the modules this build put in each script.
+{
+  const { problems } = partWordsProblems({
+    main: [...main.inMain].map((file) => file.replace(`${WORKSPACE}/`, '')),
+    parts: Object.fromEntries(PARTS.map((part) => [part, partInputs[part]])),
+    read: (file) => readerSource(WORKSPACE, file),
+    tables: TABLE_KEYS,
+  });
+  if (problems.length) throw new Error(`the parts' own words (tools/part-words.mjs):\n  ${problems.join('\n  ')}`);
+}
 
 // Each language's add-on: its words from the three packages, handed to the main script's addLanguage.
 for (const [locale, name] of Object.entries(LANGUAGES)) {
@@ -276,6 +341,14 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 for (const table of ['MESSAGES', 'WIDGET_LABELS', 'VIEWER_LABELS']) {
   const held = Object.keys(Fieldia[table] ?? {}).join(', ');
   if (held !== 'en') throw new Error(`the script bundle's ${table} holds ${held}: English alone belongs in it, the other languages in their add-ons`);
+}
+/** The tables as `addLanguage` names them, by the name Fieldia gives each. */
+const GLOBAL_OF = { messages: 'MESSAGES', widgets: 'WIDGET_LABELS', viewer: 'VIEWER_LABELS' };
+// Its English every word of the packages' but the parts' own, which they bring (tools/part-words.mjs).
+for (const [table, keys] of Object.entries(TABLE_KEYS)) {
+  const held = Object.keys(Fieldia[GLOBAL_OF[table]].en);
+  const kept = keys.filter((key) => !CUT[table].includes(key));
+  if (held.join() !== kept.join()) throw new Error(`the script bundle's ${GLOBAL_OF[table]}.en holds ${held.length} words, not the packages' ${keys.length} but the parts' own ${CUT[table].length}: ${[...held.filter((key) => !kept.includes(key)), ...kept.filter((key) => !held.includes(key))].slice(0, 5).join(', ')}`);
 }
 // esbuild writes ASCII, so an Arabic letter is an escape: \u0621 to \u064A (Arabic-Indic digits, read in numbers, sit above).
 if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries Arabic letters: some words in Arabic got past the add-on');
@@ -716,7 +789,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // part (copy, timer, 2.8) — 512.84 measured at 0.24.0, 485.55 after: 27.3 less, to 485.6.
 // The size pass joined with Wave 3 for 0.25, measured in the merged build: 512.84 at 0.24.0, 509.23 now — 3.6 less
 // (Wave 3's 23.64 more and the size pass's 27.29 less, their sum to a twentieth), to 509.3.
-const BUDGET_KB = 509.3;
+// The English words only a part reads, out of this script into the parts that read them (tools/part-words.mjs: 345 of
+// the 665 words in its tables, 153 of the widgets' and 192 of the viewer's — a list's, Import's, Export's, Print's,
+// Edit's, a file's, a table of lines', possible duplicates', a booking's slots', a phone's, the survey kinds', the
+// text's…), each part putting its own in the tables as it comes, and the viewer's words read as they are drawn
+// (viewerWords) — 509.23 measured before, 497.88 after: 11.4 less, to 497.9.
+const BUDGET_KB = 497.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -878,7 +956,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The size pass joined with Wave 3 for 0.25 (listed with the raw budget above): 167.12 at 0.24.0, 164.53 now — 2.6
 // less (Wave 3's 7.00 more, the size pass's 9.25 less: 0.34 under their sum, gzip finding more alike in one file), to
 // 164.6.
-const GZIP_BUDGET_KB = 164.6;
+// The English words only a part reads, in the parts that read them (listed with the raw budget above): 164.53 measured
+// before, 160.30 after — 4.2 less, to 160.4 (160.302, just over 160.3). A page that draws no part's words
+// downloads 4.2 less; a list of customers (with its phones), 2.7 less; one that opens every part, 0.9 more, a word two
+// parts read being in both.
+const GZIP_BUDGET_KB = 160.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1216,7 +1298,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // a block pasted, and their rules for paper — to 36.9 and 12.6); business 29.91 and 10.90 (a value to copy and a timer
 // with the statusbar's rules for paper — to 30.0 and 10.9); choice 10.59 and 4.31 and the new relations 19.58 and 7.34
 // as the size pass set them; the rest as Wave 3's above.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [10.6, 4.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.2, 31.7], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [36.9, 12.6], business: [30.0, 10.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], relations: [19.6, 7.4], duplicates: [13.9, 5.9] };
+// The English words only a part reads, carried by that part and put in the tables as it comes (tools/part-words.mjs) —
+// measured before and after, each to the next 0.1 over where it grew: list 98.16 and 31.66 to 101.79 and 32.98 (its
+// search, filters, favourites, pager, Export, Edit, Print, Import's report and a related list's, 115 words); import
+// 33.15 and 13.29 to 35.99 and 14.29 (its dialog's, 55, and a phone's reasons it reads, 6); files 32.37 and 11.92 to
+// 33.46 and 12.32 (38); duplicates 13.90 and 5.87 to 14.79 and 6.24 (18); lines 36.89 and 12.52 to 37.78 and 12.85
+// (25); survey 35.61 and 12.33 to 36.26 and 12.62 (20); slots 14.63 and 5.57 to 15.27 and 5.84 (19); text 55.87 and
+// 18.59 to 56.45 and 18.84 (17); business 29.91 and 10.90 to 30.32 and 11.09 (13); phone 34.83 and 15.24 to 35.36 and
+// 15.42 (11); relations 19.58 and 7.34 to 19.94 and 7.52 (8); head 34.24 and 9.93 to 34.46 and 10.02 (7); date 21.96
+// and 8.30 to 22.13 and 8.38, filters 11.11 and 4.17 to 11.25 and 4.21, columns 10.82 and 4.00 to 10.96 and 4.05,
+// path 15.95 and 6.26 to 16.06 and 6.31, choice 10.59 and 4.31 to 10.68 and 4.35 (five, four, four, three and two). A
+// word two parts read is in both: either may come first. Cards, themes and quiet read none of their own.
+const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [101.8, 33.0], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.3, 12.7], phone: [35.4, 15.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1246,6 +1339,11 @@ if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
 const PART_BESIDE = { slots: ['date'] };
+/** Every Arabic word of the three tables, as the packages have them. */
+const ARABIC = await sourceWords('ar');
+/** A part's own words (PART_WORDS) Fieldia's tables in `locale` do not hold as `words` have them, by table and key. */
+const wordsNotIn = (fieldia, locale, part, words) =>
+  Object.entries(partEnglish(part)).flatMap(([table, own]) => Object.keys(own).filter((key) => fieldia[GLOBAL_OF[table]][locale]?.[key] !== words[table][key]).map((key) => `${table}.${key}`));
 const partSizes = [];
 for (const part of PARTS) {
   const file = partFiles[part];
@@ -1268,6 +1366,28 @@ for (const part of PARTS) {
     if (missing.length) throw new Error(`${loaded}: ${name} does not give ${missing.join(', ')}`);
     if (withIt[PART_OF[part]].loaded !== gives) throw new Error(`${loaded}: Fieldia.${PART_OF[part]} does not hold what ${name} gave`);
     if (warnings.length) throw new Error(`${loaded}: ${warnings.join(' ')}`);
+    const wrong = wordsNotIn(withIt, 'en', part, ENGLISH);
+    if (wrong.length) throw new Error(`${loaded}: Fieldia's English lacks ${name}'s own words once it came: ${wrong.join(', ')}`);
+  }
+  // Its words in Arabic once both are in, whichever came first — the add-on's, never the part's English — and an app's
+  // own word, set before the part came, kept.
+  if (Object.keys(partEnglish(part)).length) {
+    const arabic = join(BUNDLE, 'fieldia.ar.js');
+    for (const order of [[OUT, arabic, ...beside, file], [OUT, ...beside, file, arabic], [file, ...beside, arabic, OUT]]) {
+      const { Fieldia: withIt, warnings } = runTogether(order);
+      await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, { Fieldia: withIt });
+      const loaded = order.map((f) => f.replace(BUNDLE + '/', '')).join(', then ');
+      const wrong = wordsNotIn(withIt, 'ar', part, ARABIC);
+      if (wrong.length || warnings.length) throw new Error(`${loaded}: Fieldia's Arabic does not have ${name}'s own words in Arabic: ${[...wrong, ...warnings].join(', ')}`);
+    }
+    const page = {};
+    const { Fieldia: alone } = runTogether([OUT, ...beside], page);
+    const [table, words] = Object.entries(partEnglish(part))[0];
+    const [key] = Object.keys(words);
+    alone[GLOBAL_OF[table]].en[key] = 'The app’s own';
+    runTogether([file], page);
+    await runInNewContext(`Fieldia.${PART_OF[part]}.load()`, page);
+    if (alone[GLOBAL_OF[table]].en[key] !== 'The app’s own') throw new Error(`${name} put its own English over an app's word for ${table}.${key}, set before it came`);
   }
   // A part of another version: refused with a warning, and the part asked for fails, so the page draws plainly.
   const older = partCode.replace(`, ${JSON.stringify(version)}, function`, ', "0.0.0", function');
@@ -1534,7 +1654,52 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
+  for (const part of PARTS) {
+    const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
+    if (wrong.length) throw new Error(`in a page, Fieldia's English lacks fieldia.${part}.js's own words once it came: ${wrong.join(', ')}`);
+  }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place; each part's own words in once it came");
+}
+
+/**
+ * In an Arabic page, its add-on after the main script and the parts after both: a list of customers drawn in Arabic,
+ * its part's own words Arabic in the tables and none of their English in what is drawn — its words, its names and its
+ * tips.
+ */
+{
+  const { JSDOM, VirtualConsole } = await import('jsdom');
+  const problems = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (error) => problems.push(error.message));
+  virtualConsole.on('error', (message) => problems.push(String(message)));
+  const dom = new JSDOM('<!doctype html><html lang="ar"><head><script src="fieldia.js"></script><script src="fieldia.ar.js"></script></head><body><div id="app"></div></body></html>', {
+    url: pathToFileURL(join(BUNDLE, 'page.html')).href,
+    runScripts: 'dangerously',
+    resources: 'usable',
+    pretendToBeVisual: true,
+    virtualConsole,
+  });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const { Fieldia: inPage, document: doc } = dom.window;
+  const host = doc.getElementById('app');
+  const page = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/customers.page.json'), 'utf8'));
+  const view = inPage.mountViewer(host, { page, locale: 'ar', dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
+  await view.drawn;
+  for (let turn = 0; turn < 100 && !host.querySelector('.fd-list-row'); turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!host.querySelector('.fd-list-row')) throw new Error('in an Arabic page, a list is not drawn');
+  const wrong = wordsNotIn(inPage, 'ar', 'list', ARABIC);
+  if (wrong.length) throw new Error(`in an Arabic page, the list part's own words are not Arabic once it came: ${wrong.join(', ')}`);
+  const drawn = [host.textContent, ...[...host.querySelectorAll('[aria-label], [title], [placeholder]')].flatMap((one) => ['aria-label', 'title', 'placeholder'].map((name) => one.getAttribute(name) ?? ''))].join('\n');
+  const english = Object.entries(partEnglish('list')).flatMap(([table, words]) => Object.entries(words).filter(([key, text]) => text !== ARABIC[table][key]).flatMap(([, text]) => text.split(/\{\w+\}/).map((piece) => piece.trim()).filter((piece) => /[A-Za-z]{3}/.test(piece))));
+  // A piece as words of its own, and none the page itself says (its own words are its, in English here).
+  const said = (text, piece) => new RegExp(`(^|[^A-Za-z])${piece.replace(/[.*+?^$()|[\]\\]/g, '\\$&')}($|[^A-Za-z])`).test(text);
+  const shown = [...new Set(english.filter((piece) => said(drawn, piece) && !said(JSON.stringify(page), piece)))];
+  if (shown.length) throw new Error(`in an Arabic page, a list shows its part's English: ${shown.join(' | ')}`);
+  if (problems.length) throw new Error(`in an Arabic page: ${problems.join('; ')}`);
+  view.destroy();
+  dom.window.close();
+  console.log("in an Arabic page: a list's part's own words in Arabic, none of their English drawn");
 }

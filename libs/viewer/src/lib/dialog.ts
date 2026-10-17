@@ -1,6 +1,6 @@
 import type { LeaveHow, PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
 import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
-import { ownLocale } from './labels';
+import { ownLocale, viewerWords } from './labels';
 import { keepTabIn } from './focus-trap';
 import { stayed } from './discard';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -143,7 +143,7 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
   const container = options.container ?? doc.body;
   // The window's look (inset, clear, ⤢, its grip, a head as its own head) in the page before the box is.
   if (kit && !panel && (headed || options.size === 'inset' || options.backdrop === 'clear' || options.maximise || options.resizable)) kit.installHeadStyles(doc);
-  const labels = { ...VIEWER_LABELS[ownLocale(options.locale)], ...options.labels };
+  const labels = viewerWords(ownLocale(options.locale), options.labels);
   const id = `fd-dialog-${++dialogs}`;
   const make = maker(doc);
 

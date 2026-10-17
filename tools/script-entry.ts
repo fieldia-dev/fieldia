@@ -9,6 +9,7 @@
  * a page uses them (tools/script-parts.ts).
  */
 import { addLanguage } from '@fieldia/viewer';
+import { partWords } from '../libs/viewer/src/lib/add-language';
 import type { LanguageHost } from './script-language';
 import { startParts } from './script-parts';
 
@@ -21,8 +22,9 @@ declare const __FIELDIA_VERSION__: string;
 /** The version of @fieldia/viewer this bundle was built from. */
 export const VERSION: string = __FIELDIA_VERSION__;
 
-// Where this script came from, while the browser still says, and the parts whose scripts ran before it.
-startParts();
+// Where this script came from, while the browser still says, and the parts whose scripts ran before it — each putting
+// its own words in the tables as it comes.
+startParts(partWords);
 
 // A language's script loaded before this one left its words behind: take them now.
 const host = globalThis as LanguageHost;

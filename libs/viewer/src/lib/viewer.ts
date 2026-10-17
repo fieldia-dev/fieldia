@@ -80,7 +80,7 @@ export type { Breadcrumb, RecordPager } from './record-bar';
 /** The skins a form is drawn in: underline, outlined, and quiet (see `SKINS`). */
 export type { Skin };
 
-import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
+import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labels';
 import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
@@ -375,7 +375,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
   const ownsForm = !options.form;
-  const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
+  // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
+  const labels: ViewerLabels = viewerWords(locale, options.labels);
   /**
    * What the page's steps ask of the screen: a page opened, words said, a
    * question asked, a tab shown — the viewer's own, under the app's. A form

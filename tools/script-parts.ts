@@ -19,13 +19,22 @@
  * A part's tag may also be written into the page, after fieldia.js or before
  * it (an `async` script may run first): it waits in `FieldiaParts` for the
  * main script, which takes it as it starts.
+ *
+ * The English words only a part reads are its own too (tools/part-words.mjs):
+ * the main script's tables leave them out, and a part puts them in every
+ * language's table as it comes, before its code is made — where a table has
+ * them already (an add-on's, an app's), they stay.
  */
 import { SHARED } from 'fieldia:shared';
+import type { LanguageWords } from '@fieldia/viewer';
 
 declare const __FIELDIA_VERSION__: string;
 
-/** A part's script, as it runs: its name, the version it was built as, and what makes its exports from the main script's modules. */
-export type PartEntry = [name: string, version: string, make: (shared: readonly unknown[]) => unknown];
+/**
+ * A part's script, as it runs: its name, the version it was built as, what makes its exports from the main script's
+ * modules, and its own English words.
+ */
+export type PartEntry = [name: string, version: string, make: (shared: readonly unknown[]) => unknown, words?: LanguageWords];
 
 /** The global a part's script hands itself to: a queue until the main script starts, then the main script's own. */
 export interface PartsHost {
@@ -36,6 +45,8 @@ const made = new Map<string, unknown>();
 const waiting = new Map<string, { resolve(exports: unknown): void; reject(error: Error): void }[]>();
 /** The folder the main script came from, where its parts are; empty when it came from no file of its own. */
 let base = '';
+/** What puts a part's words in the tables (`partWords`, add-language.ts), given as the main script starts. */
+let fillWords: (words: LanguageWords) => void = () => undefined;
 
 function settle(name: string, outcome: { exports: unknown } | { error: Error }) {
   for (const one of waiting.get(name) ?? []) {
@@ -45,7 +56,7 @@ function settle(name: string, outcome: { exports: unknown } | { error: Error }) 
   waiting.delete(name);
 }
 
-function take([name, version, make]: PartEntry) {
+function take([name, version, make, words]: PartEntry) {
   if (made.has(name)) return;
   if (version !== __FIELDIA_VERSION__) {
     const said = `fieldia.${name}.js is version ${version}, but fieldia.js is ${__FIELDIA_VERSION__}: load a part of the main script's own version, from the same folder. Its parts are drawn plainly meanwhile.`;
@@ -53,6 +64,7 @@ function take([name, version, make]: PartEntry) {
     settle(name, { error: new Error(said) });
     return;
   }
+  if (words) fillWords(words);
   const exports = make(SHARED);
   made.set(name, exports);
   settle(name, { exports });
@@ -91,9 +103,11 @@ export function loadPart(name: string): Promise<unknown> {
 
 /**
  * Run as the main script starts: where it came from, while the browser still
- * says (`document.currentScript`), and the parts whose scripts ran before it.
+ * says (`document.currentScript`), what puts a part's words in the tables, and
+ * the parts whose scripts ran before it.
  */
-export function startParts(): void {
+export function startParts(words: (words: LanguageWords) => void): void {
+  fillWords = words;
   const script = typeof document === 'undefined' ? null : document.currentScript;
   const src = script && 'src' in script ? String(script.src) : '';
   base = src ? src.replace(/[?#].*$/, '').replace(/[^/]*$/, '') : '';

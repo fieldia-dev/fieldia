@@ -134,7 +134,7 @@ ${code(
     }));
 </script>`
 )}
-<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
+<p>Arabic, German and French come as small scripts of their own, ${SIZES.languages[0]} to ${SIZES.languages[1]} KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. The words only a part shows come with that part, in English, and the language's script has them all, whichever comes first. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
 ${code(
   'html',
   `
