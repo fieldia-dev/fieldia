@@ -360,6 +360,8 @@ export interface ListMapLabels {
   /** More records than a map shows: `{n}` shown of `{total}`. */
   mapShowsFirst: string;
   mapFailed: string;
+  /** The same, in the words the list's page names its records by (`Page.records`): `{records}`. */
+  mapFailedNoun?: string;
   /** The tools that draw an area on a list's map, and the search the area becomes. */
   drawArea: string;
   inDrawnArea: string;
@@ -388,6 +390,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} without a place, not on the map',
     mapShowsFirst: 'The map shows {n} of {total}. Zoom in and search this area for the rest.',
     mapFailed: 'The map could not load the records.',
+    mapFailedNoun: 'The map could not load the {records}.',
     drawArea: 'Draw an area to search in',
     inDrawnArea: 'In the area drawn',
     inRegion: 'In {name}',
@@ -430,6 +433,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} sans lieu, absents de la carte',
     mapShowsFirst: 'La carte en montre {n} sur {total}. Zoomez et recherchez dans cette zone pour voir les autres.',
     mapFailed: 'La carte n’a pas pu charger les enregistrements.',
+    mapFailedNoun: 'La carte n’a pas pu charger les {records}.',
     drawArea: 'Tracer une zone où chercher',
     inDrawnArea: 'Dans la zone tracée',
     inRegion: 'À {name}',
@@ -451,6 +455,7 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     notOnMap: '{n} ohne Ort, nicht auf der Karte',
     mapShowsFirst: 'Die Karte zeigt {n} von {total}. Hineinzoomen und in diesem Gebiet suchen, um die übrigen zu sehen.',
     mapFailed: 'Die Karte konnte die Datensätze nicht laden.',
+    mapFailedNoun: 'Die Karte konnte die {records} nicht laden.',
     drawArea: 'Ein Gebiet zum Suchen zeichnen',
     inDrawnArea: 'Im gezeichneten Gebiet',
     inRegion: 'In {name}',
@@ -487,7 +492,10 @@ export function mapLabels(locale: Locale | undefined, own?: Partial<MapLabels>):
 
 /** A list's map's words for a page's language, the maps' own with them, and the app's own over both. */
 export function listMapLabels(locale: Locale | undefined, own?: Partial<MapLabels & ListMapLabels>): MapLabels & ListMapLabels {
-  return { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...own };
+  const words = { ...MAP_LABELS[locale ?? 'en'], ...LIST_MAP_LABELS[locale ?? 'en'], ...own };
+  // The app's own sentence, given without its sentence for a page's records: its own on that page too.
+  if (own && 'mapFailed' in own && !('mapFailedNoun' in own)) delete words.mapFailedNoun;
+  return words;
 }
 
 /** A word with its `{name}`s filled in. */
