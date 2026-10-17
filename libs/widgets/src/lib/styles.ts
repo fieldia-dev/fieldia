@@ -910,8 +910,20 @@ export function installStyles(document: Document): void {
  * dropped, its columns' table, the rows refused) in a dialog drawn by the main sheet. It goes after the phone's and
  * the booking slots', for the same reason, and before the themes', so a theme still reshapes its dialog, its
  * buttons and its boxes.
+ *
+ * Possible duplicates' (0.25, the viewer's duplicates part) is new too, cut from no rule: a note of records like the one
+ * typed under a field, and the merge's screen of two records side by side, laid out alone, their buttons, radios and
+ * dialog drawn with the main sheet's rules. It goes after the phone's and the slots' (neither names the other's
+ * parts) and before the themes', so a theme still reshapes its buttons' corners and focus and its
+ * dialog, and the quiet look leaves it as it is (it quietens boxes; the note holds none).
+ *
+ * Joined for 0.25, one order: Import 7 and possible duplicates 8 — both after the slots' and before the themes', so
+ * a theme reshapes both their dialogs and buttons; neither names the other's parts, so their order between them
+ * changes nothing (Import's first, as the lanes met). The ranks from the themes' on move on by two. A list's cards'
+ * and the columns a person shapes (0.25, `fd-list-cards-styles`, `fd-list-columns-styles`) are the list's, cut from
+ * it: no ranked part's, they go right after the list's own sheet, after all of these.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, themes: 8, quiet: 9, picker: 10, head: 11, groups: 12, text: 13, surveyLooks: 14 } as const;
+export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

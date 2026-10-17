@@ -698,8 +698,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // With a dialog's form in front only it prints (the page behind, and the dialog's frame, left off the paper), a column
 // of parts and the card laid out as blocks on paper (Firefox moved a grid's part it could not break to the next sheet
 // whole), and a footer's words measured as paper writes them: 521.06 measured before, 522.19 after — 1.2 more, to 522.2.
+// Possible duplicates and Merge (0.25, Wave 3): the data source's duplicates and merge on the form (findDuplicates,
+// readRecord, merge and whether it can), the memory source's merge — the values picked written, the others taken
+// away, every link to them moved — and its duplicates through its option (alikeRecords, the likeness of names, is
+// outside this script, as scheduleSlots is), the page check of a page's duplicates, their 20 English words, and the
+// viewer asking for the part where the page and its source both ask — the notes, the merge's screen and their sheet
+// in fieldia.duplicates.js — 512.84 measured before, 517.05 after: 4.2 more, to 517.1.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const BUDGET_KB = 528.0;
+const BUDGET_KB = 533.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -847,8 +853,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after — 1.8 more, to 169.0.
 // On paper (0.25, Wave 3's print lane; listed with the raw budget above), the rules for paper 0.9 of it: 167.12
 // measured before, 169.29 after — 2.2 more, to 169.3. The form in front and blocks on paper: 169.57 after, to 169.6.
+// Possible duplicates and Merge (0.25; listed with the raw budget above): 167.12 measured before, 168.50 after — 1.4
+// more, to the next 0.1 over, 168.6 (their 20 words about 0.6 of it).
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const GZIP_BUDGET_KB = 173.0;
+const GZIP_BUDGET_KB = 175.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -969,8 +977,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // On paper (0.25): a list's Print, how far it has got and how it ended, a printout's filters, groups and count, the day
 // it was printed, and the gear's This record — ten in each, as measured: Arabic's 55.07 and 9.82, German's 23.53 and
 // 8.39, French's 24.42 and 8.46 (54.23 and 9.70, 23.15 and 8.30, 23.97 and 8.34 before) — each to the next 0.1 over.
+// Possible duplicates and Merge (0.25) — a record like this one by its fields or its name, Open it, It's someone new,
+// Merge…, and the merge's screen, its columns, rows, what will happen and how it ended — 20 in each: Arabic's 54.23 and
+// 9.70 measured before, 56.56 and 10.09 after, to 56.6 and 10.1; German's 23.15 and 8.30 to 24.25 and 8.65, to 24.3
+// and 8.7; French's 23.97 and 8.34 to 25.06 and 8.68, to 25.1 and 8.7.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const ADD_ON_BUDGET_KB = { ar: [64.5, 11.4], de: [27.8, 9.6], fr: [28.9, 9.8] };
+const ADD_ON_BUDGET_KB = { ar: [67.0, 11.8], de: [29.0, 10.0], fr: [30.0, 10.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1157,8 +1169,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 9.89), lines 23.97 and 8.31 (23.88, 8.28), phone 34.83 and 15.24 (34.77, 15.21), survey 35.61 and 12.33 (35.50,
 // 12.29), text 55.87 and 18.59 (55.60, 18.52) — each to the next 0.1 over where it passed its own. A list's printout's
 // footer at the foot of every sheet, its room measured and kept there: list 79.13 and 25.72 (78.49, 25.51).
+// Possible duplicates and Merge (0.25), a part of their own — the note of records like the one typed under the field
+// they matched on, asked a moment after typing rests and left unheard when typing goes on, Open it, It's someone new
+// remembered by record, Merge…'s screen of the two side by side, and their sheet — new, in fieldia.duplicates.js
+// (duplicates 13.9, 5.9, as measured 13.89 and 5.87), loaded only where a page names duplicates and its source answers
+// them, never waited for. In the main script they would have added 13.9 and 5.9 to every page.
 // Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.5, 32.2], cards: [11.6, 3.7], columns: [10.7, 4.0], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [31.0, 10.8], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6] };
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.5, 32.2], cards: [11.6, 3.7], columns: [10.7, 4.0], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [31.0, 10.8], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1179,9 +1196,10 @@ const PART_GIVES = {
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
+  duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', duplicates: 'duplicatesPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1245,10 +1263,11 @@ console.log(`parts: ${partSizes.join('; ')}`);
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
  * part, and for each part the first time a page uses one, from beside itself — a phone read the world over, a list's
- * screen (its phones, its totals, its Export and Edit), its cards and the columns a person shapes, a gallery, a
- * record's related list, a theme, a table of lines, a customer's statusbar and photo, a work item's head, text and path
- * picker for its bug, the filter bar for its backlog, a date's box (on a public page with its bot check), the survey
- * kinds, a booking's slots — and the page is drawn whole once they have come. Pages
+ * screen (its phones, its totals, its Export and Edit), its Import, its cards and the columns a person shapes, a
+ * gallery, a record's related list, a theme, a table of lines, a customer's statusbar and photo, a work item's head,
+ * text and path picker for its bug, the filter bar for its backlog, a date's box (on a public page with its bot check),
+ * the survey kinds, a booking's slots, a customer's possible duplicates (never waited for) — and the page is drawn
+ * whole once they have come. Pages
  * open in an order where each part's first use is clear, the parts in after each step said in full.
  */
 {
@@ -1443,18 +1462,30 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error('in a page, booking slots are not drawn from their part');
   drive.destroy();
   gone('drive');
+  // A customer's card that asks for possible duplicates (its page's duplicates, and a source that answers): drawn at once
+  // — the part is never waited for — the part asked for as the card opens, and a record like the one shown said under
+  // the field it matched on, its sheet in its place. The phone part, in already, reads its phone.
+  const like = (request) => Promise.resolve({ matches: request.values.email ? [{ id: 1, name: 'Nile Traders', why: ['email'] }] : [] });
+  const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
+  if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
+  if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
+  hasIn("a customer's card and its possible duplicates", 'business, choice, date, duplicates, files, filters, head, lines, list, path, phone, quiet, slots, survey, text, themes');
+  if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
+  card.destroy();
+  gone('card');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
   // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', then a phone's and booking
-  // slots' (new at 0.24, before the themes so a theme still reshapes them), a list's Import's (0.25, the same), the themes' and the quiet look's before the
-  // pickers', the head's and the text's, the survey kinds' own looks last.
+  // slots' (new at 0.24), a list's Import's and possible duplicates' (0.25), before the themes so a theme still
+  // reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's, the survey kinds'
+  // own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
   const ids = styles.map((style) => style.id);
   const ranked = styles.filter((style) => style.hasAttribute('data-fd-rank'));
   const ranks = ranked.map((style) => Number(style.getAttribute('data-fd-rank')));
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place");
 }

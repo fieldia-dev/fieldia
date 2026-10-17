@@ -125,6 +125,7 @@ export const changes = {
   keyboard: (name: string) => `${name}: its keyboard on a phone changed`,
   botCheck: (now: 'on' | 'off' | 'changed') => ({ on: 'The bot check is on', off: 'The bot check is off', changed: 'The bot check changed' })[now],
   printout: 'The printout’s header, footer or logo changed',
+  duplicates: (now: 'on' | 'off' | 'changed') => ({ on: 'Possible duplicates are found as records are typed', off: 'Possible duplicates are no longer found', changed: 'How possible duplicates are found changed' })[now],
   thePage: 'the page',
   // ---- the look
   look: {

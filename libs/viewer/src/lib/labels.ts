@@ -401,6 +401,36 @@ export interface ViewerLabels {
   readOnlyRecord: string;
   fieldNotYours: string;
   notOffered: string;
+  /**
+   * Possible duplicates (`duplicates`): a record like the one typed, said under the field it matched on — by those
+   * fields' labels (`{fields}`, the last two joined by `duplicateAnd`'s `{a}` and `{b}`), by a name like this one, or
+   * both; `{name}` its name — and `{n}` more like it; and its ways: Open it, It's someone new, Merge.
+   */
+  duplicateWith: string;
+  duplicateNamed: string;
+  duplicateNamedWith: string;
+  duplicateAnd: string;
+  duplicatesMore: string;
+  openDuplicate: string;
+  notDuplicate: string;
+  mergeDuplicate: string;
+  /**
+   * The merge's screen: its title, what to do, a record's column (`{name}`) and the one shown, a value neither holds,
+   * the fields both hold the same (`{fields}`) or every one, what will happen (`{kept}`, `{gone}`), its button, while
+   * it merges, once merged (`{name}`), and a record it could not read (`{name}`, `{why}`).
+   */
+  mergeTitle: string;
+  mergeIntro: string;
+  mergeKeep: string;
+  mergeShown: string;
+  mergeEmpty: string;
+  mergeSame: string;
+  mergeAllSame: string;
+  mergeWhat: string;
+  merge: string;
+  merging: string;
+  merged: string;
+  mergeUnread: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -690,6 +720,26 @@ const en: ViewerLabels = {
   readOnlyRecord: 'You can read this record, but not change it.',
   fieldNotYours: 'You can see this field, but not change it.',
   notOffered: 'Not open to you here: {actions}.',
+  duplicateWith: 'A record with this {fields} already exists: {name}',
+  duplicateNamed: 'A record with a name like this already exists: {name}',
+  duplicateNamedWith: 'A record with this {fields} and a name like this already exists: {name}',
+  duplicateAnd: '{a} and {b}',
+  duplicatesMore: '{n} more like it',
+  openDuplicate: 'Open it',
+  notDuplicate: 'It’s someone new',
+  mergeDuplicate: 'Merge…',
+  mergeTitle: 'Merge two records',
+  mergeIntro: 'Pick the record to keep, then the value it keeps for each field.',
+  mergeKeep: 'Keep {name}',
+  mergeShown: 'This record',
+  mergeEmpty: 'Empty',
+  mergeSame: 'The same in both: {fields}.',
+  mergeAllSame: 'Every field shown here holds the same in both.',
+  mergeWhat: '{kept} keeps the values picked and the rest of its own. The messages, activities and links of {gone} move to {kept}, and {gone} is taken away. This cannot be undone.',
+  merge: 'Merge',
+  merging: 'Merging…',
+  merged: 'Merged into {name}.',
+  mergeUnread: 'Could not read {name}: {why}',
 };
 
 /**

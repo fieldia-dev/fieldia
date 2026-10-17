@@ -12,6 +12,7 @@ import { checkButtonParts, checkHead } from './head-checks';
 import { checkSectionTracks } from './section-checks';
 import { fieldPattern } from './pattern';
 import { BULK_KINDS, bulkSettable } from './bulk-edit';
+import { DUPLICATE_KINDS } from './duplicate-kinds';
 import { IMPORT_KINDS, importable } from './import-fields';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
@@ -104,6 +105,7 @@ export class ReferenceCheck {
     });
     if (this.page.on) this.checkEvents(this.page.on, 'on');
     if (this.page.botCheck !== undefined && !this.line) this.checkBotCheck(this.page);
+    if (this.page.duplicates !== undefined && !this.line) this.checkDuplicates(this.page);
     this.checkGoingTo();
     return this.issues;
   }
@@ -114,6 +116,21 @@ export class ReferenceCheck {
     if (page.data.kind !== 'responses') return this.report('botCheck', 'a bot check is for a page of responses that anyone may send; a record’s page is behind the app’s own sign-in');
     const captcha = check?.captcha;
     if (typeof captcha === 'string' && !this.slots.has(captcha)) this.report('botCheck.captcha', `no slot "${captcha}" on this page to draw the captcha in: place { "type": "slot", "id": "${captcha}", "name": "${captcha}" } where it goes`);
+  }
+
+  /** Possible duplicates: asked of a record's own page, by fields records can be compared by, each named once. */
+  private checkDuplicates(page: Page) {
+    const given = page.duplicates?.fields;
+    const named: string[] = Array.isArray(given) ? given : [];
+    if (!named.length) this.report('duplicates.fields', 'name the fields records are compared by: ["phone", "email"]');
+    if (page.data.kind !== 'record') this.report('duplicates', 'duplicates are asked of records like the one typed: a page of responses keeps none to compare it with');
+    else if (page.layout.type === 'list') this.report('duplicates', 'duplicates are asked as a record is typed, on its own page, not on a list of records');
+    named.forEach((name, i) => {
+      const at = `duplicates.fields[${i}]`;
+      if (named.indexOf(name) !== i) return this.report(at, `"${name}" is named twice`);
+      const def = this.need(name, at);
+      if (def && !DUPLICATE_KINDS.has(def.type)) this.report(at, `"${name}" is a ${def.type}; records are compared by words, a number, a date, a choice or a link`);
+    });
   }
 
   /** A time zone the browser knows, by its IANA name: a page's dates and times are never drawn on a clock it cannot read. */

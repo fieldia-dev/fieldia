@@ -151,6 +151,8 @@ const NAMES: Record<string, string> = {
   New: 'جديد',
   'View all opens the page': '«عرض الكل» يفتح الصفحة',
   'View all opens in': '«عرض الكل» يُفتح في',
+  'Possible duplicates': 'السجلات المكررة المحتملة',
+  'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -529,4 +531,10 @@ export const panel: DesignerWords['panel'] = {
   captchaIn: 'اختبار كابتشا يُرسم في',
   noCaptcha: 'بلا كابتشا',
   captchaHint: 'اختبار الكابتشا الخاص بتطبيقك (Turnstile أو reCAPTCHA أو hCaptcha) في أحد أجزاء الصفحة الخاصة: رمزه يُرسل مع الإجابات.',
+  // ---- السجلات المكررة المحتملة في صفحة سجل
+  duplicates: 'السجلات المكررة المحتملة',
+  duplicatesHint: 'أثناء كتابة السجل وحفظه، تُذكر تحت الحقل السجلات التي فيها القيمة نفسها في حقل محدد — أو اسم قريب من اسمه — لفتحها بدلًا منه أو تركها أو دمجها. مصدر بيانات تطبيقك هو الذي يجدها.',
+  duplicatesNone: 'لا حقل هنا يصلح للبحث عنها: أضف نصًا أو رقمًا أو تاريخًا أو اختيارًا أو رابطًا.',
+  duplicatesOn: 'متى يُبحث عنها',
+  duplicatesOnAs: { type: 'أثناء الكتابة وعند الحفظ', save: 'عند حفظ السجل فقط' },
 };

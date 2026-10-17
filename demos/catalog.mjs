@@ -47,7 +47,7 @@ export const AREAS = [
 const AREA_OF = {
   sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
-  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account'],
+  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment'],
@@ -191,6 +191,20 @@ export const DEMOS = [
     files: [
       { href: 'samples/contacts-to-import.xlsx', label: 'contacts-to-import.xlsx' },
       { href: 'samples/contacts-to-import.csv', label: 'contacts-to-import.csv' },
+    ],
+  },
+  {
+    id: 'customer-card',
+    name: 'A customer typed twice',
+    category: 'records',
+    query: 'page=customer-card&record=new&skin=underline',
+    blurb: 'A new customer typed with a phone or an email you have already: the customers like it are named under the box a moment after you stop typing — to open instead, to say it is someone new, or, once saved, to merge, the two side by side and a value picked for each field. Save is never in the way.',
+    howTo: [
+      'Type 02 2345 6789 in Phone and leave it: “A record with this Phone already exists: Nile Traders”, under the box.',
+      'Press Open it: you are asked before what you typed goes, and Nile Traders opens in its place.',
+      'Start a new customer, type orders@niletraders.example in Email: two customers have it. Press It’s someone new on one: it goes, and stays gone for this customer.',
+      'Press Open it on Nile Traders Co.: it opens, said to be like Nile Traders. Press Merge…: the two side by side, Nile Traders kept, its empty Tax ID and Website taking Nile Traders Co.’s.',
+      'Pick a value of your own in a row, then Merge: Nile Traders Co. is gone, and Nile Traders opens with the values picked.',
     ],
   },
   {

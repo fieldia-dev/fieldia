@@ -1,6 +1,8 @@
 export * from './runtime';
 // A memory source's free times from booking schedules: for demos and tests, outside the one-tag script.
 export { scheduleSlots, type MemorySchedule } from './lib/record/memory-schedules';
+// A memory source's records like the one typed, for its `duplicates`: for demos and tests, outside the one-tag script.
+export { alikeRecords, nameLikeness } from './lib/record/memory-duplicates';
 export {
   FieldSchema,
   FieldsSchema,
@@ -24,6 +26,8 @@ export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
 export { PagePhoneSchema, PhoneOptionsSchema } from './lib/format/phone';
 export { SlotsOptionsSchema } from './lib/format/slots-options';
+export { PageDuplicatesSchema } from './lib/format/duplicates';
+export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.
 export { AUTOFILL, AUTOFILL_CONTACT, AUTOFILL_NAMES, autofillProblem, autofillPurpose } from './lib/format/autofill';

@@ -80,6 +80,7 @@ export type { AddressSearchOptions } from './lib/format/address-search';
 export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-options';
 export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
+export type { PageDuplicates } from './lib/format/duplicates';
 export { wideColumns } from './lib/format/columns';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';
 export { IMPORT_KINDS, importFields, importable } from './lib/format/import-fields';
@@ -195,6 +196,11 @@ export type {
   SlotsResult,
   SlotDay,
   SlotDayState,
+  DuplicatesRequest,
+  DuplicatesResult,
+  DuplicateMatch,
+  MergeRequest,
+  MergeResult,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';

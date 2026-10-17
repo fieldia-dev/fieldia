@@ -30,6 +30,7 @@ export const refusals = {
   surveyHasNoRecords: 'A survey has no records to link to or list: this kind is for app screens',
   logoAddress: 'A logo is an image’s address: https://…, a path on your app, or data:image/…',
   botCheckForResponses: 'A bot check is for a form anyone may send, which collects responses: an app’s screen is behind its sign-in',
+  duplicatesForRecords: 'Possible duplicates are found among a model’s records, as one is typed on its own page: a form of responses, or a list, keeps none to compare it with',
   onThePageAlready: (label: string) => `${label} is on the page already`,
   optionsFromModel: (label: string) => `The options of ${label} come from the model`,
   cannotMoveFurther: 'It cannot move further',

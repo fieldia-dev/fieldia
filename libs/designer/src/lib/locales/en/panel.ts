@@ -406,4 +406,10 @@ export const panel = {
   captchaIn: 'Captcha drawn in',
   noCaptcha: 'No captcha',
   captchaHint: 'Your app’s captcha (Turnstile, reCAPTCHA, hCaptcha) in one of the page’s own parts: its token goes with the answers.',
+  // ---- a record page's possible duplicates
+  duplicates: 'Possible duplicates',
+  duplicatesHint: 'As a record is typed and saved, records with the same value in a field ticked — or a name close to its own — are named under that field, to open instead, let be or merge. Your app’s data source finds them.',
+  duplicatesNone: 'No field here can find one: add words, a number, a date, a choice or a link.',
+  duplicatesOn: 'Duplicates asked for',
+  duplicatesOnAs: { type: 'As they are typed, and as saved', save: 'Only as the record is saved' },
 };

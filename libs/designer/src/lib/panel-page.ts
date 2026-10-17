@@ -1,4 +1,4 @@
-import type { BotCheck, FieldNode, LayoutNode, Page, SheetNode } from '@fieldia/core';
+import { comparable, type BotCheck, type FieldNode, type LayoutNode, type Page, type SheetNode } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -74,6 +74,13 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     designer.setBotCheck(captcha.value ? { ...rest, captcha: captcha.value } : rest);
   });
   const captchaRow = setting(el, 'rules', 'Captcha drawn in', captcha, { hint: w.captchaHint, words: w.captchaIn });
+  // A record page's possible duplicates: the fields records like the one typed are found by, and when they are asked for.
+  const sameBy = el('div', { class: 'fd-q-required-row', role: 'group', 'aria-label': w.duplicates });
+  const noneBy = el('p', { class: 'fd-properties-hint', hidden: '' }, w.duplicatesNone);
+  const sameRow = setting(el, 'rules', 'Possible duplicates', [sameBy, noneBy], { hint: w.duplicatesHint, words: w.duplicates });
+  const sameOn = el('select', { class: 'fd-input fd-select', 'aria-label': w.duplicatesOn }, el('option', { value: 'type' }, w.duplicatesOnAs.type), el('option', { value: 'save' }, w.duplicatesOnAs.save)) as HTMLSelectElement;
+  sameOn.addEventListener('change', () => designer.setDuplicates({ on: sameOn.value === 'save' ? 'save' : null }));
+  const sameOnRow = setting(el, 'rules', 'Duplicates asked for', sameOn, { words: w.duplicatesOn });
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -128,6 +135,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     trapRow,
     secondsRow,
     captchaRow,
+    sameRow,
+    sameOnRow,
     moments.element
   );
   return {
@@ -163,6 +172,27 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
         captcha.replaceChildren(...places.map(([value, words]) => el('option', { value }, words)));
       }
       captcha.value = own?.captcha ?? '';
+      // Possible duplicates, on a record's own page: a tick for each field records can be compared by, in the page's order.
+      sameRow.hidden = page.data.kind !== 'record' || page.layout.type === 'list';
+      const by = Object.entries(page.fields).filter(([, def]) => comparable(def));
+      const byKey = JSON.stringify(by.map(([name, def]) => [name, def.label]));
+      if (sameBy.dataset['choices'] !== byKey) {
+        sameBy.dataset['choices'] = byKey;
+        sameBy.replaceChildren(
+          ...by.map(([name, def]) => {
+            const tick = el('input', { type: 'checkbox', 'data-field': name }) as HTMLInputElement;
+            tick.addEventListener('change', () => {
+              const ticked = new Set([...sameBy.querySelectorAll<HTMLInputElement>('input:checked')].map((box) => box.dataset['field'] as string));
+              designer.setDuplicates({ fields: Object.keys(designer.getPage().fields).filter((field) => ticked.has(field)) });
+            });
+            return el('label', { class: 'fd-q-required' }, tick, el('span', {}, def.label));
+          })
+        );
+      }
+      for (const tick of sameBy.querySelectorAll<HTMLInputElement>('input')) tick.checked = !!page.duplicates?.fields.includes(tick.dataset['field'] as string);
+      noneBy.hidden = by.length > 0;
+      sameOnRow.hidden = sameRow.hidden || !page.duplicates;
+      sameOn.value = page.duplicates?.on ?? 'type';
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';

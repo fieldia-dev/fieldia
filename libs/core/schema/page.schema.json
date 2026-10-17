@@ -362,6 +362,9 @@
     },
     "print": {
       "$ref": "#/$defs/PagePrint"
+    },
+    "duplicates": {
+      "$ref": "#/$defs/PageDuplicates"
     }
   },
   "required": [
@@ -9802,6 +9805,30 @@
           "pattern": "^(https?:\\/\\/|data:image\\/|\\/|\\.{0,2}\\/?[^:\\s]+$)"
         }
       },
+      "additionalProperties": false
+    },
+    "PageDuplicates": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "on": {
+          "type": "string",
+          "enum": [
+            "type",
+            "save"
+          ]
+        }
+      },
+      "required": [
+        "fields"
+      ],
       "additionalProperties": false
     }
   }

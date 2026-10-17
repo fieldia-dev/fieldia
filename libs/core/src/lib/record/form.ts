@@ -34,6 +34,8 @@ import {
   type BotReport,
   type SlotsResult,
   type UploadFile,
+  type DuplicateMatch,
+  type MergeResult,
 } from './data-source';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -561,6 +563,24 @@ export interface Form {
    * zone filled in. Rejects where the source has no `slots`.
    */
   findSlots(field: string, ask: { from: string; to: string; schedule?: string; length?: number; between?: number }): Promise<SlotsResult>;
+  /** Whether the page asks for possible duplicates: a record's page naming fields in `duplicates`, its source with `duplicates`. */
+  canFindDuplicates(): boolean;
+  /**
+   * Records like the one shown, asked of the data source's `duplicates` with the fields the page names that hold a
+   * value now — none, and nothing is asked — and every value of the form: the matches, the likest first where the
+   * source scores them, never the record itself. Rejects where the source has no `duplicates`. Its answer is for the
+   * record shown as it was asked (`recordShown`).
+   */
+  findDuplicates(): Promise<DuplicateMatch[]>;
+  /** Whether records of the page's model can be merged: its source has `merge`, and `load` to read the others. */
+  canMerge(): boolean;
+  /** Another record of the page's model, as its source loads it, its values alone: the form is left as it is. For a merge's screen. */
+  readRecord(id: RecordId): Promise<Values>;
+  /**
+   * Merge records of the page's model into one through the source's `merge`: `keepId` kept with `values`, `mergeIds`
+   * gone. The form is left as it is: show the record kept (`openRecord`, `load`) once it is done.
+   */
+  merge(request: { keepId: RecordId; mergeIds: RecordId[]; values: Values }): Promise<MergeResult | void>;
   /**
    * Store files picked for a file or picture field — or a field on a table's
    * line (`how.line`) — through the data source's `upload`, each as soon as
@@ -953,6 +973,12 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * for is still the one shown, as it was. A save's answer, a call's, an onchange's, a name looked up, a line's
    * dialog, a record step's — none is laid on another record, nor over the values the person's Discard let go.
    */
+  /** The data source with a member a record's page asks of it, and the page's model: refused where either is missing. */
+  function recordSource<K extends 'duplicates' | 'merge' | 'load'>(member: K): [Required<Pick<DataSource, K>>, string] {
+    const source = options.dataSource;
+    if (page.data.kind !== 'record' || !source?.[member]) throw new Error(`The data source has no ${member}()`);
+    return [source as Required<Pick<DataSource, K>>, page.data.model];
+  }
   function shownNow(): () => boolean {
     const at = generation;
     const reset = resets;
@@ -2728,6 +2754,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         ...(between ? { between } : {}),
         values: structuredCopy(state.values as Values),
       });
+    },
+    canFindDuplicates: () => !!(page.data.kind === 'record' && page.duplicates?.fields?.length && options.dataSource?.duplicates),
+    async findDuplicates() {
+      const [source, model] = recordSource('duplicates');
+      const fields = (page.duplicates?.fields ?? []).filter((name) => page.fields[name] && !isEmpty(page.fields[name], state.values[name]));
+      const recordId = state.recordId;
+      // Nothing typed in any of them: nothing asked.
+      if (!fields.length) return [];
+      const { matches } = await source.duplicates({ model, recordId, values: structuredCopy(state.values as Values), fields });
+      // Never the record itself, whatever the source says; the likest first where it scores them.
+      const others = (matches ?? []).filter((match) => match && String(match.id) !== String(recordId));
+      return others.every((match) => typeof match.score === 'number') ? others.sort((a, b) => (b.score as number) - (a.score as number)) : others;
+    },
+    canMerge: () => !!(page.data.kind === 'record' && options.dataSource?.merge && options.dataSource.load),
+    async readRecord(id) {
+      const [source, model] = recordSource('load');
+      return loadedRecordOf(await source.load({ model, id, fields: page.fields })).values;
+    },
+    async merge(request) {
+      const [source, model] = recordSource('merge');
+      return source.merge({ model, keepId: request.keepId, mergeIds: [...request.mergeIds], values: structuredCopy(request.values), fields: page.fields });
     },
     upload: (field, files, how = {}) => uploads.start(field, files, how),
     uploading: (field) => state.uploads.filter((upload) => upload.field === field && !upload.line),

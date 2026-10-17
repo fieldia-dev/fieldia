@@ -259,6 +259,26 @@ are gone, and the gear menu's Archive, Duplicate or Delete it does not allow
 are hidden, its foot saying why — in English, Arabic, French or German. See
 [versions and conflicts](https://fieldia.dev/data/#versions).
 
+## Possible duplicates, and Merge
+
+A record's page with `duplicates` (`{ "fields": ["name", "phone", "email"] }`)
+and a data source with `duplicates` says the records like the one typed: a
+moment after the person stops typing in one of those fields — and as a saved
+record opens, and as it is saved — each match is said under the field it
+matched on, "A record with this Phone already exists: Nile Traders", and said
+once, politely, to a screen reader. Its ways: **Open it** (the record found, in
+this one's place, once the person said Discard to what they typed), **It's
+someone new** (let be for those values, remembered for the record in the
+viewer's `preferences`), and, on a saved record where the source has `merge`,
+**Merge…**: the two side by side, the record kept picked over its column and a
+radio for each field they hold apart, what will happen said before Merge. Typing
+on leaves an answer on its way unheard; an answer for a record no longer shown
+is laid nowhere; Save is never kept waiting. It comes in a part of its own
+(`duplicatesPart`, `fieldia.duplicates.js`), loaded only where a page and its
+source both ask, never waited for. Its words are the viewer's labels
+(`duplicateWith`, `openDuplicate`, `mergeTitle`, …). See
+[possible duplicates](https://fieldia.dev/data/#duplicates).
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
@@ -474,7 +494,7 @@ Firefox), else once after the rows. See
 This package carries a `<script>` bundle that sets the global `Fieldia`
 (core, widgets and viewer; about 169 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a phone, a
-theme… — comes in 17 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
+theme, possible duplicates… — comes in 19 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
 each loaded from the same folder the first time a page uses it:
 
 ```html
