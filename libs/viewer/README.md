@@ -428,8 +428,14 @@ row's record, pressed with that record alone).
 **Columns people control.** With `optionalColumns` — the columns a person may
 hide, each `show` or `hide` at first — the header has a **Columns** menu: show,
 hide and order the columns (Move up, Move down, or Alt with an arrow), Reset to
-the page's; a header's edge drags (or its grip takes the arrow keys) to size
-its column; the header and the first column stay in view as the rows scroll.
+the page's; a header dragged sideways moves its column — its ghost under the
+pointer, the other columns sliding aside, a line where it goes; Escape puts it
+back, a press that does not move still sorts, a finger's long press lifts it
+(a tap sorts, a swipe scrolls), right to left mirrored, and its new place is
+said to a screen reader ("Phone moved to place 2 of 8", as the menu's moves
+are); a header's edge drags (or its grip takes the arrow keys) to size its
+column; the header and the first column stay in view as the rows scroll — the
+first column is whichever comes first, moved or not.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
 Export and Print write the columns shown, in their order; on paper a list is

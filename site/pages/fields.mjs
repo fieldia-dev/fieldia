@@ -350,7 +350,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>Every keystroke reaches the form</strong>, so totals and other computed values follow while a cell is still being typed.</li>
   <li><strong>Sections and notes</strong> run across the row. A note grows as it is typed; Enter starts a new line of it, Ctrl+Enter (Cmd+Enter) finishes it.</li>
   <li><strong>Moving lines.</strong> With a ${c('sequenceField')}, each line has a handle to drag it by.</li>
-  <li><strong>Columns.</strong> People resize them and drag them into another order; the button at the end of the header hides and shows the optional ones. Their choices are kept for the next visit, in the browser unless you pass your own ${c('preferences')} store to the viewer.</li>
+  <li><strong>Columns.</strong> People resize them and drag them into another order by their headers, as in a list: the column slides along under its ghost, tinted with a line at its start; Escape puts it back, a drag out of the grid never hides it, a finger resting a moment on a header lifts its column (a swipe there scrolls the page), and a screen reader hears where it went. The button at the end of the header hides and shows the optional ones. Their choices are kept for the next visit, in the browser unless you pass your own ${c('preferences')} store to the viewer.</li>
   <li><strong>A refused save</strong> marks the wrong cells, lists the problems under the table and opens the first one.</li>
   <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
   <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>
