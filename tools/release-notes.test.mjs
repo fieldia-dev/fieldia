@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { notesFor, releaseCommands, releasedVersions } from './release-notes.mjs';
+import { notesFor, releaseCommands, releasedVersions, releaseVersionOf } from './release-notes.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const changelog = readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8');
@@ -60,6 +60,36 @@ test('every version a release commit set has its notes, with that commit\'s date
     assert.ok(notes, `CHANGELOG.md has no section for ${version}, released ${date}`);
     assert.equal(notes.date, date, `${version} was released on ${date}`);
   }
+});
+
+test('a release commit is told by either subject it has had, and no other commit is', () => {
+  assert.equal(releaseVersionOf('chore(release): 0.20.0, the work item in a popup, as Azure DevOps draws it'), '0.20.0');
+  assert.equal(releaseVersionOf('chore(release): 0.19.1'), '0.19.1');
+  assert.equal(releaseVersionOf('chore: release 0.25.0'), '0.25.0');
+  assert.equal(releaseVersionOf('chore: release 0.21.0, the input rules'), '0.21.0');
+  for (const other of ['chore(tools): budgets for the date part, its release check, changelog', 'chore: release notes for 0.21.0', 'chore: release 0.2', 'chore: release 0.25.0x', 'fix: chore: release 0.25.0', 'chore:release 0.25.0']) {
+    assert.equal(releaseVersionOf(other), null, other);
+  }
+});
+
+test('the history holds the releases made by `chore: release x.y.z` too, 0.21.0 to 0.25.0, each once, in order', () => {
+  const released = releasedVersions(WORKSPACE);
+  const versions = released.map((one) => one.version);
+  for (const version of ['0.20.0', '0.21.0', '0.22.0', '0.23.0', '0.24.0', '0.25.0']) assert.ok(versions.includes(version), `${version} is not found among ${versions.join(', ')}`);
+  assert.equal(new Set(versions).size, versions.length);
+  const at = (version) => versions.indexOf(version);
+  assert.ok(at('0.20.0') < at('0.21.0') && at('0.21.0') < at('0.25.0'));
+  const subject = (commit) => execFileSync('git', ['log', '-1', '--format=%s', commit], { cwd: WORKSPACE, encoding: 'utf8' }).trim();
+  assert.equal(subject(released[at('0.25.0')].commit), 'chore: release 0.25.0');
+  assert.equal(subject(released[at('0.20.0')].commit).startsWith('chore(release): 0.20.0'), true);
+});
+
+test('--history prints the commands for every release, those made by `chore: release` among them', () => {
+  const out = execFileSync('node', [join(WORKSPACE, 'tools/release-notes.mjs'), '--history'], { cwd: WORKSPACE, encoding: 'utf8' });
+  assert.match(out, /^# 0\.20\.0, 2026-10-13$/m);
+  assert.match(out, /^# 0\.25\.0, 2026-10-17$/m);
+  assert.match(out, /^git tag -a v0\.24\.0 [0-9a-f]{12} -m "Fieldia 0\.24\.0"$/m);
+  assert.match(out, /^gh release create v0\.21\.0 --verify-tag --title "Fieldia 0\.21\.0" --notes-file tmp\/release\/notes-0\.21\.0\.md$/m);
 });
 
 test('the sections run newest first', () => {
