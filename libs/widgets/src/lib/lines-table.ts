@@ -1,4 +1,4 @@
-import { isEmpty, isRightToLeft, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
+import { isEmpty, isRightToLeft, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
 import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
 import { dateOrderOf } from './date-text';
 import { cellText, currencyOf } from './display';
@@ -89,7 +89,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const sub = def.fields[column];
     if (!sub || !isItem(line) || !['integer', 'float', 'monetary'].includes(sub.type) || (sub.readonly !== true && sub.compute === undefined)) return null;
     const other = Object.keys(def.fields).find((name2) => name2 !== column && unread?.[`${name}.${line.key}.${name2}`]);
-    return other ? fillIn(labels.cellWaits, { column: def.fields[other].label, own: sub.label }) : null;
+    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.records?.lowerLabels, locale);
+    return other ? fillIn(labels.cellWaits, { column: small('column')(def.fields[other].label), own: small('own')(sub.label) }) : null;
   };
   const min = count(options['min']) ?? 0;
   const max = count(options['max']) ?? Infinity;

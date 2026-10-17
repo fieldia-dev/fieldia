@@ -1,4 +1,4 @@
-import { recordSentence, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
+import { labelAt, recordSentence, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values } from '@fieldia/core';
 import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -38,6 +38,8 @@ const FIELD_BOX = 'input:not([type="hidden"]):not([hidden]), select:not([hidden]
 export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[]; update(state: FormState): void } {
   const { el, form, labels, fill } = context;
   const fieldLabel = (name: string) => context.page.fields[name]?.label ?? name;
+  /** A field's label as `template` puts it at `key`: small inside the sentence where the page asks (`records.lowerLabels`). */
+  const labelIn = (template: string, key: string) => (name: string) => labelAt(template, key, context.page.records?.lowerLabels, context.locale)(fieldLabel(name));
   const list = listWords(context.tag ?? context.locale);
 
   /**
@@ -165,8 +167,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
       const time = found.version.at ? timeWords(found.version.at, context.tag, context.locale) : '';
       const said = (noun: string | undefined, words: string) => recordSentence(context.page.records, noun, words, context.locale);
       setText(title, time ? fill(said(labels.conflictAtNoun, labels.conflictAt), { name, time }) : fill(said(labels.conflictSinceNoun, labels.conflictSince), { name }));
-      const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(fieldLabel)) }) : '';
-      const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(fieldLabel)) }) : '';
+      const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(labelIn(labels.conflictChanged, 'fields'))) }) : '';
+      const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(labelIn(labels.conflictBoth, 'fields'))) }) : '';
       setText(changed, [theirs, both].filter(Boolean).join(' '));
       setText(unreadWords, found.unread ? (state.saveProblem?.message ?? '') : '');
       // Written once each time it shows, so a screen reader says it whole: again when Keep mine could not read theirs.
@@ -190,7 +192,7 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
           const shown = (value: unknown) => (def ? displayValue(def, value as Values[string], state.values as Values, context.locale) : String(value ?? ''));
           const mine = shown((shownAside as Values)[name]);
           const now = shown(state.values[name]);
-          const put = el('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': fill(labels.putBackField, { label: fieldLabel(name) }) }, labels.putBack);
+          const put = el('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': fill(labels.putBackField, { label: labelIn(labels.putBackField, 'label')(name) }) }, labels.putBack);
           put.addEventListener('click', () => {
             form.putBack(name);
             // The focus stays in the list while it has more, else goes to the field put back.

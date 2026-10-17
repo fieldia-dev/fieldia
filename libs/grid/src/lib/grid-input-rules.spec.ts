@@ -307,3 +307,31 @@ describe('a grid with its most lines (options.max), as the plain table keeps it'
     expect(formLines(form)).toHaveLength(3);
   });
 });
+
+describe('a grid on a page that asks for its labels small inside sentences', () => {
+  it('names the cell a line’s worked-out amount waits for small; without it, as before', async () => {
+    for (const [lower, words] of [
+      [true, 'Fix quantity to see this line’s subtotal'],
+      [false, 'Fix Quantity to see this line’s Subtotal'],
+    ] as const) {
+      const host = document.createElement('div');
+      document.body.append(host);
+      const page = { ...order, records: { one: 'order', other: 'orders', lowerLabels: lower } } as Page;
+      handle = mountViewer(host, { page, dataSource: createMemoryDataSource({ records: { 'sale.order': { 1: { line_ids: lines } } } }), recordId: 1, widgets: gridWidgets });
+      await handle.form.settled();
+      await frames();
+      const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
+      const api = gridApiOf(box)!;
+      api.startEditingCell({ rowIndex: 0, colKey: 'qty' });
+      await microtasks();
+      const input = box.querySelector('.fd-grid-editor input') as HTMLInputElement;
+      input.value = '12 34';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '4' }));
+      api.stopEditing();
+      await frames();
+      expect(cellOf(box, 0, 'subtotal').textContent).toContain(words);
+      handle.destroy();
+      handle = null;
+    }
+  });
+});

@@ -427,4 +427,21 @@ describe('possible duplicates on a page that names its records', () => {
     expect(screen.querySelector('.fd-merge-intro')?.textContent).toBe('Pick the customer to keep, then the value it keeps for each field.');
     expect(screen.querySelector('.fd-merge-shown')?.textContent).toBe('This customer');
   });
+
+  it('says what both hold the same by labels small where the page asks; without it, as before', async () => {
+    for (const [lower, same] of [
+      [true, 'The same in both: email.'],
+      [false, 'The same in both: Email.'],
+    ] as const) {
+      const ds = source();
+      await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers', lowerLabels: lower }));
+      await pass(0);
+      way('email', 'Merge…').click();
+      await pass(0);
+      expect(document.querySelector('.fd-merge .fd-merge-same')?.textContent).toBe(same);
+      handle?.destroy();
+      handle = null;
+      document.body.replaceChildren();
+    }
+  });
 });

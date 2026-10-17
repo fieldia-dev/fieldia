@@ -1,4 +1,4 @@
-import { fill, type LineField, type Value } from '@fieldia/core';
+import { fill, labelAt, type LineField, type Value } from '@fieldia/core';
 import { cellText } from './display';
 import { handedForm } from './handed';
 import { wordsFor } from './kind-parts';
@@ -102,14 +102,15 @@ export function brokenBox(doc: Document, words: string, more?: string): HTMLElem
  * cent: "Your change was not kept: it is back to EGP 450.00."
  */
 export function brokenFieldBox(
-  context: Pick<WidgetContext, 'document' | 'labels' | 'locale' | 'field' | 'node'>,
+  context: Pick<WidgetContext, 'document' | 'labels' | 'locale' | 'field' | 'node'> & Partial<Pick<WidgetContext, 'form'>>,
   back?: { value: Value | undefined; values: Readonly<Record<string, Value>>; parent?: Readonly<Record<string, Value>> }
 ): HTMLElement {
   const words = wordsFor(context.labels, context.locale);
   const { widget, options } = context.node;
   const shown = back ? cellText(context.field as LineField, back.value, back.values as Record<string, Value>, context.locale, back.parent, { widget, options }) : '';
   const more = back ? (shown ? fill(words.brokenKept, { value: shown }) : words.brokenKeptEmpty) : undefined;
-  return brokenBox(context.document, fill(words.brokenField, { label: context.node.label ?? context.field.label }), more);
+  const label = labelAt(words.brokenField, 'label', context.form?.page.records?.lowerLabels, context.locale)(context.node.label ?? context.field.label);
+  return brokenBox(context.document, fill(words.brokenField, { label }), more);
 }
 
 /**

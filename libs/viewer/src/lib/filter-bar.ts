@@ -1,4 +1,4 @@
-import { suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
+import { labelAt, suggestions, type DataSource, type Facet, type JsonValue, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installFilterStyles } from './filter-styles';
@@ -204,7 +204,7 @@ export function filterBar(context: FilterBarContext) {
     const menuId = uid(`${node.id}-filter-${field}`);
     const words = el('span', { class: 'fd-filter-words' });
     const button = el('button', { type: 'button', class: 'fd-filter-pick', 'data-field': field, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': menuId }, words, ...icon('chevron-down', 'fd-filter-chevron'));
-    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': fill(labels.filterNamed, { label: def.label }), hidden: '' });
+    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': fill(labels.filterNamed, { label: labelAt(labels.filterNamed, 'label', page.records?.lowerLabels, context.locale)(def.label) }), hidden: '' });
     let known: Pick[] = [];
     const draw = () => {
       const ticked = picks.get(field) ?? [];

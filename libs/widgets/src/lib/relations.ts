@@ -1,4 +1,4 @@
-import { foldDigits, foldForSearch, stripMarks, type FieldNode, type Form, type ReferenceValue, type RelatedRecord } from '@fieldia/core';
+import { foldDigits, foldForSearch, labelAt, stripMarks, type FieldNode, type Form, type ReferenceValue, type RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { floatUnder } from './float';
 import { guard, quoted, refusalHint } from './input-rules';
@@ -617,8 +617,9 @@ function tagAdder(doc: Document, words: string, box: Combobox, home: HTMLElement
   };
 }
 
-/** The words of a button that adds tags: the page's own, else "Add {label}". */
-const adderWords = (node: FieldNode, label: string, labels: WidgetLabels) => node.placeholder || fill(labels.addNamed, { label });
+/** The words of a button that adds tags: the page's own, else "Add {label}", its label small where the page asks. */
+const adderWords = (node: FieldNode, label: string, labels: WidgetLabels, form: Form, locale?: string) =>
+  node.placeholder || fill(labels.addNamed, { label: labelAt(labels.addNamed, 'label', form.page.records?.lowerLabels, locale)(label) });
 
 /** A person's outline, as a work tracker draws one where no one is picked yet: a head over a bowl. */
 const NOBODY = { nobody: '<circle cx="10.5" cy="5.9" r="3.3"/><path d="M3.75 12.75h13.5v1.5a6.75 6 0 0 1-13.5 0z"/>' };
@@ -628,7 +629,7 @@ function creator(form: Form, name: string, node: FieldNode): ((text: string) => 
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
 }
 
-export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
+export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale }) => {
   const relation = field.type === 'many2one' ? field.relation : '';
   const own = shows(node);
   // No button to open it where the page says so, as Flectra's no_open.
@@ -684,7 +685,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   clear.type = 'button';
   clear.className = 'fd-combo-clear';
   clear.textContent = '×';
-  clear.setAttribute('aria-label', fill(labels.clear, { label: field.label }));
+  clear.setAttribute('aria-label', fill(labels.clear, { label: labelAt(labels.clear, 'label', form.page.records?.lowerLabels, locale)(field.label) }));
   clear.addEventListener('click', () => {
     form.setValue(name, null);
     box.input.focus();
@@ -746,7 +747,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   } satisfies Widget;
 };
 
-export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
+export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs, locale }) => {
   const relation = field.type === 'many2many' ? field.relation : '';
   const own = shows(node);
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
@@ -806,7 +807,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
         }
       : undefined;
   // Added from a button, "Add Tag": Enter adds the tag typed, an existing one by its name or a new one (`typed` above).
-  const adder = node.options?.['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels), box, element) : null;
+  const adder = node.options?.['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, labels, form, locale), box, element) : null;
   element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let readonly = false;
   let drawn = '';
@@ -1035,7 +1036,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, field, node, id, doc
   box.input.addEventListener('change', commit);
   element.addEventListener('blur', (event) => event.target === box.input && commit(), true);
   // Added from a button, "Add Tag", that turns into the box and comes back once a tag is added.
-  const adder = options['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, words), box, element) : null;
+  const adder = options['adder'] === 'button' ? tagAdder(document, adderWords(node, field.label, words, form, locale), box, element) : null;
   element.append(chips, box.element, ...(adder ? [adder.button] : []));
   let drawn = '';
   return {

@@ -282,7 +282,7 @@ export function listView(context: ListContext): ListView {
    */
   const shaping = node.optionalColumns ? columnsPart.loaded : undefined;
   const choices: ReturnType<ColumnsPart['columnChoices']> =
-    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
+    shaping?.columnChoices({ page, node, doc, el, labels, fill, locale, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
   if (spec) cards?.installCardStyles(doc);
   if (choices) shaping?.installColumnStyles(doc);
   /** The columns shown, in their order: the person's, else the page's. */

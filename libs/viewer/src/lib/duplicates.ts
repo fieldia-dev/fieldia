@@ -1,4 +1,4 @@
-import { recordSentence, type DuplicateMatch, type PageRecords, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
+import { labelAt, recordSentence, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
@@ -47,25 +47,6 @@ export interface DuplicatesContext {
 
 let watches = 0;
 
-/** Languages that write every noun with a capital: a label stays as written inside their sentences. */
-const NOUNS_CAPITAL = new Set(['de', 'lb']);
-/** The first letter of some words, whole where it takes two code units; empty for none. */
-const firstOf = (words: string) => (words ? String.fromCodePoint(words.codePointAt(0) as number) : '');
-
-/**
- * A field's label as it stands inside a sentence that names the page's records: with a small first letter where the
- * page says so (`records.lowerLabels`) — "A customer with this phone already exists" — else as written. A label whose
- * first word holds another capital ("IBAN", "VAT number", "WhatsApp") stays as written, as does every label in a
- * language that writes its nouns with a capital.
- */
-function labelInSentence(label: string, records: PageRecords | undefined, locale = 'en'): string {
-  if (!records?.lowerLabels || NOUNS_CAPITAL.has(locale.split('-')[0].toLowerCase())) return label;
-  const word = label.split(/\s/, 1)[0] ?? '';
-  const rest = word.slice(firstOf(word).length);
-  if (!word || rest !== rest.toLocaleLowerCase(locale)) return label;
-  return firstOf(label).toLocaleLowerCase(locale) + label.slice(firstOf(label).length);
-}
-
 /** How long typing in a field named rests before the source is asked. */
 export const DUPLICATES_WAIT_MS = 500;
 /** The matches said under one field; past them, how many more. */
@@ -88,8 +69,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const { form, page, root, doc, el, labels, fill } = context;
   /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
   const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, context.locale);
-  /** A field's label inside one of them: with a small first letter where the page says so (`records.lowerLabels`). */
-  const labelOf = (field: string) => labelInSentence(page.fields[field]?.label ?? field, page.records, context.tag ?? context.locale);
+  const labelOf = (field: string) => page.fields[field]?.label ?? field;
   const setting = page.duplicates;
   if (!setting || page.data.kind !== 'record' || !form.canFindDuplicates()) return { destroy: () => undefined };
   installDuplicateStyles(doc);
@@ -173,10 +153,12 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const wordsOf = (match: DuplicateMatch, values: Readonly<Values>): [string, string] => {
     const typedName = nameField ? values[nameField] : null;
     const nameLike = !!nameField && match.why.includes(nameField) && fold(match.name) !== fold(typeof typedName === 'string' ? typedName : '');
-    const same = match.why.filter((field) => !(nameLike && field === nameField)).map(labelOf);
-    const template = nameLike ? (same.length ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed)) : sentence(labels.duplicateWithNoun, labels.duplicateWith);
+    const template = nameLike ? (match.why.length > 1 ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed)) : sentence(labels.duplicateWithNoun, labels.duplicateWith);
+    // Each label small inside the sentence where the page asks (`records.lowerLabels`), by the one rule (labelAt).
+    const small = labelAt(template, 'fields', page.records?.lowerLabels, context.tag ?? context.locale);
+    const same = match.why.filter((field) => !(nameLike && field === nameField)).map((field) => small(labelOf(field)));
     const [before, after = ''] = template.split('{name}');
-    const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map(labelOf));
+    const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map((field) => small(labelOf(field))));
     return [fill(before, { fields }), fill(after, { fields })];
   };
 

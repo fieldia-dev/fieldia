@@ -1,4 +1,4 @@
-import type { JsonValue, ListNode, Page } from '@fieldia/core';
+import { labelAt, type JsonValue, type ListNode, type Locale, type Page } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -26,6 +26,8 @@ export interface ColumnsContext {
   el: El;
   labels: ViewerLabels;
   fill: (template: string, values: Record<string, string | number>) => string;
+  /** The page's language: a column's label small inside a sentence where the page asks (`labelAt`) is written its way. */
+  locale?: Locale;
   preferences: PreferenceStore;
   uid: (id: string) => string;
   icons?: IconSet;
@@ -60,6 +62,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
   const optional = node.optionalColumns;
   const key = columnsKey(page, node);
   const label = (name: string) => page.fields[name]?.label ?? name;
+  /** A sentence naming a column, its label small inside it where the page asks (`records.lowerLabels`). */
+  const naming = (template: string, name: string) => fill(template, { label: labelAt(template, 'label', page.records?.lowerLabels, context.locale)(label(name)) });
   let order: string[] = [];
   let hidden = new Set<string>();
   let widths = new Map<string, number>();
@@ -140,8 +144,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
         }
         const words = box ? el('label', { class: 'fd-list-columns-name', for: `${menuId}-${name}` }, el('bdi', {}, label(name))) : el('span', { class: 'fd-list-columns-name', 'data-fixed': '' }, el('bdi', {}, label(name)));
         // Hide, never disable: the first has no Move up, the last no Move down.
-        const up = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'up', 'aria-label': fill(labels.moveColumnUp, { label: label(name) }), title: fill(labels.moveColumnUp, { label: label(name) }), hidden: i === 0 ? '' : undefined }, '↑');
-        const down = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'down', 'aria-label': fill(labels.moveColumnDown, { label: label(name) }), title: fill(labels.moveColumnDown, { label: label(name) }), hidden: i === order.length - 1 ? '' : undefined }, '↓');
+        const up = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'up', 'aria-label': naming(labels.moveColumnUp, name), title: naming(labels.moveColumnUp, name), hidden: i === 0 ? '' : undefined }, '↑');
+        const down = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'down', 'aria-label': naming(labels.moveColumnDown, name), title: naming(labels.moveColumnDown, name), hidden: i === order.length - 1 ? '' : undefined }, '↓');
         up.addEventListener('click', () => move(name, -1, 'up'));
         down.addEventListener('click', () => move(name, 1, 'down'));
         const row = el('li', { class: 'fd-list-columns-item', 'data-col': name }, ...(box ? [box] : [el('span', { class: 'fd-list-columns-room', 'aria-hidden': 'true' })]), words, el('span', { class: 'fd-list-columns-moves' }, up, down));
@@ -242,7 +246,7 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
       role: 'separator',
       tabindex: '0',
       'aria-orientation': 'vertical',
-      'aria-label': fill(labels.resizeColumn, { label: label(name) }),
+      'aria-label': naming(labels.resizeColumn, name),
       'aria-valuemin': String(NARROWEST),
       'aria-valuemax': String(WIDEST),
     });
