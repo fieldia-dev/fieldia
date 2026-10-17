@@ -1,4 +1,4 @@
-import { fill, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
+import { fill, labelAt, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
@@ -123,6 +123,8 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
     made.push(doc.createTextNode(template.slice(last)));
     return made;
   }
+  /** A field's label as `template` puts it: small inside the sentence where the page asks (`records.lowerLabels`). */
+  const fieldIn = (template: string, label: string) => labelAt(template, 'field', options.records?.lowerLabels, locale)(label);
   /** What a line of the history says it did, its state's words with their dots. */
   function summary(entry: HistoryEntry): Node[] {
     const name = entry.message.author?.name ?? '';
@@ -130,13 +132,13 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
     if (entry.kind === 'comment') return words(labels.commented, { name });
     const { state, changes } = entry;
     if (state && !empty(state.from) && !empty(state.to)) {
-      const parts = { name, field: state.label, from: stateWords(state.from as string), to: stateWords(state.to as string) };
-      return words(changes.length > 1 ? labels.changedFromToMore : labels.changedFromTo, parts);
+      const template = changes.length > 1 ? labels.changedFromToMore : labels.changedFromTo;
+      return words(template, { name, field: fieldIn(template, state.label), from: stateWords(state.from as string), to: stateWords(state.to as string) });
     }
     if (changes.length > 1) return words(labels.madeChanges, { name });
     const [change] = changes;
-    if (empty(change.to)) return words(labels.cleared, { name, field: change.label });
-    return words(labels.changedTo, { name, field: change.label, value: change.field === options.stateField ? stateWords(change.to as string) : (change.to as string) });
+    if (empty(change.to)) return words(labels.cleared, { name, field: fieldIn(labels.cleared, change.label) });
+    return words(labels.changedTo, { name, field: fieldIn(labels.changedTo, change.label), value: change.field === options.stateField ? stateWords(change.to as string) : (change.to as string) });
   }
 
   // ---- the parts ------------------------------------------------------------------
