@@ -542,7 +542,8 @@ export function sampleDataSource() {
           name: 'S00118',
           state: 'sent',
           partner_id: { id: 1, label: 'Nile Traders' },
-          date_order: '2026-10-02',
+          // When it was ordered, as Flectra keeps a sales order's: a date and time.
+          date_order: '2026-10-02T10:00',
           validity_date: '2026-11-01',
           payment_term: '30',
           line_ids: [

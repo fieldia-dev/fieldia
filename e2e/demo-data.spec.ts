@@ -48,6 +48,57 @@ test('no demo page draws a sample record’s markup as words', async ({ page }) 
   expect(found.wrong).toEqual([]);
 });
 
+/**
+ * What a value of each kind is, as Fieldia keeps it: a date its day ("2026-10-06"), a date and time its instant with a
+ * time ("2026-10-06T09:30"), a number a number, a link `{ id, label }` — its id and its name. Null is any kind's.
+ */
+test('every demo page’s field holds its kind in its model’s sample records: a date a day, a date and time a time, a number a number, a link its id and name', async ({ page }) => {
+  await page.goto('/plain/?page=customer&skin=underline');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => Object.keys((window as any).fieldiaDemo?.pages ?? {}).length)).toBeGreaterThan(40);
+  const found = await page.evaluate(() => {
+    const { pages, dataSource } = (window as any).fieldiaDemo as { pages: Record<string, any>; dataSource: { records: Record<string, Record<string, Record<string, unknown>>> } };
+    const DAY = /^\d{4}-\d{2}-\d{2}$/;
+    const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+    /** Why a value is not of its kind, or null where it is. */
+    const misfit = (type: string, value: unknown): string | null => {
+      if (value === null || value === undefined) return null;
+      if (type === 'date') return typeof value === 'string' && DAY.test(value) ? null : 'a date holds a day';
+      if (type === 'datetime') return typeof value === 'string' && INSTANT.test(value) ? null : 'a date and time holds a time';
+      if (type === 'integer' || type === 'float' || type === 'monetary') return typeof value === 'number' && Number.isFinite(value) ? null : 'a number holds a number';
+      if (type === 'many2one') {
+        const link = value as { id?: unknown; label?: unknown };
+        return typeof value === 'object' && !Array.isArray(value) && (typeof link.id === 'number' || typeof link.id === 'string') && typeof link.label === 'string' ? null : 'a link holds its id and name';
+      }
+      return null;
+    };
+    const KINDS = new Set(['date', 'datetime', 'integer', 'float', 'monetary', 'many2one']);
+    const wrong = new Set<string>();
+    let checked = 0;
+    /** A record's values against its fields — a table's lines against theirs. */
+    const check = (where: string, fields: Record<string, { type: string; fields?: Record<string, { type: string }> }>, values: Record<string, unknown>) => {
+      for (const [field, def] of Object.entries(fields)) {
+        const value = values[field];
+        if (def.type === 'one2many' && def.fields && Array.isArray(value)) {
+          for (const line of value as { values?: Record<string, unknown> }[]) if (line?.values) check(`${where}'s ${field} line`, def.fields, line.values);
+          continue;
+        }
+        if (!KINDS.has(def.type) || value === undefined) continue;
+        checked++;
+        const why = misfit(def.type, value);
+        if (why) wrong.add(`${where}'s ${field} (${def.type}): ${why}, not ${JSON.stringify(value).slice(0, 40)}`);
+      }
+    };
+    for (const [name, shown] of Object.entries(pages)) {
+      if (shown.data?.kind !== 'record') continue;
+      for (const [id, values] of Object.entries(dataSource.records[shown.data.model] ?? {})) check(`${name}: ${shown.data.model} ${id}`, shown.fields, values);
+    }
+    return { wrong: [...wrong], checked };
+  });
+  expect(found.checked, 'values checked').toBeGreaterThan(500);
+  expect(found.wrong).toEqual([]);
+});
+
 test('the customer’s notes read as words on its account’s page, never their markup', async ({ page }) => {
   await page.goto('/plain/?page=customer-account&record=1&skin=underline');
   await page.getByRole('tab', { name: 'Notes' }).click();
