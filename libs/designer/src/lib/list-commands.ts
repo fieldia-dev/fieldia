@@ -1,7 +1,9 @@
-import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCell, type ListMap, type ListNode, type Page } from '@fieldia/core';
+import { bulkSettable, type ButtonNode, type Field, type FilterCondition, type FilterItem, type FilterPeriod, type ListCalendar, type ListCard, type ListCell, type ListGallery, type ListMap, type ListNode, type Page, type ToneWhen } from '@fieldia/core';
 import { storedAs } from './kinds';
-import { allIds, fieldReads, keptFields, listCalendarFields, listMapFields, nextName } from './page-tree';
+import { allIds, fieldReads, keptFields, listCalendarFields, listCardFields, listMapFields, nextName } from './page-tree';
 import { Refusal } from './refusal';
+import { formulaProblem, problemWords } from './rules-formula';
+import type { TableButton } from './table-commands';
 
 /**
  * A list page, as the designer edits it: its columns, its order, how many
@@ -38,6 +40,18 @@ export interface ListOptionsPatch {
   export?: boolean;
   /** Edit of many rows at once: true for the columns one value can set (keeping the fields named, if it names them), the fields it offers, or false for none. */
   bulkEdit?: boolean | string[];
+  /** What each record's card shows, on a phone and in the gallery ({} for the columns'); null for no cards. */
+  card?: ListCard | null;
+  /** A gallery of cards on the switcher; null for none. */
+  gallery?: ListGallery | null;
+  /** Whether people may hide a column, and how it starts: shown, or hidden; null when they may not. */
+  optionalColumn?: { field: string; starts: 'show' | 'hide' | null };
+  /** Each row's tone while a condition on its record holds, the first that holds; null or none for no tone. */
+  rowTones?: ToneWhen[] | null;
+  /** Each row in bold while a condition on its record holds; null for never. */
+  rowBold?: string | null;
+  /** The buttons on each row, in order, as a table's (a button kept keeps its id and steps); null or none for none. */
+  rowButtons?: TableButton[] | null;
 }
 
 export interface ListActionPatch {
@@ -173,6 +187,8 @@ export function listCommands(context: {
         if (!list.sort?.length) delete list.sort;
         if (list.cells) delete list.cells[field];
         if (list.cells && !Object.keys(list.cells).length) delete list.cells;
+        if (list.optionalColumns) delete list.optionalColumns[field];
+        if (list.optionalColumns && !Object.keys(list.optionalColumns).length) delete list.optionalColumns;
         prune(draft);
       });
       if (ok) unpick(columnId(field));
@@ -268,6 +284,63 @@ export function listCommands(context: {
           for (const name of listCalendarFields(options.calendar)) fieldFor(draft, name);
           list.calendar = JSON.parse(JSON.stringify(options.calendar)) as ListCalendar;
         }
+        if (options.card === null) delete list.card;
+        else if (options.card !== undefined) {
+          // As a map's card: its fields come from the model, and the page check says what is wrong with the rest.
+          for (const name of listCardFields(options.card)) fieldFor(draft, name);
+          list.card = JSON.parse(JSON.stringify(options.card)) as ListCard;
+        }
+        if (options.gallery === null) delete list.gallery;
+        else if (options.gallery !== undefined) list.gallery = { ...options.gallery };
+        // A row's own rules: conditions on its record, refused in words where they do not read.
+        const refuse = (when: string) => {
+          if (formulaProblem(draft, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(draft, when, w), w)));
+        };
+        if (options.rowTones !== undefined) {
+          const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when }));
+          for (const item of kept) if (typeof item.when === 'string') refuse(item.when);
+          if (kept.length) list.rowTones = kept;
+          else delete list.rowTones;
+        }
+        if (options.rowBold !== undefined) {
+          const said = options.rowBold?.trim();
+          if (said) {
+            refuse(said);
+            list.rowBold = said;
+          } else delete list.rowBold;
+        }
+        if (options.rowButtons !== undefined) {
+          const before = new Map((list.rowButtons ?? []).map((button) => [button.id, button]));
+          const kept: ButtonNode[] = (options.rowButtons ?? []).map((button) => {
+            const label = button.label.trim();
+            if (!label) throw new Refusal((w) => w.tables.buttonNeedsWords);
+            const was = button.id ? before.get(button.id) : undefined;
+            const made: ButtonNode = { ...(was ?? { type: 'button', id: fresh(draft, `${list.id}-row-button`) }), label };
+            if (button.action?.trim()) made.action = button.action.trim();
+            else delete made.action;
+            const hidden = button.invisible?.trim();
+            if (hidden) {
+              refuse(hidden);
+              made.invisible = hidden;
+            } else delete made.invisible;
+            // A button does something: an app action, or the steps it had.
+            if (!made.action && !made.steps?.length) made.action = actionName(label);
+            return made;
+          });
+          if (kept.length) list.rowButtons = kept;
+          else delete list.rowButtons;
+        }
+        if (options.optionalColumn !== undefined) {
+          const { field, starts } = options.optionalColumn;
+          if (!list.columns.includes(field)) throw new Refusal((w) => w.refusals.notAColumn(field));
+          const optional = { ...list.optionalColumns };
+          if (starts) optional[field] = starts;
+          else delete optional[field];
+          // Never every column hidden as the list opens: the one asked for shows.
+          if (starts === 'hide' && list.columns.every((name) => optional[name] === 'hide')) optional[field] = 'show';
+          if (Object.keys(optional).length) list.optionalColumns = optional;
+          else delete list.optionalColumns;
+        }
         prune(draft);
       });
     },
@@ -284,6 +357,9 @@ export function listCommands(context: {
             if (cell.rule !== undefined && !ruleIsGood(cell.rule)) throw new Refusal((w) => w.refusals.cellRule);
             const own = fieldFor(draft, column);
             if (cell.widget === 'dot' && own.type !== 'selection') throw new Refusal((w) => w.refusals.dotNeedsChoice(own.label));
+            // Chips are a link's records, a bar a number's, a phone a text's.
+            const fits: Record<string, readonly string[]> = { tags: ['many2many'], progressbar: ['integer', 'float'], phone: ['char'] };
+            if (cell.widget && fits[cell.widget] && !fits[cell.widget].includes(own.type)) throw new Refusal((w) => w.refusals.cellWidgetKind(own.label));
             // A sum, an average, the lowest and the highest are a number's; any column has a count.
             if (cell.total && cell.total !== 'count' && !['integer', 'float', 'monetary'].includes(own.type)) throw new Refusal((w) => w.refusals.totalNeedsNumber(own.label));
             if (cell.lead) {

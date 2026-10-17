@@ -28,3 +28,14 @@ export function phoneSettings(page: { readonly phone?: PagePhone } | undefined, 
 export function phoneWritten(value: string, settings: PhoneSettings): string | undefined {
   return phonePart.loaded?.shownPhone(value, settings.shown, settings.country);
 }
+
+/**
+ * Where a field's number's links go — a call and a WhatsApp chat — and the number as written for anyone anywhere, by
+ * the phone part once it has come (a list's phone column with its links: the page waited for it); undefined before,
+ * or for text that is no number. A function, for a part to take from the main script, as `phoneWritten` is.
+ */
+export function phoneLinksOf(value: string): { call: string; whatsapp: string; number: string } | undefined {
+  const part = phonePart.loaded;
+  const to = part?.phoneLinks(value);
+  return part && to ? { ...to, number: part.writePhone(value, 'international') } : undefined;
+}

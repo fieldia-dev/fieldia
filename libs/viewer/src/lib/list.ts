@@ -8,7 +8,6 @@ import {
   type DataSource,
   type Facet,
   type Form,
-  type LineField,
   type ListNode,
   type Locale,
   type ResolvedFilter as Resolved,
@@ -18,13 +17,13 @@ import {
   type RunResult,
   type SortOrder,
   type Tone,
-  type Value,
   type Values,
 } from '@fieldia/core';
-import { displayValue, drawIcon, formatNumber, moneyReads, phoneSettings, phoneWritten, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
+import { drawIcon, formatNumber, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
+import { listCells, plain, rowRules } from './list-cells';
 import { daysFilter, periodDays } from './list-days';
 import { askBulkValue, bulkOffered, bulkQuestion, lockedOut, writeBulk, type BulkList, type KnownRecord } from './list-bulk';
 import { everyId } from './list-every';
@@ -33,7 +32,7 @@ import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, typ
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { searchBar } from './search-bar';
-import { filtersPart } from './viewer-parts';
+import { cardsPart, columnsPart, filtersPart, type ColumnsPart } from './viewer-parts';
 
 export interface ListContext {
   page: Page;
@@ -88,6 +87,8 @@ export interface ListContext {
   onCount?: (total: number, searched: boolean) => void;
   /** What it says holding no records, with no search on: "No records match." unless given (a related list's "None yet."). */
   none?: string;
+  /** The widgets' words, for what a cell draws as a field would: a phone's call and WhatsApp links. Without them, a cell has no links. */
+  widgetLabels?: WidgetLabels;
 }
 
 /**
@@ -180,11 +181,8 @@ export interface ListView {
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
 /** Fields no list can put in order. */
 const UNSORTABLE = new Set(['one2many', 'many2many', 'binary', 'image', 'html', 'json', 'properties']);
-const TONES = new Set<string>(['info', 'success', 'warning', 'danger', 'muted']);
-const COLOUR = /^#[0-9a-fA-F]{6}$/;
-
-/** A link's id, or a value as it is: what a row's parent and a lead's look are found by. */
-const plain = (value: Value | undefined): unknown => (value !== null && typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as { id: unknown }).id : value);
+/** As wide as a list is when it turns into cards: a phone's, as a table of lines does (520px). */
+const NARROW = 520;
 const isPromise = (value: unknown): value is Promise<unknown> => !!value && typeof (value as Promise<unknown>).then === 'function';
 
 /**
@@ -238,22 +236,28 @@ export function listView(context: ListContext): ListView {
   const parentField = node.parentField && page.fields[node.parentField] ? node.parentField : null;
   const cellOf = (name: string) => node.cells?.[name];
   const leads = Object.values(node.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : []));
+  /** What names a record: its first column of words, else its first column. */
+  const nameColumn = node.columns.find((name) => page.fields[name].type === 'char') ?? node.columns[0];
+  /** How each column draws its cells (list-cells.ts): a pill, chips, a picture, a bar, a phone with its links. */
+  const cells = listCells({ page, node, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) });
+  const show = cells.words;
+  /** Each row's own tone, bold and buttons, read on its record as the form reads one — the person among it; a button's roles the form's. */
+  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values), () => form.today(), (button) => !form.node(button.id).invisible);
+  /** The cards part, which the page waited for where the list has cards (on a phone, `card`) or a gallery; where it could not come, a table. */
+  const cards = node.card || node.gallery ? cardsPart.loaded : undefined;
+  /** What a record's card shows. */
+  const spec = cards?.cardSpec(page, node, nameColumn) ?? null;
   // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent);
-  // the fields the cells' icons come from, and each row's parent.
-  const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : [])])];
-  /** A phone column's numbers as people read them, where its page or its cell says so (by the phone part, which the page waited for). */
-  const phones = new Map(node.columns.map((name) => [name, cellOf(name)?.widget === 'phone' && page.fields[name]?.type === 'char' ? phoneSettings(page, cellOf(name)?.options) : null]));
-  const show = (name: string, values: Record<string, Value>) => {
-    const phone = phones.get(name);
-    const value = values[name];
-    const written = phone && typeof value === 'string' ? phoneWritten(value, phone) : undefined;
-    return written ?? displayValue(page.fields[name] as LineField, value, values, locale);
-  };
+  // the fields the cells' icons come from, each row's parent, what its card shows and what its own rules read.
+  const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : []), ...(cards?.cardReads(spec) ?? []), ...rules.reads])];
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
-  /** A column of a given width, its words cut with "…" past it: in characters of its words, or in pixels for the whole column. */
+  /** A column of a given width, its words cut with "…" past it: the person's, in pixels; else the page's, in characters of its words or in pixels. */
   const sized = (cell: HTMLTableCellElement, name: string) => {
-    const width = cellOf(name)?.width;
+    const own = choices?.width(name);
+    const width = own ? (`${own}px` as const) : cellOf(name)?.width;
+    cell.removeAttribute('data-width');
+    cell.removeAttribute('data-width-px');
     if (!width) return cell;
     if (typeof width === 'string') {
       cell.setAttribute('data-width-px', '');
@@ -264,10 +268,19 @@ export function listView(context: ListContext): ListView {
     cell.style.setProperty('--fd-col-width', String(width));
     return cell;
   };
-  /** What names a record: its first column of words, else its first column. */
-  const nameColumn = node.columns.find((name) => page.fields[name].type === 'char') ?? node.columns[0];
+  /**
+   * The columns a person shows, orders and sizes, where the list lets them: the columns part's, which the page waited
+   * for; where it could not come, the page's columns.
+   */
+  const shaping = node.optionalColumns ? columnsPart.loaded : undefined;
+  const choices: ReturnType<ColumnsPart['columnChoices']> =
+    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
+  if (spec) cards?.installCardStyles(doc);
+  if (choices) shaping?.installColumnStyles(doc);
+  /** The columns shown, in their order: the person's, else the page's. */
+  const shownColumns = () => choices?.shown() ?? node.columns;
   /** Every column sized: the table keeps their widths, scrolling sideways in its card when wider, the room left after its last. */
-  const fixedWidths = node.columns.every((name) => cellOf(name)?.width);
+  const fixedWidths = () => shownColumns().every((name) => cellOf(name)?.width || choices?.width(name));
   /** Whether a header's press orders the list: not for a ranked list, which keeps its own order. */
   const sortable = node.sortable !== false;
   /** The record open from its row (or by open()), its row marked while it is. */
@@ -300,87 +313,75 @@ export function listView(context: ListContext): ListView {
   // ---- the table ---------------------------------------------------------------
 
   const chooseAll = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': labels.selectAll });
-  const headers = node.columns.map((name) => {
-    const def = page.fields[name];
-    // The name's header marked as its cells are, rows under their parent: a theme stands it over the name, past the toggles.
-    const th = sized(el('th', { scope: 'col', 'data-field': name, class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }), name);
-    // The rule at its header's end, where a theme parts the columns: none, or set in from the column's end.
-    const rule = cellOf(name)?.rule;
-    if (rule === false) th.setAttribute('data-rule', 'none');
-    else if (rule) th.style.setProperty('--fd-rule-in', rule);
-    // Words cut short say themselves whole when pointed at: past the characters given, or about a 12px word's 6.5px a letter.
-    const width = cellOf(name)?.width;
-    const cut = typeof width === 'number' ? def.label.length > width : typeof width === 'string' ? def.label.length * 6.5 > Number.parseInt(width, 10) - 16 : false;
-    const head = el('span', { class: 'fd-list-head', title: cut ? def.label : undefined }, def.label);
-    if (UNSORTABLE.has(def.type) || !sortable) th.append(head);
-    else {
-      const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
-      button.addEventListener('click', () => {
-        // The header's field leads; the list's own order breaks the ties.
-        const desc = sort[0]?.field === name ? !sort[0].desc : false;
-        sort = [{ field: name, ...(desc ? { desc } : {}) }, ...defaultSort.filter((order) => order.field !== name)];
-        offset = 0;
-        void load();
-      });
-      th.append(button);
-    }
-    return th;
-  });
+  /** Each column's header, by its field. */
+  const headers = new Map(
+    node.columns.map((name) => {
+      const def = page.fields[name];
+      // The name's header marked as its cells are, rows under their parent: a theme stands it over the name, past the toggles.
+      const th = sized(el('th', { scope: 'col', 'data-field': name, 'data-col': name, class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }), name);
+      // The rule at its header's end, where a theme parts the columns: none, or set in from the column's end.
+      const rule = cellOf(name)?.rule;
+      if (rule === false) th.setAttribute('data-rule', 'none');
+      else if (rule) th.style.setProperty('--fd-rule-in', rule);
+      // Words cut short say themselves whole when pointed at: past the characters given, or about a 12px word's 6.5px a letter.
+      const width = cellOf(name)?.width;
+      const cut = typeof width === 'number' ? def.label.length > width : typeof width === 'string' ? def.label.length * 6.5 > Number.parseInt(width, 10) - 16 : false;
+      const head = el('span', { class: 'fd-list-head', title: cut ? def.label : undefined }, def.label);
+      if (UNSORTABLE.has(def.type) || !sortable) th.append(head);
+      else {
+        const button = el('button', { type: 'button', class: 'fd-list-sort' }, head);
+        button.addEventListener('click', () => {
+          // The header's field leads; the list's own order breaks the ties.
+          const desc = sort[0]?.field === name ? !sort[0].desc : false;
+          sort = [{ field: name, ...(desc ? { desc } : {}) }, ...defaultSort.filter((order) => order.field !== name)];
+          offset = 0;
+          void load();
+        });
+        th.append(button);
+      }
+      // Its edge, dragged, sizes the column, where people shape the list's columns.
+      if (choices) th.append(choices.grip(name, th));
+      return [name, th] as const;
+    })
+  );
   // Every parent opened, or closed, at once.
   const expandAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.expandAll, title: labels.expandAll }, el('span', { 'aria-hidden': 'true' }, '+'));
   const collapseAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.collapseAll, title: labels.collapseAll }, el('span', { 'aria-hidden': 'true' }, '\u2212'));
   const body = el('tbody');
+  /** The column after the fields': each row's own buttons, and the header's Columns menu. */
+  const trailing = choices || node.rowButtons?.length ? 1 : 0;
+  const tail = el(
+    'th',
+    { class: 'fd-list-tail', scope: 'col' },
+    ...(node.rowButtons?.length ? [el('span', { class: 'fd-list-tail-words' }, labels.rowActions)] : []),
+    ...(choices ? [choices.button] : [])
+  );
+  // The header's box, with its words where the rows are cards and there is no header row over them.
+  const headRow = el(
+    'tr',
+    {},
+    ...(choose ? [el('th', { class: 'fd-list-check', scope: 'col' }, spec ? el('label', { class: 'fd-list-check-all' }, chooseAll, el('span', { class: 'fd-list-check-words', 'aria-hidden': 'true' }, labels.selectAll)) : chooseAll)] : []),
+    ...(parentField ? [el('th', { class: 'fd-list-tree', scope: 'col' }, el('span', { class: 'fd-list-folds' }, expandAll, collapseAll))] : []),
+    ...headers.values(),
+    ...(trailing ? [tail] : [])
+  );
   // The columns' totals, when the list has any and its source can tell them: a row under the list, the ticked rows'.
-  const totals = listTotals({ page, node, el, labels, locale, fill, dataSource: context.dataSource, model, leading, atEnd, interval });
+  // Made again as the person's columns change, in their order.
+  const makeTotals = () => listTotals({ page, node, el, labels, locale, fill, dataSource: context.dataSource, model, leading, trailing, columns: shownColumns(), atEnd, interval });
+  let totals = makeTotals();
   const table = el(
     'table',
-    { class: 'fd-list-table', 'aria-label': page.title, 'data-fixed': fixedWidths ? '' : undefined, 'data-sortable': sortable ? undefined : 'false' },
-    el(
-      'thead',
-      {},
-      el(
-        'tr',
-        {},
-        ...(choose ? [el('th', { class: 'fd-list-check', scope: 'col' }, chooseAll)] : []),
-        ...(parentField ? [el('th', { class: 'fd-list-tree', scope: 'col' }, el('span', { class: 'fd-list-folds' }, expandAll, collapseAll))] : []),
-        ...headers
-      )
-    ),
+    { class: 'fd-list-table', 'aria-label': page.title, 'data-sortable': sortable ? undefined : 'false' },
+    el('thead', {}, headRow),
     body,
     ...(totals ? [totals.foot] : [])
   );
+  // The headers in the person's order, those they hid hidden.
+  arrangeRow(headRow);
   const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
   const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
   retry.addEventListener('click', () => void load());
-
-  /** A cell's words, with what its column draws before them: a state's dot, a kind's icon. */
-  function cellContent(name: string, values: Record<string, Value>): Node[] {
-    const cell = cellOf(name);
-    const words = show(name, values);
-    const before: Node[] = [];
-    const look = cell?.lead?.looks[String(plain(values[cell.lead.field]))];
-    const leadIcon = look ? drawIcon(doc, look.icon, context.icons) : null;
-    if (leadIcon) {
-      leadIcon.setAttribute('aria-hidden', 'true');
-      leadIcon.classList.add('fd-list-lead');
-      if (look?.colour) leadIcon.style.color = look.colour;
-      before.push(leadIcon);
-    }
-    if (cell?.widget === 'dot' && words) {
-      // Its colour by value: the page's own, else its tone, else grey.
-      const value = String(plain(values[name]));
-      const colours = (cell.options?.['colours'] ?? {}) as Record<string, unknown>;
-      const tones = (cell.options?.['tones'] ?? {}) as Record<string, unknown>;
-      const colour = typeof colours[value] === 'string' && COLOUR.test(colours[value] as string) ? (colours[value] as string) : null;
-      const tone = typeof tones[value] === 'string' && TONES.has(tones[value] as string) ? (tones[value] as Tone) : 'muted';
-      const dot = el('span', { class: 'fd-list-dot', 'aria-hidden': 'true', 'data-tone': colour ? undefined : tone });
-      if (colour) dot.style.setProperty('--fd-dot', colour);
-      before.push(dot);
-    }
-    // Each value in its own direction: a phone number or an amount reads left to right on a right-to-left page.
-    return [...before, el('bdi', {}, words)];
-  }
 
   /** Mark the row of the record open, and only it. */
   const markOpen = () => {
@@ -421,6 +422,101 @@ export function listView(context: ListContext): ListView {
     return next as HTMLElement | null;
   };
 
+  /** The card under this one in a gallery, or over it: in the next line of cards, the nearest across. */
+  const cardBeside = (tr: HTMLElement, down: boolean) => {
+    const at = tr.getBoundingClientRect();
+    const middle = (box: DOMRect) => box.left + box.width / 2;
+    let best: HTMLElement | null = null;
+    let score = Infinity;
+    for (const other of body.querySelectorAll<HTMLElement>(':scope > .fd-list-row')) {
+      if (other.hidden || other === tr) continue;
+      const box = other.getBoundingClientRect();
+      if (down ? box.top <= at.top + 1 : box.top >= at.top - 1) continue;
+      const away = Math.abs(box.top - at.top) * 10000 + Math.abs(middle(box) - middle(at));
+      if (away < score) [best, score] = [other, away];
+    }
+    return best;
+  };
+
+  /** A row's own button: its steps run with that record alone, as a button for the rows chosen runs with them; then the records again. */
+  function rowButton(action: ButtonNode, record: Row): HTMLButtonElement {
+    const bare = action.iconOnly && action.icon ? drawIcon(doc, action.icon, context.icons) : null;
+    const button = el(
+      'button',
+      { type: 'button', class: `fd-button fd-button-${action.style ?? 'secondary'} fd-list-row-button`, 'data-action': action.id, ...(bare ? { 'aria-label': action.label, title: action.label } : {}) },
+      ...(bare ? [bare] : context.withIcon(action.icon, action.label))
+    );
+    button.addEventListener('click', (event) => {
+      // The button's press, never its row's.
+      event.stopPropagation();
+      void context.press(button, async () => {
+        const result = await form.runAction(action.id, { recordIds: [record.id] });
+        await Promise.all([load(), viewParts.reload()]);
+        return result;
+      });
+    });
+    return button;
+  }
+
+  // ---- the columns a person shapes ---------------------------------------------------
+
+  /** A row's cells in the person's order — those shown, then those hidden, hidden — each at its width, the first shown kept in view. */
+  function arrangeRow(tr: HTMLTableRowElement) {
+    if (!choices) return;
+    const shown = choices.shown();
+    const on = new Set(shown);
+    const order = choices.order();
+    const placed = new Map<string, HTMLTableCellElement>();
+    for (const cell of tr.children) {
+      const name = cell.getAttribute('data-col');
+      if (name) placed.set(name, cell as HTMLTableCellElement);
+    }
+    const after = tr.querySelector(':scope > .fd-list-card, :scope > .fd-list-tail');
+    const wanted = [...shown, ...order.filter((one) => !on.has(one))];
+    // Moved only when their order changed: a cell taken out and put back lets go of a drag on its grip.
+    const moving = [...placed.keys()].join() !== wanted.filter((name) => placed.has(name)).join();
+    for (const name of wanted) {
+      const cell = placed.get(name);
+      if (!cell) continue;
+      cell.hidden = !on.has(name);
+      cell.toggleAttribute('data-pin', name === shown[0]);
+      sized(cell, name);
+      if (moving) tr.insertBefore(cell, after);
+    }
+  }
+
+  /** How many columns a heading's row spans: the leading ones, those shown, the buttons'. */
+  const span = () => leading + shownColumns().length + trailing;
+  /** The columns as last drawn, to know when the totals must follow. */
+  let drawnColumns = shownColumns().join();
+
+  /** The person's columns changed: every row in their order, the totals with them once they are done, the headings' rows across them. */
+  function arrange(kept: boolean) {
+    arrangeRow(headRow);
+    for (const tr of body.querySelectorAll<HTMLTableRowElement>(':scope > .fd-list-row')) arrangeRow(tr);
+    drawShape();
+    if (!kept || drawnColumns === shownColumns().join()) return;
+    drawnColumns = shownColumns().join();
+    for (const cell of body.querySelectorAll<HTMLTableCellElement>(':scope > :is(.fd-list-group, .fd-list-more) > td')) cell.colSpan = span();
+    if (!totals) return;
+    const next = makeTotals();
+    if (!next) return;
+    totals.foot.replaceWith(next.foot);
+    totals = next;
+    totals.refresh(currentFilter());
+    totals.ticked([...chosen], currentFilter());
+  }
+
+  /** The table's widths: kept as given where every column has one; the first column kept in view past the leading ones. */
+  function drawShape() {
+    table.toggleAttribute('data-fixed', fixedWidths());
+    if (!choices) return;
+    const [check, tree] = [headRow.querySelector<HTMLElement>(':scope > .fd-list-check'), headRow.querySelector<HTMLElement>(':scope > .fd-list-tree')];
+    const checkWidth = check?.getBoundingClientRect().width ?? 0;
+    table.style.setProperty('--fd-pin-tree', `${checkWidth}px`);
+    table.style.setProperty('--fd-pin-first', `${checkWidth + (tree?.getBoundingClientRect().width ?? 0)}px`);
+  }
+
   function row(record: Row, level = 0): HTMLTableRowElement {
     known.set(String(record.id), { ...(record.version ? { version: record.version } : {}), ...(record.can ? { can: record.can } : {}) });
     const name = show(nameColumn, record.values) || String(record.id);
@@ -434,6 +530,10 @@ export function listView(context: ListContext): ListView {
         viewParts.chosenChanged();
       });
     }
+    // Its own tone and bold while a condition on its record holds, and the buttons its record shows.
+    const tone = rules.any ? rules.tone(record.id, record.values) : null;
+    const bold = rules.any && rules.bold(record.id, record.values);
+    const own = node.rowButtons?.length ? rules.buttons(record.id, record.values) : [];
     const tr = el(
       'tr',
       {
@@ -441,12 +541,20 @@ export function listView(context: ListContext): ListView {
         tabindex: '0',
         'data-id': String(record.id),
         'data-level': level ? String(level) : undefined,
+        'data-tone': tone ?? undefined,
+        'data-bold': bold ? '' : undefined,
         'aria-current': openId !== null && String(openId) === String(record.id) ? 'true' : undefined,
       },
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
-      ...node.columns.map((name) => sized(el('td', { class: atEnd(name) ? 'fd-num' : undefined, 'data-name': parentField && name === nameColumn ? '' : undefined }, ...cellContent(name, record.values)), name))
+      ...node.columns.map((column) =>
+        sized(el('td', { 'data-col': column, class: atEnd(column) ? 'fd-num' : undefined, 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
+      ),
+      // Its card, which the table hides and a narrow list or its gallery shows in place of the columns.
+      ...(spec && cards ? [cards.drawCard({ page, node, el, locale, cells }, spec, record.values, name)] : []),
+      ...(trailing ? [el('td', { class: 'fd-list-tail' }, ...own.map((button) => rowButton(button, record)))] : [])
     );
+    arrangeRow(tr);
     tr.addEventListener('click', (event) => {
       const cell = (event.target as Element).closest('td');
       // The box's own cell is a bigger target for the box; a parent's toggle is its own.
@@ -468,7 +576,12 @@ export function listView(context: ListContext): ListView {
         box.click();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
-        shownBeside(tr, event.key === 'ArrowDown')?.focus();
+        // In a gallery, the card over or under this one; else the row.
+        (element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown'))?.focus();
+      } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && element.hasAttribute('data-as')) {
+        // Cards: the next towards the line's end, the one before towards its start.
+        event.preventDefault();
+        shownBeside(tr, event.key === forward)?.focus();
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && tr.hasAttribute('data-parent-of')) {
         // A parent opens towards the line's end, closes towards its start: flipped right to left.
         event.preventDefault();
@@ -672,7 +785,7 @@ export function listView(context: ListContext): ListView {
   }
 
   function drawSort() {
-    for (const th of headers) {
+    for (const th of headers.values()) {
       // Nearest a place is no column's order.
       const order = !sort[0]?.near && sort[0]?.field === th.dataset['field'] ? sort[0] : null;
       if (order) th.setAttribute('aria-sort', order.desc ? 'descending' : 'ascending');
@@ -685,7 +798,7 @@ export function listView(context: ListContext): ListView {
   /** Rows came or went: what is chosen keeps to the records on show, the table's or the map's. */
   function changed() {
     // On a map, a record chosen may be one the table's page does not hold; and every one that matches reaches past the page.
-    if (view === 'list' && !wide) {
+    if ((view === 'list' || view === 'gallery') && !wide) {
       const shown = new Set(visible().map((record) => record.id));
       for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
     }
@@ -708,7 +821,7 @@ export function listView(context: ListContext): ListView {
     dataSource: source,
     model,
     fields,
-    columns: node.columns.length + leading,
+    columns: span(),
     pageSize,
     count,
     sort: () => sort,
@@ -766,6 +879,7 @@ export function listView(context: ListContext): ListView {
     empty.hidden = drawn.length > 0 || !failed.hidden;
     empty.textContent = context.none && !facets.length ? context.none : labels.noRecords;
     table.removeAttribute('aria-busy');
+    drawShape();
     drawPager();
     changed();
     if (failed.hidden) context.onCount?.(matching, facets.length > 0);
@@ -796,8 +910,15 @@ export function listView(context: ListContext): ListView {
   /** The views this list offers, by name, in the order the app registered them: by the page option of its name, unless the view says. */
   const offered = Object.entries(context.views ?? {}).filter(([name, factory]) => (factory.offers ? factory.offers(node) : (node as unknown as Record<string, unknown>)[name] !== undefined));
   const factories = new Map(offered);
-  /** The table alone, `both` (the table and the map side by side), or a view's name. */
-  let view: string = node.map && factories.has('map') && node.map.view ? node.map.view : (offered.find(([name, factory]) => name !== 'map' && factory.opens?.(node))?.[0] ?? 'list');
+  /** The list's own gallery, where it has one: its rows as cards in a grid — unless the app gives a view of that name. */
+  const gallery = !!node.gallery && !!spec && !factories.has('gallery');
+  /** The table alone, `both` (the table and the map side by side), the gallery, or a view's name. */
+  let view: string =
+    node.map && factories.has('map') && node.map.view
+      ? node.map.view
+      : gallery && node.gallery?.opens === 'gallery'
+        ? 'gallery'
+        : (offered.find(([name, factory]) => name !== 'map' && factory.opens?.(node))?.[0] ?? 'list');
   /** Each view once made: the first time it is shown. */
   const parts = new Map<string, ListViewPart>();
   const holders = new Map(offered.map(([name]) => [name, el('div', { class: name === 'map' ? 'fd-list-addon fd-list-map' : 'fd-list-addon', 'data-addon': name })]));
@@ -873,30 +994,69 @@ export function listView(context: ListContext): ListView {
     void part.reload();
   }
 
-  /** The switcher: the table, then each view offered — the map as Map, and List and map. */
-  const choices = ['list', ...offered.flatMap(([name]) => (name === 'map' ? ['map', 'both'] : [name]))];
+  /** The switcher: the table, its gallery, then each view offered — the map as Map, and List and map. */
+  const switches = ['list', ...(gallery ? ['gallery'] : []), ...offered.flatMap(([name]) => (name === 'map' ? ['map', 'both'] : [name]))];
   const words = (name: string) =>
-    name === 'list' ? labels.viewList : name === 'map' ? labels.viewMap : name === 'both' ? labels.viewBoth : (factories.get(name)?.label?.(locale) ?? name);
-  const viewButtons = choices.map((name) => {
+    name === 'list'
+      ? labels.viewList
+      : name === 'gallery' && gallery
+        ? labels.viewGallery
+        : name === 'map'
+          ? labels.viewMap
+          : name === 'both'
+            ? labels.viewBoth
+            : (factories.get(name)?.label?.(locale) ?? name);
+  const viewButtons = switches.map((name) => {
     const button = el('button', { type: 'button', class: 'fd-button fd-list-view', 'data-view': name, 'aria-pressed': 'false' }, words(name));
     button.addEventListener('click', () => showAs(name));
     return button;
   });
   const views = el('div', { class: 'fd-list-views', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
-  views.hidden = !offered.length;
+  views.hidden = !offered.length && !gallery;
 
   function showAs(next: string) {
-    view = choices.includes(next) ? next : 'list';
+    view = switches.includes(next) ? next : 'list';
     element.dataset['view'] = view;
-    // A view in place of the table: the table and its pager step aside.
-    element.toggleAttribute('data-alone', view !== 'list' && view !== 'both');
+    // A view in place of the table: the table and its pager step aside. The gallery is the table's own rows, as cards.
+    element.toggleAttribute('data-alone', view !== 'list' && view !== 'both' && view !== 'gallery');
     for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset['view'] === view));
     const on = view === 'both' ? 'map' : view;
     for (const [name, holder] of holders) holder.toggleAttribute('data-on', name === on);
-    if (view === 'list') return;
+    drawMode();
+    if (view === 'list' || view === 'gallery') return;
     makeView(on);
     parts.get(on)?.shown();
   }
+
+  // ---- cards: on a phone where the list has them, and in its gallery on any width ----------
+
+  const View = doc.defaultView as (Window & typeof globalThis) | null;
+  /**
+   * Whether the list is as narrow as a phone's (520px or less): its rows are cards there, where it has cards. As narrow
+   * as the window, at first — a phone's list is drawn as cards from its first frame — then as wide as it is measured.
+   */
+  let narrow = !!node.card && !!View && View.innerWidth > 0 && View.innerWidth <= NARROW;
+  /** The rows as cards — a gallery's, or a narrow list's — or as a table. */
+  function drawMode() {
+    const as = view === 'gallery' ? 'gallery' : node.card && spec && narrow ? 'cards' : null;
+    if (as) element.setAttribute('data-as', as);
+    else element.removeAttribute('data-as');
+  }
+  /** As wide as it was last measured: drawn so at the next frame, never while the browser tells of sizes (its loop said). */
+  let measured = narrow;
+  const widths = node.card && spec && View?.ResizeObserver
+    ? new View.ResizeObserver(([entry]) => {
+        // A list put away (its tab not shown) is no narrower than it was.
+        const width = entry.contentRect.width;
+        if (!width || measured === width <= NARROW) return;
+        measured = width <= NARROW;
+        View.requestAnimationFrame(() => {
+          if (destroyed || narrow === measured) return;
+          narrow = measured;
+          drawMode();
+        });
+      })
+    : null;
 
   // ---- every record that matches, Export and Edit ------------------------------------
 
@@ -1017,7 +1177,8 @@ export function listView(context: ListContext): ListView {
     model,
     title: page.title || node.id,
     fields: page.fields,
-    columns: node.columns,
+    // As the person shows them, in their order.
+    columns: shownColumns(),
     reads: fields,
     dataSource: context.dataSource,
     locale,
@@ -1108,13 +1269,28 @@ export function listView(context: ListContext): ListView {
   const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, exportBox, views, ...(fieldsSearch ? [] : [pager]));
   const element = el(
     'div',
-    { class: 'fd-list', 'data-node': node.id, 'data-search': fieldsSearch ? 'fields' : undefined, 'data-choose': choose ? undefined : 'none', 'data-in-record': inRecord ? '' : undefined },
+    {
+      class: 'fd-list',
+      'data-node': node.id,
+      'data-search': fieldsSearch ? 'fields' : undefined,
+      'data-choose': choose ? undefined : 'none',
+      'data-in-record': inRecord ? '' : undefined,
+      // Columns a person shapes: the header and the first column kept in view while the rows scroll under them.
+      'data-shaped': choices ? '' : undefined,
+      // How wide a gallery's card is at least.
+      'data-size': gallery ? (node.gallery?.size ?? 'medium') : undefined,
+    },
     bar,
     // A list with no box to choose a row has nothing to act on.
     ...(choose ? [selection, report] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
+  // Scrolled sideways, the first column kept in view is parted from those going under it.
+  const scroller = element.querySelector('.fd-list-scroll') as HTMLElement;
+  if (choices) scroller.addEventListener('scroll', () => scroller.toggleAttribute('data-scrolled', Math.abs(scroller.scrollLeft) > 0), { passive: true });
   showAs(view);
+  widths?.observe(element);
+  drawShape();
   void load();
 
   return {
@@ -1127,6 +1303,8 @@ export function listView(context: ListContext): ListView {
       destroyed = true;
       doc.removeEventListener('pointerdown', outsideExport, true);
       search.destroy();
+      widths?.disconnect();
+      choices?.destroy();
       parts.forEach((part) => part.destroy());
     },
   };

@@ -5,6 +5,8 @@ import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
 import { FILTERABLE, ruleIsGood, widthIsGood } from './list-commands';
 import { calendarSection } from './list-calendar';
+import { cardsSection } from './list-cards-settings';
+import { rowsSection } from './list-rows-settings';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
 import { whenClicked } from './steps-panel';
@@ -617,6 +619,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
 
   const onMap = mapSection(el, designer);
   const onCalendar = calendarSection(el, designer);
+  const asCards = cardsSection(el, designer);
+  const rowRules = rowsSection(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -633,6 +637,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.groupBy), groupsBox, addGroup),
+    rowRules.element,
+    asCards.element,
     onMap.element,
     onCalendar.element,
     el('p', { class: 'fd-properties-hint' }, w.rowOpens)
@@ -725,6 +731,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
           return el('span', { class: 'fd-chip' }, label, remove);
         })
       );
+      rowRules.update(page);
+      asCards.update(page);
       onMap.update(page);
       onCalendar.update(page);
     },
@@ -776,6 +784,27 @@ export function columnProperties(el: ElementFactory, designer: Designer, name: s
 
 // ---- a column's cells ------------------------------------------------------------------------------
 
+/** The ways a column of a kind can be drawn, beside its words. */
+function cellWays(type: string | undefined): string[] {
+  switch (type) {
+    case 'selection':
+      return ['dot', 'badge'];
+    case 'many2one':
+      return ['badge', 'avatar'];
+    case 'many2many':
+      return ['tags'];
+    case 'char':
+      return ['badge', 'avatar', 'image', 'phone'];
+    case 'image':
+      return ['image', 'avatar'];
+    case 'integer':
+    case 'float':
+      return ['progressbar'];
+    default:
+      return [];
+  }
+}
+
 /**
  * How a column draws its cells, as a work tracker's backlog does: a state's
  * dot in each value's colour, an icon before the words by another field's
@@ -788,11 +817,27 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
     for (const key of Object.keys(cell) as (keyof ListCell)[]) if (cell[key] === undefined) delete cell[key];
     return designer.setListCell(name, Object.keys(cell).length ? cell : null);
   };
-  const widget = select(el, w.cellWidget, [['', w.cellWidgets.words], ['dot', w.cellWidgets.dot]]);
-  widget.addEventListener('change', () => save({ ...cellNow(), widget: widget.value || undefined, ...(widget.value ? {} : { options: undefined }) }));
+  const widget = select(el, w.cellWidget, []);
+  // Another way of drawing it: the options of the one before go with it, but a pill's and a dot's colours, which are the same.
+  widget.addEventListener('change', () => {
+    const now = cellNow();
+    const colours = (widget.value === 'dot' || widget.value === 'badge') && (now.widget === 'dot' || now.widget === 'badge');
+    save({ ...now, widget: widget.value || undefined, options: colours ? now.options : undefined });
+  });
   const widgetRow = prop(el, w.cellWidget, widget);
   const dots = el('div', { class: 'fd-list-cell-looks' });
   const dotsRow = el('div', { class: 'fd-prop', 'data-part': 'dots' }, dots);
+  // A phone's call and WhatsApp links beside its number.
+  const links = el('input', { type: 'checkbox', 'aria-label': w.phoneLinks }) as HTMLInputElement;
+  links.addEventListener('change', () => {
+    const { links: _was, ...rest } = cellNow().options ?? {};
+    save({ ...cellNow(), options: links.checked ? { ...rest, links: true } : Object.keys(rest).length ? rest : undefined });
+  });
+  const linksRow = el('label', { class: 'fd-q-required', 'data-part': 'phone-links' }, links, el('span', {}, w.phoneLinks));
+  // Whether people may hide it, from the Columns menu, and how it starts.
+  const mayHide = select(el, w.mayHide, (['no', 'show', 'hide'] as const).map((k) => [k, w.mayHideChoices[k]]));
+  mayHide.addEventListener('change', () => designer.setListOptions({ optionalColumn: { field: name, starts: mayHide.value === 'no' ? null : (mayHide.value as 'show' | 'hide') } }));
+  const mayHideRow = el('div', { class: 'fd-prop', 'data-part': 'may-hide' }, el('span', { class: 'fd-prop-name' }, w.mayHide), mayHide, el('p', { class: 'fd-properties-hint' }, w.mayHideHint));
   const lead = el('select', { class: 'fd-input fd-select', 'aria-label': w.leadFrom }) as HTMLSelectElement;
   lead.addEventListener('change', () => save({ ...cellNow(), lead: lead.value ? { field: lead.value, looks: {} } : undefined }));
   const leadLooks = el('div', { class: 'fd-list-cell-looks' });
@@ -859,21 +904,28 @@ function cellSettings(el: ElementFactory, designer: Designer, name: string) {
     field?.type === 'selection' ? field.options.map((option) => el('div', { class: 'fd-list-cell-look' }, el('span', { class: 'fd-list-cell-look-name' }, option.label), ...row(String(option.value), option.label))) : [];
 
   return {
-    rows: [widgetRow, dotsRow, leadRow, widthRow, prop(el, w.cellSide, side), totalRow, ruleRow, ruleInRow],
+    rows: [widgetRow, dotsRow, linksRow, leadRow, widthRow, prop(el, w.cellSide, side), totalRow, ruleRow, ruleInRow, mayHideRow],
     update(page: Page) {
       const field = page.fields[name];
       const cell = page.layout.type === 'list' ? (page.layout.cells?.[name] ?? {}) : {};
       const kinds: TotalKind[] = field && ['integer', 'float', 'monetary'].includes(field.type) ? ['sum', 'avg', 'min', 'max', 'count'] : ['count'];
       total.replaceChildren(el('option', { value: '' }, w.cellTotals.none), ...kinds.map((kind) => el('option', { value: kind }, w.cellTotals[kind])));
       total.value = cell.total ?? '';
-      widget.value = cell.widget === 'dot' ? 'dot' : '';
-      widgetRow.hidden = field?.type !== 'selection';
-      // Each state's dot colour, when the column draws its dot.
-      dotsRow.hidden = cell.widget !== 'dot';
+      // The ways its kind can be drawn: a choice's dot or pill, links' chips, a picture, a number's bar, a phone.
+      const ways = cellWays(field?.type);
+      widget.replaceChildren(...['', ...ways].map((way) => el('option', { value: way }, w.cellWidgets[(way || 'words') as keyof typeof w.cellWidgets])));
+      widget.value = cell.widget && ways.includes(cell.widget) ? cell.widget : '';
+      widgetRow.hidden = !ways.length;
+      // Each state's dot or pill colour, when the column draws one.
+      dotsRow.hidden = cell.widget !== 'dot' && cell.widget !== 'badge';
+      linksRow.hidden = cell.widget !== 'phone';
+      links.checked = cell.options?.['links'] === true;
+      const list = page.layout.type === 'list' ? page.layout : undefined;
+      mayHide.value = list?.optionalColumns?.[name] ?? 'no';
       const colours = (cell.options?.['colours'] ?? {}) as Record<string, string>;
       dots.replaceChildren(
         ...optionRows(field, (value, label) => {
-          const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': w.dotColour(label) }) as HTMLInputElement;
+          const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': cell.widget === 'badge' ? w.pillColour(label) : w.dotColour(label) }) as HTMLInputElement;
           colour.value = colours[value] ?? '#7e7e7e';
           colour.addEventListener('input', () => save({ ...cellNow(), options: { ...cellNow().options, colours: { ...((cellNow().options?.['colours'] ?? {}) as Record<string, string>), [value]: colour.value } } }));
           return [colour];

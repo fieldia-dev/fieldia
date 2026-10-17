@@ -6,6 +6,7 @@ import mapDelivery from '../../examples/pages/map-delivery.page.json';
 import mapAddress from '../../examples/pages/map-address.page.json';
 import mapZone from '../../examples/pages/map-zone.page.json';
 import mapHomes from '../../examples/pages/map-homes.page.json';
+import homesGallery from '../../examples/pages/homes-gallery.page.json';
 import mapHome from '../../examples/pages/map-home.page.json';
 import mapCouriers from '../../examples/pages/map-couriers.page.json';
 import mapCourier from '../../examples/pages/map-courier.page.json';
@@ -103,6 +104,8 @@ export const pages: Record<string, Page> = {
   ...wiPicker.pages,
   // A list's records on a map, and the record each opens: shared/homes.ts.
   'map-homes': mapHomes as Page,
+  // The same homes as a gallery: a card each, its photo large, a viewing booked from it (shared/homes.ts).
+  'homes-gallery': homesGallery as Page,
   // A work item's body: groups with tools at their heading's end, Markdown and rich text, a discussion, links (shared/wi-text.ts).
   'wi-text': wiText as Page,
   'map-home': mapHome as Page,
@@ -185,6 +188,7 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
 const RECORD_PAGES: Record<string, string> = {
   contacts: 'contact',
   'map-homes': 'map-home',
+  'homes-gallery': 'map-home',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -235,6 +239,8 @@ export function optionsFromQuery(params: URLSearchParams): {
   return {
     // A list kept to one record's records by its address: a related list's View all, by the app's route.
     ...(listFilter ? { listFilter } : {}),
+    // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
+    ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
     ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.

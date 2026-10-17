@@ -60,7 +60,7 @@ export type { DateBox, DateBoxOptions } from './lib/date-box';
 // Booking slots (`"widget": "slots"`) come in the slots part, with the date part.
 export type { PhoneCountry, PhoneProblem, PhoneReading } from './lib/phone-numbers';
 export { textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, shrinkPhoto, partWidget, partFactory, type TextPart, type PathPart, type ChoicePart, type DatePart, type LinesPart, type BusinessPart, type FilesPart, type SurveyPart, type PhonePart, type SlotsPart, type PartFactory } from './lib/widget-parts';
-export { phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
+export { phoneLinksOf, phoneSettings, phoneWritten, type PhoneSettings } from './lib/phone-settings';
 // The eight themes and the quiet look come in parts of their own, loaded the first time a form wears them: `wearTheme`
 // puts a theme on as its part comes, `wearQuiet` the quiet look's sheet.
 export { themesPart, quietPart, wearTheme, wearQuiet, type ThemesPart, type QuietPart } from './lib/look-parts';

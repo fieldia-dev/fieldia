@@ -547,6 +547,12 @@ export interface Form {
   canUpload(): boolean;
   /** Today, as 2026-10-15, on the clock of the page's time zone — the browser's own where it names none — by the form's clock (`now`). */
   today(): string;
+  /**
+   * A record of the page's model as conditions read it, the form's own way: its values (a link as its id), its `id`,
+   * the person using the form (`user`), the app's `context`, and `editing` false — for what reads conditions on records
+   * the form does not hold, such as a list's rows (their `rowTones`, `rowBold` and `rowButtons`).
+   */
+  recordReads(id: RecordId | null, values: Values): Record<string, unknown>;
   /** Whether a date and time drawn as booking slots can ask for its free times: the data source has `slots`. */
   canFindSlots(): boolean;
   /**
@@ -2703,6 +2709,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     today,
+    recordReads: (id, values) => recordContext(values, page.fields, { recordId: id, user: options.user, editing: false, context: options.context }),
     canFindSlots: () => typeof options.dataSource?.slots === 'function',
     findSlots(field, ask) {
       const source = options.dataSource;
@@ -3381,6 +3388,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
   } else if (root.type === 'list') {
     // A list holds no fields of its own record: only the buttons for what is selected.
     for (const button of root.actions ?? []) add(button, root.id, 'button', { invisible: button.invisible });
+    // A row's buttons: their roles here, their condition read by the list on each row's record, which the form does not hold.
+    for (const button of root.rowButtons ?? []) add(button, root.id, 'button', {});
   } else {
     // The title and statusbar show fields too, so they are validated like
     // any field node. Their ids start with "#", which no page id can.

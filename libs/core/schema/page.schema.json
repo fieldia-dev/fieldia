@@ -9175,6 +9175,145 @@
               }
             }
           ]
+        },
+        "card": {
+          "$ref": "#/$defs/ListCard"
+        },
+        "gallery": {
+          "$ref": "#/$defs/ListGallery"
+        },
+        "optionalColumns": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "show",
+              "hide"
+            ]
+          }
+        },
+        "rowTones": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToneWhen"
+          }
+        },
+        "rowBold": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "rowButtons": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "button"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ActionStep"
+                }
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "params": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                }
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "danger",
+                  "link"
+                ]
+              },
+              "confirm": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
+              },
+              "colspan": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
+              },
+              "iconOnly": {
+                "type": "boolean"
+              },
+              "pressed": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "pressedLabel": {
+                "type": "string"
+              },
+              "menu": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MenuItem"
+                }
+              },
+              "menuIcon": {
+                "type": "string",
+                "minLength": 1
+              },
+              "menuLabel": {
+                "type": "string"
+              },
+              "primaryWhenChanged": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
@@ -9440,6 +9579,73 @@
         "start",
         "title"
       ],
+      "additionalProperties": false
+    },
+    "ListCard": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "subtitle": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "fields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CardPart"
+              },
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/CardPart"
+                }
+              }
+            ]
+          }
+        },
+        "status": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "labels": {
+          "type": "boolean"
+        },
+        "lead": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ListGallery": {
+      "type": "object",
+      "properties": {
+        "opens": {
+          "type": "string",
+          "enum": [
+            "list",
+            "gallery"
+          ]
+        },
+        "size": {
+          "type": "string",
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ]
+        }
+      },
       "additionalProperties": false
     },
     "PageEvents": {

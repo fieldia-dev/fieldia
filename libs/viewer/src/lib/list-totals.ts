@@ -15,6 +15,10 @@ export interface TotalsContext {
   model: string;
   /** The cells before the fields': the box to choose a row, a parent's toggle. */
   leading: number;
+  /** The cells after them: a row's own buttons, the header's Columns menu. None unless said. */
+  trailing?: number;
+  /** The columns shown, in their order: a person's; the list's unless said. */
+  columns?: string[];
   /** A column's cell lines its words up at the end (a number's). */
   atEnd: (name: string) => boolean;
   /** How a Group By of a date asks for its spans. */
@@ -90,22 +94,26 @@ export function listTotals(context: TotalsContext): ListTotals | null {
 
   // ---- the table's foot: the ticked rows' totals, then every record's ----
 
+  /** The columns as they are shown, in their order. */
+  const shown = context.columns ?? node.columns;
   function totalsRow(kind: string) {
     const head = el('th', { scope: 'row', class: 'fd-list-total-head' });
     const cells = new Map<string, HTMLTableCellElement>();
     // The row's words in its first column, or before its fields where that column has a total of its own.
-    const first = columns.includes(node.columns[0]) ? null : node.columns[0];
+    const first = columns.includes(shown[0]) ? null : shown[0];
     const lead: HTMLTableCellElement[] = Array.from({ length: context.leading }, (_, i) => (i === 0 && first === null ? head : el('td', {})));
     const row = el(
       'tr',
       { class: 'fd-list-total', 'data-total': kind, hidden: '' },
       ...lead,
-      ...node.columns.map((name) => {
+      ...shown.map((name) => {
         if (name === first) return head;
-        const cell = el('td', { class: context.atEnd(name) ? 'fd-num' : undefined, 'data-field': name });
+        // Its field's name, said before its total where the rows are cards.
+        const cell = el('td', { class: context.atEnd(name) ? 'fd-num' : undefined, 'data-field': name, 'data-label': page.fields[name]?.label });
         cells.set(name, cell);
         return cell;
-      })
+      }),
+      ...Array.from({ length: context.trailing ?? 0 }, () => el('td', {}))
     );
     return {
       row,
@@ -172,12 +180,14 @@ export function listTotals(context: TotalsContext): ListTotals | null {
       const sums = new Map<string, string>();
       try {
         const result = await totals(request(filter, { groupBy: key.field, ...context.interval(key) }));
+        // The sums of the columns shown: a column the person hid takes its sums with it.
+        const said = columns.filter((name) => shown.includes(name));
         for (const group of result.groups ?? []) {
-          const parts = columns.flatMap((name) => {
-            const said = words(name, group, true);
-            if (said === null) return [];
+          const parts = said.flatMap((name) => {
+            const total = words(name, group, true);
+            if (total === null) return [];
             const kind = kindOf(name);
-            return [[columns.length > 1 ? page.fields[name].label : '', kind === 'sum' ? '' : labels[KIND_WORDS[kind]], said].filter(Boolean).join(' ')];
+            return [[said.length > 1 ? page.fields[name].label : '', kind === 'sum' ? '' : labels[KIND_WORDS[kind]], total].filter(Boolean).join(' ')];
           });
           if (parts.length) sums.set(JSON.stringify(group.value), `· ${parts.join(' · ')}`);
         }

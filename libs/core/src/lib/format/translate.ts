@@ -23,7 +23,8 @@ const wordsOfReference = (text: (words: string) => string) => (reference: unknow
  * where a field may well be called `description` or `title`; and a list's
  * map, whose pin `label` and card `title` name fields (a map's layers too,
  * but for each layer's own `label`, which is words); and a list's calendar,
- * whose `title` names a field too.
+ * whose `title` names a field too; and a list's card, whose `title` and
+ * `subtitle` name fields, as its map card's do.
  */
 const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map', 'calendar']);
 
@@ -68,6 +69,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
     else if (widget && name === 'references' && Array.isArray(inner)) out[name] = inner.map(wordsOfReference(text));
     // A list's map names fields, but for the words after its card's values.
     else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
+    // A list's card names fields too, but for the words after its lines' values.
+    else if (name === 'card' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = (wordsOfCard(text)({ card: inner }) as { card: unknown }).card;
     // A head's link: the words after its number, each plural form ("Comment", "Comments"); a list's filters' own names, by field.
     else if ((name === 'words' || name === 'filterLabels') && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = Object.fromEntries(Object.entries(inner).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words]));
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));

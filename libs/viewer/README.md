@@ -352,12 +352,49 @@ pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
 
+### Lists people read anywhere and shape themselves
+
+**Cards.** With `card`, a list's rows become cards where the list is as narrow
+as a phone (520px or less): a title, a picture — or a person's initials — a
+few lines and a status pill, each by field; `"card": {}` takes them from the
+columns. With `gallery`, the switcher offers **Gallery** on any width: cards
+side by side, their pictures large (`"size"`: `small`, `medium`, `large`),
+`"opens": "gallery"` to open on it. A card is its row: ticked (Select all,
+Export, Edit), opened, toned, its buttons pressed, under its Group By heading,
+the totals under the cards and in sight while they scroll.
+
+```json
+"card": { "title": "name", "image": "photo", "status": "offer", "lead": true,
+          "fields": ["price", ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }]] },
+"gallery": { "opens": "gallery" }
+```
+
+**Richer rows.** A column's cells (`cells.<field>.widget`): `badge` (a pill, by
+`options.tones` or `options.colours` by value), `tags` (links as chips),
+`image` and `avatar` (a picture, or a person's initials), `progressbar`
+(`options.max`), `percentage` and `duration`, and `phone` with
+`"options": { "links": true }` (a call and a WhatsApp link). Each row's tone
+while a condition on its record holds (`rowTones`), its bold (`rowBold`), and
+buttons on each row (`rowButtons`, each shown by its `invisible` read on the
+row's record, pressed with that record alone).
+
+**Columns people control.** With `optionalColumns` — the columns a person may
+hide, each `show` or `hide` at first — the header has a **Columns** menu: show,
+hide and order the columns (Move up, Move down, or Alt with an arrow), Reset to
+the page's; a header's edge drags (or its grip takes the arrow keys) to size
+its column; the header and the first column stay in view as the rows scroll.
+The person's columns are kept in the viewer's `preferences`
+(`<page>.<list>.columns`; the browser's storage unless the app gives its own).
+Export writes the columns shown, in their order. The cards and the columns come
+in parts of their own (`fieldia.cards.js`, `fieldia.columns.js`), only where a
+list asks. See [lists people shape](https://fieldia.dev/lists/#shape).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 167 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 168 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a phone, a
-theme… — comes in 15 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
+theme… — comes in 17 parts beside it (`fieldia.list.js`, `fieldia.date.js`, …),
 each loaded from the same folder the first time a page uses it:
 
 ```html

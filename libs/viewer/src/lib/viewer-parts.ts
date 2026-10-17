@@ -1,6 +1,8 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, pathPart, phonePart, phoneSettings, quietPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
+import type * as CardsModule from './cards-part';
+import type * as ColumnsModule from './columns-part';
 import type * as FiltersModule from './filters-part';
 import type * as HeadModule from './head-part';
 import type * as ListModule from './list-part';
@@ -12,6 +14,10 @@ export type HeadPart = typeof HeadModule;
 export type FiltersPart = typeof FiltersModule;
 /** The list part: a list screen, its search bar and its stylesheet. */
 export type ListPart = typeof ListModule;
+/** The cards part: a list's rows as cards, on a phone and in its gallery. */
+export type CardsPart = typeof CardsModule;
+/** The columns part: the columns a person shows, hides, orders and sizes in a list. */
+export type ColumnsPart = typeof ColumnsModule;
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -19,6 +25,10 @@ export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-pa
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 /** A list screen — its table, search bar, pager and switcher — loaded the first time a page draws a list. */
 export const listPart: Part<ListPart> = lazyPart('list', () => import('./list-part'));
+/** A list's rows as cards — on a phone, in its gallery — loaded the first time a page draws a list with `card` or `gallery`. */
+export const cardsPart: Part<CardsPart> = lazyPart('cards', () => import('./cards-part'));
+/** The columns a person shapes, loaded the first time a page draws a list with `optionalColumns`. */
+export const columnsPart: Part<ColumnsPart> = lazyPart('columns', () => import('./columns-part'));
 
 /**
  * Puts the list's look in a document, as a list does the first time it is drawn: at once when the list part has come,
@@ -38,7 +48,7 @@ export function installListStyles(doc: Document): Promise<void> {
 }
 
 /** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, filtersPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -49,8 +59,10 @@ const markdownAlone = (node: SectionNode) => {
 /**
  * The parts a page draws from (parts.ts in @fieldia/widgets): the head part for
  * a record's head, a button split, toggled or shown by its icon alone, or a
- * group's work heading; the list part for a list or a related list, and the
- * filters part beside a list for its filter bar; and the
+ * group's work heading; the list part for a list or a related list, and beside
+ * a list the filters part for its filter bar, the cards part for its cards
+ * (`card`, `gallery`) and the columns part for the columns a person shapes
+ * (`optionalColumns`); and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
  * records, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking slots) — unless the app's
@@ -108,6 +120,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
     else if (node.type === 'list') {
       found.add(listPart);
+      // Its rows as cards, on a phone or in its gallery; the columns a person shapes.
+      if (node['card'] || node['gallery']) found.add(cardsPart);
+      if (node['optionalColumns']) found.add(columnsPart);
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }

@@ -35,8 +35,17 @@ function seeded(seed: number) {
   };
 }
 
+/** Each country's mobile numbers: its dialling code, how a mobile starts and how many digits follow (Egypt's 10 1234 5678). */
+const MOBILES: Record<number, { dial: string; starts: string[]; digits: number }> = {
+  1: { dial: '20', starts: ['10', '11', '12', '15'], digits: 8 },
+  2: { dial: '962', starts: ['77', '78', '79'], digits: 7 },
+  3: { dial: '966', starts: ['50', '53', '55'], digits: 7 },
+};
+
 /** The contacts, by id. */
 export function sampleContacts(): Record<number, Values> {
+  // Their phones from numbers of their own, so the rest is as it was before the contacts had phones.
+  const dial = seeded(4242);
   const next = seeded(2026);
   const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)];
   const contacts: Record<number, Values> = {};
@@ -64,9 +73,19 @@ export function sampleContacts(): Record<number, Values> {
       currency_id: { id: COUNTRIES[country].currency, label: CURRENCIES[COUNTRIES[country].currency] },
       lifetime_value: bought ? Math.round(next() * 500000) / (country === 2 ? 10 : 1) : null,
       newsletter: next() < 0.55,
+      phone: phoneIn(country, dial),
+      photo: null,
     };
   }
   return contacts;
+}
+
+/** A mobile number in a contact's country, as E.164; one in nine has none yet. */
+function phoneIn(country: number, next: () => number): string | null {
+  const mobile = MOBILES[country];
+  const start = mobile.starts[Math.floor(next() * mobile.starts.length)];
+  const digits = Array.from({ length: mobile.digits }, () => Math.floor(next() * 10)).join('');
+  return next() < 1 / 9 ? null : `+${mobile.dial}${start}${digits}`;
 }
 
 /** What this person may do with a contact: Karim's are his alone; a blocked one's status is the credit team's. */
@@ -91,7 +110,10 @@ export const contactPage: Page = {
         type: 'section',
         id: 'contact-main',
         columns: 2,
-        children: ['name', 'company', 'email', 'country_id', 'state', 'owner_id', 'last_order', 'lifetime_value', 'newsletter'].map((field) => ({ type: 'field' as const, id: `contact-${field}`, field })),
+        children: ['name', 'company', 'email', 'phone', 'country_id', 'state', 'owner_id', 'last_order', 'lifetime_value', 'newsletter'].map((field) =>
+          // A phone read the world over, with its call and WhatsApp links, as the list writes it.
+          field === 'phone' ? { type: 'field' as const, id: `contact-${field}`, field, widget: 'phone', options: { shown: 'international' } } : { type: 'field' as const, id: `contact-${field}`, field }
+        ),
       },
     ],
   },

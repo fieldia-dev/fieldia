@@ -1162,11 +1162,83 @@ export interface ListNode {
    * fields offers those, in its order.
    */
   bulkEdit?: boolean | string[];
+  /**
+   * Each record as a card — its title, a photo, a few lines, its status as a
+   * pill — where the list is narrow (a phone: 520px or less), and in its
+   * gallery. What it shows, by field; `{}` takes it all from the columns:
+   * the name as the title, the first picture column as the photo, the first
+   * column drawn as a pill or a dot as the status, the next three as lines.
+   * A card keeps what a row has: its box to tick, its press to open, its
+   * buttons, its tone; Group By headings and the totals stay over and under
+   * the cards. Tables as before unless given.
+   */
+  card?: ListCard;
+  /**
+   * The records as cards in a grid, their photos large — homes, products,
+   * people — a press away on the list's switcher (Gallery) on any width,
+   * each card as `card` says. Offered unless left out.
+   */
+  gallery?: ListGallery;
+  /**
+   * Columns a person may hide or show, and how each starts: `show`, or
+   * `hide` (offered, hidden until the person shows it), as a table of lines
+   * takes them. With any, the list's header has a Columns menu to show, hide
+   * and order its columns, a header's edge drags to size its column, the
+   * header and the first column stay in view while the rows scroll, and the
+   * person's columns are kept for them (the viewer's `preferences`), Reset
+   * putting back the page's.
+   */
+  optionalColumns?: { [column: string]: 'show' | 'hide' };
+  /** Each row's tone while a condition on its record holds, the first that holds — Flectra's decoration-* on a list: its words in that colour, a card's edge. */
+  rowTones?: ToneWhen[];
+  /** Each row's words in bold while this holds on its record — Flectra's decoration-bf. */
+  rowBold?: Modifier;
+  /**
+   * Buttons on each row and each card, each shown by its `invisible` read
+   * on the row's record (its fields and `id`); a press runs its steps with
+   * that record alone, as a button for the rows chosen runs with them.
+   */
+  rowButtons?: ButtonNode[];
+}
+
+/** What a list's card shows of its record, by field: the columns' unless said (see `ListNode.card`). */
+export interface ListCard {
+  /** The words that name the record: the list's name column unless said. */
+  title?: string;
+  /** Words under the title, smaller: a company under a person's name. None unless said. */
+  subtitle?: string;
+  /** A picture (an image field, or text holding a picture's address): large on top in the gallery, small beside the words in a narrow list; a person's initials where it is empty. */
+  image?: string;
+  /** Its lines, in order, as a map card's: a field, a field with words after it, or several on one line. The next three columns unless said. */
+  fields?: CardLine[];
+  /** A field shown as a pill beside the title, in its column's tones or colours (`cells.<field>.options`). */
+  status?: string;
+  /** Each line's label beside its value; shown unless false. Hidden, a screen reader still says them. */
+  labels?: boolean;
+  /** The first line leads: larger and bold, as a home's price heads its card. */
+  lead?: boolean;
+}
+
+/** A list's gallery: its records as cards in a grid on any width. */
+export interface ListGallery {
+  /** Whether the list opens on its table (unless said) or on its gallery. */
+  opens?: 'list' | 'gallery';
+  /** How wide a card is at least: `small` 180px, `medium` 240px (unless said), `large` 320px. */
+  size?: 'small' | 'medium' | 'large';
 }
 
 /** How a list's column draws its cells. */
 export interface ListCell {
-  /** A widget for its words: `dot`, a state's coloured dot before them, by `options.colours` (`#rrggbb` by value) or `options.tones`. */
+  /**
+   * A widget for its words: `dot`, a state's coloured dot before them, and
+   * `badge`, the value as a pill — each by `options.colours` (`#rrggbb` by
+   * value) or `options.tones`; `tags`, links as chips; `image`, a picture's
+   * thumbnail, and `avatar`, a round one, a person's initials where it is
+   * empty; `progressbar`, a number as a bar (`options.max`, 100 unless
+   * said); `percentage` and `duration`, as a table's cells write them; and
+   * `phone`, a number read the world over, with a call and a WhatsApp link
+   * where `options.links` is true.
+   */
   widget?: string;
   options?: WidgetOptions;
   /** An icon before the words, by another field's value: a bug's or a task's icon in its colour before a work item's title. */
@@ -1662,6 +1734,28 @@ export const ListCellSchema = z
   })
   .meta({ id: 'ListCell' });
 
+/** What a list's card shows of its record: its title, subtitle, picture, lines and status, by field. */
+export const ListCardSchema = z
+  .strictObject({
+    title: fieldName.optional(),
+    subtitle: fieldName.optional(),
+    image: fieldName.optional(),
+    /** Its lines: a part, or several parts on one line, as a map card's. */
+    fields: z.array(z.union([CardPartSchema, z.array(CardPartSchema).min(1)])).min(1).optional(),
+    status: fieldName.optional(),
+    labels: z.boolean().optional(),
+    lead: z.boolean().optional(),
+  })
+  .meta({ id: 'ListCard' });
+
+/** A list's gallery: whether the list opens on it, and how wide a card is at least. */
+export const ListGallerySchema = z
+  .strictObject({
+    opens: z.enum(['list', 'gallery']).optional(),
+    size: z.enum(['small', 'medium', 'large']).optional(),
+  })
+  .meta({ id: 'ListGallery' });
+
 /**
  * A related list: another model's records whose link (`field`) is this record, a page at a time, in a record's page.
  * Its columns are fields of its own `fields`.
@@ -2024,6 +2118,12 @@ export const ListNodeSchema = z.strictObject({
   parentField: fieldName.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),
+  card: ListCardSchema.optional(),
+  gallery: ListGallerySchema.optional(),
+  optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
+  rowTones: z.array(ToneWhenSchema).min(1).optional(),
+  rowBold: ModifierSchema.optional(),
+  rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'ListNode' });
 
 export const RootLayoutSchema = z

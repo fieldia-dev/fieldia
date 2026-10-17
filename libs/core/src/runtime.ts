@@ -50,6 +50,8 @@ export type {
   ListCalendar,
   CalendarView,
   ListCell,
+  ListCard,
+  ListGallery,
   MapCard,
   CardLine,
   CardPart,

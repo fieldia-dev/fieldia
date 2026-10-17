@@ -175,6 +175,7 @@ export const refusals: DesignerWords['refusals'] = {
   filterLabelNotOffered: (label: string) => `لا يعرض شريط التصفية ${label}: حدده أولًا`,
   leadNeedsChoice: (label) => `الأيقونة قبل الكلمات تأتي من قيمة حقل اختيار، و${q(label)} ليس حقل اختيار`,
   dotNeedsChoice: (label) => `نقطة الحالة لحقل اختيار، و${q(label)} ليس كذلك`,
+  cellWidgetKind: (label) => `لا يُرسم ${q(label)} هكذا: الشارات لسجلات رابط، والشريط لرقم، والهاتف لنص`,
   periodNeedsDate: (label) => `الفترة لحقل تاريخ، و${q(label)} لا يحمل تاريخًا`,
   totalNeedsNumber: (label) => `المجموع والمتوسط والأدنى والأعلى لحقل رقمي، و${q(label)} ليس كذلك. ويمكن لأي عمود أن يعدّ سجلاته`,
   parentNotOwnLink: (label) => `تتداخل الصفوف تحت رابط إلى سجلات القائمة نفسها، و${q(label)} ليس كذلك`,

@@ -144,7 +144,21 @@ export const list = {
   columnAbout: (label: string, stored: string) => `${label}: ${stored}, from the model. A column shows the field under its own name.`,
   // ---- a column's cells
   cellWidget: 'Drawn as',
-  cellWidgets: { words: 'Its words', dot: 'A state’s dot, then its words' },
+  cellWidgets: {
+    words: 'Its words',
+    dot: 'A state’s dot, then its words',
+    badge: 'A pill in its colour',
+    tags: 'Chips, one for each',
+    image: 'A small picture',
+    avatar: 'A round picture, or initials',
+    progressbar: 'A bar, and its per cent',
+    phone: 'A phone number',
+  },
+  pillColour: (option: string) => `Pill colour for ${option}`,
+  phoneLinks: 'Call and WhatsApp links',
+  mayHide: 'People may hide it',
+  mayHideChoices: { no: 'No', show: 'Yes, shown at first', hide: 'Yes, hidden at first' },
+  mayHideHint: 'With any column people may hide, the header has a Columns menu: people show, hide and order the columns there, and drag a header’s edge to size its column — kept for each of them, Reset putting back yours.',
   dotColour: (option: string) => `Dot colour for ${option}`,
   leadFrom: 'An icon before the words, by',
   noLead: 'None',
@@ -166,6 +180,30 @@ export const list = {
   // ---- a button for the rows chosen
   look: 'Look',
   actionHint: 'The name the app receives with the rows chosen; the app decides what it does.',
+  // ---- the list's rows: their tones, bold and buttons
+  rows: {
+    title: 'Rows',
+    toneHint: 'Each row’s words in a colour while a condition on its record holds: the first that holds. A card takes it on its edge.',
+    buttons: 'Buttons on each row',
+    addButton: 'Add a button on each row',
+    buttonsHint: 'A press runs the button with its row’s record alone; the app is given its id. Hidden on a row while its condition holds there.',
+  },
+  // ---- the list's cards and gallery
+  cards: {
+    title: 'Cards',
+    onPhone: 'Each record as a card on a phone',
+    gallery: 'A gallery of cards, on any width',
+    opens: 'Open on the gallery',
+    size: 'Card size',
+    sizes: { small: 'Small', medium: 'Medium', large: 'Large' },
+    heading: 'Title',
+    under: 'Under the title',
+    picture: 'Picture',
+    status: 'Status pill',
+    fromColumns: 'As the columns say',
+    nothing: 'Nothing',
+    note: 'A card keeps what its row has: its box to tick, its press, its buttons, its tone; Group By headings and totals stay. Lines unset: the next three columns.',
+  },
   // ---- the list's calendar
   calendar: {
     title: 'Calendar',
