@@ -47,7 +47,7 @@ test.describe('a list that adds up', () => {
     // Every invoice of the year, not only the ten shown, in pounds alone.
     await expect(amountIn(totalRow(page))).toHaveText(money(sum(thisYear)));
     // Lined up under the amounts: the total's end on the column's end.
-    const cell = (await rows(page).first().locator('td').last().locator('bdi').boundingBox())!;
+    const cell = (await rows(page).first().locator('td[data-col="amount"]').locator('bdi').boundingBox())!;
     const total = (await amountIn(totalRow(page)).locator('bdi').boundingBox())!;
     expect(Math.abs(cell.x + cell.width - (total.x + total.width)), 'the total is not lined up with the amounts').toBeLessThan(2);
     await expect(tickedRow(page)).toBeHidden();
@@ -62,7 +62,7 @@ test.describe('a list that adds up', () => {
     const ticked: number[] = [];
     for (const n of [0, 2, 3]) {
       await rows(page).nth(n).getByRole('checkbox').check();
-      ticked.push(amountOf((await rows(page).nth(n).locator('td').last().textContent()) ?? ''));
+      ticked.push(amountOf((await rows(page).nth(n).locator('td[data-col="amount"]').textContent()) ?? ''));
     }
     await expect(tickedRow(page).locator('th')).toHaveText('3 selected');
     await expect(amountIn(tickedRow(page))).toHaveText(money(ticked.reduce((a, b) => a + b, 0)));
