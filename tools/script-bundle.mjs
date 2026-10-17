@@ -1373,7 +1373,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A tab's count of a related list in it, asked of the source as the record is shown and drawn in the tab's pill
 // (open-small): list 103.42 and 33.50 to 104.25 and 33.78, to 104.3 and 33.8. Its rows and New the app's own way
 // first (`"open": "app"`): 104.41 and 33.85, to 104.5 and 33.9.
-const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [104.5, 33.9], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A column moved by dragging its header (0.26, open-columns): its ghost, the columns sliding aside, the line where it
+// goes, Escape, a finger's long press, the table scrolled at its edges, its place said (the widgets' movedTo, carried
+// by the part) and its sheet — columns 10.96 and 4.05 to 17.42 and 6.42; with the Columns menu's button given the
+// focus back without scrolling the table to it, and the edge's scroll by the time a frame took, 17.53 and 6.48; with
+// the Columns menu's cell held at the header's end, the card's marks for both held ends moved in from the list part,
+// 18.28 and 6.64 — to 18.3 and 6.7. The list part, which hands each header and the card to it, 103.42 and 33.50 to
+// 103.38 and 33.47, under its own.
+const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [104.5, 33.9], cards: [11.6, 3.7], columns: [18.3, 6.7], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

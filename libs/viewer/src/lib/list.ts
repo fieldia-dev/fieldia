@@ -279,7 +279,7 @@ export function listView(context: ListContext): ListView {
    */
   const shaping = node.optionalColumns ? columnsPart.loaded : undefined;
   const choices: ReturnType<ColumnsPart['columnChoices']> =
-    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
+    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept), ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) ?? null;
   if (spec) cards?.installCardStyles(doc);
   if (choices) shaping?.installColumnStyles(doc);
   /** The columns shown, in their order: the person's, else the page's. */
@@ -344,8 +344,11 @@ export function listView(context: ListContext): ListView {
         });
         th.append(button);
       }
-      // Its edge, dragged, sizes the column, where people shape the list's columns.
-      if (choices) th.append(choices.grip(name, th));
+      // Its edge, dragged, sizes the column, where people shape the list's columns; the header, dragged sideways, moves it.
+      if (choices) {
+        th.append(choices.grip(name, th));
+        choices.movable(name, th);
+      }
       return [name, th] as const;
     })
   );
@@ -1469,9 +1472,8 @@ export function listView(context: ListContext): ListView {
     report,
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
-  // Scrolled sideways, the first column kept in view is parted from those going under it.
-  const scroller = element.querySelector('.fd-list-scroll') as HTMLElement;
-  if (choices) scroller.addEventListener('scroll', () => scroller.toggleAttribute('data-scrolled', Math.abs(scroller.scrollLeft) > 0), { passive: true });
+  // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
+  choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
   widths?.observe(element);
   drawShape();

@@ -748,7 +748,9 @@ describe('a grid’s headers', () => {
     for (const column of ['product_id', 'qty', 'price', 'delivery', 'taxed']) {
       expect(api?.getColumnDef(column)).toEqual(expect.objectContaining({ wrapHeaderText: true, autoHeaderHeight: true }));
     }
-    expect(api?.getColumnDef('qty')?.headerTooltip).toBe('Quantity');
+    // Said as it is asked for (a finger resting on a header lifts its column instead).
+    const tooltip = api?.getColumnDef('qty')?.headerTooltip;
+    expect(typeof tooltip === 'function' ? tooltip({} as never) : tooltip).toBe('Quantity');
   });
 });
 

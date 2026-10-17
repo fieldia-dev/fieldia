@@ -130,6 +130,12 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-form .fd-grid-lines .fd-grid-editor .fd-input:focus { box-shadow: none; }
 /* A wrapping header breaks between its words, never inside one (its column has room for the longest). */
 .fd-grid-lines .ag-header-cell-text { word-break: normal; overflow-wrap: normal; }
+/* A finger's swipe on a column's header scrolls the page; resting there a moment lifts the column (grid.ts). AG Grid's
+   own style takes every touch there. Its edge, which sizes the column, keeps its own. */
+.fd-grid-lines .ag-header-cell[col-id]:not([col-id^="__"]) { touch-action: manipulation !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* A column being dragged, in the place it takes, as in a list: tinted, a line at its start; lifted by a finger, the same. */
+.fd-grid-lines :is(.ag-header-cell-moving, .ag-header-cell[data-lifted]) { background: var(--fd-accent-soft); box-shadow: inset 2px 0 0 var(--fd-accent); }
+.fd-grid-lines :is(.ag-header-cell-moving, .ag-header-cell[data-lifted]):dir(rtl) { box-shadow: inset -2px 0 0 var(--fd-accent); }
 /* A popup editor (links) covers its cell exactly and looks like one being edited in place. */
 .ag-popup-editor .fd-grid-editor {
   background: var(--ag-background-color); border: var(--ag-cell-editing-border); border-radius: var(--ag-border-radius);

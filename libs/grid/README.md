@@ -34,7 +34,11 @@ pass `widgets={gridWidgets}`, in Vue `:widgets="gridWidgets"`, in Angular
 - **Moving lines** by a handle, with a `sequenceField` on the field.
 - **Totals** under the lines, **columns** people resize, move and choose
   (kept in the viewer's `preferences` store), **long tables** that scroll
-  inside, and `"editMode": "row"` to open a whole line at once.
+  inside, and `"editMode": "row"` to open a whole line at once. A column moves
+  by dragging its header, as in a list: Escape puts it back, a drag out of the
+  grid never hides it, a finger resting a moment on a header lifts its column
+  (a swipe there scrolls the page), and its new place is said to a screen
+  reader.
 - **A refused save** marks the wrong cells and opens the first one.
 - **Most lines** (`"options": { "max": 12 }` on the node), as the plain table
   keeps them: at its most, Add and a line's copy are hidden (never disabled),
