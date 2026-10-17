@@ -509,7 +509,7 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 165 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 160 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
 another record, a phone, a theme, possible duplicates… — comes in 20 parts
 beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
@@ -543,6 +543,14 @@ add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
 `@fieldia/widgets` and the React, Vue and Angular bindings) has all four
 languages with no extra import; `addLanguage(locale, { messages, widgets,
 viewer })` replaces a language's words in either.
+
+The words only a part shows — a list's, Import's, a file's, booking slots'… —
+come in that part, in English, and a language's script has all of them: in
+the script bundle, `Fieldia.VIEWER_LABELS.en` (and `WIDGET_LABELS`,
+`MESSAGES`) holds a part's words once that part has come, and a part never
+puts its words over ones a table has (a language's, or your own). The viewer
+reads its words as it draws them, so a page mounted before its parts came
+shows theirs.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.

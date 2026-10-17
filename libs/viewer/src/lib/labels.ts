@@ -797,3 +797,27 @@ export function ownLocale(tag = 'en'): Locale {
   }
   return 'en';
 }
+
+const own = (words: object, key: PropertyKey) => Object.prototype.hasOwnProperty.call(words, key);
+
+/**
+ * The viewer's words for a page in `locale`: the app's own (`labels`) over that language's, each read as it is drawn —
+ * not copied as the page is mounted, so the words a part brings as it comes (the one-tag script's: add-language.ts) are
+ * there for what is drawn once it has. It reads as the words it holds: spread, keyed and listed alike.
+ */
+export function viewerWords(locale: Locale, labels: Partial<ViewerLabels> = {}): ViewerLabels {
+  const mine: Record<string, unknown> = { ...labels };
+  const table = () => (own(VIEWER_LABELS, locale) ? VIEWER_LABELS[locale] : VIEWER_LABELS.en) as unknown as Record<string, unknown>;
+  const has = (key: PropertyKey) => typeof key === 'string' && (own(mine, key) || own(table(), key));
+  const word = (key: PropertyKey) => (typeof key !== 'string' ? undefined : own(mine, key) ? mine[key] : table()[key]);
+  return new Proxy({} as ViewerLabels, {
+    get: (_, key) => word(key),
+    set: (_, key, value) => {
+      if (typeof key === 'string') mine[key] = value;
+      return true;
+    },
+    has: (_, key) => has(key),
+    ownKeys: () => [...new Set([...Object.keys(table()), ...Object.keys(mine)])],
+    getOwnPropertyDescriptor: (_, key) => (has(key) ? { value: word(key), writable: true, enumerable: true, configurable: true } : undefined),
+  });
+}
