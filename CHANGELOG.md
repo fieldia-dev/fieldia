@@ -15,6 +15,257 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.25.0 — 2026-10-17
+
+**Records listed inside a record, lists people read on a phone and shape
+themselves, a customer's data brought in, every page on paper, possible
+duplicates merged** — a smaller main script, and the business owner's walk of
+0.24 mended. The page format is 0.4; a page of 0.1, 0.2 or 0.3 is read as it
+is.
+
+**A related list inside a record.** A record's page may list another model's
+records that point at it — a customer's invoices, a property's viewings — in a
+group, a tab or straight in the sheet (`"type": "related"`: its `model`, their
+link `field`, their own `fields` and `columns`, and `cells`, `filter`, `sort`,
+`limit` (1–100), `searchFields`, `viewAll` and `create`). It asks the data
+source's `list` for them — nothing new to write — a page at a time (5 unless
+said), searched, sorted and counted, their totals under them, drawn by the list
+part's own table; its title says how many there are. A row opens its record in
+a dialog of the page your app gives for the model; **New** makes one there with
+its link filled in; **View all** opens your list of them kept to this record's,
+in a dialog, a side panel or this page's place, or your app's own way
+(`onOpen`). Before the record's first save it says nothing points at it yet.
+On a phone its rows are cards (`card`), as a list's; its rows take `rowTones`,
+`rowBold` and `rowButtons` as a list's do, each read on the row's own record —
+its fields, `id`, `user`, `context` — a row's button run with that one record
+(`recordIds`); on paper, its rows as shown and "5 of 23" where they run past a
+page. `form.relatedFilter(id)` gives what it asks for. In the designer: a
+Related list among a record's toolbox, its panel's records, link, columns,
+cards, row tones and buttons, rows a page, New and View all. New demos: a
+customer with its invoices and quotations, a property with its viewings.
+
+**Lists people read anywhere and shape themselves.**
+
+- **Cards on a phone** (`card`): where a list is 520px wide or less, each row is
+  a card — its title, a picture or a person's initials, a few lines and its
+  status as a pill, each by field (`{}` takes them from the columns) — ticked,
+  opened, toned and pressed as its row is, under its Group By heading, the
+  totals in sight under the cards as they scroll.
+- **A gallery** (`gallery`: `opens`, `size`): the same cards side by side on any
+  width, their pictures large, a press away on the list's switcher.
+- **Richer cells**: `badge` (a pill in its tones), `tags` (links as chips),
+  `image` and `avatar`, `progressbar`, `percentage`, `duration`, and `phone`
+  with `options.links` (a call, and WhatsApp where the number can be a mobile).
+- **Rows' own rules**: a row's tone while a condition on its record holds
+  (`rowTones`), its bold (`rowBold`) and its own buttons (`rowButtons`, each
+  shown by its `invisible` on the row's record, pressed with that record
+  alone) — conditions reading the person (`user`) and the app's `context` as a
+  form's do (`form.recordReads`).
+- **Columns people shape** (`optionalColumns`: each `show` or `hide` at first):
+  a Columns menu to show, hide and order them, a header's edge to size them,
+  the header and the first column in view as the rows scroll, kept for each
+  person in the viewer's `preferences` (`<page>.<list>.columns`). Export and
+  Print write the columns shown, in their order.
+
+The cards and the columns come in parts of their own (`fieldia.cards.js`,
+`fieldia.columns.js`), only where a list asks. In the designer: a list's Rows,
+Cards and gallery, and a column's ways of drawing. New demo: homes for sale as
+a gallery; the contacts shaped, with avatars, phone links and cards; invoices
+as cards on a phone.
+
+**Getting a customer's data in.** A list may offer **Import** (`"import":
+true`, or the fields): records made from an Excel workbook (.xlsx) or a CSV
+file, chosen or dropped and read in the browser with no library — a workbook's
+zip opened with the browser's DecompressionStream, its days, numbers and yes or
+no kept as it keeps them, its sheet picked; a CSV file's encoding (UTF-8 with
+or without its mark, UTF-16, a language's Windows code page such as Arabic's
+Windows-1256) and separator guessed, and changed by the person where wrong. Its
+columns are matched to the page's fields by name or label in any of the page's
+languages; every row is checked by the page's own rules before anything is
+written — numbers in any script, days in the page's order, money in its
+record's currency, yes or no and choices by their labels, links by name through
+the source's search, phones the world over, required, most, least, places — the
+rows refused named with why and downloadable as a file to fix. Then written by
+the source's new optional `createMany` (`CreateManyRequest`,
+`CreateManyResult`), or a save per row (`newRecordSave`), with progress and
+Stop, and **Undo the import** deletes what it made. At most 50,000 rows in the
+browser; the source's `importRecords` (`ImportRequest`) takes a bigger file on
+the server. `importFields(page, list)`, `IMPORT_KINDS`, `importable`. It comes
+in a part of its own, `fieldia.import.js`, loaded the first time Import is
+pressed. In the designer: a list's Import.
+
+**Rows pasted into a table of lines.** A block copied from a spreadsheet and
+pasted in a cell of a table of lines fills across and down from it, each cell
+read as its column reads what is typed, as the grid takes one; rows past the
+last line add lines, as many as `max` allows, and one note says what went in
+and what did not, with why. The cells' readers (`blockOf`, `readPastedCell`,
+`whyNotPasted`) moved from @fieldia/grid into the lines part; the grid's Add and
+a line's copy hide at the table's most lines, and ⌘V pastes on a grid cell in
+Safari.
+
+**Every page on paper.** Ctrl+P, the browser's menu or the page's own Print
+prints a clean page by Fieldia's `@media print` rules, in every page's sheet:
+every tab under its name, every folded group open, no buttons or bars, each box
+as the words a person reads in it, a table of lines whole with its header on
+each sheet, light colours, and over it the record's title and the day it was
+printed. A page's `print` (`header`, `footer`, `logo`, each `{field}` showing
+its value) puts the app's logo and words over it and words under it. With a
+dialog or a panel open, its form prints alone. **This record alone**: the gear
+menu's built-in `print`, a `{ "do": "print" }` step, or `viewer.print()`.
+**The app's own PDF**: an action's answer may carry a `file` (`ActionFile`:
+`name`, `type`, `url`, `data` or `bytes`, `show`), shown over the record in the
+browser's own viewer with Download, or saved (`ActionHost.print`,
+`ActionHost.file`). **A list's Print** (`"print": true`): every record the
+search finds, asked a page at a time as Export asks, in the columns shown,
+under its Group By headings with their sums, the totals under them, its
+filters said in words, its footer at the foot of every sheet; a list shown as
+cards prints as a table. In the designer: a page's printout words and logo, a
+list's Print, the built-in Print.
+
+**Possible duplicates, and Merge.** A record's page may name the fields records
+like it are found by (`"duplicates": { "fields": [...], "on": "type" | "save"
+}`): the data source's new optional `duplicates` (`DuplicatesRequest`,
+`DuplicatesResult`, `DuplicateMatch`) is asked a moment after typing rests in
+one of them, as a saved record opens and as it is saved, and each match is said
+under the field it matched on, with Open it, "It's someone new" and — with the
+source's `merge` (`MergeRequest`, `MergeResult`) — **Merge**: the two side by
+side, a value picked for each field they hold apart. Never in the way of a
+save. The form's `canFindDuplicates`, `findDuplicates`, `canMerge`,
+`readRecord` and `merge`; the memory source's `duplicates` option
+(`alikeRecords()`, the full `@fieldia/core`) and its `merge`. It comes in a part
+of its own, `fieldia.duplicates.js`, never waited for. In the designer: a
+record screen's possible duplicates. New demo: a customer typed twice.
+
+**A smaller main script.** What only some pages use comes the first time a
+page uses it:
+
+- a link to other records — a many2one's and a reference's box, a many2many's
+  tags and checkboxes, a char field's tags — in a part of its own,
+  `fieldia.relations.js` (`relationsPart`); a choice's tags and a long choice's
+  searched list (over 15 options) in the choice part; a one2many's cards in the
+  lines part; a value to copy and a live timer in the business part. Each is
+  drawn plainly until its part comes, keeping what is typed in it.
+- The English words only a part shows are in that part (`tools/part-words.mjs`
+  says which), added to every language's tables as it comes, never over a word
+  a table has; the viewer reads its words as it draws them.
+
+`partWith`, `partsOf` (an analytic distribution needs the business and the
+relations parts together), `floatUnder` and `FloatPlace` are new exports, and
+`PartFactory.partOf(node, page, field?)` takes the field.
+
+**@fieldia/calendar on its page's clock.** A calendar places its events on its
+start field's time zone, else the page's `timeZone`, else the browser's, in
+every view; the zone's short name stands after the span where it is not the
+reader's own, and a record moved keeps its real length across a change of the
+clocks. New demo: the Berlin showroom's week of test drives.
+
+**A business owner's walk of 0.24, mended:**
+
+- **A value worked out from lines waits for a line that does not read**: a
+  page's `compute` reading lines, a read-only number, amount or JSON on a record
+  whose source has an onchange, and a line's own dialog show a dash with why
+  ("Fix line 1 of Order lines to see Untaxed amount") until it reads
+  (`form.waitsFor(field)`, `WaitsFor`).
+- **A list drops open only when a person asks** — a click, a word typed,
+  Alt+Down — in a link's box, a many2many's tags, a reference and a choice's
+  tags; never for a focus the program puts there or Tab. The grid opens a
+  cell's list on a press.
+- **A double-click on a booking's time never books the one that slid under the
+  pointer**, and the zone's note names it all year ("Times are Central European
+  Time").
+- **Totals over several currencies say so** — "Several currencies" in the cell,
+  on a card and on a Group By heading, the sentence as its title — and a
+  heading's sums are written in full.
+- **A CSV file holds what a spreadsheet adds up**: numbers plain (a decimal
+  comma where the file's values are kept apart by semicolons), an amount's
+  currency in a column of its own or in its header, days and times as ISO writes
+  them on the clock the list shows; a workbook's times are on that clock too.
+- **On a phone a record's labels stand above their values**, in every theme;
+  its title wraps whole.
+- **A phone number's letters are said**, and WhatsApp offered only where the
+  number can be a mobile (`canBeMobile`, the phone part; its table regenerated
+  from libphonenumber-js 1.12.7 with each country's mobile prefixes).
+- **A button pressed takes away what earlier presses said** (its toasts); steps
+  the app runs itself still add theirs.
+- The map's legend says what a round mark with a number counts; the phone box
+  keeps the page's autofill purpose, and its empty Country reads on Apple's
+  dark fill.
+- The designer: a survey from nothing opens blank, its check neutral; Try it
+  leaves out "Problems" when there are none; a step's check never names `id`,
+  `user`, `editing` or `context` as missing fields.
+- A hidden button in a dialog's foot is hidden (a read-only record's dialog
+  showed Save & Close); a list page in a dialog closes with Close alone.
+
+**And:**
+
+- fieldia.dev's gallery in plain words, each demo found by what it does and its
+  common words, slips of the keys forgiven, its headings counting what a
+  search keeps; under every demo's name, the first thing to try, all its steps
+  and its source on GitHub. The purchase order and invoice templates follow
+  their real steps; phones by country on the sign-up, the test drive and
+  contact us; "Someone else books 10:00" on the test drive.
+- The page format is **0.4** (`FORMAT_VERSION`): it only added, so a 0.1, 0.2
+  or 0.3 page is read as it is, and `upgradePage` writes 0.4 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- Ctrl+P prints the print look of any page (Fieldia's `@media print` rules): no
+  bars or buttons, every tab, each box as words. Every form carries a hidden
+  `.fd-print-head`; tab panels carry `data-fd-tab` and `data-off`;
+  @fieldia/grid listens to the window's `beforeprint` and `afterprint`.
+- A link's box, a many2many's tags, a reference and a choice's tags no longer
+  open their list when they take the focus — by Tab or a program's `focus()` —
+  only for a click, typing, Alt+Down or the arrows.
+- On a form 520px wide or less (a phone), labels stand above their values in
+  every theme (`@container fd-form`).
+- A button's press clears the toasts earlier presses left.
+- A total over several currencies says "Several currencies" where it was blank;
+  a Group By heading's sums are written in full.
+- A CSV export writes numbers, amounts and days as a spreadsheet reads them
+  (`250000.00`, `2026-10-15 14:30`), an amount's currency in a column of its own
+  or its header, where it wrote them as the list shows them; a workbook writes
+  a date and time on the clock the list shows (it wrote the stored UTC clock).
+- WhatsApp is offered only for a number that can be a mobile.
+- `onOpenRecord` (a list's) is given the row's name as its second argument.
+- The widgets' `slotsZone` words drop "({mark})": the note names the zone all
+  year.
+- An app that gives the viewer a whole `labels` object adds the words of a
+  related list (`related…`), a gallery and columns (`viewGallery`, `columns`,
+  `moveColumnUp`, `moveColumnDown`, `resetColumns`, `resizeColumn`,
+  `rowActions`), Import (`import…`), Print (`print…`), possible duplicates and
+  Merge (`duplicate…`, `merge…`), several currencies (`totalMixedShort`) and a
+  CSV file's currency column (`exportCurrency`); one that gives the widgets a
+  whole `labels` object adds `pasteAddedLines`, `pasteAddedLinesOne` and
+  `phoneLetters`. `addLanguage` fills any left out from English.
+- In the script bundle, `Fieldia.VIEWER_LABELS`, `WIDGET_LABELS` and `MESSAGES`
+  hold a part's English words only once that part has come (the npm packages'
+  tables are complete, as before); a language given again after a page mounts
+  shows on the next redraw.
+- `PART_RANK` (`@fieldia/widgets`) gains `import` and `duplicates` before the
+  themes — the ranks from the themes' on move on by two — and `cards` (a table
+  of lines drawn as cards) last.
+- A page the designer saves says `"fieldia": "0.4"`: Fieldia 0.24 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.3 (nothing 0.4 adds is in them).
+- An app that serves `fieldia.js` itself serves the new `fieldia.relations.js`,
+  `fieldia.cards.js`, `fieldia.columns.js`, `fieldia.import.js` and
+  `fieldia.duplicates.js` beside it: the package's `bundle` folder has them all.
+  A CDN already does.
+- @fieldia/grid reads a pasted block with the lines part's readers (its own
+  `cell-paste` module is gone), and loads the lines part for the first block
+  pasted.
+- `MemoryDataSource` has `createMany` and `merge`, and `duplicates` through its
+  option; it leaves `importRecords` out as it leaves `exportRecords`.
+- `@fieldia/calendar` places its events on its start field's or its page's
+  time zone, where it used the browser's clock.
+
+**Size:** `fieldia.js` 501.0 KB, 161.1 gzipped (0.24: 512.8, 167.1). Its parts
+are 2.2 to 33.5 KB gzipped: the list's grew with related lists, richer rows,
+Print and its own words (33.5, from 23.7); the relations' (7.5), cards' (3.7),
+columns' (4.1), Import's (14.3) and possible duplicates' (6.2) are new and
+loaded only where a page uses them. A language's add-on is 9.9 to 11.7 KB
+gzipped (0.24: 8.3 to 9.7).
+
 ## 0.24.0 — 2026-10-16
 
 **Time zones, phones the world over, booking slots, lists that add up and go
