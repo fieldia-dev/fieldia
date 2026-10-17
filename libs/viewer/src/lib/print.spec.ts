@@ -1,4 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
+import { openFormDialog } from './dialog';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -126,6 +127,38 @@ describe('a record on paper', () => {
     title.value = 'INV/2026/0042-B';
     window.dispatchEvent(new Event('beforeprint'));
     expect(words(host)).toContain('INV/2026/0042-B');
+  });
+});
+
+describe('what is in front, and the footer on every sheet', () => {
+  it('with a form dialog open, prints only the form in it — the dialog’s record — not the page behind', async () => {
+    const host = await mount();
+    void openFormDialog({ page: invoice, dataSource: source(), recordId: 7, title: 'INV/2026/0042' });
+    await until(() => document.querySelector('.fd-form-dialog form.fd-form .fd-print-head'));
+    const front = document.querySelector('.fd-form-dialog form.fd-form') as HTMLElement;
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(document.documentElement.classList.contains('fd-print-one')).toBe(true);
+    expect(front.classList.contains('fd-print-this')).toBe(true);
+    expect(root(host).classList.contains('fd-print-this')).toBe(false);
+    window.dispatchEvent(new Event('afterprint'));
+    expect(document.documentElement.classList.contains('fd-print-one')).toBe(false);
+    expect(front.classList.contains('fd-print-this')).toBe(false);
+  });
+
+  it('with none open, prints the page as it is: nothing marked to print alone', async () => {
+    await mount();
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(document.documentElement.classList.contains('fd-print-one')).toBe(false);
+    window.dispatchEvent(new Event('afterprint'));
+  });
+
+  it('prints a record’s footer once, after it: no room kept at each sheet’s foot, which its groups’ grids do not keep to', async () => {
+    const host = await mount();
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(root(host).hasAttribute('data-print-room')).toBe(false);
+    // Right after the record's content, in its flow.
+    expect(root(host).querySelector(':scope > .fd-print-foot')?.previousElementSibling?.classList.contains('fd-content')).toBe(true);
+    window.dispatchEvent(new Event('afterprint'));
   });
 });
 

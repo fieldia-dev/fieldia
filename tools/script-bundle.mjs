@@ -674,7 +674,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // print.ts), the page's `print` setting, a list's `print`, the built-in Print and the `print` step checked and run, an
 // action's file handed to the host, and their English words — 512.84 measured before, 521.06 after: 8.2 more, to 521.1.
 // A list's printout and an action's file shown are the list's and the files part's (listed with the part budgets below).
-const BUDGET_KB = 521.1;
+// With a dialog's form in front only it prints (the page behind, and the dialog's frame, left off the paper), a column
+// of parts and the card laid out as blocks on paper (Firefox moved a grid's part it could not break to the next sheet
+// whole), and a footer's words measured as paper writes them: 521.06 measured before, 522.19 after — 1.2 more, to 522.2.
+const BUDGET_KB = 522.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -815,8 +818,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
 // On paper (0.25, Wave 3's print lane; listed with the raw budget above), the rules for paper 0.9 of it: 167.12
-// measured before, 169.29 after — 2.2 more, to 169.3.
-const GZIP_BUDGET_KB = 169.3;
+// measured before, 169.29 after — 2.2 more, to 169.3. The form in front and blocks on paper: 169.57 after, to 169.6.
+const GZIP_BUDGET_KB = 169.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1084,8 +1087,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // the dialog a file field's file opens in (viewFiles, showAppFile) — files 32.37 and 11.92 (30.89, 11.26); and each
 // part's own rules for paper in its own sheet: business 26.94 and 9.89 (26.60, 9.82), head 34.24 and 9.93 (34.00,
 // 9.89), lines 23.97 and 8.31 (23.88, 8.28), phone 34.83 and 15.24 (34.77, 15.21), survey 35.61 and 12.33 (35.50,
-// 12.29), text 55.87 and 18.59 (55.60, 18.52) — each to the next 0.1 over where it passed its own.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [78.5, 25.6], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [24.0, 8.4], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6] };
+// 12.29), text 55.87 and 18.59 (55.60, 18.52) — each to the next 0.1 over where it passed its own. A list's printout's
+// footer at the foot of every sheet, its room measured and kept there: list 79.13 and 25.72 (78.49, 25.51).
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [79.2, 25.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [24.0, 8.4], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

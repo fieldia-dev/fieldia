@@ -1043,6 +1043,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         box.style.setProperty('--fd-columns', String(wideColumns(columns)));
         // Twelfths: eleven gaps between them, which shrink in a narrow column rather than push past it.
         if (wideColumns(columns) === 12) box.setAttribute('data-twelfths', '');
+        // One column, its parts one under another: on paper a plain block, which every engine breaks between sheets.
+        if (wideColumns(columns) === 1) box.setAttribute('data-columns', '1');
         // Counts given for the narrower widths replace the skin's own stacking there.
         if (typeof columns === 'object') {
           for (const width of ['medium', 'narrow'] as const) {

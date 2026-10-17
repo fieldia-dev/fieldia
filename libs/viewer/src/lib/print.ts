@@ -89,6 +89,20 @@ export function printAlone(doc: Document, target: HTMLElement, ended: () => void
   });
 }
 
+/**
+ * The form in front: the one in the dialog or panel opened last over the page, while one is open — what a person
+ * printing looks at, and so what prints, alone; null with none open. A dialog with no form in it (a file shown) is
+ * no record to print: the form under it is the one in front.
+ */
+function frontForm(doc: Document): Element | null {
+  const open = [...doc.querySelectorAll('.fd-form-dialog[aria-modal="true"]')].filter((box) => !box.closest('[hidden]'));
+  for (const box of open.reverse()) {
+    const form = [...box.querySelectorAll('form.fd-form')].find((one) => one.closest('.fd-form-dialog') === box);
+    if (form) return form;
+  }
+  return null;
+}
+
 /** A box's words as a person reads them: its text, or a choice's label — none for a choice left empty. */
 function boxWords(box: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): string {
   if (box.tagName !== 'SELECT') return box.value;
@@ -142,6 +156,8 @@ export function printLook(context: PrintContext): PrintLook {
   }
 
   let printing = false;
+  /** This form printed alone as the one in front of the page (a dialog's), by the browser's own print. */
+  let inFront = false;
   const ready = () => {
     if (printing) return;
     printing = true;
@@ -149,6 +165,14 @@ export function printLook(context: PrintContext): PrintLook {
     context.drawAll();
     fillIn();
     writeBoxes();
+    // With a dialog's form in front, it alone prints: never the page behind with the dialog over it. Unless a Print
+    // of one part alone is on its way already.
+    const page = doc.documentElement;
+    if (!page.classList.contains('fd-print-one') && frontForm(doc) === root) {
+      inFront = true;
+      page.classList.add('fd-print-one');
+      root.classList.add('fd-print-this');
+    }
   };
   const done = () => {
     if (!printing) return;
@@ -159,6 +183,11 @@ export function printLook(context: PrintContext): PrintLook {
     }
     written.length = 0;
     root.removeAttribute('data-fd-print');
+    if (inFront) {
+      inFront = false;
+      doc.documentElement.classList.remove('fd-print-one');
+      root.classList.remove('fd-print-this');
+    }
   };
   win?.addEventListener('beforeprint', ready);
   win?.addEventListener('afterprint', done);

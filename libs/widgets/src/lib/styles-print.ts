@@ -35,6 +35,8 @@
  */
 export const PRINT_CSS = /* css */ `
 .fd-print-head, .fd-print-foot, .fd-print-box { display: none; }
+/* A footer's words as paper has them, here too: its height is measured as printing begins (print.ts), out of sight. */
+.fd-print-foot { padding-block-start: 8px; border-block-start: 1px solid var(--fd-border); font-size: 11px; line-height: 1.4; color: var(--fd-muted); white-space: pre-line; }
 @media print {
   .fd-form, .fd-theme {
     --fd-text: #1d2024 !important; --fd-muted: #545a63 !important; --fd-page: #fff !important; --fd-surface: #fff !important;
@@ -44,6 +46,11 @@ export const PRINT_CSS = /* css */ `
   .fd-form *, .fd-form *::before, .fd-form *::after { box-shadow: none !important; text-shadow: none !important; animation: none !important; transition: none !important; }
   .fd-form :is(.fd-card, .fd-sheet-page, .fd-content, .fd-section, .fd-step, .fd-head) { background: none !important; }
   .fd-form .fd-card { border: 0 !important; padding: 0 !important; }
+  /* The card and a column of parts as blocks on paper, their gaps as margins: Firefox moves a grid's part it cannot
+     break to the next sheet whole (a record's first group left its first sheet empty), and breaks a block where it may. */
+  .fd-form :is(.fd-card, .fd-grid[data-columns="1"]) { display: block !important; }
+  .fd-form .fd-card > * + * { margin-block-start: 18px; }
+  .fd-form .fd-grid[data-columns="1"] > * + * { margin-block-start: 16px; }
   .fd-form .fd-sheet-layout { display: block !important; max-width: none !important; }
 
   /* Left out: what is pressed, chosen from or said for the screen. */
@@ -94,10 +101,13 @@ export const PRINT_CSS = /* css */ `
   .fd-print-what { margin-inline-start: auto; text-align: end; }
   .fd-print-title { font-weight: 600; color: var(--fd-accent); }
   .fd-print-when { font-size: 11px; color: var(--fd-muted); }
-  .fd-form .fd-print-foot { display: block; margin-block-start: 20px; padding-block-start: 8px; border-block-start: 1px solid var(--fd-border); font-size: 11px; color: var(--fd-muted); white-space: pre-line; }
+  .fd-form .fd-print-foot { display: block; margin-block-start: 20px; }
+  /* A question asked, or a file shown over the page, is no part of it on paper. */
+  .fd-dialog-backdrop:not(.fd-form-dialog-backdrop) { display: none !important; }
 
-  /* Printed by its own Print: the form alone, what is round it in the app's page left out. */
+  /* Printed by its own Print, or in front in a dialog: the form alone, what is round it in the app's page left out —
+     a dialog's frame, its title and buttons, and the page behind it. */
   html.fd-print-one :has(.fd-print-this) > :not(.fd-print-this, :has(.fd-print-this)) { display: none !important; }
-  html.fd-print-one :has(.fd-print-this) { display: block !important; position: static !important; overflow: visible !important; width: auto !important; max-width: none !important; height: auto !important; margin: 0 !important; padding: 0 !important; border: 0 !important; transform: none !important; }
+  html.fd-print-one :has(.fd-print-this) { display: block !important; position: static !important; overflow: visible !important; width: auto !important; max-width: none !important; height: auto !important; max-height: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; transform: none !important; translate: none !important; filter: none !important; backdrop-filter: none !important; contain: none !important; animation: none !important; place-self: auto !important; place-items: normal !important; container-type: normal !important; }
 }
 `;
