@@ -704,8 +704,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // outside this script, as scheduleSlots is), the page check of a page's duplicates, their 20 English words, and the
 // viewer asking for the part where the page and its source both ask — the notes, the merge's screen and their sheet
 // in fieldia.duplicates.js — 512.84 measured before, 517.05 after: 4.2 more, to 517.1.
-// Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const BUDGET_KB = 533.0;
+// Wave 3's five lanes joined for 0.25 (related lists, cards and columns, Import, paper, possible duplicates), with a
+// related list's cards on a phone, a list printed in the columns shown and a related list's "5 of 23" on paper,
+// measured in the merged build: 512.84 at 0.24.0, 536.48 now — 23.6 more (the lanes' growths above add to 23.5), to
+// 536.5.
+const BUDGET_KB = 536.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -855,8 +858,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 169.29 after — 2.2 more, to 169.3. The form in front and blocks on paper: 169.57 after, to 169.6.
 // Possible duplicates and Merge (0.25; listed with the raw budget above): 167.12 measured before, 168.50 after — 1.4
 // more, to the next 0.1 over, 168.6 (their 20 words about 0.6 of it).
-// Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const GZIP_BUDGET_KB = 175.0;
+// Wave 3's five lanes joined for 0.25 (listed with the raw budget above): 167.12 at 0.24.0, 174.12 now — 7.0 more, to
+// 174.2.
+const GZIP_BUDGET_KB = 174.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -981,8 +985,10 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Merge…, and the merge's screen, its columns, rows, what will happen and how it ended — 20 in each: Arabic's 54.23 and
 // 9.70 measured before, 56.56 and 10.09 after, to 56.6 and 10.1; German's 23.15 and 8.30 to 24.25 and 8.65, to 24.3
 // and 8.7; French's 23.97 and 8.34 to 25.06 and 8.68, to 25.1 and 8.7.
-// Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const ADD_ON_BUDGET_KB = { ar: [67.0, 11.8], de: [29.0, 10.0], fr: [30.0, 10.2] };
+// Wave 3's five lanes joined for 0.25, measured in the merged build — their words added up, and "{n} of {total}" for a
+// related list on paper: Arabic's 66.70 and 11.56, German's 28.75 and 9.87, French's 29.80 and 9.94 (54.23 and 9.70,
+// 23.15 and 8.30, 23.97 and 8.34 at 0.24.0) — each to the next 0.1 over.
+const ADD_ON_BUDGET_KB = { ar: [66.7, 11.6], de: [28.8, 9.9], fr: [29.8, 10.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1174,8 +1180,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // remembered by record, Merge…'s screen of the two side by side, and their sheet — new, in fieldia.duplicates.js
 // (duplicates 13.9, 5.9, as measured 13.89 and 5.87), loaded only where a page names duplicates and its source answers
 // them, never waited for. In the main script they would have added 13.9 and 5.9 to every page.
-// Wave 3 joined for 0.25: provisional until every lane is in; set once from the merged build.
-const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.5, 32.2], cards: [11.6, 3.7], columns: [10.7, 4.0], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [31.0, 10.8], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], duplicates: [13.9, 5.9] };
+// Wave 3's five lanes joined for 0.25, measured in the merged build (0.24.0's in brackets): list 98.16 and 31.66
+// (72.41, 23.71: a related list's 4.96 and 1.55, the richer rows' 10.88 and 3.68, Import's button and report 2.95 and
+// 0.74, Print 6.72 and 2.01, and a related list's cards and "5 of 23" — to 98.2 and 31.7); lines 30.92 and 10.68
+// (23.88, 8.28: the paste's readers, and its rules for paper — to 31.0 and 10.7); head, text, business, files, survey
+// and phone as the print lane set them; the new cards 11.53 and 3.67, import 33.15 and 13.29 and duplicates 13.90 and
+// 5.87, each under its lane's; columns 10.82 and 4.00 — a column's grip saying its width from the first, as a
+// separator that takes the focus must (axe on the contacts) — to 10.9 and 4.1.
+const PART_BUDGET_KB = { head: [34.3, 10.0], text: [55.9, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [98.2, 31.7], cards: [11.6, 3.7], columns: [10.9, 4.1], import: [33.2, 13.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [31.0, 10.7], business: [27.0, 9.9], files: [32.4, 12.0], survey: [35.7, 12.4], phone: [34.9, 15.3], slots: [14.7, 5.6], duplicates: [13.9, 5.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1312,6 +1324,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
   hasIn('a page of plain parts', '');
+  // On paper, its printout's head: in every form, hidden, its rules for paper in this script's sheet.
+  if (!host.querySelector('.fd-form .fd-print-head[aria-hidden="true"]')) throw new Error("in a page, a form carries no printout's head");
   plain.destroy();
   gone('plain');
   // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
@@ -1324,14 +1338,14 @@ console.log(`parts: ${partSizes.join('; ')}`);
   contact.destroy();
   gone('contact');
   // A list with its search bar: the list part, the page drawn once it came; its phone column's numbers written by the
-  // phone part, in already. Export and Edit are asked for by the page: neither is in its bar.
+  // phone part, in already. Export, Edit, Import and Print are asked for by the page: none is in its bar.
   const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
   waits(customers, 'a list');
   await customers.drawn;
   hasIn("a list's screen", 'list, phone');
   if (!host.querySelector('.fd-list-table') || !host.querySelector('.fd-search-input') || !doc.getElementById('fd-list-styles')) throw new Error('in a page, a list is not drawn from its part');
   if (!(await until(() => host.querySelector('.fd-list-row')))?.textContent.includes('+20 10 1234 5678')) throw new Error(`in a page, a list's phone is not written as people read it: ${host.querySelector('.fd-list-row')?.textContent ?? 'no row'}`);
-  if (!host.querySelector('.fd-list-export')?.hidden || host.querySelector('.fd-list-edit')) throw new Error("in a page, a list that asks for neither shows Export or Edit");
+  if (!host.querySelector('.fd-list-export')?.hidden || host.querySelector('.fd-list-edit') || !host.querySelector('.fd-list-import-button')?.hidden || !host.querySelector('.fd-list-print-button')?.hidden) throw new Error('in a page, a list that asks for none shows Export, Edit, Import or Print');
   customers.destroy();
   gone('customers');
   // Invoices that add up: the list part already in, the totals row under the list from the source's totals.
@@ -1340,8 +1354,9 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const invoiced = { 1: { name: 'INV/1', invoice_date: `${year}-01-15`, due_date: `${year}-02-15`, state: 'paid', currency_id: egp, amount: 100 }, 2: { name: 'INV/2', invoice_date: `${year}-01-20`, due_date: `${year}-02-20`, state: 'sent', currency_id: egp, amount: 250 } };
   const invoices = inPage.mountViewer(host, { page: read('invoices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { invoice: invoiced, currency: { 1: { name: 'EGP' } } } }) });
   await invoices.drawn;
-  // Its rows cards on a phone (the cards part), its totals in sight under them.
+  // Its rows cards on a phone (the cards part), its totals in sight under them; Print in its bar, as it asks.
   hasIn('invoices that add up', 'cards, list, phone');
+  if (host.querySelector('.fd-list-print-button')?.hidden !== false) throw new Error('in a page, a list that asks for Print does not offer it');
   if (!(await until(() => host.querySelector('.fd-list-total:not([hidden])')?.textContent.includes('350')))) throw new Error(`in a page, a list's totals row is not drawn: ${host.querySelector('.fd-list-total')?.textContent ?? 'no totals row'}`);
   invoices.destroy();
   gone('invoices');
@@ -1372,19 +1387,21 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Homes as a gallery: the cards part already in, the list opening on its cards.
   const homes = inPage.mountViewer(host, { page: read('homes-gallery.page.json'), dataSource: inPage.createMemoryDataSource({ records: { home: { 1: { name: 'Nile view flat', offer: 'sale', price: 4500000, currency: 'EGP' } } } }) });
   await homes.drawn;
-  hasIn('homes as a gallery', 'cards, columns, list, phone');
+  hasIn('homes as a gallery', 'cards, columns, import, list, phone');
   if (host.querySelector('.fd-list')?.getAttribute('data-as') !== 'gallery' || !(await until(() => host.querySelector('.fd-list-card')))) throw new Error('in a page, a gallery does not open on its cards');
   homes.destroy();
   gone('homes');
-  // A customer with its invoices listed inside it: the list part's table, already in, for the records that point at it.
+  // A customer with its invoices listed inside it: the list part's table, already in, for the records that point at it;
+  // the cards part's card in each row, which a phone shows in place of the columns.
   const account = inPage.mountViewer(host, {
     page: read('customer-account.page.json'),
     recordId: 1,
     dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } }, invoice: { ...invoiced, 3: { ...invoiced[1], name: 'INV/3', partner_id: { id: 1, label: 'Nile Traders' } } } } }),
   });
   await account.drawn;
-  hasIn('a customer with its invoices', 'list, phone');
+  hasIn('a customer with its invoices', 'cards, columns, import, list, phone');
   if (!(await until(() => host.querySelector('[data-node="invoices"] .fd-list-row')))?.textContent.includes('INV/3') || host.querySelectorAll('[data-node="invoices"] .fd-list-row').length !== 1) throw new Error(`in a page, a related list does not list the records that point at its record: ${host.querySelector('[data-node="invoices"]')?.textContent ?? 'no related list'}`);
+  if (!host.querySelector('[data-node="invoices"] .fd-list-row .fd-list-card .fd-list-card-title')) throw new Error("in a page, a related list's rows carry no card for a phone");
   account.destroy();
   gone('account');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
@@ -1469,7 +1486,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, choice, date, duplicates, files, filters, head, lines, list, path, phone, quiet, slots, survey, text, themes');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, quiet, slots, survey, text, themes');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
@@ -1487,5 +1504,5 @@ console.log(`parts: ${partSizes.join('; ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place");
 }
