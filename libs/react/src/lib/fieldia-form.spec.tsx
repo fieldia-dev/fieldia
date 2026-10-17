@@ -205,10 +205,13 @@ describe('<FieldiaForm>', () => {
     const second: RecordId[] = [];
     const customers = page('customers');
     const { rerender } = render(<FieldiaForm page={customers} dataSource={dataSource} onOpenRecord={(id) => first.push(id)} />);
-    const row = await screen.findByText('Delta Foods');
-    fireEvent.click(row);
+    // The row's name cell: the page's card for a phone, in the row too, says the name again.
+    await screen.findAllByText('Delta Foods');
+    const name = () => document.querySelector('.fd-list-row td[data-col="name"]') as HTMLElement;
+    expect(name().textContent).toBe('Delta Foods');
+    fireEvent.click(name());
     rerender(<FieldiaForm page={customers} dataSource={dataSource} onOpenRecord={(id) => second.push(id)} />);
-    fireEvent.click(screen.getByText('Delta Foods'));
+    fireEvent.click(name());
     expect(first).toEqual([7]);
     expect(second).toEqual([7]);
   });
