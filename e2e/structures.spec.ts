@@ -200,7 +200,7 @@ test.describe('the structures on “Every field”', () => {
     await page.keyboard.press('Alt+ArrowDown');
     expect(await names(page)).toEqual(['Design sign-off', 'Site survey']);
     await expect(lines.locator('tbody tr').nth(1).getByLabel('Milestone')).toBeFocused();
-    await expect(lines.locator('.fd-lines > [role=status]')).toHaveText('Site survey moved to place 2 of 2');
+    await expect(lines.locator('.fd-lines > .fd-sr-only[role=status]')).toHaveText('Site survey moved to place 2 of 2');
     // Dragged by its grip, at hand speed.
     const grip = await box(lines.locator('tbody tr').nth(1).locator('.fd-line-grip'));
     const top = await box(lines.locator('tbody tr').first());

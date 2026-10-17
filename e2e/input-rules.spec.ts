@@ -297,8 +297,13 @@ test.describe('a number box in the viewer', () => {
     await screen(page, 'input-rules-lines', { viewport: true });
     const lines = (await valueOf(page, 'milestone_ids')) as { values: Values }[];
     expect(lines.map((line) => line.values['hours'])).toContain(2.5);
+    // A block pasted in a table of lines fills across from its cell (0.25): Hours and Amount, said in one note, and the
+    // refused key's words go with the text they were typed into.
     await paste(page, hours, '12\t380');
-    await expect(table.locator('.fd-refusal-hint')).toHaveText('Hours takes one value, and several were pasted');
+    await expect(table.locator('.fd-lines-paste-note')).toHaveText('Pasted into 2 cells.');
+    await expect(table.locator('.fd-refusal-hint')).toBeHidden();
+    const pasted = (await valueOf(page, 'milestone_ids')) as { values: Values }[];
+    expect([pasted[0].values['hours'], pasted[0].values['amount']]).toEqual([12, 380]);
   });
 });
 
