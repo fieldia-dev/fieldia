@@ -5,10 +5,11 @@ import { axeFindings } from './a11y-support';
 
 /**
  * Possible duplicates and Merge, as a person meets them on a customer's card (its page says `"duplicates": { "fields":
- * ["name", "phone", "email", "vat"] }`): a new customer typed with a phone or an email already kept is said, under the
- * box, a moment after the typing rests — "A record with this Phone already exists: Nile Traders" — with Open it (asked
- * about first, then the customer kept in its place), "It's someone new", and, on a saved customer, Merge…: the two side
- * by side, a value picked for each field, and one of them kept. Save is never in the way.
+ * ["name", "phone", "email", "vat"] }`, and names its records customers, its labels small inside a sentence): a new
+ * customer typed with a phone or an email already kept is said, under the box, a moment after the typing rests — "A
+ * customer with this phone already exists: Nile Traders" — with Open it (asked about first, then the customer kept in
+ * its place), "It's a new customer", and, on a saved customer, Merge…: the two side by side, a value picked for each
+ * field, and one of them kept. Save is never in the way.
  */
 
 const WIDE = { width: 1280, height: 900 };
@@ -18,7 +19,7 @@ const shownId = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.
 const note = (page: Page, id: string) => node(page, id).locator('.fd-duplicates');
 const title = (page: Page) => page.locator('[data-node="#title"] textarea');
 const discard = (page: Page) => page.getByRole('alertdialog').getByRole('button', { name: 'Discard' });
-const merge = (page: Page) => page.getByRole('dialog', { name: 'Merge two records' });
+const merge = (page: Page) => page.getByRole('dialog', { name: 'Merge two customers' });
 
 let problems: string[] = [];
 test.afterEach(() => expect(problems).toEqual([]));
@@ -35,22 +36,22 @@ test.describe('a customer typed twice', () => {
     await phone.click();
     await phone.pressSequentially('02 2345 6789');
     await phone.press('Tab');
-    await expect(note(page, 'f-phone')).toHaveText(/A record with this Phone already exists: Nile Traders/);
-    await expect(note(page, 'f-phone').getByRole('button')).toHaveText(['Open it', 'It’s someone new']);
+    await expect(note(page, 'f-phone')).toHaveText(/A customer with this phone already exists: Nile Traders/);
+    await expect(note(page, 'f-phone').getByRole('button')).toHaveText(['Open it', 'It’s a new customer']);
     // Said once, politely, to a screen reader.
-    await expect(page.locator('.fd-duplicates-said')).toHaveText('A record with this Phone already exists: Nile Traders');
+    await expect(page.locator('.fd-duplicates-said')).toHaveText('A customer with this phone already exists: Nile Traders');
     await screen(page, 'duplicates-phone');
     // A duplicate is said; Save saves. Saved, it may be merged.
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(() => shownId(page)).toBe(41);
     await expect.poll(async () => (await stored(page, 41))?.phone).toBe('+20223456789');
-    await expect(note(page, 'f-phone').getByRole('button')).toHaveText(['Open it', 'It’s someone new', 'Merge…']);
+    await expect(note(page, 'f-phone').getByRole('button')).toHaveText(['Open it', 'It’s a new customer', 'Merge…']);
   });
 
   test('Open it asks before what is typed goes, then shows the customer kept', async ({ page }) => {
     const email = node(page, 'f-email').locator('input');
     await email.fill('orders@deltafoods.example');
-    await expect(note(page, 'f-email')).toHaveText(/A record with this Email already exists: Delta Foods/);
+    await expect(note(page, 'f-email')).toHaveText(/A customer with this email already exists: Delta Foods/);
     await note(page, 'f-email').getByRole('button', { name: 'Open it' }).click();
     // Cancel keeps the person with their work.
     await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
@@ -61,16 +62,16 @@ test.describe('a customer typed twice', () => {
     expect(await shownId(page)).toBe(23);
   });
 
-  test('It’s someone new lets one go, and a name like one kept is said as like it', async ({ page }) => {
+  test('It’s a new customer lets one go, and a name like one kept is said as like it', async ({ page }) => {
     await node(page, 'f-email').locator('input').fill('orders@niletraders.example');
     const rows = note(page, 'f-email').locator('.fd-duplicate');
     await expect(rows).toHaveCount(2);
-    await expect(rows.locator('.fd-duplicate-words')).toHaveText(['A record with this Email already exists: Nile Traders', 'A record with this Email already exists: Nile Traders Co.']);
-    await rows.first().getByRole('button', { name: 'It’s someone new' }).click();
+    await expect(rows.locator('.fd-duplicate-words')).toHaveText(['A customer with this email already exists: Nile Traders', 'A customer with this email already exists: Nile Traders Co.']);
+    await rows.first().getByRole('button', { name: 'It’s a new customer' }).click();
     await expect(rows).toHaveCount(1);
     await expect(rows.first().getByRole('button', { name: 'Open it' })).toBeFocused();
     await title(page).fill('Nile Trader');
-    await expect(note(page, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A record with this Email and a name like this already exists: Nile Traders', 'A record with this Email and a name like this already exists: Nile Traders Co.']);
+    await expect(note(page, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A customer with this email and a name like this already exists: Nile Traders', 'A customer with this email and a name like this already exists: Nile Traders Co.']);
     await screen(page, 'duplicates-name');
   });
 
@@ -80,11 +81,11 @@ test.describe('a customer typed twice', () => {
     await discard(page).click();
     await expect(title(page)).toHaveValue('Nile Traders Co.');
     // Opened, it is asked of at once: like Nile Traders, by its email and its name.
-    await expect(note(page, 'f-email')).toHaveText(/A record with this Email and a name like this already exists: Nile Traders/);
+    await expect(note(page, 'f-email')).toHaveText(/A customer with this email and a name like this already exists: Nile Traders/);
     await note(page, 'f-email').getByRole('button', { name: 'Merge…' }).click();
     const screenBox = merge(page);
     await expect(screenBox).toBeVisible();
-    await expect(screenBox.locator('thead th')).toHaveText(['Keep Nile Traders Co.This record', 'Keep Nile Traders']);
+    await expect(screenBox.locator('thead th')).toHaveText(['Keep Nile Traders Co.This customer', 'Keep Nile Traders']);
     // Nile Traders kept: its values picked, but where it holds nothing — a tax id, a website, a city — Co.'s.
     // Its email written another way is a row of its own: which writing to keep is the person's.
     await expect(screenBox.locator('tbody th')).toHaveText(['Name', 'Phone', 'Email', 'Tax ID', 'Website', 'City']);
