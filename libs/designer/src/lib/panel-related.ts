@@ -171,7 +171,7 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
       setting(el, 'content', 'Their link to this record', field, { hint: fieldHint, words: w.field }),
       setting(el, 'content', 'Columns', [columnsBox, addColumn], { words: w.columns }),
       setting(el, 'content', 'Rows a page', rows.input, { hint: w.rowsHint, words: w.rows }),
-      setting(el, 'content', 'New', el('label', { class: 'fd-q-required' }, create, el('span', {}, w.create)), { hint: w.createHint, words: w.create }),
+      setting(el, 'content', 'New', el('label', { class: 'fd-q-required' }, create, el('span', {}, w.create)), { hint: w.createHint, words: w.newWord }),
       setting(el, 'content', 'View all opens the page', allPage, { hint: w.viewAllHint, words: w.viewAll }),
       opensRow,
     ],
