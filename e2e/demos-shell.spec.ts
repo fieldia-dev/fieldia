@@ -327,8 +327,11 @@ test.describe('the demo frame', () => {
       if (name !== 'ant-customer') expect(short, `${name} is a short page`).toBe(true);
       await screen(page, `theme-ground-${name}`, { viewport: true });
     }
-    // No theme: the frame's own page, as before.
-    await page.goto('/plain/?page=template-task&record=new&scheme=dark');
+    // No theme: the frame's own page, as before. (A template wears its own: the task is Apple's.) Asked once the
+    // form is drawn, so it is the frame's answer and not the moment before it.
+    await page.goto('/plain/?page=customer&skin=underline&scheme=dark');
+    await expect(page.locator('#app .fd-form')).toBeVisible();
+    await expect(page.locator('#app .fd-form')).not.toHaveAttribute('data-fd-theme', /./);
     await expect(page.locator('html')).not.toHaveClass(/demo-themed/);
   });
 
