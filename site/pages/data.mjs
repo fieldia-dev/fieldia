@@ -31,6 +31,8 @@ interface DataSource {
   writeMany?(request: WriteManyRequest): Promise<WriteManyResult>; // one value in many records: a list's Edit
   exportRecords?(request: ExportRequest): Promise<ExportedFile | { message } | false>; // a list's export, on the server
   slots?(request: SlotsRequest): Promise<SlotsResult>;        // the times free to book, day by day
+  duplicates?(request: DuplicatesRequest): Promise<DuplicatesResult>; // records like the one typed
+  merge?(request: MergeRequest): Promise<MergeResult | void>; // two records into one
 }`
 )}
 
@@ -55,6 +57,8 @@ interface DataSource {
     <tr><td>${c('exportRecords')}</td><td>Someone exports a list</td><td>An export written on your server — without it, the browser writes it</td></tr>
     <tr><td>${c('upload')}</td><td>Someone picks or drops a file in a file or picture field, uploads a picture of a signature, or saves one drawn</td><td>Files kept in your store, the record holding only their links — see <a href="#upload">files stored as they are picked</a></td></tr>
     <tr><td>${c('slots')}</td><td>A date and time drawn as booking slots shows a month, a field it depends on changes, or someone picks a time</td><td>Booking a time from those free — see <a href="#slots">booking slots</a></td></tr>
+    <tr><td>${c('duplicates')}</td><td>Someone stops typing in a field the page's ${c('duplicates')} names, a saved record opens, or a record is saved</td><td>Saying which records it may duplicate, under the field they matched on — see <a href="#duplicates">possible duplicates</a></td></tr>
+    <tr><td>${c('merge')}</td><td>Someone merges a record with one like it, a value picked for each field</td><td>Merge, beside a possible duplicate — without it, none is offered</td></tr>
   </tbody>
 </table>
 </div>
@@ -197,6 +201,38 @@ const dataSource = {
 };`
 )}
 <p>${c('form.findSlots(field, { from, to })')} asks it for a widget of your own, the record, its values and the zone filled in; ${c('form.canFindSlots()')} says whether the source has it. For demos and tests, ${c('scheduleSlots')} answers from booking schedules, beside the <a href="#memory">memory data source</a>.</p>
+
+<h2 id="duplicates">Possible duplicates, and Merge</h2>
+<p>A record's page may say which fields records like the one typed are found by — the same phone, email or tax id, a name close enough — with ${c('duplicates')}. While someone types in one of them, a moment after they stop (and as a saved record opens, and as the record is saved), Fieldia asks your data source's ${c('duplicates')}; each record it answers with is said under the field it matched on — <em>“A record with this Phone already exists: Nile Traders”</em> — with <strong>Open it</strong>, <strong>It's someone new</strong> and, on a saved record where the source has ${c('merge')}, <strong>Merge…</strong>. Without ${c('duplicates')} in the source, nothing is asked and nothing shows.</p>
+${code(
+  'json',
+  `
+"duplicates": { "fields": ["name", "phone", "email", "vat"] }
+"duplicates": { "fields": ["phone", "email"], "on": "save" }`
+)}
+<ul>
+  <li>${c('duplicates({ model, recordId, values, fields })')} — ${c('fields')} are those the page names that hold a value now (none: nothing is asked), ${c('values')} every value of the form (a phone as E.164 where the page reads phones the world over), ${c('recordId')} the record typed (null while new) — never its own duplicate. Answer ${c("{ matches: [{ id, name, why: ['phone', 'email'], score? }] }")}: ${c('why')} names the fields it matched on — the note goes under the first of them in sight, and a name field in it is said as <em>“a name like this”</em> where the names are not the same — and ${c('score')}, from 0 to 1, puts the likest first. To fail, throw: nothing is said.</li>
+  <li>${c('on')}: ${c("'type'")} (the default) asks as the fields are typed in, as a saved record opens and as it is saved; ${c("'save'")} only as it is saved. Typing on leaves an answer on its way unheard; an answer for a record no longer shown is laid nowhere. Nothing is in Save's way: a duplicate is said, and Save saves — unless your ${c('save')} refuses it.</li>
+  <li><strong>Open it</strong> shows the record found in the form's place, once the person said Discard to what they typed (every change counts, as a panel's Escape counts it). <strong>It's someone new</strong> lets the match be for the values it matched on, remembered for the record (in the viewer's ${c('preferences')}, by its id once saved).</li>
+  <li><strong>Merge…</strong> saves what is typed first, reads the record found (${c('load')}), and shows the two side by side: the record kept picked over its column (the one found, unless the person picks this one), and a radio for each field they hold apart, the kept record's value picked — or the other's where the kept one holds nothing. What will happen is said before Merge. Then ${c('merge({ model, keepId, mergeIds, values, fields })')}: keep ${c('keepId')} with ${c('values')}, the value picked for each field, and take ${c('mergeIds')} away. Moving what was theirs — messages, activities, the records linking to them — is your source's work. Refuse with ${c("saveRefused({ kind: 'rule', message })")}: it is said in the screen, which stays. Merged, the record kept is shown, and ${c('{ message }')} answered is said with it.</li>
+</ul>
+${code(
+  'ts',
+  `
+const dataSource = {
+  ...yourDataSource,
+  async duplicates({ model, recordId, values, fields }) {
+    const answer = await fetch(\`/api/\${model}/like\`, { method: 'POST', body: JSON.stringify({ except: recordId, values, fields }) });
+    return answer.json();   // { matches: [{ id: 7, name: 'Nile Traders', why: ['phone'], score: 1 }] }
+  },
+  async merge({ model, keepId, mergeIds, values }) {
+    const answer = await fetch(\`/api/\${model}/\${keepId}/merge\`, { method: 'POST', body: JSON.stringify({ mergeIds, values }) });
+    if (answer.status === 403) throw saveRefused({ kind: 'rule', message: await answer.text() });
+    return answer.json();   // { message: '4 messages and 2 orders moved' }
+  },
+};`
+)}
+<p>${c('form.findDuplicates()')} asks it for a screen of your own, and ${c('form.merge({ keepId, mergeIds, values })')} merges; ${c('form.canFindDuplicates()')} and ${c('form.canMerge()')} say whether the page and its source can. For demos and tests, ${c('alikeRecords()')} answers from the <a href="#memory">memory data source</a>'s records.</p>
 
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
@@ -352,6 +388,14 @@ const dataSource = createMemoryDataSource({
     },
   }),
 });`
+)}
+<p>Its ${c('duplicates')} answers with ${c('alikeRecords()')}: each record of the model holding the same value in a field asked as people write them apart — a phone's spaces and dashes, an email in any case, a link by its record — or, in its name field, a name close enough. Its ${c('merge')} keeps one record with the values picked, takes the others away, and moves the links to them to it:</p>
+${code(
+  'ts',
+  `
+import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
+
+const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });`
 )}
 <p>Its ${c('list')} gives ${c('allIds')} when asked, and its ${c('writeMany')} refuses each record as its ${c('save')} would (the person's ${c('can')}, a version older than the record's); it has no ${c('exportRecords')}, so the browser writes an export, as without a server. Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(

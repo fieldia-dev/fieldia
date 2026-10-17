@@ -202,6 +202,43 @@ const dataSource = createMemoryDataSource({
 });
 ```
 
+## Possible duplicates and Merge
+
+A record's page may name the fields records like the one typed are found by —
+the same phone, email or tax id, a name close enough:
+
+```json
+{ "duplicates": { "fields": ["name", "phone", "email", "vat"], "on": "type" } }
+```
+
+The data source's `duplicates({ model, recordId, values, fields })` is asked
+with the fields named that hold a value (none: nothing is asked), every value of
+the form and the record typed (null while new), and answers with the records
+like it — `{ matches: [{ id, name, why: ['phone'], score? }] }`, `why` naming
+the fields each matched on. `on: "type"` (the default) asks as those fields are
+typed in, as a saved record opens and as it is saved; `"save"` only as it is
+saved. Nothing is in the way of a save. `merge({ model, keepId, mergeIds,
+values, fields })` keeps `keepId` with the value picked for each field and takes
+`mergeIds` away; moving what was theirs (messages, activities, links) is the
+source's work, and `saveRefused({ kind: 'rule', message })` refuses it.
+`form.findDuplicates()`, `form.readRecord(id)` and `form.merge(…)` ask the
+source for a screen of your own, `form.canFindDuplicates()` and
+`form.canMerge()` say whether it can; the viewer says each match under the field
+it matched on, with Open it, "It's someone new" and Merge (`@fieldia/viewer`).
+`checkPage` and `validatePage` refuse a field the page has not, one named twice,
+and one of a kind records are not compared by (`DUPLICATE_KINDS`). Without
+`duplicates` in the source, nothing is asked. For demos and tests,
+`alikeRecords()` answers from the memory source's records — the same value as
+people write them apart (a phone's spaces, an email's case, a link's record) or,
+in the name field, a name close enough (`nameLikeness`) — and its `merge`
+merges as a backend would:
+
+```ts
+import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
+
+const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });
+```
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this
