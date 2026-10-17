@@ -168,12 +168,42 @@
         "style": "primary",
         "steps": [
           {
+            "do": "check",
+            "fields": [
+              "partner_id"
+            ]
+          },
+          {
+            "do": "say",
+            "when": "amount_total <= 0",
+            "message": "Add a line with an amount first: an invoice for nothing cannot be confirmed.",
+            "tone": "warning"
+          },
+          {
             "do": "set",
+            "when": "amount_total > 0 and not invoice_date",
+            "field": "invoice_date",
+            "value": "today()"
+          },
+          {
+            "do": "save",
+            "when": "amount_total > 0"
+          },
+          {
+            "do": "set",
+            "when": "amount_total > 0",
+            "field": "name",
+            "value": "'INV/' + if(id < 10, '000', if(id < 100, '00', if(id < 1000, '0', ''))) + id"
+          },
+          {
+            "do": "set",
+            "when": "amount_total > 0",
             "field": "state",
             "value": "'posted'"
           },
           {
-            "do": "save"
+            "do": "save",
+            "when": "amount_total > 0"
           }
         ],
         "invisible": "state != 'draft'"
@@ -185,12 +215,20 @@
         "style": "primary",
         "steps": [
           {
+            "do": "say",
+            "when": "amount_total <= 0",
+            "message": "Nothing to pay: this invoice’s total is 0.",
+            "tone": "warning"
+          },
+          {
             "do": "set",
+            "when": "amount_total > 0",
             "field": "state",
             "value": "'paid'"
           },
           {
-            "do": "save"
+            "do": "save",
+            "when": "amount_total > 0"
           }
         ],
         "invisible": "state != 'posted'"

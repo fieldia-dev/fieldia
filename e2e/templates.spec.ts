@@ -144,6 +144,78 @@ test.describe('what the templates’ cards say to try', () => {
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
   });
 
+  test('invoice: one for nothing is never confirmed nor paid — it says why — and once confirmed its number is its title', async ({ page }) => {
+    // As the walk did: a customer alone, then Confirm.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, 'plain', query('invoice'));
+    await expect(node(page, '#title').locator('textarea')).toHaveValue('Draft');
+    const title = node(page, '#title').locator('textarea');
+    const say = page.locator('.fd-say');
+    await node(page, 'f-partner').locator('input').pressSequentially('Nile');
+    await page.getByRole('option', { name: 'Nile Traders' }).click();
+    await page.getByRole('button', { name: 'Confirm' }).click();
+    await expect(say).toHaveText(['Add a line with an amount first: an invoice for nothing cannot be confirmed.×']);
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
+    await expect(page.getByRole('button', { name: 'Register payment' })).toBeHidden();
+    await screen(page, 'template-invoice-nothing-to-confirm', { viewport: true });
+    // A line with an amount: confirmed, numbered, dated; what was said before is gone.
+    await node(page, 'f-lines').getByRole('button', { name: /Add a line/ }).click();
+    const line = lines(page, 'f-lines').first();
+    await cell(line, 'Description').pressSequentially('Consulting, May');
+    await cell(line, 'Unit price').pressSequentially('150');
+    await page.getByRole('button', { name: 'Confirm' }).click();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
+    await expect(title).toHaveValue(/^INV\/\d{4}$/);
+    await expect(say).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values['invoice_date'])).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    await screen(page, 'template-invoice-confirmed', { viewport: true });
+    await page.getByRole('button', { name: 'Register payment' }).click();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Paid');
+  });
+
+  test('purchase order: no stage to jump to; Confirm needs a vendor and products, and Received comes only after it', async ({ page }) => {
+    // As the walk did: a new, empty order — its stages are where it stands, not buttons to jump to Received.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, 'plain', query('purchase-order'));
+    const at = page.locator('.fd-statusbar [aria-current="step"]');
+    await expect(page.locator('.fd-statusbar').getByRole('button')).toHaveCount(0);
+    await page.locator('.fd-statusbar').getByText('Received').click();
+    await expect(at).toHaveText('Request for quotation');
+    await expect(page.getByRole('button', { name: 'Receive products' })).toBeHidden();
+    // Confirm with nothing: the vendor is asked for first.
+    await page.getByRole('button', { name: 'Confirm order' }).click();
+    await expect(node(page, 'f-partner').locator('.fd-error')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await node(page, 'f-partner').locator('input').pressSequentially('Delta');
+    await page.getByRole('option', { name: 'Delta Foods' }).click();
+    await box(page, 'f-order-date').fill('2026-10-16');
+    // A vendor and no products: it says why, and stays a request for quotation.
+    await page.getByRole('button', { name: 'Confirm order' }).click();
+    await expect(page.locator('.fd-say')).toHaveText(['Add the products to order first: an order with nothing on it cannot go to the vendor.×']);
+    await expect(at).toHaveText('Request for quotation');
+    await screen(page, 'template-purchase-order-no-products', { viewport: true });
+    // Products: confirmed, numbered; then received.
+    await node(page, 'f-lines').getByRole('button', { name: /Add a line/ }).click();
+    const line = lines(page, 'f-lines').first();
+    await cell(line, 'Description').pressSequentially('Office chairs');
+    await cell(line, 'Quantity').fill('12');
+    await cell(line, 'Unit price').pressSequentially('85');
+    await page.getByRole('button', { name: 'Confirm order' }).click();
+    await expect(at).toHaveText('Purchase order');
+    await expect(page.locator('.fd-say')).toHaveCount(0);
+    await expect(node(page, '#title').locator('textarea')).toHaveValue(/^P\d{5}$/);
+    await page.getByRole('button', { name: 'Receive products' }).click();
+    await expect(at).toHaveText('Received');
+    // Saved received, with its products: never an empty order marked Received.
+    const received = await page.evaluate(() => {
+      const demo = (window as any).fieldiaDemo;
+      const order = demo.dataSource.records['purchase.order'][demo.handle.form.getState().recordId];
+      return [order.state, order.line_ids.length];
+    });
+    expect(received).toEqual(['done', 1]);
+    await screen(page, 'template-purchase-order-received', { viewport: true });
+  });
+
   test('expense claim: the total adds up the expenses; Submit hands it to the approver', async ({ page }) => {
     await open(page, 'plain', query('expense-claim'));
     for (const amount of ['120', '80.5']) {

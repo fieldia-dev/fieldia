@@ -159,8 +159,7 @@
       "label": "Purchase order"
     },
     "statusbar": {
-      "field": "state",
-      "clickable": true
+      "field": "state"
     },
     "buttons": [
       {
@@ -170,12 +169,37 @@
         "style": "primary",
         "steps": [
           {
+            "do": "check",
+            "fields": [
+              "partner_id",
+              "order_date"
+            ]
+          },
+          {
+            "do": "say",
+            "when": "count(line_ids) == 0",
+            "message": "Add the products to order first: an order with nothing on it cannot go to the vendor.",
+            "tone": "warning"
+          },
+          {
+            "do": "save",
+            "when": "count(line_ids) > 0"
+          },
+          {
             "do": "set",
+            "when": "count(line_ids) > 0 and name == 'New'",
+            "field": "name",
+            "value": "'P' + if(id < 10, '0000', if(id < 100, '000', if(id < 1000, '00', if(id < 10000, '0', '')))) + id"
+          },
+          {
+            "do": "set",
+            "when": "count(line_ids) > 0",
             "field": "state",
             "value": "'sent'"
           },
           {
-            "do": "save"
+            "do": "save",
+            "when": "count(line_ids) > 0"
           }
         ],
         "invisible": "state != 'draft'"
@@ -187,12 +211,37 @@
         "style": "primary",
         "steps": [
           {
+            "do": "check",
+            "fields": [
+              "partner_id",
+              "order_date"
+            ]
+          },
+          {
+            "do": "say",
+            "when": "count(line_ids) == 0",
+            "message": "Add the products to order first: an order with nothing on it cannot go to the vendor.",
+            "tone": "warning"
+          },
+          {
+            "do": "save",
+            "when": "count(line_ids) > 0"
+          },
+          {
             "do": "set",
+            "when": "count(line_ids) > 0 and name == 'New'",
+            "field": "name",
+            "value": "'P' + if(id < 10, '0000', if(id < 100, '000', if(id < 1000, '00', if(id < 10000, '0', '')))) + id"
+          },
+          {
+            "do": "set",
+            "when": "count(line_ids) > 0",
             "field": "state",
             "value": "'purchase'"
           },
           {
-            "do": "save"
+            "do": "save",
+            "when": "count(line_ids) > 0"
           }
         ],
         "invisible": "state not in ('draft', 'sent')"
