@@ -812,6 +812,10 @@ function selectFromStart(input: HTMLInputElement) {
 const LONG_TABLE = 15;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 38;
+/** How long a finger rests on a column's header before it lifts the column, in milliseconds, as in a list. */
+const LONG_PRESS = 500;
+/** How far a resting finger may wander before it is a swipe the browser scrolls with, in pixels. */
+const WANDER = 10;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
@@ -1508,6 +1512,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       },
       animateRows: false,
       suppressMovableColumns: false,
+      // A column dragged out of the grid stays: AG Grid would hide it, and one the page lets nobody hide would be gone.
+      suppressDragLeaveHidesColumns: true,
       defaultColDef: { sortable: false, resizable: true },
     },
     { modules: [AllCommunityModule] }
@@ -1538,9 +1544,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   api.addEventListener('columnVisible', (event) => remember(event.source));
   /** Sizing the grid does by itself is not a choice to keep. */
   const automatic = new Set(['gridInitializing', 'flex', 'gridOptionsChanged', 'sizeColumnsToFit', 'autosizeColumns']);
+  /** A drag's columns being put back as they were (below): no choice to keep. */
+  let puttingBack = false;
   function remember(source: string) {
-    // A grid taking itself apart also sends column events: they are not choices.
-    if (automatic.has(source) || !preferences || api.isDestroyed()) return;
+    // A grid taking itself apart also sends column events: they are not choices; nor a drag put back.
+    if (automatic.has(source) || !preferences || api.isDestroyed() || puttingBack) return;
     // A column the record hides is kept as the person last had it: the rule's hiding is not their choice.
     const state = (api.getColumnState() ?? []).map(({ colId, width, flex, hide }) => ({ colId, width: width ?? null, flex: flex ?? null, hide: ruleHidden.has(colId) ? personHidden.has(colId) : !!hide }));
     preferences.set(columnsKey, state);
@@ -1567,6 +1575,113 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       else personHidden.delete(s.colId);
     }
   }
+
+  // ---- a column dragged by its header, as a list's (the columns part in @fieldia/viewer) ----
+  // AG Grid moves it as it is dragged, its ghost under the pointer, the others sliding aside, the column in the place it
+  // takes marked. As in a list: Escape puts it back (AG Grid stops the drag where it had slid it), a drag out of the
+  // grid never hides it (AG Grid would: a column the page does not let people hide would be gone for good), a finger
+  // lifts it by resting on its header a moment — a swipe there scrolls the page, a tap is a tap (AG Grid moved it at
+  // the first touch, its header taking every swipe) — and its new place is said to a screen reader.
+  /** The columns as a header's drag began: put back when Escape ends it; to say where the column went. */
+  let dragFrom: ColumnState[] | null = null;
+  const headerOf = (target: EventTarget | null) => (target instanceof Element ? target.closest<HTMLElement>('.ag-header-cell[col-id]') : null);
+  /** A line's own column, never the tools' at its ends (a tick, a handle, its buttons). */
+  const ownColumn = (id: string | null | undefined): id is string => !!id && !isTool(id);
+  /** The line's own columns in the order a person sees them. */
+  const seenColumns = () => (api.getAllDisplayedColumns() ?? []).map((column) => column.getColId()).filter(ownColumn);
+  const voice = document.createElement('div');
+  voice.className = 'fd-sr-only';
+  voice.setAttribute('role', 'status');
+  voice.setAttribute('aria-live', 'polite');
+  element.append(voice);
+  /** The column dragged, tinted down the whole grid with a line at its start, as a list's: AG Grid marks its header alone. */
+  const lifted = document.createElement('style');
+  element.append(lifted);
+  const tint = (column: string | null) => {
+    lifted.textContent = column ? `#${CSS.escape(id)} .ag-cell[col-id="${CSS.escape(column)}"] { background: var(--fd-accent-soft); box-shadow: inset ${rtl ? -2 : 2}px 0 0 var(--fd-accent); }` : '';
+  };
+  api.addEventListener('dragStarted', (event) => {
+    const column = headerOf(event.target)?.getAttribute('col-id');
+    dragFrom = ownColumn(column) ? (api.getColumnState() ?? null) : null;
+    tint(dragFrom && column ? column : null);
+  });
+  api.addEventListener('dragCancelled', () => {
+    const from = dragFrom;
+    dragFrom = null;
+    tint(null);
+    if (!from || api.isDestroyed()) return;
+    puttingBack = true;
+    api.applyColumnState({ state: from, applyOrder: true });
+    // AG Grid tells of the columns put back a moment later, in its batch of events already on its way: none is kept.
+    window.setTimeout(() => (puttingBack = false), 0);
+  });
+  api.addEventListener('dragStopped', (event) => {
+    const from = dragFrom;
+    dragFrom = null;
+    tint(null);
+    const id = headerOf(event.target)?.getAttribute('col-id');
+    if (!from || !ownColumn(id) || api.isDestroyed()) return;
+    const before = from.filter((one) => !one.hide).map((one) => one.colId).filter(ownColumn);
+    const now = seenColumns();
+    if (before.join() === now.join()) return;
+    // Let go out of the grid, AG Grid tells of no move: the column stays where it was seen, so it is kept there.
+    remember('uiColumnMoved');
+    if (before.indexOf(id) !== now.indexOf(id)) voice.textContent = fill(labels.movedTo, { label: def.fields[id]?.label ?? id, n: now.indexOf(id) + 1, total: now.length });
+  });
+  // A finger on a header: AG Grid's press waits until it has rested there a moment, and is handed on then.
+  const handedOn = new WeakSet<Event>();
+  let resting: { pointer: number; x: number; y: number; timer: number; cell: HTMLElement } | null = null;
+  const stopResting = () => {
+    if (!resting) return;
+    window.clearTimeout(resting.timer);
+    resting.cell.removeAttribute('data-lifted');
+    resting = null;
+    host.removeEventListener('touchmove', holdPage, true);
+  };
+  /** Once lifted, the finger moves the column, not the page. */
+  const holdPage = (event: TouchEvent) => {
+    if (resting?.cell.hasAttribute('data-lifted') && event.cancelable) event.preventDefault();
+  };
+  /** A header's own column pressed by a finger, not on its edge (which sizes it). */
+  const fingerOnHeader = (event: Event) => {
+    const cell = headerOf(event.target);
+    return cell && ownColumn(cell.getAttribute('col-id')) && !(event.target as Element).closest('.ag-header-cell-resize') ? cell : null;
+  };
+  host.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.pointerType !== 'touch' || handedOn.has(event)) return;
+      const cell = fingerOnHeader(event);
+      if (!cell) return;
+      event.stopPropagation();
+      stopResting();
+      const { pointerId, clientX, clientY } = event;
+      const target = event.target as Element;
+      const timer = window.setTimeout(() => {
+        if (!resting || resting.pointer !== pointerId) return;
+        cell.setAttribute('data-lifted', '');
+        const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true, pointerId, pointerType: 'touch', isPrimary: true, clientX: resting.x, clientY: resting.y, button: 0, buttons: 1 });
+        handedOn.add(down);
+        target.dispatchEvent(down);
+      }, LONG_PRESS);
+      resting = { pointer: pointerId, x: clientX, y: clientY, timer, cell };
+      host.addEventListener('touchmove', holdPage, { capture: true, passive: false });
+    },
+    true
+  );
+  // AG Grid's touch path waits with its pointer's.
+  host.addEventListener('touchstart', (event) => fingerOnHeader(event) && event.stopPropagation(), { capture: true, passive: true });
+  host.addEventListener(
+    'pointermove',
+    (event) => {
+      // A finger that wanders before it has rested is a swipe: the browser scrolls.
+      if (resting && event.pointerId === resting.pointer && !resting.cell.hasAttribute('data-lifted') && Math.hypot(event.clientX - resting.x, event.clientY - resting.y) > WANDER) stopResting();
+    },
+    true
+  );
+  for (const type of ['pointerup', 'pointercancel'] as const) host.addEventListener(type, (event) => resting && event.pointerId === resting.pointer && stopResting(), true);
+  // A long press is the drag's, never the browser's menu over the header.
+  host.addEventListener('contextmenu', (event) => resting && event.preventDefault(), true);
 
   // ---- the column chooser: a short list of the columns a person may hide ----
   const chooserBox = document.createElement('div');
