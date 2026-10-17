@@ -260,3 +260,50 @@ describe('a block pasted on a chosen cell', () => {
     expect(arabic.box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لُصق في خلية واحدة.');
   });
 });
+
+describe('a grid with its most lines (options.max), as the plain table keeps it', () => {
+  const adds = (box: HTMLElement) => box.querySelector('.fd-lines-adds') as HTMLElement;
+  const copies = (box: HTMLElement) => [...box.querySelectorAll<HTMLButtonElement>('.fd-line-copy')];
+
+  it('hides Add once it holds its most lines, never disabled, and shows it again as one goes', async () => {
+    const { box, form } = await mount('en', { max: 3 });
+    expect(adds(box).hidden).toBe(false);
+    (box.querySelector('.fd-lines-add[data-add="line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(formLines(form)).toHaveLength(3);
+    expect(adds(box).hidden).toBe(true);
+    expect(box.querySelector('.fd-lines-add[disabled]')).toBeNull();
+    form.removeLine('line_ids', formLines(form)[2].key);
+    await frames();
+    expect(adds(box).hidden).toBe(false);
+  });
+
+  it('hides a line’s copy button at its most lines, as Add', async () => {
+    const { box, form } = await mount('en', { max: 3, copy: true });
+    expect(copies(box).length).toBeGreaterThan(0);
+    expect(copies(box).every((button) => !button.hidden)).toBe(true);
+    form.addLine('line_ids');
+    await frames();
+    expect(copies(box).every((button) => button.hidden)).toBe(true);
+  });
+
+  it('adds no line with Enter at the end of the last line once full', async () => {
+    const { api, form } = await mount('en', { max: 2 });
+    api.startEditingCell({ rowIndex: 1, colKey: 'qty' });
+    await frames();
+    const editor = document.querySelector('.fd-grid-editor input') as HTMLInputElement;
+    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await frames();
+    expect(formLines(form)).toHaveLength(2);
+  });
+
+  it('adds a line with Enter at the end of the last line while there is room, as before', async () => {
+    const { api, form } = await mount('en', { max: 3 });
+    api.startEditingCell({ rowIndex: 1, colKey: 'qty' });
+    await frames();
+    const editor = document.querySelector('.fd-grid-editor input') as HTMLInputElement;
+    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await frames();
+    expect(formLines(form)).toHaveLength(3);
+  });
+});

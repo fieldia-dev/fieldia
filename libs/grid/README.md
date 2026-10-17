@@ -36,6 +36,9 @@ pass `widgets={gridWidgets}`, in Vue `:widgets="gridWidgets"`, in Angular
   (kept in the viewer's `preferences` store), **long tables** that scroll
   inside, and `"editMode": "row"` to open a whole line at once.
 - **A refused save** marks the wrong cells and opens the first one.
+- **Most lines** (`"options": { "max": 12 }` on the node), as the plain table
+  keeps them: at its most, Add and a line's copy are hidden (never disabled),
+  and Enter or Tab at the last line's end adds none.
 - **Rows pasted from a spreadsheet** on a chosen cell (Ctrl+V, ⌘V in Safari
   too) fill across and down from it, each cell read as its column reads what
   is typed; rows past the last line add lines, as many as the node's

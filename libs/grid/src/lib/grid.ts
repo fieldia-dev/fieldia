@@ -420,8 +420,8 @@ class PickAllHeader implements IHeaderComp {
 /** The button that puts a copy of a line right after it. */
 class CopyRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
-  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string };
-  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
+  private params!: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string };
+  init(params: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string }) {
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.className = 'fd-line-copy';
@@ -435,11 +435,13 @@ class CopyRenderer implements ICellRendererComp<Line> {
   getGui() {
     return this.button;
   }
-  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(line: Line | undefined): string }) {
+  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; full(): boolean; label(line: Line | undefined): string }) {
     this.params = params;
     const label = params.label(params.data);
     this.button.setAttribute('aria-label', label);
     this.button.title = label;
+    // Hidden, never disabled, while the table holds its most lines.
+    this.button.hidden = params.full();
     return true;
   }
 }
@@ -987,6 +989,16 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  /**
+   * The most lines the table may have (`options.max`), as the plain table counts it: none unless a whole number. At
+   * it, Add and a line's copy are hidden — never disabled — Enter or Tab at the last line's end adds none, and a
+   * block pasted past it says what it left.
+   */
+  const most = (() => {
+    const max = node.options?.['max'];
+    return typeof max === 'number' && Number.isInteger(max) && max >= 0 ? max : Infinity;
+  })();
+  const full = () => lines().length >= most;
   /** A line field no one types in: read-only, or worked out from the line's others. */
   const locked = (sub: LineField) => sub.readonly === true || sub.compute !== undefined;
   const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !locked(def.fields[c]));
@@ -1061,7 +1073,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     // In a note, or a paragraph opened over its cell, Enter is a new line (Ctrl/Cmd+Enter finishes it).
     if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && (kindOf(node.data) === 'note' || paragraphCell(node.data, column.getColId()))) return true;
     if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
-    if (node.rowIndex !== lines().length - 1) return false;
+    // At its most lines, the last line's end adds none: the key does what it does on any other line.
+    if (node.rowIndex !== lines().length - 1 || full()) return false;
     const shown = api.getAllDisplayedColumns();
     const lastCell = !shown.slice(shown.indexOf(column) + 1).some((c) => c.isCellEditable(node));
     if (event.key === 'Enter' || (event.key === 'Tab' && lastCell)) {
@@ -1328,7 +1341,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const copyLine = (key: string) => {
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
-    if (readonly || at < 0) return;
+    if (readonly || at < 0 || full()) return;
     const values = { ...all[at].values };
     if (sequence) delete values[sequence];
     const made = form.addLine(name, values);
@@ -1351,7 +1364,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressMovable: true,
       lockPosition: lineEnd,
       pinned: lineEnd,
-      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (line: Line | undefined) => fill(labels.copy, { name: lineName(line) }) } }),
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, full, label: (line: Line | undefined) => fill(labels.copy, { name: lineName(line) }) } }),
       suppressKeyboardEvent: keys,
     });
   }
@@ -1780,11 +1793,6 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const rules = ruleOf(line, column);
     return !readonly && !kindOf(line) && !locked(def.fields[column]) && !rules?.readonly && !rules?.invisible;
   };
-  /** The most lines the table may have (`options.max`), as the plain table counts it: none unless a whole number. */
-  const most = (() => {
-    const max = node.options?.['max'];
-    return typeof max === 'number' && Number.isInteger(max) && max >= 0 ? max : Infinity;
-  })();
   /**
    * A block pasted on a chosen cell, as a spreadsheet copies one (tabs between
    * cells, a line break between rows), fills across and down from it, each cell
@@ -1936,7 +1944,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         readonly = state.readonly;
         api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && ['__delete', '__handle', '__copy', '__pick'].includes(c.colId as string))));
       }
-      adds.hidden = readonly;
+      adds.hidden = readonly || full();
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
       const unreadNow = JSON.stringify(Object.entries(form.getState().unread ?? {}).filter(([path]) => path.startsWith(`${name}.`)));
