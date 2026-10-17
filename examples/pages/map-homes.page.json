@@ -63,6 +63,7 @@
     "sort": [{ "field": "listed_on", "desc": true }],
     "pageSize": 12,
     "searchFields": ["name", "district", "kind", "offer"],
+    "card": { "title": "name", "image": "photo", "status": "offer", "lead": true, "labels": false, "fields": ["price", ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }]] },
     "filters": [
       { "id": "sale", "label": "For sale", "filter": [{ "field": "offer", "op": "=", "value": "sale" }] },
       { "id": "rent", "label": "For rent", "filter": [{ "field": "offer", "op": "=", "value": "rent" }] },

@@ -245,6 +245,12 @@ for (const variant of VARIANTS) {
       await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveClass(/fd-tone-danger/);
       expect(problems).toEqual([]);
 
+      // The receipt saved as Ready is kept while the tab is open (the demos keep what is saved): Start over puts the
+      // samples back, the receipt a draft again.
+      await page.locator('#demo-head').getByRole('button', { name: 'Start over' }).click();
+      await page.waitForURL(`**/${variant}/?${TRANSFER}`);
+      await expect(page.locator('.fd-form')).toBeVisible();
+      await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
       // Without the stock user's group: no Validate, and no Mark as ready without the internal user's.
       ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user`));
       await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');

@@ -11,6 +11,7 @@ import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
 
@@ -92,7 +93,7 @@ function Demo() {
         actions.push(request.action);
         requests.push(request);
         // The shop's answers to the pages' steps: the stock checked for "Order by phone".
-        return answerAction(request, params.get('locale') ?? undefined);
+        return answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
       }}
       fieldTypes={{ 'char.name-badge': Shout, 'monetary.tag': PriceTag }}
       onError={failures?.onError}
@@ -102,7 +103,11 @@ function Demo() {
       pages={appPages}
       {...optionsFromQuery(params)}
       slots={{ chatter: Chatter, note: Note, planner: Planner }}
-      onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } })}
+      onReady={(handle) => {
+        Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });
+        // The address in step with the record shown (shared/address.ts).
+        addressFollowsRecord(handle.form, page);
+      }}
     />
   );
 }

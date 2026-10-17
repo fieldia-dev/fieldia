@@ -143,8 +143,10 @@ test.describe('homes as a gallery', () => {
     const id = await cards(page).nth(1).getAttribute('data-id');
     await cards(page).nth(1).getByRole('button', { name: 'Book a viewing' }).click();
     await expect.poll(() => demo<{ action: string; recordIds?: unknown[] }[]>('requests').then((requests) => requests.at(-1))).toEqual(expect.objectContaining({ action: 'book_viewing', recordIds: [Number(id)] }));
-    // The press was the button's: no home opened.
+    // The press was the button's: no home opened. What the app was given, said: the demo has no app to book it.
     await expect(page).toHaveURL(/page=homes-gallery/);
+    const home = await cards(page).nth(1).locator('.fd-list-card-title').textContent();
+    await expect(page.locator('.fd-say')).toHaveText([`The app was asked to book a viewing for ${home}.×`]);
     await screen(page, 'list-gallery', { viewport: true });
     expect(problems).toEqual([]);
   });
@@ -159,6 +161,8 @@ test.describe('homes as a gallery', () => {
     await expect(cards(page).nth(0)).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('button', { name: 'Share with a buyer' }).click();
     await expect.poll(() => demo<{ action: string; recordIds?: unknown[] }[]>('requests').then((requests) => requests.at(-1)?.recordIds)).toEqual(ids.map(Number));
+    const homes = await Promise.all([0, 2].map((i) => cards(page).nth(i).locator('.fd-list-card-title').textContent()));
+    await expect(page.locator('.fd-say')).toHaveText([`The app was asked to share with a buyer for ${homes[0]} and ${homes[1]}.×`]);
     // The keys: along the line, and to the card under.
     await cards(page).nth(0).focus();
     await page.keyboard.press('ArrowRight');

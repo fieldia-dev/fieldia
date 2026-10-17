@@ -114,6 +114,8 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('alertdialog')).toContainText('Archive the chosen customers?');
       await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
       await expect.poll(() => demo<{ action: string; recordIds?: number[] }[]>('requests')).toEqual([expect.objectContaining({ action: 'archive', recordIds: [23, 24] })]);
+      // No app behind the demo shows a thing for it: the demo says what the app was given, in plain words.
+      await expect(page.locator('.fd-say')).toHaveText(['The app was asked to archive Delta Foods and Giza Plaza.×']);
       await names(page).filter({ hasText: 'Delta Foods' }).click();
       await expect(page).toHaveURL(/page=customer&record=23/);
       await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Delta Foods');
@@ -147,13 +149,16 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-list-rtl`, { viewport: true });
     });
 
-    test('fits a phone: the table scrolls in its own box, the menu stacks', async ({ page }) => {
+    test('fits a phone: each customer a card, nothing cut off to the right, the menu stacks', async ({ page }) => {
       await page.setViewportSize({ width: 400, height: 860 });
       await open(page, variant, 'page=customers');
       await expect(names(page)).toHaveCount(8);
       await expectNoSidewaysScroll(page);
+      // Cards, as the 0.25 walk asked of the featured list: its emails were cut in a table scrolling sideways.
+      await expect(page.locator('.fd-list-row').first().locator('.fd-list-card-title')).toBeVisible();
+      await expect(page.locator('.fd-list-row').first()).toContainText('@');
       const scroller = page.locator('.fd-list-scroll');
-      expect(await scroller.evaluate((el) => el.scrollWidth > el.clientWidth), 'the table does not scroll in its box').toBe(true);
+      expect(await scroller.evaluate((el) => el.scrollWidth - el.clientWidth), 'the list scrolls sideways').toBeLessThanOrEqual(1);
       await page.getByRole('button', { name: 'Search options' }).click();
       const groups = await menu(page).locator('.fd-search-group').evaluateAll((all) => all.map((g) => Math.round(g.getBoundingClientRect().left)));
       expect(new Set(groups).size, 'the menu’s groups are not stacked').toBe(1);
