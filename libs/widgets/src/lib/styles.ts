@@ -9,7 +9,7 @@ import { PICKER_CSS } from './styles-picker';
 import { HEAD_CSS } from './styles-head';
 import { TEXT_CSS } from './styles-text';
 import { BROKEN_CSS } from './broken-styles';
-import { PRINT_CSS } from './styles-print';
+import { PRINT_CSS, PRINT_GRIDS_CSS } from './styles-print';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -871,7 +871,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // a work item's text, groups and links (styles-text) after those.
 // A form on paper (PRINT) closes them: what it hides or shows for paper insists, as the parts' sheets come after it.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
-const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS;
+const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS + PRINT_GRIDS_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 /**
  * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each

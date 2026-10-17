@@ -40,7 +40,13 @@ export const GRID_CSS = /* css */ `
 .fd-grid-row-buttons { display: inline-flex; gap: 2px; }
 /* On paper, every line in a plain table as wide as the sheet, in the grid's place (and its cards'). */
 .fd-grid-lines > .fd-print-table { display: none; }
+/* So too while the room a heading over it keeps on paper is measured, as printing begins (@fieldia/viewer's print.ts). */
+.fd-form[data-fd-measure] .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
+.fd-form[data-fd-measure] .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.fd-form[data-fd-measure] .fd-print-table :is(th, td) { padding: 5px 6px; vertical-align: top; overflow-wrap: break-word; }
 @media print {
+  /* A block round it, which every engine breaks between the table's rows: Firefox moved a grid's part whole. */
+  .fd-grid-lines:has(> .fd-print-table) { display: block; }
   .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
   .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
   .fd-print-table :is(th, td) { padding: 5px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }

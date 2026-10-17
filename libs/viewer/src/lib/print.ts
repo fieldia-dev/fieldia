@@ -47,7 +47,10 @@ export interface PrintContext {
 export interface PrintLook {
   /** Over the page on paper: the app's logo and words, the record's title and the day. Not shown on screen. */
   head: HTMLElement;
-  /** Under it on paper: the page's footer words, when it has any. */
+  /**
+   * Under it on paper, the page's footer words, when it has any: the record's content's last part, which the
+   * stylesheet makes its footer group, under every sheet of it.
+   */
   foot: HTMLElement | null;
   /** The browser's print of this form alone (the page round it left out): settled once printing is done. */
   print(): Promise<void>;
@@ -103,6 +106,114 @@ function frontForm(doc: Document): Element | null {
   return null;
 }
 
+/**
+ * Keeping a heading with the start of what follows it on paper: the stylesheet keeps room under a tab's name, a
+ * group's title and a table's header (`--fd-print-keep`), which goes with it to the next sheet where this one's foot
+ * has less — Firefox keeps no heading with what follows it otherwise, `break-after: avoid` or not. As tall as that
+ * start: groups side by side, which no engine breaks on paper, a field of many lines, or one short line. So a tab's
+ * and a titled group's is measured as printing begins, from the heading's place to the end of the first thing after
+ * it that a sheet does not break, the form laid out as paper lays it — a sheet's width, words for boxes, every tab
+ * shown — for that moment; a table's is its header and first line, as the stylesheet keeps; where nothing was
+ * measured, the stylesheet's own. At most KEEP_MOST: past that, what follows starts under the heading, as it may.
+ */
+const KEEP_MOST = 420;
+/** What paper leaves out, passed over as the start of what follows a heading. */
+const UNPRINTED = '.fd-button, .fd-actions, .fd-tabbar, .fd-help, .fd-print-head, .fd-print-end';
+
+/** An element's style as its own window computes it. */
+const styleOf = (element: Element): CSSStyleDeclaration => (element.ownerDocument.defaultView as Window).getComputedStyle(element);
+
+/** The first part shown in `box`, past its title. */
+function firstShown(box: Element): HTMLElement | null {
+  for (const child of box.children) {
+    if (!(child instanceof HTMLElement) || child.hidden || child.matches(`${UNPRINTED}, .fd-section-title, legend`)) continue;
+    const style = styleOf(child);
+    if (style.display === 'none' || style.position === 'absolute' || style.position === 'fixed') continue;
+    return child;
+  }
+  return null;
+}
+
+/** Where the first thing in `box` that a sheet does not break ends, on the screen. */
+function startEnd(box: Element): number {
+  const first = firstShown(box);
+  if (!first) return box.getBoundingClientRect().bottom;
+  // A table of lines or records: its label, header and first line, as paper draws them (a grid's table for paper, shown
+  // while measured); where no line is laid out, as much as they take.
+  if (first.matches('.fd-field, .fd-related') && first.querySelector(TABLES)) {
+    const line = [...first.querySelectorAll('tbody tr')].find((row) => row.getClientRects().length);
+    const top = first.getBoundingClientRect().top;
+    return Math.max(line?.getBoundingClientRect().bottom ?? 0, top + TABLE_START);
+  }
+  if (first.matches('.fd-grid')) {
+    // Parts side by side: the first line of them, as tall as its tallest.
+    if ((Number(styleOf(first).getPropertyValue('--fd-cols')) || 1) > 1) {
+      const parts = [...first.children].filter((part) => part instanceof HTMLElement && !part.hidden && part.getClientRects().length);
+      const top = parts[0]?.getBoundingClientRect().top ?? 0;
+      return Math.max(...parts.filter((part) => part.getBoundingClientRect().top - top < 2).map((part) => part.getBoundingClientRect().bottom), first.getBoundingClientRect().top);
+    }
+    return startEnd(first);
+  }
+  // A group kept whole on paper is one thing a sheet does not break; any other, its own start.
+  if (first.matches('.fd-section, .fd-sections, .fd-tabpanel')) return whole(first) ? first.getBoundingClientRect().bottom : startEnd(first);
+  // Tabs: the first one's name over its own start.
+  if (first.matches('.fd-tabs')) {
+    const panel = first.querySelector(':scope > .fd-tabpanel');
+    return panel ? startEnd(panel) + TAB_NAME : first.getBoundingClientRect().bottom;
+  }
+  return first.getBoundingClientRect().bottom;
+}
+/** A tab's name on paper, over its first part (styles-print.ts). */
+const TAB_NAME = 37;
+
+/** A titled group short enough to be one box on paper (keepRooms): all it holds, a quarter more, within KEEP_MOST. */
+function whole(group: Element): boolean {
+  if (!group.matches('fieldset.fd-section') || !group.querySelector(':scope > .fd-section-title')) return false;
+  const { top, bottom } = group.getBoundingClientRect();
+  return bottom > top && (bottom - top) * 1.25 + 8 <= KEEP_MOST;
+}
+/** A table a field draws (lines, a grid of lines, a list), and the least room its label, header and first line take on paper. */
+const TABLES = 'table, .fd-grid-lines, .fd-lines, .fd-list';
+const TABLE_START = 110;
+
+/**
+ * Each heading's room measured and given (`--fd-print-keep`): what its start takes with the form as wide as a sheet
+ * (styles-print.ts), its columns and labels as paper lays them out, and a quarter more for what paper draws otherwise —
+ * but never more than all it heads takes: a short tab goes on as far as it fits. A titled group no taller than
+ * KEEP_MOST so is one box on paper, kept whole (`--fd-print-whole`): Firefox left a framed one's top edge at a sheet's
+ * foot, its title on the next — and printed nothing in one it may not break, but the frame. The boxes given them, to
+ * take them back once printed.
+ */
+function keepRooms(root: HTMLElement): HTMLElement[] {
+  const given: HTMLElement[] = [];
+  const keep = (box: HTMLElement, from: number) => {
+    const end = startEnd(box);
+    const start = end - from;
+    // Not laid out on the screen (a part drawn only once shown): the stylesheet's own room.
+    if (start < 1) return;
+    // All it holds: to its end, or its start's where that is paper's (a table's) and the screen draws less.
+    const all = Math.max(box.getBoundingClientRect().bottom, end) - from;
+    const room = Math.ceil(Math.min(KEEP_MOST, start * 1.25 + 8, all + 8));
+    box.style.setProperty('--fd-print-keep', `${room}px`);
+    // A group that fits in that much: one box on paper, never broken, its frame never left at a sheet's foot.
+    if (whole(box)) box.style.setProperty('--fd-print-whole', 'inline-block');
+    given.push(box);
+  };
+  const own = (box: HTMLElement) => box.closest('.fd-form') === root;
+  const panels = [...root.querySelectorAll<HTMLElement>('.fd-tabpanel:not([data-off])')].filter(own);
+  const groups = [...root.querySelectorAll<HTMLElement>('fieldset.fd-section')].filter((group) => own(group) && group.querySelector(':scope > .fd-section-title'));
+  // Nothing headed: nothing laid out again.
+  if (!panels.length && !groups.length) return given;
+  root.setAttribute('data-fd-measure', '');
+  try {
+    for (const panel of panels) keep(panel, panel.getBoundingClientRect().top + (Number.parseFloat(styleOf(panel).paddingTop) || 0));
+    for (const group of groups) keep(group, group.getBoundingClientRect().top);
+  } finally {
+    root.removeAttribute('data-fd-measure');
+  }
+  return given;
+}
+
 /** A box's words as a person reads them: its text, or a choice's label — none for a choice left empty. */
 function boxWords(box: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): string {
   if (box.tagName !== 'SELECT') return box.value;
@@ -126,7 +237,8 @@ export function printLook(context: PrintContext): PrintLook {
     ...(header ? [el('div', { class: 'fd-print-words', dir: 'auto' }, ...header.nodes)] : []),
     el('div', { class: 'fd-print-what' }, title, when)
   );
-  const foot = footer ? el('div', { class: 'fd-print-foot', 'aria-hidden': 'true', dir: 'auto' }, ...footer.nodes) : null;
+  // The words in a box of their own, inside what repeats: a table's footer group draws no padding or rule of its own.
+  const foot = footer ? el('div', { class: 'fd-print-end', 'aria-hidden': 'true' }, el('div', { class: 'fd-print-foot', dir: 'auto' }, ...footer.nodes)) : null;
 
   /** The record's title and the day, as they are now. */
   function fillIn() {
@@ -139,6 +251,8 @@ export function printLook(context: PrintContext): PrintLook {
     when.textContent = context.fill(labels.printedOn, { date: restingText(context.now().toISOString(), 'datetime', context.locale, page.timeZone) });
   }
 
+  /** The boxes given room measured under their headings, to take it away once printed. */
+  let kept: HTMLElement[] = [];
   /** The words written beside each box for paper, to take away once printed. */
   const written: { box: Element; words: HTMLElement }[] = [];
   function writeBoxes() {
@@ -165,6 +279,7 @@ export function printLook(context: PrintContext): PrintLook {
     context.drawAll();
     fillIn();
     writeBoxes();
+    kept = keepRooms(root);
     // With a dialog's form in front, it alone prints: never the page behind with the dialog over it. Unless a Print
     // of one part alone is on its way already.
     const page = doc.documentElement;
@@ -182,6 +297,11 @@ export function printLook(context: PrintContext): PrintLook {
       box.removeAttribute('data-print-box');
     }
     written.length = 0;
+    for (const box of kept) {
+      box.style.removeProperty('--fd-print-keep');
+      box.style.removeProperty('--fd-print-whole');
+    }
+    kept = [];
     root.removeAttribute('data-fd-print');
     if (inFront) {
       inFront = false;

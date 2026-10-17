@@ -1072,8 +1072,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         box.style.setProperty('--fd-columns', String(wideColumns(columns)));
         // Twelfths: eleven gaps between them, which shrink in a narrow column rather than push past it.
         if (wideColumns(columns) === 12) box.setAttribute('data-twelfths', '');
-        // One column, its parts one under another: on paper a plain block, which every engine breaks between sheets.
-        if (wideColumns(columns) === 1) box.setAttribute('data-columns', '1');
+        // Its count on a wide sheet: on paper, a grid of one column a plain block, and one of more its parts side by side
+        // as boxes in lines (styles-print.ts in @fieldia/widgets), which every engine breaks between sheets.
+        box.setAttribute('data-columns', String(wideColumns(columns)));
         // Counts given for the narrower widths replace the skin's own stacking there.
         if (typeof columns === 'object') {
           for (const width of ['medium', 'narrow'] as const) {
@@ -2270,7 +2271,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const head = layout.type === 'sheet' ? null : pageHead();
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-    content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body);
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body];
+    // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
+    const end = content.querySelector(':scope > .fd-print-end');
+    if (end) end.before(...drawnParts);
+    else content.append(...drawnParts);
     pageDrawn = true;
   }
   /** How a list's other view makes a record: the app's way, else the model's page in a dialog, else none. */
@@ -2321,7 +2326,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
   });
   cleanups.push(() => paper.destroy());
-  root.append(paper.head, content, ...(paper.foot ? [paper.foot] : []), done, announcer);
+  // Its footer the content's last part: on paper the footer of the table the content is, under every sheet.
+  if (paper.foot) content.append(paper.foot);
+  root.append(paper.head, content, done, announcer);
   // A public page's bot check (`botCheck`): a box no person sees, reaches with Tab or hears read out — inert, so no
   // browser fills it in either — which a bot filling every box fills. Told to the form as it is filled, and read again
   // as the answers go; the send carries it, and the app decides.

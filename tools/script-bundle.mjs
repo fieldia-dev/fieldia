@@ -810,7 +810,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (viewerWords) — 509.23 measured before, 497.88 after: 11.4 less, to 497.9.
 // The words lane joined with every other lane (size-words; its line above measured on the size pass's tip): 512.44
 // measured before, 500.97 after — 11.5 less, to 501.0.
-const BUDGET_KB = 501.0;
+// A record's footer under every sheet and each heading kept with what follows it on paper (0.26, open-print): the print
+// rules' grids as blocks with their parts side by side in lines, the content a table whose footer group the footer is,
+// a box under each heading as tall as its start, a short group one box, measured as printing begins (print.ts) —
+// rules for paper that a part loaded at beforeprint brings too late — 500.98 measured before, 507.84 after: 6.9 more,
+// to 507.9.
+const BUDGET_KB = 507.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -982,7 +987,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // parts read being in both.
 // The words lane joined with every other lane (listed with the raw budget above): 165.44 measured before, 161.14 after
 // — 4.3 less, to 161.2.
-const GZIP_BUDGET_KB = 161.2;
+// A record's footer under every sheet and its headings kept with what follows them on paper (listed with the raw budget
+// above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
+const GZIP_BUDGET_KB = 163.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1357,7 +1364,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 19.94 and 7.52; duplicates 14.79 and 6.24; head 34.46 and 10.02; date 22.13 and 8.38; filters 11.25 and 4.21;
 // columns 10.96 and 4.05; path 16.06 and 6.31; choice 10.64 and 4.34 — each to the next 0.1 over; cards, themes and
 // quiet as they were.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A table of lines a block round it on paper, which every engine breaks between its rows (0.26, open-print): lines
+// 37.78 and 12.85 measured before, 37.85 and 12.87 after, its raw to 37.9.
+const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

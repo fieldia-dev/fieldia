@@ -152,12 +152,92 @@ describe('what is in front, and the footer on every sheet', () => {
     window.dispatchEvent(new Event('afterprint'));
   });
 
-  it('prints a record’s footer once, after it: no room kept at each sheet’s foot, which its groups’ grids do not keep to', async () => {
+  it('keeps a record’s footer the content’s last part, which paper repeats under every sheet: no room kept by padding', async () => {
     const host = await mount();
     window.dispatchEvent(new Event('beforeprint'));
     expect(root(host).hasAttribute('data-print-room')).toBe(false);
-    // Right after the record's content, in its flow.
-    expect(root(host).querySelector(':scope > .fd-print-foot')?.previousElementSibling?.classList.contains('fd-content')).toBe(true);
+    // The content's last part, its words in a box of their own inside it (a table's footer group draws no rule).
+    const content = root(host).querySelector(':scope > .fd-content') as HTMLElement;
+    const end = content.lastElementChild as HTMLElement;
+    expect(end.classList.contains('fd-print-end')).toBe(true);
+    expect(end.getAttribute('aria-hidden')).toBe('true');
+    expect(end.querySelector(':scope > .fd-print-foot')?.textContent).toBe('Quote INV/2026/0042 when you pay.');
+    expect(root(host).querySelector(':scope > .fd-print-foot, :scope > .fd-print-end')).toBeNull();
+    window.dispatchEvent(new Event('afterprint'));
+  });
+
+  it('has no footer where its page has none', async () => {
+    const host = await mount({ page: { ...invoice, print: { header: 'Zamalek Office Supplies' } } });
+    expect(host.querySelector('.fd-print-end, .fd-print-foot')).toBeNull();
+  });
+});
+
+describe('a heading kept with the start of what follows it', () => {
+  /** Where each part stands on the screen, as a browser lays it out: by its node, its field or its tab. */
+  /** The parts measured with every tab shown (the form marked for it while measured). */
+  const measured = new Set<string>();
+  function laidOut(places: Record<string, [top: number, bottom: number]>) {
+    measured.clear();
+    jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const name = this.getAttribute('data-fd-tab') ?? this.getAttribute('data-field') ?? this.getAttribute('data-node') ?? '';
+      if (this.closest('[data-fd-measure]')) measured.add(name);
+      const [top, bottom] = places[name] ?? [0, 0];
+      return { top, bottom, left: 0, right: 600, width: 600, height: bottom - top, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+    });
+    jest.spyOn(HTMLElement.prototype, 'getClientRects').mockImplementation(() => [{}] as unknown as DOMRectList);
+  }
+  const keep = (element: Element | null) => (element as HTMLElement | null)?.style.getPropertyValue('--fd-print-keep');
+
+  it('keeps room under a tab’s name for its first part, measured as printing begins with every tab shown, and gives it back once printed', async () => {
+    const host = await mount();
+    // The Payment tab, not the one shown: its first part, the payment, 44px tall under the tab's top.
+    laidOut({ Payment: [400, 600], payment: [400, 444], note: [460, 560], Details: [100, 200], state: [100, 130] });
+    window.dispatchEvent(new Event('beforeprint'));
+    // A quarter more than the 44px it takes at a sheet's width, for what paper draws otherwise, and 8 more: 63.
+    expect(keep(panel(host, 'Payment'))).toBe('63px');
+    expect(keep(panel(host, 'Details'))).toBe('46px');
+    // Every tab was shown for it, and is as it was once measured.
+    expect(measured).toEqual(new Set(['Payment', 'payment', 'Details', 'state']));
+    expect(root(host).hasAttribute('data-fd-measure')).toBe(false);
+    expect(panel(host, 'Payment').hidden).toBe(true);
+    window.dispatchEvent(new Event('afterprint'));
+    expect(keep(panel(host, 'Payment'))).toBe('');
+    expect(keep(panel(host, 'Details'))).toBe('');
+  });
+
+  it('keeps a titled group’s title with its first field, and a short group whole on its sheet', async () => {
+    const grouped = (title: string) => ({
+      ...invoice,
+      layout: { ...invoice.layout, children: [{ type: 'section', id: title, title, children: [{ type: 'field', id: `f-${title}-ref`, field: 'reference' }, { type: 'field', id: `f-${title}-note`, field: 'note' }] }] },
+    }) as Page;
+    const host = await mount({ page: grouped('Terms') });
+    const group = host.querySelector('fieldset.fd-section') as HTMLElement;
+    laidOut({ Terms: [100, 260], reference: [130, 170], note: [180, 260] });
+    window.dispatchEvent(new Event('beforeprint'));
+    // Its title and first field, 70px, a quarter more and 8; all of it, 160px, one box on paper, kept whole.
+    expect(group.style.getPropertyValue('--fd-print-keep')).toBe('96px');
+    expect(group.style.getPropertyValue('--fd-print-whole')).toBe('inline-block');
+    window.dispatchEvent(new Event('afterprint'));
+    expect(group.style.getPropertyValue('--fd-print-whole')).toBe('');
+    // Taller than 420px with a quarter more: broken where it may, its title kept with its first field.
+    laidOut({ Terms: [100, 500], reference: [130, 170], note: [180, 500] });
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(group.style.getPropertyValue('--fd-print-keep')).toBe('96px');
+    expect(group.style.getPropertyValue('--fd-print-whole')).toBe('');
+    window.dispatchEvent(new Event('afterprint'));
+  });
+
+  it('keeps no more than all the tab holds, nor more than 420px; a part never laid out keeps the stylesheet’s own room', async () => {
+    const host = await mount();
+    laidOut({ Payment: [0, 900], payment: [0, 860], Details: [100, 140], state: [100, 136] });
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(keep(panel(host, 'Payment'))).toBe('420px');
+    // 36px of the tab's first part, 40 of all it holds: 40 and 8, not 36 a quarter more and 8.
+    expect(keep(panel(host, 'Details'))).toBe('48px');
+    window.dispatchEvent(new Event('afterprint'));
+    laidOut({});
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(keep(panel(host, 'Payment'))).toBe('');
     window.dispatchEvent(new Event('afterprint'));
   });
 });
