@@ -108,6 +108,14 @@ describe('a part’s own words in the one-tag script', () => {
     expect(fieldia.VIEWER_LABELS.de.importTitle).toBe('Datensätze importieren');
     expect(fieldia.VIEWER_LABELS.de.importReady).toBe(fieldia.VIEWER_LABELS.en.importReady);
   });
+
+  it('a part’s sentence in a page’s words for its records: never English beside a language that gave its plain one', async () => {
+    const fieldia = await oneTag();
+    fieldia.addLanguage('de', { viewer: { importReady: '{n} Zeilen bereit.' } });
+    fieldia.partWords({ viewer: { importReady: fieldia.VIEWER_LABELS.en.importReady, importReadyNoun: '{n} {records} ready.' } as Partial<ViewerLabels> });
+    expect('importReadyNoun' in fieldia.VIEWER_LABELS.de).toBe(false);
+    expect((fieldia.VIEWER_LABELS.en as unknown as Record<string, string>)['importReadyNoun']).toBe('{n} {records} ready.');
+  });
 });
 
 describe('a page mounted before its part came', () => {
