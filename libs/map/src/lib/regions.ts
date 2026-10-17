@@ -125,6 +125,8 @@ path.fd-map-region:focus-visible { stroke: var(--fd-focus); stroke-width: 4; str
 .fd-map-legend li { display: flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
 .fd-map-legend i { width: 18px; height: 11px; flex: none; border-radius: 2px; background: var(--fd-region, transparent); border: 1px solid color-mix(in srgb, var(--fd-text) 35%, transparent); }
 .fd-map-legend i[data-shade] { background: color-mix(in srgb, var(--fd-region) 50%, var(--fd-surface)); }
+.fd-map-legend-bubble { margin-block-start: 4px; padding-block-start: 5px; border-block-start: 1px solid color-mix(in srgb, var(--fd-text) 15%, transparent); align-items: flex-start !important; max-width: 220px; line-height: 1.3; }
+.fd-map-legend-bubble b { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fd-accent); color: var(--fd-accent-text); font-size: 9.5px; font-weight: 700; }
 .leaflet-tooltip.fd-map-tip {
   padding: 3px 8px; border: 0; border-radius: 6px; font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap;
   background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
@@ -164,6 +166,8 @@ export function drawRegions(options: {
   legend: boolean;
   /** What a press on an area does; without it, the areas are only shown. */
   press?: (border: Border) => void;
+  /** Where the map draws crowded pins as one round mark with their count: the legend's words for it, under the shades. */
+  bubbles?: string;
 }): RegionsLayer {
   const { box, map, L, document: doc, locale, labels, borders } = options;
   installRegionStyles(doc);
@@ -297,6 +301,16 @@ export function drawRegions(options: {
       item.append(swatch, range);
       list.append(item);
     });
+    // A round mark with a number, as the map draws crowded pins, and what it counts: never read as a shade.
+    if (options.bubbles) {
+      const item = doc.createElement('li');
+      item.className = 'fd-map-legend-bubble';
+      const mark = doc.createElement('b');
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = number(12);
+      item.append(mark, options.bubbles);
+      list.append(item);
+    }
     legend.append(title, list);
     legend.hidden = !visible;
   }
@@ -410,6 +424,8 @@ export function listRegions(options: {
   addSearch(search: { label: string; filter: ResolvedFilter[] }): void;
   /** The records the map has, to count when the data source cannot. */
   records(): readonly { values: Record<string, unknown> }[];
+  /** The legend's words for a round mark with a number, where the map draws crowded pins so. */
+  bubbles?: string;
 }): { shade(filter: readonly ResolvedFilter[], current: () => boolean): Promise<void>; destroy(): void } {
   const { spec } = options;
   let gone = false;
@@ -422,6 +438,7 @@ export function listRegions(options: {
             ...options,
             borders,
             legend: spec.legend !== false,
+            bubbles: options.bubbles,
             press: (border) => options.addSearch({ label: fill(options.labels.inRegion, { name: border.name }), filter: [{ field: spec.field, op: '=', value: border.value }] }),
           }),
         }

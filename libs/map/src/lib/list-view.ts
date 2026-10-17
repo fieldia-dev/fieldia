@@ -236,6 +236,8 @@ export function listMap(settings: MapSettings, context: ListMapContext): ListVie
                       context.addSearch({ ...search, kind: 'region' });
                     },
                     records: () => records,
+                    // Crowded pins drawn as one round mark with their count: the legend says what it means.
+                    ...(spec.cluster !== false ? { bubbles: labels.legendBubble } : {}),
                   })
             )
           )

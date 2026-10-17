@@ -63,8 +63,15 @@ test.describe('orders by district', () => {
     // close together on the map, whichever district they are in. Two measures, each said, never taken for the other.
     await expect(legend(page).locator('.fd-map-legend-title')).toHaveText('Orders this week, by district');
     await expect(page.locator('.fd-page-description, .fd-page-head').first()).toContainText('counts the orders close together on the map, whichever district they are in');
+    // And the legend itself says what a round mark with a number means, under the shades — a bubble says 92 while the
+    // shades top out at 25, and the walk read one for the other.
+    const bubble = legend(page).locator('li.fd-map-legend-bubble');
+    await expect(bubble).toHaveText('12How many are close together: zoom in to part them');
+    await expect(bubble.locator('b')).toHaveCSS('border-radius', '50%');
+    await expect(legend(page).locator('li').last()).toHaveClass('fd-map-legend-bubble');
+    await screen(page, 'map-zones-legend-bubble', { viewport: true });
     // Counts step by whole numbers, from 1: "1–5", "6–10"…
-    const steps = await legend(page).locator('li').allTextContents();
+    const steps = await legend(page).locator('li:not(.fd-map-legend-bubble)').allTextContents();
     expect(steps[0]).toMatch(/^1–\d+$/);
     expect(steps.length).toBeGreaterThanOrEqual(3);
     // Every district has orders this week: each one shaded, none called None.
