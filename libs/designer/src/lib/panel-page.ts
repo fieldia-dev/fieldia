@@ -10,6 +10,7 @@ import { formMoments } from './steps-panel';
 import { headSettings } from './head-properties';
 import { settingNumber } from './number-box';
 import { zoneBox } from './zone-setting';
+import { recordsSettings } from './records-settings';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
@@ -81,6 +82,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const sameOn = el('select', { class: 'fd-input fd-select', 'aria-label': w.duplicatesOn }, el('option', { value: 'type' }, w.duplicatesOnAs.type), el('option', { value: 'save' }, w.duplicatesOnAs.save)) as HTMLSelectElement;
   sameOn.addEventListener('change', () => designer.setDuplicates({ on: sameOn.value === 'save' ? 'save' : null }));
   const sameOnRow = setting(el, 'rules', 'Duplicates asked for', sameOn, { words: w.duplicatesOn });
+  // What its records are called in Fieldia's own sentences (records-settings.ts).
+  const records = recordsSettings(el, designer);
   // Its phone numbers: as typed, or checked by their country — the country they start on, and how they are shown.
   const phones = el('select', { class: 'fd-input fd-select', 'aria-label': w.phones }, el('option', { value: '' }, w.phonesAs.typed), el('option', { value: 'checked' }, w.phonesAs.checked)) as HTMLSelectElement;
   phones.addEventListener('change', () => designer.setPhone({ on: phones.value === 'checked' }));
@@ -117,6 +120,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     { class: 'fd-props' },
     setting(el, 'content', 'Description', description, { words: w.description }),
     zoneRow,
+    ...records.rows,
     titleRow,
     titleLabelRow,
     phonesRow,
@@ -154,6 +158,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       if (!focused(printHeader)) printHeader.value = page.print?.header ?? '';
       if (!focused(printFooter)) printFooter.value = page.print?.footer ?? '';
       if (!focused(printLogo)) printLogo.value = page.print?.logo ?? '';
+      records.update(page);
       look.update(page);
       moments.update(page);
       head.update(page);

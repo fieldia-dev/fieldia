@@ -376,6 +376,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    */
   setDuplicates(patch: { fields?: string[] | null; on?: 'type' | 'save' | null }): boolean;
   /**
+   * What the page's records are called (`records`), so Fieldia's sentences name them: the words for one and for more
+   * — both, or neither (`null`, or both empty, takes the setting away) — for one with its article (`a`, empty takes it
+   * away), and whether a field's label inside those sentences is written small (`lowerLabels`). Each kept as typed,
+   * its ends trimmed. Refused with only one of the two words.
+   */
+  setRecords(records: { one: string; other: string; a?: string; lowerLabels?: boolean } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -1424,6 +1431,17 @@ export function createDesigner(options: {
         },
         `print:${Object.keys(patch).join(',')}`
       );
+    },
+
+    setRecords(records) {
+      return apply((draft) => {
+        const one = records?.one.trim() ?? '';
+        const other = records?.other.trim() ?? '';
+        if (!one && !other) return void delete draft.records;
+        if (!one || !other) throw new Refusal((w) => w.refusals.recordsBoth);
+        const a = records?.a?.trim();
+        draft.records = { one, other, ...(a ? { a } : {}), ...(records?.lowerLabels ? { lowerLabels: true } : {}) };
+      }, 'records');
     },
 
     setDuplicates(patch) {
