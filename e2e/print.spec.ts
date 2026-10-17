@@ -438,9 +438,30 @@ test.describe('what is printed follows what is shown', () => {
     expect(problems).toEqual([]);
   });
 
-  test('a grid’s column dragged by its header prints in its new place: the lines’ paper table in the order the screen shows', async ({ page, browserName }) => {
-    // WebKit says "ResizeObserver loop completed with undelivered notifications" as a grid is laid out for paper (0.25.0 too).
-    test.skip(browserName === 'webkit', 'WebKit reports a ResizeObserver loop as a grid is laid out for paper, as at 0.25.0');
+  test('a grid in a tab never opened prints as its lines’ paper table, like the one shown, with no page error in any engine', async ({ page }) => {
+    // WebKit said "ResizeObserver loop completed with undelivered notifications" here (0.25.0 too): the delivery schedule's
+    // grid, drawn for paper after the window said printing began, made no paper table, and was laid out across the sheet.
+    const { problems } = await open(page, 'plain', `page=order&skin=underline&${NOW}`);
+    await expect(page.locator('[data-node="f-lines"] .ag-row[row-index="5"]')).toBeVisible();
+    await printing(page);
+    for (const id of ['f-lines', 'f-deliveries']) {
+      const grid = page.locator(`[data-node="${id}"]`);
+      await expect(grid.locator('.fd-print-table')).toBeVisible();
+      await expect(grid.locator('.ag-root-wrapper')).toBeHidden();
+    }
+    await expect(page.locator('[data-node="f-deliveries"] .fd-print-table thead th')).toHaveText(['Date', 'Deliver to', 'Carrier', 'Boxes']);
+    await screen(page, 'print-order-grids');
+    await printed(page);
+    await expect(page.locator('.fd-print-table')).toHaveCount(0);
+    // Back on the screen, the schedule's tab opens on its grid.
+    await page.getByRole('tab', { name: 'Other information' }).click();
+    await expect(page.locator('[data-node="f-deliveries"] .ag-root-wrapper')).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+
+  test('a grid’s column dragged by its header prints in its new place: the lines’ paper table in the order the screen shows', async ({ page }) => {
+    // In every engine: WebKit said "ResizeObserver loop completed with undelivered notifications" as every tab was shown
+    // for paper (0.25.0 too), a grid in a tab not shown put back on the page inside its own size's observer.
     const { problems } = await open(page, 'plain', `page=order&skin=underline&${NOW}`);
     const grid = page.locator('[data-node="f-lines"]');
     const cellHead = (column: string) => grid.locator(`.ag-header-cell[col-id="${column}"]`);

@@ -1508,6 +1508,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         headerHeight: HEADER_HEIGHT,
       }),
       columnDefs,
+      // The theme's heights as the grid's own too: a grid drawn out of sight (a tab not opened, a page drawn for paper)
+      // cannot read them from its theme until shown, and read then, inside its observer of their size, they changed its
+      // rows' and header's heights as it was told its own — a loop the browser reports (WebKit as a page error:
+      // "ResizeObserver loop completed with undelivered notifications").
+      rowHeight: ROW_HEIGHT,
+      headerHeight: HEADER_HEIGHT,
       enableRtl: rtl,
       rowData: lines(),
       pinnedBottomRowData: totals.length ? [totalsRow(lines())] : undefined,
@@ -1564,14 +1570,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   // Out of sight under display: none — a tab not shown, a field hidden by its condition — AG Grid measures
   // itself again every frame, for as long as it stays hidden. Taken off the page meanwhile, it rests;
-  // put back the moment it has a box again, it draws itself to fit.
+  // put back once it has a box again, it draws itself to fit — in the next frame, never inside the observer's own
+  // call: put back there, it grows the box observed while its size is told, a loop the browser reports (WebKit as a
+  // page error: "ResizeObserver loop completed with undelivered notifications", as every tab is shown for paper).
   const away = document.createComment('fd-grid-away');
   const View = document.defaultView;
+  let back = 0;
+  const putBack = () => {
+    back = 0;
+    if (away.isConnected && element.getClientRects().length) away.replaceWith(host);
+  };
   const sizes = View && 'ResizeObserver' in View
     ? new View.ResizeObserver(([entry]) => {
         const hidden = entry.contentRect.width === 0 && entry.contentRect.height === 0;
         if (hidden && host.isConnected) host.replaceWith(away);
-        else if (!hidden && away.isConnected) away.replaceWith(host);
+        else if (!hidden && away.isConnected && !back) back = View.requestAnimationFrame(putBack);
       })
     : null;
   sizes?.observe(element);
@@ -1892,6 +1905,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const view = document.defaultView;
   view?.addEventListener('beforeprint', printing);
   view?.addEventListener('afterprint', printed);
+  // Drawn after printing began — a tab never opened, drawn for paper — the viewer tells it (`fd-paper`): its paper table
+  // then, never the grid itself laid out across a sheet.
+  element.setAttribute('data-fd-paper', '');
+  element.addEventListener('fd-paper', () => !paper && printing());
 
   /** What the cards were last drawn from: drawn again only when it changes. */
   let cardsDrawn = '';
@@ -2232,6 +2249,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();
+      if (back) View?.cancelAnimationFrame(back);
       api.destroy();
       apis.delete(element);
     },

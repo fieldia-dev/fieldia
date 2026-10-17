@@ -277,6 +277,9 @@ export function printLook(context: PrintContext): PrintLook {
     printing = true;
     root.setAttribute('data-fd-print', '');
     context.drawAll();
+    // A part drawn just now (in a tab never opened) came after the window said printing begins: told here, so it lays
+    // itself out for paper too (`data-fd-paper`, a grid's paper table) before anything is measured or printed.
+    for (const late of root.querySelectorAll('[data-fd-paper]')) late.dispatchEvent(new Event('fd-paper'));
     fillIn();
     writeBoxes();
     kept = keepRooms(root);
