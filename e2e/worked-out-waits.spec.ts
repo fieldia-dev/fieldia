@@ -65,6 +65,25 @@ test.describe('values worked out from the lines wait for a line that does not re
     expect(problems).toEqual([]);
   });
 
+  test('a line opened in its dialog: its Subtotal waits for its Quantity, as its cell in the table does', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=order&skin=underline');
+    await cell(page, 'f-lines', 1, '__open').getByRole('button', { name: 'Open line' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Order lines' });
+    await expect(dialog.locator('[data-node="values-subtotal"] input')).toHaveValue('21,546.00');
+    await dialog.getByLabel('Quantity', { exact: true }).fill('abc');
+    await dialog.getByLabel('Unit price', { exact: true }).focus();
+    const subtotal = dialog.locator('[data-node="values-subtotal"] .fd-value-waits');
+    await expect(subtotal).toBeVisible();
+    await expect(subtotal).toHaveAttribute('title', 'Fix Quantity to see Subtotal');
+    await expect(dialog.locator('[data-node="values-subtotal"] input')).toBeHidden();
+    await screen(page, 'worked-out-waits-line-dialog', { viewport: true });
+    await dialog.getByLabel('Quantity', { exact: true }).fill('10');
+    await dialog.getByLabel('Unit price', { exact: true }).focus();
+    await expect(subtotal).toBeHidden();
+    await expect(dialog.locator('[data-node="values-subtotal"] input')).toHaveValue('17,955.00');
+    expect(problems).toEqual([]);
+  });
+
   test('an invoice whose page works its totals out from its lines: they wait for a quantity that does not read', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=template-invoice&theme=odoo&record=new');
     await node(page, 'f-lines').getByRole('button', { name: /Add a line/ }).click();

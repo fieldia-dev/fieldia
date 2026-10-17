@@ -796,7 +796,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing: editingNow(), context: options.context, parent: parentContext });
   const computed = compileComputed(page, today, about);
   /** Each value worked out from others — by the page, or by the app as the lines change — and what it waits for. */
-  const workedOut = workedOutFrom(page, !!options.dataSource?.onchange && page.data.kind === 'record');
+  const workedOut = workedOutFrom(page, !!options.dataSource?.onchange && page.data.kind === 'record', !!options.parent);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
   const parts = new Map<string, FormNode>();

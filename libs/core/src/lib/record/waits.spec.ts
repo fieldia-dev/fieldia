@@ -125,6 +125,25 @@ describe('a value worked out from lines waits while a line holds text that does 
     expect(form.waitsFor('total')).toBeNull();
   });
 
+  it('a line opened in its dialog: its Subtotal waits for its Quantity, as its cell in the table does', () => {
+    const line = createForm({
+      page: page({
+        qty: { type: 'float', label: 'Quantity' },
+        price: { type: 'monetary', label: 'Unit price', currency: 'EGP' },
+        subtotal: { type: 'monetary', label: 'Subtotal', currency: 'EGP', readonly: true },
+        name: { type: 'char', label: 'Description' },
+      }),
+      parent: { values: {}, fields: {} },
+    });
+    line.setValue('qty', 12);
+    expect(line.waitsFor('subtotal')).toBeNull();
+    line.setUnread('qty', { text: 'abc', message: 'Quantity: “abc” is not a number' });
+    expect(line.waitsFor('subtotal')).toEqual({ field: 'qty' });
+    // Nothing a person types in waits.
+    expect(line.waitsFor('price')).toBeNull();
+    expect(line.waitsFor('name')).toBeNull();
+  });
+
   it('a section’s or a note’s text is never waited for, and the first line holding text is named', () => {
     const form = appOrder();
     form.setValue('line_ids', ORDER);

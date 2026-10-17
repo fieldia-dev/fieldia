@@ -19,6 +19,8 @@ export interface WaitsFor {
 
 /** Kinds of value an app works out from a record's lines: amounts, and totals kept whole (Flectra's tax_totals). */
 const WORKED_OUT = new Set<Field['type']>(['integer', 'float', 'monetary', 'json']);
+/** The numbers a line works out, which wait for its cells (0.24's rule for a table's cells). */
+const NUMBERS = new Set<Field['type']>(['integer', 'float', 'monetary']);
 
 /**
  * Which fields of a page each of its values worked out from others is worked out from — what it waits for while one
@@ -26,15 +28,19 @@ const WORKED_OUT = new Set<Field['type']>(['integer', 'float', 'monetary', 'json
  * total for its lines (0.24). The page's own `compute`: the fields it reads, and what each of those it reads that is
  * worked out reads in turn — a sum over a table's lines waits for those lines. The app's (`appWorksOut`, a source
  * with an onchange): an amount no one types in (read-only), which the app works out as the lines change, from any
- * table of lines the page has — a sales order's Untaxed, Taxes and Total, its tax totals. Fields worked out from
- * nothing that can hold such text are left out.
+ * table of lines the page has — a sales order's Untaxed, Taxes and Total, its tax totals. A line's own form (`asLine`:
+ * a line opened in its dialog) is the line the table's rule reads: a number on it no one types in waits for any of
+ * its fields a person types in, as its cell in the table does. Fields worked out from nothing that can hold such text
+ * are left out.
  */
-export function workedOutFrom(page: Page, appWorksOut: boolean): Map<string, readonly string[]> {
+export function workedOutFrom(page: Page, appWorksOut: boolean, asLine = false): Map<string, readonly string[]> {
   const tables = Object.keys(page.fields).filter((name) => page.fields[name].type === 'one2many');
+  const typed = Object.keys(page.fields).filter((name) => page.fields[name].readonly !== true && page.fields[name].compute === undefined);
   const reads = new Map<string, readonly string[]>();
   for (const [name, def] of Object.entries(page.fields)) {
     if (def.type === 'one2many') continue;
-    if (def.compute !== undefined) {
+    if (asLine && NUMBERS.has(def.type) && (def.readonly === true || def.compute !== undefined)) reads.set(name, typed);
+    else if (def.compute !== undefined) {
       try {
         reads.set(name, compileExpression(def.compute).fields.filter((one) => one !== name && one in page.fields));
       } catch {
