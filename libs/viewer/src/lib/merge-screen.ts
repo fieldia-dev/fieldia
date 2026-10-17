@@ -107,7 +107,7 @@ export function openMergeScreen(context: DuplicatesContext, here: MergeSide, the
     const table = el('table', { class: 'fd-merge-table' }, el('thead', {}, head), el('tbody', {}, ...rows.map((r) => r.row)));
     const labelOf = (field: string) => page.fields[field].label;
     const separator = (context.tag ?? context.locale).split('-')[0] === 'ar' ? '، ' : ', ';
-    const sameWords = apart.length ? (alike.length ? fill(labels.mergeSame, { fields: alike.map(labelOf).map(labelAt(labels.mergeSame, 'fields', page.records?.lowerLabels, context.tag ?? context.locale)).join(separator) }) : '') : labels.mergeAllSame;
+    const sameWords = apart.length ? (alike.length ? fill(labels.mergeSame, { fields: alike.map(labelOf).map(labelAt(labels.mergeSame, 'fields', page.lowerLabels, context.tag ?? context.locale)).join(separator) }) : '') : labels.mergeAllSame;
     const what = el('p', { class: 'fd-merge-what', id: `${id}-what` });
     const problem = el('p', { class: 'fd-merge-error', role: 'alert', hidden: '' });
     const body = el('div', { class: 'fd-form-dialog-body' }, el('p', { class: 'fd-merge-intro' }, sentence(labels.mergeIntroNoun, labels.mergeIntro)), ...(apart.length ? [table] : []), ...(sameWords ? [el('p', { class: 'fd-merge-same' }, sameWords)] : []), what, problem);

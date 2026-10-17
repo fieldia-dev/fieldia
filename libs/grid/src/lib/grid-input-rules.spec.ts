@@ -316,7 +316,7 @@ describe('a grid on a page that asks for its labels small inside sentences', () 
     ] as const) {
       const host = document.createElement('div');
       document.body.append(host);
-      const page = { ...order, records: { one: 'order', other: 'orders', lowerLabels: lower } } as Page;
+      const page = { ...order, lowerLabels: lower } as Page;
       handle = mountViewer(host, { page, dataSource: createMemoryDataSource({ records: { 'sale.order': { 1: { line_ids: lines } } } }), recordId: 1, widgets: gridWidgets });
       await handle.form.settled();
       await frames();

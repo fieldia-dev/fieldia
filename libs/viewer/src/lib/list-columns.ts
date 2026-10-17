@@ -62,8 +62,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
   const optional = node.optionalColumns;
   const key = columnsKey(page, node);
   const label = (name: string) => page.fields[name]?.label ?? name;
-  /** A sentence naming a column, its label small inside it where the page asks (`records.lowerLabels`). */
-  const naming = (template: string, name: string) => fill(template, { label: labelAt(template, 'label', page.records?.lowerLabels, context.locale)(label(name)) });
+  /** A sentence naming a column, its label small inside it where the page asks (`lowerLabels`). */
+  const naming = (template: string, name: string) => fill(template, { label: labelAt(template, 'label', page.lowerLabels, context.locale)(label(name)) });
   let order: string[] = [];
   let hidden = new Set<string>();
   let widths = new Map<string, number>();

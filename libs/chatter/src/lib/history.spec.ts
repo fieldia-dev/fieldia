@@ -370,7 +370,7 @@ describe('the history on a page that names its records', () => {
 
 describe('the history on a page that asks for its labels small inside sentences', () => {
   it('says each change’s field small after its person, its first letter only; without it, as before', async () => {
-    const small = await mount({ records: { one: 'work item', other: 'work items', lowerLabels: true } });
+    const small = await mount({ lowerLabels: true });
     expect(summaries(small).slice(0, 4)).toEqual(['Mona Adel changed stack Rank to 1999964430', 'Mona Adel cleared assigned To', 'Mona Adel changed stack Rank to 1999979534', 'Karim Fathy changed state from New to Active and made field changes']);
     handle?.destroy();
     const plain = await mount();

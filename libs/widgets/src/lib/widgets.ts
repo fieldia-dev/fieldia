@@ -111,7 +111,7 @@ export interface WidgetDialogs {
       title: string;
       values?: Values;
       withValues?: boolean;
-      /** A line's own: its labels small inside sentences as its record's page asks (`records.lowerLabels`), unless its own page says. */
+      /** A line's own: its labels small inside sentences as its record's page asks (`lowerLabels`), unless its own page says. */
       lowerLabels?: boolean;
     }
   ): Promise<(RelatedRecord & { values?: Values }) | null>;
@@ -133,7 +133,7 @@ export interface WidgetDialogs {
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
     /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */
     buttons?: { done?: string; cancel?: string };
-    /** Its labels small inside sentences, as the page it is part of asks (`records.lowerLabels`): a line's record, a list. */
+    /** Its labels small inside sentences, as the page it is part of asks (`lowerLabels`): a line's record, a list. */
     lowerLabels?: boolean;
   }): Promise<Values | null>;
 }

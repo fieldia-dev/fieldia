@@ -24,7 +24,7 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
     fields: shown,
     // A line's phone numbers read as the record's page reads its own, its labels said as the record's are.
     ...(phone ? { phone } : {}),
-    ...(lowerLabels ? { records: { lowerLabels } } : {}),
+    ...(lowerLabels ? { lowerLabels } : {}),
     layout: {
       type: 'sections',
       id: 'values',
@@ -101,7 +101,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
       const found = await pageFor(model);
       if (!found) return null;
       // A line opened in its model's page: its labels said as the record's are, unless that page says otherwise.
-      const related = request.lowerLabels !== undefined && found.records?.lowerLabels === undefined ? { ...found, records: { ...found.records, lowerLabels: request.lowerLabels } } : found;
+      const related = request.lowerLabels !== undefined && found.lowerLabels === undefined ? { ...found, lowerLabels: request.lowerLabels } : found;
       const nameField = nameFieldOf(related);
       const result = await openFormDialog({
         ...shared,

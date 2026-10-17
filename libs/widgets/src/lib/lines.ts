@@ -112,7 +112,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   // What is still typed in a cell is read first — a name looked up (the cell left as the line was opened) waited for —
   // so the dialog shows the line as it reads, and its Save & Close never writes back what the typing replaced.
   const asked = stillShown(form);
-  const own = form.page.records?.lowerLabels;
+  const own = form.page.lowerLabels;
   const lowerLabels = own === undefined ? {} : { lowerLabels: own };
   const settling = form.settle?.();
   if (form.reading?.()) await settling;

@@ -758,8 +758,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // Its time zone written into each date and time field naming none, for whatever reads one from its field alone.
   const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
-  // A field's label small inside a message's sentence where the page asks (`records.lowerLabels`).
-  const messages: Messages = page.records?.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
+  // A field's label small inside a message's sentence where the page asks (`lowerLabels`).
+  const messages: Messages = page.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   const index = indexLayout(page.layout);

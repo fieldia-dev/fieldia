@@ -138,7 +138,8 @@ test.describe('the screen designer', () => {
     await expect(page.locator('.fd-canvas .fd-pager-text, .fd-designer .fd-pager-text').first()).toHaveText(/^1–40 of \d+ customers$/);
     await panel.locator('[data-setting="One with its article"]').getByLabel('One with its article').pressSequentially('a customer');
     await panel.locator('[data-setting="Field names small inside them"]').getByLabel('Field names small inside them').check();
-    expect(await page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage().records)).toEqual({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true });
+    expect(await page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage().records)).toEqual({ one: 'customer', other: 'customers', a: 'a customer' });
+    expect(await page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage().lowerLabels)).toBe(true);
     await screen(page, 'record-names-designer', { viewport: true });
     expect(errors).toEqual([]);
   });

@@ -385,7 +385,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   /** A sentence of the viewer's filled in, each field's label at `keys` small inside it where the page asks (`labelAt`). */
   const labelled = (template: string, values: Record<string, string | number>, ...keys: string[]) => {
     const own = { ...values };
-    for (const key of keys) own[key] = labelAt(template, key, page.records?.lowerLabels, locale)(String(own[key]));
+    for (const key of keys) own[key] = labelAt(template, key, page.lowerLabels, locale)(String(own[key]));
     return fill(template, own);
   };
   /**
@@ -1635,7 +1635,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (!found.some((f) => f.name === name)) found.push({ name, at: shown ? fieldsShown.indexOf(shown) : Infinity });
     }
     const names = found.sort((a, b) => a.at - b.at).map((f) => f.name);
-    const small = labelAt(labels.checkFields, 'fields', page.records?.lowerLabels, locale);
+    const small = labelAt(labels.checkFields, 'fields', page.lowerLabels, locale);
     return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.map(small).join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;

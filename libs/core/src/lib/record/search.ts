@@ -61,7 +61,7 @@ export function suggestions(typed: string, page: Page, list: ListNode, words: { 
     const def = page.fields[field];
     if (!def) continue;
     const say = (op: Suggestion['op'], value: JsonValue, valueLabel: string, label?: string) =>
-      found.push({ field, fieldLabel: def.label, op, value, valueLabel, label: label ?? fill(words.searchFor, { field: labelAt(words.searchFor, 'field', page.records?.lowerLabels, locale)(def.label), text }) });
+      found.push({ field, fieldLabel: def.label, op, value, valueLabel, label: label ?? fill(words.searchFor, { field: labelAt(words.searchFor, 'field', page.lowerLabels, locale)(def.label), text }) });
     if (list.cells?.[field]?.widget === 'phone' && TEXT.has(def.type)) {
       // Its digits in order, whatever lies between them: a server's ilike finds them with % between.
       const digits = sought.replace(/\D/g, '');

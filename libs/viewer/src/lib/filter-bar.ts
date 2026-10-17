@@ -204,7 +204,7 @@ export function filterBar(context: FilterBarContext) {
     const menuId = uid(`${node.id}-filter-${field}`);
     const words = el('span', { class: 'fd-filter-words' });
     const button = el('button', { type: 'button', class: 'fd-filter-pick', 'data-field': field, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': menuId }, words, ...icon('chevron-down', 'fd-filter-chevron'));
-    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': fill(labels.filterNamed, { label: labelAt(labels.filterNamed, 'label', page.records?.lowerLabels, context.locale)(def.label) }), hidden: '' });
+    const menu = el('div', { class: 'fd-filter-menu', role: 'menu', id: menuId, 'aria-label': fill(labels.filterNamed, { label: labelAt(labels.filterNamed, 'label', page.lowerLabels, context.locale)(def.label) }), hidden: '' });
     let known: Pick[] = [];
     const draw = () => {
       const ticked = picks.get(field) ?? [];

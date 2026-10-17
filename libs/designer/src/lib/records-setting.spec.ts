@@ -17,10 +17,10 @@ const model: Record<string, Field> = { name: { type: 'char', label: 'Name' }, ph
 afterEach(() => document.body.replaceChildren());
 
 describe('what the screen’s records are called', () => {
-  it('sets both words, one with its article and small labels, each kept trimmed; both emptied, takes the setting away', () => {
+  it('sets both words and one with its article, each kept trimmed; both emptied, takes the setting away', () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
-    expect(designer.setRecords({ one: ' customer ', other: 'customers', a: 'a customer', lowerLabels: true })).toBe(true);
-    expect(designer.getPage().records).toEqual({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true });
+    expect(designer.setRecords({ one: ' customer ', other: 'customers', a: 'a customer' })).toBe(true);
+    expect(designer.getPage().records).toEqual({ one: 'customer', other: 'customers', a: 'a customer' });
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(designer.setRecords({ one: 'invoice', other: 'invoices', a: ' ' })).toBe(true);
     expect(designer.getPage().records).toEqual({ one: 'invoice', other: 'invoices' });
@@ -31,15 +31,19 @@ describe('what the screen’s records are called', () => {
     expect(designer.getPage().records).toBeUndefined();
   });
 
-  it('keeps labels small alone, its records unnamed, said as a change of its own', () => {
+  it('sets labels small as the page’s own setting, beside its records’ names, said as a change of its own', () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
     const before = designer.getPage();
-    expect(designer.setRecords({ one: '', other: '', lowerLabels: true })).toBe(true);
-    expect(designer.getPage().records).toEqual({ lowerLabels: true });
+    expect(designer.setLowerLabels(true)).toBe(true);
+    expect(designer.getPage().lowerLabels).toBe(true);
+    expect(designer.getPage().records).toBeUndefined();
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(pageChanges(before, designer.getPage())).toEqual(['Field names are written small inside Fieldia’s sentences']);
-    expect(designer.setRecords({ one: '', other: '', lowerLabels: false })).toBe(true);
-    expect(designer.getPage().records).toBeUndefined();
+    // Naming the records leaves it be.
+    designer.setRecords({ one: 'customer', other: 'customers' });
+    expect(designer.getPage().lowerLabels).toBe(true);
+    expect(designer.setLowerLabels(false)).toBe(true);
+    expect(designer.getPage().lowerLabels).toBeUndefined();
   });
 
   it('refuses one word without the other, in words, keeping what it held', () => {
@@ -50,7 +54,7 @@ describe('what the screen’s records are called', () => {
     expect(designer.getPage().records).toEqual({ one: 'customer', other: 'customers' });
   });
 
-  it('is offered on the screen’s panel: both words first, then the article and small labels once named', () => {
+  it('is offered on the screen’s panel: both words first, the article once named, small labels beside them', () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
     const before = designer.getPage();
     const view = pageProperties(elementFactory(document), designer);
@@ -80,7 +84,8 @@ describe('what the screen’s records are called', () => {
     expect([row('One with its article').hidden, row('Field names small inside them').hidden]).toEqual([false, false]);
     type('One with its article', 'a customer');
     (view.element.querySelector('input[aria-label="Field names small inside them"]') as HTMLInputElement).click();
-    expect(designer.getPage().records).toEqual({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true });
+    expect(designer.getPage().records).toEqual({ one: 'customer', other: 'customers', a: 'a customer' });
+    expect(designer.getPage().lowerLabels).toBe(true);
     expect(pageChanges(before, designer.getPage())).toContain('Its records are called “customers” in Fieldia’s sentences');
     expect(pageChanges(designer.getPage(), before)).toContain('Its records are called records again');
   });
@@ -101,12 +106,16 @@ describe('what the screen’s records are called', () => {
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
-  it('is not offered on a page of responses', () => {
+  it('names no records on a page of responses, whose labels may still be small', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Survey'), model });
     const view = pageProperties(elementFactory(document), designer);
     document.body.append(view.element);
     view.update(designer.getPage());
     expect((view.element.querySelector('[data-setting="Records are called"]') as HTMLElement).hidden).toBe(true);
+    const small = view.element.querySelector('[data-setting="Field names small inside them"]') as HTMLElement;
+    expect(small.hidden).toBe(false);
+    (small.querySelector('input') as HTMLInputElement).click();
+    expect(designer.getPage().lowerLabels).toBe(true);
   });
 
   it('speaks Arabic in the designer’s Arabic', () => {

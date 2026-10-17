@@ -379,7 +379,7 @@ describe('possible duplicates on a page that names its records', () => {
 
   it('says a customer with this phone, its label written small inside the sentence where the page says so', async () => {
     const ds = source();
-    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true }));
+    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers', a: 'a customer' }, { lowerLabels: true }));
     await type('phone', '+20 2 2345 6789');
     await pass(DUPLICATES_WAIT_MS);
     expect(words('phone')).toEqual(['A customer with this phone already exists: Nile Traders']);
@@ -388,7 +388,7 @@ describe('possible duplicates on a page that names its records', () => {
 
   it('keeps a label whose first word holds another capital as written: "Tax ID" small, "IBAN" never', async () => {
     const ds = source();
-    const shown = customers({ one: 'customer', other: 'customers', a: 'a customer', lowerLabels: true });
+    const shown = customers({ one: 'customer', other: 'customers', a: 'a customer' }, { lowerLabels: true });
     await mount({ dataSource: ds }, { ...shown, fields: { ...shown.fields, email: { type: 'char', label: 'IBAN' } } });
     await type('vat', '123-456-789', 20);
     await pass(DUPLICATES_WAIT_MS);
@@ -410,7 +410,7 @@ describe('possible duplicates on a page that names its records', () => {
 
   it('keeps a German label’s capital: a language that writes its nouns so', async () => {
     const ds = source();
-    await mount({ dataSource: ds, locale: 'de' }, customers({ one: 'Kunde', other: 'Kunden', a: 'ein Kunde', lowerLabels: true }, { fields: { ...page().fields, phone: { type: 'char', label: 'Telefon' } } }));
+    await mount({ dataSource: ds, locale: 'de' }, customers({ one: 'Kunde', other: 'Kunden', a: 'ein Kunde' }, { lowerLabels: true, fields: { ...page().fields, phone: { type: 'char', label: 'Telefon' } } }));
     await type('phone', '+20 2 2345 6789');
     await pass(DUPLICATES_WAIT_MS);
     expect(words('phone')).toEqual(['Ein Kunde mit gleichem Wert in Telefon ist bereits vorhanden: Nile Traders']);
@@ -434,7 +434,7 @@ describe('possible duplicates on a page that names its records', () => {
       [false, 'The same in both: Email.'],
     ] as const) {
       const ds = source();
-      await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers', lowerLabels: lower }));
+      await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers' }, { lowerLabels: lower }));
       await pass(0);
       way('email', 'Merge…').click();
       await pass(0);

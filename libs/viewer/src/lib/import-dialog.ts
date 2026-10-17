@@ -398,7 +398,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       dateOrder: dateOrderOf({ page }),
       today: context.form.today(),
       // A field's label small inside a message's sentence where the page asks, as its own form says them.
-      messages: page.records?.lowerLabels ? { ...(MESSAGES[locale] ?? MESSAGES.en), lowerLabels: true } : (MESSAGES[locale] ?? MESSAGES.en),
+      messages: page.lowerLabels ? { ...(MESSAGES[locale] ?? MESSAGES.en), lowerLabels: true } : (MESSAGES[locale] ?? MESSAGES.en),
       labels: WIDGET_LABELS[locale] ?? WIDGET_LABELS.en,
       words,
       ...yesAndNo(),

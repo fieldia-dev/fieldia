@@ -109,7 +109,7 @@ export function brokenFieldBox(
   const { widget, options } = context.node;
   const shown = back ? cellText(context.field as LineField, back.value, back.values as Record<string, Value>, context.locale, back.parent, { widget, options }) : '';
   const more = back ? (shown ? fill(words.brokenKept, { value: shown }) : words.brokenKeptEmpty) : undefined;
-  const label = labelAt(words.brokenField, 'label', context.form?.page.records?.lowerLabels, context.locale)(context.node.label ?? context.field.label);
+  const label = labelAt(words.brokenField, 'label', context.form?.page.lowerLabels, context.locale)(context.node.label ?? context.field.label);
   return brokenBox(context.document, fill(words.brokenField, { label }), more);
 }
 

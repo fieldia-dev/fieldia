@@ -49,22 +49,23 @@ describe('a sentence in the words a page names its records by', () => {
 
   it('is the plain sentence where the page names none, the language has none, or it needs an article the page left out', () => {
     expect(recordSentence(undefined, 'Delete this {record}?', 'Delete this record?')).toBe('Delete this record?');
-    expect(recordSentence({ lowerLabels: true }, 'Delete this {record}?', 'Delete this record?')).toBe('Delete this record?');
     expect(recordSentence(customers, undefined, 'Delete this record?')).toBe('Delete this record?');
     expect(recordSentence({ one: 'invoice', other: 'invoices' }, '{aRecord} with this {fields} already exists', 'A record with this {fields} already exists')).toBe('A record with this {fields} already exists');
   });
 });
 
 describe('the page format: what its records are called', () => {
-  it('is read with one and more, and with an article and small labels where given — or small labels alone', () => {
+  it('is read with one and more, and with an article where given; labels small are a page’s own setting beside it', () => {
     expect(validatePage(customer).ok).toBe(true);
-    expect(validatePage({ ...customer, records: { ...customers, lowerLabels: true } }).ok).toBe(true);
-    expect(validatePage({ ...customer, records: { lowerLabels: true } }).ok).toBe(true);
-    expect(checkPage({ ...customer, records: { lowerLabels: true } }).ok).toBe(true);
-    // One word without the other, or an article with neither: refused.
-    expect(validatePage({ ...customer, records: { other: 'customers' } } as Page).ok).toBe(false);
-    expect(validatePage({ ...customer, records: { a: 'a customer' } } as Page).ok).toBe(false);
-    const quick = checkPage({ ...customer, records: { a: 'a customer', lowerLabels: true } } as Page);
+    expect(validatePage({ ...customer, lowerLabels: true }).ok).toBe(true);
+    const { records: _, ...unnamed } = customer;
+    expect(validatePage({ ...unnamed, lowerLabels: true }).ok).toBe(true);
+    expect(checkPage({ ...unnamed, lowerLabels: true }).ok).toBe(true);
+    // Never under its records: what they are called is words alone.
+    expect(validatePage({ ...customer, records: { ...customers, lowerLabels: true } } as unknown as Page).ok).toBe(false);
+    expect(validatePage({ ...customer, lowerLabels: 'yes' } as unknown as Page).ok).toBe(false);
+    // An article with neither word: refused.
+    const quick = checkPage({ ...customer, records: { a: 'a customer' } } as unknown as Page);
     expect(quick.ok ? [] : quick.issues.map((issue) => issue.path)).toEqual(['records.one', 'records.other']);
   });
 
@@ -78,8 +79,9 @@ describe('the page format: what its records are called', () => {
 
   it('is words to translate: listed for a translator, and shown in the page’s language', () => {
     expect(pageWords(customer)).toEqual(expect.arrayContaining(['customer', 'customers', 'a customer']));
-    const arabic = localizePage({ ...customer, records: { ...customers, lowerLabels: true }, translations: { ar: { customer: 'عميل', customers: 'عملاء', 'a customer': 'عميل' } } }, 'ar');
-    expect(arabic.records).toEqual({ one: 'عميل', other: 'عملاء', a: 'عميل', lowerLabels: true });
+    const arabic = localizePage({ ...customer, lowerLabels: true, translations: { ar: { customer: 'عميل', customers: 'عملاء', 'a customer': 'عميل' } } }, 'ar');
+    expect(arabic.records).toEqual({ one: 'عميل', other: 'عملاء', a: 'عميل' });
+    expect(arabic.lowerLabels).toBe(true);
   });
 });
 
@@ -197,7 +199,7 @@ describe('the form’s messages on a page that asks for labels small', () => {
         { type: 'field', id: 'f-iban', field: 'iban' },
       ],
     },
-    ...(lower === undefined ? {} : { records: { one: 'order', other: 'orders', lowerLabels: lower } }),
+    ...(lower === undefined ? {} : { lowerLabels: lower }),
   }) as unknown as Page;
 
   it('says each label inside its sentence small, and one that begins it, or a name, as written', () => {

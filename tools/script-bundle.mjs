@@ -816,14 +816,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a list that could not load — their 19 English sentences beside the plain ones, a language's or an app's own sentence
 // said where it gives none with a noun, and a related list asking the app's page for its model what its records are
 // called: 500.97 measured before, 504.04 after — 3.1 more, to 504.1.
-// Every label inside a sentence small where the page asks (`records.lowerLabels`), by one rule (labelAt): the form's
+// Every label inside a sentence small where the page asks (`lowerLabels`), by one rule (labelAt): the form's
 // messages filled through it (fillMessage: "Choose at least 2 for interests", "End date can’t be before start date"),
 // the viewer's own — a refused save's Check, a help's and a lock's names, a value that waits, a field not shown — and
 // the search's suggestion; the quiet look's hint by the same rule — 504.04 measured before, 505.18 after: 1.1 more,
 // to 505.2.
-// A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, and a page may
-// ask for its labels small alone, its records unnamed: 505.18 measured before, 505.49 after — 0.3 more, to 505.5.
-const BUDGET_KB = 505.5;
+// A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, the page's
+// `lowerLabels` a setting of its own beside `records`: 505.18 measured before, 505.33 after — 0.2 more, to 505.4.
+const BUDGET_KB = 505.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -999,9 +999,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 162.2.
 // Every label inside a sentence small where the page asks (listed with the raw budget above): 162.15 measured before,
 // 162.68 after — 0.5 more, to 162.7.
-// A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.80
-// after — 0.1 more, to 162.9.
-const GZIP_BUDGET_KB = 162.9;
+// A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.72
+// after, to 162.8.
+const GZIP_BUDGET_KB = 162.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

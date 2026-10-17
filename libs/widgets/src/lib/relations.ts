@@ -619,7 +619,7 @@ function tagAdder(doc: Document, words: string, box: Combobox, home: HTMLElement
 
 /** The words of a button that adds tags: the page's own, else "Add {label}", its label small where the page asks. */
 const adderWords = (node: FieldNode, label: string, labels: WidgetLabels, form: Form, locale?: string) =>
-  node.placeholder || fill(labels.addNamed, { label: labelAt(labels.addNamed, 'label', form.page.records?.lowerLabels, locale)(label) });
+  node.placeholder || fill(labels.addNamed, { label: labelAt(labels.addNamed, 'label', form.page.lowerLabels, locale)(label) });
 
 /** A person's outline, as a work tracker draws one where no one is picked yet: a head over a bowl. */
 const NOBODY = { nobody: '<circle cx="10.5" cy="5.9" r="3.3"/><path d="M3.75 12.75h13.5v1.5a6.75 6 0 0 1-13.5 0z"/>' };
@@ -685,7 +685,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   clear.type = 'button';
   clear.className = 'fd-combo-clear';
   clear.textContent = '×';
-  clear.setAttribute('aria-label', fill(labels.clear, { label: labelAt(labels.clear, 'label', form.page.records?.lowerLabels, locale)(field.label) }));
+  clear.setAttribute('aria-label', fill(labels.clear, { label: labelAt(labels.clear, 'label', form.page.lowerLabels, locale)(field.label) }));
   clear.addEventListener('click', () => {
     form.setValue(name, null);
     box.input.focus();

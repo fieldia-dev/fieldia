@@ -369,6 +369,9 @@
     },
     "records": {
       "$ref": "#/$defs/PageRecords"
+    },
+    "lowerLabels": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -9974,24 +9977,13 @@
           "type": "string",
           "maxLength": 80,
           "pattern": "\\S"
-        },
-        "lowerLabels": {
-          "type": "boolean"
         }
       },
-      "additionalProperties": false,
-      "dependentRequired": {
-        "one": [
-          "other"
-        ],
-        "other": [
-          "one"
-        ],
-        "a": [
-          "one",
-          "other"
-        ]
-      }
+      "required": [
+        "one",
+        "other"
+      ],
+      "additionalProperties": false
     }
   }
 }

@@ -5,7 +5,8 @@ import { setting } from './panel-controls';
 
 /**
  * What a screen's records are called in Fieldia's own sentences (`records`): the words for one and for more, then —
- * once both are given — one with its article; and, named or not, field labels written small inside any sentence. On the screen's
+ * once both are given — one with its article; and beside them the page's own `lowerLabels`, field labels written small
+ * inside any sentence, on any page. On the screen's
  * panel (panel-page.ts) and a list's (list-properties.ts), a record page's or a list's alone. Both words or neither:
  * with one alone nothing is kept yet, the boxes keep what is typed and say what is missing.
  */
@@ -21,10 +22,11 @@ export function recordsSettings(el: ElementFactory, designer: Designer): { rows:
     const [words, more] = [one.value.trim(), other.value.trim()];
     half.hidden = !words === !more;
     if (!words !== !more) return;
-    designer.setRecords({ one: words, other: more, a: a.value, lowerLabels: lower.checked });
+    designer.setRecords(words ? { one: words, other: more, a: a.value } : null);
   };
   for (const box of [one, other, a]) box.addEventListener('input', name);
-  lower.addEventListener('change', name);
+  // The page's own setting, beside its records' names: any page's labels, named records or not.
+  lower.addEventListener('change', () => designer.setLowerLabels(lower.checked));
   const called = setting(el, 'content', 'Records are called', [one, other, half], { hint: w.recordsHint, words: w.recordsCalled });
   const article = setting(el, 'content', 'One with its article', a, { hint: w.recordsAHint, words: w.recordsA });
   const small = setting(el, 'content', 'Field names small inside them', lower, { hint: w.recordsLowerLabelsHint, words: w.recordsLowerLabels });
@@ -38,10 +40,10 @@ export function recordsSettings(el: ElementFactory, designer: Designer): { rows:
         if (!focused(other)) other.value = page.records?.other ?? '';
       }
       if (!focused(a)) a.value = page.records?.a ?? '';
-      lower.checked = !!page.records?.lowerLabels;
-      // One with its article once both words are given; labels small whether or not the records are named.
-      article.hidden = called.hidden || !page.records?.one;
-      small.hidden = called.hidden;
+      lower.checked = !!page.lowerLabels;
+      // One with its article once both words are given; labels small on any page, a survey's too.
+      article.hidden = called.hidden || !page.records;
+      small.hidden = false;
     },
   };
 }

@@ -38,8 +38,8 @@ const FIELD_BOX = 'input:not([type="hidden"]):not([hidden]), select:not([hidden]
 export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[]; update(state: FormState): void } {
   const { el, form, labels, fill } = context;
   const fieldLabel = (name: string) => context.page.fields[name]?.label ?? name;
-  /** A field's label as `template` puts it at `key`: small inside the sentence where the page asks (`records.lowerLabels`). */
-  const labelIn = (template: string, key: string) => (name: string) => labelAt(template, key, context.page.records?.lowerLabels, context.locale)(fieldLabel(name));
+  /** A field's label as `template` puts it at `key`: small inside the sentence where the page asks (`lowerLabels`). */
+  const labelIn = (template: string, key: string) => (name: string) => labelAt(template, key, context.page.lowerLabels, context.locale)(fieldLabel(name));
   const list = listWords(context.tag ?? context.locale);
 
   /**

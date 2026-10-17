@@ -81,13 +81,13 @@ With nothing picked, a record screen's panel — and a list's, first — offers
 "customers"), which Fieldia's own sentences then say ("A customer with this
 phone already exists", "17 customers imported", "New customer"); both, or
 neither — with one alone nothing is kept yet, and the panel says what is
-missing. Once named, **One with its article** ("a customer", "an invoice") and
-**Field names small inside them** ("this phone", not "this Phone"), which a
-screen may ask with its records unnamed too. A list's
-canvas says its pager in them as they are typed ("1–40 of 128 customers"). The
-page stores `records`; `designer.setRecords({ one, other, a, lowerLabels })`
-sets it, `null` takes it away, and one word without the other is refused in
-words.
+missing. Once named, **One with its article** ("a customer", "an invoice").
+Beside them, on any screen, a survey's too, **Field names small inside them**
+("this phone", not "this Phone"): the page's own `lowerLabels`. A list's canvas
+says its pager in the records' words as they are typed ("1–40 of 128
+customers"). `designer.setRecords({ one, other, a })` sets the records' words,
+`null` takes them away, and one word without the other is refused in words;
+`designer.setLowerLabels(on)` sets the labels' case.
 
 ## Trying a field's rules
 

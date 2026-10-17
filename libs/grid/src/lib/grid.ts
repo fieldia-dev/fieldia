@@ -875,7 +875,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const sub = def.fields[column];
     if (!line || kindOf(line) || !sub || !NUMERIC.has(sub.type) || !locked(sub)) return null;
     const unread = Object.keys(def.fields).find((other) => other !== column && unreadAt(line, other));
-    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.records?.lowerLabels, locale);
+    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.lowerLabels, locale);
     return unread ? fill(labels.cellWaits, { column: small('column')(def.fields[unread].label), own: small('own')(sub.label) }) : null;
   };
   /** A column's total: numbers only, or the line it waits for (text that does not read, or no number, or a worked-out number that waits). */

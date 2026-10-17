@@ -262,7 +262,7 @@ imported", "Are you sure you want to delete this customer?", "New customer" —
 where they said "record", or no noun at all:
 
 ```json
-{ "records": { "one": "customer", "other": "customers", "a": "a customer", "lowerLabels": true } }
+{ "records": { "one": "customer", "other": "customers", "a": "a customer" }, "lowerLabels": true }
 ```
 
 `one` and `other` are the words for one record and for more, as they stand
@@ -271,7 +271,8 @@ for the number. `a` is one with its article, where the language puts one before
 it ("an invoice", "une facture"): Fieldia never guesses an article, so a
 sentence that needs one says "A record …" until it is given.
 
-`lowerLabels` writes a field's label with a small first letter wherever one of
+The page's own `lowerLabels`, beside `records` (label casing is no part of what
+records are called), writes a field's label with a small first letter wherever one of
 Fieldia's sentences puts it after a word of it — the form's messages ("Choose at
 least 2 for interests", "End date can’t be before start date"), a refused save's
 "Not saved. Check: email", a value that waits ("Fix tax rate to see total"), a
@@ -286,9 +287,8 @@ is right: a label whose first word is a name ("IBAN", "VAT number", "WhatsApp",
 Build"), and every label stays as written in a language that writes its nouns
 with a capital (German) or has none (Arabic). One rule says it, `labelAt(template,
 key, lower, locale)`; the form's messages carry the page's ask as
-`messages.lowerLabels` (`fillMessage`). A page may ask it alone, its records
-unnamed: `{ "records": { "lowerLabels": true } }` (`one` and `other` both, or
-neither). A line's own dialog says its labels as its record's page asks — a part
+`messages.lowerLabels` (`fillMessage`). A page asks it with its records named or
+not, a survey too. A line's own dialog says its labels as its record's page asks — a part
 of the same record — unless the line's own page (`lineOpens: "record"`) says
 otherwise; a list's Edit dialog as the list's page asks. Other languages come through the
 page's `translations`, as its other words do (`"customer": "عميل"`), and

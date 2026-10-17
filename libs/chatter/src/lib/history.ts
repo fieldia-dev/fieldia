@@ -26,6 +26,8 @@ export interface HistoryOptions {
   kind?: string;
   /** What the page calls its records (`Page.records`): its making told in them — "created the customer" — where `kind` is not given. */
   records?: PageRecords;
+  /** A field's label small inside the history's sentences — "changed status to …" — as the page asks (`Page.lowerLabels`). */
+  lowerLabels?: boolean;
   locale?: Locale;
   labels?: Partial<ChatterLabels>;
   dir?: 'ltr' | 'rtl';
@@ -123,8 +125,8 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
     made.push(doc.createTextNode(template.slice(last)));
     return made;
   }
-  /** A field's label as `template` puts it: small inside the sentence where the page asks (`records.lowerLabels`). */
-  const fieldIn = (template: string, label: string) => labelAt(template, 'field', options.records?.lowerLabels, locale)(label);
+  /** A field's label as `template` puts it: small inside the sentence where the page asks (`lowerLabels`). */
+  const fieldIn = (template: string, label: string) => labelAt(template, 'field', options.lowerLabels, locale)(label);
   /** What a line of the history says it did, its state's words with their dots. */
   function summary(entry: HistoryEntry): Node[] {
     const name = entry.message.author?.name ?? '';

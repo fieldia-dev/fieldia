@@ -154,8 +154,8 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     const typedName = nameField ? values[nameField] : null;
     const nameLike = !!nameField && match.why.includes(nameField) && fold(match.name) !== fold(typeof typedName === 'string' ? typedName : '');
     const template = nameLike ? (match.why.length > 1 ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed)) : sentence(labels.duplicateWithNoun, labels.duplicateWith);
-    // Each label small inside the sentence where the page asks (`records.lowerLabels`), by the one rule (labelAt).
-    const small = labelAt(template, 'fields', page.records?.lowerLabels, context.tag ?? context.locale);
+    // Each label small inside the sentence where the page asks (`lowerLabels`), by the one rule (labelAt).
+    const small = labelAt(template, 'fields', page.lowerLabels, context.tag ?? context.locale);
     const same = match.why.filter((field) => !(nameLike && field === nameField)).map((field) => small(labelOf(field)));
     const [before, after = ''] = template.split('{name}');
     const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map((field) => small(labelOf(field))));

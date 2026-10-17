@@ -135,7 +135,7 @@ export interface Messages {
   locale: string;
   /**
    * A field's label written small where a message puts it inside its sentence — "Choose at least 2 for interests" — as
-   * a form's page asks (`records.lowerLabels`): set on the form's own messages, never in a language's table.
+   * a form's page asks (`lowerLabels`): set on the form's own messages, never in a language's table.
    */
   lowerLabels?: boolean;
 }

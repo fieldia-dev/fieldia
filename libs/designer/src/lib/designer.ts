@@ -377,11 +377,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setDuplicates(patch: { fields?: string[] | null; on?: 'type' | 'save' | null }): boolean;
   /**
    * What the page's records are called (`records`), so Fieldia's sentences name them: the words for one and for more
-   * — both, or neither (`null`, or both empty, takes them away) — for one with its article (`a`, empty takes it away),
-   * and whether a field's label inside any sentence is written small (`lowerLabels`, kept alone with no words). Each
-   * kept as typed, its ends trimmed. Refused with only one of the two words.
+   * — both, or neither (`null`, or both empty, takes the setting away) — and for one with its article (`a`, empty takes
+   * it away). Each kept as typed, its ends trimmed. Refused with only one of the two words.
    */
-  setRecords(records: { one: string; other: string; a?: string; lowerLabels?: boolean } | null): boolean;
+  setRecords(records: { one: string; other: string; a?: string } | null): boolean;
+  /** A field's label written small inside Fieldia's sentences (`lowerLabels`), the page's own setting; false takes it away. */
+  setLowerLabels(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1438,11 +1439,18 @@ export function createDesigner(options: {
         const one = records?.one.trim() ?? '';
         const other = records?.other.trim() ?? '';
         // No words: the records unnamed, the labels small alone where asked.
-        if (!one && !other) return void (records?.lowerLabels ? (draft.records = { lowerLabels: true }) : delete draft.records);
+        if (!one && !other) return void delete draft.records;
         if (!one || !other) throw new Refusal((w) => w.refusals.recordsBoth);
         const a = records?.a?.trim();
-        draft.records = { one, other, ...(a ? { a } : {}), ...(records?.lowerLabels ? { lowerLabels: true } : {}) };
+        draft.records = { one, other, ...(a ? { a } : {}) };
       }, 'records');
+    },
+
+    setLowerLabels(on) {
+      return apply((draft) => {
+        if (on) draft.lowerLabels = true;
+        else delete draft.lowerLabels;
+      }, 'lowerLabels');
     },
 
     setDuplicates(patch) {

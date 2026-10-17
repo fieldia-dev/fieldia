@@ -89,7 +89,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const sub = def.fields[column];
     if (!sub || !isItem(line) || !['integer', 'float', 'monetary'].includes(sub.type) || (sub.readonly !== true && sub.compute === undefined)) return null;
     const other = Object.keys(def.fields).find((name2) => name2 !== column && unread?.[`${name}.${line.key}.${name2}`]);
-    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.records?.lowerLabels, locale);
+    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.lowerLabels, locale);
     return other ? fillIn(labels.cellWaits, { column: small('column')(def.fields[other].label), own: small('own')(sub.label) }) : null;
   };
   const min = count(options['min']) ?? 0;

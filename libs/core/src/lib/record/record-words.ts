@@ -19,7 +19,6 @@ const capital = (words: string, locale: string) => firstOf(words).toLocaleUpperC
  * (`named` left out), or the sentence needs `a` and the page gave none — an article is never guessed.
  */
 export function recordSentence(records: PageRecords | undefined, named: string | undefined, plain: string, locale = 'en'): string {
-  // A page that only asks for its labels small (`{ lowerLabels: true }`) names no records.
   const { one, other, a } = records ?? {};
   if (!one || !other || named === undefined) return plain;
   if (named.includes('{aRecord}') && !a) return plain;
@@ -42,7 +41,7 @@ const small = (locale: string) => (label: string) => {
 
 /**
  * A field's label as a sentence of Fieldia's puts it at its blank `key` (`{label}`, `{field}`, `{fields}`…): with a
- * small first letter where the page asks (`lower`: its `records.lowerLabels`) and the blank stands inside the sentence
+ * small first letter where the page asks (`lower`: its `lowerLabels`) and the blank stands inside the sentence
  * — after a word of it, a colon's words too: "Choose at least 2 for interests", "Fix tax rate to see total", "Check:
  * phone" — else as written. A label that begins its sentence keeps its capital: "Phone is required", and "Status: …" at
  * a line's start, a heading's place. So does a name ("IBAN", "WhatsApp", "E-mail"), and every label in a language that

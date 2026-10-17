@@ -5,7 +5,7 @@ import { mountViewer, quietHint, type ViewerHandle, type ViewerOptions } from '.
 import { VIEWER_LABELS } from './labels';
 
 /**
- * A page that asks for its fields' labels small inside Fieldia's sentences (`records.lowerLabels`): every sentence that
+ * A page that asks for its fields' labels small inside Fieldia's sentences (`lowerLabels`): every sentence that
  * puts a label after a word of it says it so — what a refused save asks to check, a help's and a lock's names, a value
  * that waits, a link's ×, a tags' Add, a phone's country, a line's cell that waits, a field that could not be shown —
  * while one that begins its sentence ("Phone is required", "Status: …") and a name ("IBAN") stay as written. Without
@@ -55,7 +55,7 @@ const lead = (lower?: boolean): Page =>
         { type: 'field', id: 'f-lines', field: 'line_ids', columns: ['qty', 'unit', 'subtotal'] },
       ],
     },
-    ...(lower === undefined ? {} : { records: { one: 'lead', other: 'leads', a: 'a lead', lowerLabels: lower } }),
+    ...(lower === undefined ? {} : { lowerLabels: lower }),
   }) as unknown as Page;
 
 /** A widget that cannot be drawn: its field's box says so, naming it. */
@@ -167,9 +167,9 @@ describe('a list and a record’s ways on a page that asks for its labels small'
       ...customers,
       fields: { ...customers.fields, tax: { type: 'char', label: 'Tax ID' } },
       layout: { ...(customers.layout as object), columns: ['name', 'country_id', 'state', 'tax'], optionalColumns: { country_id: 'show', state: 'show', tax: 'show' }, search: 'fields', filterFields: ['state'] },
-      ...(lower === undefined ? {} : { records: { one: 'customer', other: 'customers', lowerLabels: lower } }),
+      ...(lower === undefined ? {} : { lowerLabels: lower }),
     }) as unknown as Page;
-  const searching = (lower?: boolean): Page => ({ ...customers, ...(lower === undefined ? {} : { records: { one: 'customer', other: 'customers', lowerLabels: lower } }) }) as Page;
+  const searching = (lower?: boolean): Page => ({ ...customers, ...(lower === undefined ? {} : { lowerLabels: lower }) }) as Page;
 
   async function listed(page: Page) {
     const host = document.createElement('div');
@@ -203,7 +203,7 @@ describe('a list and a record’s ways on a page that asks for its labels small'
       [true, 'They changed: phone.', 'Put back phone'],
       [undefined, 'They changed: Phone.', 'Put back Phone'],
     ] as const) {
-      const page = { fieldia: '0.4', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } }, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-phone', field: 'phone' }] }, ...(lower ? { records: { one: 'lead', other: 'leads', lowerLabels: true } } : {}) } as unknown as Page;
+      const page = { fieldia: '0.4', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } }, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-phone', field: 'phone' }] }, ...(lower ? { lowerLabels: true } : {}) } as unknown as Page;
       const source = createMemoryDataSource({ records: { lead: { 1: { name: 'Villa', phone: '1' } } }, versions: { by: 'Sara' } });
       const host = document.createElement('div');
       document.body.append(host);
@@ -235,17 +235,17 @@ describe('a line’s own dialog on a page that asks for its labels small', () =>
         id: 'root',
         children: [{ type: 'field', id: 'f-lines', field: 'line_ids', columns: ['days'], ...(opens ? { lineOpens: opens } : { lineForm: { children: [{ type: 'field', id: 'l-days', field: 'days', validate: [{ atLeast: 2 }] }] } }) }],
       },
-      ...(lower === undefined ? {} : { records: { one: 'roster', other: 'rosters', lowerLabels: lower } }),
+      ...(lower === undefined ? {} : { lowerLabels: lower }),
     }) as unknown as Page;
   /** The app's page for a shift: what a line opens in its own way (`lineOpens: "record"`), saying so itself or not. */
-  const shift = (records?: Page['records']): Page =>
+  const shift = (lowerLabels?: boolean): Page =>
     ({
       fieldia: '0.4',
       id: 'shift',
       data: { kind: 'record', model: 'roster.shift' },
       fields: { days: DAYS },
       layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 's-days', field: 'days', validate: [{ atLeast: 2 }] }] },
-      ...(records ? { records } : {}),
+      ...(lowerLabels === undefined ? {} : { lowerLabels }),
     }) as unknown as Page;
   const dialog = () => document.querySelector('.fd-form-dialog') as HTMLElement;
 
@@ -274,7 +274,7 @@ describe('a line’s own dialog on a page that asks for its labels small', () =>
 
   it('opened in its own page, follows the record’s unless that page says otherwise', async () => {
     expect(await refusedIn(order(true, 'record'), { pages: { 'roster.shift': shift() } })).toBe('Choose at least 2 for work days');
-    expect(await refusedIn(order(true, 'record'), { pages: { 'roster.shift': shift({ one: 'shift', other: 'shifts', lowerLabels: false }) } })).toBe('Choose at least 2 for Work days');
-    expect(await refusedIn(order(undefined, 'record'), { pages: { 'roster.shift': shift({ lowerLabels: true }) } })).toBe('Choose at least 2 for work days');
+    expect(await refusedIn(order(true, 'record'), { pages: { 'roster.shift': shift(false) } })).toBe('Choose at least 2 for Work days');
+    expect(await refusedIn(order(undefined, 'record'), { pages: { 'roster.shift': shift(true) } })).toBe('Choose at least 2 for work days');
   });
 });
