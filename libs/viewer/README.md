@@ -451,13 +451,19 @@ an engine that tells nothing as it prints gets them too):
   wrapping rather than cut; a choice of several, the one picked; a statusbar,
   the stage the record is in;
 - a table of lines whole (a grid's every line and column, in a plain table as
-  wide as the sheet), its header again on each sheet; no field, line or
-  heading cut across two sheets;
+  wide as the sheet), broken between its lines with its header again on each
+  sheet; no field, line or heading cut across two sheets, and no tab's name, a
+  group's title or a table's header left alone at a sheet's foot — each goes
+  to the next sheet with the start of what follows it;
+- groups and fields side by side as the page sets them at the sheet's width,
+  a row of them never laid over the next, in Chromium and Firefox alike;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
 - over it, the record's title and the day it was printed (`now`, on the
-  page's `timeZone`), and — with a page's `print` — the app's logo and words,
-  and words under it, once after the record. Each `{field}` shows that
+  page's `timeZone`), and — with a page's `print` — the app's logo and words
+  over it, and its footer under every sheet of it: nothing runs under the
+  footer, and under the last sheet it follows the record (in Chromium and
+  Firefox; in Safari, once after the record). Each `{field}` shows that
   field's value;
 - with a dialog or a panel open over the page, its form alone: what a person
   printing looks at — never the page behind with the dialog over it.
@@ -472,7 +478,15 @@ an engine that tells nothing as it prints gets them too):
 
 What a stylesheet cannot do is done as printing begins (the window's
 `beforeprint`) and undone at `afterprint`: each tab not opened yet is drawn,
-and each box's words written beside it for the paper alone.
+each box's words written beside it for the paper alone, and the room each
+heading keeps under it measured — as tall as the start of what follows it,
+with the form laid out for that moment as a sheet is wide.
+
+On paper the record's content is a table and its footer that table's footer
+group, which the browser draws again under each sheet's part of it; every grid
+is a block, its parts side by side in lines a sheet breaks between. An app's
+own stylesheet that sets a form's `display` on paper keeps the footer once,
+after the record.
 
 **Print this record alone** — the app's page round it left out — with the gear
 menu's built-in item (`{ "id": "m-print", "builtin": "print" }`, under Print as
