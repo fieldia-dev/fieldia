@@ -38,6 +38,9 @@
  * now on that clock, the zone's short name after the span where it is not
  * the reader's own, and a record moved keeping its real length across a
  * change of the clocks — 19,019 bytes measured, to 18.6.
+ * 0.26's four lanes joined: New and a slot's count said in the words its
+ * page names its records by (open-names) — 19,212 bytes measured, 193 more,
+ * to 18.8.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -46,7 +49,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 18.6 };
+const BUDGET = { page: 0.8, calendar: 18.8 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

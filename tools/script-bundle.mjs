@@ -834,7 +834,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // a box under each heading as tall as its start, a short group one box, measured as printing begins (print.ts) —
 // rules for paper that a part loaded at beforeprint brings too late — 500.98 measured before, 507.84 after: 6.9 more,
 // to 507.9.
-const BUDGET_KB = 507.9;
+// The four open-items lanes joined (0.26: open-small, open-columns, open-names, open-print — each line above measured on
+// 0.25.0), with a list's shaped columns, a grid's moved ones and a work item's title on paper across them (all in the
+// parts' sheets): 500.98 measured on 0.25.0, 513.49 after — the lanes' 1.30, 4.35 and 6.86 added up — to 513.5.
+const BUDGET_KB = 513.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1018,7 +1021,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after, to 162.8.
 // A record's footer under every sheet and its headings kept with what follows them on paper (listed with the raw budget
 // above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
-const GZIP_BUDGET_KB = 163.1;
+// The four open-items lanes joined (listed with the raw budget above): 161.14 measured on 0.25.0, 165.20 after — the
+// lanes' 0.58, 1.58 and 1.91 added up — to 165.3.
+const GZIP_BUDGET_KB = 165.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1428,7 +1433,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // list 106.68 and 34.19 to 106.73 and 34.21, to 106.8 and 34.3.
 // A table of lines a block round it on paper, which every engine breaks between its rows (0.26, open-print): lines
 // 37.78 and 12.85 measured before, 37.85 and 12.87 after, its raw to 37.9.
-const PART_BUDGET_KB = { head: [34.7, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [106.8, 34.3], cards: [11.6, 3.7], columns: [18.3, 6.7], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.9, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
+// The four open-items lanes joined (0.26; each lane's lines above measured on 0.25.0), with across them a list on paper
+// (no Columns cell, nothing held in view, no drag's ghost or line), a work item's head on paper (no Copy title) and a
+// moved column said by the one rule (labelAt): head 34.46 and 10.02 measured on 0.25.0, 34.39 and 10.02 after; list
+// 103.42 and 33.50 to 107.73 and 34.56; columns 10.96 and 4.05 to 18.86 and 6.78; lines 37.78 and 12.85 to 37.93 and
+// 12.91; import 35.99 and 14.29 to 36.36 and 14.39; duplicates 14.79 and 6.24 to 15.67 and 6.45; relations 19.93 and
+// 7.52 to 20.07 and 7.58; phone 37.77 and 16.47 to 37.84 and 16.50; filters 11.25 and 4.21 to 11.30 and 4.24 — each to
+// the next 0.1 over; the rest as they were.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [107.8, 34.6], cards: [11.6, 3.7], columns: [18.9, 6.8], import: [36.4, 14.4], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [38.0, 13.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
