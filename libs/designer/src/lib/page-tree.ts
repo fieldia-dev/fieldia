@@ -1,4 +1,4 @@
-import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { cardLineFields, compileModifier, valuesIn, type Field, type FieldNode, type FilterItem, type LayoutNode, type ListCalendar, type ListCard, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { headFields, headParts, tabCountFields } from './head-parts';
@@ -135,6 +135,16 @@ export function shownFields(page: Page): Set<string> {
     for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => [...read(f.filter ?? []), ...(f.period ? [f.period.field] : [])])]) shown.add(name);
     if (root.map) for (const name of listMapFields(root.map)) shown.add(name);
     if (root.calendar) for (const name of listCalendarFields(root.calendar)) shown.add(name);
+    if (root.card) for (const name of listCardFields(root.card)) shown.add(name);
+    // And in what its rows' own tones, bold and buttons read.
+    for (const when of [...(root.rowTones ?? []).map((tone) => tone.when), root.rowBold, ...(root.rowButtons ?? []).map((button) => button.invisible)]) {
+      if (typeof when !== 'string') continue;
+      try {
+        for (const name of compileModifier(when).fields) shown.add(name);
+      } catch {
+        // A condition that does not read is the page's checks' to say.
+      }
+    }
     // And in its cells' icons, its filter bar and the link its rows nest by.
     for (const name of [...Object.values(root.cells ?? {}).flatMap((cell) => (cell.lead ? [cell.lead.field] : [])), ...(root.filterFields ?? []), ...(root.parentField ? [root.parentField] : [])]) shown.add(name);
     // And in the fields its Edit offers.
@@ -178,6 +188,11 @@ export function mapNodeFields(node: MapNode): string[] {
       ...(node.fences ?? []).flatMap((fence) => (fence.area ? [fence.area] : [])),
     ]),
   ];
+}
+
+/** The fields a list's card names: its title, the words under it, its picture, its status and its lines. */
+export function listCardFields(card: ListCard): string[] {
+  return [card.title, card.subtitle, card.image, card.status, ...cardLineFields(card)].filter((name): name is string => !!name);
 }
 
 /** The fields a list's calendar names: when each record starts and ends, its words, its colour and its column. */

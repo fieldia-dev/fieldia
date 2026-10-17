@@ -187,6 +187,7 @@ export const refusals = {
   filterLabelNotOffered: (label: string) => `The filter bar does not offer ${label}: tick it first`,
   leadNeedsChoice: (label: string) => `An icon before the words comes from a choice’s value; ${label} is not a choice`,
   dotNeedsChoice: (label: string) => `A state’s dot is for a choice; ${label} is not one`,
+  cellWidgetKind: (label: string) => `${label} cannot be drawn so: chips are a link’s records, a bar is a number’s, a phone is a text’s`,
   periodNeedsDate: (label: string) => `A period is a date’s; ${label} holds no date`,
   totalNeedsNumber: (label: string) => `A sum, an average, the lowest and the highest are a number’s; ${label} is not one. Any column can count its records`,
   parentNotOwnLink: (label: string) => `Rows nest under a link to the list’s own records; ${label} is not one`,

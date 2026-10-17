@@ -238,9 +238,10 @@ describe('the backlog’s settings, in the panels', () => {
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
-  it('a column of words has no dot to draw', () => {
+  it('a column of words has no dot to draw: its words, a pill, a picture or a phone', () => {
     const { shown, control } = mount('title');
-    expect(shown(control('Drawn as'))).toBe(false);
+    expect(shown(control('Drawn as'))).toBe(true);
+    expect([...(control('Drawn as') as HTMLSelectElement).options].map((option) => option.value)).toEqual(['', 'badge', 'avatar', 'image', 'phone']);
     expect(shown(control('Width'))).toBe(true);
   });
 });
