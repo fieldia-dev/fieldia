@@ -610,7 +610,7 @@ interface MergeResult { message?: string }   // the source's own words, said onc
 In plain words:
 
 - The page asks for them (`"duplicates": { "fields": [...], "on": "type" | "save" }`,
-  page format 0.3's shape grown by one setting). `on: "type"` (the default) asks a
+  page format 0.4, which 0.3's shape grew into by adding). `on: "type"` (the default) asks a
   moment after typing stops in a field named, as a saved record opens, and as the
   record is saved; `"save"` only as it is saved. The form's
   `findDuplicates()` asks with the fields named that hold a value — none, and

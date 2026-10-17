@@ -92,7 +92,7 @@ describe('a date and time read on a zone’s clock', () => {
 /** A date and time on a page in Berlin's zone, as the viewer keeps it. */
 function mount(field: Record<string, unknown> = {}, node: Partial<FieldNode> = {}, page: Partial<Page> = { timeZone: 'Europe/Berlin' }) {
   const made = {
-    fieldia: '0.3',
+    fieldia: '0.4',
     id: 't',
     data: { kind: 'responses' },
     fields: { x: { type: 'datetime', label: 'Test drive', ...field } as Field },
@@ -209,7 +209,7 @@ describe('a date and time box on a zone’s clock', () => {
   });
 
   it('starts a date at today on the zone’s clock', () => {
-    const page = { fieldia: '0.3', id: 't', timeZone: 'Asia/Tokyo', data: { kind: 'responses' }, fields: { d: { type: 'date', label: 'Day', default: 'today' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'n', field: 'd' }] } } as Page;
+    const page = { fieldia: '0.4', id: 't', timeZone: 'Asia/Tokyo', data: { kind: 'responses' }, fields: { d: { type: 'date', label: 'Day', default: 'today' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'n', field: 'd' }] } } as Page;
     // 20:00 UTC on the 15th: the 16th in Tokyo, the 15th in New York.
     expect(createForm({ page, now: () => new Date('2026-10-15T20:00:00Z') }).getState().values['d']).toBe('2026-10-16');
   });

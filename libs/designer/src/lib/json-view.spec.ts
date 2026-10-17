@@ -93,7 +93,7 @@ describe('the JSON view', () => {
     const { designer, button, box, type, named, rows } = setup();
     button('json').click();
     const page = designer.getPage();
-    const text = box().value.replace('"fieldia": "0.3",', '"fieldia": "0.3"');
+    const text = box().value.replace('"fieldia": "0.4",', '"fieldia": "0.4"');
     type(text);
     expect(rows()).toEqual(['Line 3Cannot applyA comma is missing before this']);
     expect([...(view?.element.querySelectorAll('.fd-json-mark') ?? [])].map((m) => m.getAttribute('data-line'))).toEqual(['3']);

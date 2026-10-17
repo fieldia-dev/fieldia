@@ -13,7 +13,7 @@ import { WIDGET_LABELS } from './labels';
 
 const page = (options: Record<string, unknown> = {}) =>
   ({
-    fieldia: '0.3',
+    fieldia: '0.4',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {

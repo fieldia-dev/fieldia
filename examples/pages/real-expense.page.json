@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "real-expense",
   "title": "Expense",
   "description": "Sherkety ERP's own multi-item expense (sherkety_expense: sherkety.expense, view_sherkety_expense_form): a shared header that cascades to every line, its own approval, and posting as an employee bill or company payments.",

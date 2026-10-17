@@ -32,7 +32,7 @@
   var BUDGET = { type: 'monetary', label: 'Budget', currency: 'EGP' };
   function page(fields, nodes) {
     return {
-      fieldia: '0.3', id: 'project-brief', title: 'Start a project', data: { kind: 'responses' }, fields: fields,
+      fieldia: '0.4', id: 'project-brief', title: 'Start a project', data: { kind: 'responses' }, fields: fields,
       layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: nodes }] },
     };
   }
@@ -156,7 +156,7 @@
   var sheet = document.getElementById('sheet-form');
   var caption = document.getElementById('sheet-caption');
   var ORDER = {
-    fieldia: '0.3', id: 'order', title: 'Sales order', data: { kind: 'record', model: 'sale.order' },
+    fieldia: '0.4', id: 'order', title: 'Sales order', data: { kind: 'record', model: 'sale.order' },
     fields: {
       name: { type: 'char', label: 'Order', readonly: true },
       partner: { type: 'char', label: 'Customer' },

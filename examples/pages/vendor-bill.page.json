@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "vendor-bill",
   "title": "Vendor bill",
   "data": { "kind": "record", "model": "account.move" },

@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  */
 
 const invoice: Page = {
-  fieldia: '0.3',
+  fieldia: '0.4',
   id: 'invoice',
   title: 'Invoice',
   timeZone: 'Africa/Cairo',

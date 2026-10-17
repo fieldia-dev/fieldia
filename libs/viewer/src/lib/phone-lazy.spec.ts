@@ -13,7 +13,7 @@ import { listPart, partsFor } from './viewer-parts';
 
 const page = (more: Partial<Page> = {}, node: Record<string, unknown> = {}): Page =>
   ({
-    fieldia: '0.3',
+    fieldia: '0.4',
     id: 'p',
     title: 'Contact',
     data: { kind: 'record', model: 'partner' },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "real-contract-termination",
   "title": "Terminate Contract",
   "data": { "kind": "record", "model": "contract.termination.wizard" },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "real-sale-order",
   "title": "Sales Order",
   "data": { "kind": "record", "model": "sale.order" },

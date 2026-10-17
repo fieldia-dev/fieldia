@@ -28,7 +28,7 @@ const invoices = {
 };
 
 const customer = (related: Record<string, unknown> = {}): Page => ({
-  fieldia: '0.3',
+  fieldia: '0.4',
   id: 'customer',
   title: 'Customer',
   data: { kind: 'record', model: 'partner' },
@@ -38,7 +38,7 @@ const customer = (related: Record<string, unknown> = {}): Page => ({
 
 /** The page the app gives for an invoice: what a row opens and New makes. */
 const invoicePage = {
-  fieldia: '0.3',
+  fieldia: '0.4',
   id: 'invoice',
   title: 'Invoice',
   data: { kind: 'record', model: 'invoice' },
@@ -211,7 +211,7 @@ describe('a related list inside a record', () => {
 
   it('View all in this page’s place: the app’s list of them kept to this record’s, and Back to the record', async () => {
     const list = {
-      fieldia: '0.3',
+      fieldia: '0.4',
       id: 'invoices',
       title: 'All invoices',
       data: { kind: 'record', model: 'invoice' },

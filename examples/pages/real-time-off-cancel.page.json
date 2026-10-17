@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "real-time-off-cancel",
   "title": "Cancel Time Off",
   "data": { "kind": "record", "model": "hr.holidays.cancel.leave" },

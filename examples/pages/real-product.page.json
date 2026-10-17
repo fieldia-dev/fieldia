@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.3",
+  "fieldia": "0.4",
   "id": "real-product",
   "title": "Product",
   "data": { "kind": "record", "model": "product.template" },

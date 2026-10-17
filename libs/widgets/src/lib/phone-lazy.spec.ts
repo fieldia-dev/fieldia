@@ -10,7 +10,7 @@ import { createWidget } from './widgets';
 
 const FIELD: Field = { type: 'char', label: 'Mobile' };
 const NODE: FieldNode = { type: 'field', id: 'f-mobile', field: 'mobile', widget: 'phone' };
-const page = { fieldia: '0.3', id: 'p', data: { kind: 'responses' }, fields: { mobile: FIELD }, layout: { type: 'sections', id: 's', children: [NODE] }, phone: { country: 'EG' } } as Page;
+const page = { fieldia: '0.4', id: 'p', data: { kind: 'responses' }, fields: { mobile: FIELD }, layout: { type: 'sections', id: 's', children: [NODE] }, phone: { country: 'EG' } } as Page;
 
 it('is the text box it was until the part comes, then the part’s own box in its place, with the value and the focus', async () => {
   expect(phonePart.loaded).toBeUndefined();

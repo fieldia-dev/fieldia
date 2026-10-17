@@ -20,9 +20,11 @@ export interface PageUpgrade {
  * date's order, a pattern's hint, a photo's `shrink` — so a 0.1 page is a 0.2 page as it is; and 0.3 (Fieldia 0.24)
  * only added too — a page's and a date and time's `timeZone`, its `phone` and a phone field's options, booking slots'
  * options, a list's totals, periods, `export` and `bulkEdit`, a box's `autocomplete` and `inputmode`, a page's
- * `botCheck` — so a 0.2 page is a 0.3 page as it is. A release that renames or
- * reshapes a setting adds a step here, with its example; one that only adds needs none: the page is the same, and
- * upgradePage writes the new version in it.
+ * `botCheck` — so a 0.2 page is a 0.3 page as it is; and 0.4 (Fieldia 0.25) only added as well — a record's `related`
+ * lists, a list's `card`, `gallery`, `optionalColumns`, `rowTones`, `rowBold`, `rowButtons`, `import` and `print`, a
+ * page's `print` and `duplicates`, the `print` step and the built-in Print — so a 0.3 page is a 0.4 page as it is. A
+ * release that renames or reshapes a setting adds a step here, with its example; one that only adds needs none: the
+ * page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];
 
