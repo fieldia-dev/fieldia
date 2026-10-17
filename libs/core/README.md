@@ -289,6 +289,19 @@ says which fields Edit offers. `createMemoryDataSource` gives `allIds` and
 `writeMany` (each record refused as its save would be), and no `exportRecords`.
 See [many records at once](https://fieldia.dev/data/#many).
 
+## Records that point at this one
+
+A page's `related` part lists another model's records whose link is this
+record — a customer's invoices — inside it (the viewer draws it). Its
+`model`, `field` (their many2one to this page's model), `fields` and `columns`
+say what it lists; `filter`, `sort`, `limit`, `cells`, `searchFields`,
+`viewAll` and `create` the rest. `form.relatedFilter(id)` gives what it asks
+the data source's `list` for, as the source gets it: the link to the record
+shown, then its own filter with each `valueFrom` read from that record — or null
+before the record's first save. No new data source member: `list` answers it.
+The page check holds its columns, order, search and cells to its own `fields`,
+its link to a many2one of theirs to this model, and it to a record's page.
+
 ## A saved form placed in another
 
 A block made once — an address, a contact person, a consent — is a page of its

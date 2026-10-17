@@ -32,6 +32,7 @@ import {
   type ImageNode,
   type FormNode,
   type MapNode,
+  type RelatedNode,
   type WizardNode,
   type LabelPlace,
   type LineField,
@@ -51,6 +52,7 @@ import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler
 import { upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
+import type { RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -595,7 +597,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const focused = drawn.contains(doc.activeElement);
         drawn.replaceWith(box);
         if (focused) box.focus();
-      } else spans(box, node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
+      } else spans(box, node.type === 'map' || node.type === 'related' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan);
       part.box = box;
       return box;
     }
@@ -1311,7 +1313,43 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           return formItem(node, place);
         case 'map':
           return mapItem(node);
+        case 'related':
+          return relatedItem(node);
       }
+    }
+
+    /**
+     * Another model's records that point at this record, listed inside it: drawn by the list part (list-related.ts),
+     * which the page waited for, in a box of the row's width, with the dialogs of the app's pages and the host's way to
+     * open a page. Not shown where the data source cannot list records.
+     */
+    function relatedItem(node: RelatedNode): HTMLElement {
+      const box = el('div', { 'data-node': node.id });
+      spans(box, node.colspan ?? 12);
+      if (!options.dataSource?.list) {
+        box.hidden = true;
+        return box;
+      }
+      let part: RelatedPart | null = null;
+      const take = (module: NonNullable<typeof listPart.loaded>) => {
+        part = module.relatedList({
+          page, node, form, box, doc, el, labels, locale, fill, press, withIcon, uid, preferences, dialogs,
+          dataSource: options.dataSource,
+          icons: options.icons,
+          now: options.now,
+          open: (request) => actionHost.open(request),
+          say: (message, tone) => actionHost.say(message, tone),
+          name: recordName,
+        });
+        part.update(form.getState());
+      };
+      watch((state) => part?.update(state));
+      cleanups.push(() => part?.destroy());
+      // The part has come; where it could not, it is asked for again.
+      if (listPart.loaded) take(listPart.loaded);
+      else void listPart.load().then((module) => gone || take(module), () => undefined);
+      hideWhen(box, node.id);
+      return box;
     }
 
     /** A map of the record's places, drawn by the app's maps; told of each change to the form. */

@@ -91,6 +91,7 @@ export const changes: DesignerWords['changes'] = {
     image: (alt) => `الصورة ${q(alt)}`,
     anImage: 'صورة',
     map: (label) => `الخريطة ${q(label)}`,
+    related: (label) => `القائمة المرتبطة ${q(label)}`,
     divider: 'خط فاصل',
     spacer: 'مسافة',
     form: (name) => `النموذج المحفوظ ${q(name)}`,

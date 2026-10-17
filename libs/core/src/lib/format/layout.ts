@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { FIELD_NAME, FilterItemSchema, MoneyLookSchema, type FilterItem, type MoneyLook } from './field';
+import { FIELD_NAME, FilterItemSchema, LinkedFieldSchema, MoneyLookSchema, type FilterItem, type LinkedField, type MoneyLook } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 import { HOTKEY } from './hotkeys';
@@ -457,6 +457,61 @@ export interface FormNode {
   hideOn?: ScreenWidth[];
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
+}
+
+/**
+ * Another model's records that point at this one — a customer's invoices, a
+ * property's viewings, an employee's leave requests — listed inside the
+ * record: a page at a time, searched, put in order, counted, each row opening
+ * its record. The records are those whose `field` (their link to this
+ * record's model) is this record, and that `filter` lets through; the data
+ * source's `list` is asked for them as for any list. **View all** opens the
+ * app's own list of them (`viewAll`) showing this record's alone; **New**
+ * makes one with its link filled in, in a dialog of the page the app gives for
+ * `model`, then lists it. Before the record's first save nothing points at it:
+ * the part says so, with no New. Without `list` in the data source the part
+ * is not shown.
+ */
+export interface RelatedNode {
+  type: 'related';
+  id: string;
+  /** Words over it, beside its count: "Invoices". None when left out. */
+  title?: string;
+  /** An icon before the title, by name: one of Fieldia's own, or one the app adds. */
+  icon?: string;
+  /** The model of the records listed: "invoice". */
+  model: string;
+  /** Their link to this record, a many2one of theirs: "partner_id". */
+  field: string;
+  /** The listed records' fields its columns show: plain values — text, numbers, money, yes or no, dates, choices and links. */
+  fields: { [name: string]: LinkedField };
+  /** The fields shown, in order. */
+  columns: string[];
+  /** Each column's cells, as a list's: a widget (`dot`, `phone`), an icon before the words, a width, a side, a total. */
+  cells?: { [column: string]: ListCell };
+  /** More that the records listed keep to — only posted invoices — as a link's filter: `valueFrom` reads this record. */
+  filter?: FilterItem[];
+  /** Their order: by the first, then the next. */
+  sort?: { field: string; desc?: boolean }[];
+  /** How many rows a page holds: 5 unless said. */
+  limit?: number;
+  /** The fields what is typed in its search is looked for in: its columns unless said. */
+  searchFields?: string[];
+  /**
+   * View all: the app's list page of these records (by its id, as an `open`
+   * step names one), opened in a dialog unless `as` says a panel or this
+   * record's place, showing only this record's — or opened the app's own way,
+   * its `onOpen`. Not offered when left out.
+   */
+  viewAll?: { page: string; as?: 'dialog' | 'panel' | 'page' };
+  /** New, which makes one with its link to this record filled in; offered unless false, where the app gives a page for `model`. */
+  create?: boolean;
+  /** Grid columns it spans inside a section: the whole row unless said. */
+  colspan?: number;
+  invisible?: Modifier;
+  roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /** A line along the roads between a map's layers: from one place to another, or through a layer's lines in their order. */
@@ -1276,7 +1331,7 @@ export interface ListCalendar {
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
-export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode | FormNode | MapNode;
+export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode | FormNode | MapNode | RelatedNode;
 
 /** What a page's `layout` can be: the four page layouts. */
 export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | ListNode;
@@ -1577,6 +1632,62 @@ export const MapNodeSchema = z
 
 export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible, roles, hideOn });
 
+/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule, its total. */
+export const ListCellSchema = z
+  .strictObject({
+    widget: z.string().min(1).optional(),
+    options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
+    lead: z
+      .strictObject({
+        field: fieldName,
+        looks: z.record(z.string(), z.strictObject({ icon: z.string().min(1), colour: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is #rrggbb').optional() })),
+      })
+      .optional(),
+    width: z
+      .union([
+        z.int().min(1).max(200),
+        // 8px to 4000px, said in the pattern itself so the JSON Schema says it too.
+        z.string().regex(/^([89]|[1-9]\d{1,2}|[1-3]\d{3}|4000)px$/, 'a width in pixels is a whole number from 8 to 4000 and px, as "120px"') as unknown as z.ZodType<`${number}px`>,
+      ])
+      .optional(),
+    align: z.enum(['start', 'end']).optional(),
+    total: z.enum(['sum', 'avg', 'min', 'max', 'count']).optional(),
+    rule: z
+      .union([
+        z.literal(false),
+        // 0px to 400px, said in the pattern itself so the JSON Schema says it too.
+        z.string().regex(/^(\d|[1-9]\d|[1-3]\d{2}|400)px$/, 'a rule set in is a whole number of pixels from 0 to 400 and px, as "44px"') as unknown as z.ZodType<`${number}px`>,
+      ])
+      .optional(),
+  })
+  .meta({ id: 'ListCell' });
+
+/**
+ * A related list: another model's records whose link (`field`) is this record, a page at a time, in a record's page.
+ * Its columns are fields of its own `fields`.
+ */
+export const RelatedNodeSchema = z
+  .strictObject({
+    type: z.literal('related'),
+    id,
+    title: z.string().optional(),
+    icon: z.string().min(1).optional(),
+    model: z.string().min(1),
+    field: fieldName,
+    fields: z.record(fieldName, LinkedFieldSchema),
+    columns: z.array(fieldName).min(1),
+    cells: z.record(fieldName, ListCellSchema).optional(),
+    filter: z.array(FilterItemSchema).min(1).optional(),
+    sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
+    limit: z.int().min(1).max(100).optional(),
+    searchFields: z.array(fieldName).min(1).optional(),
+    viewAll: z.strictObject({ page: id, as: z.enum(['dialog', 'panel', 'page']).optional() }).optional(),
+    create: z.boolean().optional(),
+    colspan: span,
+    invisible, roles, hideOn,
+  })
+  .meta({ id: 'RelatedNode' });
+
 export const FormNodeSchema = z.strictObject({
   type: z.literal('form'),
   id,
@@ -1653,6 +1764,7 @@ export const LayoutNodeSchema = z
     ImageNodeSchema,
     FormNodeSchema,
     MapNodeSchema,
+    RelatedNodeSchema,
   ])
   .meta({ id: 'LayoutNode' });
 
@@ -1879,36 +1991,6 @@ export const ListCalendarSchema = z
     slot: z.union([z.literal(15), z.literal(30), z.literal(60)]).optional(),
   })
   .meta({ id: 'ListCalendar' });
-
-/** A list column's cells: a widget, an icon from another field, a width in characters or pixels, a side, its header's rule, its total. */
-export const ListCellSchema = z
-  .strictObject({
-    widget: z.string().min(1).optional(),
-    options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
-    lead: z
-      .strictObject({
-        field: fieldName,
-        looks: z.record(z.string(), z.strictObject({ icon: z.string().min(1), colour: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour is #rrggbb').optional() })),
-      })
-      .optional(),
-    width: z
-      .union([
-        z.int().min(1).max(200),
-        // 8px to 4000px, said in the pattern itself so the JSON Schema says it too.
-        z.string().regex(/^([89]|[1-9]\d{1,2}|[1-3]\d{3}|4000)px$/, 'a width in pixels is a whole number from 8 to 4000 and px, as "120px"') as unknown as z.ZodType<`${number}px`>,
-      ])
-      .optional(),
-    align: z.enum(['start', 'end']).optional(),
-    total: z.enum(['sum', 'avg', 'min', 'max', 'count']).optional(),
-    rule: z
-      .union([
-        z.literal(false),
-        // 0px to 400px, said in the pattern itself so the JSON Schema says it too.
-        z.string().regex(/^(\d|[1-9]\d|[1-3]\d{2}|400)px$/, 'a rule set in is a whole number of pixels from 0 to 400 and px, as "44px"') as unknown as z.ZodType<`${number}px`>,
-      ])
-      .optional(),
-  })
-  .meta({ id: 'ListCell' });
 
 /** A period a date falls in, from the day the list is looked at: "This month", "Overdue". */
 export const FilterPeriodSchema = z.strictObject({ field: fieldName, is: z.enum(DATE_PERIODS) }).meta({ id: 'FilterPeriod' });

@@ -667,7 +667,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.24's lanes joined, measured in the merged build: 474.29 at 0.23.0, 512.82 now — 38.5 more (the lanes' growths
 // above add to 40.8: merged, two lanes' ways of one thing are one — one set of time zone functions, one press rule),
 // to 512.9.
-const BUDGET_KB = 512.9;
+// A related list inside a record (Wave 3, w3-related): the format's part and its page check — its columns, order,
+// search and cells held to its own records' fields (the list's own checks, shared now), its link to a many2one of
+// theirs to this model, on a record's page — the form's `relatedFilter`, the viewer's box handing the list part its
+// dialogs and its host's `open`, the list part asked for by a page with one, a list in a dialog closed with Close
+// alone (nothing to save) and a dialog's own button hidden when it is (Save & Close showed for a record only to read
+// too), and its six English words. Its heading, count, New, View all and asks are the list part's: 512.84 measured
+// before, 515.32 after — 2.5 more, to 515.4.
+const BUDGET_KB = 515.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -807,7 +814,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // The business owner's walk of 0.23 mended (listed with the raw budget above): 153.61 measured before, 155.40 after —
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
-const GZIP_BUDGET_KB = 167.2;
+// A related list inside a record (listed with the raw budget above): 167.12 measured before, 167.80 after — 0.7
+// more, to 167.9.
+const GZIP_BUDGET_KB = 167.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -912,7 +921,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 0.24's lanes joined, measured in the merged build: Arabic's 54.23 and 9.70 (44.99 and 8.23 at 0.23.0), German's
 // 23.15 and 8.30 (19.18 and 7.08), French's 23.97 and 8.34 (19.81 and 7.09) — each to the next 0.1 over, German's
 // gzipped to 8.4, its 8.30 a fifth of a byte under 8.3.
-const ADD_ON_BUDGET_KB = { ar: [54.3, 9.8], de: [23.2, 8.4], fr: [24.0, 8.4] };
+// A related list inside a record (Wave 3): View all and New, each with its title and without, what it says before a
+// record's first save and with none yet, six in each — Arabic's 54.23 and 9.70 measured before, 54.66 and 9.78 after,
+// to 54.7; German's 23.15 and 8.30 to 23.36 and 8.37, to 23.4; French's 23.97 and 8.34 to 24.21 and 8.41, to 24.3
+// and 8.5.
+const ADD_ON_BUDGET_KB = { ar: [54.7, 9.8], de: [23.4, 8.4], fr: [24.3, 8.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1066,7 +1079,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 12.29 (35.00, 12.10), and the new phone 34.77 and 15.21 and slots 14.63 and 5.57 — each to the next 0.1 over
 // (business's raw to 26.7, 4 bytes under 26.6 being no room; date's gzipped to 8.4, its 8.30 at the line); head,
 // choice, filters, themes and the quiet look as at 0.23.0, unchanged.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [72.5, 23.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
+// A related list inside a record (Wave 3), in the list part and drawn with its table: its heading, count, View all and
+// New, what it says before a first save, each ask kept to the record shown (list-related.ts: 3.6, 1.6 gzipped on its
+// own), its look (1.2), and the list's search as a box alone, its search and pager once a page is full, its count told
+// and an answer for a record no longer shown dropped (list.ts, search-bar.ts) — list 72.41 and 23.71 measured before,
+// 77.37 and 25.26 after (list 77.4, 25.3). A part of its own would have spared a plain list page about 1.2 gzipped and
+// cost a record page with one a second request: a related list draws with the list part's table, so it loads that.
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [77.4, 25.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1075,7 +1094,7 @@ const PART_GIVES = {
   choice: ['ownListWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
-  list: ['listView', 'installListStyles'],
+  list: ['listView', 'relatedList', 'relatedListPage', 'installListStyles'],
   themes: ['installThemeStyles'],
   quiet: ['installQuietStyles'],
   lines: ['linesWidget', 'linksTableWidget'],
@@ -1150,9 +1169,10 @@ console.log(`parts: ${partSizes.join('; ')}`);
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
  * part, and for each part the first time a page uses one, from beside itself — a phone read the world over, a list's
- * screen (its phones, its totals, its Export and Edit), a theme, a table of lines, a customer's statusbar and photo, a
- * work item's head, text and path picker for its bug, the filter bar for its backlog, a date's box (on a public page
- * with its bot check), the survey kinds, a booking's slots — and the page is drawn whole once they have come. Pages
+ * screen (its phones, its totals, its Export and Edit), a record's related list, a theme, a table of lines, a
+ * customer's statusbar and photo, a work item's head, text and path picker for its bug, the filter bar for its backlog,
+ * a date's box (on a public page with its bot check), the survey kinds, a booking's slots — and the page is drawn
+ * whole once they have come. Pages
  * open in an order where each part's first use is clear, the parts in after each step said in full.
  */
 {
@@ -1236,6 +1256,17 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (host.querySelector('.fd-list-export')?.hidden !== false || !host.querySelector('.fd-list-edit')) throw new Error("in a page, a list that asks for Export and Edit does not offer them");
   contacts.destroy();
   gone('contacts');
+  // A customer with its invoices listed inside it: the list part's table, already in, for the records that point at it.
+  const account = inPage.mountViewer(host, {
+    page: read('customer-account.page.json'),
+    recordId: 1,
+    dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } }, invoice: { ...invoiced, 3: { ...invoiced[1], name: 'INV/3', partner_id: { id: 1, label: 'Nile Traders' } } } } }),
+  });
+  await account.drawn;
+  hasIn('a customer with its invoices', 'list, phone');
+  if (!(await until(() => host.querySelector('[data-node="invoices"] .fd-list-row')))?.textContent.includes('INV/3') || host.querySelectorAll('[data-node="invoices"] .fd-list-row').length !== 1) throw new Error(`in a page, a related list does not list the records that point at its record: ${host.querySelector('[data-node="invoices"]')?.textContent ?? 'no related list'}`);
+  account.destroy();
+  gone('account');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
@@ -1324,5 +1355,5 @@ console.log(`parts: ${partSizes.join('; ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
+  console.log("in a page: nothing asked for by a page of plain parts; a phone read the world over; a list's screen, its phones, its totals, its Export and Edit only where asked; a customer's invoices listed inside it; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots — each as first used, each sheet in its place");
 }

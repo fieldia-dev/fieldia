@@ -7580,6 +7580,9 @@
         },
         {
           "$ref": "#/$defs/MapNode"
+        },
+        {
+          "$ref": "#/$defs/RelatedNode"
         }
       ]
     },
@@ -8268,6 +8271,252 @@
         "when",
         "steps"
       ],
+      "additionalProperties": false
+    },
+    "RelatedNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "related"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "fields": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/LinkedField"
+          }
+        },
+        "columns": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "cells": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ListCell"
+          }
+        },
+        "filter": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilterItem"
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "desc": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "field"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "searchFields": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "viewAll": {
+          "type": "object",
+          "properties": {
+            "page": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "as": {
+              "type": "string",
+              "enum": [
+                "dialog",
+                "panel",
+                "page"
+              ]
+            }
+          },
+          "required": [
+            "page"
+          ],
+          "additionalProperties": false
+        },
+        "create": {
+          "type": "boolean"
+        },
+        "colspan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
+        },
+        "hideOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScreenWidth"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "model",
+        "field",
+        "fields",
+        "columns"
+      ],
+      "additionalProperties": false
+    },
+    "ListCell": {
+      "type": "object",
+      "properties": {
+        "widget": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "clear": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "lead": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "looks": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "icon": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "colour": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  }
+                },
+                "required": [
+                  "icon"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "field",
+            "looks"
+          ],
+          "additionalProperties": false
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            {
+              "type": "string",
+              "pattern": "^([89]|[1-9]\\d{1,2}|[1-3]\\d{3}|4000)px$"
+            }
+          ]
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "total": {
+          "type": "string",
+          "enum": [
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "count"
+          ]
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "boolean",
+              "const": false
+            },
+            {
+              "type": "string",
+              "pattern": "^(\\d|[1-9]\\d|[1-3]\\d{2}|400)px$"
+            }
+          ]
+        }
+      },
       "additionalProperties": false
     },
     "HelpShown": {
@@ -9191,106 +9440,6 @@
         "start",
         "title"
       ],
-      "additionalProperties": false
-    },
-    "ListCell": {
-      "type": "object",
-      "properties": {
-        "widget": {
-          "type": "string",
-          "minLength": 1
-        },
-        "options": {
-          "type": "object",
-          "properties": {
-            "clear": {
-              "type": "boolean"
-            }
-          },
-          "additionalProperties": {
-            "$ref": "#/$defs/JsonValue"
-          }
-        },
-        "lead": {
-          "type": "object",
-          "properties": {
-            "field": {
-              "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
-            },
-            "looks": {
-              "type": "object",
-              "propertyNames": {
-                "type": "string"
-              },
-              "additionalProperties": {
-                "type": "object",
-                "properties": {
-                  "icon": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "colour": {
-                    "type": "string",
-                    "pattern": "^#[0-9a-fA-F]{6}$"
-                  }
-                },
-                "required": [
-                  "icon"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "field",
-            "looks"
-          ],
-          "additionalProperties": false
-        },
-        "width": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            },
-            {
-              "type": "string",
-              "pattern": "^([89]|[1-9]\\d{1,2}|[1-3]\\d{3}|4000)px$"
-            }
-          ]
-        },
-        "align": {
-          "type": "string",
-          "enum": [
-            "start",
-            "end"
-          ]
-        },
-        "total": {
-          "type": "string",
-          "enum": [
-            "sum",
-            "avg",
-            "min",
-            "max",
-            "count"
-          ]
-        },
-        "rule": {
-          "anyOf": [
-            {
-              "type": "boolean",
-              "const": false
-            },
-            {
-              "type": "string",
-              "pattern": "^(\\d|[1-9]\\d|[1-3]\\d{2}|400)px$"
-            }
-          ]
-        }
-      },
       "additionalProperties": false
     },
     "PageEvents": {

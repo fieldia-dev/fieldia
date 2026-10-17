@@ -5,6 +5,7 @@ import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 import { formContent } from './panel-form';
 import { mapContent } from './panel-map';
+import { relatedContent } from './panel-related';
 import { whenClicked } from './steps-panel';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
@@ -32,6 +33,8 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
   if (kind === 'form') return formContent(el, designer, id);
   // A map: its name, height and layers.
   if (kind === 'map') return mapContent(el, designer, id);
+  // A related list: its records, their link, its columns, rows a page, New and View all.
+  if (kind === 'related') return relatedContent(el, designer, id);
   const w = designer.words.panel;
   if (kind === 'image') {
     const src = el('input', { class: 'fd-input', 'aria-label': w.pictureAddress, placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;

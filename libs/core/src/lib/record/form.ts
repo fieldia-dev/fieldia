@@ -1,6 +1,6 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
-import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
@@ -441,6 +441,12 @@ export interface Form {
    * (docs/plans/wave1-contract.md, section 10, part 2).
    */
   recordShown(): () => boolean;
+  /**
+   * What a related list (a `related` part, by its id) asks the data source's `list` for, on the record shown: the
+   * records whose link is this record, and that its own `filter` lets through, each `valueFrom` read from this record.
+   * Null before the record's first save — nothing points at it yet — and for no related list of that id.
+   */
+  relatedFilter(id: string): ResolvedFilter[] | null;
   /**
    * Post words in the record's conversation, as a `post` step does: through
    * the form's host when it has a way to, else told to the form's own
@@ -2601,6 +2607,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     leaveNow: (how = {}) => (outer ? outer.leaveNow(how) : atOnce(how)),
 
     recordShown: shownNow,
+
+    relatedFilter(id) {
+      const node = index.get(id)?.source as LayoutNode | undefined;
+      if (node?.type !== 'related' || state.recordId == null) return null;
+      const related: RelatedNode = node;
+      return [{ field: related.field, op: '=', value: state.recordId }, ...(related.filter ? resolveFilter(related.filter, context()) : [])];
+    },
 
     post,
 

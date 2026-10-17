@@ -240,6 +240,16 @@ export interface ViewerLabels {
   /** A page a step opens that the app has none of (`{page}`, its id). */
   pageMissing: string;
   /**
+   * A related list inside a record (`related`): View all and New, named with its title where it has one (`{title}`),
+   * what it says before the record's first save, and with no records yet.
+   */
+  relatedAll: string;
+  relatedAllOf: string;
+  relatedNew: string;
+  relatedNewOf: string;
+  relatedUnsaved: string;
+  relatedNone: string;
+  /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
    * `newRecord`), and the pager (`records`, `recordAt` with `{n}` and
@@ -455,6 +465,12 @@ const en: ViewerLabels = {
   formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',
   formBroken: 'The saved form “{page}” cannot be shown.',
   pageMissing: 'The page “{page}” cannot be found.',
+  relatedAll: 'View all',
+  relatedAllOf: 'View all {title}',
+  relatedNew: 'New',
+  relatedNewOf: 'New in {title}',
+  relatedUnsaved: 'Nothing here until this record is saved.',
+  relatedNone: 'None yet.',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',

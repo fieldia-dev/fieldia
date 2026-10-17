@@ -133,6 +133,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     // A map among the blocks, when the app draws maps.
     maps: !!options.maps,
     forms: true,
+    related: true,
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
   });
@@ -373,6 +374,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       kinds: !listing,
       advanced: mode === 'advanced',
       forms: designer.canPlaceForms(),
+      // A related list lists the records that point at a record: on a record's page.
+      related: state.page.data.kind === 'record',
     });
     side.update(state);
     panel.update(state);

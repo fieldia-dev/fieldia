@@ -31,7 +31,7 @@ export type Drop =
   | { how: 'column'; container: string; after: boolean };
 
 /** What the toolbox adds besides fields: groups, tabs, and the blocks between fields. */
-export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button' | 'map';
+export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button' | 'map' | 'related';
 
 /** A new part: a field of a kind, a field of the backend's model, or a block. */
 export type NewPart = { kind: string } | { field: string } | { block: BlockKind };
@@ -305,8 +305,8 @@ export function dropRefusal(page: Page, drop: Drop, moving?: string, words: Desi
 
 const IMAGE_PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Crect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="%23888"/%3E%3C/svg%3E';
 
-/** A new block, named so no id is taken twice. */
-export function makeBlock(kind: BlockKind, name: (prefix: string) => string, words: DesignerWords = en): LayoutNode {
+/** A new block, named so no id is taken twice; a related list's link named for the page's model. */
+export function makeBlock(kind: BlockKind, name: (prefix: string) => string, words: DesignerWords = en, page?: Page): LayoutNode {
   const w = words.defaults;
   switch (kind) {
     case 'group':
@@ -337,10 +337,20 @@ export function makeBlock(kind: BlockKind, name: (prefix: string) => string, wor
     case 'map':
       // A map starts with the reader's own place, which needs no field: its panel adds the record's places and routes.
       return { type: 'map', id: name('map'), label: w.newMap, layers: [{ id: 'me', label: w.you, myLocation: true }] };
+    case 'related': {
+      // Records of another model that point at this one by a link named for this page's model (a partner's: partner_id),
+      // one column of their names: its panel says which model, which link and which columns.
+      if (page && page.data.kind !== 'record') throw new Refusal((r) => r.relatedPart.onlyOnRecords);
+      const model = page?.data.kind === 'record' ? page.data.model : '';
+      const base = model.split('.').pop()?.replace(/[^A-Za-z0-9_]/g, '_').replace(/^[^A-Za-z_]/, '_') || 'record';
+      const r = words.relatedPart;
+      // Its model, a name in code and no word: its panel's box to type the real one in.
+      return { type: 'related', id: name('related'), title: r.newTitle, model: 'record', field: `${base}_id`, fields: { name: { type: 'char', label: r.name } }, columns: ['name'] };
+    }
   }
 }
 
-const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button', 'map']);
+const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button', 'map', 'related']);
 
 /** A new part from the toolbox, its field (if any) added to the page's. Refuses what the store's rules refuse. */
 export function makePart(page: Page, part: NewPart, context: LayoutContext): LayoutNode {
@@ -348,7 +358,7 @@ export function makePart(page: Page, part: NewPart, context: LayoutContext): Lay
   const name = namer(page);
   if ('block' in part) {
     if (!BLOCKS.has(part.block)) throw new Refusal((w) => w.layout.noKindOfPart(part.block));
-    return makeBlock(part.block, name, words);
+    return makeBlock(part.block, name, words, page);
   }
   if ('field' in part) {
     const def = Object.prototype.hasOwnProperty.call(context.model, part.field) ? context.model[part.field] : null;
@@ -529,7 +539,7 @@ function insert(page: Page, node: LayoutNode, where: Where): void {
 /** A block where a tile is clicked: words, a line, room, a picture, a button, a group or tabs. Returns its id. */
 export function addBlock(page: Page, kind: BlockKind, where: Where = {}, words: DesignerWords = en): string {
   if (!BLOCKS.has(kind)) throw new Refusal((w) => w.layout.noKindOfPart(kind));
-  const node = makeBlock(kind, namer(page), words);
+  const node = makeBlock(kind, namer(page), words, page);
   insert(page, node, where);
   return node.id;
 }

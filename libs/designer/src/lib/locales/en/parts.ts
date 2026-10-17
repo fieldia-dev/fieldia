@@ -7,6 +7,7 @@ export const parts = {
   tabs: 'Tabs',
   image: 'Image',
   map: 'Map',
+  related: 'Related list',
   divider: 'Divider',
   spacer: 'Spacer',
   untitledSection: 'Untitled section',

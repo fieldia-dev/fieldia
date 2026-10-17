@@ -7,7 +7,7 @@ import type {
   RootLayout, RootLayoutSchema, FormNode, FormNodeSchema,
   SheetHead, SheetHeadSchema, HeadLink, HeadLinkSchema, TabsNode, TabsNodeSchema,
 } from './layout';
-import type { ListCalendar, ListCalendarSchema, ListCell, ListCellSchema, ListNode, ListNodeSchema } from './layout';
+import type { ListCalendar, ListCalendarSchema, ListCell, ListCellSchema, ListNode, ListNodeSchema, RelatedNode, RelatedNodeSchema } from './layout';
 
 /**
  * Compile-time proof that the hand-written interfaces (the public types, with
@@ -37,4 +37,5 @@ export type ListChecks = [
   Assert<Same<z.infer<typeof ListNodeSchema>, ListNode>>,
   Assert<Same<z.infer<typeof ListCellSchema>, ListCell>>,
   Assert<Same<z.infer<typeof ListCalendarSchema>, ListCalendar>>,
+  Assert<Same<z.infer<typeof RelatedNodeSchema>, RelatedNode>>,
 ];

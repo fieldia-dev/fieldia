@@ -15,7 +15,7 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
 /**
  * Firefox and WebKit (Safari's engine: every browser on an iPhone) run a smoke set, not the whole suite: what a person
  * meets first — forms drawn and filled, their behaviour and layout, lists, their totals and periods (days counted
- * through each engine's own Intl) and what they export and change in bulk, dialogs, the quiet look, a place on a map,
+ * through each engine's own Intl) and what they export and change in bulk, a record's related lists, dialogs, the quiet look, a place on a map,
  * right to left, and a part that fails kept to itself — in the plain demo alone, as the frameworks' bindings draw the
  * same DOM — where the keyboard lands after save safety's buttons hide themselves, which each engine moves its own
  * way, a box the browser fills in, which each engine writes its own way, a phone read the world over, a box of its
@@ -24,7 +24,7 @@ const sitePort = Number(process.env['FIELDIA_SITE_PORT'] ?? 4322);
  * (phone-frame), and what a phone's finger meets — a press that lands where it began, a title that wraps. Chromium
  * runs everything. `npx playwright test --project=firefox` (or webkit) runs one engine.
  */
-const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing'];
+const SMOKE = ['render', 'form-behaviour', 'behaviour', 'layout', 'lists', 'list-totals', 'lists-bulk', 'related-list', 'dialogs', 'quiet-look', 'map-place', 'contain', 'save-safety-focus', 'autofill', 'phone', 'slots', 'phone-frame', 'steady-press', 'pressed-error', 'phone-titles', 'rules-cell-hold-every-engine', 'rules-number-autofill-keeps-value', 'rules-hours-percent-entered-and-left-keep-value', 'rules-part-swap-keeps-typing'];
 const smoke = {
   testMatch: SMOKE.map((name) => `${name}.spec.ts`),
   // Each spec runs every framework's demo (its title starts "react: …", "vue · …" or "angular › …"); here, the plain one.

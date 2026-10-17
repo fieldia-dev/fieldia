@@ -51,6 +51,18 @@ export const DESIGNER_KINDS_CSS = /* css */ `
   background: repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), repeating-linear-gradient(90deg, transparent 0 31px, color-mix(in srgb, var(--fd-border) 45%, transparent) 31px 32px), var(--fd-fill);
 }
 .fd-map-preview.fd-canvas-block strong { color: var(--fd-text); font-size: 14px; }
+/* A related list on the canvas, as the form draws it (the list part's look): its rows to come in Try it, said under it. */
+.fd-related.fd-canvas-block { display: grid; gap: 8px; min-width: 0; }
+.fd-related.fd-canvas-block .fd-list-row td { color: var(--fd-muted); }
+.fd-related-preview-note { margin: 0; color: var(--fd-muted); font-size: 12.5px; }
+/* A related list's columns in its panel: each its words and a way to take it off, its field and its kind under them. */
+.fd-related-columns { display: grid; gap: 8px; }
+.fd-related-column { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 4px; align-items: center; padding-block-end: 8px; border-block-end: 1px solid var(--fd-border); }
+.fd-related-column .fd-input { min-width: 0; }
+.fd-related-column > [data-part="words"] { grid-column: 1 / 3; grid-row: 1; }
+.fd-related-column > button { grid-column: 3; grid-row: 1; }
+.fd-related-column > [data-part="name"] { grid-column: 1; grid-row: 2; font-family: var(--fd-mono, ui-monospace, monospace); }
+.fd-related-column > select { grid-column: 2; grid-row: 2; }
 /* A map's layers in its panel: each a small framed group, its kind and a way to take it off at its head. */
 .fd-map-layers { display: grid; gap: 10px; }
 .fd-map-layer { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); }

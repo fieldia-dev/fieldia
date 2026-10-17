@@ -142,6 +142,12 @@ const NAMES: Record<string, string> = {
   'Hidden box for bots': 'مربع مخفي للروبوتات',
   'Fewest seconds to fill': 'أقل عدد من الثواني للملء',
   'Captcha drawn in': 'اختبار كابتشا يُرسم في',
+  'Records of': 'سجلات من',
+  'Their link to this record': 'رابطها بهذا السجل',
+  'Rows a page': 'الصفوف في الصفحة',
+  New: 'جديد',
+  'View all opens the page': '«عرض الكل» يفتح الصفحة',
+  'View all opens in': '«عرض الكل» يُفتح في',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -171,6 +177,7 @@ export const panel: DesignerWords['panel'] = {
     button: 'زر',
     image: 'صورة',
     map: 'خريطة',
+    related: 'قائمة مرتبطة',
     divider: 'خط فاصل',
     spacer: 'مسافة',
     slot: 'جزء التطبيق',
@@ -374,6 +381,7 @@ export const panel: DesignerWords['panel'] = {
     spacer: 'مساحة فارغة: في الشبكة تُبقي خلية فارغة.',
     image: 'صورة في الصفحة.',
     map: 'خريطة لأماكن السجل في طبقات، تُضبط كلٌّ منها أدناه.',
+    related: 'سجلات من نوع آخر تشير إلى هذا السجل — فواتير العميل — صفحةً صفحة، مع عددها و«جديد» و«عرض الكل».',
     button: 'زر يضغطه الناس.',
     text: 'كلمات في الصفحة، بين الحقول.',
     slot: 'مكان يملؤه التطبيق بجزء من عنده.',

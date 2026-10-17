@@ -5,9 +5,12 @@
  * switcher to another view (list.ts) — with its search bar, its menu, a filter
  * of a person's own and the favourites kept (search-bar.ts, custom-filter.ts,
  * favourites.ts), and its stylesheet (list-styles.ts), which it puts in the
- * page as it is first drawn. Loaded the first time a page draws a list,
- * through `listPart`; the viewer waits for it before it draws that page. A
- * filter bar of fields is the filters part's, asked for beside it.
+ * page as it is first drawn; and a related list inside a record, drawn with
+ * that same table (list-related.ts). Loaded the first time a page draws a list
+ * or a related list, through `listPart`; the viewer waits for it before it
+ * draws that page. A filter bar of fields is the filters part's, asked for
+ * beside it.
  */
 export { listView } from './list';
+export { relatedList, relatedListPage } from './list-related';
 export { installListStyles } from './list-styles';

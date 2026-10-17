@@ -310,6 +310,48 @@ to one value on the records chosen, after a question, by `writeMany` or a save
 per record, each record's `can` kept, and names what it could not change and
 why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 
+### A related list inside a record
+
+Another model's records that point at this one — a customer's invoices, a
+property's viewings — are listed inside the record with a `related` part, in a
+group, a tab or straight in the sheet:
+
+```json
+{
+  "type": "related", "id": "invoices", "title": "Invoices",
+  "model": "invoice", "field": "partner_id",
+  "fields": {
+    "name": { "type": "char", "label": "Number" },
+    "invoice_date": { "type": "date", "label": "Invoice date" },
+    "state": { "type": "selection", "label": "Status", "options": [{ "value": "paid", "label": "Paid" }] },
+    "amount": { "type": "float", "label": "Amount" }
+  },
+  "columns": ["name", "invoice_date", "state", "amount"],
+  "cells": { "state": { "widget": "dot", "options": { "tones": { "paid": "success" } } } },
+  "filter": [{ "field": "state", "op": "!=", "value": "cancel" }],
+  "sort": [{ "field": "invoice_date", "desc": true }],
+  "limit": 5,
+  "viewAll": { "page": "invoices", "as": "page" }
+}
+```
+
+It asks your data source's `list` for the records whose `field` is this record
+(`{ field: 'partner_id', op: '=', value: <its id> }`) and that `filter` lets
+through (a `valueFrom` reads this record), `limit` rows a page (5 unless said),
+and draws them with the list's own table — its cells, tones, phones and totals
+— in the list part. Its title shows how many there are; past a page, its pager
+and a search box show. A row opens its record in a dialog of the page `pages`
+gives for `model`, **New** makes one there with its link filled in and lists it
+once saved (`"create": false` for none), and **View all** opens the page
+`viewAll` names showing this record's records alone, as an `open` step opens
+one — in a dialog, a side panel or this page's place, or your app's own way
+(`onOpen`, with the conditions in `request.filter`). Before the record's first
+save it says nothing points at it yet, with no New. Without `list` in the data
+source it is not shown. An answer that comes once another record is shown — the
+pager pressed, the record loaded again, Discard — is drawn in none
+(`form.recordShown()`), and the next record's are asked for. See
+[related records](https://fieldia.dev/record/#related).
+
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`

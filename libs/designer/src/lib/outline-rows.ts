@@ -59,6 +59,7 @@ const BLOCK_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = {
   slot: ['slot', 'group'],
   form: ['form', 'form'],
   map: ['map', 'map'],
+  related: ['related', 'lines'],
 };
 const TEXT_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = { heading: ['heading', 'heading'], note: ['note', 'text'], paragraph: ['words', 'text'] };
 

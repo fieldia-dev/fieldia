@@ -1,16 +1,18 @@
-import type { ButtonNode, DividerNode, ImageNode, MapNode, SlotNode, SpacerNode, TextNode } from '@fieldia/core';
+import type { ButtonNode, DividerNode, ImageNode, MapNode, RelatedNode, SlotNode, SpacerNode, TextNode } from '@fieldia/core';
+import { installListStyles, VIEWER_LABELS } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 
 /**
  * The blocks between fields on the canvas — words, a button, a line, room, a
  * picture, a slot the app fills, a map (its name and layers: the map itself
- * is in Try it) — drawn as the viewer draws them, so they sit
+ * is in Try it), a related list (its heading and columns: its records are in
+ * Try it) — drawn as the viewer draws them, so they sit
  * in the grid exactly where they will. Picked, words and a button's label are
  * typed in where they stand; a run of typing is one undo step.
  */
 
-export type BlockNode = TextNode | ButtonNode | DividerNode | SpacerNode | ImageNode | SlotNode | MapNode;
+export type BlockNode = TextNode | ButtonNode | DividerNode | SpacerNode | ImageNode | SlotNode | MapNode | RelatedNode;
 
 export interface BlockViews {
   /** The block's element, made or patched; `picked` opens its words to typing. */
@@ -55,7 +57,28 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
         return el('div', { class: 'fd-slot fd-canvas-block', 'data-node': id });
       case 'map':
         return el('div', { class: 'fd-map-preview fd-canvas-block', 'data-node': id });
+      case 'related':
+        // The list's own look, which the form draws it with.
+        void installListStyles(doc);
+        return el('div', { class: 'fd-related fd-canvas-block', 'data-node': id });
     }
+  }
+
+  /** A related list as the form draws it: its title and count, View all and New, its columns over two rows to come. */
+  function related(element: HTMLElement, node: RelatedNode) {
+    const labels = VIEWER_LABELS.en;
+    const w = designer.words.relatedPart;
+    const head = el('div', { class: 'fd-related-head' });
+    if (node.title) head.append(el('span', { class: 'fd-related-title' }, el('bdi', {}, node.title), el('span', { class: 'fd-related-count', 'aria-hidden': 'true' }, '0')));
+    const tools = el('span', { class: 'fd-related-tools' });
+    if (node.viewAll) tools.append(el('span', { class: 'fd-button fd-button-link' }, labels.relatedAll));
+    if (node.create !== false) tools.append(el('span', { class: 'fd-button fd-button-secondary' }, labels.relatedNew));
+    head.append(tools);
+    const header = el('tr', {}, ...node.columns.map((name) => el('th', { scope: 'col' }, el('span', { class: 'fd-list-head' }, node.fields[name]?.label ?? name))));
+    const row = () => el('tr', { class: 'fd-list-row' }, ...node.columns.map(() => el('td', {}, '\u00a0')));
+    const table = el('table', { class: 'fd-list-table' }, el('thead', {}, header), el('tbody', {}, row(), row()));
+    const list = el('div', { class: 'fd-list', 'data-in-record': '' }, el('div', { class: 'fd-list-scroll' }, table));
+    element.replaceChildren(head, list, el('p', { class: 'fd-related-preview-note' }, w.previewNote));
   }
 
   /** Words typed in where they stand: kept as they are while the cursor is in them. */
@@ -88,8 +111,8 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
         const w = designer.words.canvas;
         element.replaceChildren(el('strong', {}, node.label || w.map), el('span', {}, w.mapLayers(node.layers.map((layer) => layer.id))));
         element.style.minHeight = `${Math.round((node.height ?? 360) / 2)}px`;
-      }
-      const span = node.type === 'divider' ? undefined : node.type === 'map' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan;
+      } else if (node.type === 'related') related(element, node);
+      const span = node.type === 'divider' ? undefined : node.type === 'map' || node.type === 'related' ? (node.colspan ?? 12) : (node as { colspan?: number }).colspan;
       if (span) element.style.setProperty('--fd-span', String(span));
       else element.style.removeProperty('--fd-span');
       element.classList.toggle('fd-hidden-sometimes', node.invisible !== undefined);

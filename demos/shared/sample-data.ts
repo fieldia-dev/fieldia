@@ -1,4 +1,4 @@
-import { createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -23,6 +23,8 @@ import lists from '../../examples/pages/lists.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import invoices from '../../examples/pages/invoices.page.json';
 import contacts from '../../examples/pages/contacts.page.json';
+import customerAccount from '../../examples/pages/customer-account.page.json';
+import property from '../../examples/pages/property.page.json';
 import order from '../../examples/pages/order.page.json';
 import quickOrder from '../../examples/pages/quick-order.page.json';
 import newCustomer from '../../examples/pages/new-customer.page.json';
@@ -53,6 +55,7 @@ import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
+import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings } from './related-lists';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -65,6 +68,13 @@ export const pages: Record<string, Page> = {
   // 1,284 contacts to select all of, export and change in bulk, and the page each opens: shared/contacts.ts.
   contacts: contacts as Page,
   contact: contactPage,
+  // A customer with its invoices and quotations listed inside it, and a home with its viewings: shared/related-lists.ts.
+  'customer-account': customerAccount as Page,
+  property: property as Page,
+  // A record each of their rows opens: an invoice, a quotation, a viewing.
+  invoice: relatedLists.pages.invoice,
+  quotation: relatedLists.pages.quotation,
+  viewing: relatedLists.pages.viewing,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -143,7 +153,9 @@ export const pages: Record<string, Page> = {
  */
 export function pageFromQuery(params: URLSearchParams): Page {
   // The code page in the editor the demo's switch picked.
-  const page = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
+  const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
+  // A list opened for one record's records (`filter=`, a related list's View all by the app's route) shows them all, its own default filters off.
+  const page = params.get('filter') && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const dark = !page.look?.scheme && matchMedia('(prefers-color-scheme: dark)').matches;
@@ -170,13 +182,27 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
 }
 
 /** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
-const RECORD_PAGES: Record<string, string> = { contacts: 'contact', 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages };
+const RECORD_PAGES: Record<string, string> = {
+  contacts: 'contact',
+  'map-homes': 'map-home',
+  'map-couriers': 'map-courier',
+  'map-zones': 'map-week-order',
+  'map-heat': 'map-week-order',
+  ...calendarDemo.recordPages,
+  // An invoice from the invoices list, and from a customer's (View all, by the app's route — or in its dialog, over
+  // the customer, where the app has no route); a home's viewings, in View all's dialog over the home.
+  invoices: 'invoice',
+  'customer-account': 'invoice',
+  property: 'viewing',
+};
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
   const next = new URLSearchParams(params);
   next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
   next.set('record', String(id));
+  // What kept the list to one record's records is the list's, not the record's.
+  next.delete('filter');
   location.search = next.toString();
 }
 
@@ -202,9 +228,13 @@ export function optionsFromQuery(params: URLSearchParams): {
   translate?: (text: string) => string;
   user?: FormUser;
   now?: () => Date;
+  listFilter?: ResolvedFilter[];
 } {
   const saveStatus = params.get('saveStatus');
+  const listFilter = filterFromQuery(params);
   return {
+    // A list kept to one record's records by its address: a related list's View all, by the app's route.
+    ...(listFilter ? { listFilter } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
     ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
@@ -223,6 +253,10 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are.
     ...(params.get('page') === 'test-drive' ? { now: demoNow } : {}),
+    // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
+    // pager over the record moves to the next, its related lists that one's.
+    ...(params.get('page') === 'customer-account' ? { records: [1, ...Array.from({ length: 12 }, (_, i) => 20 + i)] } : {}),
+    ...(params.get('page') === 'property' ? { records: Array.from({ length: 64 }, (_, i) => i + 1) } : {}),
   };
 }
 
@@ -260,13 +294,13 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, ...relatedLists.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };
 
 /** The pages a step opens by their id: a new customer in a side panel, and a customer's record in the order's place. */
-export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page, ...real.opened };
+export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page, ...real.opened, invoices: invoices as Page, ...relatedLists.opened };
 
 /**
  * The app's pages, as the viewer's `pages` asks for them: a linked record's
@@ -376,6 +410,10 @@ export function sampleDataSource() {
       ...WI_HEAD_RECORDS,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
+      // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
+      viewing: sampleViewings(sampleHomes()),
+      agent: Object.fromEntries(Object.entries(AGENTS).map(([id, name]) => [id, { name }])),
+      quotation: sampleQuotations(),
       ...wiPicker.records,
       courier: sampleCouriers(),
       'food.order': { 1: sampleOrder() },

@@ -349,10 +349,13 @@ const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, fi
  * The fields of the records a many2many links to, for a table of them: its
  * node's `columns` name them, and the data source reads their values. Plain
  * values only — text, numbers, money, yes or no, dates, choices and links.
+ * A related list's records' fields are the same (`RelatedNode.fields`).
  */
-const LinkedFieldSchema = z
+export const LinkedFieldSchema = z
   .discriminatedUnion('type', [Char, Text, Integer, Float, Monetary, BooleanField, DateField, DateTime, LineSelection, Many2one])
   .meta({ id: 'LinkedField' });
+
+export type LinkedField = z.infer<typeof LinkedFieldSchema>;
 const Many2many = z
   .object({ type: z.literal('many2many'), ...common, relation, filter, createValues, fields: z.record(z.string().regex(FIELD_NAME), LinkedFieldSchema).optional() })
   .strict();

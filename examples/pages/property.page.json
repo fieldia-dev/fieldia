@@ -1,0 +1,283 @@
+{
+  "fieldia": "0.3",
+  "id": "property",
+  "title": "A property and its viewings",
+  "description": "A home for sale or rent with the viewings booked for it, listed inside the record.",
+  "data": {
+    "kind": "record",
+    "model": "home"
+  },
+  "phone": {
+    "country": "EG"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Home"
+    },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        {
+          "value": "flat",
+          "label": "Flat"
+        },
+        {
+          "value": "duplex",
+          "label": "Duplex"
+        },
+        {
+          "value": "penthouse",
+          "label": "Penthouse"
+        },
+        {
+          "value": "villa",
+          "label": "Villa"
+        }
+      ]
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [
+        {
+          "value": "sale",
+          "label": "For sale"
+        },
+        {
+          "value": "rent",
+          "label": "For rent"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currencyField": "currency",
+      "digits": [
+        12,
+        0
+      ],
+      "money": {
+        "currency": "code",
+        "at": "after",
+        "per": [
+          {
+            "period": "month",
+            "when": "offer == 'rent'"
+          }
+        ]
+      }
+    },
+    "currency": {
+      "type": "char",
+      "label": "Currency"
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms"
+    },
+    "area_m2": {
+      "type": "integer",
+      "label": "Area, m²"
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        },
+        {
+          "value": "october",
+          "label": "6th of October"
+        }
+      ]
+    },
+    "listed_on": {
+      "type": "date",
+      "label": "Listed on"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "The home, in a few words"
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "home",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-kind",
+            "field": "kind"
+          },
+          {
+            "type": "field",
+            "id": "f-offer",
+            "field": "offer"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms"
+          },
+          {
+            "type": "field",
+            "id": "f-area",
+            "field": "area_m2"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          }
+        ]
+      },
+      {
+        "type": "related",
+        "id": "viewings",
+        "title": "Viewings",
+        "icon": "calendar",
+        "model": "viewing",
+        "field": "home_id",
+        "fields": {
+          "starts_at": {
+            "type": "datetime",
+            "label": "When"
+          },
+          "client": {
+            "type": "char",
+            "label": "Client"
+          },
+          "phone": {
+            "type": "char",
+            "label": "Phone"
+          },
+          "agent_id": {
+            "type": "many2one",
+            "label": "Agent",
+            "relation": "agent"
+          },
+          "state": {
+            "type": "selection",
+            "label": "Status",
+            "options": [
+              {
+                "value": "planned",
+                "label": "Planned"
+              },
+              {
+                "value": "done",
+                "label": "Done"
+              },
+              {
+                "value": "no_show",
+                "label": "No show"
+              },
+              {
+                "value": "cancelled",
+                "label": "Cancelled"
+              }
+            ]
+          },
+          "feedback": {
+            "type": "char",
+            "label": "Feedback"
+          },
+          "home_id": {
+            "type": "many2one",
+            "label": "Home",
+            "relation": "home"
+          }
+        },
+        "columns": [
+          "starts_at",
+          "client",
+          "phone",
+          "agent_id",
+          "state",
+          "feedback"
+        ],
+        "cells": {
+          "phone": {
+            "widget": "phone"
+          },
+          "state": {
+            "widget": "dot",
+            "options": {
+              "tones": {
+                "planned": "info",
+                "done": "success",
+                "no_show": "warning",
+                "cancelled": "muted"
+              }
+            }
+          },
+          "feedback": {
+            "width": 32
+          }
+        },
+        "sort": [
+          {
+            "field": "starts_at",
+            "desc": true
+          }
+        ],
+        "limit": 5,
+        "searchFields": [
+          "client",
+          "agent_id",
+          "state"
+        ],
+        "viewAll": {
+          "page": "viewings"
+        }
+      }
+    ]
+  }
+}

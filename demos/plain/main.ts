@@ -11,6 +11,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { openByRoute } from '../shared/related-lists';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
@@ -75,6 +76,8 @@ const options: ViewerOptions = {
   dataSource,
   recordId: recordFromQuery(params, page),
   onOpenRecord: (id) => openRecord(params, id),
+  // The app's own route for a customer's invoices (View all): the list's address, kept to that customer's.
+  onOpen: (request) => openByRoute(params, request),
   skin: (params.get('skin') as Skin | null) ?? undefined,
   theme: (params.get('theme') as Theme | null) ?? undefined,
   dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,

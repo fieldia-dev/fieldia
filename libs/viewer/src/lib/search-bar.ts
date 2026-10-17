@@ -24,6 +24,8 @@ export interface SearchContext {
   /** A period as plain conditions, counted from now as the list counts days: for a person's own filter of one. */
   periods?: (period: FilterPeriod) => ResolvedFilter[];
   onChange: (facets: Facet[]) => void;
+  /** False: the box alone, with no menu of filters, groups and favourites — a list inside a record's. */
+  menu?: boolean;
 }
 
 /** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
@@ -209,18 +211,19 @@ export function searchBar(context: SearchContext) {
     );
   });
   const groupButtons = groupChoices.flatMap((choice) => (choice.matches('button') ? [choice as HTMLButtonElement] : [...choice.querySelectorAll('button')]));
-  const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
-  const favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change });
-
+  const menu = context.menu !== false;
   const group = (kind: string, iconName: string, title: string, ...parts: HTMLElement[]) =>
     el('div', { class: 'fd-search-group', 'data-group-kind': kind, role: 'group', 'aria-labelledby': `${panelId}-${kind}` }, heading(iconName, title, `${panelId}-${kind}`), ...parts);
-  const panel = el(
-    'div',
-    { class: 'fd-search-panel', id: panelId, hidden: '' },
-    group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
-    ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
-    group('favourites', 'star', labels.favourites, favourites.list, favourites.none, favourites.open, favourites.form)
-  );
+  const panel = el('div', { class: 'fd-search-panel', id: panelId, hidden: '' });
+  if (menu) {
+    const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
+    const favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change });
+    panel.append(
+      group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
+      ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
+      group('favourites', 'star', labels.favourites, favourites.list, favourites.none, favourites.open, favourites.form)
+    );
+  }
 
   function drawPanel() {
     const ids = (facets.find((f) => f.kind === 'filters') as Extract<Facet, { kind: 'filters' }> | undefined)?.ids ?? [];
@@ -241,7 +244,7 @@ export function searchBar(context: SearchContext) {
     showPanel(false);
     toggle.focus();
   });
-  const element = el('div', { class: 'fd-search' }, el('div', { class: 'fd-search-field' }, ...icon('search'), chips, input, toggle), offeredList, panel);
+  const element = el('div', { class: 'fd-search' }, el('div', { class: 'fd-search-field' }, ...icon('search'), chips, input, ...(menu ? [toggle] : [])), offeredList, ...(menu ? [panel] : []));
   // A press anywhere else closes the menu.
   const outside = (event: Event) => {
     if (!panel.hidden && !element.contains(event.target as Node)) showPanel(false);
