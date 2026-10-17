@@ -1,6 +1,7 @@
 /**
  * A related list on a record's page, in the designer: its tile, its panel — its title, the records it lists and their
- * link to this one, its columns, rows a page, New and View all — and the words its new one starts with.
+ * link to this one, its columns, its cards on a phone, rows a page, New and View all — and the words its new one
+ * starts with.
  */
 export const relatedPart = {
   tile: 'Related list',
@@ -34,6 +35,8 @@ export const relatedPart = {
   noModel: 'Name the model of the records it lists, as your data source names it.',
   notAName: (name: string) => `“${name}” is not a field’s name: letters, digits and _, not starting with a digit`,
   columnTwice: (name: string) => `“${name}” is a column already`,
+  cards: 'Cards on a phone',
+  notTheirs: (name: string) => `“${name}” is none of its records’ fields: add it as a column first`,
   previewNote: 'Its records show in Try it, once the record is saved.',
   more: (n: number) => `${n} more in its own JSON: a filter, an order, its cells`,
 };

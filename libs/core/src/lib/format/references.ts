@@ -1,6 +1,6 @@
 import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, MapCard, MapNode, Pin, RelatedNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
@@ -559,18 +559,7 @@ export class ReferenceCheck {
    * opening on one thing.
    */
   private checkListRows(list: ListNode, path: string) {
-    const card = list.card;
-    if (card) {
-      const at = `${path}.card`;
-      for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) this.need(card[key] as string, `${at}.${key}`);
-      if (card.image !== undefined) {
-        const def = this.need(card.image, `${at}.image`);
-        if (def && !PICTURES.has(def.type)) this.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
-      }
-      card.fields?.forEach((line, i) =>
-        (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`))
-      );
-    }
+    if (list.card) this.checkListCard(list.card, `${path}.card`, this.page.fields);
     for (const column of Object.keys(list.optionalColumns ?? {})) {
       if (!list.columns.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is no column of this list: a person shows or hides its columns`);
     }
@@ -588,6 +577,21 @@ export class ReferenceCheck {
       // Shown by a condition on each row's record.
       this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible']);
     });
+  }
+
+  /**
+   * What a list's card shows — a list page's, or a related list's of its own records' fields: its title, subtitle,
+   * status and lines each a field, its picture one that can hold a picture.
+   */
+  private checkListCard(card: ListCard, at: string, fields: Record<string, Field | LineField>) {
+    for (const key of ['title', 'subtitle', 'status'] as const) if (card[key] !== undefined) this.need(card[key] as string, `${at}.${key}`, fields);
+    if (card.image !== undefined) {
+      const def = this.need(card.image, `${at}.image`, fields);
+      if (def && !PICTURES.has(def.type)) this.report(`${at}.image`, `"${card.image}" is a ${def.type}; a card's picture is an image or binary field, or text holding a picture's address`);
+    }
+    card.fields?.forEach((line, i) =>
+      (Array.isArray(line) ? line : [line]).forEach((part, j) => this.need(typeof part === 'string' ? part : part.field, `${at}.fields[${i}]${Array.isArray(line) ? `[${j}]` : ''}${typeof part === 'string' ? '' : '.field'}`, fields))
+    );
   }
 
   /**
@@ -908,6 +912,8 @@ export class ReferenceCheck {
     if (!model || this.line) this.report(path, 'a related list shows the records that point at a record: it belongs on a record’s page');
     const fields = node.fields as Record<string, Field | LineField>;
     this.checkListed(node, fields, path);
+    // On a phone its rows are cards, as a list's: of its own records' fields.
+    if (node.card) this.checkListCard(node.card, `${path}.card`, fields);
     const link = has(fields, node.field) ? fields[node.field] : undefined;
     if (link && model && (link.type !== 'many2one' || link.relation !== model)) {
       this.report(`${path}.field`, `"${node.field}" ${link.type === 'many2one' ? `links to ${link.relation}` : `is a ${link.type}`}; the records listed point at this one by a many2one to ${model}`);

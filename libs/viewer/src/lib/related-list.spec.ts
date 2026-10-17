@@ -1,6 +1,7 @@
 import { createMemoryDataSource, type DataSource, type ListRequest, type ListResult, type OpenRequest, type OpenResult, type Page, type Values } from '@fieldia/core';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
+import { cardsPart, listPart, partsFor } from './viewer-parts';
 
 /**
  * A related list inside a record: a customer's invoices, a page at a time, searched, counted, each opening in a
@@ -346,5 +347,75 @@ describe('a related list inside a record', () => {
     await until(() => rows(host).length === 2);
     // No title: no heading to name it by, its count in its pager.
     expect(part(host).querySelector('.fd-related-head')?.hasAttribute('hidden')).toBe(true);
+  });
+});
+
+describe('a related list on paper', () => {
+  it('says how many of how many it shows where they run past a page, and nothing where they fit', async () => {
+    const { host } = await mount();
+    await until(() => rows(host).length === 2);
+    const shown = () => part(host).querySelector('.fd-list-shown') as HTMLElement;
+    expect([shown().hidden, shown().textContent]).toEqual([false, '2 of 3']);
+    (part(host).querySelector('[aria-label="Next page"]') as HTMLButtonElement).click();
+    await until(() => rows(host).length === 1);
+    expect(shown().textContent).toBe('1 of 3');
+    const fits = await mount({ page: customer({ limit: 5 }) });
+    await until(() => rows(fits.host).length === 3);
+    expect((part(fits.host).querySelector('.fd-list-shown') as HTMLElement).hidden).toBe(true);
+  });
+});
+
+describe('a related list on a phone', () => {
+  /** The list's width told as the browser tells it, at the next frame as a list draws it. */
+  function sized() {
+    let told: ((entries: { contentRect: { width: number } }[]) => void) | null = null;
+    const was = (window as unknown as { ResizeObserver?: unknown }).ResizeObserver;
+    (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+      constructor(callback: (entries: { contentRect: { width: number } }[]) => void) {
+        told = callback;
+      }
+      observe() {}
+      disconnect() {}
+    };
+    return {
+      async width(width: number) {
+        told!([{ contentRect: { width } }]);
+        await new Promise((done) => requestAnimationFrame(done));
+      },
+      restore: () => ((window as unknown as { ResizeObserver?: unknown }).ResizeObserver = was),
+    };
+  }
+  const phoneCard = { card: { title: 'name', status: 'state', fields: ['amount'] }, cells: { state: { widget: 'badge', options: { tones: { posted: 'success' } } } } };
+
+  it('asks for the cards part where it has cards, as a list does', () => {
+    expect(partsFor(customer())).toEqual([listPart]);
+    expect(partsFor(customer(phoneCard))).toEqual([listPart, cardsPart]);
+  });
+
+  it('draws its rows as cards, as a list’s: its title, its status a pill in its tone, its lines — a card opening its record', async () => {
+    const size = sized();
+    try {
+      const { host } = await mount({ page: customer(phoneCard), pages: { invoice: invoicePage } });
+      await until(() => rows(host).length === 2);
+      const list = part(host).querySelector('.fd-list') as HTMLElement;
+      expect(list.hasAttribute('data-as')).toBe(false);
+      await size.width(390);
+      expect(list.dataset['as']).toBe('cards');
+      const cards = [...part(host).querySelectorAll('.fd-list-card')];
+      expect(cards.map((card) => card.querySelector('.fd-list-card-title')?.textContent)).toEqual(['INV/1', 'INV/2']);
+      // Its status as its column draws it, a pill in its tone; its line labelled by its own records' field.
+      const pill = cards[0].querySelector('.fd-list-card-head .fd-value-badge') as HTMLElement;
+      expect([pill.textContent, pill.dataset['tone']]).toEqual(['Posted', 'success']);
+      expect(cards[0].querySelector('.fd-list-card-lines [data-field="amount"]')?.textContent).toBe('Total100');
+      // A card is its row: pressed, its record opens in a dialog of the model's page.
+      (cards[0].closest('.fd-list-row') as HTMLElement).click();
+      await until(() => dialog());
+      expect(dialog()?.querySelector('.fd-form-dialog-title')?.textContent).toBe('INV/1');
+      // Wide again: its table.
+      await size.width(900);
+      expect(list.hasAttribute('data-as')).toBe(false);
+    } finally {
+      size.restore();
+    }
   });
 });

@@ -487,8 +487,16 @@ export interface RelatedNode {
   fields: { [name: string]: LinkedField };
   /** The fields shown, in order. */
   columns: string[];
-  /** Each column's cells, as a list's: a widget (`dot`, `phone`), an icon before the words, a width, a side, a total. */
+  /** Each column's cells, as a list's: a widget (`dot`, `badge`, `phone`), an icon before the words, a width, a side, a total. */
   cells?: { [column: string]: ListCell };
+  /**
+   * Each record as a card where the record is as narrow as a phone (520px or
+   * less), as a list's (`ListNode.card`): its title, a picture or a person's
+   * initials, a few lines and its status as a pill, each a field of its own
+   * `fields`; `{}` takes them from the columns. A table on any width unless
+   * given.
+   */
+  card?: ListCard;
   /** More that the records listed keep to — only posted invoices — as a link's filter: `valueFrom` reads this record. */
   filter?: FilterItem[];
   /** Their order: by the first, then the next. */
@@ -1795,6 +1803,7 @@ export const RelatedNodeSchema = z
     fields: z.record(fieldName, LinkedFieldSchema),
     columns: z.array(fieldName).min(1),
     cells: z.record(fieldName, ListCellSchema).optional(),
+    card: ListCardSchema.optional(),
     filter: z.array(FilterItemSchema).min(1).optional(),
     sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
     limit: z.int().min(1).max(100).optional(),

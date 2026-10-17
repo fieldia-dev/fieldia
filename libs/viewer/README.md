@@ -378,8 +378,10 @@ once saved (`"create": false` for none), and **View all** opens the page
 `viewAll` names showing this record's records alone, as an `open` step opens
 one — in a dialog, a side panel or this page's place, or your app's own way
 (`onOpen`, with the conditions in `request.filter`). Before the record's first
-save it says nothing points at it yet, with no New. Without `list` in the data
-source it is not shown. An answer that comes once another record is shown — the
+save it says nothing points at it yet, with no New. With `card`, its rows are
+cards on a phone, as a list's (each a field of its own `fields`); on paper, its
+rows as shown and "5 of 23" where they run past a page. Without `list` in the
+data source it is not shown. An answer that comes once another record is shown — the
 pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
@@ -417,7 +419,8 @@ the page's; a header's edge drags (or its grip takes the arrow keys) to size
 its column; the header and the first column stay in view as the rows scroll.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
-Export writes the columns shown, in their order. The cards and the columns come
+Export and Print write the columns shown, in their order; on paper a list is
+its table, cards and a gallery printed as rows. The cards and the columns come
 in parts of their own (`fieldia.cards.js`, `fieldia.columns.js`), only where a
 list asks. See [lists people shape](https://fieldia.dev/lists/#shape).
 
@@ -482,8 +485,9 @@ holds it) or `bytes` (a Blob, an ArrayBuffer, a Uint8Array).
 
 **A list's Print** (`"print": true`, off unless set, as Export is): every record
 the search finds — each page of them asked of the data source, as Export's
-every match is — the columns as the list shows them, under its Group By
-headings with their counts and sums, the totals under them; over them the
+every match is — the columns as the list shows them (the person's, in their
+order), under its Group By headings with their counts and sums, the totals
+under them; over them the
 list's title, its filters in words, how many and the day; its footer at the
 foot of every sheet where the browser keeps room for it there (Chromium,
 Firefox), else once after the rows. See

@@ -116,6 +116,17 @@ describe('a related list', () => {
     expect(found).toContain(`${at}.cells.name.lead.field: no field "kind"`);
   });
 
+  it('takes a card for a phone, as a list does, of its own records’ fields: a picture one that can hold one', () => {
+    const card = { title: 'name', subtitle: 'partner_id', status: 'state', lead: true, fields: ['amount', ['date', { field: 'name', unit: 'ref' }]] };
+    expect(problems(customer({ card }))).toEqual([]);
+    expect(RelatedNodeSchema.safeParse({ ...invoices, card: {} }).success).toBe(true);
+    expect(RelatedNodeSchema.safeParse({ ...invoices, card: { size: 'large' } }).success).toBe(false);
+    const found = problems(customer({ card: { title: 'company_id', image: 'amount', fields: ['due'] } })).join('\n');
+    expect(found).toContain(`${at}.card.title: no field "company_id"`);
+    expect(found).toContain(`${at}.card.image: "amount" is a monetary; a card's picture is an image or binary field`);
+    expect(found).toContain(`${at}.card.fields[0]: no field "due"`);
+  });
+
   it('points at this record by a link of its records to this model, where its fields name the link', () => {
     expect(problems(customer({ fields: { ...invoices.fields, partner_id: { type: 'many2one', label: 'Vendor', relation: 'supplier' } } })).join('\n')).toContain(
       `${at}.field: "partner_id" links to supplier; the records listed point at this one by a many2one to partner`

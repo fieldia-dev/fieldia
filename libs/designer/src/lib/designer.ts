@@ -20,6 +20,7 @@ import {
   type MapLayer,
   type MapNode,
   type LinkedField,
+  type ListCard,
   type Page,
   type PageLook,
   type RelatedNode,
@@ -50,7 +51,7 @@ import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
-import { allIds, containers, findContainer, findNode, findTab, firstSection, fieldReads, keptFields, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
+import { allIds, containers, findContainer, findNode, findTab, firstSection, fieldReads, keptFields, listCardFields, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
 import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
@@ -1848,6 +1849,8 @@ export interface RelatedPatch {
   limit?: number | null;
   create?: boolean;
   viewAll?: NonNullable<RelatedNode['viewAll']> | null;
+  /** Its records as cards on a phone, as a list's: what a card shows ({} for the columns'); null for none. */
+  card?: ListCard | null;
 }
 
 /** A related list changed as asked: names that are no field's refused, and what named a column taken away gone with it. */
@@ -1897,6 +1900,25 @@ function changeRelated(node: RelatedNode, patch: RelatedPatch): void {
   else if (patch.create === false) node.create = false;
   if (patch.viewAll === null) delete node.viewAll;
   else if (patch.viewAll !== undefined) node.viewAll = { page: patch.viewAll.page, ...(patch.viewAll.as && patch.viewAll.as !== 'dialog' ? { as: patch.viewAll.as } : {}) };
+  if (patch.card === null) delete node.card;
+  else if (patch.card !== undefined) {
+    // Its card shows its own records' fields: one that is not theirs is refused, as a column's name is.
+    for (const name of listCardFields(patch.card)) {
+      named(name);
+      if (!Object.prototype.hasOwnProperty.call(node.fields, name)) throw new Refusal((w) => w.relatedPart.notTheirs(name));
+    }
+    node.card = JSON.parse(JSON.stringify(patch.card)) as ListCard;
+  }
+  // A field taken away with its column goes from the card too: its lines, its title, picture and status.
+  if (patch.columns !== undefined && node.card) {
+    const card: ListCard = node.card;
+    for (const key of ['title', 'subtitle', 'image', 'status'] as const) if (card[key] !== undefined && !Object.prototype.hasOwnProperty.call(node.fields, card[key] as string)) delete card[key];
+    if (card.fields) {
+      const kept = card.fields.filter((line) => (Array.isArray(line) ? line : [line]).every((part) => Object.prototype.hasOwnProperty.call(node.fields, typeof part === 'string' ? part : part.field)));
+      if (kept.length) card.fields = kept;
+      else delete card.fields;
+    }
+  }
 }
 
 /** The fields possible duplicates are found by (`duplicates`) that are still on the page and of a kind to compare: none left, the setting goes. */

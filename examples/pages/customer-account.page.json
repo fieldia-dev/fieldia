@@ -154,6 +154,7 @@
             "total": "sum"
           }
         },
+        "card": { "title": "name", "status": "state", "lead": true, "fields": ["amount", "invoice_date", "due_date"] },
         "sort": [
           {
             "field": "invoice_date",
@@ -268,6 +269,7 @@
                     "value": "lost"
                   }
                 ],
+                "card": { "title": "name", "status": "state", "lead": true, "fields": ["amount", "date", "valid_until"] },
                 "sort": [
                   {
                     "field": "date",

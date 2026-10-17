@@ -8,7 +8,8 @@ import { openMenu } from './menu';
  * as a card on a phone, a gallery of cards on the switcher (and whether the
  * list opens on it, its cards' size), and what a card shows — its title, the
  * words under it, its picture, its status pill and its lines, the columns'
- * where it says nothing.
+ * where it says nothing. A related list's panel has the same, but for the
+ * gallery: its records on a phone as cards, of its own fields.
  */
 
 /** Fields a card's words can come from. */
@@ -21,7 +22,31 @@ const SIZES = ['small', 'medium', 'large'] as const;
 
 const listOf = (page: Page) => page.layout as ListNode;
 
+/** Where a card's settings are kept: a list page's list (and its gallery), or a related list of a record's page. */
+export interface CardsSource {
+  /** Its card as the page holds it: none for no cards. */
+  card(page: Page): ListCard | undefined;
+  /** Its card changed (null: no cards); false where the change was refused. */
+  setCard(card: ListCard | null): boolean;
+  /** The fields a card may show, of the kinds asked: a list's page's and its model's, a related list's own. */
+  fields(page: Page, kinds: ReadonlySet<string>): { name: string; field: Field }[];
+  /** Its gallery, where it has one to offer: a list page's. */
+  gallery?: { get(page: Page): ListGallery | undefined; set(gallery: ListGallery | null): boolean };
+}
+
+/** A list page's cards and gallery, in its panel. */
 export function cardsSection(el: ElementFactory, designer: Designer) {
+  return cardSettings(el, designer, {
+    card: (page) => listOf(page).card,
+    setCard: (card) => designer.setListOptions({ card }),
+    // The page's fields first, then the model's not on it yet.
+    fields: (page, kinds) => [...Object.entries(page.fields).map(([name, field]) => ({ name, field })), ...designer.modelFields()].filter(({ field }) => kinds.has(field.type)),
+    gallery: { get: (page) => listOf(page).gallery, set: (gallery) => designer.setListOptions({ gallery }) },
+  });
+}
+
+/** A card's settings — each record as a card on a phone, and, where offered, a gallery — over where they are kept. */
+export function cardSettings(el: ElementFactory, designer: Designer, source: CardsSource) {
   const w = designer.words.list.cards;
   const words = designer.words.list;
   const prop = (text: string, control: HTMLElement) => el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, text), control);
@@ -53,37 +78,36 @@ export function cardsSection(el: ElementFactory, designer: Designer) {
     el('label', { class: 'fd-q-required' }, lead, el('span', {}, words.cardLead)),
     el('p', { class: 'fd-properties-hint' }, w.note)
   );
+  const offersGallery = source.gallery;
   const element = el(
     'div',
     { class: 'fd-prop', 'data-part': 'cards' },
-    el('span', { class: 'fd-prop-name' }, w.title),
+    // In a list's panel, under a heading of its own; a related list's is a setting row, named by it.
+    ...(offersGallery ? [el('span', { class: 'fd-prop-name' }, w.title)] : []),
     el('label', { class: 'fd-q-required' }, onPhone, el('span', {}, w.onPhone)),
-    el('label', { class: 'fd-q-required' }, gallery, el('span', {}, w.gallery)),
-    galleryRows,
+    ...(offersGallery ? [el('label', { class: 'fd-q-required' }, gallery, el('span', {}, w.gallery)), galleryRows] : []),
     details
   );
 
-  /** The page's fields first, then the model's not on it yet, of the kinds asked. */
-  const fieldsOf = (page: Page, kinds: ReadonlySet<string>) =>
-    [...Object.entries(page.fields).map(([name, field]) => ({ name, field })), ...designer.modelFields()].filter(({ field }) => kinds.has(field.type));
+  const fieldsOf = (page: Page, kinds: ReadonlySet<string>) => source.fields(page, kinds);
   const fill = (box: HTMLSelectElement, choices: { name: string; field: Field }[], none: string) =>
     box.replaceChildren(el('option', { value: '' }, none), ...choices.map(({ name, field }) => el('option', { value: name }, field.label)));
-  const card = (): ListCard => JSON.parse(JSON.stringify(listOf(designer.getPage()).card ?? {})) as ListCard;
+  const card = (): ListCard => JSON.parse(JSON.stringify(source.card(designer.getPage()) ?? {})) as ListCard;
   /** The card with a change, its empty parts left out: `{}` takes it all from the columns. */
   const change = (edit: (next: ListCard) => void) => {
     const next = card();
     edit(next);
     for (const key of Object.keys(next) as (keyof ListCard)[]) if (next[key] === '' || next[key] === undefined || (Array.isArray(next[key]) && !(next[key] as unknown[]).length)) delete next[key];
-    return designer.setListOptions({ card: next });
+    return source.setCard(next);
   };
   const galleryChange = (edit: (next: ListGallery) => void) => {
-    const next = { ...listOf(designer.getPage()).gallery };
+    const next = { ...offersGallery?.get(designer.getPage()) };
     edit(next);
-    return designer.setListOptions({ gallery: next });
+    return offersGallery?.set(next) ?? false;
   };
 
-  onPhone.addEventListener('change', () => designer.setListOptions({ card: onPhone.checked ? card() : null }));
-  gallery.addEventListener('change', () => designer.setListOptions({ gallery: gallery.checked ? {} : null }));
+  onPhone.addEventListener('change', () => source.setCard(onPhone.checked ? card() : null));
+  gallery.addEventListener('change', () => offersGallery?.set(gallery.checked ? {} : null));
   opens.addEventListener('change', () => galleryChange((next) => (opens.checked ? (next.opens = 'gallery') : delete next.opens)));
   size.addEventListener('change', () => galleryChange((next) => (size.value === 'medium' ? delete next.size : (next.size = size.value as ListGallery['size']))));
   heading.addEventListener('change', () => change((next) => (next.title = heading.value || undefined)));
@@ -111,15 +135,16 @@ export function cardsSection(el: ElementFactory, designer: Designer) {
   return {
     element,
     update(page: Page) {
-      const list = listOf(page);
-      onPhone.checked = !!list.card;
-      gallery.checked = !!list.gallery;
-      galleryRows.hidden = !list.gallery;
-      opens.checked = list.gallery?.opens === 'gallery';
-      size.value = list.gallery?.size ?? 'medium';
+      const shown = source.card(page);
+      const galleryNow = offersGallery?.get(page);
+      onPhone.checked = !!shown;
+      gallery.checked = !!galleryNow;
+      galleryRows.hidden = !galleryNow;
+      opens.checked = galleryNow?.opens === 'gallery';
+      size.value = galleryNow?.size ?? 'medium';
       // What a card shows, where the list has cards or a gallery.
-      details.hidden = !list.card && !list.gallery;
-      const shows = list.card ?? {};
+      details.hidden = !shown && !galleryNow;
+      const shows = shown ?? {};
       fill(heading, fieldsOf(page, SAYABLE), w.fromColumns);
       heading.value = shows.title ?? '';
       fill(under, fieldsOf(page, SAYABLE), w.nothing);
@@ -132,7 +157,8 @@ export function cardsSection(el: ElementFactory, designer: Designer) {
       const now = shows.fields ?? [];
       lines.replaceChildren(
         ...cardLines({ fields: now }).map((parts, i) => {
-          const named = parts.map((part) => page.fields[part.field]?.label ?? part.field).join(' · ');
+          const labelled = new Map(fieldsOf(page, SAYABLE).map(({ name, field }) => [name, field.label]));
+          const named = parts.map((part) => page.fields[part.field]?.label ?? labelled.get(part.field) ?? part.field).join(' · ');
           const remove = el('button', { type: 'button', class: 'fd-chip-remove', 'aria-label': words.takeOffCard(named) }, '×');
           remove.addEventListener('click', () => change((next) => (next.fields = now.filter((_, j) => j !== i))));
           return el('span', { class: 'fd-chip' }, named, remove);

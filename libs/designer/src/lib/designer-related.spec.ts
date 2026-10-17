@@ -122,6 +122,28 @@ describe('a related list on a page, in the designer', () => {
     expect(node().columns).toEqual(['name']);
   });
 
+  it('takes a card for a phone of its own records’ fields, refusing one of no column’s, and lets a column go from it', () => {
+    const { designer, id, node } = withRelated();
+    designer.updateRelated(id, {
+      columns: [
+        { name: 'name', field: { type: 'char', label: 'Number' } },
+        { name: 'amount', field: { type: 'integer', label: 'Total' } },
+      ],
+    });
+    expect(designer.updateRelated(id, { card: { title: 'name', fields: ['amount'], lead: true } })).toBe(true);
+    expect(node().card).toEqual({ title: 'name', fields: ['amount'], lead: true });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.updateRelated(id, { card: { title: 'name', status: 'state' } })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toContain('“state” is none of its records’ fields');
+    // A column taken away goes from its card too; none left, the card takes the columns'.
+    designer.updateRelated(id, { columns: [{ name: 'name', field: { type: 'char', label: 'Number' } }] });
+    expect(node().card).toEqual({ title: 'name', lead: true });
+    designer.updateRelated(id, { card: null });
+    expect(node().card).toBeUndefined();
+    designer.undo();
+    expect(node().card).toEqual({ title: 'name', lead: true });
+  });
+
   it('is said as a change: added, changed', () => {
     const { designer, id } = withRelated();
     const before = designer.getPage();
@@ -199,6 +221,30 @@ describe('a related list’s panel', () => {
     expect(opensIn.hidden).toBe(false);
     opensIn.querySelector<HTMLButtonElement>('[data-choice="panel"]')!.click();
     expect(node().viewAll).toEqual({ page: 'viewings', as: 'panel' });
+  });
+
+  it('turns its records into cards on a phone, as a list’s panel does, of its own fields, with no gallery', () => {
+    const { designer, id, node, control, host } = mount();
+    designer.updateRelated(id, {
+      columns: [
+        { name: 'name', field: { type: 'char', label: 'Number' } },
+        { name: 'state', field: { type: 'char', label: 'Status' } },
+      ],
+    });
+    const row = host.querySelector<HTMLElement>('[data-setting="Cards on a phone"]')!;
+    expect(row.querySelector('[aria-label="A gallery of cards, on any width"]')).toBeNull();
+    const onPhone = control<HTMLInputElement>('Each record as a card on a phone');
+    expect(onPhone.checked).toBe(false);
+    onPhone.click();
+    expect(node().card).toEqual({});
+    // What it shows: its own records' fields, by their words.
+    const status = control<HTMLSelectElement>('Status pill');
+    expect([...status.options].map((option) => option.textContent)).toEqual(['As the columns say', 'Number', 'Status']);
+    status.value = 'state';
+    status.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node().card).toEqual({ status: 'state' });
+    onPhone.click();
+    expect(node().card).toBeUndefined();
   });
 });
 

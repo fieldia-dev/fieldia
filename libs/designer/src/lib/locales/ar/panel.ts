@@ -146,6 +146,7 @@ const NAMES: Record<string, string> = {
   'Fewest seconds to fill': 'أقل عدد من الثواني للملء',
   'Captcha drawn in': 'اختبار كابتشا يُرسم في',
   'Records of': 'سجلات من',
+  'Cards on a phone': 'بطاقات على الهاتف',
   'Their link to this record': 'رابطها بهذا السجل',
   'Rows a page': 'الصفوف في الصفحة',
   New: 'جديد',

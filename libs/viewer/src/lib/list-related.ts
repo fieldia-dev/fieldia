@@ -46,8 +46,8 @@ export interface RelatedPart {
 }
 
 /**
- * A related list's records as a list page of their own: their model and fields, its columns, cells, order and search,
- * a page of `limit` rows (5 unless said), nothing to choose; the time zone, phones, look and language of the record's
+ * A related list's records as a list page of their own: their model and fields, its columns, cells, cards, order and
+ * search, a page of `limit` rows (5 unless said), nothing to choose; the time zone, phones, look and language of the record's
  * page, which they are shown in.
  */
 export function relatedListPage(page: Page, node: RelatedNode): Page {
@@ -60,6 +60,8 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
     pageSize: node.limit ?? 5,
     ...(node.sort ? { sort: node.sort } : {}),
     ...(node.cells ? { cells: node.cells } : {}),
+    // On a phone its rows are cards, as a list's: the cards part draws them, its table's own rows.
+    ...(node.card ? { card: node.card } : {}),
     ...(node.searchFields ? { searchFields: node.searchFields } : {}),
   };
   return {

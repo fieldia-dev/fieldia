@@ -103,7 +103,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await dialog(page).locator('[data-node="f-amount"] input').fill('777');
     await dialog(page).getByRole('button', { name: 'Save & Close' }).click();
     await expect(dialog(page)).toBeHidden();
-    await expect(rows(invoices).first().locator('td').last()).toHaveText('EGP 777.00');
+    await expect(rows(invoices).first().locator('td[data-col="amount"]')).toHaveText('EGP 777.00');
     // The focus back on its row.
     await expect(rows(invoices).first()).toBeFocused();
   });
@@ -144,6 +144,57 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await page.getByRole('tab', { name: 'Quotations' }).click();
     const quoted = (await records<Quotation>(page, 'quotation')).filter((q) => q.partner_id.id === 20 && q.state !== 'lost');
     await expect(rows(quotations)).toHaveCount(Math.min(5, quoted.length));
+  });
+
+  test('on a phone, its invoices are cards, as a list’s: the number, its status a pill in its tone, its amount — a card opens its invoice', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const { problems } = await open(page, 'plain', CUSTOMER);
+    const mine = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1).sort(latestFirst);
+    const invoices = part(page, 'invoices');
+    await expect(invoices.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+    await expect(invoices.locator('.fd-list-card-title')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
+    const first = rows(invoices).first();
+    const states: Record<string, [string, string]> = { draft: ['Draft', 'muted'], sent: ['Sent', 'info'], paid: ['Paid', 'success'] };
+    const pill = first.locator('.fd-list-card-head .fd-value-badge');
+    await expect(pill).toHaveText(states[mine[0].state][0]);
+    await expect(pill).toHaveAttribute('data-tone', states[mine[0].state][1]);
+    // Its amount leads its lines, as on the invoices list's cards.
+    await expect(first.locator('.fd-list-card-lines > div[data-field="amount"] dd')).toHaveText(money(mine[0].amount));
+    await expect(first.locator('.fd-list-card-lines')).toHaveAttribute('data-lead', '');
+    // The table's columns are not drawn; each card is, in full, inside the screen.
+    await expect(first.locator('td[data-col="invoice_date"]')).toBeHidden();
+    const box = (await first.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+    await expectNoSidewaysScroll(page);
+    await first.scrollIntoViewIfNeeded();
+    await screen(page, 'related-invoices-phone-cards', { viewport: true });
+    // A card is its row: pressed, its invoice opens in a dialog.
+    await first.click();
+    await expect(dialog(page).locator('.fd-form-dialog-title')).toHaveText(mine[0].name);
+    expect(problems).toEqual([]);
+  });
+
+  test('on paper, its invoices as shown — five, and “5 of” how many — without its pager, search or buttons', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CUSTOMER);
+    const mine = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1).sort(latestFirst);
+    const invoices = part(page, 'invoices');
+    await expect(rows(invoices)).toHaveCount(5);
+    const shown = invoices.locator('.fd-list-shown');
+    await expect(shown).toBeHidden();
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
+    await expect(shown).toBeVisible();
+    await expect(shown).toHaveText(`5 of ${mine.length}`);
+    await expect(invoices.locator('.fd-pager')).toBeHidden();
+    await expect(invoices.locator('.fd-search-input')).toBeHidden();
+    await expect(button(invoices, 'New')).toBeHidden();
+    await screen(page, 'related-invoices-print');
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await expect(shown).toBeHidden();
+    expect(problems).toEqual([]);
   });
 
   test('a new customer: nothing points at it until it is saved, then none yet and New', async ({ page }) => {

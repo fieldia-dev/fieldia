@@ -32,6 +32,8 @@ export const relatedPart: DesignerWords['relatedPart'] = {
   noModel: 'سمِّ نموذج السجلات التي تعرضها كما يسميه مصدر بياناتك.',
   notAName: (name) => `«${name}» ليس اسم حقل: حروف وأرقام و_ ولا يبدأ برقم`,
   columnTwice: (name) => `«${name}» عمود موجود بالفعل`,
+  cards: 'بطاقات على الهاتف',
+  notTheirs: (name) => `«${name}» ليس من حقول سجلاتها: أضفه عمودًا أولًا`,
   previewNote: 'تظهر سجلاتها في «تجربة» بعد حفظ السجل.',
   more: (n) => `${n} أخرى في JSON الخاص بها: عامل تصفية وترتيب وخلاياها`,
 };

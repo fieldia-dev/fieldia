@@ -1,6 +1,7 @@
-import type { LinkedField, Page, RelatedNode } from '@fieldia/core';
+import type { Field, LinkedField, Page, RelatedNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer, RelatedPatch } from './designer';
+import { cardSettings } from './list-cards-settings';
 import { locate } from './layout-tree';
 import type { BlockContent } from './panel-block';
 import { segmented, setting } from './panel-controls';
@@ -9,8 +10,9 @@ import { setHidden } from './writes';
 
 /**
  * A related list's own settings, on the Content tab: its title; the model of the records it lists and their link to
- * this record; its columns, each a field of theirs — its words, its name and its kind; how many rows a page holds;
- * New; and View all's page and where it opens. Its filter, order and cells are its JSON's. Its records show in Try it.
+ * this record; its columns, each a field of theirs — its words, its name and its kind; its records as cards on a phone,
+ * as a list's, of its own fields; how many rows a page holds; New; and View all's page and where it opens. Its filter,
+ * order and cells are its JSON's. Its records show in Try it.
  */
 
 /** The kinds a new column can be, plainly: a choice's options and a link's model are set in its JSON. */
@@ -110,6 +112,13 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
     if (focusLast) (rows[rows.length - 1]?.querySelector('input') as HTMLInputElement | null)?.focus();
   }
 
+  // ---- its records as cards on a phone, as a list's: of its own records' fields ----
+  const cards = cardSettings(el, designer, {
+    card: (page) => nodeOf(page)?.card,
+    setCard: (card) => change({ card }),
+    fields: (page, kinds) => Object.entries(nodeOf(page)?.fields ?? {}).map(([name, def]) => ({ name, field: def as Field })).filter(({ field: def }) => kinds.has(def.type)),
+  });
+
   // ---- rows a page, New, View all ----
   const rows = settingNumber(el, designer, {
     label: w.rows,
@@ -154,6 +163,7 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
     }
     fieldHint.textContent = w.fieldHint(page.data.kind === 'record' ? page.data.model : '…');
     drawColumns(node, focusLast);
+    cards.update(page);
     rows.refresh();
     create.checked = node.create !== false;
     if (!focused(allPage)) {
@@ -170,6 +180,7 @@ export function relatedContent(el: ElementFactory, designer: Designer, id: strin
       setting(el, 'content', 'Records of', model, { hint: w.modelHint, words: w.model }),
       setting(el, 'content', 'Their link to this record', field, { hint: fieldHint, words: w.field }),
       setting(el, 'content', 'Columns', [columnsBox, addColumn], { words: w.columns }),
+      setting(el, 'content', 'Cards on a phone', cards.element, { words: w.cards }),
       setting(el, 'content', 'Rows a page', rows.input, { hint: w.rowsHint, words: w.rows }),
       setting(el, 'content', 'New', el('label', { class: 'fd-q-required' }, create, el('span', {}, w.create)), { hint: w.createHint, words: w.newWord }),
       setting(el, 'content', 'View all opens the page', allPage, { hint: w.viewAllHint, words: w.viewAll }),

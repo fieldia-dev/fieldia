@@ -74,8 +74,8 @@ const markdownAlone = (node: SectionNode) => {
  * a record's head, a button split, toggled or shown by its icon alone, or a
  * group's work heading; the list part for a list or a related list, and beside
  * a list the filters part for its filter bar, the cards part for its cards
- * (`card`, `gallery`) and the columns part for the columns a person shapes
- * (`optionalColumns`); and the
+ * (`card`, `gallery`; a related list's `card` too) and the columns part for the
+ * columns a person shapes (`optionalColumns`); and the
  * widgets' own for the fields that need them (a work item's text, a links box,
  * a path picker, a choice in Fieldia's own list, a date's box and calendar, a table of lines or of a many2many's
  * records, a business widget, a file, a picture, a signature or a PDF field, the survey kinds, booking slots) — unless the app's
@@ -139,9 +139,11 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
       if (node['search'] === 'fields') found.add(filtersPart);
       if (phoneColumns(page, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
-    // A related list is drawn by the list part's table, its records' phones as its own fields say.
+    // A related list is drawn by the list part's table, its records' phones as its own fields say, its rows as cards
+    // on a phone as a list's.
     else if (node.type === 'related') {
       found.add(listPart);
+      if (node['card']) found.add(cardsPart);
       const fields = node['fields'] && typeof node['fields'] === 'object' ? (node['fields'] as Page['fields']) : {};
       if (phoneColumns({ ...page, fields }, node as { columns?: unknown; cells?: unknown }).length) found.add(phonePart);
     }
