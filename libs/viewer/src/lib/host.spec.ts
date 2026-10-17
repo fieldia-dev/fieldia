@@ -110,6 +110,21 @@ describe('words said: a toast', () => {
     expect(toasts().map((t) => t.getAttribute('data-tone'))).toEqual(['warning']);
   });
 
+  it('a button pressed: what earlier presses said goes, and its own words speak for what is done now', async () => {
+    // Block, then Activate at once: never "Customer blocked" left over an active customer.
+    const viewer = mount(order([button('block', 'Block', [{ do: 'say', message: 'Customer blocked', tone: 'success' }]), button('activate', 'Activate', [{ do: 'say', message: 'Customer active again', tone: 'success' }, { do: 'say', message: 'Orders are taken', tone: 'info' }])]));
+    press('Block');
+    await until(() => toasts().length === 1);
+    expect(toasts().map((t) => t.firstChild?.textContent)).toEqual(['Customer blocked']);
+    press('Activate');
+    await until(() => toasts().length === 2);
+    // Both of this press's words, and nothing of the one before.
+    expect(toasts().map((t) => t.firstChild?.textContent)).toEqual(['Customer active again', 'Orders are taken']);
+    // Steps run by the app, not pressed, add to what is shown, as before.
+    await viewer.run([{ do: 'say', message: 'Synced', tone: 'info' }]);
+    expect(toasts().map((t) => t.firstChild?.textContent)).toEqual(['Customer active again', 'Orders are taken', 'Synced']);
+  });
+
   it('goes by itself after a moment, but not while the pointer or the focus is on it', async () => {
     jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] });
     const viewer = mount(order());

@@ -491,11 +491,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
   /**
    * A press runs its steps one run at a time: the button busy meanwhile, and
-   * not pressed again. A check or a save that stops it takes the focus to the
-   * first problem, and says which fields, as Save does.
+   * not pressed again. What earlier presses said goes as it starts: its own
+   * words speak for what is done now. A check or a save that stops it takes
+   * the focus to the first problem, and says which fields, as Save does.
    */
   async function press(button: HTMLElement, run: () => Promise<RunResult>) {
     if (button.hasAttribute('aria-busy')) return;
+    say.clear();
     button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
     try {
