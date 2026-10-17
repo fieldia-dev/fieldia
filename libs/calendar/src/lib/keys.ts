@@ -1,5 +1,5 @@
 import type { CalendarCore } from './calendar-core';
-import { addDays, atMinutes, dayKey, minutesOf, startOfDay, stepFrom } from './dates';
+import { addDays, atMinutes, dayKey, minutesOf, startOfDay, stepFrom, weekdayOf } from './dates';
 import type { CalendarEvent } from './events';
 
 /**
@@ -100,8 +100,8 @@ export function onDayKey(cal: CalendarCore, e: KeyboardEvent, day: Date) {
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') by = sideways(cal, e.key);
   else if (e.key === 'ArrowUp') by = -7;
   else if (e.key === 'ArrowDown') by = 7;
-  else if (e.key === 'Home') by = -((day.getDay() - firstDay + 7) % 7);
-  else if (e.key === 'End') by = 6 - ((day.getDay() - firstDay + 7) % 7);
+  else if (e.key === 'Home') by = -((weekdayOf(day) - firstDay + 7) % 7);
+  else if (e.key === 'End') by = 6 - ((weekdayOf(day) - firstDay + 7) % 7);
   else if (e.key === 'PageUp' || e.key === 'PageDown') {
     e.preventDefault();
     const next = stepFrom('month', day, e.key === 'PageUp' ? -1 : 1);

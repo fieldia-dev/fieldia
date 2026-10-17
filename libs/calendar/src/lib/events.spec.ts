@@ -1,4 +1,5 @@
 import type { ListCalendar, Page } from '@fieldia/core';
+import { dayOn } from './dates';
 import { colourOf, eventsOf, moved, sideBySide, whereTo, type CalendarEvent } from './events';
 
 /**
@@ -24,9 +25,11 @@ const page: Page = {
   layout: { type: 'list', id: 'list', columns: ['patient'] },
 };
 const timed: ListCalendar = { start: 'start', end: 'stop', title: 'patient', resource: 'doctor', colour: 'kind' };
-const at = (h: number, m = 0, d = 14) => new Date(2026, 9, d, h, m);
-const iso = (h: number, m = 0, d = 14) => at(h, m, d).toISOString();
-const hm = (date: Date) => `${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+/** A time on the calendar's clock — the reader's own, as the page names no zone (dates.ts). */
+const at = (h: number, m = 0, d = 14) => dayOn(2026, 9, d, h * 60 + m);
+/** The instant that time is, as the date widgets write one. */
+const iso = (h: number, m = 0, d = 14) => new Date(2026, 9, d, h, m).toISOString();
+const hm = (date: Date) => `${date.getUTCDate()} ${date.getUTCHours()}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
 
 describe("a calendar's events", () => {
   it('reads each record’s start, end, words, person and colour', () => {
@@ -106,6 +109,27 @@ describe("a calendar's events", () => {
     expect(whereTo(mona, at(11, 15), 'ar')).toMatch(/، 11:15$/);
     expect(whereTo(mona, at(11, 15), 'ar')).not.toContain(',');
     // Another year than the record's own is named, so a year typed wrong is seen.
-    expect(whereTo(mona, new Date(2062, 9, 15, 15), 'en')).toMatch(/^Sun,? 15 Oct 2062, 15:00$/);
+    expect(whereTo(mona, dayOn(2062, 9, 15, 15 * 60), 'en')).toMatch(/^Sun,? 15 Oct 2062, 15:00$/);
+  });
+
+  it('reads and writes on the zone its start or its page names, wherever the reader is', () => {
+    // Tokyo, nine hours ahead of UTC all year: 01:00 UTC is 10:00 there.
+    const tokyo = { ...page, timeZone: 'Asia/Tokyo' } as Page;
+    const [mona] = eventsOf([{ id: 7, values: { patient: 'Mona Adel', start: '2026-10-14T01:00:00.000Z', stop: '2026-10-14T01:30:00.000Z' } }], timed, tokyo, 'en');
+    expect([hm(mona.start), hm(mona.end)]).toEqual(['14 10:00', '14 10:30']);
+    // Moved to 11:15 on Tokyo's clock: 02:15 UTC, half an hour on.
+    expect(moved(mona, at(11, 15), timed, tokyo)).toEqual({ start: '2026-10-14T02:15:00.000Z', stop: '2026-10-14T02:45:00.000Z' });
+    // The start field's own zone over the page's: New York, four hours behind UTC in October.
+    const own = { ...tokyo, fields: { ...tokyo.fields, start: { type: 'datetime', label: 'Starts', timeZone: 'America/New_York' } } } as Page;
+    expect(hm(eventsOf([{ id: 1, values: { patient: 'A', start: '2026-10-14T14:00:00.000Z' } }], { start: 'start', title: 'patient' }, own, 'en')[0].start)).toBe('14 10:00');
+  });
+
+  it('keeps the time a record really lasts when it moves across a change of the clocks', () => {
+    // Berlin's clocks go back on 25 October 2026 at 03:00: a two-hour record from 01:00 that day ends at 02:00 on the
+    // clock, and moved to the day before, it still lasts two hours — to 03:00.
+    const berlin = { ...page, timeZone: 'Europe/Berlin' } as Page;
+    const [night] = eventsOf([{ id: 9, values: { patient: 'Night shift', start: '2026-10-24T23:00:00.000Z', stop: '2026-10-25T01:00:00.000Z' } }], timed, berlin, 'en');
+    expect([hm(night.start), hm(night.end)]).toEqual(['25 1:00', '25 2:00']);
+    expect(moved(night, dayOn(2026, 9, 24, 60), timed, berlin)).toEqual({ start: '2026-10-23T23:00:00.000Z', stop: '2026-10-24T01:00:00.000Z' });
   });
 });

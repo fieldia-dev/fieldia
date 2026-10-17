@@ -131,6 +131,8 @@ export const pages: Record<string, Page> = {
   ...listingHandover.pages,
   // A test drive booked at a showroom in Berlin, on Berlin's clock, from the times its schedule has free: shared/test-drive.ts.
   'test-drive': testDriveDemo.page,
+  // The showroom's week of test drives on a calendar, on Berlin's clock wherever it is looked at from.
+  'test-drives': testDriveDemo.list,
 };
 
 /**
@@ -170,7 +172,7 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
 }
 
 /** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
-const RECORD_PAGES: Record<string, string> = { contacts: 'contact', 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages };
+const RECORD_PAGES: Record<string, string> = { contacts: 'contact', 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order', ...calendarDemo.recordPages, 'test-drives': 'test-drive' };
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
@@ -260,7 +262,7 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related, 'wi.text': wiText as Page, ...calendarDemo.related, 'drive.booking': testDriveDemo.page };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page, ...listingHandover.savedForms };

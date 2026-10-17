@@ -1,0 +1,34 @@
+{
+  "fieldia": "0.3",
+  "id": "test-drives",
+  "title": "Test drives",
+  "description": "The Berlin showroom's week of test drives, a column for each car in the day: every time on Berlin's clock, wherever you look from — the week, today and the line for now are Berlin's, and a drive dragged or made from an empty slot is booked at that time in Berlin.",
+  "timeZone": "Europe/Berlin",
+  "data": { "kind": "record", "model": "drive.booking" },
+  "fields": {
+    "customer": { "type": "char", "label": "Name", "required": true },
+    "car": { "type": "many2one", "label": "Car", "relation": "showroom.car", "required": true },
+    "start": { "type": "datetime", "label": "Test drive", "required": true },
+    "stop": { "type": "datetime", "label": "Back by" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "drives",
+    "columns": ["customer", "car", "start"],
+    "sort": [{ "field": "start" }],
+    "pageSize": 20,
+    "searchFields": ["customer", "car"],
+    "groupBy": ["car"],
+    "calendar": {
+      "start": "start",
+      "end": "stop",
+      "title": "customer",
+      "colour": "car",
+      "resource": "car",
+      "views": ["week", "day", "month", "agenda"],
+      "opens": "calendar",
+      "hours": { "start": 8, "end": 19 },
+      "slot": 15
+    }
+  }
+}

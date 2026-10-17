@@ -1,5 +1,5 @@
 import type { CalendarCore, Column } from './calendar-core';
-import { atMinutes, dayKey, format, readDay } from './dates';
+import { atMinutes, dayKey, format, minutesOf, readDay, startOfDay } from './dates';
 import { moved, whereTo, type CalendarEvent } from './events';
 import { fill } from './labels';
 
@@ -45,13 +45,13 @@ export function moveTo(cal: CalendarCore): { open(event: CalendarEvent, block: H
     // The days it may go to, which a browser's own picker keeps to as well.
     const [first, last] = [-YEARS, YEARS].map((by) => {
       const d = new Date(event.start);
-      d.setFullYear(d.getFullYear() + by);
+      d.setUTCFullYear(d.getUTCFullYear() + by);
       return d;
     });
     const day = make('input', { type: 'date', class: 'fd-input', min: dayKey(first), max: dayKey(last) });
     day.value = dayKey(event.start);
     const at = make('input', { type: 'time', class: 'fd-input', step: String(cal.slot * 60) });
-    at.value = `${String(event.start.getHours()).padStart(2, '0')}:${String(event.start.getMinutes()).padStart(2, '0')}`;
+    at.value = `${String(Math.floor(minutesOf(event.start) / 60)).padStart(2, '0')}:${String(minutesOf(event.start) % 60).padStart(2, '0')}`;
     const who = make('select', { class: 'fd-input fd-select' });
     const people = cal.state.resources.filter((r): r is NonNullable<Column['resource']> => !!r);
     for (const person of people) who.append(make('option', { value: person.key }, person.label));
@@ -81,7 +81,7 @@ export function moveTo(cal: CalendarCore): { open(event: CalendarEvent, block: H
     const apply = () => {
       const when = readDay(day.value);
       const shortDay = (d: Date) => format(cal.locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
-      if (!when || when < new Date(first.getFullYear(), first.getMonth(), first.getDate()) || when > last) return refuse(day, fill(labels.badDay, { from: shortDay(first), to: shortDay(last) }));
+      if (!when || when < startOfDay(first) || when > last) return refuse(day, fill(labels.badDay, { from: shortDay(first), to: shortDay(last) }));
       const time = /^(\d\d):(\d\d)/.exec(at.value);
       if (!event.allDay && !time) return refuse(at, labels.badTime);
       const start = time && !event.allDay ? atMinutes(when, Number(time[1]) * 60 + Number(time[2])) : when;
