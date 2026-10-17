@@ -33,6 +33,11 @@
  * go of a stretch and of slots dragged across; and a crowded slot's lanes
  * kept to its width, with "+N more" and the list it opens — 1.8 more, to 18.2
  * (17.9 measured).
+ * On its start field's time zone, else its page's, else the browser's, in
+ * every view (0.25's size pass): its days, its hours, today and the line for
+ * now on that clock, the zone's short name after the span where it is not
+ * the reader's own, and a record moved keeping its real length across a
+ * change of the clocks — 19,019 bytes measured, to 18.6.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -41,7 +46,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/calendar-bundle');
-const BUDGET = { page: 0.8, calendar: 18.2 };
+const BUDGET = { page: 0.8, calendar: 18.6 };
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

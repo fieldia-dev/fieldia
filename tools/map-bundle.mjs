@@ -98,8 +98,12 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * for a place and an area (27,073: 26.2 goes to 26.5), 363 more for all
  * (47,198: 46.2); a list's map in a page of its own stays within its 31.1
  * (31,608).
+ * 0.25's lanes joined, measured in the merged build: a place and an area as
+ * it was (27,073); 140 bytes more for all (47,338: 46.3), from the core
+ * and widgets code a list's map draws with, grown in this release; a list's
+ * map in a page of its own 135 more, within its 31.1 (31,743).
  */
-const BUDGET = { fields: 26.5, all: 46.2, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.5, all: 46.3, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
