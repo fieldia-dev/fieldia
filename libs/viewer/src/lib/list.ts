@@ -279,7 +279,7 @@ export function listView(context: ListContext): ListView {
    */
   const shaping = node.optionalColumns ? columnsPart.loaded : undefined;
   const choices: ReturnType<ColumnsPart['columnChoices']> =
-    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
+    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept), ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) ?? null;
   if (spec) cards?.installCardStyles(doc);
   if (choices) shaping?.installColumnStyles(doc);
   /** The columns shown, in their order: the person's, else the page's. */
@@ -344,8 +344,11 @@ export function listView(context: ListContext): ListView {
         });
         th.append(button);
       }
-      // Its edge, dragged, sizes the column, where people shape the list's columns.
-      if (choices) th.append(choices.grip(name, th));
+      // Its edge, dragged, sizes the column, where people shape the list's columns; the header, dragged sideways, moves it.
+      if (choices) {
+        th.append(choices.grip(name, th));
+        choices.movable(name, th);
+      }
       return [name, th] as const;
     })
   );

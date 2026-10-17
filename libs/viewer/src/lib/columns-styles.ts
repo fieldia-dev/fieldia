@@ -46,6 +46,17 @@ export const COLUMN_STYLES = `
 /* Under the rows' own backgrounds (a row pointed at, chosen, open), so they stay whole. */
 :where(.fd-list[data-shaped]) :where(.fd-list-row) > :is(td[data-pin], .fd-list-check, .fd-list-tree) { background: var(--fd-surface); }
 .fd-list[data-shaped]:not([data-as]) .fd-list-totals { position: sticky; bottom: 0; z-index: 2; }
+/* A header dragged sideways moves its column: its words are not chosen as it goes, nor a finger's long press the browser's. */
+.fd-list[data-shaped]:not([data-as]) .fd-list-table thead th[data-col] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.fd-list[data-moving], .fd-list[data-moving] * { cursor: grabbing !important; }
+/* The columns slide aside to make its place; its own cells stand in that place, faint, until it is let go. */
+.fd-list-table[data-sliding] :is(th, td) { transition: transform 0.15s ease; }
+.fd-list-table [data-lifted] { background: var(--fd-accent-soft) !important; opacity: 0.65; }
+.fd-list-ghost { position: absolute; z-index: 41; box-sizing: border-box; display: flex; align-items: center; padding-inline: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; background: var(--fd-surface); color: var(--fd-text); font-size: 13px; font-weight: 600; border: 1px solid var(--fd-accent); border-radius: 4px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18); }
+.fd-list-ghost > bdi { overflow: hidden; text-overflow: ellipsis; }
+.fd-list-drop { position: absolute; z-index: 40; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--fd-accent); pointer-events: none; }
+.fd-list-drop[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .fd-list-table[data-sliding] :is(th, td) { transition: none; } }
 
 `;
 

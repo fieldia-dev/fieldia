@@ -30,7 +30,7 @@ export const PART_WORDS = {
     widgets: ['moreSteps', 'timeInStep', 'copyValue', 'addAccount', 'sharesOff', 'untaxed', 'amountDue', 'paymentOf', 'openPayment', 'hoursDecimal', 'account', 'deleteLine', 'stillHolds'],
   },
   choice: { widgets: ['createNamed', 'stillHolds'] },
-  columns: { viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
+  columns: { widgets: ['movedTo'], viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
   date: { widgets: ['chooseDate', 'weekShort', 'notPastedDate', 'previousMonth', 'nextMonth'] },
   duplicates: {
     viewer: ['duplicateWith', 'duplicateNamed', 'duplicateNamedWith', 'duplicateAnd', 'duplicatesMore', 'openDuplicate', 'notDuplicate', 'mergeDuplicate', 'mergeTitle', 'mergeIntro', 'mergeKeep', 'mergeShown', 'mergeEmpty', 'mergeSame', 'mergeAllSame', 'mergeWhat', 'merging', 'mergeUnread'],
