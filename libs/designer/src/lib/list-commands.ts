@@ -111,6 +111,8 @@ export interface RowRulesPatch {
   rowTones?: ToneWhen[] | null;
   /** Each row in bold while a condition on its record holds; null for never. */
   rowBold?: string | null;
+  /** What a row in bold means, in words, for the key over the rows; null or empty for none. */
+  rowBoldLabel?: string | null;
   /** The buttons on each row, in order, as a table's (a button kept keeps its id and steps); null or none for none. */
   rowButtons?: TableButton[] | null;
 }
@@ -120,12 +122,12 @@ export interface RowRulesPatch {
  * a row's record (`reads`: a page whose fields are its records' — the list page itself, or a related list's own
  * `fields`), a button kept by its id, a new one named afresh in the page, each doing something.
  */
-export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold?: Modifier; rowButtons?: ButtonNode[] }, options: RowRulesPatch, draft: Page, reads: Page): void {
+export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold?: Modifier; rowBoldLabel?: string; rowButtons?: ButtonNode[] }, options: RowRulesPatch, draft: Page, reads: Page): void {
   const refuse = (when: string) => {
     if (formulaProblem(reads, when)) throw new Refusal((w) => w.rules.inWhen(problemWords(formulaProblem(reads, when, w), w)));
   };
   if (options.rowTones !== undefined) {
-    const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when }));
+    const kept = (options.rowTones ?? []).map((item) => ({ tone: item.tone, when: typeof item.when === 'string' ? item.when.trim() : item.when, ...(item.label?.trim() ? { label: item.label.trim() } : {}) }));
     for (const item of kept) if (typeof item.when === 'string') refuse(item.when);
     if (kept.length) target.rowTones = kept;
     else delete target.rowTones;
@@ -135,7 +137,15 @@ export function setRowRules(target: { id: string; rowTones?: ToneWhen[]; rowBold
     if (said) {
       refuse(said);
       target.rowBold = said;
-    } else delete target.rowBold;
+    } else {
+      delete target.rowBold;
+      delete target.rowBoldLabel;
+    }
+  }
+  if (options.rowBoldLabel !== undefined) {
+    const said = options.rowBoldLabel?.trim();
+    if (said) target.rowBoldLabel = said;
+    else delete target.rowBoldLabel;
   }
   if (options.rowButtons !== undefined) {
     const before = new Map((target.rowButtons ?? []).map((button) => [button.id, button]));

@@ -186,7 +186,7 @@ describe('possible duplicates, as a record is typed', () => {
 });
 
 describe('its ways: It’s someone new, Open it', () => {
-  it('lets a match be for the values it matched on, remembered for the record once it is saved', async () => {
+  it('lets a match’s record be for this record, whatever matches it next, remembered for the record once it is saved', async () => {
     const ds = source();
     const preferences = memoryPreferences();
     const viewer = await mount({ dataSource: ds, preferences });
@@ -204,11 +204,11 @@ describe('its ways: It’s someone new, Open it', () => {
     expect(await viewer.save()).toBe(true);
     await pass(0);
     expect(notes()).toEqual([]);
-    expect(preferences.kept.get('duplicates.partner')).toEqual([['4', ['1|email="orders@niletraders.example"', '3|email="orders@niletraders.example"']]]);
-    // Another value matching one of them: said again.
+    expect(preferences.kept.get('duplicates.partner')).toEqual([['4', ['1', '3']]]);
+    // Another field matching them too (0.25 said them again, by the values they had matched on): still let be.
     await type('vat', '123456789', 2);
     await pass(DUPLICATES_WAIT_MS);
-    expect(words('email')).toEqual(['A record with this Email and Tax ID already exists: Nile Traders', 'A record with this Email and Tax ID already exists: Nile Traders Co.']);
+    expect(notes()).toEqual([]);
     // Opened again later, what was let be stays let be.
     handle?.destroy();
     document.body.replaceChildren();
@@ -443,5 +443,23 @@ describe('possible duplicates on a page that names its records', () => {
       handle = null;
       document.body.replaceChildren();
     }
+  });
+});
+
+describe('what 0.25 remembered as let be', () => {
+  it('is read as its record let be, whatever it matched on', async () => {
+    const ds = source();
+    const preferences = memoryPreferences();
+    // Nile Traders Co. (3) shares Nile Traders' (1) email and tax ID; 0.25 let Nile Traders be by the email alone.
+    preferences.set('duplicates.partner', [['3', ['1|email="orders@niletraders.example"']]]);
+    await mount({ dataSource: ds, preferences, recordId: 3 }, page({ duplicates: { fields: ['email', 'vat'] } }));
+    await pass(0);
+    expect(notes()).toEqual([]);
+    // Without it, Nile Traders is said.
+    handle?.destroy();
+    document.body.replaceChildren();
+    await mount({ dataSource: ds, preferences: memoryPreferences(), recordId: 3 }, page({ duplicates: { fields: ['email', 'vat'] } }));
+    await pass(0);
+    expect(notes()).not.toEqual([]);
   });
 });

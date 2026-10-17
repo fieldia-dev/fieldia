@@ -28,8 +28,8 @@ import {
   distributionWords,
   DRAWN_IN_CELLS,
   drawIcon,
-  inPlural,
   itemNumber,
+  keepsWhole,
   openLineDialog,
   kindTextField,
   lineForm,
@@ -96,6 +96,24 @@ interface CellContext {
    * list drops open, as a click on the box opens it. Entered by the keys (Tab, Enter) or by the program, it stays closed.
    */
   pressed?(cell: Element): boolean;
+  /** A block pasted in an open cell: spread from that cell on, as on a chosen cell (`pasteRows`). */
+  pasteBlock?(rowIndex: number, column: string, text: string): void;
+}
+
+/**
+ * Whether text pasted in an open cell is a block for the cells around it — rows, or cells side by side, as a
+ * spreadsheet copies them — rather than one value for the box: by the lines part's reader where it has come, else by
+ * its tabs and line breaks. A paragraph's box keeps several lines with no tabs, as the plain table's does.
+ */
+function pastedBlock(text: string, box: EventTarget | null): boolean {
+  const readers = linesPart.loaded;
+  if (box instanceof HTMLTextAreaElement && !text.includes('\t')) return false;
+  if (readers) {
+    const block = readers.blockOf(text);
+    return block.length > 1 || block[0].length > 1;
+  }
+  const flat = text.replace(/\r\n?/g, '\n').replace(/\n$/, '');
+  return flat.includes('\t') || flat.includes('\n');
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -585,6 +603,24 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       params.api.stopEditing(true);
       if (rowIndex !== null && !params.api.isDestroyed()) params.api.setFocusedCell(rowIndex, column, rowPinned);
     });
+    // A block pasted in the open cell — a click opens one, and most people click before they paste — spreads across and
+    // down from it, as on a chosen cell, what was typed in it so far let go as Escape lets it go; one value is the box's.
+    this.box.addEventListener(
+      'paste',
+      (event) => {
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        const { rowIndex, rowPinned } = params.node;
+        if (!cell.pasteBlock || !text || rowIndex === null || rowPinned || !pastedBlock(text, event.target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const column = params.column.getColId();
+        params.cell.cancel(key, this.before);
+        params.api.stopEditing(true);
+        if (!params.api.isDestroyed()) params.api.setFocusedCell(rowIndex, column, rowPinned);
+        cell.pasteBlock(rowIndex, column, text);
+      },
+      true
+    );
     // A day picked from a date's calendar is the whole answer: the cell keeps it and closes, as a
     // spreadsheet's does. A date typed stays open until Enter or Tab commits it. A date with a time
     // stays open for its time, and a whole line open at once stays open.
@@ -904,8 +940,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   /** The last press of a person's pointer on the grid: on which cell, and when. */
   let press: { cell: Element | null; at: number } | null = null;
   element.addEventListener('pointerdown', (event) => (press = { cell: event.target instanceof Element ? event.target.closest('.ag-cell') : null, at: performance.now() }), true);
+  /** A block pasted in an open cell, once the grid can paste one (its editors hold this context as it was made). */
+  let pasteInCell: (row: number, column: string, text: string) => void = () => undefined;
   const cell: CellContext = {
     pressed: (on) => !!press && press.cell === on && performance.now() - press.at < 1000,
+    pasteBlock: (row, column, text) => pasteInCell(row, column, text),
     form,
     field: name,
     fieldId: node.id,
@@ -1470,6 +1509,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         headerHeight: HEADER_HEIGHT,
       }),
       columnDefs,
+      // The theme's heights as the grid's own too: a grid drawn out of sight (a tab not opened, a page drawn for paper)
+      // cannot read them from its theme until shown, and read then, inside its observer of their size, they changed its
+      // rows' and header's heights as it was told its own — a loop the browser reports (WebKit as a page error:
+      // "ResizeObserver loop completed with undelivered notifications").
+      rowHeight: ROW_HEIGHT,
+      headerHeight: HEADER_HEIGHT,
       enableRtl: rtl,
       rowData: lines(),
       pinnedBottomRowData: totals.length ? [totalsRow(lines())] : undefined,
@@ -1526,14 +1571,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   // Out of sight under display: none — a tab not shown, a field hidden by its condition — AG Grid measures
   // itself again every frame, for as long as it stays hidden. Taken off the page meanwhile, it rests;
-  // put back the moment it has a box again, it draws itself to fit.
+  // put back once it has a box again, it draws itself to fit — in the next frame, never inside the observer's own
+  // call: put back there, it grows the box observed while its size is told, a loop the browser reports (WebKit as a
+  // page error: "ResizeObserver loop completed with undelivered notifications", as every tab is shown for paper).
   const away = document.createComment('fd-grid-away');
   const View = document.defaultView;
+  let back = 0;
+  const putBack = () => {
+    back = 0;
+    if (away.isConnected && element.getClientRects().length) away.replaceWith(host);
+  };
   const sizes = View && 'ResizeObserver' in View
     ? new View.ResizeObserver(([entry]) => {
         const hidden = entry.contentRect.width === 0 && entry.contentRect.height === 0;
         if (hidden && host.isConnected) host.replaceWith(away);
-        else if (!hidden && away.isConnected) away.replaceWith(host);
+        else if (!hidden && away.isConnected && !back) back = View.requestAnimationFrame(putBack);
       })
     : null;
   sizes?.observe(element);
@@ -1796,10 +1848,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let paper: HTMLTableElement | null = null;
   const NUMBERS = new Set(['integer', 'float', 'monetary']);
   function paperTable(): HTMLTableElement {
-    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false) => {
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false, whole = false) => {
       const cell = document.createElement(tag);
       cell.textContent = text;
       if (end) cell.className = 'fd-num';
+      // A day or a phone number on one line too, as a number is.
+      if (whole) cell.classList.add('fd-whole');
       return cell;
     };
     const parent = form.getState().values;
@@ -1825,7 +1879,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         continue;
       }
       const state = lineStates.get(line.key);
-      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column))));
+      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column), keepsWhole(def.fields[column].type, node.cells?.[column]?.widget))));
     }
     const current = lines();
     const items = current.filter((line) => !kindOf(line));
@@ -1854,6 +1908,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const view = document.defaultView;
   view?.addEventListener('beforeprint', printing);
   view?.addEventListener('afterprint', printed);
+  // Drawn after printing began — a tab never opened, drawn for paper — the viewer tells it (`fd-paper`): its paper table
+  // then, never the grid itself laid out across a sheet.
+  element.setAttribute('data-fd-paper', '');
+  element.addEventListener('fd-paper', () => !paper && printing());
 
   /** What the cards were last drawn from: drawn again only when it changes. */
   let cardsDrawn = '';
@@ -1997,65 +2055,47 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     return !readonly && !kindOf(line) && !locked(def.fields[column]) && !rules?.readonly && !rules?.invisible;
   };
   /**
-   * A block pasted on a chosen cell, as a spreadsheet copies one (tabs between
-   * cells, a line break between rows), fills across and down from it, each cell
-   * read as its column reads what is typed; rows past the last line add lines,
-   * as many as the table may have (`options.max`), as the plain table does.
-   * Cells that are read-only, or cannot read what is pasted, keep what they
-   * hold, and so do rows past the most lines: all of it said in one note.
+   * A block pasted on a cell — chosen, or open for typing — as a spreadsheet copies one (tabs between cells, a line
+   * break between rows): each row on its own line from there, across the columns shown, as the plain table pastes
+   * (the lines part's `pasteRows`): each cell read as its column reads what is typed, a link's by its name through the
+   * source's search; a row whose name reads as no record not pasted at all; rows past the last line add lines, as many
+   * as the table may have (`options.max`). What did not go in is named with why, all of it said in one note. One paste
+   * at a time: the next waits for the names of the one before.
    */
-  function pasteBlock({ blockOf, readPastedCell, whyNotPasted }: LinesPart, rowIndex: number, startColumn: string, text: string) {
+  let pasting: Promise<unknown> = Promise.resolve();
+  type PasteTable = Parameters<LinesPart['pasteRows']>[0];
+  function pasteBlock({ blockOf, pasteRows }: LinesPart, rowIndex: number, startColumn: string, text: string) {
     const shownColumns = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
-    const from = shownColumns.indexOf(startColumn);
-    if (from < 0) return;
     const dateOrder = dateOrderOf(form);
-    let pasted = 0;
-    let added = 0;
-    const missed: string[] = [];
-    let beyond = false;
-    blockOf(text).forEach((cells, r) => {
-      let line: Line | undefined = lines()[rowIndex + r];
-      if (!line) {
-        // A row of nothing adds no line; past the most lines, the rest is said.
-        if (cells.every((value) => !value.trim())) return;
-        if (lines().length >= most) return void (beyond = true);
-        const key = form.addLine(name);
-        added++;
-        line = lines().find((one) => one.key === key);
-        if (!line) return;
-      }
-      const key = line.key;
-      cells.forEach((value, c) => {
-        // The line as it is now: a cell pasted before may have set what this one reads by (its currency).
-        const line = lines().find((one) => one.key === key);
-        if (!line) return;
-        const column = shownColumns[from + c];
-        if (!column) return;
+    const stillShown = form.recordShown();
+    const table: PasteTable = {
+      fields: def.fields as Record<string, LineField>,
+      columns: shownColumns,
+      lines,
+      add: () => (lines().length >= most ? null : form.addLine(name)),
+      typable,
+      reading: (line, column) => ({ locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(def.fields[column], line.values, form.getState().values) }),
+      // Named, and — where its box has words for it — why. By its line's number as people count lines; a section's or a
+      // note's by its words.
+      cellName: (line, column) => {
+        const number = numberOf(line);
         const sub = def.fields[column];
-        const reading = { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) };
-        const read = typable(line, column) ? readPastedCell(sub, value, reading) : null;
-        if (!read) {
-          // Named, and — where its box has words for it — why: "“6:3” could be 6:03 or 6:30", "the time 14:30 was left out".
-          // By its line's number as people count lines; a section's or a note's by its words.
-          const number = numberOf(line);
-          const cell = number ? fill(labels.cellName, { column: sub.label, n: number }) : fill(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
-          const why = typable(line, column) ? whyNotPasted(sub, value, { ...reading, labels }) : null;
-          return void missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
-        }
+        return number ? fill(labels.cellName, { column: sub.label, n: number }) : fill(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
+      },
+      write: (line, column, value) => {
         form.setUnread(`${name}.${line.key}.${column}`, null);
-        form.updateLine(name, line.key, column, read.value);
-        pasted++;
-      });
-    });
-    const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
-    const said = [
-      ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
-      ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
-      ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
-      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, lines().length, locale)] : []),
-    ].join(' ');
-    pasteNote.textContent = said;
-    pasteNote.hidden = !said;
+        form.updateLine(name, line.key, column, value);
+      },
+      search: (key, column, query, limit, exact) => form.searchLine(name, key, column, query, limit, exact ? { exact: true } : {}),
+      shown: () => stillShown() && !destroyed,
+    };
+    pasting = pasting.then(() =>
+      pasteRows(table, rowIndex, startColumn, blockOf(text), { labels, locale }).then((said) => {
+        if (said === null || destroyed) return;
+        pasteNote.textContent = said;
+        pasteNote.hidden = !said;
+      }, () => undefined)
+    );
   }
   /**
    * A paste while one of this grid's cells is chosen (not edited). A browser sends a paste on what is not editable to
@@ -2067,6 +2107,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const readers = linesPart.loaded;
     if (readers) pasteBlock(readers, row, column, text);
     else void linesPart.load().then((part) => !destroyed && pasteBlock(part, row, column, text), () => undefined);
+  };
+  pasteInCell = (row, column, text) => {
+    if (!readonly) pasteFrom(row, column, text);
   };
   const onPaste = (event: ClipboardEvent) => {
     const focusedCell = document.activeElement;
@@ -2209,6 +2252,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();
+      if (back) View?.cancelAnimationFrame(back);
       api.destroy();
       apis.delete(element);
     },

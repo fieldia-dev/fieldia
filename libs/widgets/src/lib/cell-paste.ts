@@ -1,7 +1,7 @@
-import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type LineField, type Locale, type NumberLimits, type Value } from '@fieldia/core';
+import { charCount, cleanPastedNumber, couldBeNumber, fill, foldForSearch, isRightToLeft, MESSAGES, numberMisfit, oneLine, placesOfCurrency, readDuration, stripMarks, type DateOrder, type Line, type LineField, type Locale, type NumberLimits, type RelatedRecord, type Value } from '@fieldia/core';
 import { readDateText } from './date-text';
 import { leftWords, quoted, refusalWords } from './input-rules';
-import type { WidgetLabels } from './labels';
+import { inPlural, type WidgetLabels } from './labels';
 
 /**
  * A block pasted on a table's cells, and a file's cells read for a list's
@@ -246,4 +246,170 @@ export function whyNotPasted(def: LineField, pasted: string, reading: CellReadin
     default:
       return null;
   }
+}
+
+// ---- a block pasted on a table of lines: the grid's and the plain table's one way --------------------------------
+
+/** What a block pasted on a table of lines reads and writes through: the grid and the plain table each give theirs. */
+export interface PasteTable {
+  /** The line's fields, by column. */
+  fields: Record<string, LineField>;
+  /** The columns shown, in their order: a row's cells go across them from the one pasted on. */
+  columns: readonly string[];
+  /** The lines as they are now. */
+  lines(): readonly Line[];
+  /** A line added at the end for a row past the last, its key; null past the most lines the table may have. */
+  add(): string | null;
+  /** Whether a line's cell takes typing now: an item's, not read-only, not worked out, not hidden. */
+  typable(line: Line, column: string): boolean;
+  /** How a line's cell reads what is pasted: the page's language and date order, its widget, its currency now. */
+  reading(line: Line, column: string): CellReading;
+  /** A cell named in the note: "Product, line 3", or a section's by its words. */
+  cellName(line: Line, column: string): string;
+  /** Write a value read into a line's cell, as its box writes what is typed. */
+  write(line: Line, column: string, value: Value): void;
+  /**
+   * The records a link column's search finds for words, as its box searches them (`form.searchLine`): filtered by the
+   * line's values (`key`), or a new line's (null), `exact` asking for those named exactly so.
+   */
+  search(key: string | null, column: string, query: string, limit: number, exact: boolean): Promise<RelatedRecord[]>;
+  /** False once the record pasted on is no longer the one shown: a late answer writes nothing on another. */
+  shown(): boolean;
+}
+
+/** Records a name's search asks for: past them, the name is asked for exactly, as a link's box and Import ask. */
+const NAMES_LIMIT = 20;
+const foldedName = (text: string) => foldForSearch(text.trim()).replace(/\s+/g, ' ');
+
+/** What words name in a link column: the one record of that exact name (any case, Arabic in any of its forms), several, none, or not asked (the source failed). */
+type Named = RelatedRecord | 'several' | null | 'failed';
+
+/** The record words name, looked up as a link's box looks a name up: a search, and where it came back full, the name asked for exactly too. */
+async function lookUpName(table: PasteTable, key: string | null, column: string, name: string): Promise<Named> {
+  const among = (records: readonly RelatedRecord[]): RelatedRecord | 'several' | null => {
+    const same = [...new Map(records.filter((record) => foldedName(record.label) === foldedName(name)).map((record) => [String(record.id), record])).values()];
+    return same.length > 1 ? 'several' : (same[0] ?? null);
+  };
+  try {
+    const found = await table.search(key, column, name.trim(), NAMES_LIMIT, false);
+    const first = among(found);
+    if (found.length < NAMES_LIMIT || first === 'several') return first;
+    return among([...found, ...(await table.search(key, column, name.trim(), NAMES_LIMIT, true))]);
+  } catch {
+    return 'failed';
+  }
+}
+
+/** Between the names a cell of a many2many holds: a comma, a semicolon or a line break, as Import reads them. */
+const NAMES = /\s*[,;\n]\s*/;
+
+/**
+ * A link cell's words read as records, or why not: a many2one's one name; a many2many's names — the whole words first
+ * (a name may hold a comma: "Monitor arm, dual"), else each between its commas.
+ */
+async function readLinkCell(table: PasteTable, key: string | null, column: string, def: LineField, text: string, labels: WidgetLabels): Promise<{ value: Value } | { why: string }> {
+  const label = def.label;
+  const why = (named: Named, name: string) =>
+    fill(named === 'several' ? labels.pasteSeveralCalled : named === 'failed' ? labels.pasteNotLookedUp : labels.pasteNoMatch, { label, text: quoted(name) });
+  const whole = await lookUpName(table, key, column, text);
+  if (whole && whole !== 'several' && whole !== 'failed') return { value: def.type === 'many2many' ? [whole] : whole };
+  const names = def.type === 'many2many' ? text.split(NAMES).filter(Boolean) : [];
+  if (names.length < 2) return { why: why(whole, text.trim()) };
+  const linked: RelatedRecord[] = [];
+  for (const name of names) {
+    const named = await lookUpName(table, key, column, name);
+    if (!named || named === 'several' || named === 'failed') return { why: why(named, name) };
+    if (!linked.some((record) => String(record.id) === String(named.id))) linked.push(named);
+  }
+  return { value: linked };
+}
+
+const isLink = (def: LineField | undefined) => def?.type === 'many2one' || def?.type === 'many2many';
+/** A row named in the note by the words it starts with, as the person copied it. */
+const rowStart = (cells: readonly string[]) => quoted(cells.find((text) => text.trim()) ?? '');
+
+/**
+ * A block pasted on a table of lines — a spreadsheet's rows, tabs between their cells — from the line at `from` and
+ * the column `fromColumn`: each row goes on its own line, across the columns shown — the lines there, then lines added
+ * past the last, as many as the table may have. Each cell is read as its column reads what is typed; a link's by its
+ * name through the source's search, as its box reads a name typed — the one record of that exact name. A row whose
+ * name does not read (nothing, or more than one, called so) is not pasted at all, never half laid on a line with
+ * another record: named with why. A cell that cannot take its text keeps what it holds, named with why; so are rows
+ * past the most lines. Names are looked up first, then every row written at once — nothing once the record is gone.
+ * Returns the note to say under the table: what went in, the lines added, and what did not; null when the record went.
+ */
+export async function pasteRows(table: PasteTable, from: number, fromColumn: string, block: readonly (readonly string[])[], words: { labels: WidgetLabels; locale?: Locale }): Promise<string | null> {
+  const { labels, locale } = words;
+  const start = table.columns.indexOf(fromColumn);
+  if (start < 0) return null;
+  const columnOf = (c: number) => table.columns[start + c] as string | undefined;
+  // The lines the rows land on, by key, as they are now; past the last, new lines.
+  const landing = table.lines().slice(from, from + block.length).map((line) => line.key);
+  const lineOf = (key: string) => table.lines().find((line) => line.key === key);
+  // Every link cell's name, looked up before anything is written: a row is written whole, or not at all.
+  const links = await Promise.all(
+    block.map((cells, r) => {
+      const key = landing[r] ?? null;
+      const line = key ? lineOf(key) : undefined;
+      return Promise.all(
+        cells.map((text, c) => {
+          const column = columnOf(c);
+          const def = column ? table.fields[column] : undefined;
+          if (!column || !def || !isLink(def) || !text.trim()) return null;
+          // A cell that takes nothing on its line is named as any cell is, never looked up.
+          if (line && !table.typable(line, column)) return null;
+          return readLinkCell(table, key, column, def, text, labels);
+        })
+      );
+    })
+  );
+  if (!table.shown()) return null;
+  let pasted = 0;
+  let added = 0;
+  let beyond = false;
+  const missed: string[] = [];
+  block.forEach((cells, r) => {
+    const read = links[r];
+    const refused = read.find((one): one is { why: string } => !!one && 'why' in one);
+    if (refused) return void missed.push(fill(labels.notPastedWhy, { cell: fill(labels.pasteRowRefused, { start: rowStart(cells) }), why: refused.why }));
+    let key = landing[r];
+    if (key && !lineOf(key)) return; // its line went while the names were looked up
+    if (!key) {
+      // A row of nothing adds no line; past the most lines, the rest is said.
+      if (cells.every((text) => !text.trim())) return;
+      const made = beyond ? null : table.add();
+      if (!made) return void (beyond = true);
+      key = made;
+      added++;
+    }
+    // Its links first: what the other cells read by (an amount's currency) may be one of them.
+    const order = cells.map((text, c) => ({ text, c, link: read[c] })).sort((a, b) => Number(!a.link) - Number(!b.link));
+    for (const { text, c, link } of order) {
+      // The line as it is now: a cell pasted before may have set what this one reads by.
+      const line = lineOf(key);
+      const column = columnOf(c);
+      if (!column || !line) continue;
+      const def = table.fields[column];
+      const takes = table.typable(line, column);
+      // Nothing pasted on a cell that takes nothing: nothing lost, nothing to say.
+      if (!takes && !text.trim()) continue;
+      const reading = table.reading(line, column);
+      const value = !takes ? null : link && 'value' in link ? link : isLink(def) && !text.trim() ? { value: def.type === 'many2many' ? [] : null } : readPastedCell(def, text, reading);
+      if (!value) {
+        const why = takes ? whyNotPasted(def, text, { ...reading, labels }) : null;
+        const cell = table.cellName(line, column);
+        missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
+        continue;
+      }
+      table.write(line, column, value.value);
+      pasted++;
+    }
+  });
+  const separator = locale && isRightToLeft(locale) ? '؛ ' : '; ';
+  return [
+    ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
+    ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
+    ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
+    ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, table.lines().length, locale)] : []),
+  ].join(' ');
 }

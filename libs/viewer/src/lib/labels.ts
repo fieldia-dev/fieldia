@@ -226,6 +226,10 @@ export interface ViewerLabels {
   importColumnLetter: string;
   importFileRows: string;
   importFileRowsOne: string;
+  /** A file of a header and nothing under it: no rows to check. */
+  importNoRowsUnder: string;
+  /** A CSV file read in an encoding its bytes say it is not in (`{chosen}`), and the one that reads it (`{encoding}`). */
+  importMisread: string;
   importSheet: string;
   importEncoding: string;
   importUnicode: string;
@@ -411,6 +415,8 @@ export interface ViewerLabels {
   relatedNone: string;
   relatedNoneNoun?: string;
   relatedShown: string;
+  /** The key over a list's rows: what their tones and their bold mean, where the page says (`rowTones` labels, `rowBoldLabel`). */
+  rowsKey: string;
   relatedShownNoun?: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
@@ -668,6 +674,8 @@ const en: ViewerLabels = {
   importColumnLetter: 'Column {letter}',
   importFileRows: '{name}: {n} rows',
   importFileRowsOne: '{name}: {n} row',
+  importNoRowsUnder: '{name}: no rows under the header',
+  importMisread: 'Its characters look wrong read as {chosen}: this file reads as {encoding}.',
   importSheet: 'Sheet',
   importEncoding: 'Characters',
   importUnicode: 'Unicode ({name})',
@@ -812,6 +820,7 @@ const en: ViewerLabels = {
   relatedNone: 'None yet.',
   relatedNoneNoun: 'No {records} yet.',
   relatedShown: '{n} of {total}',
+  rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
   actions: 'Actions',
   print: 'Print',

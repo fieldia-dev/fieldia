@@ -51,6 +51,7 @@ import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
+import { printablePart } from './print-setting';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, fieldReads, keptFields, listCardFields, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
 import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
@@ -351,6 +352,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   /** The roles a part shows to (Flectra's groups=), `!` before one hiding it from people holding it; null shows it to everyone. */
   setRoles(id: string, roles: string[] | null): boolean;
+  /** Whether a field, a group, a tab or a related list prints with its record; false leaves it off paper (`"print": false`). */
+  setPrinted(id: string, printed: boolean): boolean;
   /** A part shown only while the record is edited, only while it is read, or always: Flectra's oe_edit_only and oe_read_only. */
   setShownWhile(id: string, mode: ShownWhile): boolean;
   /**
@@ -1331,6 +1334,15 @@ export function createDesigner(options: {
         if (wrong !== undefined) throw new Refusal((w) => w.refusals.notARole(wrong));
         if (roles?.length) target.roles = [...new Set(roles)];
         else delete target.roles;
+      });
+    },
+
+    setPrinted(id, printed) {
+      return apply((draft) => {
+        const target = printablePart(draft, id);
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
+        if (printed) delete target.print;
+        else target.print = false;
       });
     },
 

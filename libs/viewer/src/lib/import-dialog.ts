@@ -1,3 +1,4 @@
+import type { SheetCell } from './xlsx';
 import { MESSAGES, recordSentence, type DataSource, type Form, type LineField, type ListNode, type Locale, type Page, type RecordId, type Value } from '@fieldia/core';
 import { dateOrderOf, displayValue, drawIcon, keepTabIn, loadLinesPart, loadPhonePart, phoneSettings, WIDGET_LABELS, type IconSet, type LinesPart, type PhonePart } from '@fieldia/widgets';
 import { checkRows, type CheckedRow, type RowsCheck } from './import-check';
@@ -28,7 +29,7 @@ const NAMED = 50;
 
 /** What the list part hands over of its own, so the import part carries no copy of it: the workbook and CSV writers and the browser's save. */
 export interface ImportFiles {
-  xlsxOf: (sheet: { name: string; columns: string[]; rows: (string | { n: number; format?: string } | null)[][]; rtl?: boolean }) => Promise<Uint8Array>;
+  xlsxOf: (sheet: { name: string; columns: string[]; rows: SheetCell[][]; rtl?: boolean }) => Promise<Uint8Array>;
   csvOf: (rows: readonly (readonly string[])[], separator?: string) => string;
   csvSeparator: (locale: Locale) => string;
   saveFile: (doc: Document, name: string, file: Blob | string) => void;
@@ -94,6 +95,24 @@ const encodingName = (encoding: string) => ({ 'utf-8': 'UTF-8', 'utf-16le': 'UTF
 
 /** A cell's words, as a file to fix holds them: a day as written ("2026-09-14"), a number as JavaScript writes it. */
 const cellWords = (cell: FileCell) => (cell === null ? '' : typeof cell === 'object' ? cell.at.replace('T', ' ') : String(cell));
+
+/** Days from Excel's day 0 (30 December 1899) to the Unix epoch. */
+const EXCEL_EPOCH = 25569;
+/**
+ * A workbook's cell written back as it was read: a number as a number, yes or no as yes or no, a day (and its time) as a
+ * day in the ISO order, words as words — never "true", or "2026-06-11" as words.
+ */
+function sheetCellOf(cell: FileCell): SheetCell {
+  if (cell === null) return null;
+  if (typeof cell === 'number') return { n: cell };
+  if (typeof cell === 'boolean') return { b: cell };
+  if (typeof cell === 'object') {
+    const time = /T\d\d:\d\d/.test(cell.at) && !/T00:00(:00)?$/.test(cell.at);
+    const at = Date.parse(/Z|[+-]\d\d:\d\d$/.test(cell.at) ? cell.at : `${cell.at}${cell.at.includes('T') ? '' : 'T00:00'}Z`);
+    return Number.isFinite(at) ? { n: Math.round((at / 86_400_000 + EXCEL_EPOCH) * 1e6) / 1e6, format: time ? 'yyyy-mm-dd hh:mm' : 'yyyy-mm-dd' } : cellWords(cell);
+  }
+  return cell;
+}
 
 /** The import, in its dialog: settled once it has ended — null when the person closed it before writing anything. */
 export function openImport(context: ImportContext): Promise<ImportEnd | null> {
@@ -273,9 +292,12 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
     const now = sheet as FileSheet;
     const picked = file as PickedFile;
     // The file's name in bold, where the words put it: "contacts.xlsx: 1,284 rows".
-    const [before, after = ''] = fill(new Intl.PluralRules(locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows, { name: '\u0000', n: number(now.total) }).split('\u0000');
+    // A header and nothing under it: said so, and nothing offered to check.
+    const counted = !now.total ? labels.importNoRowsUnder : new Intl.PluralRules(locale).select(now.total) === 'one' ? labels.importFileRowsOne : labels.importFileRows;
+    const [before, after = ''] = fill(counted, { name: '\u0000', n: number(now.total) }).split('\u0000');
     const rows = make('p', { class: 'fd-import-file' }, before, make('strong', {}, make('bdi', {}, picked.name)), after);
     const pickers: HTMLElement[] = [];
+    let misread: HTMLElement | null = null;
     const picker = (label: string, options: [string, string][], value: string, change: (value: string) => void) => {
       const select = make('select', { class: 'fd-input fd-import-select', 'aria-label': label }, ...options.map(([v, words]) => make('option', { value: v }, words)));
       select.value = value;
@@ -294,6 +316,8 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       picker(labels.importEncoding, ENCODINGS.map((encoding) => [encoding, named(encoding)]), now.encoding ?? 'utf-8', (value) => void read(picked, { ...how, encoding: value }));
       const separators: Record<string, string> = { ',': labels.importComma, ';': labels.importSemicolon, '\t': labels.importTab, '|': labels.importBar };
       picker(labels.importSeparator, SEPARATORS.map((separator) => [separator, separators[separator]]), now.separator ?? ',', (value) => void read(picked, { ...how, separator: value }));
+      // Read in an encoding its bytes say it is not in: said, with the one that reads it ("ï»؟Name" is UTF-8 read as Arabic).
+      if (now.misread) misread = make('p', { class: 'fd-import-misread', role: 'note' }, fill(labels.importMisread, { chosen: named(now.encoding ?? 'utf-8'), encoding: named(now.misread) }));
     }
     const choices: [string, string][] = [['', labels.importLeaveOut], ...context.fields.map((field): [string, string] => [field, page.fields[field].label])];
     const table = make(
@@ -323,7 +347,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
         })
       )
     );
-    body.replaceChildren(make('div', { class: 'fd-import-head' }, rows, ...pickers), problem, make('div', { class: 'fd-import-scroll' }, table), said);
+    body.replaceChildren(make('div', { class: 'fd-import-head' }, rows, ...pickers), ...(misread ? [misread] : []), problem, make('div', { class: 'fd-import-scroll' }, table), said);
     problem.hidden = true;
     sayMatch();
     if (focus) table.querySelector('select')?.focus();
@@ -340,7 +364,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       if (def.required === true && def.default === undefined && context.fields.includes(name) && !columns.includes(name)) lines.push(fill(labels.importNeeded, { field: def.label }));
     }
     said.replaceChildren(...lines.map((line) => make('p', {}, line)));
-    const anything = columns.some(Boolean);
+    const anything = columns.some(Boolean) && now.total > 0;
     steps({ back: showPick, ...(anything ? { primary: { words: plural(now.total, labels.importCheck, labels.importCheckOne), act: () => void check() } } : {}) });
   }
 
@@ -424,14 +448,20 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   }
 
   /** The rows not imported, as a file like the one read — a workbook for a workbook, CSV for CSV — with why in a last column. */
+  /**
+   * The rows not imported, to fix and bring in again: their cells as the file had them — a workbook's numbers, yes or
+   * no and days kept as such, a CSV file's words as they were — under the labels of the fields the import matched them
+   * to (where a column matched none, its own header), so the file matches by itself when it is imported again; why each
+   * was refused in a last column.
+   */
   async function downloadFix(rows: readonly NotImported[]): Promise<void> {
     const now = sheet as FileSheet;
     const byNumber = new Map(now.numbers.map((n, i) => [n, now.rows[i]]));
-    const headers = [...now.headers, labels.importWhy];
+    const headers = [...now.headers.map((header, i) => (columns[i] ? (page.fields[columns[i] as string]?.label ?? header) : header)), labels.importWhy];
     const base = fill(labels.importFixName, { name: (file as PickedFile).name.replace(/\.[^.]+$/, '') });
     const { files } = context;
     if (now.kind === 'xlsx') {
-      const cells = rows.map(({ number: n, why }) => [...(byNumber.get(n) ?? []).map((cell) => (typeof cell === 'number' ? { n: cell } : cell === null ? null : cellWords(cell))), why]);
+      const cells = rows.map(({ number: n, why }) => [...(byNumber.get(n) ?? []).map(sheetCellOf), why]);
       const bytes = await files.xlsxOf({ name: base, columns: headers, rows: cells });
       files.saveFile(doc, `${base}.xlsx`, new Blob([bytes as BlobPart], { type: files.xlsxType }));
     } else {

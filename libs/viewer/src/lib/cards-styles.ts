@@ -62,6 +62,11 @@ export const CARD_STYLES = `
 .fd-list-card-lines dd { min-width: 0; margin: 0; overflow-wrap: break-word; font-variant-numeric: tabular-nums; }
 /* A phone's links stay together, beside its number or under it. */
 .fd-list-card-lines .fd-list-links { white-space: nowrap; }
+/* A number, an amount, a day or a phone number never breaks inside ("E£ 473,734." over "00"): the line gives it its
+   room — under its label where there is none beside it — and a phone's links wrap after it as one, in every theme. */
+.fd-list-card-lines > div[data-whole] { flex-wrap: wrap; }
+.fd-list-card-lines > div[data-whole] dd { flex: 1 1 0; min-width: min-content; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; overflow-wrap: normal; }
+.fd-list-card-lines > div[data-whole] dd > bdi { white-space: nowrap; }
 .fd-list-card-lines[data-labels="hidden"] dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-list-card-lines[data-lead] > div:first-child dd { color: var(--fd-text); font-size: 17px; font-weight: 700; }
 .fd-list-card-lines .fd-list-links { margin-block: -3px; }

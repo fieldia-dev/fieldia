@@ -78,6 +78,7 @@ export function relatedListPage(page: Page, node: RelatedNode, records?: PageRec
     // Its rows' tones, bold and buttons, as a list's, read on each row's record; a button runs with that record alone.
     ...(node.rowTones ? { rowTones: node.rowTones } : {}),
     ...(node.rowBold !== undefined ? { rowBold: node.rowBold } : {}),
+    ...(node.rowBoldLabel ? { rowBoldLabel: node.rowBoldLabel } : {}),
     ...(node.rowButtons ? { rowButtons: node.rowButtons } : {}),
     ...(node.searchFields ? { searchFields: node.searchFields } : {}),
   };

@@ -14,8 +14,9 @@ import { nameFieldOf } from './name-field';
  *
  * - **Open it**: the record found, in this form's place, once the one check let what is typed here go
  *   (`form.leave({ changes: true })`: asked about, every change not saved counting);
- * - **It's someone new**: this match let be for the values it matched on, remembered for this record (a new one's
- *   until it is saved, then by its id, in the viewer's preferences);
+ * - **It's someone new**: this match's record let be for this record, whatever field matches it next — a name typed
+ *   after the email that found it — remembered for this record (a new one's until it is saved, then by its id, in the
+ *   viewer's preferences);
  * - **Merge…**, on a saved record where the source has `merge`: the two side by side (merge-screen.ts).
  *
  * Typing on in a field named leaves an answer on its way unheard; an answer for a record no longer shown
@@ -133,8 +134,11 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     const next = [...all.filter(([record]) => record !== String(id)), [String(id), [...new Set([...own, ...signatures])]] as [string, string[]]];
     context.preferences.set(KEY, next.slice(-REMEMBERED) as unknown as JsonValue);
   };
-  /** A match as it was let be: the record, and the values typed in each field it matched on. */
-  const signature = (match: DuplicateMatch, values: Readonly<Values>) => [String(match.id), ...[...match.why].sort().map((field) => `${field}=${JSON.stringify(values[field] ?? null)}`)].join('|');
+  /**
+   * Whether a match was let be for this record: by its record's id, whatever it matched on now (0.25 kept the values it
+   * matched on, `id|field=…`, so the same record came back as soon as another field matched it: read as its id too).
+   */
+  const letBeIn = (dismissed: ReadonlySet<string>, match: DuplicateMatch) => dismissed.has(String(match.id)) || [...dismissed].some((mark) => mark.startsWith(`${match.id}|`));
   const keyOf = (match: DuplicateMatch) => `${match.id}:${[...match.why].sort().join(',')}`;
 
   // ---- where a note goes, and what it says ------------------------------------------------------------
@@ -188,7 +192,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   function draw(matches: readonly DuplicateMatch[]) {
     const { recordId, values } = form.getState();
     const dismissed = letBeFor(recordId);
-    shown = matches.filter((match) => !dismissed.has(signature(match, values)));
+    shown = matches.filter((match) => !letBeIn(dismissed, match));
     const at = new Map<string, DuplicateMatch[]>();
     for (const match of shown) {
       const place = placeOf(match);
@@ -243,10 +247,10 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     await form.openRecord(match.id);
   }
 
-  /** "It's someone new": let be for the values it matched on, remembered for this record; the focus to what is next. */
+  /** "It's someone new": its record let be for this record, remembered; the focus to what is next. */
   function letBe(match: DuplicateMatch, pressed: HTMLElement) {
-    const { recordId, values } = form.getState();
-    const mark = signature(match, values);
+    const { recordId } = form.getState();
+    const mark = String(match.id);
     if (recordId === null) fresh.add(mark);
     else remember(recordId, [mark]);
     const item = pressed.closest('.fd-duplicate');

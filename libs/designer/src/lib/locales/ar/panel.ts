@@ -43,6 +43,7 @@ const NAMES: Record<string, string> = {
   'Read-only fields': 'الحقول للقراءة فقط',
   'Empty quiet fields': 'الحقول الهادئة الفارغة',
   'Shown only to': 'يظهر فقط لـ',
+  'On paper': 'على الورق',
   'Shown while': 'يظهر أثناء',
   'Starts with': 'يبدأ بـ',
   'New lines start with': 'تبدأ البنود الجديدة بـ',

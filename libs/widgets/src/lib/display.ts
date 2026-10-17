@@ -110,3 +110,14 @@ export function cellText(def: LineField, value: Value | undefined, values: Recor
  * there with a click; the rest are typed into as the field's own box.
  */
 export const DRAWN_IN_CELLS: ReadonlySet<string> = new Set(['progressbar', 'priority', 'dot', 'color', 'timer', 'badge']);
+
+/** The kinds whose words read as one: a number, an amount, a day, a day and time. */
+const WHOLE = new Set(['integer', 'float', 'monetary', 'date', 'datetime']);
+/**
+ * Whether a column's words are one thing a reader takes in at once — a number, an amount, a day, a phone number — so a
+ * printed table keeps them on one line, never "+20 12 0528" over "2720": by its field's kind, or the widget its cells
+ * are shown with (`phone`, a time of day's `time`).
+ */
+export function keepsWhole(type: string | undefined, widget?: string): boolean {
+  return !!type && (WHOLE.has(type) || widget === 'phone' || widget === 'time');
+}

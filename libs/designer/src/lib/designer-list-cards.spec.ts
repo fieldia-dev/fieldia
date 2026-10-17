@@ -194,4 +194,29 @@ describe('a list’s rows, by the designer: their tones, bold and own buttons', 
     words.dispatchEvent(new Event('input', { bubbles: true }));
     expect(list(designer).rowButtons?.map((b) => b.label)).toEqual(['Book a viewing']);
   });
+
+  it('names what a tone and the bold mean, for the key over the rows; the bold let go takes its words with it', () => {
+    const designer = contacts();
+    const panel = listProperties(elementFactory(document), designer);
+    document.body.replaceChildren(panel.element);
+    const update = () => panel.update(designer.getPage());
+    designer.subscribe(update);
+    update();
+    const part = panel.element.querySelector('[data-part="rows"]') as HTMLElement;
+    const boldWords = part.querySelector('input[aria-label="What bold means"]') as HTMLInputElement;
+    // No bold yet: nothing to name.
+    expect(boldWords.closest('label')?.hidden).toBe(true);
+    expect(designer.setListOptions({ rowTones: [{ tone: 'danger', when: "state == 'lead'" }], rowBold: 'score > 80' })).toBe(true);
+    expect(boldWords.closest('label')?.hidden).toBe(false);
+    boldWords.value = 'Your best customers';
+    boldWords.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(list(designer).rowBoldLabel).toBe('Your best customers');
+    const toneWords = part.querySelector('.fd-table-tone-row input[aria-label="What this tone means"]') as HTMLInputElement;
+    toneWords.value = 'Still a lead';
+    toneWords.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(list(designer).rowTones).toEqual([{ tone: 'danger', when: "state == 'lead'", label: 'Still a lead' }]);
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(designer.setListOptions({ rowBold: null })).toBe(true);
+    expect(list(designer).rowBoldLabel).toBeUndefined();
+  });
 });

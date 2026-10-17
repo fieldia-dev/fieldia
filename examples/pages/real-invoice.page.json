@@ -2,6 +2,7 @@
   "fieldia": "0.4",
   "id": "real-invoice",
   "title": "Account Entry",
+  "records": { "one": "invoice", "other": "invoices", "a": "an invoice" },
   "description": "Sherkety ERP's invoice, bill, credit note and journal entry: one page (account.move, view_move_form) whose type decides what shows. With what account (currency), sherkety_manual_currency_rate, account_payment, account_debit_note, account_edi, account_distribution_extras, sale and purchase add to it.",
   "data": { "kind": "record", "model": "account.move" },
   "maxWidth": "full",
@@ -1068,6 +1069,7 @@
             "type": "tab",
             "id": "aml_tab",
             "label": "Journal Items",
+            "print": false,
             "children": [
               {
                 "type": "field",
@@ -1263,7 +1265,7 @@
                         "invisible": "auto_post in ['no', 'at_date']",
                         "readonly": "state != 'draft'"
                       },
-                      { "type": "field", "id": "f-to-check", "field": "to_check" }
+                      { "type": "field", "id": "f-to-check", "field": "to_check", "print": false }
                     ]
                   },
                   {
@@ -1309,7 +1311,7 @@
                         "invisible": "auto_post in ['no', 'at_date']",
                         "readonly": "state != 'draft'"
                       },
-                      { "type": "field", "id": "f-entry-to-check", "field": "to_check", "invisible": "move_type != 'entry'" }
+                      { "type": "field", "id": "f-entry-to-check", "field": "to_check", "invisible": "move_type != 'entry'", "print": false }
                     ]
                   },
                   {

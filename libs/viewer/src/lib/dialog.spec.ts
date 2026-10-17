@@ -60,13 +60,21 @@ describe('a form in a dialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it.each(['Discard', 'Close', 'Escape'])('%s closes it without saving', async (way) => {
+  it.each(['Discard', 'Close', 'Escape'])('%s closes it without saving (Close and Escape asking first)', async (way) => {
     const dataSource = customerSource();
     const result = openFormDialog({ page: page('customer'), dataSource, recordId: 1, title: 'Nile Traders' });
     await flush();
     typeIn(dialog()?.querySelector('[data-node="#title"] textarea') as HTMLInputElement, 'Changed');
     if (way === 'Escape') (dialog() as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     else button(way).click();
+    if (way !== 'Discard') {
+      // What was typed is asked about first, the focus on Cancel; the question's Discard lets it go.
+      while (!dialog()?.querySelector('[role="alertdialog"]')) await flush();
+      const asked = dialog()?.querySelector('[role="alertdialog"]') as HTMLElement;
+      expect(asked.textContent).toContain('Discard your changes?');
+      expect(document.activeElement?.textContent).toBe('Cancel');
+      [...asked.querySelectorAll('button')].find((b) => b.textContent === 'Discard')?.click();
+    }
     expect((await result).saved).toBe(false);
     expect(dataSource.records['partner'][1]['name']).toBe('Nile Traders');
     expect(dialog()).toBeNull();

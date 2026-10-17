@@ -23,12 +23,17 @@ export const LIST_ROW_STYLES = `
 .fd-list-link:hover { background: var(--fd-accent-soft); }
 .fd-list-link:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 0; }
 .fd-list-link svg { width: 16px; height: 16px; }
-/* A row's own tone (rowTones), its words in that colour as Flectra's decoration-*, and bold (rowBold). */
-.fd-list-row[data-tone="info"] { --fd-row-tone: var(--fd-info); }
-.fd-list-row[data-tone="success"] { --fd-row-tone: var(--fd-success); }
-.fd-list-row[data-tone="warning"] { --fd-row-tone: var(--fd-warning); }
-.fd-list-row[data-tone="danger"] { --fd-row-tone: var(--fd-error); }
-.fd-list-row[data-tone="muted"] { --fd-row-tone: var(--fd-muted); }
+/* A row's own tone (rowTones), its words in that colour as Flectra's decoration-*, and bold (rowBold); the key's swatch. */
+:is(.fd-list-row, .fd-list-key-mark)[data-tone="info"] { --fd-row-tone: var(--fd-info); }
+:is(.fd-list-row, .fd-list-key-mark)[data-tone="success"] { --fd-row-tone: var(--fd-success); }
+:is(.fd-list-row, .fd-list-key-mark)[data-tone="warning"] { --fd-row-tone: var(--fd-warning); }
+:is(.fd-list-row, .fd-list-key-mark)[data-tone="danger"] { --fd-row-tone: var(--fd-error); }
+:is(.fd-list-row, .fd-list-key-mark)[data-tone="muted"] { --fd-row-tone: var(--fd-muted); }
+/* The key over the rows: what each tone and the bold mean, in the page's words. */
+.fd-list-key { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--fd-muted); }
+.fd-list-key-item { display: inline-flex; align-items: center; gap: 6px; }
+.fd-list-key-mark { flex: none; width: 10px; height: 10px; border-radius: 3px; background: var(--fd-row-tone); }
+.fd-list-key-mark[data-bold] { width: auto; height: auto; background: none; color: var(--fd-text); font-weight: 700; }
 .fd-list-row[data-tone] > td { color: var(--fd-row-tone); }
 .fd-list-row[data-bold] > td { font-weight: 600; }
 /* A row's own buttons, at its end; the Columns menu's button over them. */

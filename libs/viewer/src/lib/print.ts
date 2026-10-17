@@ -1,8 +1,8 @@
-import type { Locale, Page, Values } from '@fieldia/core';
+import { recordSentence, type Locale, type Page, type Values } from '@fieldia/core';
 import { restingText } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
-import { valueWords } from './value-words';
+import { named, printWords, valueWords } from './value-words';
 
 /**
  * A page on paper, whatever prints it — the browser's Ctrl+P or its menu, a
@@ -37,7 +37,7 @@ export interface PrintContext {
   locale: Locale;
   fill: (template: string, values: Record<string, string | number>) => string;
   now: () => Date;
-  /** The record's name, as its crumb says it; empty for a new one. */
+  /** The record's own name (its title field's words); empty where it has none yet. */
   name(): string;
   values(): Readonly<Values>;
   /** Every part drawn and brought up to date for paper: each tab not opened yet. */
@@ -118,7 +118,7 @@ function frontForm(doc: Document): Element | null {
  */
 const KEEP_MOST = 420;
 /** What paper leaves out, passed over as the start of what follows a heading. */
-const UNPRINTED = '.fd-button, .fd-actions, .fd-tabbar, .fd-help, .fd-print-head, .fd-print-end';
+const UNPRINTED = '.fd-button, .fd-actions, .fd-tabbar, .fd-help, .fd-print-head, .fd-print-end, [data-print="off"]';
 
 /** An element's style as its own window computes it. */
 const styleOf = (element: Element): CSSStyleDeclaration => (element.ownerDocument.defaultView as Window).getComputedStyle(element);
@@ -200,7 +200,7 @@ function keepRooms(root: HTMLElement): HTMLElement[] {
     given.push(box);
   };
   const own = (box: HTMLElement) => box.closest('.fd-form') === root;
-  const panels = [...root.querySelectorAll<HTMLElement>('.fd-tabpanel:not([data-off])')].filter(own);
+  const panels = [...root.querySelectorAll<HTMLElement>('.fd-tabpanel:not([data-off], [data-print="off"])')].filter(own);
   const groups = [...root.querySelectorAll<HTMLElement>('fieldset.fd-section')].filter((group) => own(group) && group.querySelector(':scope > .fd-section-title'));
   // Nothing headed: nothing laid out again.
   if (!panels.length && !groups.length) return given;
@@ -214,6 +214,9 @@ function keepRooms(root: HTMLElement): HTMLElement[] {
   return given;
 }
 
+/** The words of nodes made by `valueWords`, as they read now. */
+const wordsOf = (nodes: readonly (Node | string)[]) => nodes.map((node) => (typeof node === 'string' ? node : (node.textContent ?? ''))).join('');
+
 /** A box's words as a person reads them: its text, or a choice's label — none for a choice left empty. */
 function boxWords(box: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): string {
   if (box.tagName !== 'SELECT') return box.value;
@@ -224,9 +227,12 @@ export function printLook(context: PrintContext): PrintLook {
   const { doc, el, root, page, labels } = context;
   const win = doc.defaultView;
   const own = page.print ?? {};
-  // The page's words over and under the printout, with each {field} showing its value.
-  const header = own.header ? valueWords(doc, page.fields, own.header, context.locale) : null;
-  const footer = own.footer ? valueWords(doc, page.fields, own.footer, context.locale) : null;
+  // The page's words over and under the printout, with each {field} showing its value: a line whose value is empty left out.
+  const header = own.header ? printWords(doc, page.fields, own.header, context.locale) : null;
+  const footer = own.footer ? printWords(doc, page.fields, own.footer, context.locale) : null;
+  // A record's stage (its statusbar's field), in words, for a title that has no name to say yet.
+  const bar = page.layout.type === 'sheet' ? page.layout.statusbar?.field : undefined;
+  const stage = bar && page.fields[bar] ? valueWords(doc, page.fields, `{${bar}}`, context.locale) : null;
   const title = el('div', { class: 'fd-print-title' });
   const when = el('div', { class: 'fd-print-when' });
   // The logo is asked for with the page, so it is there to print however soon printing starts.
@@ -245,9 +251,12 @@ export function printLook(context: PrintContext): PrintLook {
     const values = context.values();
     header?.update(values);
     footer?.update(values);
-    // A record's page and its name, once each; a page of responses has its title over it already.
-    const names = page.data.kind === 'record' ? [page.title ?? '', context.name()].filter((name, at, all) => name && all.indexOf(name) === at) : [];
-    title.textContent = names.join(' · ');
+    // A record's own name; with none yet (a draft invoice's "/"), what the page calls its records ("Invoice", else its
+    // title) and the stage it is in ("Invoice · Draft"). A page of responses has its title over it already.
+    stage?.update(values);
+    const name = context.name();
+    const what = () => [recordSentence(page.records, '{record}', page.title ?? '', context.locale), stage ? wordsOf(stage.nodes) : ''].filter(named);
+    title.textContent = page.data.kind !== 'record' ? '' : named(name) ? name : what().join(' · ');
     when.textContent = context.fill(labels.printedOn, { date: restingText(context.now().toISOString(), 'datetime', context.locale, page.timeZone) });
   }
 
@@ -277,6 +286,9 @@ export function printLook(context: PrintContext): PrintLook {
     printing = true;
     root.setAttribute('data-fd-print', '');
     context.drawAll();
+    // A part drawn just now (in a tab never opened) came after the window said printing begins: told here, so it lays
+    // itself out for paper too (`data-fd-paper`, a grid's paper table) before anything is measured or printed.
+    for (const late of root.querySelectorAll('[data-fd-paper]')) late.dispatchEvent(new Event('fd-paper'));
     fillIn();
     writeBoxes();
     kept = keepRooms(root);

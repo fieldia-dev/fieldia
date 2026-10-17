@@ -123,8 +123,10 @@ describe('columns a person shows, hides and orders', () => {
   it('orders the columns with Move up and Move down, and with Alt and an arrow, the focus staying on the column moved', async () => {
     const host = await mount();
     menuButton(host).click();
-    // Hide, never disable: the first has no Move up, the last no Move down.
+    // Hide, never disable: the name column has neither (it stays first), the one under it no Move up, the last no Move down.
     expect((item(host, 'name').querySelector('[data-move="up"]') as HTMLElement).hidden).toBe(true);
+    expect((item(host, 'name').querySelector('[data-move="down"]') as HTMLElement).hidden).toBe(true);
+    expect((item(host, 'company').querySelector('[data-move="up"]') as HTMLElement).hidden).toBe(true);
     expect((item(host, 'value').querySelector('[data-move="down"]') as HTMLElement).hidden).toBe(true);
     // Past Email, hidden: the menu says where it went, the table shows it where it is now.
     (item(host, 'city').querySelector('[data-move="up"]') as HTMLButtonElement).click();
@@ -132,14 +134,17 @@ describe('columns a person shows, hides and orders', () => {
     (item(host, 'city').querySelector('[data-move="up"]') as HTMLButtonElement).click();
     expect(heads(host)).toEqual(['Name', 'City', 'Company', 'Value']);
     expect(cells(host)).toEqual(['Mona Adel', 'Cairo', 'Nile Traders', expect.any(String)]);
-    expect(document.activeElement).toBe(item(host, 'city').querySelector('[data-move="up"]'));
+    // Right under Name its Move up is gone: the focus stays on its row, on its box.
+    expect(document.activeElement).toBe(box(host, 'city'));
     box(host, 'value').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }));
     expect(items(host)).toEqual(['Name', 'City', 'Company', 'Value', 'Email']);
     expect(document.activeElement).toBe(box(host, 'value'));
-    // The first column moved: it is the one kept in view.
-    (item(host, 'city').querySelector('[data-move="up"]') as HTMLButtonElement).click();
-    expect(heads(host)).toEqual(['City', 'Name', 'Company', 'Value']);
-    expect(host.querySelector('thead th[data-pin]')?.getAttribute('data-col')).toBe('city');
+    // Right under the name column, City has no Move up: Name stays first, the one kept in view; Alt and ↑ do nothing.
+    expect((item(host, 'city').querySelector('[data-move="up"]') as HTMLElement).hidden).toBe(true);
+    box(host, 'city')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }));
+    item(host, 'city').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }));
+    expect(heads(host)).toEqual(['Name', 'City', 'Company', 'Value']);
+    expect(host.querySelector('thead th[data-pin]')?.getAttribute('data-col')).toBe('name');
   });
 
   it('closes with Escape, the focus back on its button — the table not scrolled to it — and Reset puts back the page’s columns', async () => {
@@ -224,7 +229,8 @@ describe('columns a person shows, hides and orders', () => {
       { colId: 'company', width: 5000, hide: true },
     ]);
     const host = await mount(preferences);
-    expect(heads(host)).toEqual(['Value', 'Name', 'City']);
+    // Name first, wherever it was kept (0.26 kept it after Value): the name column always leads.
+    expect(heads(host)).toEqual(['Name', 'Value', 'City']);
     expect((host.querySelector('thead th[data-col="value"]') as HTMLElement).style.getPropertyValue('--fd-col-px')).toBe('120px');
     // Wider than any column may be: the widest.
     expect((host.querySelector('thead th[data-col="company"]') as HTMLElement).style.getPropertyValue('--fd-col-px')).toBe('1200px');
@@ -349,14 +355,17 @@ describe('a column moved by dragging its header', () => {
     expect(host.querySelector('thead th[data-col="company"]')?.hasAttribute('aria-sort')).toBe(false);
   });
 
-  it('moves the first column too, the one that comes first held in view; mirrored right to left', async () => {
+  it('keeps the name column first, held in view, whatever is carried; mirrored right to left', async () => {
     const host = await mount(memoryPreferences(), { ...contacts, language: 'ar' });
     laid = layOut(true);
     expect(host.querySelector('[dir]')?.getAttribute('dir')).toBe('rtl');
-    // Right to left, Name is at 340–440 (from the start, 40–140); carried leftwards past Company's middle (290).
+    // Right to left, Name is at 340–440 (from the start, 40–140): carried leftwards past Company's middle (290), it stays.
     dragHeader(host, 'name', 390, 280);
-    expect(heads(host)).toEqual(['Company', 'Name', 'City', 'Value']);
-    expect(host.querySelector('thead th[data-pin]')?.getAttribute('data-col')).toBe('company');
+    expect(heads(host)).toEqual(['Name', 'Company', 'City', 'Value']);
+    // Value (40–140) carried to the table's start, over Name: right after it.
+    dragHeader(host, 'value', 90, 430);
+    expect(heads(host)).toEqual(['Name', 'Value', 'Company', 'City']);
+    expect(host.querySelector('thead th[data-pin]')?.getAttribute('data-col')).toBe('name');
   });
 
   it('is lifted by a finger resting on its header, and follows it; a swipe is left to the browser', async () => {

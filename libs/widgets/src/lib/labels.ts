@@ -368,6 +368,15 @@ export interface WidgetLabels {
   /** A block pasted on a table of lines past its last line: the lines added for its rows. */
   pasteAddedLines: string;
   pasteAddedLinesOne: string;
+  /**
+   * A pasted row not pasted at all, a name in it read as no record (`{start}`: the words the row starts with): with
+   * `notPastedWhy`, why — nothing called so (`pasteNoMatch`), more than one (`pasteSeveralCalled`), or the source
+   * could not be asked (`pasteNotLookedUp`).
+   */
+  pasteRowRefused: string;
+  pasteNoMatch: string;
+  pasteSeveralCalled: string;
+  pasteNotLookedUp: string;
   /** A list's filter box waiting for its value. */
   enterNumber: string;
   enterDate: string;
@@ -680,6 +689,10 @@ const en: WidgetLabels = {
   pasteBeyondLinesOne: 'Only {n} line is here, so the rest was not pasted',
   pasteAddedLines: '{n} lines added.',
   pasteAddedLinesOne: '{n} line added.',
+  pasteRowRefused: 'the row starting “{start}”, none of it',
+  pasteNoMatch: '{label}: nothing is called “{text}”',
+  pasteSeveralCalled: '{label}: more than one is called “{text}”',
+  pasteNotLookedUp: '{label}: “{text}” could not be looked up',
   enterNumber: 'Enter a number',
   enterDate: 'Enter a date, like {example}',
   enterValue: 'Enter a value to filter by',

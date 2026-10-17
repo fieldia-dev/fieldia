@@ -80,7 +80,7 @@ test.describe('a customer typed twice', () => {
     await expect(title(page)).toHaveValue('Sinai Outfitters');
   });
 
-  test('It’s a new customer lets one go, and a name like one kept is said as like it', async ({ page }) => {
+  test('It’s a new customer lets one go for this customer, whatever matches it next; a name like one kept is said as like it', async ({ page }) => {
     await node(page, 'f-email').locator('input').fill('orders@niletraders.example');
     const rows = note(page, 'f-email').locator('.fd-duplicate');
     await expect(rows).toHaveCount(2);
@@ -88,8 +88,12 @@ test.describe('a customer typed twice', () => {
     await rows.first().getByRole('button', { name: 'It’s a new customer' }).click();
     await expect(rows).toHaveCount(1);
     await expect(rows.first().getByRole('button', { name: 'Open it' })).toBeFocused();
+    // The owner's walk of 0.25: the name typed next matched Nile Traders again, and it came back. It stays gone.
+    await title(page).fill('Nile Traders');
+    await expect(note(page, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A customer with this email and a name like this already exists: Nile Traders Co.']);
     await title(page).fill('Nile Trader');
-    await expect(note(page, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A customer with this email and a name like this already exists: Nile Traders', 'A customer with this email and a name like this already exists: Nile Traders Co.']);
+    await expect(note(page, 'f-email').locator('.fd-duplicate-words')).toHaveText(['A customer with this email and a name like this already exists: Nile Traders Co.']);
+    await expect(page.locator('.fd-duplicate', { hasText: /: Nile Traders$/ })).toHaveCount(0);
     await screen(page, 'duplicates-name');
   });
 

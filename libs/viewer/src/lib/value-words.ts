@@ -30,3 +30,30 @@ export function valueWords(doc: Document, fields: Fields, text: string, locale: 
     },
   };
 }
+
+/** Words that name something: a letter or a digit in them — never "", "/" (a draft invoice's number) or "—". */
+export const named = (words: string): boolean => /[\p{L}\p{N}]/u.test(words);
+
+/**
+ * A printout's own words (a page's `print.header` or `footer`), a line at a time: each line a box of its own, and one
+ * whose `{field}` is empty — or holds no letter or digit, as a draft invoice's "/" — left out whole, never "quoting .
+ * Thank you".
+ */
+export function printWords(doc: Document, fields: Fields, text: string, locale: Locale): { nodes: Node[]; update(values: Readonly<Values>): void } {
+  const lines = text.split('\n').map((line) => {
+    const words = valueWords(doc, fields, line, locale);
+    const box = doc.createElement('span');
+    box.className = 'fd-print-line';
+    box.append(...words.nodes);
+    return { box, words, values: [...box.querySelectorAll<HTMLElement>('.fd-value')] };
+  });
+  return {
+    nodes: lines.map((line) => line.box),
+    update(record) {
+      for (const line of lines) {
+        line.words.update(record);
+        line.box.hidden = line.values.some((value) => !named(value.textContent ?? ''));
+      }
+    },
+  };
+}

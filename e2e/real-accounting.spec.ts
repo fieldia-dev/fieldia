@@ -187,7 +187,7 @@ for (const variant of VARIANTS) {
       await page.getByRole('button', { name: 'Actions' }).click();
       await expect(page.getByRole('menuitem', { name: 'Debit Note' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible();
-      await expect(page.getByRole('menuitem', { name: 'Invoice' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Invoice', exact: true })).toBeVisible();
       await page.getByRole('menuitem', { name: 'Debit Note' }).click();
       await expect(toast(page, /debit note/i)).toBeVisible();
       // A vendor bill: its PDF beside the sheet, and the duplicate's link inside the alert's sentence.

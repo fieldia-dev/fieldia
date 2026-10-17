@@ -275,8 +275,9 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
     /**
      * Close once the form's one check lets its values go (`form.leave()`): it waits for a save on its way and files on
      * theirs — the dialog saying so — then asks "Discard your changes?" when the person's work is at risk, and keeps the
-     * dialog open on Cancel. Escape and × in a panel, or a dialog round a page with a head, count every change not
-     * saved, as they always have; any other dialog closes on a change not saved, as it always has. Discard asks
+     * dialog open on Cancel. Escape and × count every change not saved, in every dialog and panel: nothing else saves
+     * what was typed in it (0.25 asked so only in a panel, a dialog round a page with a head and a line's own; a
+     * related list's New or row, a calendar's New and an `open` step's dialog let the typing go unasked). Discard asks
      * nothing, but waits too: a save that went through meanwhile closes it saved.
      */
     const closeChecked = async (saved: boolean, how?: LeaveHow): Promise<void> => {
@@ -285,8 +286,8 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
       if (handle.form.leaveNow(how)) return close(saved);
       if ((await handle.form.leave(how)) && !done) close(saved);
     };
-    // A dialog of values (a line's own form) holds what was typed and nothing else saves it: every change counts too.
-    const leave = () => closeChecked(false, panel || headed || options.mode === 'values' ? { changes: true } : undefined);
+    // A dialog or a panel holds what was typed and nothing else saves it: every change counts.
+    const leave = () => closeChecked(false, { changes: true });
     saveClose.addEventListener('click', async () => {
       const had = doc.activeElement === saveClose;
       saveClose.disabled = true;

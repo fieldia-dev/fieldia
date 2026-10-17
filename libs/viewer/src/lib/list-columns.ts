@@ -7,8 +7,9 @@ import type { ViewerLabels } from './labels';
  * The columns a person shapes in a list with `optionalColumns` (list.ts; the
  * columns part, columns-part.ts): which show, in what order and how wide — chosen in the Columns
  * menu at the header's end (a box to show or hide each column the page lets
- * them hide, Move up and Move down, or Alt with an arrow, for every column,
- * and Reset), by dragging a header sideways to its place (a finger's long
+ * them hide, Move up and Move down, or Alt with an arrow, for every column
+ * but the list's name column — the page's first, which stays first — and
+ * Reset), by dragging a header sideways to its place (a finger's long
  * press lifts it), or by dragging a header's edge (its grip takes the arrow
  * keys too) — and kept for them in the viewer's `preferences`, by page and
  * list, as a table of lines keeps its own: `[{ colId, width, hide }]`, in
@@ -86,6 +87,12 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
   if (!node.optionalColumns) return null;
   const optional = node.optionalColumns;
   const key = columnsKey(page, node);
+  /**
+   * The list's name column, the page's first: always first, held in view as the table scrolls sideways, never moved
+   * or displaced by a move or a drag — the others order after it (0.26's first column moved like any other, and
+   * Phone moved above Name held the phones in view, the names scrolling away).
+   */
+  const held = node.columns[0];
   const label = (name: string) => page.fields[name]?.label ?? name;
   /** A sentence naming a column, its label small inside it where the page asks (`lowerLabels`). */
   const naming = (template: string, name: string) => fill(template, { label: labelAt(template, 'label', page.lowerLabels, context.locale)(label(name)) });
@@ -124,6 +131,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
       }
       if (typeof one.width === 'number' && Number.isFinite(one.width)) widths.set(name, clamp(one.width));
     }
+    // The name column first, whatever was kept (0.26 let another before it).
+    order = [held, ...order.filter((name) => name !== held)];
     // Never a list of no column.
     if (order.every((name) => hidden.has(name))) hidden.delete(order[0]);
   }
@@ -179,9 +188,9 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
           });
         }
         const words = box ? el('label', { class: 'fd-list-columns-name', for: `${menuId}-${name}` }, el('bdi', {}, label(name))) : el('span', { class: 'fd-list-columns-name', 'data-fixed': '' }, el('bdi', {}, label(name)));
-        // Hide, never disable: the first has no Move up, the last no Move down.
-        const up = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'up', 'aria-label': naming(labels.moveColumnUp, name), title: naming(labels.moveColumnUp, name), hidden: i === 0 ? '' : undefined }, '↑');
-        const down = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'down', 'aria-label': naming(labels.moveColumnDown, name), title: naming(labels.moveColumnDown, name), hidden: i === order.length - 1 ? '' : undefined }, '↓');
+        // Hide, never disable: the name column has neither, the one after it no Move up, the last no Move down.
+        const up = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'up', 'aria-label': naming(labels.moveColumnUp, name), title: naming(labels.moveColumnUp, name), hidden: i <= least() || name === held ? '' : undefined }, '↑');
+        const down = el('button', { type: 'button', class: 'fd-list-columns-move', 'data-move': 'down', 'aria-label': naming(labels.moveColumnDown, name), title: naming(labels.moveColumnDown, name), hidden: i === order.length - 1 || name === held ? '' : undefined }, '↓');
         up.addEventListener('click', () => move(name, -1, 'up'));
         down.addEventListener('click', () => move(name, 1, 'down'));
         const row = el('li', { class: 'fd-list-columns-item', 'data-col': name }, ...(box ? [box] : [el('span', { class: 'fd-list-columns-room', 'aria-hidden': 'true' })]), words, el('span', { class: 'fd-list-columns-moves' }, up, down));
@@ -202,10 +211,12 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     (wanted ?? row?.querySelector<HTMLElement>('input, [data-move]:not([hidden])'))?.focus();
   }
 
+  /** The first place a column may move to: after the name column. */
+  const least = () => (order[0] === held ? 1 : 0);
   function move(name: string, by: -1 | 1, part: 'box' | 'up' | 'down') {
     const at = order.indexOf(name);
     const to = at + by;
-    if (to < 0 || to >= order.length) return;
+    if (name === held || to < least() || to >= order.length) return;
     order.splice(at, 1);
     order.splice(to, 0, name);
     done({ name, part });
@@ -372,7 +383,7 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     const row = header.parentElement;
     const list = context.host();
     const names = shown();
-    if (!table || !row || names.length < 2 || !names.includes(name) || list.hasAttribute('data-as')) return null;
+    if (!table || !row || names.length < 2 || !names.includes(name) || name === held || list.hasAttribute('data-as')) return null;
     const rtl = header.closest('[dir]')?.getAttribute('dir') === 'rtl';
     const scroller = header.closest<HTMLElement>('.fd-list-scroll');
     // Each column's width, and the room before the first: the box to choose a row, the parents' toggles.
@@ -411,12 +422,14 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
     };
     /** The columns shown, this one at `place` among them. */
     const lineWith = (place: number) => [...others.slice(0, place), name, ...others.slice(place)];
-    /** Its place for a pointer at x: past each column whose middle the pointer is past; over the first held in view, before or after it. */
+    /** The first place it may take: after the name column, which stays first. */
+    const foremost = pinned === held ? 1 : 0;
+    /** Its place for a pointer at x: past each column whose middle the pointer is past; over the first held in view, before or after it — never before the name column. */
     const placeAt = (x: number) => {
       const at = along(x);
-      const held = lead + scrolled();
-      if (name !== pinned && held > lead && at >= held && at < held + widthOf(pinned)) return at < held + widthOf(pinned) / 2 ? 0 : 1;
-      return others.filter((one) => (one === pinned ? held : startIn(names, one)) + widthOf(one) / 2 < at).length;
+      const start = lead + scrolled();
+      if (name !== pinned && start > lead && at >= start && at < start + widthOf(pinned)) return Math.max(foremost, at < start + widthOf(pinned) / 2 ? 0 : 1);
+      return Math.max(foremost, others.filter((one) => (one === pinned ? start : startIn(names, one)) + widthOf(one) / 2 < at).length);
     };
     let place = names.indexOf(name);
     let x = from;
@@ -633,6 +646,8 @@ export function columnChoices(context: ColumnsContext): ColumnChoices | null {
   }
 
   function movable(name: string, header: HTMLElement) {
+    // The name column stays first: its header sorts, and lifts nothing.
+    if (name === held) return;
     // The click a drag ends with sorts nothing; a key's click (no pointer's) always does.
     header.addEventListener(
       'click',

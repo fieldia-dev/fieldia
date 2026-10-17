@@ -1,10 +1,10 @@
-import { isEmpty, isRightToLeft, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
-import { blockOf, readPastedCell, whyNotPasted } from './cell-paste';
+import { isEmpty, labelAt, lineKind, type Field, type FieldNode, type Line, type LineField, type Value } from '@fieldia/core';
+import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf } from './date-text';
-import { cellText, currencyOf } from './display';
+import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
-import { inPlural, WIDGET_LABELS } from './labels';
+import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
 import { afterPress } from './press';
@@ -339,61 +339,47 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   };
   /**
    * A block pasted on a cell — tabs between its cells, a line break between its rows, as a spreadsheet copies one —
-   * fills across the columns shown and down the lines from there, each cell read as its column reads what is typed
-   * (its places, its currency, the page's date order, a choice by its label); rows past the last line add lines, as
-   * many as the table may have. A cell that cannot take its text keeps what it holds, named with why; so are rows past
-   * the most lines. All of it said in one note under the table.
+   * goes row by row on the lines from there, across the columns shown (`pasteRows`, the grid's way too): each cell read
+   * as its column reads what is typed, a link's by its name through the source's search; a row whose name reads as no
+   * record not pasted at all; rows past the last line add lines, as many as the table may have. What did not go in is
+   * named with why, all of it said in one note under the table. One paste at a time: the next waits for the names of
+   * the one before.
    */
+  let pasting: Promise<unknown> = Promise.resolve();
+  let destroyed = false;
   function pasteBlock(fromKey: string, fromColumn: string, block: string[][]) {
     const shown = columns.filter((column) => !(ruled && form.columnHidden(node.id, column)));
-    const start = Math.max(0, shown.indexOf(fromColumn));
+    const dateOrder = dateOrderOf(form);
+    const stillShown = form.recordShown();
+    const table: PasteTable = {
+      fields: def.fields as Record<string, LineField>,
+      columns: shown,
+      lines: current,
+      add: () => (current().length >= max ? null : form.addLine(name)),
+      typable,
+      reading: (line, column) => ({ locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(def.fields[column], line.values, form.getState().values) }),
+      // By its line's number as people count lines; a section's or a note's by its words.
+      cellName: (line, column) => {
+        const number = itemNumber(current(), line.key, isItem);
+        const sub = def.fields[column];
+        return number ? fillIn(labels.cellName, { column: sub.label, n: number }) : fillIn(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
+      },
+      write: (line, column, value) => {
+        form.setUnread(`${name}.${line.key}.${column}`, null);
+        form.updateLine(name, line.key, column, value);
+      },
+      search: (key, column, query, limit, exact) => form.searchLine(name, key, column, query, limit, exact ? { exact: true } : {}),
+      shown: () => stillShown() && !destroyed,
+    };
     const from = current().findIndex((line) => line.key === fromKey);
     if (from < 0) return;
-    const dateOrder = dateOrderOf(form);
-    let pasted = 0;
-    let added = 0;
-    let beyond = false;
-    const missed: string[] = [];
-    block.forEach((cells, r) => {
-      let key = current()[from + r]?.key;
-      if (!key) {
-        // A row of nothing adds no line; past the most lines, the rest is said.
-        if (cells.every((text) => !text.trim())) return;
-        if (current().length >= max) return void (beyond = true);
-        key = form.addLine(name);
-        added++;
-      }
-      cells.forEach((text, c) => {
-        const column = shown[start + c];
-        const line = current().find((one) => one.key === key);
-        if (!column || !line) return;
-        const sub = def.fields[column];
-        const takes = typable(line, column);
-        // Nothing pasted on a cell that takes nothing: nothing lost, nothing to say.
-        if (!takes && !text.trim()) return;
-        const reading = { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) };
-        const read = takes ? readPastedCell(sub, text, reading) : null;
-        if (!read) {
-          // By its line's number as people count lines; a section's or a note's by its words.
-          const number = itemNumber(current(), line.key, isItem);
-          const cell = number ? fillIn(labels.cellName, { column: sub.label, n: number }) : fillIn(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
-          const why = takes ? whyNotPasted(sub, text, { ...reading, labels }) : null;
-          return void missed.push(why ? fillIn(labels.notPastedWhy, { cell, why }) : cell);
-        }
-        form.setUnread(`${name}.${line.key}.${column}`, null);
-        form.updateLine(name, line.key, column, read.value);
-        pasted++;
-      });
-    });
-    const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
-    const said = [
-      ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
-      ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
-      ...(missed.length ? [fillIn(labels.notPastedCells, { cells: missed.join(separator) })] : []),
-      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, current().length, locale)] : []),
-    ].join(' ');
-    pasteNote.textContent = said;
-    pasteNote.hidden = !said;
+    pasting = pasting.then(() =>
+      pasteRows(table, from, shown.includes(fromColumn) ? fromColumn : shown[0], block, { labels, locale }).then((said) => {
+        if (said === null || destroyed) return;
+        pasteNote.textContent = said;
+        pasteNote.hidden = !said;
+      }, () => undefined)
+    );
   }
   // Heard before the box's own paste: one value is the box's, as is a paragraph's text of several lines with no tabs.
   body.addEventListener(
@@ -433,6 +419,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     td.colSpan = span;
     td.dataset['column'] = column;
     if (FIXED_WIDTH.has(sub.type)) td.dataset['fit'] = sub.type;
+    // Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number.
+    if (keepsWhole(sub.type, subNode.widget)) td.classList.add('fd-whole');
     // Its column's label, which a card shows before its value.
     td.dataset['label'] = sub.label;
     const label = document.createElement('label');
@@ -574,6 +562,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     element,
     focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? adds.querySelector('button'))?.focus(),
     destroy: () => {
+      destroyed = true;
       for (const row of rows.values()) for (const cell of row.cells) cell.widget.destroy?.();
     },
     update(state) {

@@ -83,6 +83,8 @@ export const rulesUi: DesignerWords['rulesUi'] = {
   typeAName: 'اكتب اسم حقل، أو @',
   functions: 'الدوال',
   shownOnlyTo: 'يظهر فقط لـ',
+  onPaper: 'على الورق',
+  onPaperHint: 'يُطبع مع السجل حين يُطبع. ألغِ التحديد ليظهر على الشاشة فقط، كما تترك الفاتورة قيود اليومية خارج الورق.',
   shownWhile: 'يظهر أثناء',
   shownWhileWays: { always: 'دائمًا', editing: 'التعديل', reading: 'القراءة' },
   shownWhileHint: 'جزء للتعديل فقط — زر بجانب الاسم، أو تحذير — أو للقراءة فقط. النموذج الذي يُعدَّل دائمًا يُظهر أجزاء التعديل.',

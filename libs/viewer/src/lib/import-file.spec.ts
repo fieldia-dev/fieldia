@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { DecompressionStream } from 'node:stream/web';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { deflateRawSync } from 'node:zlib';
-import { csvRows, decodeText, FileProblem, formatWrites, guessSeparator, readFile, serialAt, type PickedFile } from './import-file';
+import { csvRows, decodeText, FileProblem, formatWrites, guessSeparator, ownEncoding, readFile, serialAt, type PickedFile } from './import-file';
 import { xlsxOf } from './xlsx';
 
 /**
@@ -108,6 +108,31 @@ describe('a CSV file', () => {
 
   it('decodes UTF-8 when its bytes are UTF-8, whatever else they could be', () => {
     expect(decodeText(new TextEncoder().encode('Müller'))).toEqual({ text: 'Müller', encoding: 'utf-8' });
+  });
+
+  it('says the encoding a file’s bytes are in where they say — a mark, UTF-8 whole — and nothing for plain ASCII', () => {
+    expect(ownEncoding(new Uint8Array([0xef, 0xbb, 0xbf, 0x41]))).toBe('utf-8');
+    expect(ownEncoding(encoded('\ufeffName', 'utf16le'))).toBe('utf-16le');
+    expect(ownEncoding(new TextEncoder().encode('Müller'))).toBe('utf-8');
+    expect(ownEncoding(new TextEncoder().encode('Name;Email'))).toBeNull();
+    expect(ownEncoding(in1256('الاسم;البريد'))).toBeNull();
+  });
+
+  it('read in an encoding its bytes say it is not in, says the one that reads it; read right, nothing (the walk of 0.25)', async () => {
+    const utf8 = readFileSync(join(SAMPLES, 'contacts-to-import.csv'));
+    const wrong = await readFile(picked(new Uint8Array(utf8)), { encoding: 'windows-1256' });
+    expect(wrong.headers[0]).toBe('ï»؟Name');
+    expect(wrong.misread).toBe('utf-8');
+    expect((await readFile(picked(new Uint8Array(utf8)), { encoding: 'utf-8' })).misread).toBeUndefined();
+    expect((await readFile(picked(new Uint8Array(utf8)))).misread).toBeUndefined();
+    // An Arabic code page's file read as it: nothing to say.
+    expect((await readFile(picked(in1256('الاسم;البريد\r\nسلمى;s@x.example')), { encoding: 'windows-1256' })).misread).toBeUndefined();
+  });
+
+  it('reads a file of a header alone as no rows under it', async () => {
+    const sheet = await readFile(picked('Name;Email\r\n'));
+    expect(sheet.headers).toEqual(['Name', 'Email']);
+    expect(sheet.total).toBe(0);
   });
 });
 

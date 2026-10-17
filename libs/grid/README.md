@@ -44,10 +44,13 @@ pass `widgets={gridWidgets}`, in Vue `:widgets="gridWidgets"`, in Angular
   keeps them: at its most, Add and a line's copy are hidden (never disabled),
   and Enter or Tab at the last line's end adds none.
 - **Rows pasted from a spreadsheet** on a chosen cell (Ctrl+V, ⌘V in Safari
-  too) fill across and down from it, each cell read as its column reads what
-  is typed; rows past the last line add lines, as many as the node's
-  `options.max` allows; one note says what went in, the lines added, and what
-  did not, with why. The readers come in the lines part, asked for the first
+  too), or in a cell a click opened for typing, go each on its own line from
+  it, as the plain table pastes them: each cell read as its column reads what
+  is typed, a link by its exact name through the source's search; a row whose
+  name reads as no record is not pasted at all; rows past the last line add
+  lines, as many as the node's `options.max` allows; one note says what went in,
+  the lines added, and what did not, with why. One value pasted in an open cell
+  stays in its box. The readers come in the lines part, asked for the first
   time a block is pasted.
 
 `gridApiOf(element)` returns the AG Grid API behind a grid, for an app that

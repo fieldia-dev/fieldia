@@ -171,8 +171,9 @@ above, the rest up from below.
 
 `mode: 'values'` checks the form and hands its values back without saving
 (the panel's button then says Done). Each keeps Tab inside it, gives the focus
-back where it came from, and closes on Escape — a panel asks "Discard your
-changes?" first when something was changed. A dialog opened from inside a
+back where it came from, and closes on Escape — asking "Discard your
+changes?" first when something was changed, the focus on Cancel so Enter
+keeps it open, as × asks; Discard asks nothing. A dialog opened from inside a
 panel sits above it; a panel opened from a panel stacks over it, the older one
 stepped back from its own edge. A panel slides in from its edge only when the
 reader's system welcomes motion.
@@ -202,9 +203,11 @@ a moment does”). The viewer is their host: it draws what they ask for.
   change of theirs the last save did not send, a file on its way or not saved
   yet, changes set aside, a save refused for a conflict still waiting for
   Reload or Keep mine. A dialog's Discard waits for a save on its way too, and
-  asks nothing; it stops a file on its way at once. A dialog of values — a
-  line's own form — asks before Escape or × let a change in it go, as a panel
-  does: nothing else saves what it holds. An answer that comes once the record
+  asks nothing; it stops a file on its way at once. Every dialog and panel —
+  a line's own form, a related list's row and New, a calendar's New, a page an
+  `open` step shows — and a page in place's Back ask before they let a change
+  in it go, every change not saved counting: nothing else saves what they
+  hold. An answer that comes once the record
   it was asked for is gone — a name looked up, a record made from a link, a
   line's dialog closed, an onchange, a step's Archive, Duplicate or Delete —
   is laid on no other record (`form.recordShown()`).
@@ -222,7 +225,7 @@ a moment does”). The viewer is their host: it draws what they ask for.
   button's `confirm` is asked once, by the form. Escape answers No and leaves
   a dialog or panel under it open. Your own `host.ask` gets every question,
   and the one check's “Discard your changes?” comes with `{ discard: true }`
-  (a panel's Escape and × among them): word its Yes as Discard and put the
+  (a dialog's or a panel's Escape and × among them): word its Yes as Discard and put the
   focus on Cancel, as the viewer's own box does.
 - **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
   steps — as for a tab a person picks.
@@ -315,8 +318,8 @@ record opens, and as it is saved — each match is said under the field it
 matched on, "A record with this Phone already exists: Nile Traders", and said
 once, politely, to a screen reader. Its ways: **Open it** (the record found, in
 this one's place, once the person said Discard to what they typed), **It's
-someone new** (let be for those values, remembered for the record in the
-viewer's `preferences`), and, on a saved record where the source has `merge`,
+someone new** (the record found let be for this record, whatever field matches
+it next, remembered for the record in the viewer's `preferences`), and, on a saved record where the source has `merge`,
 **Merge…**: the two side by side, the record kept picked over its column and a
 radio for each field they hold apart, what will happen said before Merge. Typing
 on leaves an answer on its way unheard; an answer for a record no longer shown
@@ -387,11 +390,14 @@ why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 
 With `"import": true` (or the fields) **Import**, in its bar, brings records in
 from an Excel workbook or a CSV file, read in the browser with no library (a
-CSV file's encoding and separator guessed): its columns matched to the page's
-fields by name or label in any of the page's languages, a picker for each; every
-row checked by the page's own rules before anything is written — the rows
-refused named with why and downloadable as a file to fix, the first shown as
-they will be saved — then written by `createMany` or a save per row, with
+CSV file's encoding and separator guessed, an encoding picked that its bytes
+say it is not in said with the one that reads it; a file of a header alone
+said to hold no rows): its columns matched to the page's fields by name or
+label in any of the page's languages, a picker for each; every row checked by
+the page's own rules before anything is written — the rows refused named with
+why and downloadable as a file to fix, its cells as the file had them under the
+labels of the fields they were matched to, so it matches by itself when brought
+in again; the first shown as they will be saved — then written by `createMany` or a save per row, with
 progress and Stop; and **Undo the import** deletes what it made. Its dialog comes
 in a part of its own (`importPart`), the first time it is pressed. At most
 50,000 rows in the browser; `importRecords` takes more on your server. See
@@ -491,7 +497,10 @@ the totals under the cards and in sight while they scroll.
 `"options": { "links": true }` (a call and a WhatsApp link). Each row's tone
 while a condition on its record holds (`rowTones`), its bold (`rowBold`), and
 buttons on each row (`rowButtons`, each shown by its `invisible` read on the
-row's record, pressed with that record alone).
+row's record, pressed with that record alone). A tone's `label` and
+`rowBoldLabel` ("Your own contacts") say what they mean in a key over the rows —
+a swatch, a bold sample — read by a screen reader as a list; without words, no
+key.
 
 **Columns people control.** With `optionalColumns` — the columns a person may
 hide, each `show` or `hide` at first — the header has a **Columns** menu: show,
@@ -503,7 +512,8 @@ back, a press that does not move still sorts, a finger's long press lifts it
 said to a screen reader ("Phone moved to place 2 of 8", as the menu's moves
 are); a header's edge drags (or its grip takes the arrow keys) to size its
 column; the header and the first column stay in view as the rows scroll — the
-first column is whichever comes first, moved or not — and the Columns button is
+first is the list's name column (the page's first), which no move or drag
+displaces: the others order after it — and the Columns button is
 held at the header's end, in sight however wide the table.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
@@ -534,15 +544,23 @@ an engine that tells nothing as it prints gets them too):
   header left alone at a sheet's foot — each goes to the next sheet with the
   start of what follows it;
 - groups and fields side by side as the page sets them at the sheet's width,
-  a row of them never laid over the next, in Chromium and Firefox alike;
+  a row of them never laid over the next, in Chromium and Firefox alike; a
+  sheet breaks between any two groups, so one that fits stays where it is;
+- no required star, in any skin; a number, an amount, a day or a phone number
+  in a printed list's or table's cell on one line;
+- a part its page marks `"print": false` — a tab, a group, a field or a
+  related list — left out, as an invoice leaves out its journal items, and a
+  related list with no title of its own no empty band over its rows;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
-- over it, the record's title and the day it was printed (`now`, on the
-  page's `timeZone`), and — with a page's `print` — the app's logo and words
-  over it, and its footer under every sheet of it: nothing runs under the
-  footer, and under the last sheet it follows the record (in Chromium and
-  Firefox; in Safari, once after the record). Each `{field}` shows that
-  field's value;
+- over it, the record's own name — with none yet (a draft invoice's "/"),
+  what the page calls its records and the stage it is in, "Invoice · Draft" —
+  and the day it was printed (`now`, on the page's `timeZone`), and — with a
+  page's `print` — the app's logo and words over it, and its footer under every
+  sheet of it: nothing runs under the footer, and under the last sheet it
+  follows the record (in Chromium and Firefox; in Safari, once after the
+  record). Each `{field}` shows that field's value; a line whose value is
+  empty (or no words, as "/") is left out whole, never "quoting . Thank you";
 - with a dialog or a panel open over the page, its form alone: what a person
   printing looks at — never the page behind with the dialog over it.
 

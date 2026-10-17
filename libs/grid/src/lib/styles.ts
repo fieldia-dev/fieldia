@@ -57,6 +57,7 @@ export const GRID_CSS = /* css */ `
   .fd-print-table :is(th, td) { padding: 5px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }
   .fd-print-table th { font-weight: 600; border-block-end-color: var(--fd-border-strong); }
   .fd-print-table .fd-num { text-align: end; white-space: nowrap; }
+  .fd-print-table .fd-whole { white-space: nowrap; }
   .fd-print-table .fd-line-section td { font-weight: 600; }
   .fd-print-table .fd-line-note td { font-style: italic; }
   .fd-print-table tfoot td { font-weight: 600; border-block-end: 0; }

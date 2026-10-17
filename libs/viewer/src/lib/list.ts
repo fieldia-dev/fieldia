@@ -21,7 +21,7 @@ import {
   type Tone,
   type Values,
 } from '@fieldia/core';
-import { drawIcon, formatNumber, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
+import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -262,6 +262,10 @@ export function listView(context: ListContext): ListView {
   const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : []), ...(cards?.cardReads(spec) ?? []), ...rules.reads])];
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
+  /** Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number. */
+  const whole = (name: string) => keepsWhole(page.fields[name]?.type, cellOf(name)?.widget);
+  /** A cell's classes: at the end for a number, whole on paper for words read as one. */
+  const cellClass = (name: string) => [atEnd(name) ? 'fd-num' : '', whole(name) ? 'fd-whole' : ''].filter(Boolean).join(' ') || undefined;
   /** A column of a given width, its words cut with "…" past it: the person's, in pixels; else the page's, in characters of its words or in pixels. */
   const sized = (cell: HTMLTableCellElement, name: string) => {
     const own = choices?.width(name);
@@ -563,7 +567,7 @@ export function listView(context: ListContext): ListView {
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
       ...node.columns.map((column) =>
-        sized(el('td', { 'data-col': column, class: atEnd(column) ? 'fd-num' : undefined, 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
+        sized(el('td', { 'data-col': column, class: cellClass(column), 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
       ),
       // Its card, which the table hides and a narrow list or its gallery shows in place of the columns.
       ...(spec && cards ? [cards.drawCard({ page, node, el, locale, cells }, spec, record.values, name)] : []),
@@ -932,6 +936,24 @@ export function listView(context: ListContext): ListView {
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}) });
 
+  /**
+   * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each
+   * tone's swatch and its words, a sample in bold and its words — a list a screen reader reads, named "Key to the rows".
+   * Without words, none: a list as 0.25 drew it.
+   */
+  function rowsKey(): HTMLElement | null {
+    const tones = (node.rowTones ?? []).filter((one) => one.label);
+    const bold = node.rowBold !== undefined && node.rowBold !== false && node.rowBoldLabel ? node.rowBoldLabel : null;
+    if (!tones.length && !bold) return null;
+    const item = (mark: HTMLElement, words: string) => el('li', { class: 'fd-list-key-item' }, mark, el('span', {}, words));
+    return el(
+      'ul',
+      { class: 'fd-list-key', 'aria-label': labels.rowsKey },
+      ...tones.map((one) => item(el('span', { class: 'fd-list-key-mark', 'data-tone': one.tone, 'aria-hidden': 'true' }), one.label as string)),
+      ...(bold ? [item(el('span', { class: 'fd-list-key-mark', 'data-bold': '', 'aria-hidden': 'true' }, 'Aa'), bold)] : [])
+    );
+  }
+
   // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
   /** The views this list offers, by name, in the order the app registered them: by the page option of its name, unless the view says. */
@@ -1272,6 +1294,7 @@ export function listView(context: ListContext): ListView {
             reads: fields,
             words: show,
             atEnd,
+            whole,
             filter: currentFilter(),
             sort,
             facets,
@@ -1458,6 +1481,7 @@ export function listView(context: ListContext): ListView {
   }
 
   const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
+  const key = rowsKey();
   const element = el(
     'div',
     {
@@ -1475,6 +1499,7 @@ export function listView(context: ListContext): ListView {
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
+    ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
   // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.

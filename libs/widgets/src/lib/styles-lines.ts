@@ -98,6 +98,8 @@ export const LINES_CSS = /* css */ `
   /* A block round the table on paper, which every engine breaks between its rows: Firefox moved a grid's part whole. */
   .fd-form .fd-lines { display: block; }
   .fd-form .fd-lines > * + * { margin-block-start: 6px; }
+  /* A number, an amount, a day or a phone number on one line. */
+  .fd-form .fd-lines td.fd-whole .fd-print-box { white-space: nowrap; }
 }
 `;
 

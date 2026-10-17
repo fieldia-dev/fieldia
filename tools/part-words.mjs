@@ -55,7 +55,7 @@ export const PART_WORDS = {
     widgets: ['phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart'],
     viewer: [
       'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooMany', 'importColumnLetter',
-      'importFileRows', 'importFileRowsOne', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
+      'importFileRows', 'importFileRowsOne', 'importNoRowsUnder', 'importMisread', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
       'importWhy', 'importFixName', 'importing', 'importStop', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
       'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
@@ -64,7 +64,7 @@ export const PART_WORDS = {
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',
-      'pastedCells', 'pastedCellsOne', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
+      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
     ],
   },
   list: {
@@ -77,7 +77,7 @@ export const PART_WORDS = {
       'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
       'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opSet', 'opNotSet', 'opPeriod', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'expandAll', 'collapseAll',
-      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown',
+      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown', 'rowsKey',
       'rangeNoun', 'noRecordsNoun', 'selectAllMatchingNoun', 'selectAllFailedNoun', 'exportAllNoun', 'exportAllNounOne', 'exportCutNoun', 'exportFailedNoun', 'exportedNoun', 'exportedNounOne', 'printCutNoun', 'printFailedNoun',
       'printCountNoun', 'printCountNounOne', 'bulkTitleNoun', 'bulkTitleNounOne', 'bulkAskNoun', 'bulkAskNounOne', 'bulkDoneNoun', 'bulkDoneNounOne', 'bulkSomeNoun', 'importDoneNoun', 'importDoneNounOne', 'importStoppedNoun', 'importSomeNoun',
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun',
