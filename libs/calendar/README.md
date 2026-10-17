@@ -71,6 +71,10 @@ The page check refuses a field the page lacks or one of the wrong kind, an end
 of another kind than its start, a `view` that is not among `views`, and hours
 that end before they start.
 
+On a page that names its records (`"records": { "one": "appointment",
+"other": "appointments" }`), New says "New appointment", a slot "1
+appointment", and Enter "makes a new appointment there".
+
 ## What a person can do
 
 - **See** the week (days across, the hours down), the day (a column for each
