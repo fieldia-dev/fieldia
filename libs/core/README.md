@@ -63,6 +63,21 @@ settings each kind has are `PART_LOOKS`:
 }
 ```
 
+## Values that wait for a line
+
+A value worked out from others waits while one of them holds text that does
+not read — "abc" in a line's Quantity — as the table's own total does, so it is
+never shown counting the value that text replaced. Who works it out does not
+matter: the page (a `compute`, such as `sum(lines, 'subtotal')`, and what is
+worked out from that in turn) or your app (an amount or totals kept whole, read
+only, which a source with an `onchange` works out as the lines change — a sales
+order's Untaxed, Taxes and Total, Flectra's `tax_totals`). `form.waitsFor(field)`
+says what it waits for — `{ field: 'line_ids', line: 1, column: 'qty' }`, the line
+as people count lines, or `{ field: 'rate' }` for a field of the record's own —
+and null when it shows its value; the viewer draws it as a dash, said in words
+("Fix line 1 of Order lines to see Untaxed amount"). An answer your onchange
+gives meanwhile is kept, and shown once the line reads.
+
 ## A public form's bot check
 
 A page of responses anyone may send — a sign-up, a contact form — can check that
