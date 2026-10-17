@@ -10,8 +10,9 @@ import { en } from './locales/en';
  * question, a click going to it — with the warnings beside them. A required
  * question not answered yet is no problem until the page is sent: it is
  * counted apart and said neutrally ("5 to answer"), the red count kept for
- * real problems (an answer that does not read or does not fit). It opens on
- * a tab and stays put out of the way otherwise; only an open tab is drawn.
+ * real problems (an answer that does not read or does not fit); with none of
+ * these, there is no Problems tab at all. It opens on a tab and stays put out
+ * of the way otherwise; only an open tab is drawn.
  * What a person tries stays in Try it; the drawer only shows it.
  */
 
@@ -122,6 +123,9 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
     toAnswer.textContent = unanswered ? fill(w.toAnswer, { n: unanswered }) : '';
     toAnswer.hidden = !unanswered;
     problemsWord.hidden = !problems && unanswered > 0;
+    // With nothing to say — no problem, no warning, nothing to answer — the tab is not there (a blank survey, a screen
+    // with nothing required); only while it is the one open does it stay, to say nothing stands in the way now.
+    tabs.problems.hidden = rows.length === 0 && !open('problems');
     none.hidden = rows.length > 0;
     list.replaceChildren(
       ...rows.filter(() => open('problems')).map((row) => {
