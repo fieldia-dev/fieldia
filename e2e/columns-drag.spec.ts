@@ -167,6 +167,142 @@ test.describe('a list’s column moved by dragging its header', () => {
   });
 });
 
+// ---- a table wider than its card, scrolled sideways (Phone and Email shown, on a narrower window) ----
+
+const NARROW = { width: 820, height: 700 };
+const WIDE = ['Name', 'Company', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter', 'Phone', 'Email'];
+/** The Columns menu's button and the menu, in any of the page's languages. */
+const columnsButton = (page: Page) => page.locator('.fd-list-columns-button');
+const columnsMenu = (page: Page) => page.locator('.fd-list-columns-menu[role="dialog"]');
+const tableScroll = (page: Page) => page.locator('.fd-list-scroll');
+const scrolledBy = (page: Page) => tableScroll(page).evaluate((element) => Math.round(element.scrollLeft));
+const scrolledMost = (page: Page) => tableScroll(page).evaluate((element) => element.scrollWidth - element.clientWidth);
+/** Phone and Email shown from the Columns menu, the menu closed with Escape: the table wider than its card. */
+async function widen(page: Page) {
+  await columnsButton(page).click();
+  const menu = columnsMenu(page);
+  await menu.getByLabel('Phone', { exact: true }).check();
+  await menu.getByLabel('Email', { exact: true }).check();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(heads(page)).toHaveText(WIDE);
+  expect(await scrolledMost(page)).toBeGreaterThan(300);
+}
+/** The table scrolled sideways by a wheel over it, as far as `to` goes ('start' or 'end'). */
+async function wheelTo(page: Page, to: 'start' | 'end') {
+  const card = await boxOf(tableScroll(page));
+  await page.mouse.move(card.x + card.width / 2, card.y + card.height / 2);
+  const most = await scrolledMost(page);
+  await expect
+    .poll(async () => {
+      await page.mouse.wheel(to === 'end' ? 400 : -400, 0);
+      return scrolledBy(page);
+    })
+    .toBe(to === 'end' ? most : 0);
+}
+/** The middle of what is seen of a header, the card's sides cutting it. */
+async function seenMiddle(page: Page, target: Locator) {
+  const box = await boxOf(target);
+  const card = await boxOf(tableScroll(page));
+  return { x: (Math.max(box.x, card.x) + Math.min(box.x + box.width, card.x + card.width)) / 2, y: box.y + box.height / 2 };
+}
+
+test.describe('a table scrolled sideways', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize(NARROW);
+  });
+
+  test('Escape out of the Columns menu gives its button the focus and leaves the table where it was scrolled', async ({ page }) => {
+    const { problems } = await contacts(page);
+    // A person scrolls to the header's end to reach the button; the columns shown push it on, out of sight.
+    await expect(columnsButton(page)).toHaveAccessibleName('Columns');
+    await columnsButton(page).click();
+    const menu = page.getByRole('dialog', { name: 'Columns' });
+    await menu.getByLabel('Phone', { exact: true }).check();
+    await menu.getByLabel('Email', { exact: true }).check();
+    await expect(heads(page)).toHaveText(WIDE);
+    const before = await scrolledBy(page);
+    expect(before).toBeLessThan((await scrolledMost(page)) - 100);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(columnsButton(page)).toBeFocused();
+    expect(await scrolledBy(page)).toBe(before);
+    // The names, held in view, and the columns beside them as they were.
+    await expect(header(page, 'name')).toBeInViewport();
+    expect(problems).toEqual([]);
+  });
+
+  test('a column carried to the card’s end scrolls the table there, and let go, it is the last', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await widen(page);
+    await wheelTo(page, 'start');
+    await holdsStill(header(page, 'company'));
+    const company = await boxOf(header(page, 'company'));
+    const card = await boxOf(tableScroll(page));
+    await carry(page, { x: company.x + company.width / 2, y: company.y + company.height / 2 }, card.x + card.width - 8);
+    await expect(page.locator('.fd-list-ghost')).toHaveText('Company');
+    // Held there, the table scrolls on to its end, the line at the end of the last column.
+    const most = await scrolledMost(page);
+    await expect.poll(() => scrolledBy(page)).toBe(most);
+    await expect.poll(async () => Math.abs((await boxOf(page.locator('.fd-list-drop'))).x + 1 - (await edgeOf(header(page, 'email'), 'right')))).toBeLessThanOrEqual(1.5);
+    await screen(page, 'list-columns-dragging-scrolled-end', { viewport: true });
+    await page.mouse.up();
+    await expect(heads(page)).toHaveText(['Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter', 'Phone', 'Email', 'Company']);
+    await expect(said(page)).toHaveText('Company moved to place 10 of 10');
+    expect(problems).toEqual([]);
+  });
+
+  test('right to left, a column carried to the card’s end — its left — scrolls the table there, and let go, it is the last', async ({ page }) => {
+    const { problems } = await contacts(page, '&locale=ar');
+    await widen(page);
+    // Back to its start, at the right, by a wheel over it.
+    const over = await boxOf(tableScroll(page));
+    await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2);
+    await expect
+      .poll(async () => {
+        await page.mouse.wheel(400, 0);
+        return scrolledBy(page);
+      })
+      .toBe(0);
+    await holdsStill(header(page, 'company'));
+    const company = await boxOf(header(page, 'company'));
+    const card = await boxOf(tableScroll(page));
+    await carry(page, { x: company.x + company.width / 2, y: company.y + company.height / 2 }, card.x + 8);
+    await expect(page.locator('.fd-list-ghost')).toHaveText('Company');
+    // Right to left the table scrolls leftwards: scrollLeft runs from 0 below it, to minus its most.
+    const most = await scrolledMost(page);
+    await expect.poll(() => scrolledBy(page)).toBe(-most);
+    await expect.poll(async () => Math.abs((await boxOf(page.locator('.fd-list-drop'))).x + 1 - (await boxOf(header(page, 'email'))).x)).toBeLessThanOrEqual(1.5);
+    await screen(page, 'list-columns-dragging-scrolled-end-rtl', { viewport: true });
+    await page.mouse.up();
+    await expect(heads(page)).toHaveText(['Name', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter', 'Phone', 'Email', 'Company']);
+    expect(problems).toEqual([]);
+  });
+
+  test('a column carried over the first column, held in view, scrolls the table back to its start, and goes right after it', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await widen(page);
+    await wheelTo(page, 'end');
+    await holdsStill(header(page, 'email'));
+    // Name is held at the card's start, over the columns scrolled under it.
+    const name = await boxOf(header(page, 'name'));
+    expect(await edgeOf(header(page, 'company'), 'right')).toBeLessThan(name.x + name.width);
+    await expect(header(page, 'name')).toBeInViewport();
+    const from = await seenMiddle(page, header(page, 'email'));
+    await carry(page, from, name.x + name.width * 0.75);
+    await expect(page.locator('.fd-list-ghost')).toHaveText('Email');
+    // Held over Name's end half, the table scrolls back to its start; the line stands at Name's end.
+    await expect.poll(() => scrolledBy(page)).toBe(0);
+    await expect.poll(async () => Math.abs((await boxOf(page.locator('.fd-list-drop'))).x + 1 - (await edgeOf(header(page, 'name'), 'right')))).toBeLessThanOrEqual(1.5);
+    await screen(page, 'list-columns-dragging-scrolled-start', { viewport: true });
+    await page.mouse.up();
+    await expect(heads(page)).toHaveText(['Name', 'Email', 'Company', 'Country', 'Status', 'Owner', 'Last order', 'Lifetime value', 'Newsletter', 'Phone']);
+    await expect(page.locator('.fd-list-table thead th[data-pin]')).toHaveAttribute('data-col', 'name');
+    await expect(said(page)).toHaveText('Email moved to place 2 of 10');
+    expect(problems).toEqual([]);
+  });
+});
+
 // ---- a finger, on a phone held sideways (the list a table there, wider than a phone's cards) ----
 
 /** A finger on the screen, through Chromium's own protocol: pressed, moved, lifted. */
