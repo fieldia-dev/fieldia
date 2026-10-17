@@ -318,8 +318,8 @@ record opens, and as it is saved — each match is said under the field it
 matched on, "A record with this Phone already exists: Nile Traders", and said
 once, politely, to a screen reader. Its ways: **Open it** (the record found, in
 this one's place, once the person said Discard to what they typed), **It's
-someone new** (let be for those values, remembered for the record in the
-viewer's `preferences`), and, on a saved record where the source has `merge`,
+someone new** (the record found let be for this record, whatever field matches
+it next, remembered for the record in the viewer's `preferences`), and, on a saved record where the source has `merge`,
 **Merge…**: the two side by side, the record kept picked over its column and a
 radio for each field they hold apart, what will happen said before Merge. Typing
 on leaves an answer on its way unheard; an answer for a record no longer shown
