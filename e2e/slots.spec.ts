@@ -42,7 +42,8 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     await chooseCar(page, 'hatch', 'City hatchback, electric');
     await settled(page);
     await expect(slots(page).locator('.fd-calendar-title')).toHaveText('October 2026');
-    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time (CEST)');
+    // The zone by its name all year: the clocks go back on the 25th, and this month holds both CEST and CET.
+    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time');
     // Today in Berlin; the days before it closed; the hatchback's next Wednesday fully booked; the staff day; Sundays.
     await expect(day(page, 14)).toHaveAttribute('aria-current', 'date');
     await expect(day(page, 13)).toHaveAttribute('data-state', 'past');
@@ -113,6 +114,59 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     expect(problems).toEqual([]);
   });
 
+  test('26 October, after the clocks go back: CET beside the times, and nothing saying CEST', async ({ page }) => {
+    const { problems } = await open(page, 'plain', DRIVE);
+    await chooseCar(page, 'estate', 'Family estate, hybrid');
+    await settled(page);
+    await day(page, 26).click();
+    await chips(page).filter({ hasText: '10:00' }).click();
+    // 10:00 in Berlin's winter is 09:00 UTC.
+    await expect.poll(() => valueOf(page, 'start')).toBe('2026-10-26T09:00:00.000Z');
+    await expect(slots(page).locator('.fd-slots-chosen')).toHaveText(/^Monday,? 26 October 2026, 10:00 to 10:45 CET$/);
+    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time');
+    await expect(slots(page)).not.toContainText('CEST');
+    await screen(page, 'slots-26-october-cet');
+    // A day before the change, the same note; the summer's name beside its times.
+    await day(page, 23).click();
+    await chips(page).filter({ hasText: '10:00' }).click();
+    await expect(slots(page).locator('.fd-slots-chosen')).toHaveText(/^Friday,? 23 October 2026, 10:00 to 10:45 CEST$/);
+    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time');
+    expect(problems).toEqual([]);
+  });
+
+  test('a double-click on a time just booked books nothing: the time that slid under the pointer is never taken', async ({ page }) => {
+    const { problems } = await open(page, 'plain', DRIVE);
+    await chooseCar(page, 'hatch', 'City hatchback, electric');
+    await settled(page);
+    await day(page, 16).click();
+    await expect(chips(page)).toHaveText(['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '17:00']);
+    await page.evaluate(() => {
+      (window as any).fieldiaDemo.dataSource.records['drive.booking'][999] = { customer: 'Tom Schulz', car: { id: 1, label: 'City hatchback, electric' }, start: '2026-10-16T08:00:00.000Z', stop: '2026-10-16T08:45:00.000Z' };
+    });
+    // The walk's double-click: its first click asks about 10:00, which is said taken, the times close up and 11:00
+    // slides under the pointer — then its second click lands there.
+    const box = await chips(page).filter({ hasText: '10:00' }).boundingBox();
+    if (!box) throw new Error('no 10:00');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down({ clickCount: 1 });
+    await page.mouse.up({ clickCount: 1 });
+    await expect(said(page)).toHaveText('10:00 was just booked by someone else. Pick another time.');
+    await expect(chips(page)).toHaveText(['09:00', '11:00', '12:00', '14:00', '15:00', '17:00']);
+    await page.mouse.down({ clickCount: 2 });
+    await page.mouse.up({ clickCount: 2 });
+    // 11:00, never pointed at, is not booked; the warning stays until the person picks again.
+    await expect(said(page)).toHaveText('10:00 was just booked by someone else. Pick another time.');
+    expect(await valueOf(page, 'start')).toBeNull();
+    await expect(chips(page).filter({ hasText: '11:00' })).toHaveAttribute('aria-pressed', 'false');
+    await screen(page, 'slots-double-click-taken');
+    // A click of its own, a moment later, picks it.
+    await page.waitForTimeout(600);
+    await chips(page).filter({ hasText: '11:00' }).click();
+    await expect.poll(() => valueOf(page, 'start')).toBe('2026-10-16T09:00:00.000Z');
+    await expect(said(page)).toHaveText('');
+    expect(problems).toEqual([]);
+  });
+
   test('another car has its own times: a full day for one is open for another', async ({ page }) => {
     await open(page, 'plain', DRIVE);
     await chooseCar(page, 'hatch', 'City hatchback, electric');
@@ -128,7 +182,7 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     await slots(page).getByRole('button', { name: 'Next month' }).click();
     await settled(page);
     await expect(slots(page).locator('.fd-calendar-title')).toHaveText('November 2026');
-    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time (CET)');
+    await expect(slots(page).locator('.fd-slots-zone')).toHaveText('Times are Central European Time');
     await day(page, 2).click();
     await chips(page).first().click();
     // 09:00 in Berlin's winter is 08:00 UTC.

@@ -117,6 +117,42 @@ describe('a press on a bar’s button', () => {
     expect(deleted).toEqual(['Chair', 'Desk', 'Lamp']);
   });
 
+  it('a booking’s free times: the time that slid under a double-click’s second click is not booked', () => {
+    const scope = document.createElement('div');
+    const chips = document.createElement('div');
+    chips.className = 'fd-slots-chips';
+    const booked: string[] = [];
+    const draw = (times: string[]) =>
+      chips.replaceChildren(
+        ...times.map((time) => {
+          const chip = document.createElement('button');
+          chip.textContent = time;
+          // The first press finds its time just booked by someone else: the times close up, and nothing is booked.
+          chip.addEventListener('click', () => (time === '10:00' ? draw(['09:00', '11:00']) : booked.push(time)));
+          return chip;
+        })
+      );
+    draw(['09:00', '10:00', '11:00']);
+    scope.append(chips);
+    document.body.append(scope);
+    stop = steadyPresses(scope, () => clock);
+    press(chips.children[1] as HTMLElement, 120, 20, 1);
+    const slid = chips.children[1] as HTMLElement;
+    expect(slid.textContent).toBe('11:00');
+    expect(press(slid, 120, 20, 2)).toEqual({ focusKept: true, clicked: false });
+    expect(booked).toEqual([]);
+    // Its own click, later, books it.
+    expect(press(slid, 120, 20, 1).clicked).toBe(true);
+    expect(booked).toEqual(['11:00']);
+    // A finger's double tap the same: its second tap, a moment after the first, where it landed, books nothing.
+    draw(['09:00', '10:00', '11:00']);
+    clock += 1000;
+    press(chips.children[1] as HTMLElement, 120, 20, 1, 'touch');
+    clock += 150;
+    expect(press(chips.children[1] as HTMLElement, 120, 20, 1, 'touch').clicked).toBe(false);
+    expect(booked).toEqual(['11:00']);
+  });
+
   it('a button outside the scope it keeps is left alone', () => {
     const { save, pressed } = bar();
     const other = document.createElement('button');
