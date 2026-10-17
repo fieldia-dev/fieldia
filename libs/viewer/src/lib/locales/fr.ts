@@ -148,6 +148,8 @@ export const fr: ViewerLabels = {
   importColumnLetter: 'Colonne {letter}',
   importFileRows: '{name} : {n} lignes',
   importFileRowsOne: '{name} : {n} ligne',
+  importNoRowsUnder: '{name} : aucune ligne sous l’en-tête',
+  importMisread: 'Ses caractères semblent faux lus en {chosen} : ce fichier se lit en {encoding}.',
   importSheet: 'Feuille',
   importEncoding: 'Caractères',
   importUnicode: 'Unicode ({name})',

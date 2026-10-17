@@ -153,6 +153,8 @@ export const de: ViewerLabels = {
   importColumnLetter: 'Spalte {letter}',
   importFileRows: '{name}: {n} Zeilen',
   importFileRowsOne: '{name}: {n} Zeile',
+  importNoRowsUnder: '{name}: keine Zeilen unter der Kopfzeile',
+  importMisread: 'Die Zeichen sehen in {chosen} falsch aus: Diese Datei liest sich in {encoding}.',
   importSheet: 'Blatt',
   importEncoding: 'Zeichen',
   importUnicode: 'Unicode ({name})',

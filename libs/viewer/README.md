@@ -390,11 +390,14 @@ why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 
 With `"import": true` (or the fields) **Import**, in its bar, brings records in
 from an Excel workbook or a CSV file, read in the browser with no library (a
-CSV file's encoding and separator guessed): its columns matched to the page's
-fields by name or label in any of the page's languages, a picker for each; every
-row checked by the page's own rules before anything is written — the rows
-refused named with why and downloadable as a file to fix, the first shown as
-they will be saved — then written by `createMany` or a save per row, with
+CSV file's encoding and separator guessed, an encoding picked that its bytes
+say it is not in said with the one that reads it; a file of a header alone
+said to hold no rows): its columns matched to the page's fields by name or
+label in any of the page's languages, a picker for each; every row checked by
+the page's own rules before anything is written — the rows refused named with
+why and downloadable as a file to fix, its cells as the file had them under the
+labels of the fields they were matched to, so it matches by itself when brought
+in again; the first shown as they will be saved — then written by `createMany` or a save per row, with
 progress and Stop; and **Undo the import** deletes what it made. Its dialog comes
 in a part of its own (`importPart`), the first time it is pressed. At most
 50,000 rows in the browser; `importRecords` takes more on your server. See

@@ -226,6 +226,10 @@ export interface ViewerLabels {
   importColumnLetter: string;
   importFileRows: string;
   importFileRowsOne: string;
+  /** A file of a header and nothing under it: no rows to check. */
+  importNoRowsUnder: string;
+  /** A CSV file read in an encoding its bytes say it is not in (`{chosen}`), and the one that reads it (`{encoding}`). */
+  importMisread: string;
   importSheet: string;
   importEncoding: string;
   importUnicode: string;
@@ -668,6 +672,8 @@ const en: ViewerLabels = {
   importColumnLetter: 'Column {letter}',
   importFileRows: '{name}: {n} rows',
   importFileRowsOne: '{name}: {n} row',
+  importNoRowsUnder: '{name}: no rows under the header',
+  importMisread: 'Its characters look wrong read as {chosen}: this file reads as {encoding}.',
   importSheet: 'Sheet',
   importEncoding: 'Characters',
   importUnicode: 'Unicode ({name})',
