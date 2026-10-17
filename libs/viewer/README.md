@@ -261,6 +261,33 @@ are gone, and the gear menu's Archive, Duplicate or Delete it does not allow
 are hidden, its foot saying why — in English, Arabic, French or German. See
 [versions and conflicts](https://fieldia.dev/data/#versions).
 
+## What a page's records are called
+
+A page that names its records (`"records": { "one": "contact", "other":
+"contacts", "a": "a contact" }`, see `@fieldia/core`) has the viewer say them
+wherever it named records in words: a list's pager ("1–10 of 1,284 contacts"),
+nothing found ("No contacts match."), Select all ("Select all 1,284 contacts that
+match"), Export ("All 1,284 contacts that match", "1,284 contacts exported."),
+Edit ("Edit 3 contacts", "Update 3 contacts? …", "3 contacts updated."),
+Import's button, report and Undo ("Import 10 contacts", "10 of 17 contacts
+imported", "Delete the 10 contacts this import made?"), a printout's count; over
+a record its crumb ("New contact"), its pager's name and buttons ("Next
+contact"), the gear's Print ("This contact"), someone else's save, a record only
+to be read, the question before changes go; possible duplicates ("A contact with
+this phone already exists", "It's a new contact", "Merge two contacts"); a
+related list in the words its model's page names them by ("New invoice", "View
+all invoices", "No invoices yet.", "5 of 23 invoices") — "all" and "none" kept to
+its title where its own `filter` lists only some — and "Nothing here until this
+customer is saved." in the record's own. @fieldia/calendar's New and a slot's
+count, and @fieldia/map's failure, say them too.
+
+Each is a word of its own beside the plain one, ending in `Noun`
+(`exportedNoun: '{n} {records} exported.'`, `exportedNounOne`); English has them
+all, German and French those they can say round any noun's gender, Arabic the
+pager's name. A language that leaves one out says its own plain sentence, and so
+does an app's `labels` that gives the plain one alone (`exported`): never an
+English sentence round another language's words. `addLanguage` keeps it so.
+
 ## Possible duplicates, and Merge
 
 A record's page with `duplicates` (`{ "fields": ["name", "phone", "email"] }`)

@@ -254,6 +254,41 @@ import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });
 ```
 
+## What a page's records are called
+
+A page may say what its records are, so Fieldia's own sentences name them as
+the business does — "A customer with this phone already exists", "17 customers
+imported", "Are you sure you want to delete this customer?", "New customer" —
+where they said "record", or no noun at all:
+
+```json
+{ "records": { "one": "customer", "other": "customers", "a": "a customer", "lowerLabels": true } }
+```
+
+`one` and `other` are the words for one record and for more, as they stand
+inside a sentence; a sentence that counts picks one of them as its language does
+for the number. `a` is one with its article, where the language puts one before
+it ("an invoice", "une facture"): Fieldia never guesses an article, so a
+sentence that needs one says "A record …" until it is given. `lowerLabels`
+writes a field's label inside those sentences with a small first letter — "this
+phone", not "this Phone" — off unless said, since only the page knows whether
+that is right: a label whose first word holds another capital ("IBAN", "VAT
+number", "WhatsApp") stays as written, as does every label in a language that
+writes its nouns with a capital (German). Other languages come through the
+page's `translations`, as its other words do (`"customer": "عميل"`), and
+`pageWords` lists them for a translator.
+
+The form's own sentences say them — what it asks before the gear menu's Archive
+and Delete, why a person may not change, archive, copy or delete one, why a run
+of steps stopped, what letting changes go asks — and the viewer's (a list's, a
+record's, possible duplicates', a related list's in its model page's words: see
+`@fieldia/viewer`). Each such sentence is a message of its own beside the plain
+one (`deleteConfirmNoun`: "Are you sure you want to delete this {record}?",
+with `{record}`, `{records}` and `{aRecord}`); `recordSentence(records, named,
+plain, locale)` says one. A language, or an app's own `messages`, that has no
+such sentence says its plain one: a page that names no records reads as before.
+`checkPage` and `validatePage` refuse a word for one or for more left out.
+
 ## Two people, one record
 
 A source that keeps versions returns each record with its version, and what this
