@@ -188,7 +188,7 @@ async function sideways(browser: Browser, query: string) {
 test.describe('a column moved by a finger', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'a finger’s touches are sent through Chromium’s own protocol');
 
-  test('in a list: a swipe on a header scrolls the table, a tap sorts, a finger resting a moment lifts the column and it follows', async ({ browser }) => {
+  test('in a list: a tap sorts, a finger resting a moment lifts the column and it follows, a swipe on a header scrolls the table', async ({ browser }) => {
     const { page, problems, hand, close } = await sideways(browser, 'page=contacts&skin=underline');
     await expect(rows(page)).toHaveCount(10);
     await expect(page.locator('.fd-list')).not.toHaveAttribute('data-as', /./);
@@ -196,20 +196,10 @@ test.describe('a column moved by a finger', () => {
     await holdsStill(header(page, 'company'));
     let company = await boxOf(header(page, 'company'));
     const y = company.y + company.height / 2;
-    // A swipe leftwards on the header: the table scrolls, nothing moves.
-    const scroll = page.locator('.fd-list-scroll');
-    await hand.down(company.x + company.width / 2, y);
-    for (let step = 1; step <= 12; step++) await hand.move(company.x + company.width / 2 - step * 10, y);
-    await hand.up();
-    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(40);
-    await expect(page.locator('.fd-list[data-moving]')).toHaveCount(0);
-    await expect(heads(page)).toHaveText(CONTACTS);
-    await scroll.evaluate((element) => element.scrollTo({ left: 0 }));
-    await holdsStill(header(page, 'company'));
-    // A tap: a sort.
-    company = await boxOf(header(page, 'company'));
+    // A tap: a sort, the rows asked again and drawn.
     await page.touchscreen.tap(company.x + company.width / 2, y);
     await expect(header(page, 'company')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page.locator('.fd-list-table')).not.toHaveAttribute('aria-busy', /.*/);
     // Resting: the column lifts, then follows the finger past Status.
     await holdsStill(header(page, 'company'));
     company = await boxOf(header(page, 'company'));
@@ -222,44 +212,56 @@ test.describe('a column moved by a finger', () => {
     await expect.poll(async () => Math.round((await boxOf(header(page, 'country_id'))).x)).toBe(Math.round(company.x));
     await screen(page, 'list-columns-finger', { viewport: true });
     await hand.up();
-    await expect(heads(page)).toHaveText(['Name', 'Country', 'Status', 'Company', 'Owner', 'Last order', 'Lifetime value', 'Newsletter']);
+    const moved = ['Name', 'Country', 'Status', 'Company', 'Owner', 'Last order', 'Lifetime value', 'Newsletter'];
+    await expect(heads(page)).toHaveText(moved);
     await expect(said(page)).toHaveText('Company moved to place 4 of 8');
     // The touch was the drag's: still the tap's sort, not turned the other way.
     await expect(header(page, 'company')).toHaveAttribute('aria-sort', 'ascending');
+    // A swipe leftwards on a header: the table scrolls, nothing lifts or moves.
+    await holdsStill(header(page, 'state'));
+    const state = await boxOf(header(page, 'state'));
+    const scroll = page.locator('.fd-list-scroll');
+    await hand.down(state.x + state.width / 2, y);
+    for (let step = 1; step <= 12; step++) await hand.move(state.x + state.width / 2 - step * 10, y);
+    await hand.up();
+    await expect.poll(() => scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(40);
+    await expect(page.locator('.fd-list[data-moving]')).toHaveCount(0);
+    await expect(heads(page)).toHaveText(moved);
     expect(problems).toEqual([]);
     await close();
   });
 
-  test('in a grid: a swipe on a header scrolls the page, a finger resting a moment lifts the column and it follows', async ({ browser }) => {
+  test('in a grid: a finger resting a moment lifts the column and it follows, a swipe on a header scrolls the page', async ({ browser }) => {
     const { page, problems, hand, close } = await sideways(browser, 'page=order&skin=underline');
     const grid = page.locator('[data-node="f-lines"]');
     const cellHead = (column: string) => grid.locator(`.ag-header-cell[col-id="${column}"]`);
     await cellHead('price').scrollIntoViewIfNeeded();
     await holdsStill(cellHead('price'));
-    let price = await boxOf(cellHead('price'));
     const start = await gridOrder(grid);
-    // A swipe up on a header: the page scrolls, no column moves (AG Grid's header took every touch).
-    const scrolled = await page.evaluate(() => window.scrollY);
-    await hand.down(price.x + price.width / 2, price.y + price.height / 2);
-    for (let step = 1; step <= 10; step++) await hand.move(price.x + price.width / 2, price.y + price.height / 2 - step * 8);
-    await hand.up();
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled + 20);
-    expect(await gridOrder(grid)).toEqual(start);
-    // Resting: lifted, then carried past Disc. %.
-    await holdsStill(cellHead('price'));
-    price = await boxOf(cellHead('price'));
+    // Resting: lifted, then carried past Disc. % (AG Grid moved it at the first touch).
+    const price = await boxOf(cellHead('price'));
     const discount = await boxOf(cellHead('discount'));
     const y = price.y + price.height / 2;
     await hand.down(price.x + price.width / 2, y);
     await expect(cellHead('price')).toHaveAttribute('data-lifted', '');
     const to = discount.x + discount.width * 0.8;
     for (let step = 1; step <= 16; step++) await hand.move(price.x + price.width / 2 + ((to - price.x - price.width / 2) * step) / 16, y);
-    await expect.poll(() => gridOrder(grid)).toEqual(start.map((one) => (one === 'price' ? 'discount' : one === 'discount' ? 'price' : one)));
+    const moved = start.map((one) => (one === 'price' ? 'discount' : one === 'discount' ? 'price' : one));
+    await expect.poll(() => gridOrder(grid)).toEqual(moved);
     await screen(page, 'grid-columns-finger', { viewport: true });
     await hand.up();
     await expect(cellHead('price')).not.toHaveAttribute('data-lifted', /.*/);
-    await expect(grid.locator('.fd-sr-only[role="status"]')).toHaveText(/^Unit price moved to place \d of \d$/);
+    await expect(grid.locator('.fd-sr-only[role="status"]')).toHaveText(`Unit price moved to place ${moved.indexOf('price') + 1} of ${moved.length}`);
     await expect.poll(() => keptOrder(page)).toContain('discount price');
+    // A swipe up on a header: the page scrolls, no column moves (AG Grid's header took every touch).
+    await holdsStill(cellHead('qty'));
+    const qty = await boxOf(cellHead('qty'));
+    const scrolled = await page.evaluate(() => window.scrollY);
+    await hand.down(qty.x + qty.width / 2, qty.y + qty.height / 2);
+    for (let step = 1; step <= 10; step++) await hand.move(qty.x + qty.width / 2, qty.y + qty.height / 2 - step * 8);
+    await hand.up();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled + 20);
+    expect(await gridOrder(grid)).toEqual(moved);
     expect(problems).toEqual([]);
     await close();
   });
