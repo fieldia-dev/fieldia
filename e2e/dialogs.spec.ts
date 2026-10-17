@@ -63,15 +63,18 @@ for (const variant of VARIANTS) {
       expect((await partners(page))[1]['name']).toBe('Nile Traders Ltd');
     });
 
-    test('Escape and Discard close a dialog and keep nothing typed in it', async ({ page }) => {
+    test('Escape (asked first, the typing let go) and Discard close a dialog and keep nothing typed in it', async ({ page }) => {
       await open(page, variant, 'page=fields&skin=outlined');
       const opener = node(page, 'f-client').getByRole('button', { name: 'Open Nile Traders' });
       for (const leave of ['Escape', 'Discard']) {
         await opener.click();
         const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
         await dialog.locator('[data-node="#title"] textarea').fill('Someone else');
-        if (leave === 'Escape') await page.keyboard.press('Escape');
-        else await dialog.getByRole('button', { name: 'Discard' }).click();
+        if (leave === 'Escape') {
+          // What was typed is asked about first (0.25 let it go unasked): the question's own Discard lets it go.
+          await page.keyboard.press('Escape');
+          await page.getByRole('alertdialog').getByRole('button', { name: 'Discard' }).click();
+        } else await dialog.getByRole('button', { name: 'Discard' }).click();
         await expect(dialog).toBeHidden();
         await expect(opener).toBeFocused();
       }

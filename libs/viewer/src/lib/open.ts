@@ -102,12 +102,14 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       if (from?.isConnected) from.focus();
       resolve({ saved: saved || savedAny, recordId: state.recordId ?? null, values: state.values as Values });
     };
-    // Its form's one check first: it waits for a save on its way and files on theirs, then asks about what is at risk.
+    // Its form's one check first: it waits for a save on its way and files on theirs, then asks about what is at risk —
+    // every change not saved, going back, as a dialog's Escape asks: nothing else saves what was typed in it.
     const endChecked = async (saved: boolean) => {
       if (done) return;
+      const how = saved ? undefined : { changes: true };
       // Nothing to wait for and nothing at risk: back at once, as it always was.
-      if (opened.form.leaveNow()) return end(saved);
-      if ((await opened.form.leave()) && !done) end(saved);
+      if (opened.form.leaveNow(how)) return end(saved);
+      if ((await opened.form.leave(how)) && !done) end(saved);
     };
     /** The saves made in it, and as many as there were when the person last chose to stay: a save they were asked about does not ask again as it settles. */
     let saves = 0;

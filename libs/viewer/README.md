@@ -171,8 +171,9 @@ above, the rest up from below.
 
 `mode: 'values'` checks the form and hands its values back without saving
 (the panel's button then says Done). Each keeps Tab inside it, gives the focus
-back where it came from, and closes on Escape — a panel asks "Discard your
-changes?" first when something was changed. A dialog opened from inside a
+back where it came from, and closes on Escape — asking "Discard your
+changes?" first when something was changed, the focus on Cancel so Enter
+keeps it open, as × asks; Discard asks nothing. A dialog opened from inside a
 panel sits above it; a panel opened from a panel stacks over it, the older one
 stepped back from its own edge. A panel slides in from its edge only when the
 reader's system welcomes motion.
@@ -202,9 +203,11 @@ a moment does”). The viewer is their host: it draws what they ask for.
   change of theirs the last save did not send, a file on its way or not saved
   yet, changes set aside, a save refused for a conflict still waiting for
   Reload or Keep mine. A dialog's Discard waits for a save on its way too, and
-  asks nothing; it stops a file on its way at once. A dialog of values — a
-  line's own form — asks before Escape or × let a change in it go, as a panel
-  does: nothing else saves what it holds. An answer that comes once the record
+  asks nothing; it stops a file on its way at once. Every dialog and panel —
+  a line's own form, a related list's row and New, a calendar's New, a page an
+  `open` step shows — and a page in place's Back ask before they let a change
+  in it go, every change not saved counting: nothing else saves what they
+  hold. An answer that comes once the record
   it was asked for is gone — a name looked up, a record made from a link, a
   line's dialog closed, an onchange, a step's Archive, Duplicate or Delete —
   is laid on no other record (`form.recordShown()`).
@@ -222,7 +225,7 @@ a moment does”). The viewer is their host: it draws what they ask for.
   button's `confirm` is asked once, by the form. Escape answers No and leaves
   a dialog or panel under it open. Your own `host.ask` gets every question,
   and the one check's “Discard your changes?” comes with `{ discard: true }`
-  (a panel's Escape and × among them): word its Yes as Discard and put the
+  (a dialog's or a panel's Escape and × among them): word its Yes as Discard and put the
   focus on Cancel, as the viewer's own box does.
 - **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
   steps — as for a tab a person picks.

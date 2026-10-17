@@ -239,7 +239,7 @@ mountViewer(host, {
   <li><strong>Create and edit…</strong> after a name is typed opens the related page with that name filled in. Save &amp; Close makes the record and links to it.</li>
 </ul>
 <p>Every link, with or without a related page, ends its list with <strong>Search more…</strong> when more records match than the list shows (eight). It opens every match in a dialog with its own search box; a click or Enter picks one.</p>
-<p>A dialog takes the focus to its first field, keeps Tab inside, and gives the focus back where it came from when it closes. A link's or a choice's list drops open for a person — a click or a tap on its box, a word typed, Alt+Down or the arrows — never for the focus alone: a dialog's first field, a refused save going to the field to fix, or Tab keeps its list closed over the fields under it. Escape closes a list open inside it first, then the dialog, keeping nothing. The page's own Save and Discard give way to the dialog's Discard and Save &amp; Close.</p>
+<p>A dialog takes the focus to its first field, keeps Tab inside, and gives the focus back where it came from when it closes. A link's or a choice's list drops open for a person — a click or a tap on its box, a word typed, Alt+Down or the arrows — never for the focus alone: a dialog's first field, a refused save going to the field to fix, or Tab keeps its list closed over the fields under it. Escape closes a list open inside it first, then the dialog — asking “Discard your changes?” first when something was typed, the focus on Cancel so Enter keeps it. The page's own Save and Discard give way to the dialog's Discard and Save &amp; Close.</p>
 <h3 id="your-dialogs">Your own dialogs</h3>
 ${code(
   'ts',

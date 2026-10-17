@@ -198,10 +198,18 @@ describe('a dialog or a panel closes on a save only when nothing is left unsaved
     expect(ended()).toMatchObject({ saved: true });
   });
 
-  it('a plain dialog’s Escape closes at once on a change not saved, as before; but asks about changes set aside', async () => {
+  it('a plain dialog’s Escape asks about a change not saved (0.25 let it go unasked), and about changes set aside', async () => {
     const first = await opened(openFormDialog);
     type(panelOf(), 'phone', '+201009998887');
     input(panelOf(), 'phone').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await asked(panelOf());
+    answer('Cancel', panelOf());
+    await pause();
+    expect(first.ended()).toBeNull();
+    expect(input(panelOf(), 'phone').value).toBe('+201009998887');
+    input(panelOf(), 'phone').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await asked(panelOf());
+    answer('Discard', panelOf());
     await until(() => first.ended());
     expect(first.ended()).toMatchObject({ saved: false });
     const { ds, ended } = await opened(openFormDialog, { dataSource: source() });
