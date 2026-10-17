@@ -110,7 +110,8 @@ html, body { background: var(--dh-page); color: var(--dh-ink); }
   .dh-crumb { display: none; }
   /* The logo alone, its word kept for screen readers: the link home keeps its name. */
   .dh-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .dh-title { grid-area: 1 / 3; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* The demo's name whole, on a second line where it is long — never cut to "A customer or suppl…". */
+  .dh-title { grid-area: 1 / 3; font-size: 16px; line-height: 1.25; overflow-wrap: break-word; text-wrap: balance; }
   .dh-options { display: inline-flex; grid-area: 1 / 4; }
   #demo-head:not(.dh-open) :is(.dh-row > .dh-pills, .dh-links, .dh-looks) { display: none; }
   #demo-head.dh-open :is(.dh-row > .dh-pills, .dh-links, .dh-looks) { grid-column: 1 / -1; justify-self: start; margin: 0; }
@@ -179,3 +180,20 @@ body.dc-open { padding-block-end: 46vh; }
 .dc-code .tok-tag { color: var(--tok-tag); }
 .dc-code .tok-attr { color: var(--tok-attr); }
 .dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: var(--dh-code-bg); font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--dh-code-ink); white-space: pre; }
+
+/* ---- the first thing to try, and the demo's source: under its name, for everyone ---- */
+.dh-try { margin: 6px 0 0; max-width: 150ch; font-size: 13.5px; line-height: 1.45; color: var(--dh-muted); }
+.dh-try-word { font-weight: 700; color: var(--dh-ink); }
+.dh-try-all { font: inherit; font-weight: 600; color: var(--dh-link); background: none; border: 0; padding: 0; margin-inline-start: 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.dh-source { margin-inline-start: 10px; color: var(--dh-link); white-space: nowrap; }
+.dh-try-all:focus-visible, .dh-source:focus-visible { outline: 2px solid var(--dh-link); outline-offset: 2px; border-radius: 2px; }
+/* A phone: under Options with the rest, first of them, so the row over the form stays one row. */
+@media (max-width: 640px) {
+  .dh-try { grid-column: 1 / -1; order: 0; margin: 0; }
+  #demo-head:not(.dh-open) .dh-try { display: none; }
+  .dh-source { display: inline-block; margin-inline-start: 0; margin-block-start: 4px; }
+}
+
+/* A theme's ground, the window's own: the page round its form wears it, edge to edge, never a box of it stopping
+   mid-window over the frame's own page (shell.mjs reads it from the form). */
+:root.demo-themed, :root.demo-themed body { background: var(--demo-ground); }

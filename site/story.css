@@ -60,7 +60,8 @@
 
 /* The parts drawn around the record: each placed, and shown only in its chapter. */
 .story-list, .story-toast, .story-rule, .story-theme, .story-server, .story-frameworks { position: absolute; visibility: hidden; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.6s; }
-.story-toast { inset-inline-start: 50%; top: 52px; margin: 0; padding: 10px 16px; border-radius: 10px; background: var(--h-saved); color: var(--h-on-saved); font-weight: 650; transform: translate(-50%, -16px); z-index: 3; box-shadow: 0 10px 24px rgba(16, 25, 43, 0.2); }
+/* At the foot of the window, as an app's toast is: never over the buttons and the stages it is about. */
+.story-toast { inset-inline-start: 50%; bottom: 22px; margin: 0; padding: 10px 16px; border-radius: 10px; background: var(--h-saved); color: var(--h-on-saved); font-weight: 650; white-space: nowrap; transform: translate(-50%, 16px); z-index: 3; box-shadow: 0 10px 24px rgba(16, 25, 43, 0.2); }
 .story-stage[data-step="3"] .story-toast { visibility: visible; transform: translate(-50%, 0); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
 .story-rule { left: var(--x, 460px); top: var(--y, 330px); margin: 0; padding: 7px 11px; border-radius: 8px; background: var(--h-stage); color: var(--j-str); font: 13px/1 var(--h-mono); z-index: 3; transform: translateY(8px); }
 .story-rule::before { content: ""; position: absolute; top: -6px; inset-inline-start: 18px; border: 6px solid transparent; border-top: 0; border-bottom-color: var(--h-stage); }
