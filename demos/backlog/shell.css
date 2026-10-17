@@ -164,6 +164,23 @@
 .bl[dir="rtl"] .bl-note.bl-note-on { translate: 50% 0; }
 @media (prefers-reduced-motion: reduce) { .bl-note { transition: none; } }
 
+/*
+ * Narrower than the tracker's own screens (1920 and 2044 wide, whose columns keep the tracker's widths and scroll
+ * sideways in their card, as its screenshots do): the columns fit the window, none cut at its edge and no header cut
+ * to "W…" — Work Item Type, Story Points and Value Area wide enough for their words, Iteration Path and Tags a little
+ * narrower, the title taking the room left, never under 180px (a 1280 window's). The columns by place: the parents'
+ * toggles, Order, Work Item Type, Title, State, Story Points, Value Area, Iteration Path, Tags
+ * (examples/pages/backlog.page.json); the widths besides the title's come to 765px.
+ */
+@media (max-width: 1799px) {
+  #app.bl .bl-list .fd-list-scroll { container-type: inline-size; }
+  #app.bl .bl-list .fd-list-table tr > :nth-child(3) { --fd-col-px: 108px !important; }
+  #app.bl .bl-list .fd-list-table tr > :is(:nth-child(6), :nth-child(7)) { --fd-col-px: 92px !important; }
+  #app.bl .bl-list .fd-list-table tr > :nth-child(8) { --fd-col-px: 140px !important; }
+  #app.bl .bl-list .fd-list-table tr > :nth-child(9) { --fd-col-px: 130px !important; }
+  #app.bl .bl-list .fd-list-table tr > :nth-child(4) { --fd-col-px: clamp(180px, calc(100cqi - 765px), 911px) !important; }
+}
+
 /* ---- narrower windows: the menu goes, then the bar keeps its words short; a phone keeps 16px each side ---- */
 @media (max-width: 1100px) { .bl-nav { display: none; } .bl-search { width: 140px; } }
 @media (max-width: 1100px) { #app.bl .bl-list .fd-list-scroll { min-height: 0; } }
