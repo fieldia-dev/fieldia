@@ -47,6 +47,7 @@
     },
     "optionalColumns": { "company": "show", "country_id": "show", "owner_id": "show", "last_order": "show", "lifetime_value": "show", "newsletter": "show", "phone": "hide", "email": "hide" },
     "rowTones": [{ "tone": "muted", "when": "state == 'inactive'" }],
+    "rowBold": "owner_id == user.id",
     "card": { "title": "name", "subtitle": "company", "image": "photo", "status": "state", "fields": ["phone", "owner_id", "lifetime_value"] },
     "export": true,
     "bulkEdit": ["state", "owner_id", "newsletter", "country_id"],

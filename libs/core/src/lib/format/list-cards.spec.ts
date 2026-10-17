@@ -156,3 +156,20 @@ describe('a card’s words', () => {
     expect(card?.fields).toEqual([{ field: 'bedrooms', unit: { one: '«bed»', other: '«beds»' } }, { field: 'area_m2', unit: '«m²»' }]);
   });
 });
+
+describe('a list’s record as its row’s conditions read it', () => {
+  it('reads the person, the app’s context and the record’s own id beside its values, as the form’s own conditions do', () => {
+    const page = {
+      fieldia: '0.3',
+      id: 'contacts',
+      data: { kind: 'record', model: 'contact' },
+      fields: { name: { type: 'char', label: 'Name' }, owner_id: { type: 'many2one', label: 'Owner', relation: 'res.users' } },
+      layout: { type: 'list', id: 'list', columns: ['name', 'owner_id'], rowBold: 'owner_id == user.id' },
+    } as unknown as Page;
+    const form = createForm({ page, user: { id: 9001, name: 'Mona Adel', roles: ['sales'] }, context: { team: 'north' } });
+    const read = form.recordReads(7, { name: 'Omar Said', owner_id: { id: 9001, label: 'Mona Adel' } });
+    expect(read).toEqual(expect.objectContaining({ id: 7, name: 'Omar Said', owner_id: 9001, user: { id: 9001, name: 'Mona Adel', roles: ['sales'] }, context: { team: 'north' }, editing: false }));
+    // No one signed in: no id, no roles, as a form's own conditions read it.
+    expect(createForm({ page }).recordReads(7, {})['user']).toEqual({ id: null, name: null, roles: [] });
+  });
+});

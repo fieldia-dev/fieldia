@@ -208,6 +208,8 @@ export function optionsFromQuery(params: URLSearchParams): {
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
+    ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
     ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.

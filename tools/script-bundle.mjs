@@ -670,10 +670,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // Record lists people read anywhere and shape themselves (0.25): the page check of a list's card, gallery, optional
 // columns and its rows' tones, bold and buttons (references.ts) and their schemas, a card's words kept from
 // translation, a row's buttons among the form's, the viewer's words for the gallery, the Columns menu and a row's
-// buttons, the two parts' names and what asks for them, and the names the parts take from this script (a cell's
-// words, a condition read, a card's lines, a phone's links by the phone part) — the cells in the list part, the cards
-// and the gallery in the cards part, the Columns menu in the columns part, each with its sheet: 512.82 measured before,
-// 515.10 after — 2.3 more, to 515.2.
+// buttons, the two parts' names and what asks for them, a record read as the form reads one, the person among it
+// (form.recordReads, for a row's conditions), and the names the parts take from this script (a cell's words, a
+// condition read, a card's lines, a phone's links by the phone part) — the cells in the list part, the cards and the
+// gallery in the cards part, the Columns menu in the columns part, each with its sheet: 512.82 measured before, 515.16
+// after — 2.4 more, to 515.2.
 const BUDGET_KB = 515.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -815,7 +816,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 1.8 more, to 155.5.
 // 0.24's lanes joined (listed with the raw budget above): 153.62 at 0.23.0, 167.10 now — 13.5 more, to 167.2.
 // Record lists people read anywhere and shape themselves (0.25; listed with the raw budget above): 167.10 measured
-// before, 167.72 after — 0.6 more, to 167.8.
+// before, 167.73 after — 0.6 more, to 167.8.
 const GZIP_BUDGET_KB = 167.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -1083,11 +1084,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // person's initials, a number as a bar, a phone's call and WhatsApp links, a row's own tone, bold and buttons, the
 // gallery on the switcher and the cards' keys, a header's cells moved only as their order changes (list 83.3, 27.4, as
 // measured 83.29 and 27.39: 10.9 and 3.7 more); a list's rows as cards on a phone and in its gallery, their totals in
-// sight, and their sheet, a part of their own (cards 11.5, 3.7, as measured 11.44 and 3.64); the columns a person
+// sight, a row in bold bolder on its card, and their sheet, a part of their own (cards 11.6, 3.7, as measured 11.52
+// and 3.66); the columns a person
 // shows, hides, orders and sizes, kept for them, the header and first column in view, and their sheet, another
 // (columns 10.7, 4.0, as measured 10.69 and 3.94). In the list part the two would have added 22.1 and 7.6 to every
 // list; on their own, only a list that asks loads them.
-const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [83.3, 27.4], cards: [11.5, 3.7], columns: [10.7, 4.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
+const PART_BUDGET_KB = { head: [34.0, 9.9], text: [55.7, 18.6], path: [16.0, 6.3], choice: [5.4, 2.4], filters: [11.2, 4.2], date: [22.0, 8.4], list: [83.3, 27.4], cards: [11.6, 3.7], columns: [10.7, 4.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [23.9, 8.3], business: [26.7, 9.9], files: [30.9, 11.3], survey: [35.6, 12.4], phone: [34.8, 15.3], slots: [14.7, 5.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

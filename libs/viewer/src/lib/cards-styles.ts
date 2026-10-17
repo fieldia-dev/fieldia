@@ -49,6 +49,8 @@ export const CARD_STYLES = `
 .fd-list-card-body { display: grid; flex: 1; gap: 3px; min-width: 0; align-content: start; }
 .fd-list-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
 .fd-list-card-title { min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+/* A row in bold (rowBold): its card's title bolder, its lines in bold as its cells are. */
+.fd-list[data-as] .fd-list-row[data-bold] .fd-list-card-title { font-weight: 750; }
 .fd-list-card-head > .fd-list-pill { flex: none; }
 .fd-list-card-subtitle { color: var(--fd-muted); font-size: 13.5px; overflow-wrap: anywhere; }
 .fd-list-card-lines { display: grid; gap: 3px; margin: 4px 0 0; font-size: 13.5px; }

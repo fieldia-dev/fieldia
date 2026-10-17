@@ -225,8 +225,8 @@ export function listView(context: ListContext): ListView {
   /** How each column draws its cells (list-cells.ts): a pill, chips, a picture, a bar, a phone with its links. */
   const cells = listCells({ page, node, doc, el, locale, icons: context.icons, fill, ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) });
   const show = cells.words;
-  /** Each row's own tone, bold and buttons, read on its record; a button's roles the form's. */
-  const rules = rowRules(page, node, () => form.today(), (button) => !form.node(button.id).invisible);
+  /** Each row's own tone, bold and buttons, read on its record as the form reads one — the person among it; a button's roles the form's. */
+  const rules = rowRules(page, node, (id, values) => form.recordReads(id, values), () => form.today(), (button) => !form.node(button.id).invisible);
   /** The cards part, which the page waited for where the list has cards (on a phone, `card`) or a gallery; where it could not come, a table. */
   const cards = node.card || node.gallery ? cardsPart.loaded : undefined;
   /** What a record's card shows. */

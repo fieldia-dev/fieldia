@@ -62,6 +62,18 @@ test.describe('columns people shape', () => {
     expect(problems).toEqual([]);
   });
 
+  test('bolds the contacts owned by the person signed in, Mona Adel, and no other', async ({ page }) => {
+    const { problems } = await contacts(page);
+    const owners = await rows(page).locator('td[data-col="owner_id"]').allTextContents();
+    expect(owners.filter((owner) => owner === 'Mona Adel').length, 'the first page holds some of hers').toBeGreaterThan(0);
+    for (const [i, owner] of owners.entries()) {
+      if (owner === 'Mona Adel') await expect(rows(page).nth(i)).toHaveAttribute('data-bold', '');
+      else await expect(rows(page).nth(i)).not.toHaveAttribute('data-bold', /.*/);
+    }
+    expect(await rows(page).filter({ hasText: 'Mona Adel' }).first().locator('td[data-col="name"]').evaluate((cell) => getComputedStyle(cell).fontWeight)).toBe('600');
+    expect(problems).toEqual([]);
+  });
+
   test('sizes a column by dragging its header’s edge at a hand’s speed, and by its grip’s arrow keys, kept for the next visit', async ({ page }) => {
     const { problems } = await contacts(page);
     const company = page.locator('.fd-list-table thead th[data-col="company"]');
@@ -191,6 +203,10 @@ test.describe('lists on a phone', () => {
     await expect(card.locator('.fd-list-card-title')).toBeVisible();
     await expect(card.locator('.fd-list-card-photo[data-empty] .fd-list-card-initials')).toHaveAttribute('data-initials', /^\p{Lu}\p{Lu}$/u);
     await expect(card.locator('.fd-list-card-head .fd-value-badge')).toBeVisible();
+    // Her own contacts bold on their cards too, as in the table.
+    const hers = rows(page).filter({ has: page.locator('.fd-list-card dd', { hasText: /^Mona Adel$/ }) }).first();
+    await expect(hers).toHaveAttribute('data-bold', '');
+    expect(await hers.locator('.fd-list-card-title').evaluate((title) => Number(getComputedStyle(title).fontWeight))).toBeGreaterThanOrEqual(700);
     // The table's columns are not drawn; its card is, in full, inside the screen.
     await expect(card.locator('td[data-col="company"]')).toBeHidden();
     const box = (await card.boundingBox())!;

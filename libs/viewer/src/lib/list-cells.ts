@@ -1,4 +1,4 @@
-import { compileModifier, expressionContext, type ButtonNode, type CompiledModifier, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
+import { compileModifier, type ButtonNode, type CompiledModifier, type FileValue, type LineField, type ListCell, type ListNode, type Locale, type Page, type RecordId, type Tone, type Value, type Values } from '@fieldia/core';
 import { cellText, drawIcon, formatNumber, phoneLinksOf, phoneSettings, phoneWritten, type IconSet, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 
@@ -231,8 +231,12 @@ export interface RowRules {
   buttons(id: RecordId, values: Values): ButtonNode[];
 }
 
-/** A list's `rowTones`, `rowBold` and `rowButtons`, each condition read once; `today` is the page's day, for `today()`. */
-export function rowRules(page: Page, node: ListNode, today: () => string, shown: (button: ButtonNode) => boolean): RowRules {
+/**
+ * A list's `rowTones`, `rowBold` and `rowButtons`, each condition read once, on a row's record as `read` gives it — the
+ * form's own way (`form.recordReads`): its values, its `id`, the person (`user`) and the app's `context`. `today` is
+ * the page's day, for `today()`.
+ */
+export function rowRules(page: Page, node: ListNode, recordOf: (id: RecordId, values: Values) => Record<string, unknown>, today: () => string, shown: (button: ButtonNode) => boolean): RowRules {
   const read = (modifier: ButtonNode['invisible']): CompiledModifier | null => {
     try {
       return compileModifier(modifier);
@@ -245,8 +249,7 @@ export function rowRules(page: Page, node: ListNode, today: () => string, shown:
   const bold = node.rowBold === undefined ? null : read(node.rowBold);
   const buttons = (node.rowButtons ?? []).map((button) => ({ button, hidden: read(button.invisible) }));
   const reads = [...new Set([...tones.flatMap((item) => item.when?.fields ?? []), ...(bold?.fields ?? []), ...buttons.flatMap((item) => item.hidden?.fields ?? [])])].filter((name) => page.fields[name]);
-  // The record as its expressions read it: its fields, and its `id`.
-  const context = (id: RecordId, values: Values) => ({ id, user: { id: null, name: null, roles: [] }, ...expressionContext(values, page.fields) });
+  const context = recordOf;
   return {
     reads,
     any: tones.length > 0 || bold !== null || buttons.length > 0,

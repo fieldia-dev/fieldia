@@ -541,6 +541,12 @@ export interface Form {
   canUpload(): boolean;
   /** Today, as 2026-10-15, on the clock of the page's time zone — the browser's own where it names none — by the form's clock (`now`). */
   today(): string;
+  /**
+   * A record of the page's model as conditions read it, the form's own way: its values (a link as its id), its `id`,
+   * the person using the form (`user`), the app's `context`, and `editing` false — for what reads conditions on records
+   * the form does not hold, such as a list's rows (their `rowTones`, `rowBold` and `rowButtons`).
+   */
+  recordReads(id: RecordId | null, values: Values): Record<string, unknown>;
   /** Whether a date and time drawn as booking slots can ask for its free times: the data source has `slots`. */
   canFindSlots(): boolean;
   /**
@@ -2690,6 +2696,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     today,
+    recordReads: (id, values) => recordContext(values, page.fields, { recordId: id, user: options.user, editing: false, context: options.context }),
     canFindSlots: () => typeof options.dataSource?.slots === 'function',
     findSlots(field, ask) {
       const source = options.dataSource;

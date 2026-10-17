@@ -158,6 +158,35 @@ describe('a list’s richer rows', () => {
     expect(host.querySelector('thead .fd-list-tail')?.textContent).toBe('Actions');
   });
 
+  it('reads the person in a row’s conditions, as a form’s own: its own records bold and toned, its button on them alone — in the table and on the cards', async () => {
+    const mine = withList({
+      gallery: {},
+      rowTones: [{ tone: 'info', when: "agent == user.name and 'agents' in user.roles" }],
+      rowBold: 'agent == user.name',
+      rowButtons: [{ type: 'button', id: 'hand-over', label: 'Hand over', action: 'hand_over', invisible: 'agent != user.name' }],
+    });
+    const host = await mount(mine, { user: { id: 9001, name: 'Sara Haddad', roles: ['agents'] } });
+    const own = rowOf(host, 'Zamalek duplex');
+    const other = rowOf(host, 'Nile view flat');
+    expect(own.hasAttribute('data-bold')).toBe(true);
+    expect(own.dataset['tone']).toBe('info');
+    expect(own.querySelector('[data-action="hand-over"]')).not.toBeNull();
+    expect(other.hasAttribute('data-bold')).toBe(false);
+    expect(other.hasAttribute('data-tone')).toBe(false);
+    expect(other.querySelector('[data-action="hand-over"]')).toBeNull();
+    // The cards are the rows: the gallery shows the same.
+    ([...host.querySelectorAll('.fd-list-views button')].find((b) => b.textContent === 'Gallery') as HTMLButtonElement).click();
+    expect(list(host).dataset['as']).toBe('gallery');
+    expect(rowOf(host, 'Zamalek duplex').hasAttribute('data-bold')).toBe(true);
+    // Someone else signed in: none of it.
+    handle?.destroy();
+    document.body.replaceChildren();
+    const theirs = await mount(mine, { user: { id: 9002, name: 'Omar Said' } });
+    expect(rowOf(theirs, 'Zamalek duplex').hasAttribute('data-bold')).toBe(false);
+    expect(rowOf(theirs, 'Maadi villa').hasAttribute('data-bold')).toBe(true);
+    expect(rowOf(theirs, 'Maadi villa').hasAttribute('data-tone')).toBe(false);
+  });
+
   it('draws as 0.24 did for a list that asks for none of it: no column at the end, no card', async () => {
     const plain: Page = withList({ cells: { price: { total: 'sum' } }, rowTones: undefined, rowBold: undefined, rowButtons: undefined });
     const host = await mount(plain);
