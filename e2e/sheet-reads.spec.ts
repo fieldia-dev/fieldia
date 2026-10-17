@@ -85,8 +85,9 @@ for (const variant of VARIANTS) {
       await expect(words(page, 'f-payment')).toHaveText('Paid');
       const label = await node(page, 'f-total').locator('.fd-label').boundingBox();
       const value = await words(page, 'f-total').boundingBox();
-      // Mirrored: the label at the right, its value to its left.
-      expect(label!.x).toBeGreaterThan(value!.x + value!.width - 1);
+      // On a phone a label sits above its value (0.25), mirrored: both from the right, where an Arabic line starts.
+      expect(label!.y + label!.height).toBeLessThanOrEqual(value!.y + 1);
+      expect(label!.x + label!.width).toBeGreaterThanOrEqual(value!.x + value!.width - 2);
       // A line of parts keeps within the row: the pricelist's box is not cut at the screen's side.
       const row = await node(page, 'l-pricelist').locator('.fd-oneline-row').boundingBox();
       const box = await node(page, 'f-pricelist').boundingBox();
