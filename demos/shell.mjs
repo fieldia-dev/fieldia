@@ -444,12 +444,24 @@ function standingAlone(handle) {
     panel.querySelector('h2').focus();
   }
 }
-{
-  let tries = 0;
-  const look = () => {
-    const handle = window.fieldiaDemo?.handle;
-    if (handle?.form) standingAlone(handle);
-    else if (++tries < 150) setTimeout(look, 100);
+// Taken the moment the demo hands over its handle (window.fieldiaDemo, set as the page is mounted): a poll left a tenth
+// of a second in which the page's own Cancel ran with nothing to say what it did — a quick press after Start over did.
+if (FRAMEWORKS.some((f) => f.id === app)) {
+  let given = window.fieldiaDemo;
+  const taken = new WeakSet();
+  const take = (demo) => {
+    if (!demo?.handle?.form || taken.has(demo.handle)) return;
+    taken.add(demo.handle);
+    standingAlone(demo.handle);
   };
-  if (FRAMEWORKS.some((f) => f.id === app)) look();
+  Object.defineProperty(window, 'fieldiaDemo', {
+    configurable: true,
+    enumerable: true,
+    get: () => given,
+    set(demo) {
+      given = demo;
+      take(demo);
+    },
+  });
+  take(given);
 }
