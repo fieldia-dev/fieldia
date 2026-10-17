@@ -113,7 +113,7 @@ handle.form.setValues({ courier_lat: 30.0512, courier_lng: 31.2337 });`
 <p>Values a route writes are changes to the record, as the page asks: they are saved as any change is. A page that only follows an order, and keeps nothing, is shown read-only.</p>
 
 <h2 id="areas">Areas by colour</h2>
-<p>Districts, zones or municipalities, shaded in up to five steps of the page's accent, with a legend. Their borders are the app's, never Fieldia's: GeoJSON polygons, from your own data or an open source such as OpenStreetMap or geoBoundaries, given to the maps once by name, and loaded the first time a map shades them.</p>
+<p>Districts, zones or municipalities, shaded in up to five steps of the page's accent, with a legend that also says what a round mark with a number counts: the pins close together, never a shade. Their borders are the app's, never Fieldia's: GeoJSON polygons, from your own data or an open source such as OpenStreetMap or geoBoundaries, given to the maps once by name, and loaded the first time a map shades them.</p>
 ${code(
   'ts',
   `

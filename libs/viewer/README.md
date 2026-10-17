@@ -208,9 +208,11 @@ a moment does”). The viewer is their host: it draws what they ask for.
   counting, with `warnOnLeave: true`. Off unless set, as in 0.20.
 - **Words said** are toasts at the foot of the screen, in their tone: one over
   another, read out by a polite live region, going after a few seconds (not
-  while pointed at or focused), or with their ×. Your app's `stop` words come
-  as a warning; a step that cannot run here, or your `onAction` throwing, is
-  said too.
+  while pointed at or focused), or with their ×. A button pressed takes away
+  what earlier presses said: its own words speak for what is done now — never
+  "Customer blocked" left over a customer just made active again. Your app's
+  `stop` words come as a warning; a step that cannot run here, or your
+  `onAction` throwing, is said too.
 - **A question** is the viewer's own box (Cancel, OK) or your `confirm`. A
   button's `confirm` is asked once, by the form. Escape answers No and leaves
   a dialog or panel under it open. Your own `host.ask` gets every question,
