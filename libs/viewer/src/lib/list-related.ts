@@ -1,4 +1,4 @@
-import type { DataSource, Form, FormState, ListNode, Locale, OpenRequest, OpenResult, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, Tone, Values } from '@fieldia/core';
+import type { DataSource, Form, FormState, ListNode, Locale, OpenRequest, OpenResult, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, TabNode, Tone, Values } from '@fieldia/core';
 import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -35,6 +35,8 @@ export interface RelatedContext {
   dialogs: Pick<WidgetDialogs, 'canOpen' | 'openRecord'>;
   /** A page opened as an `open` step opens one — the app's own way (`onOpen`) first: View all's. */
   open: (request: OpenRequest) => Promise<OpenResult>;
+  /** Told how many records it lists for the record shown, each time it counts them unsearched: a tab's count of it. */
+  onCount?: (total: number) => void;
 }
 
 /** A related list drawn: told each state of the form, as a part of the page is. */
@@ -158,6 +160,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
       count.textContent = formatNumber(total, 0, locale);
       count.hidden = false;
       nameAs(total);
+      context.onCount?.(total);
     },
     say: context.say,
     ...(context.icons ? { icons: context.icons } : {}),
@@ -248,6 +251,87 @@ export function relatedList(context: RelatedContext): RelatedPart {
     destroy() {
       gone = true;
       list?.destroy();
+    },
+  };
+}
+
+/** What a tab's count of a related list in it (`count: { related }`) is kept with: the tab, its button and its pill. */
+export interface RelatedCountContext {
+  node: RelatedNode;
+  form: Form;
+  dataSource: DataSource | undefined;
+  tab: TabNode;
+  button: HTMLElement;
+  pill: HTMLElement;
+  labels: ViewerLabels;
+  locale: Locale;
+  fill: (template: string, values: Record<string, string | number>) => string;
+}
+
+/** A tab's count of a related list in it, kept up to date. */
+export interface RelatedCount {
+  update(state: FormState): void;
+  /** The list itself counted them (after New, a delete, a reload): what it says stands, over an answer still on its way. */
+  told(total: number): void;
+}
+
+/**
+ * How many records a related list lists for the record shown, for the count on its tab: asked of the data source's
+ * `list` with the list's own conditions and `limit: 1` as the record is shown — whether its tab is open or not, before
+ * the list is drawn — and asked again for another record, the same loaded again, or its conditions read anew. Unknown
+ * (no count) meanwhile, before the record's first save, with no `list`, and while the list is hidden. An answer is for
+ * the record it was asked for (`form.recordShown()`): another shown meanwhile, it is laid on none. The list's own count
+ * (`told`), once it is drawn — after New, a delete, a row's button — wins over an answer asked before it.
+ */
+export function relatedCount(context: RelatedCountContext): RelatedCount {
+  const { node, form, dataSource, tab, button, pill } = context;
+  /** How many records it lists for the record shown, in the pill and the tab's name ("Invoices, 3"); none while not known. */
+  const show = (total: number | null) => {
+    const n = total === null ? '' : formatNumber(total, 0, context.locale);
+    pill.hidden = total === null;
+    pill.textContent = n;
+    if (total !== null) button.setAttribute('aria-label', context.fill(context.labels.countOf, { label: tab.label, count: n }));
+    // An icon alone keeps its name.
+    else if (tab.iconOnly) button.setAttribute('aria-label', tab.label);
+    else button.removeAttribute('aria-label');
+  };
+  /** What it last asked, and whether the record it asked for is still shown as it was. */
+  let asked: { key: string; shown: () => boolean } | null = null;
+  /** Each ask and each count told, in turn: an answer lands only while nothing newer has. */
+  let turn = 0;
+  const unknown = () => {
+    asked = null;
+    turn++;
+    show(null);
+  };
+  return {
+    update(state) {
+      // Another record shown, the same loaded again, the person's Discard: what was counted was another's.
+      if (asked && !asked.shown()) unknown();
+      if (state.status === 'idle' || state.status === 'loading') return;
+      const filter = form.relatedFilter(node.id);
+      if (!filter || state.recordId == null || !dataSource?.list || form.node(node.id).invisible) {
+        if (asked) unknown();
+        return;
+      }
+      const key = JSON.stringify(filter);
+      if (asked && asked.key === key) return;
+      if (asked) unknown();
+      const shown = form.recordShown();
+      asked = { key, shown };
+      const at = ++turn;
+      dataSource.list({ model: node.model, fields: node.columns, filter, sort: node.sort ?? [], offset: 0, limit: 1 }).then(
+        (result) => {
+          if (at === turn && shown()) show(result.total);
+        },
+        // Not counted: none shown, as before it was asked.
+        () => undefined
+      );
+    },
+    told(total) {
+      if (!asked?.shown()) return;
+      turn++;
+      show(total);
     },
   };
 }

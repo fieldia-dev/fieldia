@@ -61,6 +61,7 @@ import { headCommands, type HeadCommands } from './head-commands';
 import { keepWhatRulesRead } from './rules-reads';
 import { stepsCommands, type StepsCommands } from './steps-commands';
 import { forgetGoneTargets } from './steps-places';
+import { forgetGoneCounts } from './head-parts';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
@@ -759,6 +760,8 @@ export function createDesigner(options: {
     forgetGoneTargets(draft);
     // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
     forgetGoneDuplicates(draft);
+    // A related list taken out of a tab takes the tab's count of it with it.
+    forgetGoneCounts(draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
       // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.

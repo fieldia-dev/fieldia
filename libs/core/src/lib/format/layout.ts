@@ -752,11 +752,20 @@ export interface TabNode {
   /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
   iconOnly?: boolean;
   /**
-   * A field whose count shows in a pill after it, as a work item's "Links 0":
-   * a number's value, a table's or links' lines, a field of files' files.
-   * Shown at 0 too, and read out with the tab's name ("Links, 0").
+   * A count in a pill after it, read out with the tab's name ("Links, 0"):
+   * a field's — a number's value, a table's or links' lines, a field of
+   * files' files, shown at 0 too, as a work item's "Links 0" — or the records
+   * a related list in this tab lists (`{ "related": "quotations" }`, by its
+   * id): asked of the data source as the record is shown, whether the tab is
+   * open or not, and again as the list adds or loses one; hidden until known,
+   * and on a record not saved yet.
    */
-  count?: string;
+  count?: string | TabCount;
+}
+
+/** What a tab counts other than a field: the records a related list in it lists, by the list's id. */
+export interface TabCount {
+  related: string;
 }
 
 export interface TabsNode {
@@ -1885,7 +1894,7 @@ export const TabNodeSchema = z.strictObject({
     return z.array(LayoutNodeSchema);
   },
   iconOnly: z.boolean().optional(),
-  count: fieldName.optional(),
+  count: z.union([fieldName, z.strictObject({ related: id }).meta({ id: 'TabCount' })]).optional(),
 }).meta({ id: 'TabNode' });
 
 export const TabsNodeSchema = z.strictObject({

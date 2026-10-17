@@ -84,7 +84,7 @@ ${code(
   <li>A button takes ${c('iconOnly')} (its label its name and tooltip), ${c('pressed')} with ${c('pressedLabel')} for a toggle, ${c('menu')} for a split button — or a menu button with no steps of its own — and ${c('primaryWhenChanged')}: quiet but usable with nothing changed, when Save and Close simply closes. Undo with nothing to put back says “Nothing has changed.”</li>
   <li>Your app answers Follow with ${c('{ stored: { following: true } }')}: values the server keeps, written as loaded ones are, never a change to save — ${c('form.setValues(values, { stored: true })')} does the same.</li>
   <li>A field's ${c('hotkey')} underlines that letter of its label; Alt with it takes the focus there. The page's ${c('"lockAt": "value"')} puts a locked field's lock at its value's start.</li>
-  <li>${c('"place": "head"')} puts the sheet's tabs at the band's end, their panels as the body; a tab's ${c('count')} shows in a pill and in its name, “Links, 0”.</li>
+  <li>${c('"place": "head"')} puts the sheet's tabs at the band's end, their panels as the body; a tab's ${c('count')} shows in a pill and in its name, “Links, 0” — a field's, or the records of a related list in the tab (${c('{ "related": "links" }')}, <a href="#related">below</a>).</li>
   <li>In ${c("openFormDialog({ size: 'inset', backdrop: 'clear', maximise: true, resizable: true })")} the head is the dialog's own: no title bar or foot, its ⤢ and × at the badge row's end, Escape and × asking before changes go.</li>
 </ul>
 <p><a href="/demos/plain/?page=wi-head&amp;open=dialog">Try a bug in a large popup</a>.</p>
@@ -141,8 +141,9 @@ ${code(
   <li><strong>View all</strong> opens the page ${c('viewAll')} names — your app's list of those records — showing this record's alone: in a dialog, a side panel (${c('"as": "panel"')}) or this page's place (${c('"as": "page"')}), or your own way, through ${c('onOpen')}, whose request carries the conditions as ${c('filter')} for your router.</li>
   <li><strong>Before the record's first save</strong> nothing points at it: the part says so, with no New.</li>
   <li><strong>Another record shown</strong> — the pager, a reload, Discard — its records are asked again; an answer for the one before is drawn in none.</li>
+  <li><strong>Counted on its tab</strong>: a tab holding it may count its records, ${c('"count": { "related": "quotations" }')} by its id — “Quotations 4”, read out “Quotations, 4”. Your source's ${c('list')} is asked for one record, with the list's own conditions, as the record is shown, whether the tab is open or not, and the count is its ${c('total')}; the list's own count after New, a delete or a row's button stands for it then. None is shown until it is known: before the answer, before the record's first save, while the list is hidden.</li>
 </ul>
-<p>In the designer, a <strong>Related list</strong> is among the toolbox's records on a record's page: its panel sets its title, the model and link, its columns, its cards on a phone, its rows a page, New and View all. <a href="/demos/plain/?page=customer-account&amp;record=1&amp;skin=underline">Try a customer with its invoices and quotations</a>, or <a href="/demos/plain/?page=property&amp;record=1&amp;skin=underline">a property with its viewings</a>.</p>
+<p>In the designer, a <strong>Related list</strong> is among the toolbox's records on a record's page: its panel sets its title, the model and link, its columns, its cards on a phone, its rows a page, New and View all; a tab's <strong>Count from</strong> offers the related lists in it. <a href="/demos/plain/?page=customer-account&amp;record=1&amp;skin=underline">Try a customer with its invoices and quotations</a>, or <a href="/demos/plain/?page=property&amp;record=1&amp;skin=underline">a property with its viewings</a>.</p>
 
 <h2 id="preview">The attachment beside the sheet</h2>
 ${code(

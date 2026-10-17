@@ -285,11 +285,6 @@ button.fd-head-updated:hover { text-decoration: underline; }
 }
 .fd-head-tabs .fd-tab:has(> .fd-tab-count)[aria-selected="true"]::after { inset-inline-end: 8px; }
 .fd-head-tabs .fd-tab:hover { background: color-mix(in srgb, var(--fd-text) 4%, transparent); }
-.fd-tab-count {
-  display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
-  background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
-}
-.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
 
 /* ---- the body under it --------------------------------------------------------------- */
 .fd-head-body { padding: 0 12px 12px; background: var(--fd-surface); min-width: 0; }

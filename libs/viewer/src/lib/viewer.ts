@@ -50,10 +50,10 @@ import {
 } from '@fieldia/core';
 import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { upgradePage, zonedPage } from '@fieldia/core';
+import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
-import type { RelatedPart } from './list-related';
+import type { RelatedCount, RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -503,6 +503,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const tabs = new Map<string, () => boolean>();
   /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */
   const problemTabs = new Map<string, () => boolean>();
+  /** A tab's count of a related list in it, by the list's id: the list, once drawn, tells it what it counts itself. */
+  const relatedCounts = new Map<string, RelatedCount>();
 
   /**
    * A press runs its steps one run at a time: the button busy meanwhile, and
@@ -1267,6 +1269,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const count = p.tab.count;
         if (count === undefined) continue;
         const pill = p.button.querySelector<HTMLElement>('.fd-tab-count') as HTMLElement;
+        if (typeof count !== 'string') {
+          // The records of a related list in it, counted by the list part as the record is shown: none until known.
+          pill.hidden = true;
+          const related = relatedInTab(p.tab, count.related);
+          if (related) countRelated(related, p.tab, p.button, pill);
+          continue;
+        }
         watch((state) => {
           const value = state.values[count];
           const n = Array.isArray(value) ? value.length : typeof value === 'number' ? value : Number(value ?? 0) || 0;
@@ -1374,6 +1383,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     /**
+     * How many records a related list lists, in its tab's pill and name: asked by the list part (list-related.ts) as the
+     * record is shown, whether the tab is open or not; where the part could not come, never known, and none shown.
+     */
+    function countRelated(node: RelatedNode, tab: TabNode, button: HTMLElement, pill: HTMLElement) {
+      let counter: RelatedCount | null = null;
+      const take = (module: NonNullable<typeof listPart.loaded>) => {
+        counter = module.relatedCount({ node, form, dataSource: options.dataSource, tab, button, pill, labels, locale, fill });
+        relatedCounts.set(node.id, counter);
+        counter.update(form.getState());
+      };
+      watch((state) => counter?.update(state));
+      if (listPart.loaded) take(listPart.loaded);
+      else void listPart.load().then((module) => gone || take(module), () => undefined);
+    }
+
+    /**
      * Another model's records that point at this record, listed inside it: drawn by the list part (list-related.ts),
      * which the page waited for, in a box of the row's width, with the dialogs of the app's pages and the host's way to
      * open a page. Not shown where the data source cannot list records.
@@ -1395,6 +1420,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           open: (request) => actionHost.open(request),
           say: (message, tone) => actionHost.say(message, tone),
           name: recordName,
+          // What it counts itself — after New, a delete — is its tab's count too.
+          onCount: (total) => relatedCounts.get(node.id)?.told(total),
         });
         part.update(form.getState());
       };

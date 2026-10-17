@@ -183,8 +183,21 @@
         "children": [
           {
             "type": "tab",
+            "id": "tab-notes",
+            "label": "Notes",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-notes",
+                "field": "notes"
+              }
+            ]
+          },
+          {
+            "type": "tab",
             "id": "tab-quotations",
             "label": "Quotations",
+            "count": { "related": "quotations" },
             "children": [
               {
                 "type": "related",
@@ -284,18 +297,6 @@
                   "name",
                   "state"
                 ]
-              }
-            ]
-          },
-          {
-            "type": "tab",
-            "id": "tab-notes",
-            "label": "Notes",
-            "children": [
-              {
-                "type": "field",
-                "id": "f-notes",
-                "field": "notes"
               }
             ]
           }

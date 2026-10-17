@@ -402,6 +402,15 @@ pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
 
+A tab holding a related list may count its records: `"count": { "related":
+"quotations" }` on the tab, by the list's id, shows "Quotations 4" (read out
+"Quotations, 4"). The source's `list` is asked for one record with the list's
+own conditions as the record is shown, whether the tab is open or not, and its
+`total` is the count; once the list is drawn, its own count after New, a delete
+or a row's button stands for it. No count shows until it is known — before the
+answer, before the record's first save, while the list is hidden — and never
+another record's.
+
 ### Lists people read anywhere and shape themselves
 
 **Cards.** With `card`, a list's rows become cards where the list is as narrow

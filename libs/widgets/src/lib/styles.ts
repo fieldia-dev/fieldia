@@ -511,6 +511,13 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
 /* A tab with a problem in it, seen or not: a dot in the error colour after its words. */
 .fd-tab[data-problem]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 6px; border-radius: 50%; background: var(--fd-error); vertical-align: 0.15em; }
+/* A tab's count in a pill after its words, on any page: a record's head greys it (--fd-head-pill). */
+.fd-tab-count {
+  display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
+  background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
+}
+.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
+.fd-tab-count[hidden] { display: none; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 
 /* ---- buttons ---------------------------------------------------------- */
