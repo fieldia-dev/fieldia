@@ -498,6 +498,16 @@ for (const variant of VARIANTS) {
       await page.mouse.up();
       await expect.poll(async () => (await order()).indexOf('price')).toBeLessThan((await order()).indexOf('qty'));
       const arranged = await order();
+      // AG Grid tells of a move a moment after the drop, and the grid keeps it then: reloaded once it is kept.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const key = Object.keys(localStorage).find((one) => one.startsWith('fieldia:') && one.endsWith('.columns'));
+            const kept = key ? (JSON.parse(localStorage.getItem(key) as string) as { colId: string }[]).map((column) => column.colId) : [];
+            return kept.includes('price') && kept.indexOf('price') < kept.indexOf('qty');
+          })
+        )
+        .toBe(true);
 
       await page.reload();
       await expect(cell(page, LAMP, 'subtotal')).toHaveText('E£ 4,560.00');
