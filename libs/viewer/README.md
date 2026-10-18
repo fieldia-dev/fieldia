@@ -527,8 +527,8 @@ the columns come in parts of their own (`fieldia.cards.js`,
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a
-clean page, by the stylesheet's `@media print` rules (in every page's sheet:
-an engine that tells nothing as it prints gets them too):
+clean page, by the print part's `@media print` rules (`fieldia.print.js`, a
+chunk of its own in an app's bundle, about 5 KB gzipped):
 
 - every tab one after another under its name, every wizard step, every folded
   group open (but what a condition hides);
@@ -578,6 +578,27 @@ each box's words written beside it for the paper alone, and the room each
 heading keeps under it measured — as tall as the start of what follows it,
 with the form laid out for that moment as a sheet is wide.
 
+**The print part comes on intent.** A page no one prints never loads it. It is
+loaded, and printing waits for it, as a person prints: **Ctrl+P** (⌘P) is
+Fieldia's — held back the first time while the part comes, then the page laid
+out whole and the browser's print asked; at once once it is in — and **every
+Print** (the gear's built-in, a `print` step, `viewer.print()`, a list's Print)
+waits for it. It is fetched, and nothing printed, as soon as a person shows they
+may print: the gear opened with Print in it, a pointer resting on a Print button;
+and once a page meant for paper is drawn — a page with its own `print` words, a
+list with `"print": true` — when the browser is idle. An app's own Ctrl+P (a
+keydown it handled first, `preventDefault`) is left to it.
+
+**The browser's own menu** (File › Print) is the one print no page can hold
+back, and a part loaded as it begins comes too late. So before the part came,
+it prints a plain look the main sheet keeps — the page as the screen shows it,
+its buttons, bars, the record's bar, the side panel and hints left out, light
+colours — and asks for the part: every print after is whole. A page that
+printed or fetched the part once, and every page meant for paper, prints whole
+from the browser's menu too. To have it whole from the first moment on every
+page, load it as the app starts: `printPart.load()`, or `loadParts()` with no
+page, which loads every part.
+
 On paper the record's content is a table and its footer that table's footer
 group, which the browser draws again under each sheet's part of it; every grid
 is a block, its parts side by side in lines a sheet breaks between. An app's
@@ -619,11 +640,12 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 161 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 163 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
-another record, a phone, a theme, possible duplicates… — comes in 20 parts
-beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
-each loaded from the same folder the first time a page uses it:
+another record, a phone, a theme, possible duplicates, a page on paper… —
+comes in 21 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+`fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
+folder the first time a page uses it:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

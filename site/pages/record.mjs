@@ -1,3 +1,4 @@
+import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 export default {
@@ -197,7 +198,8 @@ onAction: async ({ action, recordId }) => {
   return { file: { name: 'INV_2026_0042.pdf', type: 'application/pdf', bytes: await answer.blob() } };
 }`
 )}
-<p>${c('file')} takes your server's ${c('url')}, its ${c('data')} as base64, or its ${c('bytes')}. The print rules are in every page's sheet — about 2 KB gzipped — so a print the browser lays out by itself gets them too; what a stylesheet cannot do (drawing a tab never opened, writing a box's words, measuring the room a heading keeps under it for the start of what follows) is done at the window's ${c('beforeprint')} and undone at ${c('afterprint')}. <a href="/demos/plain/?page=real-invoice&amp;record=4102&amp;skin=underline">Print an invoice</a>, or a <a href="/lists/#print">list of them</a>.</p>
+<p>${c('file')} takes your server's ${c('url')}, its ${c('data')} as base64, or its ${c('bytes')}. What a stylesheet cannot do (drawing a tab never opened, writing a box's words, measuring the room a heading keeps under it for the start of what follows) is done at the window's ${c('beforeprint')} and undone at ${c('afterprint')}. <a href="/demos/plain/?page=real-invoice&amp;record=4102&amp;skin=underline">Print an invoice</a>, or a <a href="/lists/#print">list of them</a>.</p>
+<p>All of it comes in a part of its own — ${c('fieldia.print.js')}, ${SIZES.print} KB gzipped, a chunk of its own in your app's bundle — only as a person means to print, so a page no one prints never loads it. ${c('Ctrl+P')} (⌘P) is Fieldia's: held back the first time while the part comes, then the page laid out whole and the browser's print asked. Every Print waits for it. It is fetched, and nothing printed, as the gear opens with Print in it or a pointer rests on a Print button, and once a page meant for paper is drawn — its own ${c('print')} words, a list's ${c('"print": true')} — when the browser is idle. The browser's own menu is the one print no page can hold back: before the part came, it prints a plain look — the page as the screen shows it, without buttons, bars or hints, in light colours — and asks for the part, so every print after is whole. To have the whole look from the first moment, ${c('printPart.load()')} as your app starts.</p>
 
 <h2 id="chatter">The chatter beside it</h2>
 <p>As Flectra's chatter, the side panel sits beside the sheet on a form 1534px wide or more, the page growing by its width so the sheet keeps its own; on a narrower one it goes under the sheet, which takes the whole width. ${c('"sidePanelBeside": "always"')} keeps it beside, narrower, down to 600px, the sheet's columns stacking inside it as they need. A grid of many columns beside it can ${c('"fit": "shrink"')}: its columns go narrower, their headers wrapping, before it scrolls.</p>
