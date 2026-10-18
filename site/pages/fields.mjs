@@ -1,3 +1,4 @@
+import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
@@ -66,7 +67,7 @@ ${code(
   <li><strong>The input rules kept.</strong> A letter is refused, and said why, the keys after it held — left so, the box says letters are not allowed in a phone number, never that the digits are too short; a number that does not read stays as it was typed, marked, with why, the field keeping what it held, and the save refuses it.</li>
   <li><strong>A list writes them as people read them.</strong> A list's column with ${c('"cells": { "phone": { "widget": "phone" } }')} on a page with ${c('phone')} shows ${c('02 2345 6789')} and ${c('+971 50 123 4567')}; a table's phone cells are the phone box.</li>
 </ul>
-<p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (15 KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
+<p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (${SIZES.phone} KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
 
 <h2 id="time-zones">Time zones</h2>
 <p>A page may name the time zone its dates and times are in — a branch's, a clinic's — by its IANA name, and a date and time field its own: a flight's departure in its airport's. A date and time is kept as an instant, as always; it is shown and typed on the zone's clock wherever the person is, with the zone's short name beside its box where the browser's zone is another, and after it in words: <em>15 Oct 2026, 14:30 CEST</em>, which a paste reads back. Today is the zone's day: a date's default ${c('"today"')}, its earliest and latest counted from today, ${c('today()')}, a rule's past and future, and a booking's days. Without ${c('timeZone')}, the browser's own zone, as before.</p>
