@@ -112,6 +112,8 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   // What is still typed in a cell is read first — a name looked up (the cell left as the line was opened) waited for —
   // so the dialog shows the line as it reads, and its Save & Close never writes back what the typing replaced.
   const asked = stillShown(form);
+  const own = form.page.lowerLabels;
+  const lowerLabels = own === undefined ? {} : { lowerLabels: own };
   const settling = form.settle?.();
   if (form.reading?.()) await settling;
   const line = lines().find((l) => l.key === pressed.key);
@@ -122,7 +124,8 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   const write = whileShown(form, (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l))));
   const shown = stillShown(form);
   if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
-    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: def.label, withValues: true });
+    // A line is part of its record: its labels said as the record's page asks, unless its own page says otherwise.
+    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: def.label, withValues: true, ...lowerLabels });
     const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
     if (Object.keys(back).length) write(back as Values);
     return;
@@ -144,6 +147,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
     recompute: (edited) => (shown() ? form.previewLine(name, line.key, edited) : Promise.resolve(edited)),
     parent: { values: state.values, fields: form.page.fields, id: state.recordId },
     ...(node.lineForm ? { layout: node.lineForm.children } : {}),
+    ...lowerLabels,
   });
   // Written in one go, so the form recalculates once.
   if (values) write(values);

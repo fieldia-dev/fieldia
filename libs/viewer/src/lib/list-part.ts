@@ -12,5 +12,5 @@
  * beside it.
  */
 export { listView } from './list';
-export { relatedList, relatedListPage } from './list-related';
+export { relatedCount, relatedList, relatedListPage } from './list-related';
 export { installListStyles } from './list-styles';

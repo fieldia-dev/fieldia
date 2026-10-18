@@ -8,7 +8,8 @@
         "0.1",
         "0.2",
         "0.3",
-        "0.4"
+        "0.4",
+        "0.5"
       ]
     },
     "id": {
@@ -366,6 +367,12 @@
     },
     "duplicates": {
       "$ref": "#/$defs/PageDuplicates"
+    },
+    "records": {
+      "$ref": "#/$defs/PageRecords"
+    },
+    "lowerLabels": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -6296,6 +6303,9 @@
             "$ref": "#/$defs/ScreenWidth"
           }
         },
+        "print": {
+          "type": "boolean"
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -6433,6 +6443,10 @@
         },
         "when": {
           "$ref": "#/$defs/Modifier"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -7726,6 +7740,9 @@
             "$ref": "#/$defs/ScreenWidth"
           }
         },
+        "print": {
+          "type": "boolean"
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -7845,6 +7862,9 @@
         "roles": {
           "$ref": "#/$defs/Roles"
         },
+        "print": {
+          "type": "boolean"
+        },
         "children": {
           "type": "array",
           "items": {
@@ -7855,8 +7875,15 @@
           "type": "boolean"
         },
         "count": {
-          "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            {
+              "$ref": "#/$defs/TabCount"
+            }
+          ]
         }
       },
       "required": [
@@ -7864,6 +7891,19 @@
         "id",
         "label",
         "children"
+      ],
+      "additionalProperties": false
+    },
+    "TabCount": {
+      "type": "object",
+      "properties": {
+        "related": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        }
+      },
+      "required": [
+        "related"
       ],
       "additionalProperties": false
     },
@@ -8372,6 +8412,10 @@
         "rowBold": {
           "$ref": "#/$defs/Modifier"
         },
+        "rowBoldLabel": {
+          "type": "string",
+          "minLength": 1
+        },
         "rowButtons": {
           "minItems": 1,
           "type": "array",
@@ -8544,6 +8588,13 @@
         "create": {
           "type": "boolean"
         },
+        "open": {
+          "type": "string",
+          "enum": [
+            "dialog",
+            "app"
+          ]
+        },
         "colspan": {
           "type": "integer",
           "minimum": 1,
@@ -8561,6 +8612,9 @@
           "items": {
             "$ref": "#/$defs/ScreenWidth"
           }
+        },
+        "print": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -9424,6 +9478,10 @@
         "rowBold": {
           "$ref": "#/$defs/Modifier"
         },
+        "rowBoldLabel": {
+          "type": "string",
+          "minLength": 1
+        },
         "rowButtons": {
           "minItems": 1,
           "type": "array",
@@ -9951,6 +10009,31 @@
       },
       "required": [
         "fields"
+      ],
+      "additionalProperties": false
+    },
+    "PageRecords": {
+      "type": "object",
+      "properties": {
+        "one": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "\\S"
+        },
+        "other": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "\\S"
+        },
+        "a": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "one",
+        "other"
       ],
       "additionalProperties": false
     }

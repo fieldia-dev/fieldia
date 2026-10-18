@@ -13,7 +13,7 @@ import { createForm } from './form';
  */
 
 const page = (more: Partial<Page> = {}, fields: Page['fields'] = {}): Page => ({
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'visit',
   data: { kind: 'responses' },
   fields: {

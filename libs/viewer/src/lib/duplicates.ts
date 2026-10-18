@@ -1,4 +1,4 @@
-import type { DuplicateMatch, Form, JsonValue, Locale, Page, RecordId, Tone, Values } from '@fieldia/core';
+import { labelAt, recordSentence, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
@@ -14,8 +14,9 @@ import { nameFieldOf } from './name-field';
  *
  * - **Open it**: the record found, in this form's place, once the one check let what is typed here go
  *   (`form.leave({ changes: true })`: asked about, every change not saved counting);
- * - **It's someone new**: this match let be for the values it matched on, remembered for this record (a new one's
- *   until it is saved, then by its id, in the viewer's preferences);
+ * - **It's someone new**: this match's record let be for this record, whatever field matches it next — a name typed
+ *   after the email that found it — remembered for this record (a new one's until it is saved, then by its id, in the
+ *   viewer's preferences);
  * - **Merge…**, on a saved record where the source has `merge`: the two side by side (merge-screen.ts).
  *
  * Typing on in a field named leaves an answer on its way unheard; an answer for a record no longer shown
@@ -67,6 +68,9 @@ export interface MergeSide {
  */
 export function watchDuplicates(context: DuplicatesContext): { destroy(): void } {
   const { form, page, root, doc, el, labels, fill } = context;
+  /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, context.locale);
+  const labelOf = (field: string) => page.fields[field]?.label ?? field;
   const setting = page.duplicates;
   if (!setting || page.data.kind !== 'record' || !form.canFindDuplicates()) return { destroy: () => undefined };
   installDuplicateStyles(doc);
@@ -130,8 +134,11 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     const next = [...all.filter(([record]) => record !== String(id)), [String(id), [...new Set([...own, ...signatures])]] as [string, string[]]];
     context.preferences.set(KEY, next.slice(-REMEMBERED) as unknown as JsonValue);
   };
-  /** A match as it was let be: the record, and the values typed in each field it matched on. */
-  const signature = (match: DuplicateMatch, values: Readonly<Values>) => [String(match.id), ...[...match.why].sort().map((field) => `${field}=${JSON.stringify(values[field] ?? null)}`)].join('|');
+  /**
+   * Whether a match was let be for this record: by its record's id, whatever it matched on now (0.25 kept the values it
+   * matched on, `id|field=…`, so the same record came back as soon as another field matched it: read as its id too).
+   */
+  const letBeIn = (dismissed: ReadonlySet<string>, match: DuplicateMatch) => dismissed.has(String(match.id)) || [...dismissed].some((mark) => mark.startsWith(`${match.id}|`));
   const keyOf = (match: DuplicateMatch) => `${match.id}:${[...match.why].sort().join(',')}`;
 
   // ---- where a note goes, and what it says ------------------------------------------------------------
@@ -150,10 +157,12 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const wordsOf = (match: DuplicateMatch, values: Readonly<Values>): [string, string] => {
     const typedName = nameField ? values[nameField] : null;
     const nameLike = !!nameField && match.why.includes(nameField) && fold(match.name) !== fold(typeof typedName === 'string' ? typedName : '');
-    const same = match.why.filter((field) => !(nameLike && field === nameField)).map((field) => page.fields[field]?.label ?? field);
-    const template = nameLike ? (same.length ? labels.duplicateNamedWith : labels.duplicateNamed) : labels.duplicateWith;
+    const template = nameLike ? (match.why.length > 1 ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed)) : sentence(labels.duplicateWithNoun, labels.duplicateWith);
+    // Each label small inside the sentence where the page asks (`lowerLabels`), by the one rule (labelAt).
+    const small = labelAt(template, 'fields', page.lowerLabels, context.tag ?? context.locale);
+    const same = match.why.filter((field) => !(nameLike && field === nameField)).map((field) => small(labelOf(field)));
     const [before, after = ''] = template.split('{name}');
-    const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map((field) => page.fields[field].label));
+    const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map((field) => small(labelOf(field))));
     return [fill(before, { fields }), fill(after, { fields })];
   };
 
@@ -171,7 +180,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     };
     const ways = [
       button(labels.openDuplicate, 'open', () => void openIt(match)),
-      button(labels.notDuplicate, 'new', (pressed) => letBe(match, pressed)),
+      button(sentence(labels.notDuplicateNoun, labels.notDuplicate), 'new', (pressed) => letBe(match, pressed)),
       ...(mergeable() ? [button(labels.mergeDuplicate, 'merge', (pressed) => void mergeWith(match, pressed))] : []),
     ];
     const icon = drawIcon(doc, 'warning', context.icons);
@@ -183,7 +192,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   function draw(matches: readonly DuplicateMatch[]) {
     const { recordId, values } = form.getState();
     const dismissed = letBeFor(recordId);
-    shown = matches.filter((match) => !dismissed.has(signature(match, values)));
+    shown = matches.filter((match) => !letBeIn(dismissed, match));
     const at = new Map<string, DuplicateMatch[]>();
     for (const match of shown) {
       const place = placeOf(match);
@@ -238,10 +247,10 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
     await form.openRecord(match.id);
   }
 
-  /** "It's someone new": let be for the values it matched on, remembered for this record; the focus to what is next. */
+  /** "It's someone new": its record let be for this record, remembered; the focus to what is next. */
   function letBe(match: DuplicateMatch, pressed: HTMLElement) {
-    const { recordId, values } = form.getState();
-    const mark = signature(match, values);
+    const { recordId } = form.getState();
+    const mark = String(match.id);
     if (recordId === null) fresh.add(mark);
     else remember(recordId, [mark]);
     const item = pressed.closest('.fd-duplicate');
@@ -277,7 +286,7 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
       }
       if (!still() || gone) return;
       const typedName = nameField ? values[nameField] : null;
-      const here: MergeSide = { id: recordId, name: typeof typedName === 'string' && typedName.trim() ? typedName : labels.newRecord, values: { ...values } };
+      const here: MergeSide = { id: recordId, name: typeof typedName === 'string' && typedName.trim() ? typedName : sentence(labels.newRecordNoun, labels.newRecord), values: { ...values } };
       pressed.removeAttribute('aria-busy');
       const done = await openMergeScreen(context, here, { id: match.id, name: match.name, values: other }, pressed);
       if (!done) return;

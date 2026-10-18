@@ -1,3 +1,4 @@
+import { recordSentence } from '@fieldia/core';
 import type { Part } from '@fieldia/widgets';
 import type { ListContext, ListView } from './list';
 import type * as ListModule from './list-part';
@@ -15,7 +16,7 @@ export function waitingList(part: Part<typeof ListModule>, context: ListContext)
   const { el, labels, node } = context;
   const words = el('p', { class: 'fd-list-waiting', role: 'status' }, labels.loading);
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
-  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
+  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, recordSentence(context.page.records, labels.loadFailedNoun, labels.loadFailed, context.locale), ' ', retry);
   const holder = el('div', { class: 'fd-list', 'data-node': node.id, 'aria-busy': 'true' }, words, failed);
   let list: ListView | null = null;
   let gone = false;

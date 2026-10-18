@@ -9,11 +9,12 @@
  * main script's: the form a cell sees — its unread text, its uploads stored as
  * its line's — a column's total and a line's dialog, which a grid and cards
  * draw with too. A block pasted on a table's cells — a spreadsheet's rows, each
- * cell read as its column reads what is typed (cell-paste.ts) — is this part's
- * too: the table of lines pastes with it, and gives it to the grid and to a
- * list's Import, which load this part for it.
+ * on its own line, each cell read as its column reads what is typed, a link's by
+ * its name through the source's search (cell-paste.ts, `pasteRows`) — is this
+ * part's too: the table of lines pastes with it, and gives it to the grid and its
+ * readers to a list's Import, which load this part for it.
  */
 export { linesWidget } from './lines-table';
 export { cardsWidget } from './cards';
 export { linksTableWidget } from './links-table';
-export { blockOf, readPastedCell, whyNotPasted, type CellReading } from './cell-paste';
+export { blockOf, pasteRows, readPastedCell, whyNotPasted, type CellReading, type PasteTable } from './cell-paste';

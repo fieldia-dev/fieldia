@@ -1,9 +1,10 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "customers",
   "title": "Customers",
   "data": { "kind": "record", "model": "partner" },
   "phone": { "country": "EG" },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
   "fields": {
     "name": { "type": "char", "label": "Name" },
     "email": { "type": "char", "label": "Email" },
@@ -30,6 +31,7 @@
     "pageSize": 8,
     "searchFields": ["name", "email", "phone", "country_id", "state"],
     "cells": { "phone": { "widget": "phone" } },
+    "card": { "title": "name", "status": "state", "fields": ["email", "phone", "country_id"] },
     "filters": [
       { "id": "active", "label": "Active", "filter": [{ "field": "state", "op": "=", "value": "active" }] },
       { "id": "blocked", "label": "Blocked", "filter": [{ "field": "state", "op": "=", "value": "blocked" }] },

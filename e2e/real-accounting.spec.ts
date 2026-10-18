@@ -187,7 +187,7 @@ for (const variant of VARIANTS) {
       await page.getByRole('button', { name: 'Actions' }).click();
       await expect(page.getByRole('menuitem', { name: 'Debit Note' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible();
-      await expect(page.getByRole('menuitem', { name: 'Invoice' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Invoice', exact: true })).toBeVisible();
       await page.getByRole('menuitem', { name: 'Debit Note' }).click();
       await expect(toast(page, /debit note/i)).toBeVisible();
       // A vendor bill: its PDF beside the sheet, and the duplicate's link inside the alert's sentence.
@@ -296,6 +296,7 @@ for (const variant of VARIANTS) {
       // and Start over, so a second press can never make a second payment. In a dialog it closes (the tests above).
       const done = page.locator('.demo-done');
       await expect(done).toContainText(/posted, check CHK-004417 due 2026-11-15/);
+      await expect(done.locator('.demo-done-note')).toHaveText('In your app this window closes, and the invoice shows the payment.');
       await expect(page.getByRole('button', { name: 'Create Payment', exact: true })).toBeHidden();
       await expectNoSidewaysScroll(page);
       await done.getByRole('button', { name: 'Start over' }).click();

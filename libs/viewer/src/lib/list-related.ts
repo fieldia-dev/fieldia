@@ -1,4 +1,4 @@
-import type { DataSource, Form, FormState, ListNode, Locale, OpenRequest, OpenResult, Page, RecordId, RelatedNode, ResolvedFilter, RunResult, Tone, Values } from '@fieldia/core';
+import { recordSentence, type DataSource, type Facet, type Form, type FormState, type ListNode, type Locale, type OpenRequest, type OpenResult, type Page, type PageRecords, type RecordId, type RelatedNode, type ResolvedFilter, type RunResult, type TabNode, type Tone, type Values } from '@fieldia/core';
 import { formatNumber, whileShown, type IconSet, type PreferenceStore, type WidgetDialogs } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -35,6 +35,19 @@ export interface RelatedContext {
   dialogs: Pick<WidgetDialogs, 'canOpen' | 'openRecord'>;
   /** A page opened as an `open` step opens one — the app's own way (`onOpen`) first: View all's. */
   open: (request: OpenRequest) => Promise<OpenResult>;
+  /**
+   * The app's own way to open a record of a model, for a list that says so (`open: 'app'`) — its host's `open`, else
+   * its `onOpen` — asked with the page it gives for the model; null where it does not take it. None where the app has
+   * neither.
+   */
+  route?: ((model: string, request: Omit<OpenRequest, 'page'>) => Promise<OpenResult | null>) | undefined;
+  /** Told how many records it lists for the record shown, each time it counts them unsearched: a tab's count of it. */
+  onCount?: (total: number) => void;
+  /**
+   * What the app's page for a model calls its records (its `records`, in this page's language), now or once it is
+   * found: "New invoice", "View all invoices", "No invoices yet". Nothing named without it.
+   */
+  recordsOf?: (model: string) => PageRecords | undefined | Promise<PageRecords | undefined>;
 }
 
 /** A related list drawn: told each state of the form, as a part of the page is. */
@@ -50,7 +63,7 @@ export interface RelatedPart {
  * tones, bold and buttons, order and search, a page of `limit` rows (5 unless said), nothing to choose; the time zone, phones, look and language of the record's
  * page, which they are shown in.
  */
-export function relatedListPage(page: Page, node: RelatedNode): Page {
+export function relatedListPage(page: Page, node: RelatedNode, records?: PageRecords): Page {
   const layout: ListNode = {
     type: 'list',
     // Its own id: the part's is its box's, which holds it.
@@ -65,6 +78,7 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
     // Its rows' tones, bold and buttons, as a list's, read on each row's record; a button runs with that record alone.
     ...(node.rowTones ? { rowTones: node.rowTones } : {}),
     ...(node.rowBold !== undefined ? { rowBold: node.rowBold } : {}),
+    ...(node.rowBoldLabel ? { rowBoldLabel: node.rowBoldLabel } : {}),
     ...(node.rowButtons ? { rowButtons: node.rowButtons } : {}),
     ...(node.searchFields ? { searchFields: node.searchFields } : {}),
   };
@@ -79,6 +93,8 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
     ...(page.look ? { look: page.look } : {}),
     ...(page.phone ? { phone: page.phone } : {}),
     ...(page.timeZone ? { timeZone: page.timeZone } : {}),
+    // Its records named as their own page names them: "5 of 23 invoices".
+    ...(records ? { records } : {}),
   };
 }
 
@@ -93,16 +109,37 @@ export function relatedListPage(page: Page, node: RelatedNode): Page {
 export function relatedList(context: RelatedContext): RelatedPart {
   const { node, form, el, labels, fill, box, doc, locale, dialogs } = context;
   installListStyles(doc);
-  // Its records open, and New makes one, in a dialog of the page the app gives for their model; View all opens its page.
+  // Its records open, and New makes one, in a dialog of the page the app gives for their model — or the app's own way
+  // first, where the list says so (`open: 'app'`) and the app has one; View all opens its page.
+  const byApp = node.open === 'app' ? context.route : undefined;
   const opens = dialogs.canOpen(node.model);
-  const openRecord = opens ? (id: RecordId, name?: string) => dialogs.openRecord(node.model, { recordId: id, title: name || node.title || node.model }) : undefined;
+  /** A row's record, or a new one with its link to this record: the app's way where it takes it, else the dialog. True once saved. */
+  const show = async (recordId: RecordId | null, title: string, values?: Values): Promise<boolean> => {
+    const theirs = byApp ? await byApp(node.model, { as: 'dialog', recordId, title, ...(values ? { values } : {}) }) : null;
+    if (theirs) return theirs.saved;
+    return opens && (await dialogs.openRecord(node.model, { ...(recordId === null ? {} : { recordId }), ...(values ? { values } : {}), title })) !== null;
+  };
+  const openRecord = opens || byApp ? (id: RecordId, name?: string) => show(id, name || node.title || node.model) : undefined;
+  /** What its model's records are called, once known: New, View all and None name them ("New invoice"). */
+  let records: PageRecords | undefined;
+  const ofModel = (noun: string | undefined, words: string) => recordSentence(records, noun, words, locale);
+  // Kept to a part of them (its own `filter`: only posted invoices), "all" and "no" of them would be untrue: its title says which.
+  const part = !!node.filter?.length;
   const newRecord =
-    opens && node.create !== false
-      ? async (values: Values) => (await dialogs.openRecord(node.model, { values, title: node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord })) !== null
+    (opens || byApp) && node.create !== false
+      ? (values: Values) => show(null, records?.one ? ofModel(labels.relatedNewNoun, labels.relatedNew) : node.title ? fill(labels.relatedNewOf, { title: node.title }) : labels.newRecord, values)
       : undefined;
   const { viewAll } = node;
-  const showAll = viewAll ? (filter: ResolvedFilter[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter }) : undefined;
-  const page = relatedListPage(context.page, node);
+  const showAll = viewAll ? (filter: ResolvedFilter[], search: Facet[]) => context.open({ page: viewAll.page, as: viewAll.as ?? 'dialog', filter, search }) : undefined;
+  /**
+   * What View all's list is kept to, as chips it shows and a person may take away: this record ("Customer: Nile
+   * Traders"), and the list's own part of them (its `filter`), by its title.
+   */
+  const searchOf = (filter: ResolvedFilter[], id: RecordId): Facet[] => [
+    { kind: 'field', field: node.field, label: node.fields[node.field]?.label ?? node.field, values: [{ op: '=', value: id, label: context.name() || String(id) }] },
+    ...(filter.length > 1 ? [{ kind: 'custom' as const, label: node.title ?? labels.filters, filter: filter.slice(1) }] : []),
+  ];
+  let page = relatedListPage(context.page, node);
   // Its count in a pill after the title, read out with it as the group's name: "Invoices, 12".
   const count = el('span', { class: 'fd-related-count', 'aria-hidden': 'true', hidden: '' });
   const title = node.title ? el('span', { class: 'fd-related-title' }, ...context.withIcon(node.icon, node.title), count) : null;
@@ -113,7 +150,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
   const head = el('div', { class: 'fd-related-head' }, ...(title ? [title] : []), tools);
   // Its buttons show once the record is saved: until then, a heading only for its title.
   head.hidden = !title;
-  const note = el('p', { class: 'fd-related-note', hidden: '' }, labels.relatedUnsaved);
+  const note = el('p', { class: 'fd-related-note', hidden: '' }, recordSentence(context.page.records, labels.relatedUnsavedNoun, labels.relatedUnsaved, locale));
   const holder = el('div', { class: 'fd-related-list' });
   box.classList.add('fd-related');
   /** The group's name: its title, and once counted how many it holds. */
@@ -158,12 +195,37 @@ export function relatedList(context: RelatedContext): RelatedPart {
       count.textContent = formatNumber(total, 0, locale);
       count.hidden = false;
       nameAs(total);
+      context.onCount?.(total);
     },
     say: context.say,
     ...(context.icons ? { icons: context.icons } : {}),
     ...(context.now ? { now: context.now } : {}),
     ...(openRecord ? { onOpenRecord: openRecord } : {}),
   };
+
+  /**
+   * Its words in the names its model's page gives its records, once known: New and View all say them — their title
+   * then needless as their name — None yet too, and the list made for the next record counts them ("5 of 23 invoices").
+   */
+  function nameRecords(given: PageRecords | undefined) {
+    // A page that only asks for its labels small names no records.
+    if (!given?.one) return;
+    records = given;
+    page = relatedListPage(context.page, node, given);
+    listContext.page = page;
+    if (!part) listContext.none = ofModel(labels.relatedNoneNoun, labels.relatedNone);
+    if (add) {
+      add.textContent = ofModel(labels.relatedNewNoun, labels.relatedNew);
+      add.removeAttribute('aria-label');
+    }
+    if (all && !part) {
+      all.textContent = ofModel(labels.relatedAllNoun, labels.relatedAll);
+      all.removeAttribute('aria-label');
+    }
+  }
+  const known = context.recordsOf?.(node.model);
+  if (known instanceof Promise) void known.then((given) => gone || nameRecords(given), () => undefined);
+  else nameRecords(known);
 
   /** The list for the record shown now: a new one for a record it was not listing, else its records asked again. */
   function ask(filter: ResolvedFilter[], id: RecordId) {
@@ -226,11 +288,12 @@ export function relatedList(context: RelatedContext): RelatedPart {
   });
   all?.addEventListener('click', async () => {
     const filter = form.relatedFilter(node.id);
-    if (!filter || !showAll || all.hasAttribute('aria-busy')) return;
+    const id = form.getState().recordId;
+    if (!filter || id == null || !showAll || all.hasAttribute('aria-busy')) return;
     const back = again();
     all.setAttribute('aria-busy', 'true');
     try {
-      await showAll(filter);
+      await showAll(filter, searchOf(filter, id));
     } catch (error) {
       // A page the app does not have: said, as an `open` step says it.
       context.say((error as Error).message, 'danger');
@@ -248,6 +311,87 @@ export function relatedList(context: RelatedContext): RelatedPart {
     destroy() {
       gone = true;
       list?.destroy();
+    },
+  };
+}
+
+/** What a tab's count of a related list in it (`count: { related }`) is kept with: the tab, its button and its pill. */
+export interface RelatedCountContext {
+  node: RelatedNode;
+  form: Form;
+  dataSource: DataSource | undefined;
+  tab: TabNode;
+  button: HTMLElement;
+  pill: HTMLElement;
+  labels: ViewerLabels;
+  locale: Locale;
+  fill: (template: string, values: Record<string, string | number>) => string;
+}
+
+/** A tab's count of a related list in it, kept up to date. */
+export interface RelatedCount {
+  update(state: FormState): void;
+  /** The list itself counted them (after New, a delete, a reload): what it says stands, over an answer still on its way. */
+  told(total: number): void;
+}
+
+/**
+ * How many records a related list lists for the record shown, for the count on its tab: asked of the data source's
+ * `list` with the list's own conditions and `limit: 1` as the record is shown — whether its tab is open or not, before
+ * the list is drawn — and asked again for another record, the same loaded again, or its conditions read anew. Unknown
+ * (no count) meanwhile, before the record's first save, with no `list`, and while the list is hidden. An answer is for
+ * the record it was asked for (`form.recordShown()`): another shown meanwhile, it is laid on none. The list's own count
+ * (`told`), once it is drawn — after New, a delete, a row's button — wins over an answer asked before it.
+ */
+export function relatedCount(context: RelatedCountContext): RelatedCount {
+  const { node, form, dataSource, tab, button, pill } = context;
+  /** How many records it lists for the record shown, in the pill and the tab's name ("Invoices, 3"); none while not known. */
+  const show = (total: number | null) => {
+    const n = total === null ? '' : formatNumber(total, 0, context.locale);
+    pill.hidden = total === null;
+    pill.textContent = n;
+    if (total !== null) button.setAttribute('aria-label', context.fill(context.labels.countOf, { label: tab.label, count: n }));
+    // An icon alone keeps its name.
+    else if (tab.iconOnly) button.setAttribute('aria-label', tab.label);
+    else button.removeAttribute('aria-label');
+  };
+  /** What it last asked, and whether the record it asked for is still shown as it was. */
+  let asked: { key: string; shown: () => boolean } | null = null;
+  /** Each ask and each count told, in turn: an answer lands only while nothing newer has. */
+  let turn = 0;
+  const unknown = () => {
+    asked = null;
+    turn++;
+    show(null);
+  };
+  return {
+    update(state) {
+      // Another record shown, the same loaded again, the person's Discard: what was counted was another's.
+      if (asked && !asked.shown()) unknown();
+      if (state.status === 'idle' || state.status === 'loading') return;
+      const filter = form.relatedFilter(node.id);
+      if (!filter || state.recordId == null || !dataSource?.list || form.node(node.id).invisible) {
+        if (asked) unknown();
+        return;
+      }
+      const key = JSON.stringify(filter);
+      if (asked && asked.key === key) return;
+      if (asked) unknown();
+      const shown = form.recordShown();
+      asked = { key, shown };
+      const at = ++turn;
+      dataSource.list({ model: node.model, fields: node.columns, filter, sort: node.sort ?? [], offset: 0, limit: 1 }).then(
+        (result) => {
+          if (at === turn && shown()) show(result.total);
+        },
+        // Not counted: none shown, as before it was asked.
+        () => undefined
+      );
+    },
+    told(total) {
+      if (!asked?.shown()) return;
+      turn++;
+      show(total);
     },
   };
 }

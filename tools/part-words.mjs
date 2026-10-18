@@ -30,10 +30,13 @@ export const PART_WORDS = {
     widgets: ['moreSteps', 'timeInStep', 'copyValue', 'addAccount', 'sharesOff', 'untaxed', 'amountDue', 'paymentOf', 'openPayment', 'hoursDecimal', 'account', 'deleteLine', 'stillHolds'],
   },
   choice: { widgets: ['createNamed', 'stillHolds'] },
-  columns: { viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
+  columns: { widgets: ['movedTo'], viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
   date: { widgets: ['chooseDate', 'weekShort', 'notPastedDate', 'previousMonth', 'nextMonth'] },
   duplicates: {
-    viewer: ['duplicateWith', 'duplicateNamed', 'duplicateNamedWith', 'duplicateAnd', 'duplicatesMore', 'openDuplicate', 'notDuplicate', 'mergeDuplicate', 'mergeTitle', 'mergeIntro', 'mergeKeep', 'mergeShown', 'mergeEmpty', 'mergeSame', 'mergeAllSame', 'mergeWhat', 'merging', 'mergeUnread'],
+    viewer: [
+      'duplicateWith', 'duplicateNamed', 'duplicateNamedWith', 'duplicateAnd', 'duplicatesMore', 'openDuplicate', 'notDuplicate', 'mergeDuplicate', 'mergeTitle', 'mergeIntro', 'mergeKeep', 'mergeShown', 'mergeEmpty', 'mergeSame', 'mergeAllSame', 'mergeWhat', 'merging', 'mergeUnread',
+      'duplicateWithNoun', 'duplicateNamedNoun', 'duplicateNamedWithNoun', 'notDuplicateNoun', 'mergeTitleNoun', 'mergeIntroNoun', 'mergeShownNoun',
+    ],
   },
   files: {
     widgets: [
@@ -52,32 +55,37 @@ export const PART_WORDS = {
     widgets: ['phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart'],
     viewer: [
       'importTitle', 'importDrop', 'importChoose', 'importHint', 'importReading', 'importCannotRead', 'importNotSheet', 'importOldExcel', 'importLocked', 'importDamaged', 'importNoRows', 'importNoUnzip', 'importTooMany', 'importColumnLetter',
-      'importFileRows', 'importFileRowsOne', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
+      'importFileRows', 'importFileRowsOne', 'importNoRowsUnder', 'importMisread', 'importSheet', 'importEncoding', 'importUnicode', 'importSeparator', 'importComma', 'importSemicolon', 'importTab', 'importBar', 'importColumn', 'importExample', 'importField', 'importLeaveOut', 'importLeftOut',
       'importNeeded', 'importMoved', 'importCheck', 'importCheckOne', 'importChecking', 'importReady', 'importReadyOne', 'importRefused', 'importRefusedOne', 'importMore', 'importMoreOne', 'importPreview', 'importNone', 'importStart', 'importStartOne',
       'importWhy', 'importFixName', 'importing', 'importStop', 'importNotMade', 'importNoneCalled', 'importSeveralCalled', 'importNotYesNo', 'importRow', 'importDownload', 'importFailed',
+      'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',
-      'pastedCells', 'pastedCellsOne', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
+      'pastedCells', 'pastedCellsOne', 'pasteRowRefused', 'pasteNoMatch', 'pasteSeveralCalled', 'pasteNotLookedUp', 'deleteLine', 'moveUp', 'moveDown', 'movedTo', 'removeAsk', 'removed',
     ],
   },
   list: {
     widgets: ['enterNumber', 'enterDate', 'enterValue', 'phoneCallNamed', 'phoneWhatsAppNamed'],
     viewer: [
       'previousPage', 'nextPage', 'selectAll', 'viewList', 'viewMap', 'viewBoth', 'viewGallery', 'rowActions', 'selectRecord', 'noRecords', 'selectAllMatching', 'selectingAll', 'selectedOf', 'selectAllFailed', 'showAs',
-      'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne',
+      'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printing', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne', 'printedOn',
       'bulkTitle', 'bulkTitleOne', 'bulkField', 'bulkApply', 'bulkAsk', 'bulkAskOne', 'bulkSet', 'bulkClear', 'bulkProgress', 'bulkDone', 'bulkDoneOne', 'bulkSome', 'bulkWhy', 'bulkChangedSince',
       'importDone', 'importDoneOne', 'importStopped', 'importSome', 'importUndo', 'importUndoAsk', 'importUndoAskOne', 'importUndoing', 'importUndone', 'importUndoneOne', 'importUndoSome', 'importRow', 'importDownload', 'importFailed',
       'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
       'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opSet', 'opNotSet', 'opPeriod', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'expandAll', 'collapseAll',
-      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown',
+      'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown', 'rowsKey',
+      'rangeNoun', 'noRecordsNoun', 'selectAllMatchingNoun', 'selectAllFailedNoun', 'exportAllNoun', 'exportAllNounOne', 'exportCutNoun', 'exportFailedNoun', 'exportedNoun', 'exportedNounOne', 'printCutNoun', 'printFailedNoun',
+      'printCountNoun', 'printCountNounOne', 'bulkTitleNoun', 'bulkTitleNounOne', 'bulkAskNoun', 'bulkAskNounOne', 'bulkDoneNoun', 'bulkDoneNounOne', 'bulkSomeNoun', 'importDoneNoun', 'importDoneNounOne', 'importStoppedNoun', 'importSomeNoun',
+      'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun',
     ],
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
+  print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {

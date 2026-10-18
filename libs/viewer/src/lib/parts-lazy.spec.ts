@@ -397,7 +397,7 @@ describe('the parts a page draws from', () => {
     expect(host.querySelector('.fd-head-badge')?.textContent).toBe('BUG 4127');
     expect(document.getElementById('fieldia-head-styles')).not.toBeNull();
     await handle.form.settled();
-    expect((host.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe(VALUES.title);
+    expect((host.querySelector('[data-node="#title"] textarea') as HTMLTextAreaElement).value).toBe(VALUES.title);
     // Drawn from the part now loaded: a second record is drawn at once.
     const second = mount(BUG, { dataSource, recordId: 1 });
     expect(second.host.querySelector('.fd-head')).not.toBeNull();

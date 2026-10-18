@@ -257,12 +257,19 @@ export const LIST_STYLES = `
    Print: every record that matches in a sheet of its own (list-print.ts), in the list's place, the list left out. */
 .fd-print-sheet, .fd-list-shown { display: none; }
 @media print {
+  /* A related list's head as its title alone: no room kept for its buttons, and none at all where it has no title (a
+     list in a tab of its own, which the tab's name heads), never an empty band over its rows. */
+  .fd-form .fd-related-head { min-height: 0; }
+  .fd-form .fd-related-head:not(:has(> .fd-related-title)) { display: none !important; }
   /* A related list's rows as shown, and how many of how many where they run past a page. */
   .fd-form .fd-list-shown:not([hidden]) { display: block; margin: 4px 0 0; font-size: 12px; color: var(--fd-muted); }
-  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon { display: none !important; }
+  /* Its tools, and the column after the fields — each row's buttons and the Columns menu's cell — with them. */
+  .fd-form .fd-list-bar, .fd-form .fd-list-selection, .fd-form .fd-list-report, .fd-form .fd-list-check, .fd-form .fd-list-tree, .fd-form .fd-list-twisty, .fd-form .fd-pager, .fd-form .fd-list-addon, .fd-form .fd-list-tail { display: none !important; }
   .fd-form .fd-list-scroll { overflow: visible !important; }
   .fd-form .fd-list-table { width: 100%; }
   .fd-form .fd-list-table :is(td, th) { white-space: normal; overflow-wrap: break-word; }
+  /* A number, an amount, a day or a phone number on one line: never "+20 12 0528" over "2720". */
+  .fd-form .fd-list-table td.fd-whole, .fd-print-sheet .fd-print-table td.fd-whole { white-space: nowrap; }
   .fd-form .fd-list > .fd-print-sheet { display: block; }
   .fd-print-about { display: grid; gap: 2px; margin-block-end: 12px; font-size: 12px; color: var(--fd-muted); }
   .fd-print-sheet .fd-print-table { width: 100%; border-collapse: collapse; font-size: 12px; }

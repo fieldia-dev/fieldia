@@ -110,12 +110,17 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 data source it is the date and time box.
 
 Rows copied from a spreadsheet and pasted in a cell of a table of lines (or on
-a cell chosen in @fieldia/grid) fill across and down from that cell, each read as its column reads what is typed
-(the page's marks and digits in any script, an amount in its line's currency,
-a day in the page's order, a choice by its label), lines added for the rows past
-the last as the table's `max` allows, and what a cell could not take named with
-why under the table. The readers — `blockOf`, `readPastedCell`, `whyNotPasted` —
-come in the lines part (`(await linesPart.load()).readPastedCell(…)`), which the
-grid and a list's Import read cells with too.
+a cell of @fieldia/grid, chosen or open for typing) go each on its own line from
+that cell, across the columns shown, each cell read as its column reads what is
+typed (the page's marks and digits in any script, an amount in its line's
+currency, a day in the page's order, a choice by its label, a link by its exact
+name through the source's search, as its box reads a name typed), lines added for
+the rows past the last as the table's `max` allows. A row whose name reads as no
+record — nothing, or more than one, called so — is not pasted at all, never half
+laid on a line of another record; what a cell could not take is named with why
+under the table. The readers — `blockOf`, `readPastedCell`, `whyNotPasted`, and
+`pasteRows`, which the table and the grid paste a block with — come in the lines
+part (`(await linesPart.load()).readPastedCell(…)`), which the grid and a list's
+Import read cells with too.
 
 MIT licensed.

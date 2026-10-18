@@ -14,7 +14,7 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, labelAt, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import {
   afterPress,
@@ -28,8 +28,8 @@ import {
   distributionWords,
   DRAWN_IN_CELLS,
   drawIcon,
-  inPlural,
   itemNumber,
+  keepsWhole,
   openLineDialog,
   kindTextField,
   lineForm,
@@ -96,6 +96,24 @@ interface CellContext {
    * list drops open, as a click on the box opens it. Entered by the keys (Tab, Enter) or by the program, it stays closed.
    */
   pressed?(cell: Element): boolean;
+  /** A block pasted in an open cell: spread from that cell on, as on a chosen cell (`pasteRows`). */
+  pasteBlock?(rowIndex: number, column: string, text: string): void;
+}
+
+/**
+ * Whether text pasted in an open cell is a block for the cells around it — rows, or cells side by side, as a
+ * spreadsheet copies them — rather than one value for the box: by the lines part's reader where it has come, else by
+ * its tabs and line breaks. A paragraph's box keeps several lines with no tabs, as the plain table's does.
+ */
+function pastedBlock(text: string, box: EventTarget | null): boolean {
+  const readers = linesPart.loaded;
+  if (box instanceof HTMLTextAreaElement && !text.includes('\t')) return false;
+  if (readers) {
+    const block = readers.blockOf(text);
+    return block.length > 1 || block[0].length > 1;
+  }
+  const flat = text.replace(/\r\n?/g, '\n').replace(/\n$/, '');
+  return flat.includes('\t') || flat.includes('\n');
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -585,6 +603,24 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       params.api.stopEditing(true);
       if (rowIndex !== null && !params.api.isDestroyed()) params.api.setFocusedCell(rowIndex, column, rowPinned);
     });
+    // A block pasted in the open cell — a click opens one, and most people click before they paste — spreads across and
+    // down from it, as on a chosen cell, what was typed in it so far let go as Escape lets it go; one value is the box's.
+    this.box.addEventListener(
+      'paste',
+      (event) => {
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        const { rowIndex, rowPinned } = params.node;
+        if (!cell.pasteBlock || !text || rowIndex === null || rowPinned || !pastedBlock(text, event.target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const column = params.column.getColId();
+        params.cell.cancel(key, this.before);
+        params.api.stopEditing(true);
+        if (!params.api.isDestroyed()) params.api.setFocusedCell(rowIndex, column, rowPinned);
+        cell.pasteBlock(rowIndex, column, text);
+      },
+      true
+    );
     // A day picked from a date's calendar is the whole answer: the cell keeps it and closes, as a
     // spreadsheet's does. A date typed stays open until Enter or Tab commits it. A date with a time
     // stays open for its time, and a whole line open at once stays open.
@@ -812,6 +848,10 @@ function selectFromStart(input: HTMLInputElement) {
 const LONG_TABLE = 15;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 38;
+/** How long a finger rests on a column's header before it lifts the column, in milliseconds, as in a list. */
+const LONG_PRESS = 500;
+/** How far a resting finger may wander before it is a swipe the browser scrolls with, in pixels. */
+const WANDER = 10;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
@@ -843,6 +883,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // The table's own rules, read by the form for each line as the form changes; a table with none asks nothing.
   const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   let lineStates = new Map<string, LineState>();
+  /** A finger resting on a column's header (below: a long press lifts the column), from its touch to its lifting. */
+  let resting: { pointer: number; x: number; y: number; timer: number; cell: HTMLElement } | null = null;
   /** Accounts' names an analytic distribution's cells show, by model and id, as they are found. */
   const accountNames = new Map<string, string>();
   /** The analytic distributions among the columns, by column: their names found and said. */
@@ -875,7 +917,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const sub = def.fields[column];
     if (!line || kindOf(line) || !sub || !NUMERIC.has(sub.type) || !locked(sub)) return null;
     const unread = Object.keys(def.fields).find((other) => other !== column && unreadAt(line, other));
-    return unread ? fill(labels.cellWaits, { column: def.fields[unread].label, own: sub.label }) : null;
+    const small = (key: string) => labelAt(labels.cellWaits, key, form.page.lowerLabels, locale);
+    return unread ? fill(labels.cellWaits, { column: small('column')(def.fields[unread].label), own: small('own')(sub.label) }) : null;
   };
   /** A column's total: numbers only, or the line it waits for (text that does not read, or no number, or a worked-out number that waits). */
   const totalOf = (current: Line[], column: string) => columnTotal(current, column, (line) => !kindOf(line), (line) => !!unreadAt(line, column) || !!cellWaits(line, column));
@@ -897,8 +940,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   /** The last press of a person's pointer on the grid: on which cell, and when. */
   let press: { cell: Element | null; at: number } | null = null;
   element.addEventListener('pointerdown', (event) => (press = { cell: event.target instanceof Element ? event.target.closest('.ag-cell') : null, at: performance.now() }), true);
+  /** A block pasted in an open cell, once the grid can paste one (its editors hold this context as it was made). */
+  let pasteInCell: (row: number, column: string, text: string) => void = () => undefined;
   const cell: CellContext = {
     pressed: (on) => !!press && press.cell === on && performance.now() - press.at < 1000,
+    pasteBlock: (row, column, text) => pasteInCell(row, column, text),
     form,
     field: name,
     fieldId: node.id,
@@ -1141,7 +1187,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       colId: column,
       headerName: sub.label,
       // A long label wraps onto a second line rather than be cut, so two columns never read the same; all of it on pointing at it.
-      headerTooltip: sub.label,
+      // Not under a finger resting on it: its long press lifts the column, whose ghost says its name.
+      headerTooltip: () => (resting ? undefined : sub.label),
       wrapHeaderText: true,
       autoHeaderHeight: true,
       valueGetter: (p) => {
@@ -1462,6 +1509,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         headerHeight: HEADER_HEIGHT,
       }),
       columnDefs,
+      // The theme's heights as the grid's own too: a grid drawn out of sight (a tab not opened, a page drawn for paper)
+      // cannot read them from its theme until shown, and read then, inside its observer of their size, they changed its
+      // rows' and header's heights as it was told its own — a loop the browser reports (WebKit as a page error:
+      // "ResizeObserver loop completed with undelivered notifications").
+      rowHeight: ROW_HEIGHT,
+      headerHeight: HEADER_HEIGHT,
       enableRtl: rtl,
       rowData: lines(),
       pinnedBottomRowData: totals.length ? [totalsRow(lines())] : undefined,
@@ -1508,6 +1561,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       },
       animateRows: false,
       suppressMovableColumns: false,
+      // A column dragged out of the grid stays: AG Grid would hide it, and one the page lets nobody hide would be gone.
+      suppressDragLeaveHidesColumns: true,
       defaultColDef: { sortable: false, resizable: true },
     },
     { modules: [AllCommunityModule] }
@@ -1516,14 +1571,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   // Out of sight under display: none — a tab not shown, a field hidden by its condition — AG Grid measures
   // itself again every frame, for as long as it stays hidden. Taken off the page meanwhile, it rests;
-  // put back the moment it has a box again, it draws itself to fit.
+  // put back once it has a box again, it draws itself to fit — in the next frame, never inside the observer's own
+  // call: put back there, it grows the box observed while its size is told, a loop the browser reports (WebKit as a
+  // page error: "ResizeObserver loop completed with undelivered notifications", as every tab is shown for paper).
   const away = document.createComment('fd-grid-away');
   const View = document.defaultView;
+  let back = 0;
+  const putBack = () => {
+    back = 0;
+    if (away.isConnected && element.getClientRects().length) away.replaceWith(host);
+  };
   const sizes = View && 'ResizeObserver' in View
     ? new View.ResizeObserver(([entry]) => {
         const hidden = entry.contentRect.width === 0 && entry.contentRect.height === 0;
         if (hidden && host.isConnected) host.replaceWith(away);
-        else if (!hidden && away.isConnected) away.replaceWith(host);
+        else if (!hidden && away.isConnected && !back) back = View.requestAnimationFrame(putBack);
       })
     : null;
   sizes?.observe(element);
@@ -1538,9 +1600,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   api.addEventListener('columnVisible', (event) => remember(event.source));
   /** Sizing the grid does by itself is not a choice to keep. */
   const automatic = new Set(['gridInitializing', 'flex', 'gridOptionsChanged', 'sizeColumnsToFit', 'autosizeColumns']);
+  /** A drag's columns being put back as they were (below): no choice to keep. */
+  let puttingBack = false;
   function remember(source: string) {
-    // A grid taking itself apart also sends column events: they are not choices.
-    if (automatic.has(source) || !preferences || api.isDestroyed()) return;
+    // A grid taking itself apart also sends column events: they are not choices; nor a drag put back.
+    if (automatic.has(source) || !preferences || api.isDestroyed() || puttingBack) return;
     // A column the record hides is kept as the person last had it: the rule's hiding is not their choice.
     const state = (api.getColumnState() ?? []).map(({ colId, width, flex, hide }) => ({ colId, width: width ?? null, flex: flex ?? null, hide: ruleHidden.has(colId) ? personHidden.has(colId) : !!hide }));
     preferences.set(columnsKey, state);
@@ -1567,6 +1631,113 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       else personHidden.delete(s.colId);
     }
   }
+
+  // ---- a column dragged by its header, as a list's (the columns part in @fieldia/viewer) ----
+  // AG Grid moves it as it is dragged, its ghost under the pointer, the others sliding aside, the column in the place it
+  // takes marked. As in a list: Escape puts it back (AG Grid stops the drag where it had slid it), a drag out of the
+  // grid never hides it (AG Grid would: a column the page does not let people hide would be gone for good), a finger
+  // lifts it by resting on its header a moment — a swipe there scrolls the page, a tap is a tap (AG Grid moved it at
+  // the first touch, its header taking every swipe) — and its new place is said to a screen reader.
+  /** The columns as a header's drag began: put back when Escape ends it; to say where the column went. */
+  let dragFrom: ColumnState[] | null = null;
+  const headerOf = (target: EventTarget | null) => (target instanceof Element ? target.closest<HTMLElement>('.ag-header-cell[col-id]') : null);
+  /** A line's own column, never the tools' at its ends (a tick, a handle, its buttons). */
+  const ownColumn = (id: string | null | undefined): id is string => !!id && !isTool(id);
+  /** The line's own columns in the order a person sees them. */
+  const seenColumns = () => (api.getAllDisplayedColumns() ?? []).map((column) => column.getColId()).filter(ownColumn);
+  const voice = document.createElement('div');
+  voice.className = 'fd-sr-only';
+  voice.setAttribute('role', 'status');
+  voice.setAttribute('aria-live', 'polite');
+  element.append(voice);
+  /** The column dragged, tinted down the whole grid with a line at its start, as a list's: AG Grid marks its header alone. */
+  const lifted = document.createElement('style');
+  element.append(lifted);
+  const tint = (column: string | null) => {
+    lifted.textContent = column ? `#${CSS.escape(id)} .ag-cell[col-id="${CSS.escape(column)}"] { background: var(--fd-accent-soft); box-shadow: inset ${rtl ? -2 : 2}px 0 0 var(--fd-accent); }` : '';
+  };
+  api.addEventListener('dragStarted', (event) => {
+    const column = headerOf(event.target)?.getAttribute('col-id');
+    dragFrom = ownColumn(column) ? (api.getColumnState() ?? null) : null;
+    tint(dragFrom && column ? column : null);
+  });
+  api.addEventListener('dragCancelled', () => {
+    const from = dragFrom;
+    dragFrom = null;
+    tint(null);
+    if (!from || api.isDestroyed()) return;
+    puttingBack = true;
+    api.applyColumnState({ state: from, applyOrder: true });
+    // AG Grid tells of the columns put back a moment later, in its batch of events already on its way: none is kept.
+    window.setTimeout(() => (puttingBack = false), 0);
+  });
+  api.addEventListener('dragStopped', (event) => {
+    const from = dragFrom;
+    dragFrom = null;
+    tint(null);
+    const id = headerOf(event.target)?.getAttribute('col-id');
+    if (!from || !ownColumn(id) || api.isDestroyed()) return;
+    const before = from.filter((one) => !one.hide).map((one) => one.colId).filter(ownColumn);
+    const now = seenColumns();
+    if (before.join() === now.join()) return;
+    // Let go out of the grid, AG Grid tells of no move: the column stays where it was seen, so it is kept there.
+    remember('uiColumnMoved');
+    // Its label small inside the sentence where the page asks (`lowerLabels`), as every sentence naming a field.
+    if (before.indexOf(id) !== now.indexOf(id)) voice.textContent = fill(labels.movedTo, { label: labelAt(labels.movedTo, 'label', form.page.lowerLabels, locale)(def.fields[id]?.label ?? id), n: now.indexOf(id) + 1, total: now.length });
+  });
+  // A finger on a header: AG Grid's press waits until it has rested there a moment, and is handed on then.
+  const handedOn = new WeakSet<Event>();
+  const stopResting = () => {
+    if (!resting) return;
+    window.clearTimeout(resting.timer);
+    resting.cell.removeAttribute('data-lifted');
+    resting = null;
+    host.removeEventListener('touchmove', holdPage, true);
+  };
+  /** Once lifted, the finger moves the column, not the page. */
+  const holdPage = (event: TouchEvent) => {
+    if (resting?.cell.hasAttribute('data-lifted') && event.cancelable) event.preventDefault();
+  };
+  /** A header's own column pressed by a finger, not on its edge (which sizes it). */
+  const fingerOnHeader = (event: Event) => {
+    const cell = headerOf(event.target);
+    return cell && ownColumn(cell.getAttribute('col-id')) && !(event.target as Element).closest('.ag-header-cell-resize') ? cell : null;
+  };
+  host.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.pointerType !== 'touch' || handedOn.has(event)) return;
+      const cell = fingerOnHeader(event);
+      if (!cell) return;
+      event.stopPropagation();
+      stopResting();
+      const { pointerId, clientX, clientY } = event;
+      const target = event.target as Element;
+      const timer = window.setTimeout(() => {
+        if (!resting || resting.pointer !== pointerId) return;
+        cell.setAttribute('data-lifted', '');
+        const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true, pointerId, pointerType: 'touch', isPrimary: true, clientX: resting.x, clientY: resting.y, button: 0, buttons: 1 });
+        handedOn.add(down);
+        target.dispatchEvent(down);
+      }, LONG_PRESS);
+      resting = { pointer: pointerId, x: clientX, y: clientY, timer, cell };
+      host.addEventListener('touchmove', holdPage, { capture: true, passive: false });
+    },
+    true
+  );
+  // AG Grid's touch path waits with its pointer's.
+  host.addEventListener('touchstart', (event) => fingerOnHeader(event) && event.stopPropagation(), { capture: true, passive: true });
+  host.addEventListener(
+    'pointermove',
+    (event) => {
+      // A finger that wanders before it has rested is a swipe: the browser scrolls.
+      if (resting && event.pointerId === resting.pointer && !resting.cell.hasAttribute('data-lifted') && Math.hypot(event.clientX - resting.x, event.clientY - resting.y) > WANDER) stopResting();
+    },
+    true
+  );
+  for (const type of ['pointerup', 'pointercancel'] as const) host.addEventListener(type, (event) => resting && event.pointerId === resting.pointer && stopResting(), true);
+  // A long press is the drag's, never the browser's menu over the header.
+  host.addEventListener('contextmenu', (event) => resting && event.preventDefault(), true);
 
   // ---- the column chooser: a short list of the columns a person may hide ----
   const chooserBox = document.createElement('div');
@@ -1677,14 +1848,19 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let paper: HTMLTableElement | null = null;
   const NUMBERS = new Set(['integer', 'float', 'monetary']);
   function paperTable(): HTMLTableElement {
-    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false) => {
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', end = false, whole = false) => {
       const cell = document.createElement(tag);
       cell.textContent = text;
       if (end) cell.className = 'fd-num';
+      // A day or a phone number on one line too, as a number is.
+      if (whole) cell.classList.add('fd-whole');
       return cell;
     };
     const parent = form.getState().values;
-    const shown = columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false);
+    // In the order the person sees them — a header dragged, or the order kept for them — as the screen shows them.
+    const seen = seenColumns();
+    const at = (column: string) => (seen.includes(column) ? seen.indexOf(column) : seen.length + columns.indexOf(column));
+    const shown = columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false).sort((a, b) => at(a) - at(b));
     const atEnd = (column: string) => NUMBERS.has(def.fields[column].type);
     const table = document.createElement('table');
     table.className = 'fd-print-table';
@@ -1703,7 +1879,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         continue;
       }
       const state = lineStates.get(line.key);
-      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column))));
+      row.append(...shown.map((column) => make('td', state?.cells[column]?.invisible ? '' : cellWords(line, column, parent), atEnd(column), keepsWhole(def.fields[column].type, node.cells?.[column]?.widget))));
     }
     const current = lines();
     const items = current.filter((line) => !kindOf(line));
@@ -1732,6 +1908,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const view = document.defaultView;
   view?.addEventListener('beforeprint', printing);
   view?.addEventListener('afterprint', printed);
+  // Drawn after printing began — a tab never opened, drawn for paper — the viewer tells it (`fd-paper`): its paper table
+  // then, never the grid itself laid out across a sheet.
+  element.setAttribute('data-fd-paper', '');
+  element.addEventListener('fd-paper', () => !paper && printing());
 
   /** What the cards were last drawn from: drawn again only when it changes. */
   let cardsDrawn = '';
@@ -1875,65 +2055,47 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     return !readonly && !kindOf(line) && !locked(def.fields[column]) && !rules?.readonly && !rules?.invisible;
   };
   /**
-   * A block pasted on a chosen cell, as a spreadsheet copies one (tabs between
-   * cells, a line break between rows), fills across and down from it, each cell
-   * read as its column reads what is typed; rows past the last line add lines,
-   * as many as the table may have (`options.max`), as the plain table does.
-   * Cells that are read-only, or cannot read what is pasted, keep what they
-   * hold, and so do rows past the most lines: all of it said in one note.
+   * A block pasted on a cell — chosen, or open for typing — as a spreadsheet copies one (tabs between cells, a line
+   * break between rows): each row on its own line from there, across the columns shown, as the plain table pastes
+   * (the lines part's `pasteRows`): each cell read as its column reads what is typed, a link's by its name through the
+   * source's search; a row whose name reads as no record not pasted at all; rows past the last line add lines, as many
+   * as the table may have (`options.max`). What did not go in is named with why, all of it said in one note. One paste
+   * at a time: the next waits for the names of the one before.
    */
-  function pasteBlock({ blockOf, readPastedCell, whyNotPasted }: LinesPart, rowIndex: number, startColumn: string, text: string) {
+  let pasting: Promise<unknown> = Promise.resolve();
+  type PasteTable = Parameters<LinesPart['pasteRows']>[0];
+  function pasteBlock({ blockOf, pasteRows }: LinesPart, rowIndex: number, startColumn: string, text: string) {
     const shownColumns = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
-    const from = shownColumns.indexOf(startColumn);
-    if (from < 0) return;
     const dateOrder = dateOrderOf(form);
-    let pasted = 0;
-    let added = 0;
-    const missed: string[] = [];
-    let beyond = false;
-    blockOf(text).forEach((cells, r) => {
-      let line: Line | undefined = lines()[rowIndex + r];
-      if (!line) {
-        // A row of nothing adds no line; past the most lines, the rest is said.
-        if (cells.every((value) => !value.trim())) return;
-        if (lines().length >= most) return void (beyond = true);
-        const key = form.addLine(name);
-        added++;
-        line = lines().find((one) => one.key === key);
-        if (!line) return;
-      }
-      const key = line.key;
-      cells.forEach((value, c) => {
-        // The line as it is now: a cell pasted before may have set what this one reads by (its currency).
-        const line = lines().find((one) => one.key === key);
-        if (!line) return;
-        const column = shownColumns[from + c];
-        if (!column) return;
+    const stillShown = form.recordShown();
+    const table: PasteTable = {
+      fields: def.fields as Record<string, LineField>,
+      columns: shownColumns,
+      lines,
+      add: () => (lines().length >= most ? null : form.addLine(name)),
+      typable,
+      reading: (line, column) => ({ locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(def.fields[column], line.values, form.getState().values) }),
+      // Named, and — where its box has words for it — why. By its line's number as people count lines; a section's or a
+      // note's by its words.
+      cellName: (line, column) => {
+        const number = numberOf(line);
         const sub = def.fields[column];
-        const reading = { locale: locale ?? 'en', widget: node.cells?.[column]?.widget, dateOrder, currency: currencyOf(sub, line.values, form.getState().values) };
-        const read = typable(line, column) ? readPastedCell(sub, value, reading) : null;
-        if (!read) {
-          // Named, and — where its box has words for it — why: "“6:3” could be 6:03 or 6:30", "the time 14:30 was left out".
-          // By its line's number as people count lines; a section's or a note's by its words.
-          const number = numberOf(line);
-          const cell = number ? fill(labels.cellName, { column: sub.label, n: number }) : fill(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
-          const why = typable(line, column) ? whyNotPasted(sub, value, { ...reading, labels }) : null;
-          return void missed.push(why ? fill(labels.notPastedWhy, { cell, why }) : cell);
-        }
+        return number ? fill(labels.cellName, { column: sub.label, n: number }) : fill(labels.cellOfHeading, { column: sub.label, heading: kinds ? String(line.values[kinds.text] ?? '') : '' });
+      },
+      write: (line, column, value) => {
         form.setUnread(`${name}.${line.key}.${column}`, null);
-        form.updateLine(name, line.key, column, read.value);
-        pasted++;
-      });
-    });
-    const separator = locale && isRightToLeft(locale) ? '\u061b ' : '; ';
-    const said = [
-      ...(pasted ? [inPlural(labels.pastedCells, labels.pastedCellsOne, pasted, locale)] : []),
-      ...(added ? [inPlural(labels.pasteAddedLines, labels.pasteAddedLinesOne, added, locale)] : []),
-      ...(missed.length ? [fill(labels.notPastedCells, { cells: missed.join(separator) })] : []),
-      ...(beyond ? [inPlural(labels.pasteBeyondLines, labels.pasteBeyondLinesOne, lines().length, locale)] : []),
-    ].join(' ');
-    pasteNote.textContent = said;
-    pasteNote.hidden = !said;
+        form.updateLine(name, line.key, column, value);
+      },
+      search: (key, column, query, limit, exact) => form.searchLine(name, key, column, query, limit, exact ? { exact: true } : {}),
+      shown: () => stillShown() && !destroyed,
+    };
+    pasting = pasting.then(() =>
+      pasteRows(table, rowIndex, startColumn, blockOf(text), { labels, locale }).then((said) => {
+        if (said === null || destroyed) return;
+        pasteNote.textContent = said;
+        pasteNote.hidden = !said;
+      }, () => undefined)
+    );
   }
   /**
    * A paste while one of this grid's cells is chosen (not edited). A browser sends a paste on what is not editable to
@@ -1945,6 +2107,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const readers = linesPart.loaded;
     if (readers) pasteBlock(readers, row, column, text);
     else void linesPart.load().then((part) => !destroyed && pasteBlock(part, row, column, text), () => undefined);
+  };
+  pasteInCell = (row, column, text) => {
+    if (!readonly) pasteFrom(row, column, text);
   };
   const onPaste = (event: ClipboardEvent) => {
     const focusedCell = document.activeElement;
@@ -2087,6 +2252,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       document.removeEventListener('mousedown', outside);
       document.removeEventListener('paste', onPaste);
       sizes?.disconnect();
+      if (back) View?.cancelAnimationFrame(back);
       api.destroy();
       apis.delete(element);
     },

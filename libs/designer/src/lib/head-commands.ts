@@ -1,4 +1,4 @@
-import { foldDigits, type ButtonNode, type Field, type FieldNode, type HeadLink, type LayoutNode, type MenuItem, type Page, type SheetHead, type SheetNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { foldDigits, relatedInTab, type ButtonNode, type Field, type FieldNode, type HeadLink, type LayoutNode, type MenuItem, type Page, type SheetHead, type SheetNode, type TabCount, type TabNode, type TabsNode } from '@fieldia/core';
 import { allIds, findNode, findTab, keptFields, nextName, tabsNodes } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
@@ -70,8 +70,8 @@ export interface HeadCommands {
   moveHeadPart(id: string, delta: number): boolean;
   /** A button's icon alone, toggle, menu and look while the record has changes: a head's, a header's or one in a group. */
   setButtonParts(id: string, patch: ButtonPartsPatch): boolean;
-  /** A tab's icon, shown alone or not, and the field whose count shows after it. */
-  setTabParts(id: string, patch: { iconOnly?: boolean; icon?: string | null; count?: string | null }): boolean;
+  /** A tab's icon, shown alone or not, and what its count after it counts: a field, or a related list in it (`{ related }`). */
+  setTabParts(id: string, patch: { iconOnly?: boolean; icon?: string | null; count?: string | TabCount | null }): boolean;
   /** Tabs directly in a sheet with a head, put in the head's band (true) or left over the body. */
   setTabsInHead(id: string, inHead: boolean): boolean;
   /** A field's access key — one letter or digit of its label, with Alt — or `null` for none. */
@@ -465,7 +465,11 @@ export function headCommands(deps: HeadCommandsDeps): HeadCommands {
         else if (patch.iconOnly) tab.iconOnly = true;
         if (tab.iconOnly && !tab.icon) throw new Refusal((w) => w.head.iconOnlyNeedsIcon);
         if (patch.count === null || patch.count === '') delete tab.count;
-        else if (patch.count !== undefined) {
+        else if (typeof patch.count === 'object') {
+          const related = patch.count.related;
+          if (!relatedInTab(tab, related)) throw new Refusal((w) => w.head.countNoRelated(related));
+          tab.count = { related };
+        } else if (patch.count !== undefined) {
           const def = fieldFor(draft, patch.count);
           if (!COUNTED.has(def.type)) throw new Refusal((w) => w.head.countShape(def.label));
           tab.count = patch.count;

@@ -357,3 +357,23 @@ describe('historySlot', () => {
     expect(host.querySelector('.fd-history-none')?.textContent).toBe('No changes yet');
   });
 });
+
+describe('the history on a page that names its records', () => {
+  it('tells its making in the page’s words where the app gives no kind of its own', async () => {
+    const host = await mount({ kind: undefined, records: { one: 'bug', other: 'bugs', a: 'a bug' } });
+    expect(summaries(host)).toContain('Mona Adel created the bug');
+    handle?.destroy();
+    const own = await mount({ records: { one: 'bug', other: 'bugs', a: 'a bug' } });
+    expect(summaries(own)).toContain('Mona Adel created the work item');
+  });
+});
+
+describe('the history on a page that asks for its labels small inside sentences', () => {
+  it('says each change’s field small after its person, its first letter only; without it, as before', async () => {
+    const small = await mount({ lowerLabels: true });
+    expect(summaries(small).slice(0, 4)).toEqual(['Mona Adel changed stack Rank to 1999964430', 'Mona Adel cleared assigned To', 'Mona Adel changed stack Rank to 1999979534', 'Karim Fathy changed state from New to Active and made field changes']);
+    handle?.destroy();
+    const plain = await mount();
+    expect(summaries(plain).slice(0, 2)).toEqual(['Mona Adel changed Stack Rank to 1999964430', 'Mona Adel cleared Assigned To']);
+  });
+});

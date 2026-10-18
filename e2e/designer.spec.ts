@@ -25,6 +25,19 @@ test.describe('survey designer', () => {
     expect((page as unknown as { problems: string[] }).problems).toEqual([]);
   });
 
+  test('Try it on a survey from nothing, and on the screen designer’s page: no Problems tab while it has nothing to say', async ({ page }) => {
+    // As the walk tried them: the drawer under the page tried offers Data alone, never "Problems" opening on "Nothing
+    // stands in the way of sending this".
+    for (const address of ['/designer/', '/screen/']) {
+      await page.goto(address);
+      await page.getByRole('button', { name: 'Try it' }).click();
+      const drawer = page.locator('.fd-try-drawer');
+      await expect(drawer.locator('.fd-try-tab:visible')).toHaveText(['Data']);
+      await expect(drawer.getByText('Problems')).toBeHidden();
+      if (address === '/designer/') await screen(page, 'designer-blank-try-it', { viewport: true });
+    }
+  });
+
   test('a survey from nothing opens blank: no title but the box’s “Untitled form”, and where to start said without red', async ({ page }) => {
     // As the walk opened it from the Designer page: no "Event feedback", no red "Must fix".
     const title = page.locator('.fd-designer input').first();

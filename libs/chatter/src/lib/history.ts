@@ -1,8 +1,8 @@
-import { fill, type Locale } from '@fieldia/core';
+import { fill, labelAt, recordSentence, type Locale, type PageRecords } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
-import { CHATTER_LABELS, type ChatterLabels } from './labels';
+import { chatterLabels, type ChatterLabels } from './labels';
 import { ageOf, empty, firstDayOfWeek, HISTORY_AGES, historyEntries, type HistoryAge, type HistoryEntry } from './history-data';
 import type { ChatterSource, Person, RecordRef } from './source';
 
@@ -24,6 +24,10 @@ export interface HistoryOptions {
   reasonField?: string;
   /** What the record is called where its making is told, in the reader's language: "work item" ("created the work item"). The words' own `recordKind` unless said. */
   kind?: string;
+  /** What the page calls its records (`Page.records`): its making told in them — "created the customer" — where `kind` is not given. */
+  records?: PageRecords;
+  /** A field's label small inside the history's sentences — "changed status to …" — as the page asks (`Page.lowerLabels`). */
+  lowerLabels?: boolean;
   locale?: Locale;
   labels?: Partial<ChatterLabels>;
   dir?: 'ltr' | 'rtl';
@@ -70,7 +74,7 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
   installStyles(doc);
   installHistoryStyles(doc);
   const locale = options.locale ?? 'en';
-  const labels: ChatterLabels = { ...CHATTER_LABELS[locale], ...options.labels };
+  const labels: ChatterLabels = chatterLabels(locale, options.labels);
   const now = options.now ?? (() => new Date());
   const firstDay = firstDayOfWeek(locale);
   const tag = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale;
@@ -121,20 +125,22 @@ export function mountHistory(host: HTMLElement, options: MountHistoryOptions): H
     made.push(doc.createTextNode(template.slice(last)));
     return made;
   }
+  /** A field's label as `template` puts it: small inside the sentence where the page asks (`lowerLabels`). */
+  const fieldIn = (template: string, label: string) => labelAt(template, 'field', options.lowerLabels, locale)(label);
   /** What a line of the history says it did, its state's words with their dots. */
   function summary(entry: HistoryEntry): Node[] {
     const name = entry.message.author?.name ?? '';
-    if (entry.kind === 'created') return words(labels.created, { name, kind: options.kind ?? labels.recordKind });
+    if (entry.kind === 'created') return words(options.kind === undefined ? recordSentence(options.records, labels.createdNoun, labels.created, locale) : labels.created, { name, kind: options.kind ?? labels.recordKind });
     if (entry.kind === 'comment') return words(labels.commented, { name });
     const { state, changes } = entry;
     if (state && !empty(state.from) && !empty(state.to)) {
-      const parts = { name, field: state.label, from: stateWords(state.from as string), to: stateWords(state.to as string) };
-      return words(changes.length > 1 ? labels.changedFromToMore : labels.changedFromTo, parts);
+      const template = changes.length > 1 ? labels.changedFromToMore : labels.changedFromTo;
+      return words(template, { name, field: fieldIn(template, state.label), from: stateWords(state.from as string), to: stateWords(state.to as string) });
     }
     if (changes.length > 1) return words(labels.madeChanges, { name });
     const [change] = changes;
-    if (empty(change.to)) return words(labels.cleared, { name, field: change.label });
-    return words(labels.changedTo, { name, field: change.label, value: change.field === options.stateField ? stateWords(change.to as string) : (change.to as string) });
+    if (empty(change.to)) return words(labels.cleared, { name, field: fieldIn(labels.cleared, change.label) });
+    return words(labels.changedTo, { name, field: fieldIn(labels.changedTo, change.label), value: change.field === options.stateField ? stateWords(change.to as string) : (change.to as string) });
   }
 
   // ---- the parts ------------------------------------------------------------------

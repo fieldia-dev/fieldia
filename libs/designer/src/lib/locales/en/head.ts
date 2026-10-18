@@ -72,6 +72,7 @@ export const head = {
   tabIconOnly: 'Its icon alone',
   countFrom: 'Count from',
   noCount: 'No count',
+  countRelated: (name: string) => `Related list: ${name}`,
   inHead: 'In the record’s head',
   inHeadHint: 'The tabs at the band’s end, their pages as the record’s body.',
   // ---- the canvas
@@ -97,6 +98,7 @@ export const head = {
   pressedWordsNeedToggle: 'Words while pressed need what presses it',
   chevronNeedsMenu: 'A chevron of its own needs a menu to open',
   countShape: (label: string) => `${label} cannot be counted: a tab counts a number, lines, links or files`,
+  countNoRelated: (id: string) => `There is no related list "${id}" in this tab: a tab counts the records of one it holds`,
   tabsDirectlyInHead: 'Tabs go in the head from directly in a sheet with a head',
   accessKeyShape: 'An access key is one letter or digit of the label',
 };

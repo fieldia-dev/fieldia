@@ -103,7 +103,18 @@ export interface WidgetDialogs {
    * starts as `name`. Resolves with the record once saved, or null; asked
    * `withValues`, with its values as its page saved them too.
    */
-  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string; values?: Values; withValues?: boolean }): Promise<(RelatedRecord & { values?: Values }) | null>;
+  openRecord(
+    model: string,
+    request: {
+      recordId?: RecordId;
+      name?: string;
+      title: string;
+      values?: Values;
+      withValues?: boolean;
+      /** A line's own: its labels small inside sentences as its record's page asks (`lowerLabels`), unless its own page says. */
+      lowerLabels?: boolean;
+    }
+  ): Promise<(RelatedRecord & { values?: Values }) | null>;
   /** Pick a record from a searchable list. */
   searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
   /**
@@ -122,6 +133,8 @@ export interface WidgetDialogs {
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
     /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */
     buttons?: { done?: string; cancel?: string };
+    /** Its labels small inside sentences, as the page it is part of asks (`lowerLabels`): a line's record, a list. */
+    lowerLabels?: boolean;
   }): Promise<Values | null>;
 }
 

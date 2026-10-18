@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "vendor-bill",
   "title": "Vendor bill",
   "data": { "kind": "record", "model": "account.move" },
@@ -23,7 +23,7 @@
     "amount_untaxed": { "type": "monetary", "label": "Untaxed amount", "currency": "EGP" },
     "amount_tax": { "type": "monetary", "label": "VAT 14%", "currency": "EGP", "compute": "amount_untaxed * 0.14" },
     "amount_total": { "type": "monetary", "label": "Total", "currency": "EGP", "compute": "amount_untaxed + amount_tax" },
-    "narration": { "type": "text", "label": "Terms and conditions" }
+    "narration": { "type": "html", "label": "Terms and conditions" }
   },
   "layout": {
     "type": "sheet",

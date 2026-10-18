@@ -9,6 +9,7 @@ import { splitValues } from '../format/words';
 import { fitTo } from './compute';
 import type { ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
+import type { Facet } from './search';
 import { emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 /**
@@ -129,6 +130,13 @@ export interface OpenRequest {
   values?: Values;
   /** On a list page, the records it shows: each `valueFrom` already read from the form that opened it. */
   filter?: ResolvedFilter[];
+  /**
+   * On a list page, the same conditions as the search it opens with, chips a person sees and may take away — a related
+   * list's View all: "Customer: Nile Traders". Where given, the viewer opens the list with them in place of `filter`'s
+   * fixed conditions (and of its default search); `filter` stays what they ask for, for an app that opens the list its
+   * own way.
+   */
+  search?: Facet[];
 }
 
 /** How an opened page ended: saved (or sent), or closed without. */

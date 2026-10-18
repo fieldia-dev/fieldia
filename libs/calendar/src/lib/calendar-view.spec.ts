@@ -27,6 +27,14 @@ async function mount(options: Partial<ViewerOptions> = {}, page: Page = clinicPa
   return host;
 }
 const cal = (host: Element) => host.querySelector('.fd-cal') as HTMLElement;
+/** The calendar mounted with its clock at `now`, its New's values handed to `made`. */
+async function mountAt(now: Date, made: (values: Values) => void) {
+  const host = document.createElement('div');
+  document.body.append(host);
+  handle = mountViewer(host, { page: clinicPage(), dataSource: clinicSource(), listViews: calendarListViews({ now: () => now }), onNewRecord: made });
+  await until(() => host.querySelector('.fd-cal-body:not([aria-busy]) .fd-cal-grid'));
+  return host;
+}
 /** The calendar's title, its range's dash read without the spaces around it: Intl puts them there or not by ICU version (CI's Node gives "12 – 18 Oct"). */
 const title = (host: Element) => host.querySelector('.fd-cal-title')?.textContent?.replace(/\s*–\s*/g, '–');
 const blocks = (host: Element) => [...host.querySelectorAll<HTMLElement>('.fd-cal-event')];
@@ -252,6 +260,41 @@ describe('moving and making from the keyboard', () => {
     expect(made[1]).toEqual(made[0]);
   });
 
+  it('New from the bar, the keys never on a slot: the next free time from now, rounded to its slot, never one gone by', async () => {
+    const made: Values[] = [];
+    // 09:40 on Wednesday 14: 10:00 and 10:30 hold Mona's and Omar's; 11:00 to 12:00 is free.
+    const host = await mount({ onNewRecord: (values) => void made.push(values) });
+    button(host, 'New').click();
+    await until(() => made.length);
+    expect(made[0]).toEqual({ start: at(14, 11), stop: at(14, 12) });
+    handle?.destroy();
+    document.body.replaceChildren();
+    // At 19:45, past the day's last slot (19:30, its hours ending at 20:00): the next day's first free time.
+    const late = await mountAt(new Date(2026, 9, 14, 19, 45), (values) => void made.push(values));
+    button(late, 'New').click();
+    await until(() => made.length === 2);
+    expect(made[1]).toEqual({ start: at(15, 8), stop: at(15, 9) });
+    handle?.destroy();
+    document.body.replaceChildren();
+    // A week to come shown: its first free time, the week's own.
+    const ahead = await mountAt(NOW, (values) => void made.push(values));
+    button(ahead, 'Next week').click();
+    await until(() => ahead.querySelector('.fd-cal-col[data-day="2026-10-19"]'));
+    button(ahead, 'New').click();
+    await until(() => made.length === 3);
+    expect(made[2]).toEqual({ start: at(19, 8), stop: at(19, 9) });
+  });
+
+  it('New where a person pressed or keyed onto a slot gone by still makes it there: they chose it', async () => {
+    const made: Values[] = [];
+    const host = await mount({ onNewRecord: (values) => void made.push(values) });
+    const past = host.querySelector('.fd-cal-col[data-day="2026-10-13"] .fd-cal-slot[data-minutes="540"]') as HTMLElement;
+    past.focus();
+    button(host, 'New').click();
+    await until(() => made.length);
+    expect(made[0]).toEqual({ start: at(13, 9), stop: at(13, 10) });
+  });
+
   it('takes a screen reader’s press, a click with no pointer behind it: a slot makes a record, a record opens', async () => {
     const made: Values[] = [];
     const opened: RecordId[] = [];
@@ -361,5 +404,18 @@ describe('the pointer', () => {
     document.dispatchEvent(pointer('pointerup', 500));
     expect(block(host, 'Mona Adel').style.height).toBe(height);
     expect(source.records['clinic.appointment'][1]['stop']).toBe(at(14, 10, 30));
+  });
+});
+
+describe('a calendar whose page names its records', () => {
+  it('says New, how many a slot holds and what Enter makes in the page’s words; without them, as before', async () => {
+    const host = await mount({ onNewRecord: () => undefined }, { ...clinicPage(), records: { one: 'appointment', other: 'appointments', a: 'an appointment' } });
+    expect(button(host, 'New appointment')).toBeTruthy();
+    expect(host.querySelector('.fd-cal-slot[aria-label="Wednesday 14 October, 10:30, 1 appointment"]')).not.toBeNull();
+    expect([...host.querySelectorAll('.fd-sr-only')].map((said) => said.textContent)).toContain('The arrow keys move between days and times; Enter makes a new appointment there.');
+    handle?.destroy();
+    const plain = await mount({ onNewRecord: () => undefined });
+    expect(button(plain, 'New')).toBeTruthy();
+    expect(plain.querySelector('.fd-cal-slot[aria-label="Wednesday 14 October, 10:30, 1 record"]')).not.toBeNull();
   });
 });

@@ -15,6 +15,7 @@ import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { answerAction } from '../shared/order-desk';
+import { addressFollowsRecord } from '../shared/address';
 import { checkPrice, errorLog, loadPlanner, priceWords } from '../shared/contained';
 import { meanwhileBar } from '../shared/test-drive';
 import type { PartFailure } from '@fieldia/widgets';
@@ -184,13 +185,15 @@ class DemoComponent {
   readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });
+    // The address in step with the record shown (shared/address.ts).
+    addressFollowsRecord(handle.form, page);
   }
   pressed(request: ActionRequest) {
     actions.push(request.action);
     requests.push(request);
   }
   /** The shop's answers to the pages' steps: the stock checked for "Order by phone". An output cannot answer, so this is an input. */
-  readonly answer = (request: ActionRequest) => answerAction(request, this.locale);
+  readonly answer = (request: ActionRequest) => answerAction(request, this.locale, { page, source: dataSource });
   open(id: RecordId) {
     openRecord(params, id);
   }

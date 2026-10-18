@@ -14,6 +14,8 @@ export const checks: DesignerWords['checks'] = {
   describeIt: 'صِفها',
   emptyPage: (name) => `لا أسئلة في ${q(name)}: سيرى الناس صفحة فارغة.`,
   emptySection: (name) => `لا حقول في ${q(name)}: سيظهر مربعًا فارغًا.`,
+  nothingOnPaper: 'كل أجزاء هذه الصفحة متروكة خارج الورق: لن يُطبع منها إلا عنوانها.',
+  printEveryPart: 'اطبعها كلها',
   deletePage: 'حذف الصفحة',
   deleteSection: 'حذف القسم',
   neverShows: (name, field, value) => `لا يظهر ${q(name)} إلا عندما يساوي ${field} ${q(value)}، و${field} لم يعد يعرض هذه القيمة، فلن يظهر أبدًا.`,

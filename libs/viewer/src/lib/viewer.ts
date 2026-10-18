@@ -19,6 +19,7 @@ import {
   type Skin,
   type Theme,
   type RecordId,
+  type Facet,
   type ResolvedFilter,
   type SectionNode,
   type SectionsNode,
@@ -45,15 +46,17 @@ import {
   type WaitsFor,
   MESSAGES,
   hotkeyWords,
+  labelAt,
+  recordSentence,
   uploadGoing,
   workAtRisk,
 } from '@fieldia/core';
 import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { upgradePage, zonedPage } from '@fieldia/core';
+import { relatedInTab, upgradePage, zonedPage } from '@fieldia/core';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
-import type { RelatedPart } from './list-related';
+import type { RelatedCount, RelatedPart } from './list-related';
 import { waitingList } from './list-waiting';
 import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
@@ -74,7 +77,7 @@ import { duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './v
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
-import { printLook } from './print';
+import { paperFor, printIntent } from './print';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
@@ -214,6 +217,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   onNewRecord?: (values: Values) => unknown;
   /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
   listFilter?: ResolvedFilter[];
+  /**
+   * A list page: the search it opens with, as chips a person sees and may take away, in place of its default filters and
+   * favourite — a related list's View all, "Customer: Nile Traders" (`OpenRequest.search`).
+   */
+  listSearch?: Facet[];
   /**
    * What the page's steps ask of the screen, the viewer does itself: a page
    * opened (in a dialog, a side panel, or this form's place, with Back), words
@@ -378,6 +386,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
+  /** One of the viewer's sentences in the words the page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  /** A sentence of the viewer's filled in, each field's label at `keys` small inside it where the page asks (`labelAt`). */
+  const labelled = (template: string, values: Record<string, string | number>, ...keys: string[]) => {
+    const own = { ...values };
+    for (const key of keys) own[key] = labelAt(template, key, page.lowerLabels, locale)(String(own[key]));
+    return fill(template, own);
+  };
   /**
    * What the page's steps ask of the screen: a page opened, words said, a
    * question asked, a tab shown — the viewer's own, under the app's. A form
@@ -395,7 +411,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           missing: (id) => fill(labels.pageMissing, { page: id }),
           say: (message, tone) => actionHost.say(message, tone),
           post: (message) => form.post(message),
-          name: () => recordName() || labels.newRecord,
+          name: () => recordName() || sentence(labels.newRecordNoun, labels.newRecord),
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
         },
@@ -497,12 +513,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = labels.discardChanges) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, true, { yes: labels.discard, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
   /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */
   const problemTabs = new Map<string, () => boolean>();
+  /** A tab's count of a related list in it, by the list's id: the list, once drawn, tells it what it counts itself. */
+  const relatedCounts = new Map<string, RelatedCount>();
 
   /**
    * A press runs its steps one run at a time: the button busy meanwhile, and
@@ -602,7 +620,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const { node } = part;
       report(error, { stage, part: node.type, node: node.id, ...(node.type === 'field' ? { field: node.field } : {}), ...(node.type === 'slot' ? { name: node.name } : {}) });
       const name = node.type === 'field' ? (node.label ?? page.fields[node.field]?.label ?? node.field) : partName(node);
-      const words = node.type === 'field' ? fill(widgetLabels.brokenField, { label: name ?? '' }) : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
+      const words = node.type === 'field' ? labelled(widgetLabels.brokenField, { label: name ?? '' }, 'label') : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
       const box = brokenBox(doc, words);
       box.dataset['node'] = node.id;
       const drawn = part.element;
@@ -610,6 +628,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const span = drawn.style.getPropertyValue('--fd-span');
         if (span) box.style.setProperty('--fd-span', span);
         if (drawn.dataset['hideOn']) box.dataset['hideOn'] = drawn.dataset['hideOn'];
+        if (drawn.dataset['print']) box.dataset['print'] = drawn.dataset['print'];
         // The focus it held comes to its box, which says what failed: a keyboard keeps its place.
         const focused = drawn.contains(doc.activeElement);
         drawn.replaceWith(box);
@@ -710,7 +729,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Under the field, behind a (?) by its label, or both: the field's own way, else the page's.
       const helpWay = node.helpShown ?? page.look?.helpShown ?? 'below';
       const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
-      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
+      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, labelled(labels.helpFor, { label: labelText }, 'label')) : null;
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
       if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
       // Its side of the words and the gap before it follow the way the words run: English on an Arabic page too.
@@ -740,7 +759,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         lockMark?.remove();
         lockWords = words;
         const icon = drawIcon(doc, 'lock', options.icons) ?? '';
-        lock = words ? bubbleTip(`${id}-lock`, words, fill(labels.locked, { label: labelText }), 'fd-lock', icon) : null;
+        lock = words ? bubbleTip(`${id}-lock`, words, labelled(labels.locked, { label: labelText }, 'label'), 'fd-lock', icon) : null;
         if (words && !pointing) {
           pointing = true;
           for (const [event, on] of [['mouseenter', true], ['mouseleave', false], ['focusin', true], ['focusout', false]] as const) widget.element.addEventListener(event, () => point(on));
@@ -773,8 +792,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       let waitMark: HTMLElement | null = null;
       const waitWords = (waits: WaitsFor) =>
         waits.line
-          ? fill(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText })
-          : fill(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText });
+          ? labelled(labels.valueWaitsLine, { n: waits.line, lines: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'lines', 'own')
+          : labelled(labels.valueWaits, { field: page.fields[waits.field]?.label ?? waits.field, own: labelText }, 'field', 'own');
       const drawWaiting = (words: string | null) => {
         if (!words && !waitMark) return;
         if (!waitMark) {
@@ -1003,6 +1022,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
       if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
+      // A button that prints: the print part fetched as a pointer rests on it.
+      if (node.steps?.some((step) => step.do === 'print')) printIntent(button);
       spans(button, node.colspan);
       // Its confirmation, then its steps: the form asks, through the viewer. Undo with nothing to put back says so.
       button.addEventListener('click', () => {
@@ -1072,8 +1093,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         box.style.setProperty('--fd-columns', String(wideColumns(columns)));
         // Twelfths: eleven gaps between them, which shrink in a narrow column rather than push past it.
         if (wideColumns(columns) === 12) box.setAttribute('data-twelfths', '');
-        // One column, its parts one under another: on paper a plain block, which every engine breaks between sheets.
-        if (wideColumns(columns) === 1) box.setAttribute('data-columns', '1');
+        // Its count on a wide sheet: on paper, a grid of one column a plain block, and one of more its parts side by side
+        // as boxes in lines (styles-print.ts in @fieldia/widgets), which every engine breaks between sheets.
+        box.setAttribute('data-columns', String(wideColumns(columns)));
         // Counts given for the narrower widths replace the skin's own stacking there.
         if (typeof columns === 'object') {
           for (const width of ['medium', 'narrow'] as const) {
@@ -1213,7 +1235,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           button.title = tab.label;
         }
         // On paper every tab shows, one after another, under its name.
-        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label });
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label, ...(tab.print === false ? { 'data-print': 'off' } : {}) });
         /**
          * A tab's parts are drawn when it is first shown, and kept up to date
          * only while it is shown: a page of many tabs costs one tab's work.
@@ -1267,6 +1289,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const count = p.tab.count;
         if (count === undefined) continue;
         const pill = p.button.querySelector<HTMLElement>('.fd-tab-count') as HTMLElement;
+        if (typeof count !== 'string') {
+          // The records of a related list in it, counted by the list part as the record is shown: none until known.
+          pill.hidden = true;
+          const related = relatedInTab(p.tab, count.related);
+          if (related) countRelated(related, p.tab, p.button, pill);
+          continue;
+        }
         watch((state) => {
           const value = state.values[count];
           const n = Array.isArray(value) ? value.length : typeof value === 'number' ? value : Number(value ?? 0) || 0;
@@ -1340,9 +1369,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       return hiddenOn(node, kept(node, () => partItem(node, place)));
     }
 
-    /** A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. */
-    function hiddenOn(node: { hideOn?: readonly string[] }, element: HTMLElement): HTMLElement {
+    /**
+     * A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. And one its page
+     * leaves off paper (`"print": false`): the stylesheet for paper leaves it out.
+     */
+    function hiddenOn(node: { hideOn?: readonly string[]; print?: boolean }, element: HTMLElement): HTMLElement {
       if (node.hideOn?.length) element.dataset['hideOn'] = node.hideOn.join(' ');
+      if (node.print === false) element.dataset['print'] = 'off';
       return element;
     }
 
@@ -1374,6 +1407,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     }
 
     /**
+     * How many records a related list lists, in its tab's pill and name: asked by the list part (list-related.ts) as the
+     * record is shown, whether the tab is open or not; where the part could not come, never known, and none shown.
+     */
+    function countRelated(node: RelatedNode, tab: TabNode, button: HTMLElement, pill: HTMLElement) {
+      let counter: RelatedCount | null = null;
+      const take = (module: NonNullable<typeof listPart.loaded>) => {
+        counter = module.relatedCount({ node, form, dataSource: options.dataSource, tab, button, pill, labels, locale, fill });
+        relatedCounts.set(node.id, counter);
+        counter.update(form.getState());
+      };
+      watch((state) => counter?.update(state));
+      if (listPart.loaded) take(listPart.loaded);
+      else void listPart.load().then((module) => gone || take(module), () => undefined);
+    }
+
+    /**
      * Another model's records that point at this record, listed inside it: drawn by the list part (list-related.ts),
      * which the page waited for, in a box of the row's width, with the dialogs of the app's pages and the host's way to
      * open a page. Not shown where the data source cannot list records.
@@ -1395,6 +1444,18 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           open: (request) => actionHost.open(request),
           say: (message, tone) => actionHost.say(message, tone),
           name: recordName,
+          // What it counts itself — after New, a delete — is its tab's count too.
+          onCount: (total) => relatedCounts.get(node.id)?.told(total),
+          // A row's record and New, the app's own way where the list says so: its host's open, else its onOpen, with the
+          // page it gives for the model (that page's id, else the model's own name); null where neither takes it.
+          route:
+            options.host?.open || options.onOpen
+              ? async (model, request) => {
+                  const asked = { ...request, page: (await findPage(options, { model }))?.id ?? model };
+                  return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
+                }
+              : undefined,
+          recordsOf: modelRecords,
         });
         part.update(form.getState());
       };
@@ -1405,6 +1466,17 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       else void listPart.load().then((module) => gone || take(module), () => undefined);
       hideWhen(box, node.id);
       return box;
+    }
+
+    /** What the app's page for a model calls its records, as this page is shown: now, or once the app has found it. */
+    function modelRecords(model: string) {
+      const of = (other: Page | null) => (other?.records ? shownAs(other).records : undefined);
+      try {
+        const found = findPage(options, { model });
+        return found instanceof Promise ? found.then(of, () => undefined) : of(found);
+      } catch {
+        return undefined;
+      }
     }
 
     /** A map of the record's places, drawn by the app's maps; told of each change to the form. */
@@ -1613,7 +1685,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (!found.some((f) => f.name === name)) found.push({ name, at: shown ? fieldsShown.indexOf(shown) : Infinity });
     }
     const names = found.sort((a, b) => a.at - b.at).map((f) => f.name);
-    return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
+    const small = labelAt(labels.checkFields, 'fields', page.lowerLabels, locale);
+    return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.map(small).join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   /**
@@ -1757,9 +1830,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function recordName(): string {
     const state = form.getState();
     if (state.recordId == null) return '';
+    return ownName() || page.title || '';
+  }
+
+  /** The record's own name: its sheet's title field's words, empty where it has none (yet). */
+  function ownName(): string {
+    const state = form.getState();
     const field = page.layout.type === 'sheet' ? page.layout.title?.field : undefined;
-    const name = field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
-    return name || page.title || '';
+    return field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
   }
 
   /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */
@@ -1773,6 +1851,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       records: options.records,
       breadcrumbs: options.breadcrumbs,
       labels,
+      locale,
       icons: options.icons,
       uid,
       fill,
@@ -2249,6 +2328,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         onOpenRecord: options.onOpenRecord,
         ...(options.now ? { now: options.now } : {}),
         ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
+        ...(options.listSearch ? { search: options.listSearch } : {}),
         ...(options.listViews ? { views: options.listViews } : {}),
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
@@ -2270,7 +2350,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const head = layout.type === 'sheet' ? null : pageHead();
     // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
     const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
-    content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body);
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...safety.elements, draft, body];
+    // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
+    const end = content.querySelector(':scope > .fd-print-end');
+    if (end) end.before(...drawnParts);
+    else content.append(...drawnParts);
     pageDrawn = true;
   }
   /** How a list's other view makes a record: the app's way, else the model's page in a dialog, else none. */
@@ -2278,7 +2362,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (options.onNewRecord) return { onNewRecord: options.onNewRecord };
     const model = page.data.kind === 'record' ? page.data.model : '';
     if (!model || (!options.pages && !options.relatedPages) || !dialogs.canOpen(model)) return {};
-    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: labels.newRecord }) };
+    return { onNewRecord: (values) => dialogs.openRecord(model, { values, title: sentence(labels.newRecordNoun, labels.newRecord) }) };
   }
   let pageDrawn = false;
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
@@ -2303,8 +2387,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
-  // On paper, the app's logo and words, the record's title and the day over the page, its footer under it (print.ts).
-  const paper = printLook({
+  // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
+  // the print part's, as a person shows they mean to print (print.ts).
+  const paper = paperFor({
     doc,
     el,
     root,
@@ -2313,7 +2398,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     locale,
     fill,
     now: options.now ?? (() => new Date()),
-    name: recordName,
+    name: ownName,
     values: () => form.getState().values,
     drawAll: () => {
       // Each tabs' own drawing may draw tabs inside its own, which join the list as they come.
@@ -2321,7 +2406,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     },
   });
   cleanups.push(() => paper.destroy());
-  root.append(paper.head, content, ...(paper.foot ? [paper.foot] : []), done, announcer);
+  // Its footer the content's last part: on paper the footer of the table the content is, under every sheet.
+  if (paper.foot) content.append(paper.foot);
+  root.append(paper.head, content, done, announcer);
   // A public page's bot check (`botCheck`): a box no person sees, reaches with Tab or hears read out — inert, so no
   // browser fills it in either — which a bot filling every box fills. Told to the form as it is filled, and read again
   // as the answers go; the send carries it, and the app decides.
@@ -2703,19 +2790,12 @@ const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="fi
 const isBlank = (value: unknown) => value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length);
 
 /**
- * A label inside a sentence, as "Add story points" says it: in English and French its first letter small, unless the
- * word is a name such as "VAT"; German nouns, and Arabic, as written.
- */
-function inSentence(label: string, locale: Locale): string {
-  return (locale === 'en' || locale === 'fr') && /^\p{Lu}\p{Ll}/u.test(label) ? label[0].toLocaleLowerCase(locale) + label.slice(1) : label;
-}
-
-/**
  * What an empty field in the quiet look says, by its label, in the viewer's
  * words for `locale`: "Add story points", or for a question "Your answer".
  */
 export function quietHint(label: string, locale: Locale, labels: Pick<ViewerLabels, 'quietHint' | 'quietAnswer'> = VIEWER_LABELS[locale]): string {
-  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', inSentence(label, locale));
+  // Small inside its sentence, as it has always been — "Add story points" — by the one rule every sentence asks (labelAt).
+  return /[?؟]\s*$/.test(label) ? labels.quietAnswer : labels.quietHint.replace('{label}', labelAt(labels.quietHint, 'label', true, locale)(label));
 }
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */

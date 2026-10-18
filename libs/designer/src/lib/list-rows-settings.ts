@@ -20,6 +20,7 @@ const listOf = (page: Page) => page.layout as ListNode;
 interface RowRules {
   rowTones?: ToneWhen[];
   rowBold?: Modifier;
+  rowBoldLabel?: string;
   rowButtons?: ButtonNode[];
 }
 
@@ -52,7 +53,7 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
   const tonesList = el('ul', { class: 'fd-table-tones' });
   const addTone = el('button', { type: 'button', class: 'fd-button fd-button-link fd-table-add-tone' }, w.addTone);
   let drafting = false;
-  const toneRows: { element: HTMLElement; tone: HTMLSelectElement; when: FormulaBox }[] = [];
+  const toneRows: { element: HTMLElement; tone: HTMLSelectElement; when: FormulaBox; says: HTMLInputElement }[] = [];
   const saveTones = (tones: ToneWhen[]) => source.set({ rowTones: tones.length ? tones : null });
   addTone.addEventListener('click', () => {
     drafting = true;
@@ -61,16 +62,20 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
   });
   function toneRow(index: number) {
     const tone = el('select', { class: 'fd-input fd-select fd-table-tone', 'aria-label': w.toneOf }, ...TONES.map((t) => el('option', { value: t }, w.tones[t]))) as HTMLSelectElement;
+    // Its words for the key over the rows, kept as they are left.
+    const says = el('input', { class: 'fd-input fd-table-tone-says', 'aria-label': own.toneSays, placeholder: own.saysPlaceholder }) as HTMLInputElement;
     const keep = (when: string) => {
       if (!when) return;
       const items = [...(list().rowTones ?? [])];
       const begun = index >= items.length;
-      items[index] = { tone: tone.value as Tone, when };
+      const label = says.value.trim();
+      items[index] = { tone: tone.value as Tone, when, ...(label ? { label } : {}) };
       if (begun) drafting = false;
       if (!saveTones(items) && begun) drafting = true;
     };
     const when = condition(w.when, keep);
     tone.addEventListener('change', () => keep(when.input.value.trim()));
+    says.addEventListener('change', () => keep(when.input.value.trim() || String(list().rowTones?.[index]?.when ?? '')));
     const remove = iconButton(el, w.removeTone(index + 1), '×', () => {
       if (index >= (list().rowTones ?? []).length) {
         drafting = false;
@@ -78,7 +83,12 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
       }
       saveTones((list().rowTones ?? []).filter((_, i) => i !== index));
     });
-    return { element: el('li', { class: 'fd-table-tone-row' }, tone, el('div', { class: 'fd-table-tone-when' }, when.element, when.problem), remove), tone, when };
+    return {
+      element: el('li', { class: 'fd-table-tone-row' }, tone, el('div', { class: 'fd-table-tone-when' }, when.element, when.problem, el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, own.says), says)), remove),
+      tone,
+      when,
+      says,
+    };
   }
   function drawTones() {
     const items = list().rowTones ?? [];
@@ -92,6 +102,7 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
     toneRows.forEach((row, i) => {
       const item = items[i];
       if (!focused(row.tone)) row.tone.value = item?.tone ?? 'danger';
+      if (!focused(row.says)) row.says.value = item?.label ?? '';
       row.when.update(source.reads(page()), item ? String(item.when) : row.when.input.value);
     });
     tonesList.hidden = !count;
@@ -100,7 +111,10 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
 
   // ---- each row in bold while a condition holds ----
   const bold = condition(w.boldWhen, (said) => source.set({ rowBold: said || null }));
-  const boldRow = el('div', { class: 'fd-answer-rule-field fd-table-when' }, el('span', { class: 'fd-answer-rule-word' }, w.boldWhen), bold.element, bold.problem);
+  const boldSays = el('input', { class: 'fd-input', 'aria-label': own.boldSays, placeholder: own.boldPlaceholder }) as HTMLInputElement;
+  boldSays.addEventListener('change', () => source.set({ rowBoldLabel: boldSays.value.trim() || null }));
+  const boldSaysRow = el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, own.says), boldSays);
+  const boldRow = el('div', { class: 'fd-answer-rule-field fd-table-when' }, el('span', { class: 'fd-answer-rule-word' }, w.boldWhen), bold.element, bold.problem, boldSaysRow);
 
   // ---- the buttons on each row ----
   const buttonsList = el('ul', { class: 'fd-table-buttons', 'data-place': 'rowButtons' });
@@ -152,6 +166,7 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
     el('div', { class: 'fd-table-tone-list' }, tonesList, addTone),
     el('p', { class: 'fd-properties-hint' }, own.toneHint),
     boldRow,
+    el('p', { class: 'fd-properties-hint' }, own.saysHint),
     el('div', { class: 'fd-table-button-place' }, el('span', { class: 'fd-answer-rule-word' }, own.buttons), buttonsList, addButton),
     el('p', { class: 'fd-properties-hint' }, own.buttonsHint)
   );
@@ -161,6 +176,9 @@ export function rowSettings(el: ElementFactory, designer: Designer, source: Rows
       drawTones();
       const said = source.rules(next).rowBold;
       bold.update(source.reads(next), typeof said === 'string' ? said : '');
+      // Its words, offered while there is a bold to name.
+      boldSaysRow.hidden = typeof said !== 'string';
+      if (!focused(boldSays)) boldSays.value = source.rules(next).rowBoldLabel ?? '';
       drawButtons();
     },
   };

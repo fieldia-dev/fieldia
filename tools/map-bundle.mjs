@@ -102,8 +102,14 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * it was (27,073); 140 bytes more for all (47,338: 46.3), from the core
  * and widgets code a list's map draws with, grown in this release; a list's
  * map in a page of its own 135 more, within its 31.1 (31,743).
+ * 0.26's four lanes joined, measured in the merged build: a place and an area
+ * as it was (27,072); 101 bytes more for all (47,441: 46.4) — a list's map
+ * saying it could not load in the words its page names its records by, and
+ * the one rule for a label inside a sentence (open-names), the core and
+ * widgets code it draws with; a list's map in a page of its own 91 more,
+ * within its 31.1 (31,830).
  */
-const BUDGET = { fields: 26.5, all: 46.3, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.5, all: 46.4, embed: 31.1, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

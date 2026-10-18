@@ -16,7 +16,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const SVG = 'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E';
 const homes: Page = {
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'homes',
   title: 'Homes',
   data: { kind: 'record', model: 'home' },
@@ -185,6 +185,22 @@ describe('a list’s richer rows', () => {
     expect(rowOf(theirs, 'Zamalek duplex').hasAttribute('data-bold')).toBe(false);
     expect(rowOf(theirs, 'Maadi villa').hasAttribute('data-bold')).toBe(true);
     expect(rowOf(theirs, 'Maadi villa').hasAttribute('data-tone')).toBe(false);
+  });
+
+  it('says what its rows’ tones and bold mean over them, where the page gives words: a key read as a list; none without words', async () => {
+    const keyed = withList({ rowTones: [{ tone: 'muted', when: "state == 'sold'", label: 'Sold' }, { tone: 'info', when: "state == 'offer'" }], rowBold: 'price > 5000000', rowBoldLabel: 'Over five million' });
+    const host = await mount(keyed);
+    const key = host.querySelector('.fd-list-key') as HTMLElement;
+    expect(key.tagName).toBe('UL');
+    expect(key.getAttribute('aria-label')).toBe('Key to the rows');
+    expect([...key.querySelectorAll('li')].map((item) => item.textContent)).toEqual(['Sold', 'AaOver five million']);
+    expect(key.querySelector('[data-tone="muted"]')?.getAttribute('aria-hidden')).toBe('true');
+    // Over the rows, under the bar.
+    expect(key.previousElementSibling?.matches('.fd-list-bar, .fd-list-selection, .fd-list-report')).toBe(true);
+    handle?.destroy();
+    document.body.replaceChildren();
+    const plain = await mount(homes);
+    expect(plain.querySelector('.fd-list-key')).toBeNull();
   });
 
   it('draws as 0.24 did for a list that asks for none of it: no column at the end, no card', async () => {

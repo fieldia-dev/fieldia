@@ -1,4 +1,4 @@
-import { isOwnZone, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
+import { isOwnZone, recordSentence, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads, zoneName } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
@@ -41,6 +41,9 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const source = context.dataSource;
   const model = page.data.kind === 'record' ? page.data.model : '';
   const labels: CalendarLabels = calendarLabels(locale, settings.labels?.[locale]);
+  /** One of its sentences in the words the list's page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const holds = (n: number) => (n === 1 ? sentence(labels.holdsNounOne, labels.holdsOne) : fill(sentence(labels.holdsNoun, labels.holds), { n }));
   const kind = kindOf(page, spec);
   /** The zone its clock is: its start's, else its page's, else the reader's own (dates.ts). */
   const zone = zoneOfCalendar(page, spec);
@@ -75,6 +78,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   let failed = false;
   /** What Undo writes back, the version the record holds after the move, and the moment it started at before. */
   let undo: { record: ListedRecord; values: Values; version?: RecordVersion; at: Date } | null = null;
+  /** Whether the person put the keys on a slot (a slot took the focus): New makes its record there. */
+  let chosen = false;
   /** The fields a move writes. When the page locks one, nothing moves; when a record's source locks or hides one, that record stays. */
   const moveFields = [spec.start, spec.end, spec.resource].filter((name): name is string => !!name);
   const canSave = !!source?.save && !moveFields.some((name) => page.fields[name]?.readonly);
@@ -105,7 +110,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   });
   const ranges = make('div', { class: 'fd-cal-ranges', role: 'group', 'aria-label': labels.showAs }, ...viewButtons);
   ranges.hidden = views.length < 2;
-  const newButton = make('button', { type: 'button', class: 'fd-button fd-button-primary fd-cal-new' }, labels.newRecord);
+  const newButton = make('button', { type: 'button', class: 'fd-button fd-button-primary fd-cal-new' }, sentence(labels.newRecordNoun, labels.newRecord));
   newButton.hidden = !canCreate;
   today.addEventListener('click', () => go(startOfDay(now())));
   back.addEventListener('click', () => go(stepFrom(state.view, state.anchor, -1)));
@@ -130,8 +135,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   // What a record's keys do: Enter and M, or Enter alone for one that stays where it is.
   const keysEvent = make('span', { id: `${id}-keys-event`, class: 'fd-sr-only' }, canOpen ? labels.keysOpenMove : labels.keysMove);
   const keysStill = make('span', { id: `${id}-keys-still`, class: 'fd-sr-only' }, labels.keysOpen);
-  const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, labels.keysSlots);
-  const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, labels.keysDays);
+  const keysSlot = make('span', { id: `${id}-keys-slot`, class: 'fd-sr-only' }, sentence(labels.keysSlotsNoun, labels.keysSlots));
+  const keysDay = make('span', { id: `${id}-keys-day`, class: 'fd-sr-only' }, sentence(labels.keysDaysNoun, labels.keysDays));
   const element = make('div', { class: 'fd-cal', 'data-creates': canCreate ? '' : undefined, 'aria-label': labels.calendar }, bar, said, alert, note, body, keysEvent, keysStill, keysSlot, keysDay);
   element.setAttribute('role', 'group');
   element.style.setProperty('--fd-cal-hour', `${HOUR}px`);
@@ -403,14 +408,17 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
         for (let m = from * 60; m < to * 60; m += slot) {
           const at = atMinutes(column.day, m);
           const busy = timed.filter((event) => event.start <= at && event.end > at && inColumn(event, column)).length;
-          const words = [longDay(column.day), time(at), column.resource?.label, busy ? (busy === 1 ? labels.holdsOne : fill(labels.holds, { n: busy })) : labels.free].filter(Boolean).join(joined);
+          const words = [longDay(column.day), time(at), column.resource?.label, busy ? holds(busy) : labels.free].filter(Boolean).join(joined);
           const cell = make('div', { class: 'fd-cal-slot', role: 'button', tabindex: '-1', 'data-minutes': String(m), 'data-focus': `s:${i}:${m}`, 'aria-label': words, 'aria-describedby': keysSlot.id });
           cell.addEventListener('keydown', (e) => onSlotKey(cal, e, i, m));
           // A screen reader's press, with no pointer behind it: a new record there, as Enter makes one.
           cell.addEventListener('click', (e) => {
             if (e.detail === 0) void createAt(atMinutes(column.day, m), null, column);
           });
-          cell.addEventListener('focus', () => (state.cursor = { day: column.day, minutes: m, column: i }));
+          cell.addEventListener('focus', () => {
+            state.cursor = { day: column.day, minutes: m, column: i };
+            chosen = true;
+          });
           col.append(cell);
         }
         col.addEventListener('pointerdown', (e) => pressSlot(cal, e, col, i));
@@ -556,7 +564,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const cell = make('div', { class: 'fd-cal-day', 'data-day': dayKey(day), 'data-out': day.getUTCMonth() !== state.anchor.getUTCMonth() ? '' : undefined, 'aria-current': isToday(day) ? 'date' : undefined });
       const number = make(
         'button',
-        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? (mine.length === 1 ? labels.holdsOne : fill(labels.holds, { n: mine.length })) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
+        { type: 'button', class: 'fd-cal-daynum', tabindex: dayKey(day) === cursorKey ? '0' : '-1', 'data-focus': `d:${dayKey(day)}`, 'aria-label': [longDay(day), mine.length ? holds(mine.length) : ''].filter(Boolean).join(joined), 'aria-describedby': keysDay.id },
         format(locale, { day: 'numeric' }).format(day)
       );
       number.addEventListener('click', () => (views.includes('day') ? showView('day', day) : undefined));
@@ -616,6 +624,7 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   function go(day: Date) {
     state.anchor = startOfDay(day);
     state.cursor = { ...state.cursor, day: state.anchor, column: 0 };
+    chosen = false;
     void reload();
   }
 
@@ -623,24 +632,37 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
     state.view = next;
     if (day) state.anchor = startOfDay(day);
     state.cursor = { ...state.cursor, day: day ? startOfDay(day) : state.cursor.day, column: 0 };
+    chosen = false;
     void reload();
   }
 
   // ---- making a record --------------------------------------------------------------------------------------
 
-  /** Where New puts a record: the slot the keys stand on, else the next whole hour today in the span, else its first day. */
+  /**
+   * Where New puts a record: the slot the person put the keys on, past or not (they chose it); else the next free time
+   * from now on the calendar's clock — rounded up to its slot, within its hours, where none of the records it shows is
+   * (a new record's hour) — from the span shown where that is still to come. A date's calendar: today, or the span's
+   * first day to come. 0.25 took the slot the keys had never left: 08:00, at 12:30.
+   */
   function newPlace(): [Date, Date | null, Column | null, boolean] {
-    const shown = range();
-    if ((state.view === 'day' || state.view === 'week') && kind === 'datetime' && body.querySelector('.fd-cal-slot')) {
+    if (chosen && (state.view === 'day' || state.view === 'week') && kind === 'datetime' && body.querySelector('.fd-cal-slot')) {
       const column = state.columns[state.cursor.column] ?? state.columns[0];
       return [atMinutes(column.day, clampMinutes(state.cursor.minutes)), null, column, false];
     }
+    const shown = range();
     const at = now();
-    const inSpan = at >= shown.from && at < shown.to;
-    const day = inSpan ? startOfDay(at) : shown.from;
-    if (kind === 'date') return [day, null, null, true];
-    const minutes = inSpan ? Math.min(Math.max(hours.start * 60, (Math.floor(minutesOf(at) / 60) + 1) * 60), (hours.end - 1) * 60) : hours.start * 60;
-    return [atMinutes(day, minutes), null, null, false];
+    const from = shown.from > at ? shown.from : at;
+    if (kind === 'date') return [startOfDay(from), null, null, true];
+    const taken = (start: Date) => {
+      const end = addMinutes(start, NEW_LENGTH);
+      return events.some((event) => !event.allDay && event.start < end && event.end > start);
+    };
+    const last = hours.end * 60 - slot;
+    for (let day = startOfDay(from), n = 0; n < 366; day = addDays(day, 1), n++) {
+      const first = n === 0 ? Math.max(hours.start * 60, Math.ceil(minutesOf(from) / slot) * slot) : hours.start * 60;
+      for (let minutes = first; minutes <= last; minutes += slot) if (!taken(atMinutes(day, minutes))) return [atMinutes(day, minutes), null, null, false];
+    }
+    return [atMinutes(startOfDay(from), hours.start * 60), null, null, false];
   }
 
   /** A new record from `start` (to `end`, or an hour on; the whole day for a day's), with its column's person. */

@@ -94,6 +94,9 @@ describe('groups side by side', () => {
     const side = gridOf(at(host, 'side'));
     expect(side.style.getPropertyValue('--fd-columns')).toBe('2');
     expect(side.getAttribute('data-columns-medium')).toBe('1');
+    // Its count on a wide sheet, which paper reads to set its parts side by side (styles-print.ts in @fieldia/widgets).
+    expect(grid.getAttribute('data-columns')).toBe('3');
+    expect(side.getAttribute('data-columns')).toBe('2');
   });
 });
 

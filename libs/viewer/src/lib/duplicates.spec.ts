@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.4',
+    fieldia: '0.5',
     id: 'customer-card',
     title: 'Customer',
     data: { kind: 'record', model: 'partner' },
@@ -186,7 +186,7 @@ describe('possible duplicates, as a record is typed', () => {
 });
 
 describe('its ways: It’s someone new, Open it', () => {
-  it('lets a match be for the values it matched on, remembered for the record once it is saved', async () => {
+  it('lets a match’s record be for this record, whatever matches it next, remembered for the record once it is saved', async () => {
     const ds = source();
     const preferences = memoryPreferences();
     const viewer = await mount({ dataSource: ds, preferences });
@@ -204,11 +204,11 @@ describe('its ways: It’s someone new, Open it', () => {
     expect(await viewer.save()).toBe(true);
     await pass(0);
     expect(notes()).toEqual([]);
-    expect(preferences.kept.get('duplicates.partner')).toEqual([['4', ['1|email="orders@niletraders.example"', '3|email="orders@niletraders.example"']]]);
-    // Another value matching one of them: said again.
+    expect(preferences.kept.get('duplicates.partner')).toEqual([['4', ['1', '3']]]);
+    // Another field matching them too (0.25 said them again, by the values they had matched on): still let be.
     await type('vat', '123456789', 2);
     await pass(DUPLICATES_WAIT_MS);
-    expect(words('email')).toEqual(['A record with this Email and Tax ID already exists: Nile Traders', 'A record with this Email and Tax ID already exists: Nile Traders Co.']);
+    expect(notes()).toEqual([]);
     // Opened again later, what was let be stays let be.
     handle?.destroy();
     document.body.replaceChildren();
@@ -371,5 +371,95 @@ describe('without the source’s duplicates', () => {
     await pass(DUPLICATES_WAIT_MS * 2);
     expect(notes()).toEqual([]);
     expect(host.querySelector('.fd-duplicates-said')).toBeNull();
+  });
+});
+
+describe('possible duplicates on a page that names its records', () => {
+  const customers = (records: Page['records'], more: Partial<Page> = {}) => page({ records, ...more });
+
+  it('says a customer with this phone, its label written small inside the sentence where the page says so', async () => {
+    const ds = source();
+    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers', a: 'a customer' }, { lowerLabels: true }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['A customer with this phone already exists: Nile Traders']);
+    expect(ways('phone')).toEqual(['Open it', 'It’s a new customer']);
+  });
+
+  it('keeps a label whose first word holds another capital as written: "Tax ID" small, "IBAN" never', async () => {
+    const ds = source();
+    const shown = customers({ one: 'customer', other: 'customers', a: 'a customer' }, { lowerLabels: true });
+    await mount({ dataSource: ds }, { ...shown, fields: { ...shown.fields, email: { type: 'char', label: 'IBAN' } } });
+    await type('vat', '123-456-789', 20);
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('vat')).toEqual(['A customer with this tax ID already exists: Nile Traders', 'A customer with this tax ID already exists: Nile Traders Co.']);
+    await type('email', 'orders@deltafoods.example', 5);
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('email')).toEqual(['A customer with this IBAN already exists: Delta Foods']);
+  });
+
+  it('keeps each label as the page wrote it unless it says so, and says "A record" where the page gives no article', async () => {
+    const ds = source();
+    await mount({ dataSource: ds }, customers({ one: 'customer', other: 'customers' }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['A record with this Phone already exists: Nile Traders']);
+    // A sentence with no article in it names the record still.
+    expect(ways('phone')).toEqual(['Open it', 'It’s a new customer']);
+  });
+
+  it('keeps a German label’s capital: a language that writes its nouns so', async () => {
+    const ds = source();
+    await mount({ dataSource: ds, locale: 'de' }, customers({ one: 'Kunde', other: 'Kunden', a: 'ein Kunde' }, { lowerLabels: true, fields: { ...page().fields, phone: { type: 'char', label: 'Telefon' } } }));
+    await type('phone', '+20 2 2345 6789');
+    await pass(DUPLICATES_WAIT_MS);
+    expect(words('phone')).toEqual(['Ein Kunde mit gleichem Wert in Telefon ist bereits vorhanden: Nile Traders']);
+  });
+
+  it('names them on the merge’s screen', async () => {
+    const ds = source();
+    await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers', a: 'a customer' }));
+    await pass(0);
+    way('email', 'Merge…').click();
+    await pass(0);
+    const screen = document.querySelector('.fd-merge') as HTMLElement;
+    expect(screen.querySelector('.fd-form-dialog-title')?.textContent).toBe('Merge two customers');
+    expect(screen.querySelector('.fd-merge-intro')?.textContent).toBe('Pick the customer to keep, then the value it keeps for each field.');
+    expect(screen.querySelector('.fd-merge-shown')?.textContent).toBe('This customer');
+  });
+
+  it('says what both hold the same by labels small where the page asks; without it, as before', async () => {
+    for (const [lower, same] of [
+      [true, 'The same in both: email.'],
+      [false, 'The same in both: Email.'],
+    ] as const) {
+      const ds = source();
+      await mount({ dataSource: ds, recordId: 3 }, customers({ one: 'customer', other: 'customers' }, { lowerLabels: lower }));
+      await pass(0);
+      way('email', 'Merge…').click();
+      await pass(0);
+      expect(document.querySelector('.fd-merge .fd-merge-same')?.textContent).toBe(same);
+      handle?.destroy();
+      handle = null;
+      document.body.replaceChildren();
+    }
+  });
+});
+
+describe('what 0.25 remembered as let be', () => {
+  it('is read as its record let be, whatever it matched on', async () => {
+    const ds = source();
+    const preferences = memoryPreferences();
+    // Nile Traders Co. (3) shares Nile Traders' (1) email and tax ID; 0.25 let Nile Traders be by the email alone.
+    preferences.set('duplicates.partner', [['3', ['1|email="orders@niletraders.example"']]]);
+    await mount({ dataSource: ds, preferences, recordId: 3 }, page({ duplicates: { fields: ['email', 'vat'] } }));
+    await pass(0);
+    expect(notes()).toEqual([]);
+    // Without it, Nile Traders is said.
+    handle?.destroy();
+    document.body.replaceChildren();
+    await mount({ dataSource: ds, preferences: memoryPreferences(), recordId: 3 }, page({ duplicates: { fields: ['email', 'vat'] } }));
+    await pass(0);
+    expect(notes()).not.toEqual([]);
   });
 });

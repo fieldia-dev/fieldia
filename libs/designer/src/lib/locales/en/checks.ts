@@ -12,6 +12,8 @@ export const checks = {
   describeIt: 'Describe it',
   emptyPage: (name: string) => `“${name}” has no questions: people would see an empty page.`,
   emptySection: (name: string) => `“${name}” has no fields: it would show as an empty box.`,
+  nothingOnPaper: 'Every part of this page is left off paper: its printout would be its title alone.',
+  printEveryPart: 'Print them all',
   deletePage: 'Delete the page',
   deleteSection: 'Delete the section',
   neverShows: (name: string, field: string, value: string) => `“${name}” shows only when ${field} is “${value}”, which ${field} no longer offers, so it never shows.`,

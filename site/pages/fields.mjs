@@ -1,3 +1,4 @@
+import { SIZES } from '../facts.mjs';
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
@@ -49,7 +50,7 @@ ${code(
   'json',
   `
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "phone": { "country": "EG", "shown": "national" },
   "fields": { "mobile": { "type": "char", "label": "Mobile" }, "office": { "type": "char", "label": "Dubai office" } },
   "layout": { "type": "sections", "id": "s", "children": [
@@ -66,7 +67,7 @@ ${code(
   <li><strong>The input rules kept.</strong> A letter is refused, and said why, the keys after it held — left so, the box says letters are not allowed in a phone number, never that the digits are too short; a number that does not read stays as it was typed, marked, with why, the field keeping what it held, and the save refuses it.</li>
   <li><strong>A list writes them as people read them.</strong> A list's column with ${c('"cells": { "phone": { "widget": "phone" } }')} on a page with ${c('phone')} shows ${c('02 2345 6789')} and ${c('+971 50 123 4567')}; a table's phone cells are the phone box.</li>
 </ul>
-<p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (15 KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
+<p>The country table — every country's dialling code, the lengths its numbers have by how they start, and how they are written in groups — is made from libphonenumber's metadata and comes with the box in a part of its own, ${c('fieldia.phone.js')} (${SIZES.phone} KB gzipped), the first time a page shows such a phone; libphonenumber's own smallest build is 34. A page that says nothing of phones never downloads it. In the designer: the screen's Phone numbers, Phone country to start on and Phone numbers shown; a phone field's Country to start on and Shown.</p>
 
 <h2 id="time-zones">Time zones</h2>
 <p>A page may name the time zone its dates and times are in — a branch's, a clinic's — by its IANA name, and a date and time field its own: a flight's departure in its airport's. A date and time is kept as an instant, as always; it is shown and typed on the zone's clock wherever the person is, with the zone's short name beside its box where the browser's zone is another, and after it in words: <em>15 Oct 2026, 14:30 CEST</em>, which a paste reads back. Today is the zone's day: a date's default ${c('"today"')}, its earliest and latest counted from today, ${c('today()')}, a rule's past and future, and a booking's days. Without ${c('timeZone')}, the browser's own zone, as before.</p>
@@ -239,7 +240,7 @@ mountViewer(host, {
   <li><strong>Create and edit…</strong> after a name is typed opens the related page with that name filled in. Save &amp; Close makes the record and links to it.</li>
 </ul>
 <p>Every link, with or without a related page, ends its list with <strong>Search more…</strong> when more records match than the list shows (eight). It opens every match in a dialog with its own search box; a click or Enter picks one.</p>
-<p>A dialog takes the focus to its first field, keeps Tab inside, and gives the focus back where it came from when it closes. A link's or a choice's list drops open for a person — a click or a tap on its box, a word typed, Alt+Down or the arrows — never for the focus alone: a dialog's first field, a refused save going to the field to fix, or Tab keeps its list closed over the fields under it. Escape closes a list open inside it first, then the dialog, keeping nothing. The page's own Save and Discard give way to the dialog's Discard and Save &amp; Close.</p>
+<p>A dialog takes the focus to its first field, keeps Tab inside, and gives the focus back where it came from when it closes. A link's or a choice's list drops open for a person — a click or a tap on its box, a word typed, Alt+Down or the arrows — never for the focus alone: a dialog's first field, a refused save going to the field to fix, or Tab keeps its list closed over the fields under it. Escape closes a list open inside it first, then the dialog — asking “Discard your changes?” first when something was typed, the focus on Cancel so Enter keeps it. The page's own Save and Discard give way to the dialog's Discard and Save &amp; Close.</p>
 <h3 id="your-dialogs">Your own dialogs</h3>
 ${code(
   'ts',
@@ -311,7 +312,7 @@ ${code(
 <p>${c('section')} and ${c('note')} are the values that mark each kind; they default to ${c('"section"')} and ${c('"note"')}. With a ${c('sequenceField')} (an integer line field) lines can be moved, and only the lines that moved are numbered again. Neither field shows as a column.</p>
 
 <h3 id="lines-paste">Rows pasted from a spreadsheet</h3>
-<p>Rows copied from Excel, Google Sheets, LibreOffice or Numbers and pasted in a cell of a table of lines — or on a cell chosen in the grid, in Safari too — fill across the columns and down the lines from that cell: each cell read as its column reads what is typed — a number in any script with the page's marks, an amount in its line's currency, a day in the page's order, a choice by its label — a cell a spreadsheet quoted (a line break or a tab inside it) read as one. Rows past the last line add lines, as many as the table's ${c('max')} lets it have. A cell that cannot take what was pasted keeps what it holds, and one note under the table says what went in and what did not, with why: <em>Pasted into 7 cells. 2 lines added. Not pasted: Unit price, line 3 (Unit price: “abc” is not a number)</em>. One value pasted is the box's own paste, and a paragraph's lines go into the paragraph.</p>
+<p>Rows copied from Excel, Google Sheets, LibreOffice or Numbers and pasted in a cell of a table of lines — or on a cell of the grid, chosen or opened for typing by a click, in Safari too — go each on its own line, across the columns from that cell: each cell read as its column reads what is typed — a number in any script with the page's marks, an amount in its line's currency, a day in the page's order, a choice by its label, a product or any link by its exact name, looked up through your data source's search as typing it is — a cell a spreadsheet quoted (a line break or a tab inside it) read as one. Rows past the last line add lines, as many as the table's ${c('max')} lets it have. A row whose name reads as no record — nothing, or more than one, called so — is not pasted at all: never its description and price on another product's line. A cell that cannot take what was pasted keeps what it holds, and one note under the table says what went in and what did not, with why: <em>Pasted into 7 cells. 2 lines added. Not pasted: the row starting “Laser printer”, none of it (Product: nothing is called “Laser printer”); Unit price, line 3 (Unit price: “abc” is not a number)</em>. One value pasted is the box's own paste, and a paragraph's lines go into the paragraph.</p>
 
 <h3 id="table-node">On the node</h3>
 <p>The node that shows the table can add up number columns in a row under the lines, and let people hide or show some columns:</p>
@@ -350,7 +351,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>Every keystroke reaches the form</strong>, so totals and other computed values follow while a cell is still being typed.</li>
   <li><strong>Sections and notes</strong> run across the row. A note grows as it is typed; Enter starts a new line of it, Ctrl+Enter (Cmd+Enter) finishes it.</li>
   <li><strong>Moving lines.</strong> With a ${c('sequenceField')}, each line has a handle to drag it by.</li>
-  <li><strong>Columns.</strong> People resize them and drag them into another order; the button at the end of the header hides and shows the optional ones. Their choices are kept for the next visit, in the browser unless you pass your own ${c('preferences')} store to the viewer.</li>
+  <li><strong>Columns.</strong> People resize them and drag them into another order by their headers, as in a list: the column slides along under its ghost, tinted with a line at its start; Escape puts it back, a drag out of the grid never hides it, a finger resting a moment on a header lifts its column (a swipe there scrolls the page), and a screen reader hears where it went. The button at the end of the header hides and shows the optional ones. Their choices are kept for the next visit, in the browser unless you pass your own ${c('preferences')} store to the viewer.</li>
   <li><strong>A refused save</strong> marks the wrong cells, lists the problems under the table and opens the first one.</li>
   <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
   <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>

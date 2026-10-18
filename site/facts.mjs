@@ -34,6 +34,10 @@ export const SIZES = {
   parts: parts.length,
   /** Each language's add-on, the least and the most. */
   languages: [Math.round(Math.min(...addOns)), Math.round(Math.max(...addOns))],
+  /** fieldia.print.js: a page on paper whole, fetched as a person means to print. */
+  print: Math.round(gzippedKB('fieldia.print.js')),
+  /** fieldia.phone.js: the phone box and its country table, fetched the first time a page shows a phone. */
+  phone: Math.round(gzippedKB('fieldia.phone.js')),
 };
 
 const packages = readdirSync(new URL('libs/', ROOT)).filter((dir) => {

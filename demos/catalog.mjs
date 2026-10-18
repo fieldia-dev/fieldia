@@ -71,9 +71,9 @@ const SEARCH_WORDS = {
   order: 'sale sales order quotation quote lines products items spreadsheet totals tax discount',
   customers: 'clients accounts contacts list search filter group favourites sort archive table',
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
-  contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize print cards',
+  contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
-  'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print',
+  'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
   'test-drives': 'calendar week schedule planner test drives cars showroom time zone berlin diary agenda drag',
@@ -204,7 +204,7 @@ export const DEMOS = [
       'Type "egy" in the search box and pick "Search Country for: egy" with the arrow keys and Enter.',
       'Open the menu at the end of the box: turn on Active, then group by Country and Status, and open the groups.',
       'Click the Credit limit header, twice: the list goes one way, then the other.',
-      'Tick two customers and press Archive: the app is asked first, then given their ids.',
+      'Tick two customers and press Archive: you are asked first, then the app is given those two, and a note says so.',
       'Save the search as a favourite used by default, and reload: it opens that way.',
       'Click a row to open that customer on its own page.',
     ],
@@ -230,18 +230,19 @@ export const DEMOS = [
     name: 'Contacts to bring in, take away, change in bulk and shape',
     category: 'lists',
     query: 'page=contacts&skin=underline',
-    blurb: 'A list of 1,284 contacts: import more from an Excel or CSV file — its columns matched to the fields, every row checked before anything is saved, the rows refused named with why, and Undo — select every one that matches, export the rows ticked or all of them, and set one field on many at once, each record’s permissions kept. Show, hide, order and size its columns, kept for you; on a phone, each contact is a card.',
+    blurb: 'A list of 1,284 contacts: import more from an Excel or CSV file — its columns matched to the fields, every row checked before anything is saved, the rows refused named with why, and Undo — select every one that matches, export the rows ticked or all of them, and set one field on many at once, each record’s permissions kept. Show, hide, order — by dragging a header too — and size its columns, kept for you; on a phone, each contact is a card.',
     howTo: [
-      'Download the sample workbook below, press Import and drop it on the box: its columns are matched to the fields, and Full name and Notes are left out.',
+      'Download [the sample workbook](samples/contacts-to-import.xlsx), press Import and drop it on the box: its columns are matched to the fields, and Full name and Notes are left out.',
       'Pick Name for Full name, then Check 17 rows: 10 can be imported, and 7 cannot — an owner two users are called, a name missing, a status, a country and an owner nobody is called, a 31 February, a newsletter of “maybe” — each said by its row.',
-      'Press “Download the rows to fix” for a workbook of those seven, with why in a last column; then Import 10 records, and Undo the import under the list.',
-      'Import the sample CSV file: its semicolons and its Arabic names are read as they are, its days day first.',
-      'Tick the box in the header, then press “Select all 1,284 that match”: turn a page, and its rows are ticked too.',
+      'Press “Download the rows to fix” for a workbook of those seven, with why in a last column; then Import 10 contacts, and Undo the import under the list.',
+      'Import [the sample CSV file](samples/contacts-to-import.csv): its semicolons and its Arabic names are read as they are, its days day first.',
+      'Tick the box in the header, then press “Select all 1,284 contacts that match”: turn a page, and its rows are ticked too.',
       'Press Export and pick Excel: the workbook has the columns as the list shows them, money with its currency and days as days.',
       'Search for a company, tick a few rows, press Edit, pick Owner and a person, then Update: say Yes to the question.',
-      'Add &allIds=1000 to the address: “1,000 of 1,284 could be selected”, never “all”.',
+      '[Try it with a server that hands over at most 1,000 at once](?allIds=1000), then tick the header’s box and press Select all: “1,000 of 1,284 could be selected”, never “all”.',
       'Press Columns at the header’s end: tick Phone, move it up beside Name, and untick Country. Reload: the list is as you left it. Reset puts back the page’s.',
       'Search for a company, then press Print: the contacts it finds on paper, in the columns you show, in their order — as Export writes them.',
+      'Drag the Company header sideways past Status and let go: the column follows, the others slide aside, and it stays there after a reload. Press Escape mid-drag to put it back; on a phone or tablet, rest a finger on a header to lift its column.',
       'Drag the edge of a header to make its column wider; scroll the list sideways: the names stay in view, the header over the rows.',
       'Narrow the window, or open the page on a phone: each contact is a card — a photo or their initials, their status as a pill, a phone with Call and WhatsApp.',
     ],
@@ -253,7 +254,7 @@ export const DEMOS = [
     query: 'page=homes-gallery&skin=underline',
     blurb: 'Homes for sale and to rent as a gallery: a card each, its photo large, its price leading, where it is and how big, its offer as a pill and a button to book a viewing. A list a press away; one card to a line on a phone.',
     howTo: [
-      'Press Book a viewing on a card: the app is given that home alone.',
+      'Press Book a viewing on a card: the app is given that home alone, and a note says so, as no app stands behind the demo.',
       'Tick two cards by the box on their photos, then press Share with a buyer: the app is given both.',
       'Group By District: a heading over each district’s cards, its count beside it.',
       'Press List over the cards: the same homes as rows, each with a small photo; press Gallery to go back.',
@@ -265,16 +266,17 @@ export const DEMOS = [
     name: 'A customer with its invoices and quotations',
     category: 'records',
     query: 'page=customer-account&record=1&skin=underline',
-    blurb: 'Another kind of record listed inside this one: the customer’s invoices under its details, its quotations in a tab — a page at a time, searched, sorted and counted, their total under them, New making one for this customer, and View all opening the invoices list kept to this customer.',
+    blurb: 'Another kind of record listed inside this one: the customer’s invoices under its details, its quotations in a tab that counts them, each opened on its own page by the app’s own route — a page at a time, searched, sorted and counted, their total under them, New making one for this customer, and View all opening the invoices list kept to this customer.',
     howTo: [
       'Under the details, Invoices says how many this customer has, and lists the latest five, their total under them.',
-      'An invoice sent and past its due date is in red, a draft in bold; one sent has Send a reminder on its row: the app is given that invoice alone.',
+      'An invoice sent and past its due date is in red, a draft in bold; one sent has Send a reminder on its row: the app is given that invoice alone, and a note says so, as no app stands behind the demo.',
       'Press › beside the pager for the next five, or type “paid” in the search and pick Search Status for: paid.',
       'Click Amount’s header: the invoices in their amount’s order.',
-      'Press New: a new invoice opens in a dialog, its customer filled in. Give it a number and an amount and save: it is in the list, and the count is one more.',
-      'Press View all: the invoices list opens, kept to this customer’s.',
-      'Open the Quotations tab: its own list, the lost ones left out. Press › on the pager over the record: the next customer’s invoices and quotations, never the last one’s.',
-      'Start a new customer (record=new): the lists say nothing points at it until it is saved.',
+      'Press New invoice: a new invoice opens in a dialog, its customer filled in. Give it a number and an amount and save: it is in the list, and the count is one more.',
+      'Press View all invoices: the invoices list opens, kept to this customer’s.',
+      'The Quotations tab says how many quotations this customer has before it is opened. Open it: its own list, the lost ones left out. Press › on the pager over the record: the next customer’s invoices and quotations, and their count on the tab, never the last one’s.',
+      'In the Quotations tab, click a quotation: it opens on its own page, by the app’s own route, not in a dialog. Back, then New quotation: a new quotation’s page, this customer filled in.',
+      '[Start a new customer](?record=new): the lists say nothing points at it until it is saved.',
     ],
   },
   {
@@ -285,15 +287,10 @@ export const DEMOS = [
     blurb: 'A home with the viewings booked for it, listed inside the record: when, the client and their phone as people read it, the agent and how it went — the latest first, New booking one for this home, View all opening every viewing of it in a dialog.',
     howTo: [
       'Viewings lists this home’s, the latest first, five at a time, and says how many there are.',
-      'Press New: a viewing opens in a dialog, its home filled in. Pick a time and a client and save: it joins the list.',
+      'Press New viewing: a viewing opens in a dialog, its home filled in. Pick a time and a client and save: it joins the list.',
       'Click a viewing: it opens in a dialog to change; saved, the list shows it changed.',
-      'Press View all: every viewing of this home, in a dialog, to search, group and page through.',
-      'Press › on the pager over the record, twice: the third home has had no viewings, and says so.',
-    ],
-    // Files to try it with, served beside the demos.
-    files: [
-      { href: 'samples/contacts-to-import.xlsx', label: 'contacts-to-import.xlsx' },
-      { href: 'samples/contacts-to-import.csv', label: 'contacts-to-import.csv' },
+      'Press View all viewings: every viewing of this home, in a dialog, to search, group and page through.',
+      'Press › on the pager over the record, twice: the third home has had no viewings, and says “No viewings yet.”',
     ],
   },
   {
@@ -301,11 +298,11 @@ export const DEMOS = [
     name: 'A customer typed twice',
     category: 'records',
     query: 'page=customer-card&record=new&skin=underline',
-    blurb: 'A new customer typed with a phone or an email you have already: the customers like it are named under the box a moment after you stop typing — to open instead, to say it is someone new, or, once saved, to merge, the two side by side and a value picked for each field. Save is never in the way.',
+    blurb: 'A new customer typed with a phone or an email you have already: the customers like it are named under the box a moment after you stop typing — to open instead, to say it is a new customer, or, once saved, to merge, the two side by side and a value picked for each field. Save is never in the way.',
     howTo: [
-      'Type 02 2345 6789 in Phone and leave it: “A record with this Phone already exists: Nile Traders”, under the box.',
+      'Type 02 2345 6789 in Phone and leave it: “A customer with this phone already exists: Nile Traders”, under the box.',
       'Press Open it: you are asked before what you typed goes, and Nile Traders opens in its place.',
-      'Start a new customer, type orders@niletraders.example in Email: two customers have it. Press It’s someone new on one: it goes, and stays gone for this customer.',
+      'Start a new customer, type orders@niletraders.example in Email: two customers have it. Press It’s a new customer on one: it goes, and stays gone for this customer.',
       'Press Open it on Nile Traders Co.: it opens, said to be like Nile Traders. Press Merge…: the two side by side, Nile Traders kept, its empty Tax ID and Website taking Nile Traders Co.’s.',
       'Pick a value of your own in a row, then Merge: Nile Traders Co. is gone, and Nile Traders opens with the values picked.',
     ],
@@ -448,7 +445,7 @@ export const DEMOS = [
       'Narrow the window: Personal details keeps its three columns on a tablet and goes to one on a phone, its fields always on the same columns as the photo.',
       'Open the Pay tab: the bank’s labels sit beside their boxes, and go above them once a box gets narrow.',
       'Choose a fixed-term contract on the Job tab: Contract ends takes its place on the columns. Give it a day before the start date: it is refused.',
-      'Add &locale=ar&dir=rtl to the address for the page in Arabic, right to left, or &scheme=dark for its dark scheme.',
+      'See the page [in Arabic, right to left](?locale=ar&dir=rtl), or [in its dark scheme](?scheme=dark).',
     ],
   },
   {
@@ -572,7 +569,7 @@ export const DEMOS = [
     howTo: [
       'Drag the map, and turn the wheel over it: it moves and zooms with no key held. On a phone, one finger moves it.',
       'Move the map: Search this area says how many homes are in view. Press it: the page’s own list keeps those, and the map stays where it is.',
-      'Move the map again: the address bar’s at= keeps where it stands. Reload the page: the map opens there.',
+      'Move the map again, then reload the page: the map opens where you left it, which the page keeps in its own address.',
       'Point at a home in the list: its pin lights up. Point at a pin: its home lights up in the list.',
       'Press To rent at the top: the page’s own filter, and the map follows it.',
       'Press a pin, then Open on its card: the page marks that home in its list.',
@@ -948,6 +945,25 @@ export function sourceOf(demo) {
   const page = new URLSearchParams(demo.query ?? '').get('page') ?? 'signup';
   return page.startsWith('template-') ? `examples/templates/${page.slice('template-'.length)}.page.json` : `examples/pages/${page}.page.json`;
 }
+
+/**
+ * A how-to step's words and its links, each written as Markdown writes one: `[the sample workbook](samples/x.xlsx)` for
+ * a file to try the demo with, served beside the demos (demos/samples), and `[Start a new customer](?record=new)` for
+ * this demo with those settings in its address — so no step sends a person to the address bar, and a file a step names
+ * is a press away in the step itself. `stepText` is a step's words alone, as the header and the tests read them.
+ */
+export function stepParts(step) {
+  const parts = [];
+  let at = 0;
+  for (const link of step.matchAll(/\[([^\]]+)\]\(([^)\s]+)\)/g)) {
+    if (link.index > at) parts.push({ text: step.slice(at, link.index) });
+    parts.push({ text: link[1], href: link[2] });
+    at = link.index + link[0].length;
+  }
+  if (at < step.length) parts.push({ text: step.slice(at) });
+  return parts;
+}
+export const stepText = (step) => stepParts(step).map((part) => part.text).join('');
 
 /** A demo's address, from a demo page or from the site's /demos/: its framework's folder and its query. */
 export function demoHref(demo, framework = 'plain') {

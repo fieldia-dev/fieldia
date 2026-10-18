@@ -5,7 +5,7 @@ import { zipOf } from './zip';
  * XML files Office Open XML asks for (zip.ts), no library. A header row in
  * bold that stays in view and filters its columns; text as text, never read
  * as a formula; numbers, money and dates as numbers in the format they are
- * read in, so they still add up and sort.
+ * read in, so they still add up and sort; yes or no as a spreadsheet keeps it.
  */
 
 /** A number, shown in an Excel format: `#,##0.00`, `"E£" #,##0.00`, `d mmm yyyy`. */
@@ -14,8 +14,13 @@ export interface SheetNumber {
   format?: string;
 }
 
-/** A cell: words, a number, or nothing. */
-export type SheetCell = string | SheetNumber | null;
+/** Yes or no, as a spreadsheet keeps it (TRUE, FALSE). */
+export interface SheetYesNo {
+  b: boolean;
+}
+
+/** A cell: words, a number, yes or no, or nothing. */
+export type SheetCell = string | SheetNumber | SheetYesNo | null;
 
 export interface Sheet {
   /** The sheet's name on its tab: 31 characters at most, with none of []:*?/\ (cut and dropped here). */
@@ -78,6 +83,7 @@ export function xlsxOf(sheet: Sheet, when?: Date): Promise<Uint8Array> {
       const space = /^\s|\s$/.test(text) ? ' xml:space="preserve"' : '';
       return `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t${space}>${escaped(text)}</t></is></c>`;
     }
+    if ('b' in value) return `<c r="${ref}" t="b"><v>${value.b ? 1 : 0}</v></c>`;
     if (!Number.isFinite(value.n)) return '';
     widths[column] = Math.max(widths[column], 14);
     const s = styleOf(value.format);

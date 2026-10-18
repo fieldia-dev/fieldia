@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { DEMOS, FRAMEWORKS, GITHUB, OPENED, demoHref, sourceOf } from '../demos/catalog.mjs';
+import { DEMOS, FRAMEWORKS, GITHUB, OPENED, demoHref, sourceOf, stepParts, stepText } from '../demos/catalog.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
 
@@ -31,7 +31,8 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   // The 500-field page is for timing (e2e/perf.spec.ts), not for a visitor: it has no card on purpose.
   const forTiming = new Set(['big']);
   // A section choosing its own look, for e2e/quiet-look.spec.ts: the work item's demo shows the switch whole.
-  const forTests = new Set(['work-item-mixed']);
+  // Tables of lines with none yet, for e2e/grid-empty.spec.ts.
+  const forTests = new Set(['work-item-mixed', 'empty-grids']);
   // A home's, a courier's and an order's own page, an appointment's, a booking's and a contact's: a record opened from its list's row,
   // pin or calendar, not a demo of its own — each named in the catalog (OPENED), as the test below holds it to.
   const opened = new Set(OPENED.map((o) => o.page));
@@ -81,6 +82,27 @@ test('every page the demos open is named for what it shows, in the heading and t
   }
 });
 
+test('no how-to step sends a person to the address bar; a step naming a file links it, a file the demos serve', () => {
+  // A setting typed into the address ("record=new", "&allIds=1000") is a link in the step instead (catalog.mjs: stepParts).
+  const ADDRESS = /\b[a-zA-Z]+=[^\s,)]*|address bar|to the address|in the address\b/i;
+  const FILE = /\bsample (workbook|CSV file|file)\b|\.(xlsx|csv|pdf)\b|\bdownload (the|a) (sample|file|workbook)/i;
+  let files = 0;
+  for (const demo of DEMOS) {
+    for (const step of demo.howTo) {
+      const text = stepText(step);
+      expect(text, `${demo.id}: ${text}`).not.toMatch(ADDRESS);
+      const links = stepParts(step).filter((part) => part.href);
+      if (FILE.test(text)) expect(links.some((link) => !link.href!.startsWith('?')), `${demo.id}: ${text}`).toBe(true);
+      for (const link of links) {
+        if (link.href!.startsWith('?')) continue;
+        files++;
+        expect(existsSync(`demos/${link.href}`), `${demo.id}: ${link.href}`).toBe(true);
+      }
+    }
+  }
+  expect(files).toBeGreaterThanOrEqual(2);
+});
+
 test.describe('the demo frame', () => {
   test('gives a visitor the menu of every demo, how to try this one, and its code', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -103,9 +125,15 @@ test.describe('the demo frame', () => {
     await expect(menu(page).locator('.dn-item:visible')).toHaveText(['Customer record in Arabic']);
     await page.keyboard.press('Escape');
 
-    // How to try it: what the demo shows, and the steps.
+    // How to try it: at 1440 it waits folded — its first step is in the header — so the record keeps its room beside
+    // the menu; the header's ? opens it: what the demo shows, and the steps.
     const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    await expect(howTo).toBeHidden();
+    const about = page.locator('#demo-head').getByRole('button', { name: 'About this demo' });
+    await expect(about).toHaveAttribute('aria-expanded', 'false');
+    await about.click();
     await expect(howTo).toBeVisible();
+    await expect(about).toHaveAttribute('aria-expanded', 'true');
     const demo = DEMOS.find((d) => d.id === 'customers')!;
     await expect(howTo.locator('.ht-about')).toHaveText(demo.blurb);
     await expect(howTo.locator('li')).toHaveCount(demo.howTo.length);
@@ -126,7 +154,7 @@ test.describe('the demo frame', () => {
     // Coloured as it reads: a key apart from its value, in colours of their own.
     const colour = (selector: string) => code.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
     await expect(code.locator('.tok-key').first()).toHaveText('"fieldia"');
-    await expect(code.locator('.tok-string').first()).toHaveText('"0.4"');
+    await expect(code.locator('.tok-string').first()).toHaveText('"0.5"');
     expect(await colour('.tok-key')).not.toBe(await colour('.tok-string'));
     expect(await colour('.tok-string')).not.toBe(await code.locator('code').evaluate((el) => getComputedStyle(el).color));
     await code.getByRole('tab', { name: 'React' }).click();
@@ -287,7 +315,7 @@ test.describe('the demo frame', () => {
     for (const demo of DEMOS.filter((d) => ['customer', 'test-drive', 'template-invoice', 'backlog', 'two-tabs', 'script', 'code'].includes(d.id))) {
       await page.goto(`/${demoHref(demo)}`);
       const line = page.locator('#demo-head .dh-try');
-      await expect(line.locator('.dh-try-step'), demo.id).toHaveText(demo.howTo[0]);
+      await expect(line.locator('.dh-try-step'), demo.id).toHaveText(stepText(demo.howTo[0]));
       await expect(line.getByRole('link', { name: 'Its source on GitHub' }), demo.id).toHaveAttribute('href', `${GITHUB}/blob/main/${sourceOf(demo)}`);
       await expect(line, demo.id).toBeInViewport();
     }
@@ -302,6 +330,123 @@ test.describe('the demo frame', () => {
     await page.locator('#demo-head').getByRole('button', { name: 'All 5 steps' }).click();
     await expect(howTo).toBeVisible();
     await expect(howTo.locator('li')).toHaveCount(5);
+  });
+
+  test('opens the menu and the how-to together only where the record stays whole beside them; else the how-to waits, a person’s choice kept', async ({ page }) => {
+    await asVisitor(page);
+    const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    const about = page.locator('#demo-head').getByRole('button', { name: 'About this demo' });
+    /** What the record cuts at this width that it does not cut in a window as wide as can be: a cell, a column, a value. */
+    const cutHere = async (width: number) => {
+      const cut = () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('#app *')]
+            .filter((e) => (e as HTMLElement).clientWidth > 0 && !e.closest('[hidden]'))
+            .filter((e) => {
+              const style = getComputedStyle(e);
+              return (style.overflowX !== 'visible' || style.textOverflow === 'ellipsis') && e.scrollWidth > (e as HTMLElement).clientWidth + 1;
+            })
+            .map((e) => `${(e.className || e.tagName).toString().split(' ')[0]}: ${((e as HTMLElement).innerText || (e as HTMLInputElement).value || '').trim().slice(0, 30)}`)
+        );
+      // What a window as wide as can be leaves cut too (a label's own ellipsis) is no squeeze: once it holds still.
+      await page.setViewportSize({ width: 2600, height: 900 });
+      let wide = '';
+      await expect.poll(async () => {
+        const now = JSON.stringify(await cut());
+        const still = now === wide;
+        wide = now;
+        return still;
+      }).toBe(true);
+      const known = new Set(JSON.parse(wide) as string[]);
+      await page.setViewportSize({ width, height: 900 });
+      // The grid sizes its columns a moment after the window changes: what is cut once it has.
+      let left: string[] = [];
+      await expect.poll(async () => (left = (await cut()).filter((c) => !known.has(c))).length, { timeout: 4000 }).toBe(0).catch(() => undefined);
+      return left;
+    };
+    // The menu, the panel and the widest record — the sales order's lines — fit side by side from 1,744px: both open by
+    // themselves, and nothing of the records the walk saw squeezed is cut.
+    await page.setViewportSize({ width: 1744, height: 900 });
+    for (const query of ['page=order&skin=underline', 'page=invoices&skin=underline', 'page=property&record=1&skin=underline', 'page=contacts&skin=underline']) {
+      await page.goto(`/plain/?${query}`);
+      await expect(page.locator('.fd-list-row, .fd-field').first()).toBeVisible();
+      await expect(menu(page), query).toBeInViewport();
+      await expect(howTo, query).toBeVisible();
+      expect(await cutHere(1744), query).toEqual([]);
+    }
+    await screen(page, 'demo-frame-both-panels', { viewport: true });
+    // At 1440 the menu alone; the how-to's first step is in the header, the rest a press away.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/plain/?page=invoices&skin=underline');
+    await expect(menu(page)).toBeInViewport();
+    await expect(howTo).toBeHidden();
+    await expect(page.locator('#demo-head .dh-try-step')).toBeVisible();
+    await expect(page.locator('.fd-list-scroll')).toHaveJSProperty('scrollLeft', 0);
+    expect(await page.locator('.fd-list-scroll').evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
+    await screen(page, 'demo-frame-1440', { viewport: true });
+    // Opened by the person, it stays open on the next demo and after a reload; closed, it stays closed even where both fit.
+    await about.click();
+    await expect(howTo).toBeVisible();
+    await page.goto('/plain/?page=contacts&skin=underline');
+    await expect(howTo).toBeVisible();
+    await howTo.getByRole('button', { name: 'Close the panel' }).click();
+    await expect(about).toBeFocused();
+    await page.setViewportSize({ width: 1920, height: 1000 });
+    await page.reload();
+    await expect(page.locator('.fd-list-row').first()).toBeVisible();
+    await expect(howTo).toBeHidden();
+  });
+
+  test('a step’s files and settings are links in the step: the sample workbook in the header, a new customer a press away', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const problems = watch(page);
+    await page.goto('/plain/?page=contacts&skin=underline');
+    // The first step, in the header for everyone, downloads the file it names from where it is said.
+    const workbook = page.locator('#demo-head .dh-try-step').getByRole('link', { name: 'the sample workbook' });
+    await expect(workbook).toHaveAttribute('download', '');
+    const download = page.waitForEvent('download');
+    await workbook.click();
+    expect((await download).suggestedFilename()).toBe('contacts-to-import.xlsx');
+    // And the steps: the CSV file in its own step; a server's limit on the ids a press away, not typed in the address.
+    await page.locator('#demo-head').getByRole('button', { name: 'About this demo' }).click();
+    const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    await expect(howTo.getByRole('link', { name: 'the sample CSV file' })).toHaveAttribute('href', /\/samples\/contacts-to-import\.csv$/);
+    const csv = await page.request.get((await howTo.getByRole('link', { name: 'the sample CSV file' }).getAttribute('href'))!);
+    expect(csv.ok()).toBe(true);
+    await screen(page, 'demo-steps-files', { viewport: true });
+    await howTo.getByRole('link', { name: /hands over at most 1,000/ }).click();
+    await expect(page).toHaveURL(/[?&]allIds=1000(&|$)/);
+    await expect(page).toHaveURL(/[?&]page=contacts&skin=underline/);
+    // A related list's new customer: the step's link, the look kept. (The panel opens as it was left: open.)
+    await page.goto('/plain/?page=customer-account&record=1&skin=outlined');
+    await expect(howTo).toBeVisible();
+    await howTo.getByRole('link', { name: 'Start a new customer' }).click();
+    await expect(page).toHaveURL(/[?&]page=customer-account&record=new&skin=outlined$/);
+    await expect(page.locator('[data-node="invoices"] .fd-related-note')).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+
+  test('a phone’s header holds About this demo beside Options: nothing floats over the demo’s cards and totals', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/plain/?page=invoices&skin=underline');
+    await expect(page.locator('.fd-list-card, .fd-card').first()).toBeVisible();
+    const about = page.locator('#demo-head').getByRole('button', { name: 'About this demo' });
+    const options = page.locator('#demo-head .dh-options');
+    const [a, o, head] = [(await about.boundingBox())!, (await options.boundingBox())!, (await page.locator('#demo-head').boundingBox())!];
+    // One row: the ? just before Options, inside the header.
+    expect(Math.abs(a.y + a.height / 2 - (o.y + o.height / 2))).toBeLessThanOrEqual(2);
+    expect(a.x + a.width).toBeLessThanOrEqual(o.x);
+    expect(a.y + a.height).toBeLessThanOrEqual(head.y + head.height);
+    // Nothing of the frame is fixed over the demo but what a person opened.
+    const floating = await page.evaluate(() => [...document.querySelectorAll('body > *')].filter((e) => getComputedStyle(e).position === 'fixed' && (e as HTMLElement).offsetParent !== null && getComputedStyle(e).display !== 'none').map((e) => e.id));
+    expect(floating).toEqual([]);
+    await page.mouse.wheel(0, 4000);
+    await screen(page, 'demo-frame-phone-bottom', { viewport: true });
+    await about.click();
+    await expect(page.getByRole('complementary', { name: 'About this demo' })).toBeVisible();
+    await expectNoSidewaysScroll(page);
   });
 
   test('a theme’s ground fills the window under a short page, light and dark, as the walk saw it stop mid-screen', async ({ page }) => {

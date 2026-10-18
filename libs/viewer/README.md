@@ -153,7 +153,12 @@ A page whose sheet has a `head` (a work item's: its kind's strip and badge,
 the title line, Save and Close, Follow, the band of fields and the tabs) is
 the dialog's own head and foot: the dialog draws neither, its ⤢ and × sit at
 the end of the head's badge row, and Escape and × ask before changes go. A
-head button whose steps save and then close resolves with `saved: true`.
+head button whose steps save and then close resolves with `saved: true`. The
+head's title is one line that wraps where it is too long for its line, as a
+sheet's title does: a `textarea` (`aria-multiline="false"`), read from its
+start, never cut, its words whole — the browser hyphenates none; only a word
+longer than the line (a web address) breaks, at its end or at a soft hyphen the
+words carry. Enter adds no line, and a line break pasted is a space.
 
 `side` is where it comes from: `'end'` (the default: the end of the line, the
 right, or the left right to left) or `'start'`, as the page reads; or
@@ -166,8 +171,9 @@ above, the rest up from below.
 
 `mode: 'values'` checks the form and hands its values back without saving
 (the panel's button then says Done). Each keeps Tab inside it, gives the focus
-back where it came from, and closes on Escape — a panel asks "Discard your
-changes?" first when something was changed. A dialog opened from inside a
+back where it came from, and closes on Escape — asking "Discard your
+changes?" first when something was changed, the focus on Cancel so Enter
+keeps it open, as × asks; Discard asks nothing. A dialog opened from inside a
 panel sits above it; a panel opened from a panel stacks over it, the older one
 stepped back from its own edge. A panel slides in from its edge only when the
 reader's system welcomes motion.
@@ -197,9 +203,11 @@ a moment does”). The viewer is their host: it draws what they ask for.
   change of theirs the last save did not send, a file on its way or not saved
   yet, changes set aside, a save refused for a conflict still waiting for
   Reload or Keep mine. A dialog's Discard waits for a save on its way too, and
-  asks nothing; it stops a file on its way at once. A dialog of values — a
-  line's own form — asks before Escape or × let a change in it go, as a panel
-  does: nothing else saves what it holds. An answer that comes once the record
+  asks nothing; it stops a file on its way at once. Every dialog and panel —
+  a line's own form, a related list's row and New, a calendar's New, a page an
+  `open` step shows — and a page in place's Back ask before they let a change
+  in it go, every change not saved counting: nothing else saves what they
+  hold. An answer that comes once the record
   it was asked for is gone — a name looked up, a record made from a link, a
   line's dialog closed, an onchange, a step's Archive, Duplicate or Delete —
   is laid on no other record (`form.recordShown()`).
@@ -217,7 +225,7 @@ a moment does”). The viewer is their host: it draws what they ask for.
   button's `confirm` is asked once, by the form. Escape answers No and leaves
   a dialog or panel under it open. Your own `host.ask` gets every question,
   and the one check's “Discard your changes?” comes with `{ discard: true }`
-  (a panel's Escape and × among them): word its Yes as Discard and put the
+  (a dialog's or a panel's Escape and × among them): word its Yes as Discard and put the
   focus on Cancel, as the viewer's own box does.
 - **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
   steps — as for a tab a person picks.
@@ -261,6 +269,46 @@ are gone, and the gear menu's Archive, Duplicate or Delete it does not allow
 are hidden, its foot saying why — in English, Arabic, French or German. See
 [versions and conflicts](https://fieldia.dev/data/#versions).
 
+## What a page's records are called
+
+A page that names its records (`"records": { "one": "contact", "other":
+"contacts", "a": "a contact" }`, see `@fieldia/core`) has the viewer say them
+wherever it named records in words: a list's pager ("1–10 of 1,284 contacts"),
+nothing found ("No contacts match."), Select all ("Select all 1,284 contacts that
+match"), Export ("All 1,284 contacts that match", "1,284 contacts exported."),
+Edit ("Edit 3 contacts", "Update 3 contacts? …", "3 contacts updated."),
+Import's button, report and Undo ("Import 10 contacts", "10 of 17 contacts
+imported", "Delete the 10 contacts this import made?"), a printout's count; over
+a record its crumb ("New contact"), its pager's name and buttons ("Next
+contact"), the gear's Print ("This contact"), someone else's save, a record only
+to be read, the question before changes go; possible duplicates ("A contact with
+this phone already exists", "It's a new contact", "Merge two contacts"); a
+related list in the words its model's page names them by ("New invoice", "View
+all invoices", "No invoices yet.", "5 of 23 invoices") — "all" and "none" kept to
+its title where its own `filter` lists only some — and "Nothing here until this
+customer is saved." in the record's own. @fieldia/calendar's New and a slot's
+count, and @fieldia/map's failure, say them too.
+
+Each is a word of its own beside the plain one, ending in `Noun`
+(`exportedNoun: '{n} {records} exported.'`, `exportedNounOne`); English has them
+all, German and French those they can say round any noun's gender, Arabic the
+pager's name. A language that leaves one out says its own plain sentence, and so
+does an app's `labels` that gives the plain one alone (`exported`): never an
+English sentence round another language's words. `addLanguage` keeps it so.
+
+With `"lowerLabels": true`, every sentence of the viewer's and the widgets' that
+puts a field's label after a word of it writes it with a small first letter, by
+the one rule of `@fieldia/core` (`labelAt`): a refused save's "Not saved. Check:
+full name, quantity", "Help for tax ID", "Locked: budget", "Fix quantity to see
+total", "Clear country", "Add tags", "Country of mobile", "Fix quantity to see
+this line's subtotal", "This field could not be shown: price", "They changed:
+phone.", "Put back phone", "Resize tax ID", "Filter by status", "Search name for:
+…", "The same in both: email." — one that begins its sentence ("Full name is
+required", "Status: nothing is called …") as written. The quiet look's "Add story
+points" has always been so, and keeps to the same rule. A line's own dialog —
+its table's `lineForm`, or its model's page (`lineOpens: "record"`) unless that
+page says otherwise — and a list's Edit dialog follow the page they are part of.
+
 ## Possible duplicates, and Merge
 
 A record's page with `duplicates` (`{ "fields": ["name", "phone", "email"] }`)
@@ -270,8 +318,8 @@ record opens, and as it is saved — each match is said under the field it
 matched on, "A record with this Phone already exists: Nile Traders", and said
 once, politely, to a screen reader. Its ways: **Open it** (the record found, in
 this one's place, once the person said Discard to what they typed), **It's
-someone new** (let be for those values, remembered for the record in the
-viewer's `preferences`), and, on a saved record where the source has `merge`,
+someone new** (the record found let be for this record, whatever field matches
+it next, remembered for the record in the viewer's `preferences`), and, on a saved record where the source has `merge`,
 **Merge…**: the two side by side, the record kept picked over its column and a
 radio for each field they hold apart, what will happen said before Merge. Typing
 on leaves an answer on its way unheard; an answer for a record no longer shown
@@ -342,11 +390,14 @@ why. See [taking records away, changing many](https://fieldia.dev/lists/#bulk).
 
 With `"import": true` (or the fields) **Import**, in its bar, brings records in
 from an Excel workbook or a CSV file, read in the browser with no library (a
-CSV file's encoding and separator guessed): its columns matched to the page's
-fields by name or label in any of the page's languages, a picker for each; every
-row checked by the page's own rules before anything is written — the rows
-refused named with why and downloadable as a file to fix, the first shown as
-they will be saved — then written by `createMany` or a save per row, with
+CSV file's encoding and separator guessed, an encoding picked that its bytes
+say it is not in said with the one that reads it; a file of a header alone
+said to hold no rows): its columns matched to the page's fields by name or
+label in any of the page's languages, a picker for each; every row checked by
+the page's own rules before anything is written — the rows refused named with
+why and downloadable as a file to fix, its cells as the file had them under the
+labels of the fields they were matched to, so it matches by itself when brought
+in again; the first shown as they will be saved — then written by `createMany` or a save per row, with
 progress and Stop; and **Undo the import** deletes what it made. Its dialog comes
 in a part of its own (`importPart`), the first time it is pressed. At most
 50,000 rows in the browser; `importRecords` takes more on your server. See
@@ -387,7 +438,12 @@ gives for `model`, **New** makes one there with its link filled in and lists it
 once saved (`"create": false` for none), and **View all** opens the page
 `viewAll` names showing this record's records alone, as an `open` step opens
 one — in a dialog, a side panel or this page's place, or your app's own way
-(`onOpen`, with the conditions in `request.filter`). Before the record's first
+(`onOpen`, with the conditions in `request.filter`). Its list says what it is
+kept to as chips over it, which a person may take away — "Customer: Nile
+Traders", and the list's own `filter` by its title — given in
+`request.search` (`Facet[]`) for a route of your own: hand them to the list
+page's viewer as `listSearch`, the search it opens with in place of its
+default filters (where `listFilter` keeps conditions fixed and unsaid). Before the record's first
 save it says nothing points at it yet, with no New. With `card`, its rows are
 cards on a phone, as a list's (each a field of its own `fields`); `rowTones`,
 `rowBold` and `rowButtons` tone, bold and give buttons to its rows as a list's,
@@ -398,6 +454,24 @@ data source it is not shown. An answer that comes once another record is shown �
 pager pressed, the record loaded again, Discard — is drawn in none
 (`form.recordShown()`), and the next record's are asked for. See
 [related records](https://fieldia.dev/record/#related).
+
+With `"open": "app"`, a row and New go your app's own way first, as View all
+does: your `onOpen` (or your host's `open`) is asked with `{ page, as: 'dialog',
+recordId }` for a row and `{ page, as: 'dialog', recordId: null, values }` for
+New — this record filled in among the values (`{ partner_id: { id, label } }`) —
+`page` being the id of the page `pages` gives for `model`, else the model's
+name. Answer with how it ended, or `undefined` for the dialog after all; the list
+asks for its records again once it settles. Without `onOpen` or a host's `open`,
+the dialog as ever.
+
+A tab holding a related list may count its records: `"count": { "related":
+"quotations" }` on the tab, by the list's id, shows "Quotations 4" (read out
+"Quotations, 4"). The source's `list` is asked for one record with the list's
+own conditions as the record is shown, whether the tab is open or not, and its
+`total` is the count; once the list is drawn, its own count after New, a delete
+or a row's button stands for it. No count shows until it is known — before the
+answer, before the record's first save, while the list is hidden — and never
+another record's.
 
 ### Lists people read anywhere and shape themselves
 
@@ -423,42 +497,70 @@ the totals under the cards and in sight while they scroll.
 `"options": { "links": true }` (a call and a WhatsApp link). Each row's tone
 while a condition on its record holds (`rowTones`), its bold (`rowBold`), and
 buttons on each row (`rowButtons`, each shown by its `invisible` read on the
-row's record, pressed with that record alone).
+row's record, pressed with that record alone). A tone's `label` and
+`rowBoldLabel` ("Your own contacts") say what they mean in a key over the rows —
+a swatch, a bold sample — read by a screen reader as a list; without words, no
+key.
 
 **Columns people control.** With `optionalColumns` — the columns a person may
 hide, each `show` or `hide` at first — the header has a **Columns** menu: show,
 hide and order the columns (Move up, Move down, or Alt with an arrow), Reset to
-the page's; a header's edge drags (or its grip takes the arrow keys) to size
-its column; the header and the first column stay in view as the rows scroll.
+the page's; a header dragged sideways moves its column — its ghost under the
+pointer, the other columns sliding aside, a line where it goes; Escape puts it
+back, a press that does not move still sorts, a finger's long press lifts it
+(a tap sorts, a swipe scrolls), right to left mirrored, and its new place is
+said to a screen reader ("Phone moved to place 2 of 8", as the menu's moves
+are); a header's edge drags (or its grip takes the arrow keys) to size its
+column; the header and the first column stay in view as the rows scroll — the
+first is the list's name column (the page's first), which no move or drag
+displaces: the others order after it — and the Columns button is
+held at the header's end, in sight however wide the table.
 The person's columns are kept in the viewer's `preferences`
 (`<page>.<list>.columns`; the browser's storage unless the app gives its own).
 Export and Print write the columns shown, in their order; on paper a list is
-its table, cards and a gallery printed as rows. The cards and the columns come
-in parts of their own (`fieldia.cards.js`, `fieldia.columns.js`), only where a
-list asks. See [lists people shape](https://fieldia.dev/lists/#shape).
+its table in that order — its first column at the table's start, nothing held
+in view, no Columns cell — cards and a gallery printed as rows. The cards and
+the columns come in parts of their own (`fieldia.cards.js`,
+`fieldia.columns.js`), only where a list asks. See
+[lists people shape](https://fieldia.dev/lists/#shape).
 
 ## On paper
 
 Every page prints — Ctrl+P, the browser's menu, or the page's own Print — as a
-clean page, by the stylesheet's `@media print` rules (in every page's sheet:
-an engine that tells nothing as it prints gets them too):
+clean page, by the print part's `@media print` rules (`fieldia.print.js`, a
+chunk of its own in an app's bundle, about 5 KB gzipped):
 
 - every tab one after another under its name, every wizard step, every folded
   group open (but what a condition hides);
-- no buttons, bars, gear, pager, tabs' strip, help or locks; each box written
-  as the words a person reads in it — a choice by its label, a link by its
-  name, money with its currency, a date as the page writes it on its clock —
-  wrapping rather than cut; a choice of several, the one picked; a statusbar,
-  the stage the record is in;
+- no buttons, bars, gear, pager, tabs' strip (a tab's count with it), help or
+  locks; each box written as the words a person reads in it — a choice by its
+  label, a link by its name, money with its currency, a date as the page writes
+  it on its clock — wrapping rather than cut; a choice of several, the one
+  picked; a statusbar, the stage the record is in;
 - a table of lines whole (a grid's every line and column, in a plain table as
-  wide as the sheet), its header again on each sheet; no field, line or
-  heading cut across two sheets;
+  wide as the sheet, its columns in the order the person sees them), broken
+  between its lines with its header again on each sheet; no field, line or
+  heading cut across two sheets, and no tab's name, a group's title or a table's
+  header left alone at a sheet's foot — each goes to the next sheet with the
+  start of what follows it;
+- groups and fields side by side as the page sets them at the sheet's width,
+  a row of them never laid over the next, in Chromium and Firefox alike; a
+  sheet breaks between any two groups, so one that fits stays where it is;
+- no required star, in any skin; a number, an amount, a day or a phone number
+  in a printed list's or table's cell on one line;
+- a part its page marks `"print": false` — a tab, a group, a field or a
+  related list — left out, as an invoice leaves out its journal items, and a
+  related list with no title of its own no empty band over its rows;
 - light colours whatever the screen's scheme, the theme's accent kept for the
   headings; the page's language and direction;
-- over it, the record's title and the day it was printed (`now`, on the
-  page's `timeZone`), and — with a page's `print` — the app's logo and words,
-  and words under it, once after the record. Each `{field}` shows that
-  field's value;
+- over it, the record's own name — with none yet (a draft invoice's "/"),
+  what the page calls its records and the stage it is in, "Invoice · Draft" —
+  and the day it was printed (`now`, on the page's `timeZone`), and — with a
+  page's `print` — the app's logo and words over it, and its footer under every
+  sheet of it: nothing runs under the footer, and under the last sheet it
+  follows the record (in Chromium and Firefox; in Safari, once after the
+  record). Each `{field}` shows that field's value; a line whose value is
+  empty (or no words, as "/") is left out whole, never "quoting . Thank you";
 - with a dialog or a panel open over the page, its form alone: what a person
   printing looks at — never the page behind with the dialog over it.
 
@@ -472,7 +574,36 @@ an engine that tells nothing as it prints gets them too):
 
 What a stylesheet cannot do is done as printing begins (the window's
 `beforeprint`) and undone at `afterprint`: each tab not opened yet is drawn,
-and each box's words written beside it for the paper alone.
+each box's words written beside it for the paper alone, and the room each
+heading keeps under it measured — as tall as the start of what follows it,
+with the form laid out for that moment as a sheet is wide.
+
+**The print part comes on intent.** A page no one prints never loads it. It is
+loaded, and printing waits for it, as a person prints: **Ctrl+P** (⌘P) is
+Fieldia's — held back the first time while the part comes, then the page laid
+out whole and the browser's print asked; at once once it is in — and **every
+Print** (the gear's built-in, a `print` step, `viewer.print()`, a list's Print)
+waits for it. It is fetched, and nothing printed, as soon as a person shows they
+may print: the gear opened with Print in it, a pointer resting on a Print button;
+and once a page meant for paper is drawn — a page with its own `print` words, a
+list with `"print": true` — when the browser is idle. An app's own Ctrl+P (a
+keydown it handled first, `preventDefault`) is left to it.
+
+**The browser's own menu** (File › Print) is the one print no page can hold
+back, and a part loaded as it begins comes too late. So before the part came,
+it prints a plain look the main sheet keeps — the page as the screen shows it,
+its buttons, bars, the record's bar, the side panel and hints left out, light
+colours — and asks for the part: every print after is whole. A page that
+printed or fetched the part once, and every page meant for paper, prints whole
+from the browser's menu too. To have it whole from the first moment on every
+page, load it as the app starts: `printPart.load()`, or `loadParts()` with no
+page, which loads every part.
+
+On paper the record's content is a table and its footer that table's footer
+group, which the browser draws again under each sheet's part of it; every grid
+is a block, its parts side by side in lines a sheet breaks between. An app's
+own stylesheet that sets a form's `display` on paper keeps the footer once,
+after the record.
 
 **Print this record alone** — the app's page round it left out — with the gear
 menu's built-in item (`{ "id": "m-print", "builtin": "print" }`, under Print as
@@ -509,11 +640,12 @@ Firefox), else once after the rows. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 161 KB gzipped). What a page uses beyond
+(core, widgets and viewer; about 163 KB gzipped). What a page uses beyond
 plain fields — a list's screen, a table of lines, a date's box, a link to
-another record, a phone, a theme, possible duplicates… — comes in 20 parts
-beside it (`fieldia.list.js`, `fieldia.date.js`, `fieldia.relations.js`, …),
-each loaded from the same folder the first time a page uses it:
+another record, a phone, a theme, possible duplicates, a page on paper… —
+comes in 21 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
+`fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
+folder the first time a page uses it:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

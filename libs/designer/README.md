@@ -74,6 +74,21 @@ up to 520px wide is a phone's, up to 760px a tablet's), and each group shows
 the columns it has there; a double-click goes back to the size's own width.
 The width is kept in this browser.
 
+## What a screen's records are called
+
+With nothing picked, a record screen's panel — and a list's, first — offers
+**Records are called**: the word for one record and for more ("customer",
+"customers"), which Fieldia's own sentences then say ("A customer with this
+phone already exists", "17 customers imported", "New customer"); both, or
+neither — with one alone nothing is kept yet, and the panel says what is
+missing. Once named, **One with its article** ("a customer", "an invoice").
+Beside them, on any screen, a survey's too, **Field names small inside them**
+("this phone", not "this Phone"): the page's own `lowerLabels`. A list's canvas
+says its pager in the records' words as they are typed ("1–40 of 128
+customers"). `designer.setRecords({ one, other, a })` sets the records' words,
+`null` takes them away, and one word without the other is refused in words;
+`designer.setLowerLabels(on)` sets the labels' case.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey

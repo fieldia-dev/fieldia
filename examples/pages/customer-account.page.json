@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "customer-account",
   "title": "A customer’s account",
   "description": "A customer with the invoices and quotations that point at it, listed inside the record.",
@@ -7,6 +7,7 @@
     "kind": "record",
     "model": "partner"
   },
+  "records": { "one": "customer", "other": "customers", "a": "a customer" },
   "fields": {
     "name": {
       "type": "char",
@@ -37,7 +38,7 @@
       "relation": "currency"
     },
     "notes": {
-      "type": "text",
+      "type": "html",
       "label": "Notes"
     }
   },
@@ -183,8 +184,21 @@
         "children": [
           {
             "type": "tab",
+            "id": "tab-notes",
+            "label": "Notes",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-notes",
+                "field": "notes"
+              }
+            ]
+          },
+          {
+            "type": "tab",
             "id": "tab-quotations",
             "label": "Quotations",
+            "count": { "related": "quotations" },
             "children": [
               {
                 "type": "related",
@@ -283,19 +297,8 @@
                 "searchFields": [
                   "name",
                   "state"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "tab",
-            "id": "tab-notes",
-            "label": "Notes",
-            "children": [
-              {
-                "type": "field",
-                "id": "f-notes",
-                "field": "notes"
+                ],
+                "open": "app"
               }
             ]
           }

@@ -11,7 +11,7 @@ import { sampleChatter } from '../shared/sample-chatter';
 import { historySlot } from '@fieldia/chatter';
 import { wiHistoryChatter } from '../shared/wi-history';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, pages, recordFromQuery, sampleDataSource } from '../shared/sample-data';
-import { openByRoute } from '../shared/related-lists';
+import { openByRoute, valuesFromQuery } from '../shared/related-lists';
 import { panelBar } from '../shared/panel-demo';
 import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
@@ -21,6 +21,7 @@ import { errorLog, plannerSlot, priceTag } from '../shared/contained';
 import { photosBar } from '../shared/listing-photos';
 import { botLog, captchaSlot } from '../shared/captcha';
 import { meanwhileBar } from '../shared/test-drive';
+import { addressFollowsRecord } from '../shared/address';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -76,6 +77,8 @@ const options: ViewerOptions = {
   page,
   dataSource,
   recordId: recordFromQuery(params, page),
+  // A new record its address fills in: a customer's quotation made with New, by the app's own route.
+  values: valuesFromQuery(params),
   onOpenRecord: (id) => openRecord(params, id),
   // The app's own route for a customer's invoices (View all): the list's address, kept to that customer's.
   onOpen: (request) => openByRoute(params, request),
@@ -86,8 +89,9 @@ const options: ViewerOptions = {
   onAction: (request) => {
     actions.push(request.action);
     requests.push(request);
-    // The shop's answers to the pages' steps: the stock checked for "Order by phone".
-    return answerAction(request, params.get('locale') ?? undefined);
+    // The shop's answers to the pages' steps: the stock checked for "Order by phone"; and a press with nothing to show
+    // says what the app was given.
+    return answerAction(request, params.get('locale') ?? undefined, { page, source: dataSource });
   },
   widgets: { 'char.name-badge': shoutWidget, 'monetary.tag': priceTag, ...gridWidgets, ...codeWidgets, ...monaco, ...demoMapWidgets },
   // Told of each part that fails, which then shows a small box in its place: "A part that fails" lists them.
@@ -146,6 +150,8 @@ await Promise.all([
 const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, options);
 opened();
+// The address in step with the record shown: Reload and Back show the one on screen (shared/address.ts).
+addressFollowsRecord(handle.form, page);
 
 /**
  * `&open=dialog`: the page's record opened again in a large popup over the page,
@@ -175,7 +181,7 @@ if (params.get('open') === 'dialog') {
       onAction: (request) => {
         actions.push(request.action);
         requests.push(request);
-        return wiHeadAction(request) ?? answerAction(request, locale);
+        return wiHeadAction(request) ?? answerAction(request, locale, { page, source: dataSource });
       },
     }).then((result) => void results.push(result));
   void open();
@@ -201,5 +207,6 @@ if (name === 'listing-photos') document.getElementById('app')?.before(photosBar(
 // The test drive has a bar over it: someone else books a time on another screen (shared/test-drive.ts).
 if (name === 'test-drive') document.getElementById('app')?.before(meanwhileBar(dataSource));
 
-// `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows.
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages) } });
+// `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `pages` themselves,
+// for the one that each draws the sample records' values as their kind is.
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), pages } });

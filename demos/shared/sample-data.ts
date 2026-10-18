@@ -1,4 +1,4 @@
-import { alikeRecords, createMemoryDataSource, scheduleSlots, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, scheduleSlots, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -56,8 +56,10 @@ import { sampleInvoices } from './invoices';
 import { listingHandover } from './listing-handover';
 import { contactPage, contactPermissions, contactsAsAsked, OWNERS, sampleContacts } from './contacts';
 import { showroom, testDriveDemo, testDriveRecords } from './test-drive';
-import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings } from './related-lists';
+import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
+import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
+import { keepWrites, keptOver } from './kept';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -126,6 +128,8 @@ export const pages: Record<string, Page> = {
   'map-week-order': mapWeekOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
+  // Tables of lines with none yet, a totals row under one: e2e/grid-empty.spec.ts opens it; no card in the gallery.
+  'empty-grids': emptyGridsPage,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
   reading: reading as Page,
   // A bug as a work item, in the look the demo's switch picks: quiet, values plain words until pointed at or clicked.
@@ -162,8 +166,8 @@ export const pages: Record<string, Page> = {
 export function pageFromQuery(params: URLSearchParams): Page {
   // The code page in the editor the demo's switch picked.
   const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : (pages[params.get('page') ?? 'signup'] ?? pages['signup']);
-  // A list opened for one record's records (`filter=`, a related list's View all by the app's route) shows them all, its own default filters off.
-  const page = params.get('filter') && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
+  // A list opened for one record's records (`filter=` or `search=`, a related list's View all by the app's route) shows them all, its own default filters off.
+  const page = (params.get('filter') || params.get('search')) && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const dark = !page.look?.scheme && matchMedia('(prefers-color-scheme: dark)').matches;
@@ -171,6 +175,8 @@ export function pageFromQuery(params: URLSearchParams): Page {
   const labels = params.get('labels') as NonNullable<Page['look']>['labels'] | null;
   // A look for each kind of part, as JSON: `parts={"inputs":{"corners":"round"}}`.
   const parts = params.get('parts');
+  // A printout's words and logo over and under it, as JSON: `print={"footer":"Confidential · {name}"}`.
+  const print = params.get('print');
   return {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
@@ -178,6 +184,7 @@ export function pageFromQuery(params: URLSearchParams): Page {
     ...(scheme || labels || parts
       ? { look: { ...page.look, ...(scheme ? { scheme } : {}), ...(labels ? { labels } : {}), ...(parts ? { parts: JSON.parse(parts) } : {}) } }
       : {}),
+    ...(print ? { print: { ...page.print, ...JSON.parse(print) } } : {}),
   };
 }
 
@@ -213,6 +220,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   next.set('record', String(id));
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
+  next.delete('search');
   location.search = next.toString();
 }
 
@@ -239,12 +247,16 @@ export function optionsFromQuery(params: URLSearchParams): {
   user?: FormUser;
   now?: () => Date;
   listFilter?: ResolvedFilter[];
+  listSearch?: Facet[];
 } {
   const saveStatus = params.get('saveStatus');
   const listFilter = filterFromQuery(params);
+  const listSearch = searchFromQuery(params);
   return {
-    // A list kept to one record's records by its address: a related list's View all, by the app's route.
+    // A list kept to one record's records by its address: a related list's View all, by the app's route — said as chips
+    // a person may take away ("Customer: Nile Traders"), or conditions kept whatever is searched.
     ...(listFilter ? { listFilter } : {}),
+    ...(listSearch ? { listSearch } : {}),
     // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
     // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
@@ -408,7 +420,7 @@ function quietHeader(page: Page): Page {
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
   const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-  const source = createMemoryDataSource(withReal({
+  const options = withReal({
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: appLists,
@@ -424,6 +436,7 @@ export function sampleDataSource() {
     records: {
       ...READING,
       ...WI_HEAD_RECORDS,
+      ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
       // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
@@ -542,7 +555,8 @@ export function sampleDataSource() {
           name: 'S00118',
           state: 'sent',
           partner_id: { id: 1, label: 'Nile Traders' },
-          date_order: '2026-10-02',
+          // When it was ordered, as Flectra keeps a sales order's: a date and time.
+          date_order: '2026-10-02T10:00',
           validity_date: '2026-11-01',
           payment_term: '30',
           line_ids: [
@@ -654,7 +668,11 @@ export function sampleDataSource() {
           Number(values['credit_limit']) > 100000 ? 'Above the 100,000 approval limit: a manager has to sign this off.' : null,
       },
     },
-  }));
+  });
+  // What this tab saved in the demos, in place of the samples (shared/kept.ts) — the customer typed twice's second Nile
+  // Traders, someone else's, to find and merge (shared/duplicates.ts), back unless it was merged away.
+  const extra: Record<string, Record<string, Values>> = params.get('page') === 'customer-card' ? { partner: duplicateCustomers() } : {};
+  const source = createMemoryDataSource({ ...options, records: keptOver(options?.records ?? {}, extra) });
   // `?store=http`: the listing's photos to a real endpoint, through uploadTo, for the browser tests.
   const upload = listingUpload(params);
   if (upload) source.upload = upload;
@@ -662,9 +680,23 @@ export function sampleDataSource() {
   if (params.get('store') === 'none') delete (source as { upload?: unknown }).upload;
   // The contacts' source as the address asks: ids cut short or none, no bulk writing, an export on the server.
   contactsAsAsked(params, source);
-  // The customer's card: a second Nile Traders, someone else's, to find and merge (shared/duplicates.ts).
-  if (params.get('page') === 'customer-card') Object.assign(source.records['partner'], duplicateCustomers());
+  // `?lines=40`: the posted invoice with that many lines, to see a long one on paper (e2e/print.spec.ts).
+  const lines = Number(params.get('lines'));
+  const posted = source.records['account.move']?.[4102];
+  if (lines > 0 && posted) posted['invoice_line_ids'] = longLines(posted['invoice_line_ids'], lines);
+  // Each save, import, merge and delete kept in this tab: the next page the demo goes to shows it.
+  keepWrites(source);
   return source;
+}
+
+/** A table's lines repeated to `count`, each its own: a long invoice's. */
+function longLines(given: unknown, count: number): unknown[] {
+  const lines = (given ?? []) as { key: string; id: number; values: Record<string, unknown> }[];
+  if (!lines.length) return lines;
+  return Array.from({ length: count }, (_, at) => {
+    const line = lines[at % lines.length];
+    return { key: `long${at}`, id: 49000 + at, values: { ...line.values, sequence: 10 * (at + 1), name: `${String(line.values['name'] ?? '')} (${at + 1})` } };
+  });
 }
 
 /** The samples' data source options with the real lanes' beside them: a model's records, rules and lists added to, never replaced. */

@@ -1,8 +1,9 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "contacts",
   "title": "Contacts",
   "data": { "kind": "record", "model": "crm.contact" },
+  "records": { "one": "contact", "other": "contacts", "a": "a contact" },
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true },
     "company": { "type": "char", "label": "Company" },
@@ -48,6 +49,7 @@
     "optionalColumns": { "company": "show", "country_id": "show", "owner_id": "show", "last_order": "show", "lifetime_value": "show", "newsletter": "show", "phone": "hide", "email": "hide" },
     "rowTones": [{ "tone": "muted", "when": "state == 'inactive'" }],
     "rowBold": "owner_id == user.id",
+    "rowBoldLabel": "Your own contacts",
     "card": { "title": "name", "subtitle": "company", "image": "photo", "status": "state", "fields": ["phone", "owner_id", "lifetime_value"] },
     "export": true,
     "import": true,

@@ -10,8 +10,11 @@ export { nameFieldOf };
 
 
 
-/** A form made of fields, for values edited in a dialog (a line, for one): laid out as asked (a line's own form), else every field in two columns. */
-function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone']): Page {
+/**
+ * A form made of fields, for values edited in a dialog (a line, for one): laid out as asked (a line's own form), else
+ * every field in two columns; its labels small inside sentences where the record's page asks (`lowerLabels`).
+ */
+function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone'], lowerLabels?: boolean): Page {
   const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
   return {
     fieldia: '0.1',
@@ -19,8 +22,9 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
     title,
     data: { kind: 'record', model: 'values' },
     fields: shown,
-    // A line's phone numbers read as the record's page reads its own.
+    // A line's phone numbers read as the record's page reads its own, its labels said as the record's are.
     ...(phone ? { phone } : {}),
+    ...(lowerLabels ? { lowerLabels } : {}),
     layout: {
       type: 'sections',
       id: 'values',
@@ -94,8 +98,10 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
   return {
     canOpen: (model) => pageFor(model) !== null,
     async openRecord(model, request) {
-      const related = await pageFor(model);
-      if (!related) return null;
+      const found = await pageFor(model);
+      if (!found) return null;
+      // A line opened in its model's page: its labels said as the record's are, unless that page says otherwise.
+      const related = request.lowerLabels !== undefined && found.lowerLabels === undefined ? { ...found, lowerLabels: request.lowerLabels } : found;
       const nameField = nameFieldOf(related);
       const result = await openFormDialog({
         ...shared,
@@ -117,7 +123,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,
-        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout, options.page.phone),
+        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout, options.page.phone, request.lowerLabels),
         ...(request.parent ? { parent: request.parent } : {}),
         dataSource: lookupsOf(options.dataSource),
         values: request.values,

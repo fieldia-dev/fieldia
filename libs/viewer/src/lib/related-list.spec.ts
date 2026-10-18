@@ -1,5 +1,6 @@
 import { createMemoryDataSource, type ActionRequest, type DataSource, type ListRequest, type ListResult, type OpenRequest, type OpenResult, type Page, type Values } from '@fieldia/core';
 import { until } from './test-list';
+import type { PageRequest } from './related';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 import { cardsPart, listPart, partsFor } from './viewer-parts';
 
@@ -28,7 +29,7 @@ const invoices = {
 };
 
 const customer = (related: Record<string, unknown> = {}): Page => ({
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'customer',
   title: 'Customer',
   data: { kind: 'record', model: 'partner' },
@@ -38,7 +39,7 @@ const customer = (related: Record<string, unknown> = {}): Page => ({
 
 /** The page the app gives for an invoice: what a row opens and New makes. */
 const invoicePage = {
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'invoice',
   title: 'Invoice',
   data: { kind: 'record', model: 'invoice' },
@@ -192,7 +193,13 @@ describe('a related list inside a record', () => {
     expect(all.getAttribute('aria-label')).toBe('View all Invoices');
     all.click();
     await until(() => asked.length === 1);
-    expect(asked[0]).toEqual({ page: 'invoices', as: 'page', filter: [{ field: 'partner_id', op: '=', value: 1 }] });
+    // The same conditions as the search its list opens with, chips a person sees: "Customer: Acme".
+    expect(asked[0]).toEqual({
+      page: 'invoices',
+      as: 'page',
+      filter: [{ field: 'partner_id', op: '=', value: 1 }],
+      search: [{ kind: 'field', field: 'partner_id', label: 'Customer', values: [{ op: '=', value: 1, label: 'Acme' }] }],
+    });
     // In the viewer's own dialog, a list has nothing to save: Close alone.
     const own = await mount({ page: customer({ viewAll: { page: 'all' } }), pages: { all: { ...invoicePage, id: 'all', layout: { type: 'list', id: 'all-list', columns: ['name'] } } as unknown as Page } });
     await until(() => rows(own.host).length === 2);
@@ -211,7 +218,7 @@ describe('a related list inside a record', () => {
 
   it('View all in this page’s place: the app’s list of them kept to this record’s, and Back to the record', async () => {
     const list = {
-      fieldia: '0.4',
+      fieldia: '0.5',
       id: 'invoices',
       title: 'All invoices',
       data: { kind: 'record', model: 'invoice' },
@@ -223,8 +230,35 @@ describe('a related list inside a record', () => {
     named(host, 'View all')?.click();
     await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 3);
     expect([...host.querySelectorAll('[data-node="all"] .fd-list-row td:nth-child(2)')].map((td) => td.textContent)).toEqual(['INV/1', 'INV/2', 'INV/4']);
+    // What it is kept to, said as a chip over it, which the person may take away: then every invoice.
+    const chips = () => [...host.querySelectorAll('[data-node="all"] .fd-facet')].map((chip) => chip.querySelector('.fd-facet-text')?.textContent);
+    expect(chips()).toEqual(['Customer: Acme']);
+    (host.querySelector('[data-node="all"] .fd-facet-remove') as HTMLButtonElement).click();
+    await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 4);
+    expect(chips()).toEqual([]);
     (host.querySelector('.fd-back') as HTMLButtonElement).click();
     await until(() => !host.querySelector('[data-node="all"]') && rows(host).length === 2);
+    // A list kept to a part of them (its own filter) says that part too, by its title, as a chip of its own.
+    const posted = await mount({ page: customer({ title: 'Posted invoices', filter: [{ field: 'state', op: '=', value: 'posted' }], viewAll: { page: 'invoices', as: 'page' } }), pages: { invoices: list } });
+    await until(() => rows(posted.host).length === 2);
+    named(posted.host, 'View all')?.click();
+    await until(() => posted.host.querySelectorAll('[data-node="all"] .fd-list-row').length === 2);
+    expect([...posted.host.querySelectorAll('[data-node="all"] .fd-facet-text')].map((chip) => chip.textContent)).toEqual(['Customer: Acme', 'Posted invoices']);
+  });
+
+  it('an open step with a filter and no search keeps it fixed and unsaid, as 0.25 did', async () => {
+    const list = {
+      fieldia: '0.5',
+      id: 'invoices',
+      title: 'All invoices',
+      data: { kind: 'record', model: 'invoice' },
+      fields: invoices.fields,
+      layout: { type: 'list', id: 'all', columns: ['name', 'partner_id'], sort: [{ field: 'name' }] },
+    } as unknown as Page;
+    const { host, handle } = await mount({ pages: { invoices: list } });
+    void handle.run([{ do: 'open', page: 'invoices', as: 'page', filter: [{ field: 'partner_id', op: '=', value: 2 }] }]);
+    await until(() => host.querySelectorAll('[data-node="all"] .fd-list-row').length === 1);
+    expect(host.querySelectorAll('[data-node="all"] .fd-facet')).toHaveLength(0);
   });
 
   it('asks nothing while hidden by its rule, and asks once it shows', async () => {
@@ -451,5 +485,57 @@ describe('a related list on a phone', () => {
     } finally {
       size.restore();
     }
+  });
+});
+
+describe('a related list whose records are named', () => {
+  const namedInvoice = { ...invoicePage, records: { one: 'invoice', other: 'invoices', a: 'an invoice' } } as Page;
+  const namedCustomer = (related: Record<string, unknown> = {}) => ({ ...customer({ viewAll: { page: 'all' }, ...related }), records: { one: 'customer', other: 'customers', a: 'a customer' } }) as Page;
+
+  it('says New, View all and None in the words its model’s page names them by; before the first save, this record’s', async () => {
+    const dataSource = createMemoryDataSource({ records: records() });
+    const { host, handle } = await mount({ page: namedCustomer(), recordId: null, dataSource, pages: { invoice: namedInvoice } });
+    expect(part(host).querySelector('.fd-related-note')?.textContent).toBe('Nothing here until this customer is saved.');
+    handle.form.setValue('name', 'Initech');
+    expect(await handle.save()).toBe(true);
+    await until(() => part(host).querySelector('.fd-list-empty:not([hidden])'));
+    expect(part(host).querySelector('.fd-list-empty')?.textContent).toBe('No invoices yet.');
+    // Their words name them: no title folded into a name of their own.
+    expect(named(host, 'New invoice')?.hasAttribute('aria-label')).toBe(false);
+    expect(named(host, 'View all invoices')?.hasAttribute('aria-label')).toBe(false);
+    named(host, 'New invoice')?.click();
+    await until(() => dialog());
+    expect(dialog()?.querySelector('.fd-form-dialog-title')?.textContent).toBe('New invoice');
+  });
+
+  it('counts them so on paper, and searched to none says none of them match', async () => {
+    const { host } = await mount({ page: namedCustomer(), pages: { invoice: namedInvoice } });
+    await until(() => rows(host).length === 2);
+    expect(part(host).querySelector('.fd-list-shown')?.textContent).toBe('2 of 3 invoices');
+    expect(part(host).querySelector('.fd-pager-text')?.textContent).toBe('1–2 of 3 invoices');
+  });
+
+  it('kept to a part of them by its own filter, says all and none of them by its title, as before; New still names one', async () => {
+    const dataSource = createMemoryDataSource({ records: { ...records(), partner: { ...records().partner, 3: { name: 'Initech' } } } });
+    const { host } = await mount({ page: namedCustomer({ title: 'Posted invoices', filter: [{ field: 'state', op: '=', value: 'posted' }] }), recordId: 3, dataSource, pages: { invoice: namedInvoice } });
+    await until(() => part(host).querySelector('.fd-list-empty:not([hidden])'));
+    expect(part(host).querySelector('.fd-list-empty')?.textContent).toBe('None yet.');
+    expect(named(host, 'View all')?.getAttribute('aria-label')).toBe('View all Posted invoices');
+    expect(named(host, 'New invoice')).toBeTruthy();
+  });
+
+  it('names them once an app that finds its pages later has found the model’s', async () => {
+    const pages = (request: PageRequest) => ('model' in request && request.model === 'invoice' ? Promise.resolve(namedInvoice) : null);
+    const { host } = await mount({ page: namedCustomer(), pages });
+    await until(() => named(host, 'New invoice'));
+    expect(named(host, 'View all invoices')).toBeTruthy();
+  });
+
+  it('reads as before where its model’s page names none', async () => {
+    const { host } = await mount({ page: namedCustomer(), pages: { invoice: invoicePage } });
+    await until(() => rows(host).length === 2);
+    expect(named(host, 'New')?.getAttribute('aria-label')).toBe('New in Invoices');
+    expect(named(host, 'View all')?.getAttribute('aria-label')).toBe('View all Invoices');
+    expect(part(host).querySelector('.fd-list-shown')?.textContent).toBe('2 of 3');
   });
 });

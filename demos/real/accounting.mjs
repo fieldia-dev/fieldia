@@ -13,7 +13,7 @@ export default [
       'Register Payment opens its dialog: pay part of it and choose to keep the rest open or mark it fully paid.',
       'Under the gear, Print › This record: the invoice on paper — the firm’s logo and address over it, every tab one after another, the lines whole, no buttons — or press Ctrl+P.',
       'Print › Invoice: the app’s own PDF of it, shown over the record, with Download.',
-      'Open another record: record=4102 is a USD invoice partly paid, 4103 a vendor bill (a possible duplicate), 4104 a journal entry, 4105 a paid credit note.',
+      'Open another record: [a USD invoice partly paid](?record=4102), [a vendor bill](?record=4103) (a possible duplicate), [a journal entry](?record=4104), [a paid credit note](?record=4105).',
     ],
   },
   {
@@ -21,6 +21,8 @@ export default [
     name: 'Register a payment',
     category: 'real',
     query: 'page=real-register-payment&record=4101&skin=underline',
+    // What the frame says once it is done here on its own (shell.mjs), where an app closes it over its invoice.
+    done: { saved: 'In your app this window closes, and the invoice shows the payment.', cancelled: 'In your app this window closes, and the invoice stays as it was.' },
     blurb:
       'The dialog an invoice opens to record a payment, here on its own: the bank or cash journal and the method, the amount in any currency, a postdated check’s number and date, and what to do with a payment that is short.',
     howTo: [

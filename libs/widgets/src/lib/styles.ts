@@ -280,9 +280,11 @@ const SKINS_CSS = /* css */ `
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
 .fd-textarea { resize: vertical; min-height: 64px; }
-/* One line that wraps (a record's title): as tall as its words, never a grip to resize, read from its start; a word
-   broken only when it is longer than the line, at a hyphen where the page's language has one. */
-.fd-line-wraps { display: block; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; hyphens: auto; line-height: 1.25; }
+/* One line that wraps (a record's title): as tall as its words, never a grip to resize, read from its start; its words
+   whole, a word broken only when it is longer than the line (a web address, a German compound), at the line's end or
+   at a soft hyphen the words carry. Never hyphenated by the browser: "auto" broke words that fit the next line whole,
+   as Firefox does ("re-leasing"), and no rule hyphenates only a word too long for any line. */
+.fd-line-wraps { display: block; resize: none; overflow: hidden; white-space: pre-wrap; overflow-wrap: break-word; hyphens: manual; line-height: 1.25; }
 /* On a phone, a record's name a size smaller, so a long word fits a line beside its photo. */
 @container (max-width: 520px) { .fd-form .fd-title .fd-field .fd-line-wraps { font-size: 20px; } }
 .fd-select { appearance: auto; }
@@ -511,6 +513,13 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
 /* A tab with a problem in it, seen or not: a dot in the error colour after its words. */
 .fd-tab[data-problem]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 6px; border-radius: 50%; background: var(--fd-error); vertical-align: 0.15em; }
+/* A tab's count in a pill after its words, on any page: a record's head greys it (--fd-head-pill). */
+.fd-tab-count {
+  display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
+  background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
+}
+.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
+.fd-tab-count[hidden] { display: none; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 
 /* ---- buttons ---------------------------------------------------------- */
@@ -869,7 +878,9 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // too — a state's words, a field's lock (styles-lock) — stays here, where it stood. The pickers' (a work tracker's
 // lists, styles-picker); a record's head after them, which draws its boxes (and a dot in its lead slot) its own way;
 // a work item's text, groups and links (styles-text) after those.
-// A form on paper (PRINT) closes them: what it hides or shows for paper insists, as the parts' sheets come after it.
+// A form on paper (PRINT) closes them: the printout's parts kept off the screen and a plain look for paper — the whole
+// look is the print part's, whose sheet goes right after this one (PART_RANK.print), where its rules stood here: what
+// it hides or shows for paper insists, as the other parts' sheets come after it.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
 const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
@@ -932,8 +943,14 @@ export function installStyles(document: Document): void {
  * which are the list's, above): its rules stood at the head of the page's own looks, just after the survey kinds'
  * looks and a line's grip, so its sheet goes after the survey kinds' looks, last of the parts' — before the grip's
  * rule, which names nothing of a card.
+ *
+ * The print part's (0.26, the viewer's `print`, loaded as a person shows they mean to print: Ctrl+P, a Print pressed,
+ * the gear opened): the whole look on paper, cut from the end of this sheet's first half, where it stood after every
+ * rule of the main sheet and before every part's sheet — whose own rules for paper (a table of lines', a list's, a
+ * statusbar's) come after it, as they did. So it is first of them all, rank 0, right after this sheet; on the screen it
+ * holds nothing but what lays a form out while a heading's room on paper is measured.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

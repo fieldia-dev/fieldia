@@ -24,7 +24,7 @@ const goesInto = (page: Page, header: string) => dialog(page).getByRole('combobo
 async function contacts(page: Page) {
   const opened = await open(page, 'plain', 'page=contacts&skin=underline');
   await expect(rows(page)).toHaveCount(10);
-  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,284');
+  await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
   return opened;
 }
 
@@ -38,6 +38,15 @@ async function choose(page: Page, name: string) {
 /** The file dropped on the dialog, as a person drags one from their folder. */
 async function drop(page: Page, name: string) {
   const bytes = [...readFileSync(join(SAMPLES, name))];
+  await page.locator('.fd-import-drop').evaluate((zone, [file, data]) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([new Uint8Array(data as number[])], file as string, { type: 'text/csv' }));
+    for (const type of ['dragenter', 'dragover', 'drop']) zone.dispatchEvent(new DragEvent(type, { dataTransfer: transfer, bubbles: true, cancelable: true }));
+  }, [name, bytes] as const);
+}
+
+/** A file of these bytes dropped on the dialog. */
+async function dropBytes(page: Page, name: string, bytes: number[]) {
   await page.locator('.fd-import-drop').evaluate((zone, [file, data]) => {
     const transfer = new DataTransfer();
     transfer.items.add(new File([new Uint8Array(data as number[])], file as string, { type: 'text/csv' }));
@@ -104,19 +113,26 @@ test.describe('a customer’s contacts brought in from a file', () => {
     expect(sheet).toContain('Why it was not imported');
     expect(sheet).toContain('Status: nothing is called “Prospect”');
     expect(sheet.match(/<row /g)).toHaveLength(8);
-    await dialog(page).getByRole('button', { name: 'Import 10 records' }).click();
+    // As the workbook had them (the owner's walk of 0.25): yes or no as a spreadsheet keeps it, never "true"; a day as a
+    // day; under the labels the import matched — "Name", never "Full name" — so it matches by itself when brought in again.
+    expect(sheet).toMatch(/<c r="H\d+" t="b"><v>[01]<\/v><\/c>/);
+    expect(sheet).not.toMatch(/<t>(true|false)<\/t>/);
+    expect(sheet).toMatch(/<c r="G\d+" s="\d+"><v>4\d{4}<\/v><\/c>/);
+    expect(sheet).toContain('<t>Name</t>');
+    expect(sheet).not.toContain('<t>Full name</t>');
+    await dialog(page).getByRole('button', { name: 'Import 10 contacts' }).click();
     await expect(dialog(page)).toBeHidden();
-    await expect(report(page).locator('.fd-list-report-words')).toHaveText('10 of 17 records imported. Not imported:');
+    await expect(report(page).locator('.fd-list-report-words')).toHaveText('10 of 17 contacts imported. Not imported:');
     await expect(report(page).locator('li')).toHaveCount(7);
-    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,294');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,294 contacts');
     await screen(page, 'lists-import-report', { viewport: true });
     // Undone, after a question: the records it made are gone again.
     await report(page).getByRole('button', { name: 'Undo the import' }).click();
     const question = page.getByRole('alertdialog');
-    await expect(question).toHaveText(/Delete the 10 records this import made\?/);
+    await expect(question).toHaveText(/Delete the 10 contacts this import made\?/);
     await question.getByRole('button', { name: 'OK' }).click();
-    await expect(page.locator('.fd-say')).toContainText('Import undone: 10 records deleted.');
-    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 / 1,284');
+    await expect(page.locator('.fd-say')).toContainText('Import undone: 10 contacts deleted.');
+    await expect(page.locator('.fd-pager-text')).toHaveText('1–10 of 1,284 contacts');
     await expect(report(page)).toBeHidden();
     expect(problems).toEqual([]);
   });
@@ -136,14 +152,60 @@ test.describe('a customer’s contacts brought in from a file', () => {
       'Row 10: Last order: months go from 1 to 12',
       'Row 11: Newsletter: “sometimes” is neither yes nor no',
     ]);
-    await dialog(page).getByRole('button', { name: 'Import 6 records' }).click();
-    await expect(report(page).locator('.fd-list-report-words')).toHaveText('6 of 10 records imported. Not imported:');
+    await dialog(page).getByRole('button', { name: 'Import 6 contacts' }).click();
+    await expect(report(page).locator('.fd-list-report-words')).toHaveText('6 of 10 contacts imported. Not imported:');
     await page.locator('.fd-search-input').fill('سلمى');
     await expect(page.locator('.fd-search-suggestions [role="option"]').first()).toBeVisible();
     await page.locator('.fd-search-input').press('Enter');
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('فنادق وردة الصحراء');
     await expectNoSidewaysScroll(page);
+    expect(problems).toEqual([]);
+  });
+
+  test('the rows to fix brought in again match by themselves: every column but why the row was refused', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await page.getByRole('button', { name: 'Import' }).click();
+    await choose(page, 'contacts-to-import.xlsx');
+    await goesInto(page, 'Full name').selectOption({ label: 'Name' });
+    await dialog(page).getByRole('button', { name: 'Check 17 rows' }).click();
+    const saving = page.waitForEvent('download');
+    await dialog(page).getByRole('button', { name: 'Download the rows to fix' }).click();
+    const fix = await (await saving).path();
+    await dialog(page).getByRole('button', { name: 'Close' }).first().click();
+    await expect(dialog(page)).toBeHidden();
+    await page.getByRole('button', { name: 'Import' }).click();
+    await dropBytes(page, 'contacts-to-import – not imported.xlsx', [...readFileSync(fix)]);
+    await expect(dialog(page).locator('.fd-import-file')).toHaveText('contacts-to-import – not imported.xlsx: 7 rows');
+    await expect(goesInto(page, 'Name')).toHaveValue('name');
+    await expect(dialog(page).locator('.fd-import-said')).toHaveText('Left out: Notes, Why it was not imported');
+    await screen(page, 'lists-import-fix-again', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('a CSV file of a header alone says there are no rows under it, and offers nothing to check', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await page.getByRole('button', { name: 'Import' }).click();
+    await dropBytes(page, 'header-only.csv', [...Buffer.from('Name;Email;Phone\r\n')]);
+    await expect(dialog(page).locator('.fd-import-file')).toHaveText('header-only.csv: no rows under the header');
+    await expect(dialog(page).getByRole('button', { name: /^Check/ })).toHaveCount(0);
+    await screen(page, 'lists-import-header-only', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+
+  test('characters chosen wrong (Arabic Windows-1256 for a UTF-8 file) are said, with the set that reads it', async ({ page }) => {
+    const { problems } = await contacts(page);
+    await page.getByRole('button', { name: 'Import' }).click();
+    await drop(page, 'contacts-to-import.csv');
+    await expect(dialog(page).getByRole('combobox', { name: 'Characters' })).toHaveValue('utf-8');
+    await expect(dialog(page).locator('.fd-import-misread')).toHaveCount(0);
+    await dialog(page).getByRole('combobox', { name: 'Characters' }).selectOption('windows-1256');
+    const said = dialog(page).locator('.fd-import-misread');
+    await expect(said).toHaveText(/^Its characters look wrong read as Arabic \(Windows-1256\): this file reads as Unicode \(UTF-8\)\.$/);
+    await screen(page, 'lists-import-misread', { viewport: true });
+    // Read in UTF-8 again: nothing to say.
+    await dialog(page).getByRole('combobox', { name: 'Characters' }).selectOption('utf-8');
+    await expect(said).toHaveCount(0);
     expect(problems).toEqual([]);
   });
 

@@ -17,6 +17,7 @@ const IMPORT_CSS = /* css */ `
 .fd-import-drop-words { margin: 0; font-size: 15px; font-weight: 600; }
 .fd-import-drop .fd-help { margin: 0; }
 .fd-import-problem { margin: 0; }
+.fd-import-misread { margin: 0; padding: 8px 12px; border: 1px solid var(--fd-warning); border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); font-size: 13.5px; }
 .fd-import-head { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 16px; }
 .fd-import-file { margin: 0; flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
 .fd-import-how { display: grid; gap: 4px; font-size: 12.5px; color: var(--fd-muted); }

@@ -92,6 +92,8 @@ export const rulesUi = {
   typeAName: 'Type a field’s name, or @',
   functions: 'Functions',
   shownOnlyTo: 'Shown only to',
+  onPaper: 'On paper',
+  onPaperHint: 'Printed with the record (Ctrl+P, Print). Untick it to show it on screen only, as an invoice leaves its journal items off paper.',
   shownWhile: 'Shown while',
   shownWhileWays: { always: 'Always', editing: 'Editing', reading: 'Reading' },
   shownWhileHint: 'A part for editing only — a button beside the name, a warning — or for reading only. A form always being edited shows its editing parts.',

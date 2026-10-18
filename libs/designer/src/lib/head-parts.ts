@@ -1,4 +1,4 @@
-import { compileModifier, type ButtonNode, type LayoutNode, type Page, type SheetNode } from '@fieldia/core';
+import { compileModifier, relatedInTab, type ButtonNode, type LayoutNode, type Page, type SheetNode } from '@fieldia/core';
 
 /**
  * What a record's head (`SheetHead`) holds, for the designer's walk through a
@@ -35,7 +35,7 @@ function pressedReads(button: ButtonNode): string[] {
   }
 }
 
-/** The fields a page's tabs count (a tab's `count`), wherever the tabs are. */
+/** The fields a page's tabs count (a tab's `count`, a field's), wherever the tabs are. */
 export function tabCountFields(page: Page): string[] {
   const found: string[] = [];
   const walk = (nodes: readonly LayoutNode[]) => {
@@ -43,7 +43,7 @@ export function tabCountFields(page: Page): string[] {
       if (node.type === 'section') walk(node.children);
       if (node.type === 'tabs') {
         for (const tab of node.children) {
-          if (tab.count) found.push(tab.count);
+          if (typeof tab.count === 'string' && tab.count) found.push(tab.count);
           walk(tab.children);
         }
       }
@@ -54,4 +54,26 @@ export function tabCountFields(page: Page): string[] {
   else if (root.type === 'wizard') for (const step of root.children) walk(step.children);
   else if (root.type !== 'list') walk(root.children);
   return found;
+}
+
+/**
+ * A tab's count of a related list it no longer holds — the list taken away, or moved out of the tab — goes with it:
+ * the tab is left without a count, as it was before one was set.
+ */
+export function forgetGoneCounts(page: Page): void {
+  const walk = (nodes: readonly LayoutNode[]) => {
+    for (const node of nodes) {
+      if (node.type === 'section') walk(node.children);
+      if (node.type === 'tabs') {
+        for (const tab of node.children) {
+          if (tab.count && typeof tab.count !== 'string' && !relatedInTab(tab, tab.count.related)) delete tab.count;
+          walk(tab.children);
+        }
+      }
+    }
+  };
+  const root = page.layout;
+  if (root.type === 'tabs') walk([root]);
+  else if (root.type === 'wizard') for (const step of root.children) walk(step.children);
+  else if (root.type !== 'list') walk(root.children);
 }

@@ -43,9 +43,34 @@ export const COLUMN_STYLES = `
 /* Scrolled sideways, a rule at the first column's end parts it from the columns going under it. */
 .fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-scrolled] [data-pin] { box-shadow: inset -1px 0 0 var(--fd-border-strong); }
 .fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-scrolled] [data-pin]:dir(rtl) { box-shadow: inset 1px 0 0 var(--fd-border-strong); }
+/* The Columns menu's cell held at the header's end, as the first column is at its start: in sight however wide the
+   table, a rule at its start while columns lie past it. The rows' end cells keep to their own places. */
+.fd-list[data-shaped]:not([data-as]) .fd-list-table thead th.fd-list-tail { position: sticky; inset-inline-end: 0; z-index: 4; }
+.fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-more] thead th.fd-list-tail { box-shadow: inset 1px 0 0 var(--fd-border-strong); }
+.fd-list[data-shaped]:not([data-as]) .fd-list-scroll[data-more] thead th.fd-list-tail:dir(rtl) { box-shadow: inset -1px 0 0 var(--fd-border-strong); }
 /* Under the rows' own backgrounds (a row pointed at, chosen, open), so they stay whole. */
 :where(.fd-list[data-shaped]) :where(.fd-list-row) > :is(td[data-pin], .fd-list-check, .fd-list-tree) { background: var(--fd-surface); }
 .fd-list[data-shaped]:not([data-as]) .fd-list-totals { position: sticky; bottom: 0; z-index: 2; }
+/* A header dragged sideways moves its column: its words are not chosen as it goes, nor a finger's long press the browser's. */
+.fd-list[data-shaped]:not([data-as]) .fd-list-table thead th[data-col] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.fd-list[data-moving], .fd-list[data-moving] * { cursor: grabbing !important; }
+/* The columns slide aside to make its place; its own cells stand in that place, faint, until it is let go. */
+.fd-list-table[data-sliding] :is(th, td) { transition: transform 0.15s ease; }
+.fd-list-table [data-lifted] { background: var(--fd-accent-soft) !important; opacity: 0.65; }
+.fd-list-ghost { position: absolute; z-index: 41; box-sizing: border-box; display: flex; align-items: center; padding-inline: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; background: var(--fd-surface); color: var(--fd-text); font-size: 13px; font-weight: 600; border: 1px solid var(--fd-accent); border-radius: 4px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18); }
+.fd-list-ghost > bdi { overflow: hidden; text-overflow: ellipsis; }
+.fd-list-drop { position: absolute; z-index: 40; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--fd-accent); pointer-events: none; }
+.fd-list-drop[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .fd-list-table[data-sliding] :is(th, td) { transition: none; } }
+/* On paper: the table as it stands, its columns in the person's order — nothing held in view (the first column held
+   past the boxes left out before it would stand over the next), no menu, no drag's ghost or line, a lifted column's
+   cells as the others'. */
+@media print {
+  .fd-form .fd-list[data-shaped] .fd-list-scroll { max-height: none !important; }
+  .fd-form .fd-list[data-shaped] :is(.fd-list-table th, .fd-list-table td, .fd-list-totals) { position: static !important; box-shadow: none !important; transform: none !important; }
+  .fd-form .fd-list[data-shaped] .fd-list-table [data-lifted] { background: none !important; opacity: 1; }
+  .fd-form :is(.fd-list-columns-menu, .fd-list-ghost, .fd-list-drop, .fd-list-grip) { display: none !important; }
+}
 
 `;
 

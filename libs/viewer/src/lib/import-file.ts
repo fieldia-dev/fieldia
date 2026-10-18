@@ -44,6 +44,11 @@ export interface FileSheet {
   /** A CSV file's: the encoding it was read in, and its separator. */
   encoding?: string;
   separator?: string;
+  /**
+   * A CSV file read in an encoding the person chose that its own bytes say it is not in (its mark at the start, or
+   * text that reads as UTF-8 whole): the one that reads it. "ï»؟Name" is UTF-8 read as Windows-1256.
+   */
+  misread?: string;
   /** A workbook's: its sheets' names, and the one read. */
   sheets?: string[];
   sheet?: number;
@@ -92,11 +97,30 @@ export async function readFile(file: PickedFile, how: ReadHow = {}, most = Infin
   if (bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) throw new FileProblem('oldExcel');
   if (/\.(xlsx|xlsm|xls|ods|numbers)$/i.test(file.name)) throw new FileProblem('notSheet');
   const { text, encoding } = decodeText(bytes, how.encoding);
+  const own = how.encoding ? ownEncoding(bytes) : null;
+  const misread = own && own !== encoding ? { misread: own } : {};
   // Text with characters no text has (a picture, a PDF): no table.
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u0008\u000e-\u001a]/.test(text.slice(0, 4096))) throw new FileProblem('notSheet');
   const separator = how.separator ?? guessSeparator(text);
-  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells })), most, unnamed, { encoding, separator });
+  return tableOf('csv', csvRows(text.replace(/^sep=.\r?\n/i, ''), separator).map((cells, i) => ({ number: i + 1 + (/^sep=./i.test(text) ? 1 : 0), cells })), most, unnamed, { encoding, separator, ...misread });
+}
+
+/**
+ * The encoding a file's bytes say it is in, where they say: its mark at the start (UTF-8, UTF-16), else UTF-8 where it
+ * reads as UTF-8 whole and holds more than plain ASCII (which every code page reads alike); else nothing to say.
+ */
+export function ownEncoding(bytes: Uint8Array): string | null {
+  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return 'utf-8';
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return 'utf-16le';
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return 'utf-16be';
+  if (!bytes.some((byte) => byte > 0x7f)) return null;
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return 'utf-8';
+  } catch {
+    return null;
+  }
 }
 
 // ---- CSV ------------------------------------------------------------------------------------------------------

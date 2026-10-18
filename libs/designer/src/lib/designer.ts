@@ -51,6 +51,7 @@ import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
+import { printablePart } from './print-setting';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, fieldReads, keptFields, listCardFields, mapNodeFields, nextName, shownFields, type Container } from './page-tree';
 import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
@@ -61,6 +62,7 @@ import { headCommands, type HeadCommands } from './head-commands';
 import { keepWhatRulesRead } from './rules-reads';
 import { stepsCommands, type StepsCommands } from './steps-commands';
 import { forgetGoneTargets } from './steps-places';
+import { forgetGoneCounts } from './head-parts';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
@@ -350,6 +352,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   /** The roles a part shows to (Flectra's groups=), `!` before one hiding it from people holding it; null shows it to everyone. */
   setRoles(id: string, roles: string[] | null): boolean;
+  /** Whether a field, a group, a tab or a related list prints with its record; false leaves it off paper (`"print": false`). */
+  setPrinted(id: string, printed: boolean): boolean;
   /** A part shown only while the record is edited, only while it is read, or always: Flectra's oe_edit_only and oe_read_only. */
   setShownWhile(id: string, mode: ShownWhile): boolean;
   /**
@@ -375,6 +379,14 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * the record is saved (`save`).
    */
   setDuplicates(patch: { fields?: string[] | null; on?: 'type' | 'save' | null }): boolean;
+  /**
+   * What the page's records are called (`records`), so Fieldia's sentences name them: the words for one and for more
+   * — both, or neither (`null`, or both empty, takes the setting away) — and for one with its article (`a`, empty takes
+   * it away). Each kept as typed, its ends trimmed. Refused with only one of the two words.
+   */
+  setRecords(records: { one: string; other: string; a?: string } | null): boolean;
+  /** A field's label written small inside Fieldia's sentences (`lowerLabels`), the page's own setting; false takes it away. */
+  setLowerLabels(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -759,6 +771,8 @@ export function createDesigner(options: {
     forgetGoneTargets(draft);
     // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
     forgetGoneDuplicates(draft);
+    // A related list taken out of a tab takes the tab's count of it with it.
+    forgetGoneCounts(draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
       // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.
@@ -1323,6 +1337,15 @@ export function createDesigner(options: {
       });
     },
 
+    setPrinted(id, printed) {
+      return apply((draft) => {
+        const target = printablePart(draft, id);
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
+        if (printed) delete target.print;
+        else target.print = false;
+      });
+    },
+
     setRule(id, which, condition) {
       return apply((draft) => {
         const found = findNode(draft, id);
@@ -1424,6 +1447,25 @@ export function createDesigner(options: {
         },
         `print:${Object.keys(patch).join(',')}`
       );
+    },
+
+    setRecords(records) {
+      return apply((draft) => {
+        const one = records?.one.trim() ?? '';
+        const other = records?.other.trim() ?? '';
+        // No words: the records unnamed, the labels small alone where asked.
+        if (!one && !other) return void delete draft.records;
+        if (!one || !other) throw new Refusal((w) => w.refusals.recordsBoth);
+        const a = records?.a?.trim();
+        draft.records = { one, other, ...(a ? { a } : {}) };
+      }, 'records');
+    },
+
+    setLowerLabels(on) {
+      return apply((draft) => {
+        if (on) draft.lowerLabels = true;
+        else delete draft.lowerLabels;
+      }, 'lowerLabels');
     },
 
     setDuplicates(patch) {
@@ -1848,6 +1890,8 @@ export interface RelatedPatch extends RowRulesPatch {
   columns?: { name: string; field: LinkedField }[];
   limit?: number | null;
   create?: boolean;
+  /** Where a row's record and New's open: a dialog (the default, not written), or the app's own way. */
+  open?: NonNullable<RelatedNode['open']>;
   viewAll?: NonNullable<RelatedNode['viewAll']> | null;
   /** Its records as cards on a phone, as a list's: what a card shows ({} for the columns'); null for none. */
   card?: ListCard | null;
@@ -1898,6 +1942,8 @@ function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch): voi
   else if (patch.limit !== undefined) node.limit = patch.limit;
   if (patch.create === true) delete node.create;
   else if (patch.create === false) node.create = false;
+  if (patch.open === 'app') node.open = 'app';
+  else if (patch.open === 'dialog') delete node.open;
   if (patch.viewAll === null) delete node.viewAll;
   else if (patch.viewAll !== undefined) node.viewAll = { page: patch.viewAll.page, ...(patch.viewAll.as && patch.viewAll.as !== 'dialog' ? { as: patch.viewAll.as } : {}) };
   if (patch.card === null) delete node.card;

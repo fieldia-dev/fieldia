@@ -15,6 +15,201 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.26.0 — 2026-10-18
+
+**A page names its records, a column moved by its header, a record's footer
+under every sheet, and the business owner's walk of 0.25 mended** — and the
+look on paper in a part of its own, loaded when a person means to print. The
+page format is 0.5; a page of 0.1, 0.2, 0.3 or 0.4 is read as it is.
+
+**A page names its records.** `records: { one, other, a? }` says what a page's
+records are called — `{ "one": "invoice", "other": "invoices", "a": "an invoice"
+}` (the article written by the page: it is never guessed) — and Fieldia's
+sentences use it: the pager ("1–10 of 1,284 contacts"), nothing found, Select
+all, Export, Edit, Print's count, Import's report and Undo, the questions before
+Archive, Delete and letting changes go, why a run stopped, a record's crumb and
+pager ("Next customer"), the gear's This invoice, someone else's save, a related
+list's "New invoice", "View all invoices" and "No invoices yet" (in its model
+page's words), possible duplicates ("A customer with this phone already exists",
+"It's a new customer"), Merge, a calendar's New and a slot's count, a list's
+map, the chatter and its history. Without it, every sentence reads as in 0.25.
+German and French say the sentences they can round a page's words (none whose
+words must agree with the noun), Arabic its pager's; elsewhere a language says
+its own plain sentence. `lowerLabels: true` (page level) writes a field's label
+small wherever it stands inside a sentence ("Choose at least 2 for interests",
+"A customer with this phone…") but never at a sentence's start, a name ("IBAN",
+"WhatsApp"), or in German or a right-to-left language; a line's own dialog and a
+list's Edit dialog follow the page they are part of. `recordSentence` and
+`labelAt` are the one rule, exported. In the designer: a screen's panel says
+what its records are called and whether labels go small. The demos' customers,
+invoices, contacts, properties and homes name theirs.
+
+**A column moved by dragging its header.** In a list with `optionalColumns`, a
+header pressed and carried sideways moves its column: a ghost of the header
+under the pointer, the other columns sliding aside, a line where it goes, the
+table scrolled at its edges, kept in the person's `preferences` as the Columns
+menu's order is; Escape puts it back, a press that moves less than 5px still
+sorts, a header's edge still sizes, a finger resting 500 ms lifts it (a swipe
+scrolls), mirrored right to left, and its new place said ("Phone moved to place
+2 of 8") — the menu's moves too. The list's name column, the page's first,
+stays first and held in view; the others move after it. A table of lines drawn
+as a grid moves its columns alike: Escape puts back and keeps nothing, a drag
+out of the grid never hides a column, a finger's long press lifts, its move
+said. Escape out of the Columns menu leaves the table where it was scrolled,
+and the Columns button is held in sight at the header's end. The contacts demo
+shows it.
+
+**A record on paper, sheet after sheet.** A page's `print.footer` stands under
+every sheet of a record in Chromium and Firefox (Safari's once, after it); a
+tab's name, a group's title, a table's header and a step's title go to the next
+sheet with the start of what follows them; groups side by side as the page sets
+them at the sheet's width, a row of them never over the next; a group that fits
+stays whole, and one that does not fit the room left starts the next sheet; a
+long table breaks between its lines with its header again. Over it, the
+record's own name — or, before it has one, what the page calls its records and
+its stage ("Invoice · Draft"), never the model's title. A header or footer line
+whose `{field}` is empty is left out whole; a required field's star never
+prints; numbers, amounts, days and phone numbers never wrap inside a cell. A
+field, group, tab or related list may say `"print": false` (the designer's On
+paper). A list printed follows the person's columns in their order, with no
+Columns cell; a grid's table of lines on paper follows the order its columns
+are seen in, and one in a tab never opened prints as a table too. A work item's
+title prints as its words, wrapped. A tab's count is the screen's alone.
+
+**On paper when a person means it.** The whole look on paper comes in a part of
+its own, `fieldia.print.js` (about 5 KB gzipped), loaded when a person means to
+print: Ctrl+P (⌘P) on a page with a form is Fieldia's — the first time it waits
+for the part, then prints at once — every Print waits for it, and it is fetched
+ahead as the gear menu with Print opens, as a pointer rests on a Print button or
+the keyboard reaches it, and when the browser is idle on a page meant for paper
+(its own `print` words, or a list with `"print": true`). A page no one prints
+never loads it. `printPart.load()` (or `loadParts()`) at an app's start gives
+the whole look from the first print of the browser's own menu.
+
+**Smaller things a page may say:**
+
+- **A tab counts a related list in it** (`"count": { "related": "quotations"
+  }`): asked of the source as the record is shown — whether the tab is open or
+  not, never another record's — its list's own count after New, a delete or a
+  row's button, hidden while unknown or before the first save. The tab's count
+  pill is drawn on every page (a count outside a work item's head showed
+  "Links0").
+- **A related list's rows and New the app's own way** (`"open": "app"`): through
+  the app's `onOpen` (or its host's `open`) with the page it gives for the
+  model, New filling this record in through the request's `values`; else a
+  dialog, as before.
+- **View all says what its list is kept to**, as chips a person may take away
+  ("Customer: Nile Traders", the related list's own filter by its title):
+  `OpenRequest.search`, `ViewerOptions.listSearch`.
+- **A key over a list's rows** says what their tones and bold mean: a row tone's
+  `label` and a list's `rowBoldLabel`, drawn as swatches over the rows and read
+  out as "Key to the rows"; without them nothing shows. The contacts demo says
+  "Your own contacts".
+
+**The business owner's walk of 0.25, mended:**
+
+- **Every dialog and side panel holding a record asks before Escape or × lets
+  typing go** — a related list's New and row, a calendar's New, an `open` step's
+  dialog or panel — and so does Back on a page an `open` step shows in place;
+  Cancel has the focus, Enter keeps.
+- **Rows pasted from a spreadsheet each go on their own line**, in a plain table
+  of lines and a grid alike: a link's name read through the source's search as
+  typing reads it, a row whose name matches nothing or several refused whole
+  with why (nothing called so, or more than one), never half laid on another
+  line; a block
+  pasted into a cell open for typing spreads as it does from a chosen cell.
+- **"It's someone new" lets that record be** for this record whatever field
+  matches it next.
+- **A calendar's New takes the next free time from now** on its clock, rounded
+  to its slot; a slot a person presses is still theirs, past or not.
+- **A card never breaks an amount, a day or a phone number** inside, and its
+  call links wrap together, in every theme.
+- **Import says when a file's characters look wrong** and which character set
+  reads it; a CSV with only its header says "no rows under the header" and
+  offers no Check; the rows to fix are written as the file had them — yes and
+  no, real dates — under the matched fields' labels, so the fixed file imports
+  by itself.
+- **A work item's head title wraps** whole where it is too long for its line —
+  one line all the same, Enter saves it — and every title wraps whole words
+  (`hyphens: manual`).
+- **An empty grid's "No lines yet"** sits in its body, clear of its totals row.
+- The memory source numbers new lines after every line it was given; the
+  designer's Try it shows no Problems tab while it has nothing to say.
+- fieldia.dev's demos: saved work stays while the tab is open (with Start over),
+  a press the app shows nothing for says what the app was given, steps link
+  their files and settings (no address bar needed), below 1,744px only the menu
+  opens by itself and About is a "?" in the header, the address follows the
+  record shown, more lists are cards on a phone (none scrolls sideways at 390px
+  unless it says why), dialog demos say what happens next in plain words; the
+  demos' notes and terms are formatted text and an order's date has its time.
+- `release-notes --history` finds `chore: release x.y.z` commits too.
+
+**And:** the page format is **0.5** (`FORMAT_VERSION`): it only added — a page's
+`records` and `lowerLabels`, a tab's related count, a related list's `open`,
+`print: false`, a tone's `label`, `rowBoldLabel` — so a 0.1 to 0.4 page is read
+as it is, and `upgradePage` writes 0.5 in it.
+
+**Upgrading** — what an app that uses none of the new things sees change:
+
+- Ctrl+P (⌘P) on a page with a form is Fieldia's, unless the app's own keydown
+  calls `preventDefault()` first. The browser's own menu, before the print part
+  has come, prints a plain look (no buttons, bars, record bar, side panel or
+  hints, light colours) and loads the part: every print after is whole. The
+  whole-look rules moved out of `FIELDIA_CSS` into the part's sheet
+  (`fieldia-print-styles`, `PART_RANK.print = 0`, right after the main sheet);
+  the printout head's title and day are filled as printing begins. An app that
+  serves `fieldia.js` itself serves `fieldia.print.js` beside it (the
+  package's `bundle` folder has it).
+- On paper: the footer is `.fd-print-foot` inside `.fd-print-end`, the last
+  child of `.fd-content` (`PrintLook.foot` is that wrapper); every grid carries
+  `data-columns`; while printing, boxes carry inline `--fd-print-keep` and
+  `--fd-print-whole`, and the form `data-fd-measure` for a moment at
+  `beforeprint`; groups sit side by side by a media query on the sheet's width;
+  a list leaves out the column after its fields (row buttons, the Columns
+  cell); @fieldia/grid shows its paper table while measured, and a grid drawn
+  for paper carries `data-fd-paper` (`fd-paper`).
+- Every dialog or side panel holding a record with a person's edits asks before
+  Escape or × closes it.
+- In a list with `optionalColumns`, a header pressed and moved 5px or more drags
+  its column instead of sorting, and its words are not selectable; the name
+  column stays first, and an order kept with it elsewhere is read with it put
+  back first.
+  @fieldia/grid sets `suppressDragLeaveHidesColumns`, its headers `touch-action:
+  manipulation`, and its `headerTooltip` is a callback.
+- View all opens its list with its conditions as chips a person may take away
+  (0.25 kept them fixed and unseen); an `open` step with a `filter` and no
+  `search` stays fixed, as before.
+- A work item's head title is a one-line `textarea`
+  (`[data-node="#title"] textarea`), where it was an `input`.
+- `TabNode.count` is `string | TabCount`; `form.searchLine` takes `null`;
+  `createMemoryDataSource` numbers new lines after the highest line id it was
+  given; the workbook writer takes yes or no cells (`{ b }`).
+- New exports: `recordSentence`, `labelAt`, `PageRecords`, `PageRecordsSchema`,
+  `TabCount`, `relatedInTab` (core); `keepsWhole` (widgets); `printPart`,
+  `PrintPart` (viewer). The list part gives `relatedCount`;
+  `relatedListPage(page, node, records?)`; `RecordBarContext.locale?`,
+  `RelatedContext.recordsOf?`, `ColumnChoices.movable`,
+  `ColumnsContext.widgetLabels?`; `WidgetDialogs.openRecord` and `editValues`
+  take `lowerLabels?`; the designer's `setRecords` and `setLowerLabels`.
+- An app that gives the viewer a whole `labels` object adds `importNoRowsUnder`,
+  `importMisread` and `rowsKey`; one that gives the widgets a whole `labels`
+  object adds `pasteRowRefused`, `pasteNoMatch`, `pasteSeveralCalled` and
+  `pasteNotLookedUp`. The `…Noun` sentences (ViewerLabels, Messages,
+  CalendarLabels, ChatterLabels, ListMapLabels) are optional. `addLanguage`
+  fills any left out from English.
+- The quiet look's hint keeps "WhatsApp number" whole (0.25 wrote "whatsApp").
+- A page the designer saves says `"fieldia": "0.5"`: Fieldia 0.25 refuses it as
+  newer than it reads. An app that keeps pages for older Fieldias keeps them in
+  0.4 (nothing 0.5 adds is in them).
+
+**Size:** `fieldia.js` 503.4 KB, 162.9 gzipped (0.25: 501.0, 161.1) — the look
+on paper moved out to `fieldia.print.js` (16.0 KB, 5.2 gzipped), loaded only
+when a person means to print. Of the parts, the columns' grew with dragging
+(6.9 KB gzipped, from 4.1), the list's with named records, tab counts, View
+all's chips and the key over its rows (35.2, from 33.5), the lines' with rows
+pasted each on their line (14.0, from 12.9), Import's (14.8, from 14.3). A
+language's add-on is 10.4 to 11.8 KB gzipped (0.25: 9.9 to 11.7).
+
 ## 0.25.0 — 2026-10-17
 
 **Records listed inside a record, lists people read on a phone and shape

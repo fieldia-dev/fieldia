@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "property",
   "title": "A property and its viewings",
   "description": "A home for sale or rent with the viewings booked for it, listed inside the record.",
@@ -10,6 +10,7 @@
   "phone": {
     "country": "EG"
   },
+  "records": { "one": "property", "other": "properties", "a": "a property" },
   "fields": {
     "name": {
       "type": "char",
@@ -261,6 +262,16 @@
           "feedback": {
             "width": 32
           }
+        },
+        "card": {
+          "title": "client",
+          "status": "state",
+          "fields": [
+            "starts_at",
+            "phone",
+            "agent_id",
+            "feedback"
+          ]
         },
         "sort": [
           {

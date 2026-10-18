@@ -1,9 +1,10 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "homes-gallery",
   "title": "Homes for sale",
   "description": "Homes for sale and to rent as a gallery: each a card with its photo large, its price leading, where it is and how big, its offer as a pill and a button to book a viewing — a list on a switcher's press, cards in one column on a phone.",
   "data": { "kind": "record", "model": "home" },
+  "records": { "one": "property", "other": "properties", "a": "a property" },
   "fields": {
     "name": { "type": "char", "label": "Home" },
     "kind": {
@@ -88,6 +89,9 @@
   "translations": {
     "ar": {
       "Homes for sale": "منازل للبيع",
+      "property": "عقار",
+      "properties": "عقارات",
+      "a property": "عقار",
       "Home": "المنزل",
       "Type": "النوع",
       "Flat": "شقة",

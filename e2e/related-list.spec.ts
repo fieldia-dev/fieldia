@@ -1,6 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, open, screen } from './support';
+import { pressPrint } from './print-support';
 
 /**
  * A related list inside a record, as a person uses it: a customer with its invoices and quotations, a property with
@@ -38,7 +39,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(count(invoices)).toHaveText(String(mine.length));
     await expect(invoices).toHaveAccessibleName(`Invoices, ${mine.length}`);
     await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
-    await expect(invoices.locator('.fd-pager-text')).toHaveText(`1–5 / ${mine.length}`);
+    await expect(invoices.locator('.fd-pager-text')).toHaveText(`1–5 of ${mine.length} invoices`);
     // Every one of this customer's, not only the five shown, in the totals row under them.
     await expect(invoices.locator('.fd-list-totals tr[data-total="all"] td[data-field="amount"]')).toHaveText(money(mine.reduce((sum, invoice) => sum + invoice.amount, 0)));
     // Past a page, a search box — a box alone, no menu of filters.
@@ -76,7 +77,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(count(invoices)).toHaveText(String(before));
     await button(invoices, 'New').click();
     await expect(dialog(page)).toBeVisible();
-    await expect(dialog(page).locator('.fd-form-dialog-title')).toHaveText('New in Invoices');
+    await expect(dialog(page).locator('.fd-form-dialog-title')).toHaveText('New invoice');
     // The customer filled in, by its name.
     await expect(dialog(page).locator('[data-node="f-partner"] input')).toHaveValue('Nile Traders');
     await dialog(page).locator('[data-node="#title"] textarea').fill('INV/2026/9999');
@@ -111,19 +112,57 @@ test.describe('a customer’s invoices, inside the customer', () => {
   test('View all goes to the invoices list by the app’s own route, kept to this customer’s, all of them', async ({ page }) => {
     const { problems } = await open(page, 'plain', CUSTOMER);
     const mine = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1);
-    await expect(button(part(page, 'invoices'), 'View all')).toHaveAccessibleName('View all Invoices');
+    await expect(button(part(page, 'invoices'), 'View all')).toHaveAccessibleName('View all invoices');
     await button(part(page, 'invoices'), 'View all').click();
-    await expect(page).toHaveURL(/page=invoices&filter=/);
+    await expect(page).toHaveURL(/page=invoices&search=/);
     await expect(page.locator('.fd-list-row').first()).toBeVisible();
-    // No "This year": the list's own default filter is off for one customer's.
-    await expect(page.locator('.fd-facet')).toHaveCount(0);
-    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, mine.length)} / ${mine.length}`);
+    // No "This year": the list's own default filter is off for one customer's; what it is kept to, said as a chip.
+    await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['Customer: Nile Traders']);
+    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, mine.length)} of ${mine.length} invoices`);
     await expect(page.locator('.fd-list-row td[data-field="partner_id"], .fd-list-row td:nth-child(3)').first()).toContainText('Nile Traders');
     // Its rows open an invoice.
     await page.locator('.fd-list-row').first().click();
     await expect(page).toHaveURL(/[?&]page=invoice&(.+&)?record=\d+$/);
     expect(page.url()).not.toContain('filter=');
     await expect(page.locator('[data-node="f-partner"] input')).toHaveValue('Nile Traders');
+    expect(problems).toEqual([]);
+  });
+
+  test('a new invoice stays through View all and Back; View all’s chip says whose they are and comes off; Start over puts the samples back', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CUSTOMER);
+    const invoices = part(page, 'invoices');
+    const everyone = (await records<Invoice>(page, 'invoice')).length;
+    const before = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 1).length;
+    await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
+    await button(invoices, 'New').click();
+    await dialog(page).locator('[data-node="#title"] textarea').fill('INV/2026/9998');
+    await dialog(page).locator('[data-node="f-amount"] input').fill('4200');
+    await dialog(page).getByRole('button', { name: 'Save & Close' }).click();
+    await expect(dialog(page)).toBeHidden();
+    await expect(count(invoices)).toHaveText(String(before + 1));
+    // Kept while the tab is open, as an app's server keeps it: the header says so, with Start over.
+    await expect(page.locator('#demo-head .dh-kept')).toHaveText('What you saved stays while this tab is open. Start over');
+    // View all, by the app's own route to another page: the new invoice is there, and the list says whose they are.
+    await button(invoices, 'View all').click();
+    await expect(page).toHaveURL(/page=invoices&search=/);
+    await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['Customer: Nile Traders']);
+    await expect(page.locator('.fd-pager-text')).toHaveText(`1–10 of ${before + 1} invoices`);
+    await expect(page.locator('.fd-list-row', { hasText: 'INV/2026/9998' })).toBeVisible();
+    await screen(page, 'related-view-all-kept', { viewport: true });
+    // The chip taken away: every customer's invoices, the new one among them.
+    await page.locator('.fd-facet-remove').click();
+    await expect(page.locator('.fd-facet')).toHaveCount(0);
+    await expect(page.locator('.fd-pager-text')).toContainText(`of ${everyone + 1} invoices`);
+    // Back: the customer with the invoice made, not the samples again.
+    await page.goBack();
+    await expect(count(part(page, 'invoices'))).toHaveText(String(before + 1));
+    await page.reload();
+    await expect(count(part(page, 'invoices'))).toHaveText(String(before + 1));
+    // Start over: the samples back, on the demo's own first page.
+    await page.locator('#demo-head').getByRole('button', { name: 'Start over' }).click();
+    await expect(page).toHaveURL(/[?&]page=customer-account&record=1&skin=underline&now=2026-10-14T09%3A40$/);
+    await expect(count(part(page, 'invoices'))).toHaveText(String(before));
+    await expect(page.locator('#demo-head .dh-kept')).toBeHidden();
     expect(problems).toEqual([]);
   });
 
@@ -136,7 +175,7 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(quotations.locator('.fd-pager-text')).toHaveText(mine.length > 5 ? `1–5 / ${mine.length}` : /.*/);
     await screen(page, 'related-quotations');
     // The pager over the record: Amira Clinics, its own invoices and quotations, never Nile Traders'.
-    await page.getByRole('button', { name: 'Next record' }).click();
+    await page.getByRole('button', { name: 'Next customer' }).click();
     await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Amira Clinics');
     const theirs = (await records<Invoice>(page, 'invoice')).filter((invoice) => invoice.partner_id.id === 20).sort(latestFirst);
     await expect(count(part(page, 'invoices'))).toHaveText(String(theirs.length));
@@ -182,11 +221,12 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(rows(invoices)).toHaveCount(5);
     const shown = invoices.locator('.fd-list-shown');
     await expect(shown).toBeHidden();
-    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    // Ctrl+P, as a person presses it (the print part asked for, the browser asked to print).
+    await pressPrint(page);
     await page.emulateMedia({ media: 'print' });
     await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
     await expect(shown).toBeVisible();
-    await expect(shown).toHaveText(`5 of ${mine.length}`);
+    await expect(shown).toHaveText(`5 of ${mine.length} invoices`);
     await expect(invoices.locator('.fd-pager')).toBeHidden();
     await expect(invoices.locator('.fd-search-input')).toBeHidden();
     await expect(button(invoices, 'New')).toBeHidden();
@@ -218,8 +258,9 @@ test.describe('a customer’s invoices, inside the customer', () => {
     expect(sent, 'one of the first five is sent').toBeGreaterThanOrEqual(0);
     await rows(invoices).nth(sent).getByRole('button', { name: 'Send a reminder' }).click();
     await expect.poll(() => demo<{ action: string; recordId?: unknown; recordIds?: unknown[] }[]>('requests').then((requests) => requests.at(-1))).toEqual(expect.objectContaining({ action: 'send_reminder', recordId: 1, recordIds: [mine[sent].id] }));
-    // Its press is the button's, never its row's: no invoice opened.
+    // Its press is the button's, never its row's: no invoice opened. With no app behind the demo, it says what the app was given.
     await expect(dialog(page)).toHaveCount(0);
+    await expect(page.locator('.fd-say')).toHaveText([`The app was asked to send a reminder for ${mine[sent].name}.×`]);
     await screen(page, 'related-invoices-rows');
     expect(problems).toEqual([]);
   });
@@ -227,14 +268,14 @@ test.describe('a customer’s invoices, inside the customer', () => {
   test('a new customer: nothing points at it until it is saved, then none yet and New', async ({ page }) => {
     const { problems } = await open(page, 'plain', `page=customer-account&record=new&skin=underline&${NOW}`);
     const invoices = part(page, 'invoices');
-    await expect(invoices.locator('.fd-related-note')).toHaveText('Nothing here until this record is saved.');
+    await expect(invoices.locator('.fd-related-note')).toHaveText('Nothing here until this customer is saved.');
     await expect(button(invoices, 'New')).toBeHidden();
     await expect(button(invoices, 'View all')).toBeHidden();
     await expect(invoices.locator('.fd-list')).toHaveCount(0);
     await screen(page, 'related-unsaved');
     await page.locator('[data-node="#title"] textarea').fill('Nile Delta Shipping');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(invoices.locator('.fd-list-empty')).toHaveText('None yet.');
+    await expect(invoices.locator('.fd-list-empty')).toHaveText('No invoices yet.');
     await expect(count(invoices)).toHaveText('0');
     await expect(button(invoices, 'New')).toBeVisible();
     await expect(invoices.locator('.fd-related-note')).toBeHidden();
@@ -255,7 +296,7 @@ test.describe('a property’s viewings, inside the property', () => {
     await button(viewings, 'View all').click();
     await expect(dialog(page)).toBeVisible();
     await expect(dialog(page).locator('.fd-list-row')).toHaveCount(mine.length);
-    await expect(dialog(page).locator('.fd-pager-text')).toHaveText(`1–${mine.length} / ${mine.length}`);
+    await expect(dialog(page).locator('.fd-pager-text')).toHaveText(`1–${mine.length} of ${mine.length} viewings`);
     // A list has nothing to save: Close alone at the dialog's foot.
     await expect(dialog(page).locator('.fd-form-dialog-foot button:visible')).toHaveText(['Close']);
     await screen(page, 'related-view-all-dialog', { viewport: true });
@@ -280,16 +321,23 @@ test.describe('a property’s viewings, inside the property', () => {
     await expect(count(viewings)).toHaveText(String(before + 1));
     await expect(rows(viewings).locator('td:nth-child(2)').first()).toHaveText('Mona Kamal');
     // Two homes on: none yet.
-    await page.getByRole('button', { name: 'Next record' }).click();
-    await page.getByRole('button', { name: 'Next record' }).click();
-    await expect(viewings.locator('.fd-list-empty')).toHaveText('None yet.');
+    await page.getByRole('button', { name: 'Next property' }).click();
+    await page.getByRole('button', { name: 'Next property' }).click();
+    await expect(viewings.locator('.fd-list-empty')).toHaveText('No viewings yet.');
     await expect(count(viewings)).toHaveText('0');
   });
 
-  test('on a phone, the page keeps to its width; the list scrolls in its card', async ({ page }) => {
+  test('on a phone, each viewing is a card — who, how it went, when, the phone and the agent — nothing cut, the page its width', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, 'plain', PROPERTY);
-    await expect(rows(part(page, 'viewings')).first()).toBeVisible();
+    const mine = (await records<Viewing & { phone: string; agent_id: Link }>(page, 'viewing')).filter((viewing) => viewing.home_id.id === 1).sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+    const viewings = part(page, 'viewings');
+    const card = rows(viewings).first();
+    await expect(card.locator('.fd-list-card-title')).toHaveText(mine[0].client);
+    await expect(card).toContainText(mine[0].agent_id.label);
+    await expect(card).toContainText(/\+20 10 \d{4} \d{4}/);
+    // Never a table scrolling sideways with its phone and agent off to the right.
+    expect(await viewings.locator('.fd-list-scroll').evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
     await expectNoSidewaysScroll(page);
     await screen(page, 'related-viewings-phone');
   });

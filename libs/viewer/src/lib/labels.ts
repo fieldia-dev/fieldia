@@ -1,7 +1,14 @@
 import type { Locale } from '@fieldia/core';
 import { LANGUAGES } from './locales/all';
 
-/** Every word the viewer shows, so a page can be translated. `{n}`, `{total}` and `{time}` are filled in. */
+/**
+ * Every word the viewer shows, so a page can be translated. `{n}`, `{total}` and `{time}` are filled in.
+ *
+ * A key ending in `Noun` (`importDoneNoun`, and `…NounOne` for a count of one) is the sentence before it in the words
+ * a page names its records by (`Page.records`): `{record}` for one ("customer"), `{records}` for more, `{aRecord}` for
+ * one with its article ("a customer"). Said only on a page that names its records; where a language, or an app's own
+ * `labels`, gives the sentence before it and not this one, its own sentence is said instead.
+ */
 export interface ViewerLabels {
   save: string;
   /** Switching a read-only form to editing, and back. */
@@ -67,6 +74,7 @@ export interface ViewerLabels {
   countOf: string;
   /** A form in a side panel: what it asks before Escape or × drops the changes made in it. */
   discardChanges: string;
+  discardChangesNoun?: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
   /** The (?) beside a label that shows its help: its name, as a screen reader says it. */
@@ -91,6 +99,7 @@ export interface ViewerLabels {
   previousPage: string;
   nextPage: string;
   range: string;
+  rangeNoun?: string;
   selected: string;
   clearSelection: string;
   selectAll: string;
@@ -113,15 +122,19 @@ export interface ViewerLabels {
   rowActions: string;
   selectRecord: string;
   noRecords: string;
+  noRecordsNoun?: string;
   loadFailed: string;
+  loadFailedNoun?: string;
   /**
    * A list's selection of every record that matches (`{n}` written as the page writes numbers), and what it says when
    * the source gave fewer than match (`{n}` of `{total}`) or none.
    */
   selectAllMatching: string;
+  selectAllMatchingNoun?: string;
   selectingAll: string;
   selectedOf: string;
   selectAllFailed: string;
+  selectAllFailedNoun?: string;
   /**
    * A list's Export: its button, its two files, what goes (`{n}` selected, or all that match: one, or more), how far it
    * has got (`{done}` of `{n}`), and how it ended.
@@ -130,12 +143,18 @@ export interface ViewerLabels {
   exportExcel: string;
   exportCsv: string;
   exportAll: string;
+  exportAllNoun?: string;
   exportAllOne: string;
+  exportAllNounOne?: string;
   exporting: string;
   exportCut: string;
+  exportCutNoun?: string;
   exportFailed: string;
+  exportFailedNoun?: string;
   exported: string;
+  exportedNoun?: string;
   exportedOne: string;
+  exportedNounOne?: string;
   /**
    * On paper: a list's Print (`printList`), how far it has got (`{done}` of `{n}`), how it ended; a printout's words
    * over its rows — the filters (`{filters}`), the groups (`{groups}`), how many (`{n}`: more, or one) — and the day it
@@ -144,30 +163,42 @@ export interface ViewerLabels {
   printList: string;
   printing: string;
   printCut: string;
+  printCutNoun?: string;
   printFailed: string;
+  printFailedNoun?: string;
   printFilters: string;
   printGroups: string;
   printCount: string;
+  printCountNoun?: string;
   printCountOne: string;
+  printCountNounOne?: string;
   printedOn: string;
   printRecord: string;
+  printRecordNoun?: string;
   /**
    * A list's Edit of many records: its button, its dialog (`{n}` records: one, or more), its question, how far it has
    * got, and what was not changed and why (`{name}`: `{why}`).
    */
   bulkEdit: string;
   bulkTitle: string;
+  bulkTitleNoun?: string;
   bulkTitleOne: string;
+  bulkTitleNounOne?: string;
   bulkField: string;
   bulkApply: string;
   bulkAsk: string;
+  bulkAskNoun?: string;
   bulkAskOne: string;
+  bulkAskNounOne?: string;
   bulkSet: string;
   bulkClear: string;
   bulkProgress: string;
   bulkDone: string;
+  bulkDoneNoun?: string;
   bulkDoneOne: string;
+  bulkDoneNounOne?: string;
   bulkSome: string;
+  bulkSomeNoun?: string;
   bulkWhy: string;
   bulkChangedSince: string;
   /**
@@ -195,6 +226,10 @@ export interface ViewerLabels {
   importColumnLetter: string;
   importFileRows: string;
   importFileRowsOne: string;
+  /** A file of a header and nothing under it: no rows to check. */
+  importNoRowsUnder: string;
+  /** A CSV file read in an encoding its bytes say it is not in (`{chosen}`), and the one that reads it (`{encoding}`). */
+  importMisread: string;
   importSheet: string;
   importEncoding: string;
   importUnicode: string;
@@ -224,24 +259,37 @@ export interface ViewerLabels {
   importPreview: string;
   importNone: string;
   importStart: string;
+  importStartNoun?: string;
   importStartOne: string;
+  importStartNounOne?: string;
   importWhy: string;
   importFixName: string;
   importing: string;
   importStop: string;
   importDone: string;
+  importDoneNoun?: string;
   importDoneOne: string;
+  importDoneNounOne?: string;
   importStopped: string;
+  importStoppedNoun?: string;
   importSome: string;
+  importSomeNoun?: string;
   importFailed: string;
+  importFailedNoun?: string;
   importNotMade: string;
+  importNotMadeNoun?: string;
   importUndo: string;
   importUndoAsk: string;
+  importUndoAskNoun?: string;
   importUndoAskOne: string;
+  importUndoAskNounOne?: string;
   importUndoing: string;
   importUndone: string;
+  importUndoneNoun?: string;
   importUndoneOne: string;
+  importUndoneNounOne?: string;
   importUndoSome: string;
+  importUndoSomeNoun?: string;
   importNoneCalled: string;
   importSeveralCalled: string;
   importNotYesNo: string;
@@ -357,12 +405,19 @@ export interface ViewerLabels {
    * where they run past a page (`{n}` of `{total}`).
    */
   relatedAll: string;
+  relatedAllNoun?: string;
   relatedAllOf: string;
   relatedNew: string;
+  relatedNewNoun?: string;
   relatedNewOf: string;
   relatedUnsaved: string;
+  relatedUnsavedNoun?: string;
   relatedNone: string;
+  relatedNoneNoun?: string;
   relatedShown: string;
+  /** The key over a list's rows: what their tones and their bold mean, where the page says (`rowTones` labels, `rowBoldLabel`). */
+  rowsKey: string;
+  relatedShownNoun?: string;
   /**
    * Over a record: the gear menu (`actions`, its `print` group and its
    * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
@@ -377,10 +432,14 @@ export interface ViewerLabels {
   delete: string;
   breadcrumbs: string;
   newRecord: string;
+  newRecordNoun?: string;
   records: string;
+  recordsNoun?: string;
   recordAt: string;
   previousRecord: string;
+  previousRecordNoun?: string;
   nextRecord: string;
+  nextRecordNoun?: string;
   /** The record's main attachment beside it (`{name}`, the file's): its name, Open, and the buttons through several. */
   attachment: string;
   openAttachment: string;
@@ -397,7 +456,9 @@ export interface ViewerLabels {
    * open to them (`{actions}`).
    */
   conflictAt: string;
+  conflictAtNoun?: string;
   conflictSince: string;
+  conflictSinceNoun?: string;
   someoneElse: string;
   conflictChanged: string;
   conflictBoth: string;
@@ -405,12 +466,14 @@ export interface ViewerLabels {
   reload: string;
   keepMine: string;
   reloaded: string;
+  reloadedNoun?: string;
   setAside: string;
   putBack: string;
   putBackField: string;
   putAllBack: string;
   nowIs: string;
   readOnlyRecord: string;
+  readOnlyRecordNoun?: string;
   fieldNotYours: string;
   notOffered: string;
   /**
@@ -419,12 +482,16 @@ export interface ViewerLabels {
    * both; `{name}` its name — and `{n}` more like it; and its ways: Open it, It's someone new, Merge.
    */
   duplicateWith: string;
+  duplicateWithNoun?: string;
   duplicateNamed: string;
+  duplicateNamedNoun?: string;
   duplicateNamedWith: string;
+  duplicateNamedWithNoun?: string;
   duplicateAnd: string;
   duplicatesMore: string;
   openDuplicate: string;
   notDuplicate: string;
+  notDuplicateNoun?: string;
   mergeDuplicate: string;
   /**
    * The merge's screen: its title, what to do, a record's column (`{name}`) and the one shown, a value neither holds,
@@ -432,9 +499,12 @@ export interface ViewerLabels {
    * it merges, once merged (`{name}`), and a record it could not read (`{name}`, `{why}`).
    */
   mergeTitle: string;
+  mergeTitleNoun?: string;
   mergeIntro: string;
+  mergeIntroNoun?: string;
   mergeKeep: string;
   mergeShown: string;
+  mergeShownNoun?: string;
   mergeEmpty: string;
   mergeSame: string;
   mergeAllSame: string;
@@ -444,6 +514,9 @@ export interface ViewerLabels {
   merged: string;
   mergeUnread: string;
 }
+
+/** A word every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
+export type WordKey = Exclude<keyof ViewerLabels, `${string}Noun` | `${string}NounOne`>;
 
 /** English: always here, and the words a language leaves out. */
 const en: ViewerLabels = {
@@ -491,6 +564,7 @@ const en: ViewerLabels = {
   nothingChanged: 'Nothing has changed.',
   countOf: '{label}, {count}',
   discardChanges: 'Discard your changes?',
+  discardChangesNoun: 'Discard your changes to this {record}?',
   dismiss: 'Dismiss',
   helpFor: 'Help for {label}',
   quietHint: 'Add {label}',
@@ -504,6 +578,7 @@ const en: ViewerLabels = {
   previousPage: 'Previous page',
   nextPage: 'Next page',
   range: '{from}–{to} / {total}',
+  rangeNoun: '{from}–{to} of {total} {records}',
   selected: '{n} selected',
   clearSelection: 'Clear',
   selectAll: 'Select all',
@@ -520,44 +595,66 @@ const en: ViewerLabels = {
   rowActions: 'Actions',
   selectRecord: 'Select {name}',
   noRecords: 'No records match.',
+  noRecordsNoun: 'No {records} match.',
   loadFailed: 'Could not load the records.',
+  loadFailedNoun: 'Could not load the {records}.',
   selectAllMatching: 'Select all {n} that match',
+  selectAllMatchingNoun: 'Select all {n} {records} that match',
   selectingAll: 'Selecting all that match…',
   selectedOf: '{n} of {total} could be selected',
   selectAllFailed: 'Could not select every record that matches.',
+  selectAllFailedNoun: 'Could not select every {record} that matches.',
   export: 'Export',
   exportExcel: 'Excel (.xlsx)',
   exportCsv: 'CSV (.csv)',
   exportAll: 'All {n} that match',
+  exportAllNoun: 'All {n} {records} that match',
   exportAllOne: 'The {n} that matches',
+  exportAllNounOne: 'The {n} {record} that matches',
   exporting: 'Exporting {done} of {n}…',
   exportCut: 'Only the first {n} of {total} were exported.',
+  exportCutNoun: 'Only the first {n} of {total} {records} were exported.',
   exportFailed: 'Could not export the records.',
+  exportFailedNoun: 'Could not export the {records}.',
   exported: '{n} records exported.',
+  exportedNoun: '{n} {records} exported.',
   exportedOne: '{n} record exported.',
+  exportedNounOne: '{n} {record} exported.',
   printList: 'Print',
   printing: 'Getting {done} of {n} to print…',
   printCut: 'Only the first {n} of {total} were printed.',
+  printCutNoun: 'Only the first {n} of {total} {records} were printed.',
   printFailed: 'Could not get the records to print.',
+  printFailedNoun: 'Could not get the {records} to print.',
   printFilters: 'Filters: {filters}',
   printGroups: 'Grouped by {groups}',
   printCount: '{n} records',
+  printCountNoun: '{n} {records}',
   printCountOne: '{n} record',
+  printCountNounOne: '{n} {record}',
   printedOn: 'Printed {date}',
   printRecord: 'This record',
+  printRecordNoun: 'This {record}',
   bulkEdit: 'Edit',
   bulkTitle: 'Edit {n} records',
+  bulkTitleNoun: 'Edit {n} {records}',
   bulkTitleOne: 'Edit {n} record',
+  bulkTitleNounOne: 'Edit {n} {record}',
   bulkField: 'Field',
   bulkApply: 'Update',
   bulkAsk: 'Update {n} records?',
+  bulkAskNoun: 'Update {n} {records}?',
   bulkAskOne: 'Update {n} record?',
+  bulkAskNounOne: 'Update {n} {record}?',
   bulkSet: '{field} becomes “{value}”.',
   bulkClear: '{field} is cleared.',
   bulkProgress: 'Updating {done} of {n}…',
   bulkDone: '{n} records updated.',
+  bulkDoneNoun: '{n} {records} updated.',
   bulkDoneOne: '{n} record updated.',
+  bulkDoneNounOne: '{n} {record} updated.',
   bulkSome: '{done} of {n} updated. Not changed:',
+  bulkSomeNoun: '{done} of {n} {records} updated. Not changed:',
   bulkWhy: '{name}: {why}',
   bulkChangedSince: '{name} changed it after it was listed.',
   import: 'Import',
@@ -577,6 +674,8 @@ const en: ViewerLabels = {
   importColumnLetter: 'Column {letter}',
   importFileRows: '{name}: {n} rows',
   importFileRowsOne: '{name}: {n} row',
+  importNoRowsUnder: '{name}: no rows under the header',
+  importMisread: 'Its characters look wrong read as {chosen}: this file reads as {encoding}.',
   importSheet: 'Sheet',
   importEncoding: 'Characters',
   importUnicode: 'Unicode ({name})',
@@ -606,24 +705,37 @@ const en: ViewerLabels = {
   importPreview: 'The first rows, as they will be saved',
   importNone: 'None of the rows can be imported.',
   importStart: 'Import {n} records',
+  importStartNoun: 'Import {n} {records}',
   importStartOne: 'Import {n} record',
+  importStartNounOne: 'Import {n} {record}',
   importWhy: 'Why it was not imported',
   importFixName: '{name} – not imported',
   importing: 'Importing {done} of {n}…',
   importStop: 'Stop',
   importDone: '{n} records imported.',
+  importDoneNoun: '{n} {records} imported.',
   importDoneOne: '{n} record imported.',
+  importDoneNounOne: '{n} {record} imported.',
   importStopped: 'Stopped: {n} of {total} records imported.',
+  importStoppedNoun: 'Stopped: {n} of {total} {records} imported.',
   importSome: '{n} of {total} records imported. Not imported:',
+  importSomeNoun: '{n} of {total} {records} imported. Not imported:',
   importFailed: 'Could not import the records.',
+  importFailedNoun: 'Could not import the {records}.',
   importNotMade: 'the data source made no record of it',
+  importNotMadeNoun: 'the data source made no {record} of it',
   importUndo: 'Undo the import',
   importUndoAsk: 'Delete the {n} records this import made?',
+  importUndoAskNoun: 'Delete the {n} {records} this import made?',
   importUndoAskOne: 'Delete the {n} record this import made?',
+  importUndoAskNounOne: 'Delete the {n} {record} this import made?',
   importUndoing: 'Deleting {done} of {n}…',
   importUndone: 'Import undone: {n} records deleted.',
+  importUndoneNoun: 'Import undone: {n} {records} deleted.',
   importUndoneOne: 'Import undone: {n} record deleted.',
+  importUndoneNounOne: 'Import undone: {n} {record} deleted.',
   importUndoSome: '{done} of {n} records deleted. Not deleted:',
+  importUndoSomeNoun: '{done} of {n} {records} deleted. Not deleted:',
   importNoneCalled: '{label}: nothing is called “{text}”',
   importSeveralCalled: '{label}: more than one is called “{text}”',
   importNotYesNo: '{label}: “{text}” is neither yes nor no',
@@ -698,12 +810,18 @@ const en: ViewerLabels = {
   formBroken: 'The saved form “{page}” cannot be shown.',
   pageMissing: 'The page “{page}” cannot be found.',
   relatedAll: 'View all',
+  relatedAllNoun: 'View all {records}',
   relatedAllOf: 'View all {title}',
   relatedNew: 'New',
+  relatedNewNoun: 'New {record}',
   relatedNewOf: 'New in {title}',
   relatedUnsaved: 'Nothing here until this record is saved.',
+  relatedUnsavedNoun: 'Nothing here until this {record} is saved.',
   relatedNone: 'None yet.',
+  relatedNoneNoun: 'No {records} yet.',
   relatedShown: '{n} of {total}',
+  rowsKey: 'Key to the rows',
+  relatedShownNoun: '{n} of {total} {records}',
   actions: 'Actions',
   print: 'Print',
   archive: 'Archive',
@@ -712,16 +830,22 @@ const en: ViewerLabels = {
   delete: 'Delete',
   breadcrumbs: 'Breadcrumbs',
   newRecord: 'New',
+  newRecordNoun: 'New {record}',
   records: 'Records',
+  recordsNoun: '{records}',
   recordAt: '{n} / {total}',
   previousRecord: 'Previous record',
+  previousRecordNoun: 'Previous {record}',
   nextRecord: 'Next record',
+  nextRecordNoun: 'Next {record}',
   attachment: 'Attachment: {name}',
   openAttachment: 'Open',
   previousAttachment: 'Previous attachment',
   nextAttachment: 'Next attachment',
   conflictAt: '{name} changed this record at {time}.',
+  conflictAtNoun: '{name} changed this {record} at {time}.',
   conflictSince: '{name} changed this record after you opened it.',
+  conflictSinceNoun: '{name} changed this {record} after you opened it.',
   someoneElse: 'Someone else',
   conflictChanged: 'They changed: {fields}.',
   conflictBoth: 'You both changed: {fields}.',
@@ -729,26 +853,35 @@ const en: ViewerLabels = {
   reload: 'Reload',
   keepMine: 'Keep mine',
   reloaded: 'Reloaded: this is the record as it is now.',
+  reloadedNoun: 'Reloaded: this is the {record} as it is now.',
   setAside: 'Your changes were not saved. Put back the ones you still want:',
   putBack: 'Put back',
   putBackField: 'Put back {label}',
   putAllBack: 'Put all back',
   nowIs: 'now {value}',
   readOnlyRecord: 'You can read this record, but not change it.',
+  readOnlyRecordNoun: 'You can read this {record}, but not change it.',
   fieldNotYours: 'You can see this field, but not change it.',
   notOffered: 'Not open to you here: {actions}.',
   duplicateWith: 'A record with this {fields} already exists: {name}',
+  duplicateWithNoun: '{aRecord} with this {fields} already exists: {name}',
   duplicateNamed: 'A record with a name like this already exists: {name}',
+  duplicateNamedNoun: '{aRecord} with a name like this already exists: {name}',
   duplicateNamedWith: 'A record with this {fields} and a name like this already exists: {name}',
+  duplicateNamedWithNoun: '{aRecord} with this {fields} and a name like this already exists: {name}',
   duplicateAnd: '{a} and {b}',
   duplicatesMore: '{n} more like it',
   openDuplicate: 'Open it',
   notDuplicate: 'It’s someone new',
+  notDuplicateNoun: 'It’s a new {record}',
   mergeDuplicate: 'Merge…',
   mergeTitle: 'Merge two records',
+  mergeTitleNoun: 'Merge two {records}',
   mergeIntro: 'Pick the record to keep, then the value it keeps for each field.',
+  mergeIntroNoun: 'Pick the {record} to keep, then the value it keeps for each field.',
   mergeKeep: 'Keep {name}',
   mergeShown: 'This record',
+  mergeShownNoun: 'This {record}',
   mergeEmpty: 'Empty',
   mergeSame: 'The same in both: {fields}.',
   mergeAllSame: 'Every field shown here holds the same in both.',
@@ -800,16 +933,32 @@ export function ownLocale(tag = 'en'): Locale {
 
 const own = (words: object, key: PropertyKey) => Object.prototype.hasOwnProperty.call(words, key);
 
+/** A sentence in the words a page names its records by: `exportedNoun`, `exportedNounOne`. */
+const NOUN = /Noun(One|Two|Many)?$/;
+
+/**
+ * The sentence a sentence in the words for a page's records stands for — `exportedNounOne`'s is `exportedOne` — or
+ * null for any other word. A language, or an app's `labels`, that gives that one and not this says its own instead.
+ */
+export const plainOf = (key: string): string | null => (NOUN.test(key) ? key.replace(NOUN, '$1') : null);
+
 /**
  * The viewer's words for a page in `locale`: the app's own (`labels`) over that language's, each read as it is drawn —
  * not copied as the page is mounted, so the words a part brings as it comes (the one-tag script's: add-language.ts) are
- * there for what is drawn once it has. It reads as the words it holds: spread, keyed and listed alike.
+ * there for what is drawn once it has. It reads as the words it holds: spread, keyed and listed alike. A sentence the
+ * app gives, without its sentence for a page's records (`…Noun`), is said for that one too.
  */
 export function viewerWords(locale: Locale, labels: Partial<ViewerLabels> = {}): ViewerLabels {
   const mine: Record<string, unknown> = { ...labels };
   const table = () => (own(VIEWER_LABELS, locale) ? VIEWER_LABELS[locale] : VIEWER_LABELS.en) as unknown as Record<string, unknown>;
   const has = (key: PropertyKey) => typeof key === 'string' && (own(mine, key) || own(table(), key));
-  const word = (key: PropertyKey) => (typeof key !== 'string' ? undefined : own(mine, key) ? mine[key] : table()[key]);
+  const word = (key: PropertyKey) => {
+    if (typeof key !== 'string') return undefined;
+    if (own(mine, key)) return mine[key];
+    // The app's own sentence, given without one for the page's records: its own, said on that page too.
+    const plain = plainOf(key);
+    return plain !== null && own(mine, plain) ? mine[plain] : table()[key];
+  };
   return new Proxy({} as ViewerLabels, {
     get: (_, key) => word(key),
     set: (_, key, value) => {

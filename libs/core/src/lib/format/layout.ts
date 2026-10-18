@@ -227,6 +227,8 @@ export interface FieldNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
   readonly?: Modifier;
   required?: Modifier;
   // ---- the quiet look ----
@@ -273,6 +275,11 @@ export interface LineOrder {
 export interface ToneWhen {
   tone: Tone;
   when: Modifier;
+  /**
+   * A row's tone in words, for a list's and a related list's key over its rows ("Overdue"): its swatch and these words,
+   * read by a screen reader too. Without it, the tone has no key.
+   */
+  label?: string;
 }
 
 /**
@@ -506,6 +513,8 @@ export interface RelatedNode {
   rowTones?: ToneWhen[];
   /** Each row's words in bold while this holds on its record, as a list's. */
   rowBold?: Modifier;
+  /** What a row in bold means, in words, for the key over its rows, as a list's (`ListNode.rowBoldLabel`). */
+  rowBoldLabel?: string;
   /**
    * Buttons on each row and each card, as a list's: each shown by its
    * `invisible` read on the row's record, a press running its steps with
@@ -530,12 +539,24 @@ export interface RelatedNode {
   viewAll?: { page: string; as?: 'dialog' | 'panel' | 'page' };
   /** New, which makes one with its link to this record filled in; offered unless false, where the app gives a page for `model`. */
   create?: boolean;
+  /**
+   * Where a row's record and New's open: in a dialog of the page the app
+   * gives for `model` (`dialog`, the default), or the app's own way (`app`)
+   * — its `onOpen` (or its host's `open`) asked first, as View all's is, with
+   * `{ page, recordId }` for a row and `{ page, recordId: null, values }` for
+   * New, its link to this record among the values; `page` the id of the page
+   * the app gives for `model`, else `model` itself. Where the app's way does
+   * not take it, the dialog, as with `dialog`.
+   */
+  open?: 'dialog' | 'app';
   /** Grid columns it spans inside a section: the whole row unless said. */
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
 }
 
 /** A line along the roads between a map's layers: from one place to another, or through a layer's lines in their order. */
@@ -722,6 +743,8 @@ export interface SectionNode {
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
+  print?: boolean;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
   children: LayoutNode[];
@@ -748,15 +771,26 @@ export interface TabNode {
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
+  /** `false`: left out on paper (Ctrl+P, Print), its name with it, as an invoice's Journal Items: shown on screen as ever. */
+  print?: boolean;
   children: LayoutNode[];
   /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
   iconOnly?: boolean;
   /**
-   * A field whose count shows in a pill after it, as a work item's "Links 0":
-   * a number's value, a table's or links' lines, a field of files' files.
-   * Shown at 0 too, and read out with the tab's name ("Links, 0").
+   * A count in a pill after it, read out with the tab's name ("Links, 0"):
+   * a field's — a number's value, a table's or links' lines, a field of
+   * files' files, shown at 0 too, as a work item's "Links 0" — or the records
+   * a related list in this tab lists (`{ "related": "quotations" }`, by its
+   * id): asked of the data source as the record is shown, whether the tab is
+   * open or not, and again as the list adds or loses one; hidden until known,
+   * and on a record not saved yet.
    */
-  count?: string;
+  count?: string | TabCount;
+}
+
+/** What a tab counts other than a field: the records a related list in it lists, by the list's id. */
+export interface TabCount {
+  related: string;
 }
 
 export interface TabsNode {
@@ -1242,6 +1276,12 @@ export interface ListNode {
   /** Each row's words in bold while this holds on its record — Flectra's decoration-bf. */
   rowBold?: Modifier;
   /**
+   * What a row in bold means, in words ("Your own contacts"): with it, a key over the rows says so — a bold sample and
+   * these words — beside each `rowTones` item's `label` with its swatch, read by a screen reader too. Without labels,
+   * no key.
+   */
+  rowBoldLabel?: string;
+  /**
    * Buttons on each row and each card, each shown by its `invisible` read
    * on the row's record (its fields and `id`); a press runs its steps with
    * that record alone, as a button for the rows chosen runs with them.
@@ -1473,10 +1513,12 @@ const invisible = ModifierSchema.optional();
 export const RolesSchema = z.array(z.string().regex(/^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/, 'a role is a name such as sales_team.group_sale_manager, with ! before it to hide the part from people holding it')).min(1).meta({ id: 'Roles' });
 const roles = RolesSchema.optional();
 const hideOn = z.array(ScreenWidthSchema).min(1).optional();
+/** `false`: a part left out on paper. */
+const print = z.boolean().optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
-export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema }).meta({ id: 'ToneWhen' });
+export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema, label: z.string().min(1).optional() }).meta({ id: 'ToneWhen' });
 export const PlaceholderWhenSchema = z.strictObject({ when: ModifierSchema, text: z.string() }).meta({ id: 'PlaceholderWhen' });
 
 export const CellRulesSchema = z
@@ -1561,7 +1603,7 @@ export const FieldNodeSchema = z.strictObject({
   bold: ModifierSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
   focus: z.boolean().optional(),
-  invisible, roles, hideOn,
+  invisible, roles, hideOn, print,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
   // The quiet look.
@@ -1822,6 +1864,7 @@ export const RelatedNodeSchema = z
     card: ListCardSchema.optional(),
     rowTones: z.array(ToneWhenSchema).min(1).optional(),
     rowBold: ModifierSchema.optional(),
+    rowBoldLabel: z.string().min(1).optional(),
     rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
     filter: z.array(FilterItemSchema).min(1).optional(),
     sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
@@ -1829,8 +1872,9 @@ export const RelatedNodeSchema = z
     searchFields: z.array(fieldName).min(1).optional(),
     viewAll: z.strictObject({ page: id, as: z.enum(['dialog', 'panel', 'page']).optional() }).optional(),
     create: z.boolean().optional(),
+    open: z.enum(['dialog', 'app']).optional(),
     colspan: span,
-    invisible, roles, hideOn,
+    invisible, roles, hideOn, print,
   })
   .meta({ id: 'RelatedNode' });
 
@@ -1860,7 +1904,7 @@ export const SectionNodeSchema = z.strictObject({
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
-  invisible, roles, hideOn,
+  invisible, roles, hideOn, print,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -1880,12 +1924,12 @@ export const TabNodeSchema = z.strictObject({
   id,
   label: z.string(),
   icon: z.string().optional(),
-  invisible, roles,
+  invisible, roles, print,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
   iconOnly: z.boolean().optional(),
-  count: fieldName.optional(),
+  count: z.union([fieldName, z.strictObject({ related: id }).meta({ id: 'TabCount' })]).optional(),
 }).meta({ id: 'TabNode' });
 
 export const TabsNodeSchema = z.strictObject({
@@ -2177,6 +2221,7 @@ export const ListNodeSchema = z.strictObject({
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
   rowTones: z.array(ToneWhenSchema).min(1).optional(),
   rowBold: ModifierSchema.optional(),
+  rowBoldLabel: z.string().min(1).optional(),
   rowButtons: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'ListNode' });
 

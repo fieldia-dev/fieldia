@@ -18,7 +18,7 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=customers');
       await expect(names(page)).toHaveCount(8);
       await expect(names(page).first()).toHaveText('Amira Clinics');
-      await expect(range(page)).toHaveText('1–8 / 12');
+      await expect(range(page)).toHaveText('1–8 of 12 customers');
       await expect(page.locator('.fd-list-table th[aria-sort="ascending"]')).toHaveText('Name');
       // The headers share one line, and a number sits on the end of its column, as its header does.
       const heads = page.locator('.fd-list-table thead th');
@@ -43,12 +43,12 @@ for (const variant of VARIANTS) {
       await expect(offered.nth(3)).toHaveAttribute('aria-selected', 'true');
       await box(page).press('Enter');
       await expect(chips(page)).toHaveText(['Country: egy']);
-      await expect(range(page)).toHaveText('1–8 / 10');
+      await expect(range(page)).toHaveText('1–8 of 10 customers');
       await page.getByRole('button', { name: 'Search options' }).click();
       await menu(page).getByRole('button', { name: 'Active' }).click();
       await expect(menu(page).getByRole('button', { name: 'Active' })).toHaveAttribute('aria-pressed', 'true');
       await expect(chips(page)).toHaveText(['Country: egy', 'Active']);
-      await expect(range(page)).toHaveText('1–6 / 6');
+      await expect(range(page)).toHaveText('1–6 of 6 customers');
       // The menu sits over the list, under the box, in its three columns.
       const field = (await page.locator('.fd-search-field').boundingBox())!;
       const panel = (await menu(page).boundingBox())!;
@@ -59,7 +59,7 @@ for (const variant of VARIANTS) {
       await box(page).focus();
       await box(page).press('Backspace');
       await expect(chips(page)).toHaveText(['Country: egy']);
-      await expect(range(page)).toHaveText('1–8 / 10');
+      await expect(range(page)).toHaveText('1–8 of 10 customers');
     });
 
     test('puts the records in a header’s order, either way, and pages through them', async ({ page }) => {
@@ -72,7 +72,7 @@ for (const variant of VARIANTS) {
       await expect(credit).toHaveAttribute('aria-sort', 'descending');
       await expect(names(page).first()).toHaveText('Delta Foods');
       await page.getByRole('button', { name: 'Next page' }).click();
-      await expect(range(page)).toHaveText('9–12 / 12');
+      await expect(range(page)).toHaveText('9–12 of 12 customers');
       await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
       // Empty amounts come last, whichever way.
       await expect(names(page).last()).toHaveText('Maadi Labs');
@@ -114,6 +114,8 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('alertdialog')).toContainText('Archive the chosen customers?');
       await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
       await expect.poll(() => demo<{ action: string; recordIds?: number[] }[]>('requests')).toEqual([expect.objectContaining({ action: 'archive', recordIds: [23, 24] })]);
+      // No app behind the demo shows a thing for it: the demo says what the app was given, in plain words.
+      await expect(page.locator('.fd-say')).toHaveText(['The app was asked to archive Delta Foods and Giza Plaza.×']);
       await names(page).filter({ hasText: 'Delta Foods' }).click();
       await expect(page).toHaveURL(/page=customer&record=23/);
       await expect(page.locator('[data-node="#title"] textarea')).toHaveValue('Delta Foods');
@@ -147,13 +149,16 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-list-rtl`, { viewport: true });
     });
 
-    test('fits a phone: the table scrolls in its own box, the menu stacks', async ({ page }) => {
+    test('fits a phone: each customer a card, nothing cut off to the right, the menu stacks', async ({ page }) => {
       await page.setViewportSize({ width: 400, height: 860 });
       await open(page, variant, 'page=customers');
       await expect(names(page)).toHaveCount(8);
       await expectNoSidewaysScroll(page);
+      // Cards, as the 0.25 walk asked of the featured list: its emails were cut in a table scrolling sideways.
+      await expect(page.locator('.fd-list-row').first().locator('.fd-list-card-title')).toBeVisible();
+      await expect(page.locator('.fd-list-row').first()).toContainText('@');
       const scroller = page.locator('.fd-list-scroll');
-      expect(await scroller.evaluate((el) => el.scrollWidth > el.clientWidth), 'the table does not scroll in its box').toBe(true);
+      expect(await scroller.evaluate((el) => el.scrollWidth - el.clientWidth), 'the list scrolls sideways').toBeLessThanOrEqual(1);
       await page.getByRole('button', { name: 'Search options' }).click();
       const groups = await menu(page).locator('.fd-search-group').evaluateAll((all) => all.map((g) => Math.round(g.getBoundingClientRect().left)));
       expect(new Set(groups).size, 'the menu’s groups are not stacked').toBe(1);

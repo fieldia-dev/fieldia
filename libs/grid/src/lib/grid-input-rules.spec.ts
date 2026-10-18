@@ -181,6 +181,7 @@ describe('a grid cell holding what is no number', () => {
 });
 
 describe('a block pasted on a chosen cell', () => {
+  /** Pasted: its names looked up first (none here), then written a moment after. */
   function paste(text: string) {
     const event = new Event('paste', { bubbles: true, cancelable: true });
     Object.defineProperty(event, 'clipboardData', { value: { getData: (type: string) => (type === 'text/plain' ? text : '') } });
@@ -197,6 +198,7 @@ describe('a block pasted on a chosen cell', () => {
   it('fills across and down, each cell read as its column reads what is typed, and says how many', async () => {
     const { box, form } = await chosen();
     expect(paste('3\t100\n4\t200\n').defaultPrevented).toBe(true);
+    await microtasks();
     expect(formLines(form).map((l) => [l.values['qty'], l.values['price']])).toEqual([[3, 100], [4, 200]]);
     const note = box.querySelector('.fd-grid-paste-note') as HTMLElement;
     expect(note.hidden).toBe(false);
@@ -207,6 +209,7 @@ describe('a block pasted on a chosen cell', () => {
   it('reads Arabic digits, and leaves cells it cannot read and read-only ones, naming them; rows past the last line add lines', async () => {
     const { box, form } = await chosen();
     paste('٣\tabc\t9\n٤\t١٠٠\n5\t6');
+    await microtasks();
     expect(formLines(form).map((l) => [l.values['qty'], l.values['price'], l.values['subtotal']])).toEqual([
       [3, 1890, 7560],
       [4, 100, 2280],
@@ -219,6 +222,7 @@ describe('a block pasted on a chosen cell', () => {
   it('adds a line for each row past the last, as the plain table does: no line for a row of nothing', async () => {
     const { box, form } = await chosen();
     paste('1\t10\n2\t20\n3\t30\n4\t40\n\t\n');
+    await microtasks();
     expect(formLines(form).map((l) => [l.values['qty'], l.values['price']])).toEqual([
       [1, 10],
       [2, 20],
@@ -231,6 +235,7 @@ describe('a block pasted on a chosen cell', () => {
   it('adds lines up to the table’s most, and says what it left past them', async () => {
     const { box, form } = await chosen('en', { max: 3 });
     paste('1\t10\n2\t20\n3\t30\n4\t40');
+    await microtasks();
     expect(formLines(form).map((l) => [l.values['qty'], l.values['price']])).toEqual([
       [1, 10],
       [2, 20],
@@ -242,21 +247,25 @@ describe('a block pasted on a chosen cell', () => {
   it('says the lines added in the page’s language', async () => {
     const { box } = await chosen('ar');
     paste('1\t10\n2\t20\n3\t30');
+    await microtasks();
     expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لُصق في 6 من الخلايا. أُضيف سطر واحد.');
   });
 
   it('speaks the page’s language', async () => {
     const { box } = await chosen('ar');
     paste('abc');
+    await microtasks();
     expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لم يُلصق في: Quantity، السطر 1 (Quantity: «⁨abc⁩» ليس رقمًا)');
   });
 
   it('counts one cell as one, in the page’s language: never “1 cells”', async () => {
     const { box } = await chosen();
     paste('3');
+    await microtasks();
     expect(box.querySelector('.fd-grid-paste-note')?.textContent).toBe('Pasted into 1 cell.');
     const arabic = await chosen('ar');
     paste('3');
+    await microtasks();
     expect(arabic.box.querySelector('.fd-grid-paste-note')?.textContent).toBe('لُصق في خلية واحدة.');
   });
 });
@@ -305,5 +314,33 @@ describe('a grid with its most lines (options.max), as the plain table keeps it'
     editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     await frames();
     expect(formLines(form)).toHaveLength(3);
+  });
+});
+
+describe('a grid on a page that asks for its labels small inside sentences', () => {
+  it('names the cell a line’s worked-out amount waits for small; without it, as before', async () => {
+    for (const [lower, words] of [
+      [true, 'Fix quantity to see this line’s subtotal'],
+      [false, 'Fix Quantity to see this line’s Subtotal'],
+    ] as const) {
+      const host = document.createElement('div');
+      document.body.append(host);
+      const page = { ...order, lowerLabels: lower } as Page;
+      handle = mountViewer(host, { page, dataSource: createMemoryDataSource({ records: { 'sale.order': { 1: { line_ids: lines } } } }), recordId: 1, widgets: gridWidgets });
+      await handle.form.settled();
+      await frames();
+      const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
+      const api = gridApiOf(box)!;
+      api.startEditingCell({ rowIndex: 0, colKey: 'qty' });
+      await microtasks();
+      const input = box.querySelector('.fd-grid-editor input') as HTMLInputElement;
+      input.value = '12 34';
+      input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '4' }));
+      api.stopEditing();
+      await frames();
+      expect(cellOf(box, 0, 'subtotal').textContent).toContain(words);
+      handle.destroy();
+      handle = null;
+    }
   });
 });

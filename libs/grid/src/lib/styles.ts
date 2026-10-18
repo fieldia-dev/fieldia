@@ -6,6 +6,11 @@ export const GRID_CSS = /* css */ `
 .fd-grid-host { min-width: 0; }
 /* AG Grid keeps 150px of rows for its "no rows" message; ours has none, so one row's height is enough. */
 .fd-grid-lines .ag-grid-scrolling-rows.ag-layout-auto-height { min-height: 40px; }
+/* An empty table says so where its first line would be: in that one row's 40px under the header, centred. AG Grid's
+   overlay lies over the whole table and keeps clear of the header alone: centred there, the words fell across the
+   line between the body and a totals row under it. */
+.fd-grid-lines .ag-overlay-no-rows-wrapper { align-items: flex-start; }
+.fd-grid-lines .fd-grid-empty { display: block; margin: 10px 0 0; line-height: 20px; }
 /* AG Grid keeps room for a sideways scroll bar it has marked invisible; give the room back until it is needed. */
 .fd-grid-lines .ag-body-horizontal-scroll.ag-invisible { display: none; }
 /* When the lines scroll sideways the bar sits under them, never over the last line (AG Grid lays it over, as if no
@@ -40,15 +45,24 @@ export const GRID_CSS = /* css */ `
 .fd-grid-row-buttons { display: inline-flex; gap: 2px; }
 /* On paper, every line in a plain table as wide as the sheet, in the grid's place (and its cards'). */
 .fd-grid-lines > .fd-print-table { display: none; }
+/* So too while the room a heading over it keeps on paper is measured, as printing begins (@fieldia/viewer's print.ts). */
+.fd-form[data-fd-measure] .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
+.fd-form[data-fd-measure] .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.fd-form[data-fd-measure] .fd-print-table :is(th, td) { padding: 5px 6px; vertical-align: top; overflow-wrap: break-word; }
 @media print {
+  /* A block round it, which every engine breaks between the table's rows: Firefox moved a grid's part whole. */
+  .fd-grid-lines:has(> .fd-print-table) { display: block; }
   .fd-grid-lines:has(> .fd-print-table) > :not(.fd-print-table) { display: none !important; }
   .fd-grid-lines > .fd-print-table { display: table; width: 100%; border-collapse: collapse; font-size: 12.5px; }
   .fd-print-table :is(th, td) { padding: 5px 6px; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); overflow-wrap: break-word; }
   .fd-print-table th { font-weight: 600; border-block-end-color: var(--fd-border-strong); }
   .fd-print-table .fd-num { text-align: end; white-space: nowrap; }
+  .fd-print-table .fd-whole { white-space: nowrap; }
   .fd-print-table .fd-line-section td { font-weight: 600; }
   .fd-print-table .fd-line-note td { font-style: italic; }
   .fd-print-table tfoot td { font-weight: 600; border-block-end: 0; }
+  /* A header's ghost, carried while its column is dragged, is the screen's alone. */
+  .ag-dnd-ghost { display: none !important; }
 }
 /* Lines as cards (cards: narrow on a phone, or always), in the grid's place. */
 .fd-grid-lines[data-cards] { container: fd-grid / inline-size; }
@@ -125,6 +139,12 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-form .fd-grid-lines .fd-grid-editor .fd-input:focus { box-shadow: none; }
 /* A wrapping header breaks between its words, never inside one (its column has room for the longest). */
 .fd-grid-lines .ag-header-cell-text { word-break: normal; overflow-wrap: normal; }
+/* A finger's swipe on a column's header scrolls the page; resting there a moment lifts the column (grid.ts). AG Grid's
+   own style takes every touch there. Its edge, which sizes the column, keeps its own. */
+.fd-grid-lines .ag-header-cell[col-id]:not([col-id^="__"]) { touch-action: manipulation !important; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* A column being dragged, in the place it takes, as in a list: tinted, a line at its start; lifted by a finger, the same. */
+.fd-grid-lines :is(.ag-header-cell-moving, .ag-header-cell[data-lifted]) { background: var(--fd-accent-soft); box-shadow: inset 2px 0 0 var(--fd-accent); }
+.fd-grid-lines :is(.ag-header-cell-moving, .ag-header-cell[data-lifted]):dir(rtl) { box-shadow: inset -2px 0 0 var(--fd-accent); }
 /* A popup editor (links) covers its cell exactly and looks like one being edited in place. */
 .ag-popup-editor .fd-grid-editor {
   background: var(--ag-background-color); border: var(--ag-cell-editing-border); border-radius: var(--ag-border-radius);

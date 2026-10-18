@@ -3,6 +3,7 @@ import {
   groupByFields,
   importFields,
   ownZone,
+  recordSentence,
   type ButtonNode,
   type DayCount,
   type FilterPeriod,
@@ -20,7 +21,7 @@ import {
   type Tone,
   type Values,
 } from '@fieldia/core';
-import { drawIcon, formatNumber, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
+import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -33,7 +34,7 @@ import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, typ
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
-import { printAlone } from './print';
+import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
@@ -62,6 +63,8 @@ export interface ListContext {
   onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /** Conditions every search keeps: the records this list may show at all. */
   fixedFilter?: ResolvedFilter[];
+  /** The search it opens with, chips a person may take away, in place of its default filters and favourite (View all's). */
+  search?: Facet[];
   /** Other ways of showing the records, by name: `map` for a list with `map`, `calendar` for one with `calendar`. */
   views?: Record<string, ListViewFactory>;
   /**
@@ -196,6 +199,8 @@ const isPromise = (value: unknown): value is Promise<unknown> => !!value && type
  */
 export function listView(context: ListContext): ListView {
   const { page, node, form, el, labels, fill, locale, doc } = context;
+  /** One of the list's sentences in the words its page names its records by (`records`), else as it says them plainly. */
+  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
   installListStyles(doc);
   const pageSize = node.pageSize ?? 40;
   const defaultSort = node.sort ?? [];
@@ -209,7 +214,7 @@ export function listView(context: ListContext): ListView {
   const visible = () => [...body.querySelectorAll('.fd-list-row')].map((tr) => recordOf.get(tr) as Row);
   // Only a page of records gets this far: the page check refuses a list of anything else.
   const model = page.data.kind === 'record' ? page.data.model : '';
-  let facets: Facet[] = startingFacets(node, context.preferences, page);
+  let facets: Facet[] = context.search ? [...context.search] : startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */
@@ -257,6 +262,10 @@ export function listView(context: ListContext): ListView {
   const fields = [...new Set([...node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]), ...leads, ...(parentField ? [parentField] : []), ...(cards?.cardReads(spec) ?? []), ...rules.reads])];
   /** Its words keep to the end: a number's, unless its cell says otherwise. */
   const atEnd = (name: string) => (cellOf(name)?.align ? cellOf(name)?.align === 'end' : NUMBERS.has(page.fields[name].type));
+  /** Its words one thing, kept on one line on paper: a number, an amount, a day, a phone number. */
+  const whole = (name: string) => keepsWhole(page.fields[name]?.type, cellOf(name)?.widget);
+  /** A cell's classes: at the end for a number, whole on paper for words read as one. */
+  const cellClass = (name: string) => [atEnd(name) ? 'fd-num' : '', whole(name) ? 'fd-whole' : ''].filter(Boolean).join(' ') || undefined;
   /** A column of a given width, its words cut with "…" past it: the person's, in pixels; else the page's, in characters of its words or in pixels. */
   const sized = (cell: HTMLTableCellElement, name: string) => {
     const own = choices?.width(name);
@@ -279,7 +288,7 @@ export function listView(context: ListContext): ListView {
    */
   const shaping = node.optionalColumns ? columnsPart.loaded : undefined;
   const choices: ReturnType<ColumnsPart['columnChoices']> =
-    shaping?.columnChoices({ page, node, doc, el, labels, fill, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept) }) ?? null;
+    shaping?.columnChoices({ page, node, doc, el, labels, fill, locale, preferences: context.preferences, uid: context.uid, icons: context.icons, host: (): HTMLElement => element, changed: (kept) => arrange(kept), ...(context.widgetLabels ? { widgetLabels: context.widgetLabels } : {}) }) ?? null;
   if (spec) cards?.installCardStyles(doc);
   if (choices) shaping?.installColumnStyles(doc);
   /** The columns shown, in their order: the person's, else the page's. */
@@ -344,8 +353,11 @@ export function listView(context: ListContext): ListView {
         });
         th.append(button);
       }
-      // Its edge, dragged, sizes the column, where people shape the list's columns.
-      if (choices) th.append(choices.grip(name, th));
+      // Its edge, dragged, sizes the column, where people shape the list's columns; the header, dragged sideways, moves it.
+      if (choices) {
+        th.append(choices.grip(name, th));
+        choices.movable(name, th);
+      }
       return [name, th] as const;
     })
   );
@@ -383,9 +395,9 @@ export function listView(context: ListContext): ListView {
   );
   // The headers in the person's order, those they hid hidden.
   arrangeRow(headRow);
-  const empty = el('p', { class: 'fd-list-empty', hidden: '' }, labels.noRecords);
+  const empty = el('p', { class: 'fd-list-empty', hidden: '' }, sentence(labels.noRecordsNoun, labels.noRecords));
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry);
-  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
+  const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, sentence(labels.loadFailedNoun, labels.loadFailed), ' ', retry);
   // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
   const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
@@ -555,7 +567,7 @@ export function listView(context: ListContext): ListView {
       ...(box ? [el('td', { class: 'fd-list-check' }, box)] : []),
       ...(parentField ? [el('td', { class: 'fd-list-tree' })] : []),
       ...node.columns.map((column) =>
-        sized(el('td', { 'data-col': column, class: atEnd(column) ? 'fd-num' : undefined, 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
+        sized(el('td', { 'data-col': column, class: cellClass(column), 'data-name': parentField && column === nameColumn ? '' : undefined }, ...cells.draw(column, record.values, name)), column)
       ),
       // Its card, which the table hides and a narrow list or its gallery shows in place of the columns.
       ...(spec && cards ? [cards.drawCard({ page, node, el, locale, cells }, spec, record.values, name)] : []),
@@ -751,7 +763,7 @@ export function listView(context: ListContext): ListView {
     chosenCount.textContent = wide && wide.got < wide.total && chosen.size === wide.got ? fill(labels.selectedOf, { n: number(chosen.size), total: number(wide.total) }) : fill(labels.selected, { n: number(chosen.size) });
     totals?.ticked([...chosen], currentFilter());
     every.hidden = !!wide || groupedNow || !chooseAll.checked || total <= shown.length || !context.dataSource?.list;
-    if (!every.hidden && !every.hasAttribute('aria-busy')) every.textContent = fill(labels.selectAllMatching, { n: number(total) });
+    if (!every.hidden && !every.hasAttribute('aria-busy')) every.textContent = fill(sentence(labels.selectAllMatchingNoun, labels.selectAllMatching), { n: number(total) });
     // Edit, where one record chosen at least may be changed as far as the list knows.
     let editable = false;
     for (const id of chosen) {
@@ -791,10 +803,10 @@ export function listView(context: ListContext): ListView {
       bar.hidden = pager.hidden && search.element.hidden;
     }
     // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
-    range.textContent = fill(labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
+    range.textContent = fill(sentence(labels.rangeNoun, labels.range), { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
     if (shownOf) {
       shownOf.hidden = rows.length >= total;
-      shownOf.textContent = fill(labels.relatedShown, { n: number(rows.length), total: number(total) });
+      shownOf.textContent = fill(sentence(labels.relatedShownNoun, labels.relatedShown), { n: number(rows.length), total: number(total) });
     }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
@@ -896,7 +908,7 @@ export function listView(context: ListContext): ListView {
     }
     body.replaceChildren(...drawn);
     empty.hidden = drawn.length > 0 || !failed.hidden;
-    empty.textContent = context.none && !facets.length ? context.none : labels.noRecords;
+    empty.textContent = context.none && !facets.length ? context.none : sentence(labels.noRecordsNoun, labels.noRecords);
     table.removeAttribute('aria-busy');
     drawShape();
     drawPager();
@@ -923,6 +935,24 @@ export function listView(context: ListContext): ListView {
     filters
       ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
       : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}) });
+
+  /**
+   * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each
+   * tone's swatch and its words, a sample in bold and its words — a list a screen reader reads, named "Key to the rows".
+   * Without words, none: a list as 0.25 drew it.
+   */
+  function rowsKey(): HTMLElement | null {
+    const tones = (node.rowTones ?? []).filter((one) => one.label);
+    const bold = node.rowBold !== undefined && node.rowBold !== false && node.rowBoldLabel ? node.rowBoldLabel : null;
+    if (!tones.length && !bold) return null;
+    const item = (mark: HTMLElement, words: string) => el('li', { class: 'fd-list-key-item' }, mark, el('span', {}, words));
+    return el(
+      'ul',
+      { class: 'fd-list-key', 'aria-label': labels.rowsKey },
+      ...tones.map((one) => item(el('span', { class: 'fd-list-key-mark', 'data-tone': one.tone, 'aria-hidden': 'true' }), one.label as string)),
+      ...(bold ? [item(el('span', { class: 'fd-list-key-mark', 'data-bold': '', 'aria-hidden': 'true' }, 'Aa'), bold)] : [])
+    );
+  }
 
   // ---- other views: the map beside the table or instead of it, a calendar, an app's own ----------
 
@@ -1110,7 +1140,7 @@ export function listView(context: ListContext): ListView {
         wide = { total: Math.max(matched, ids.length), got: ids.length };
         for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-row .fd-list-checkbox')) box.checked = true;
       } catch {
-        context.say?.(labels.selectAllFailed, 'danger');
+        context.say?.(sentence(labels.selectAllFailedNoun, labels.selectAllFailed), 'danger');
       }
       drawChoice();
       viewParts.chosenChanged();
@@ -1154,7 +1184,7 @@ export function listView(context: ListContext): ListView {
     const ids = chosen.size;
     exportWhat.textContent = ids
       ? fill(labels.selected, { n: number(ids) })
-      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? labels.exportAllOne : labels.exportAll, { n: number(matching) });
+      : fill(new Intl.PluralRules(locale).select(matching) === 'one' ? sentence(labels.exportAllNounOne, labels.exportAllOne) : sentence(labels.exportAllNoun, labels.exportAll), { n: number(matching) });
     exportMenu.hidden = false;
     // From the button's start, unless that runs past the screen's edge: then from its end.
     exportMenu.removeAttribute('data-end');
@@ -1221,10 +1251,10 @@ export function listView(context: ListContext): ListView {
         });
         if (destroyed) return;
         if ('message' in end) context.say?.(end.message, 'info');
-        else if (end.done < end.total) context.say?.(fill(labels.exportCut, { n: number(end.done), total: number(end.total) }), 'warning');
-        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? labels.exportedOne : labels.exported, { n: number(end.done) }), 'success');
+        else if (end.done < end.total) context.say?.(fill(sentence(labels.exportCutNoun, labels.exportCut), { n: number(end.done), total: number(end.total) }), 'warning');
+        else context.say?.(fill(new Intl.PluralRules(locale).select(end.done) === 'one' ? sentence(labels.exportedNounOne, labels.exportedOne) : sentence(labels.exportedNoun, labels.exported), { n: number(end.done) }), 'success');
       } catch {
-        if (!destroyed) context.say?.(labels.exportFailed, 'danger');
+        if (!destroyed) context.say?.(sentence(labels.exportFailedNoun, labels.exportFailed), 'danger');
       }
     });
   }
@@ -1238,6 +1268,12 @@ export function listView(context: ListContext): ListView {
   const printButton = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-list-print-button' }, ...(printIcon ? [printIcon] : []), labels.printList);
   printButton.hidden = !printOn;
   printButton.addEventListener('click', () => void printAll());
+  // A list meant for paper: the print part fetched once the browser has nothing else to do, and as a pointer rests on
+  // its Print (print.ts).
+  if (printOn) {
+    printSoon(doc);
+    printIntent(printButton);
+  }
 
   /** Every record that matches on paper: asked of the source (list-print.ts), then the browser's print of it alone. */
   function printAll(): Promise<void> {
@@ -1246,9 +1282,12 @@ export function listView(context: ListContext): ListView {
     return busy(printButton, async () => {
       const grouping = groupedNow && source.groups ? groupByFields(facets).map((text) => groupKey(page, text)) : [];
       progress.textContent = fill(labels.printing, { done: number(0), n: number(matching) });
+      // The print part, which prints it, asked for as its records are.
+      const printer = loadPrint();
       let out: Awaited<ReturnType<typeof printout>>;
+      let paper: Awaited<typeof printer>;
       try {
-        out = await printout(
+        [out, paper] = await Promise.all([printout(
           {
             page,
             node,
@@ -1264,6 +1303,7 @@ export function listView(context: ListContext): ListView {
             reads: fields,
             words: show,
             atEnd,
+            whole,
             filter: currentFilter(),
             sort,
             facets,
@@ -1278,22 +1318,23 @@ export function listView(context: ListContext): ListView {
             if (!destroyed) progress.textContent = fill(labels.printing, { done: number(done), n: number(n) });
           },
           PRINT_MOST
-        );
+        ), printer]);
+        if (!paper) throw new Error('The print part could not come');
       } catch {
-        if (!destroyed) context.say?.(labels.printFailed, 'danger');
+        if (!destroyed) context.say?.(sentence(labels.printFailedNoun, labels.printFailed), 'danger');
         return;
       }
       if (destroyed) return;
       // Its logo drawn before the browser lays the sheet out for paper.
       await Promise.all([...out.sheet.querySelectorAll('img')].map((image) => (typeof image.decode === 'function' ? image.decode().catch(() => undefined) : undefined)));
       if (destroyed) return;
-      if (out.done < out.total) context.say?.(fill(labels.printCut, { n: number(out.done), total: number(out.total) }), 'warning');
+      if (out.done < out.total) context.say?.(fill(sentence(labels.printCutNoun, labels.printCut), { n: number(out.done), total: number(out.total) }), 'warning');
       progress.textContent = '';
       // In the list's place on paper, inside its form: its language, its direction and its accent.
       element.append(out.sheet);
       // Its footer at the foot of every sheet, its room kept there.
       keepFootRoom(out.sheet.querySelector<HTMLElement>(':scope > .fd-print-foot'));
-      await printAlone(doc, out.sheet, () => out.sheet.remove());
+      await paper.printAlone(doc, out.sheet, () => out.sheet.remove());
     });
   }
 
@@ -1308,7 +1349,7 @@ export function listView(context: ListContext): ListView {
       const n = ids.length;
       const one = new Intl.PluralRules(locale).select(n) === 'one';
       const how: BulkList = { page, node, model, dataSource: context.dataSource, labels, fill, locale, known: (id) => known.get(String(id)) };
-      const asked = await askBulkValue(how, bulk.editValues, fill(one ? labels.bulkTitleOne : labels.bulkTitle, { n: number(n) }));
+      const asked = await askBulkValue(how, bulk.editValues, fill(one ? sentence(labels.bulkTitleNounOne, labels.bulkTitleOne) : sentence(labels.bulkTitleNoun, labels.bulkTitle), { n: number(n) }));
       if (!asked || destroyed) return;
       if (!(await bulk.ask(bulkQuestion(how, n, asked.field, asked.value, number))) || destroyed) return;
       report.hidden = true;
@@ -1326,12 +1367,12 @@ export function listView(context: ListContext): ListView {
           wide = { total: failed.length, got: failed.length };
           const names = await namesOf(failed.map(({ id }) => id));
           if (destroyed) return;
-          reportWords.textContent = fill(labels.bulkSome, { done: number(done), n: number(n) });
+          reportWords.textContent = fill(sentence(labels.bulkSomeNoun, labels.bulkSome), { done: number(done), n: number(n) });
           reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
           reportFix.hidden = reportUndo.hidden = true;
           reported = edit;
           report.hidden = false;
-        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.bulkDoneOne : labels.bulkDone, { n: number(done) }), 'success');
+        } else context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.bulkDoneNounOne, labels.bulkDoneOne) : sentence(labels.bulkDoneNoun, labels.bulkDone), { n: number(done) }), 'success');
         await Promise.all([load(), viewParts.reload()]);
       });
     } finally {
@@ -1365,7 +1406,7 @@ export function listView(context: ListContext): ListView {
       try {
         part = await importPart.load();
       } catch {
-        context.say?.(labels.importFailed, 'danger');
+        context.say?.(sentence(labels.importFailedNoun, labels.importFailed), 'danger');
         return;
       }
       if (destroyed) return;
@@ -1393,10 +1434,10 @@ export function listView(context: ListContext): ListView {
       const made = end.made.length;
       const one = new Intl.PluralRules(locale).select(made) === 'one';
       reportWords.textContent = end.stopped
-        ? fill(labels.importStopped, { n: number(made), total: number(end.total) })
+        ? fill(sentence(labels.importStoppedNoun, labels.importStopped), { n: number(made), total: number(end.total) })
         : end.notImported.length
-          ? fill(labels.importSome, { n: number(made), total: number(end.total) })
-          : fill(one ? labels.importDoneOne : labels.importDone, { n: number(made) });
+          ? fill(sentence(labels.importSomeNoun, labels.importSome), { n: number(made), total: number(end.total) })
+          : fill(one ? sentence(labels.importDoneNounOne, labels.importDoneOne) : sentence(labels.importDoneNoun, labels.importDone), { n: number(made) });
       reportList.replaceChildren(...end.notImported.slice(0, 50).map(({ number: row, why }) => el('li', {}, fill(labels.importRow, { n: number(row), why }))));
       reportFix.hidden = !end.notImported.length;
       reportFix.onclick = () => void end.downloadFix(end.notImported);
@@ -1412,7 +1453,7 @@ export function listView(context: ListContext): ListView {
   /** The records an import made, deleted again once the person says so; those that could not be, named with why. */
   async function undoImport(ids: RecordId[], undo: (ids: readonly RecordId[], progress: (done: number, total: number) => void) => Promise<{ done: number; failed: { id: RecordId; why: string }[] }>): Promise<void> {
     const one = new Intl.PluralRules(locale).select(ids.length) === 'one';
-    if (!context.ask || !(await context.ask(fill(one ? labels.importUndoAskOne : labels.importUndoAsk, { n: number(ids.length) }))) || destroyed) return;
+    if (!context.ask || !(await context.ask(fill(one ? sentence(labels.importUndoAskNounOne, labels.importUndoAskOne) : sentence(labels.importUndoAskNoun, labels.importUndoAsk), { n: number(ids.length) }))) || destroyed) return;
     await busy(reportUndo, async () => {
       const { done, failed } = await undo(ids, (at, of) => {
         if (!destroyed) progress.textContent = fill(labels.importUndoing, { done: number(at), n: number(of) });
@@ -1422,11 +1463,11 @@ export function listView(context: ListContext): ListView {
       if (failed.length) {
         const names = await namesOf(failed.map(({ id }) => id));
         if (destroyed) return;
-        reportWords.textContent = fill(labels.importUndoSome, { done: number(done), n: number(ids.length) });
+        reportWords.textContent = fill(sentence(labels.importUndoSomeNoun, labels.importUndoSome), { done: number(done), n: number(ids.length) });
         reportList.replaceChildren(...failed.map(({ id, why }) => el('li', {}, fill(labels.bulkWhy, { name: names.get(String(id)) ?? String(id), why }))));
       } else {
         report.hidden = true;
-        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? labels.importUndoneOne : labels.importUndone, { n: number(done) }), 'success');
+        context.say?.(fill(new Intl.PluralRules(locale).select(done) === 'one' ? sentence(labels.importUndoneNounOne, labels.importUndoneOne) : sentence(labels.importUndoneNoun, labels.importUndone), { n: number(done) }), 'success');
         importButton.focus();
       }
       await Promise.all([load(), viewParts.reload()]);
@@ -1450,6 +1491,7 @@ export function listView(context: ListContext): ListView {
   }
 
   const bar = el('div', { class: 'fd-list-bar' }, search.element, progress, importButton, exportBox, printButton, views, ...(fieldsSearch ? [] : [pager]));
+  const key = rowsKey();
   const element = el(
     'div',
     {
@@ -1467,11 +1509,11 @@ export function listView(context: ListContext): ListView {
     // A list with no box to choose a row has nothing to act on; an import's report is said all the same.
     ...(choose ? [selection] : []),
     report,
+    ...(key ? [key] : []),
     el('div', { class: 'fd-list-body' }, el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : [])), ...holders.values())
   );
-  // Scrolled sideways, the first column kept in view is parted from those going under it.
-  const scroller = element.querySelector('.fd-list-scroll') as HTMLElement;
-  if (choices) scroller.addEventListener('scroll', () => scroller.toggleAttribute('data-scrolled', Math.abs(scroller.scrollLeft) > 0), { passive: true });
+  // Scrolled sideways, the first column and the Columns menu's cell, held at its ends, are parted from those going under them.
+  choices?.scrolls(element.querySelector('.fd-list-scroll') as HTMLElement);
   showAs(view);
   widths?.observe(element);
   drawShape();

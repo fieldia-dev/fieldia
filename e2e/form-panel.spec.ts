@@ -153,8 +153,11 @@ test('a link’s Create and edit… inside the panel opens a dialog above it, an
   expect(over).toEqual({ dialog: true, panelShaded: true });
   await dialog.locator('[data-node="f-email"] input').fill('events@hiltoncairo.example');
   await screen(page, 'panel-with-dialog', { viewport: true });
-  // Escape in the dialog closes the dialog alone.
+  // Escape in the dialog asks about the dialog's typing alone (one question, in the dialog), and Discard closes it alone.
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('alertdialog')).toHaveCount(1);
+  await expect(dialog.getByRole('alertdialog')).toContainText('Discard your changes?');
+  await dialog.getByRole('alertdialog').getByRole('button', { name: 'Discard' }).click();
   await expect(dialog).toBeHidden();
   await expect(panel).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);

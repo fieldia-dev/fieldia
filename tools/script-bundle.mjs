@@ -810,7 +810,54 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (viewerWords) — 509.23 measured before, 497.88 after: 11.4 less, to 497.9.
 // The words lane joined with every other lane (size-words; its line above measured on the size pass's tip): 512.44
 // measured before, 500.97 after — 11.5 less, to 501.0.
-const BUDGET_KB = 501.0;
+// A tab's count of a related list in it (open-small): which list a tab counts, checked and found (relatedInTab), its
+// pill asked for the count through the list part, and the pill's look out of the head part into this sheet, where a
+// count on any page's tab is drawn (it was unstyled without a head) — 500.98 measured before, 502.13 after: 1.2 more,
+// to 502.2.
+// A related list's rows and New the app's own way (open-small, `"open": "app"`): the app's way handed to the list,
+// with the page it gives for the model — 502.13 measured before, 502.28 after: 0.2 more, to 502.3.
+// A page names its records (0.26, open-names): the page's `records` read and checked, a sentence said in its words
+// (recordSentence) — the form's questions before Archive and Delete, why it may not, why a run stopped, what letting
+// changes go asks; a record's crumb, its pager, the gear's This record, someone else's save, a record only to be read,
+// a list that could not load — their 19 English sentences beside the plain ones, a language's or an app's own sentence
+// said where it gives none with a noun, and a related list asking the app's page for its model what its records are
+// called: 500.97 measured before, 504.04 after — 3.1 more, to 504.1.
+// Every label inside a sentence small where the page asks (`lowerLabels`), by one rule (labelAt): the form's
+// messages filled through it (fillMessage: "Choose at least 2 for interests", "End date can’t be before start date"),
+// the viewer's own — a refused save's Check, a help's and a lock's names, a value that waits, a field not shown — and
+// the search's suggestion; the quiet look's hint by the same rule — 504.04 measured before, 505.18 after: 1.1 more,
+// to 505.2.
+// A line's own dialog says its labels as its record's page asks, unless its own page says otherwise, the page's
+// `lowerLabels` a setting of its own beside `records`: 505.18 measured before, 505.33 after — 0.2 more, to 505.4.
+// A record's footer under every sheet and each heading kept with what follows it on paper (0.26, open-print): the print
+// rules' grids as blocks with their parts side by side in lines, the content a table whose footer group the footer is,
+// a box under each heading as tall as its start, a short group one box, measured as printing begins (print.ts) —
+// rules for paper that a part loaded at beforeprint brings too late — 500.98 measured before, 507.84 after: 6.9 more,
+// to 507.9.
+// The four open-items lanes joined (0.26: open-small, open-columns, open-names, open-print — each line above measured on
+// 0.25.0), with a list's shaped columns, a grid's moved ones and a work item's title on paper across them (all in the
+// parts' sheets): 500.98 measured on 0.25.0, 513.49 after — the lanes' 1.30, 4.35 and 6.86 added up — to 513.5.
+// A related list's View all says what its list is kept to as chips a person may take away (`OpenRequest.search` opened
+// as the list's `listSearch`), and the memory source numbers a new line after every line of the records it was given
+// (0.26, the owner walk's site lane): 513.49 measured before, 513.94 after — 0.45 more, to 514.0.
+// The owner's walk of 0.25 mended in the engine (0.26, walkfix26-engine): every dialog's Escape asks about every change,
+// a line not added yet searched by what it starts with (a pasted row's names read first), a grid drawn for paper told so,
+// and on paper a record's own name or its noun and stage over it, its printout's lines one each — a line of an empty
+// value left out — no required star, what its page leaves off left off, every grid's groups lines a sheet breaks between,
+// grids side by side by the sheet's width (a media query: Firefox drew a box a container query changed nothing of) —
+// rules for paper the main sheet must hold: 513.49 measured before, 515.07 after — 1.6 more, to 515.1.
+// The owner's walk's two lanes joined (site and engine, each line above measured on the four lanes' tip): 513.49
+// measured before, 515.51 after — their 0.45 and 1.58 added up — to 515.6.
+// Print on intent (0.26, size-026): the whole look on paper — its rules for paper (9.70 of the main script, 2.6 of it
+// gzipped: 4.89 at 0.25.0, grown by the open-print and walk-fix lanes), what is done as printing begins (print.ts,
+// 5.84) — moved into a part of its own, fieldia.print.js, loaded as a person shows they mean to print: Ctrl+P, which
+// Fieldia holds back while it comes, every Print waiting for it, the gear opened, a pointer resting on a Print, a page
+// meant for paper drawn. A part loaded at beforeprint comes too late, so the browser's own menu before it came prints
+// a plain look the main sheet keeps (buttons, bars, the side, hints left out, light colours), and asks for the part —
+// with the printout's parts kept off the screen, 1.17 of the main sheet. The main script keeps the printout's head and
+// footer, made as a form is drawn (the screen's every element as it was), and Ctrl+P's and intent's watch (print.ts,
+// 2.17): 515.51 measured before, 503.40 after — 12.1 less, to 503.5.
+const BUDGET_KB = 503.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -982,7 +1029,29 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // parts read being in both.
 // The words lane joined with every other lane (listed with the raw budget above): 165.44 measured before, 161.14 after
 // — 4.3 less, to 161.2.
-const GZIP_BUDGET_KB = 161.2;
+// A tab's count of a related list in it, and the pill's look on any page (listed with the raw budget above): 161.14
+// measured before, 161.65 after — 0.5 more, to 161.7.
+// A related list's rows and New the app's own way (listed with the raw budget above): 161.65 measured before, 161.72
+// after — 0.1 more, to 161.8.
+// A page names its records (0.26; listed with the raw budget above): 161.14 measured before, 162.15 after — 1.0 more,
+// to 162.2.
+// Every label inside a sentence small where the page asks (listed with the raw budget above): 162.15 measured before,
+// 162.68 after — 0.5 more, to 162.7.
+// A line's own dialog as its record's page asks (listed with the raw budget above): 162.68 measured before, 162.72
+// after, to 162.8.
+// A record's footer under every sheet and its headings kept with what follows them on paper (listed with the raw budget
+// above): 161.14 measured before, 163.05 after — 1.9 more, to 163.1.
+// The four open-items lanes joined (listed with the raw budget above): 161.14 measured on 0.25.0, 165.20 after — the
+// lanes' 0.58, 1.58 and 1.91 added up — to 165.3.
+// View all's chips and the memory source's line numbers (0.26, the owner walk's site lane; listed with the raw budget
+// above): 165.20 measured before, 165.35 after — 0.15 more, to 165.4.
+// The owner's walk of 0.25 mended in the engine (listed with the raw budget above): 165.20 measured before, 165.75 after
+// — 0.6 more, to 165.8.
+// The owner's walk's two lanes joined (listed with the raw budget above): 165.20 measured before, 165.90 after — their
+// 0.15 and 0.55 added up — to 166.0.
+// Print on intent (listed with the raw budget above): 165.90 measured before, 162.94 after — 3.0 less, to 163.0. A
+// page that prints takes 5.22 more in fieldia.print.js.
+const GZIP_BUDGET_KB = 163.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1116,7 +1185,16 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // Arabic's to 54.8, German's to 23.5, French's to 24.3 and, its 8.40 half a byte over, 8.5.
 // The walk's engine lane joined, its words for values that wait, several currencies and a phone's letters: Arabic's
 // 67.21 and 11.65, German's 29.04 and 9.95, French's 30.08 and 10.00, each to the next 0.1 over.
-const ADD_ON_BUDGET_KB = { ar: [67.3, 11.7], de: [29.1, 10.0], fr: [30.1, 10.1] };
+// A page names its records (0.26): each sentence a language can say round any page's words for its records — German's
+// 42 (its plurals and its "ein Kunde" agree with no gender), French's 31 (none that agrees with the noun's) — the rest
+// left out, so the language's own plain sentence is said: German's 29.04 and 9.95 measured before, 31.46 and 10.29
+// after, to 31.5 and 10.3; French's 30.08 and 10.00 to 31.76 and 10.28, to 31.8 and 10.3; Arabic's one (the pager's
+// name), 67.23 and 11.66, under its own.
+// The owner's walk of 0.25 mended in the engine: a pasted row's name read as no record said (four words, the lines
+// part's), a CSV file's characters misread and its header alone said, the key over a list's rows named — each language's
+// words: Arabic's 67.23 and 11.66 measured before, 68.25 and 11.82 after, to 68.3 and 11.9; German's 31.46 and 10.29 to
+// 31.91 and 10.42, to 32.0 and 10.5; French's 31.76 and 10.28 to 32.24 and 10.42, to 32.3 and 10.5.
+const ADD_ON_BUDGET_KB = { ar: [68.3, 11.9], de: [32.0, 10.5], fr: [32.3, 10.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1357,7 +1435,61 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 19.94 and 7.52; duplicates 14.79 and 6.24; head 34.46 and 10.02; date 22.13 and 8.38; filters 11.25 and 4.21;
 // columns 10.96 and 4.05; path 16.06 and 6.31; choice 10.64 and 4.34 — each to the next 0.1 over; cards, themes and
 // quiet as they were.
-const PART_BUDGET_KB = { head: [34.5, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.3, 4.3], date: [22.2, 8.4], list: [103.5, 33.6], cards: [11.6, 3.7], columns: [11.0, 4.1], import: [36.0, 14.3], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [37.8, 12.9], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.8, 16.5], slots: [15.3, 5.9], relations: [20.0, 7.6], duplicates: [14.8, 6.3] };
+// A work item's head's title wraps where it is too long for its line, never cut (open-small): the head 34.46 and 10.02
+// to 34.66 and 10.07 — its title drawn as a line that wraps and its first line's room kept for what stands beside it —
+// to 34.7. (A tab's count's pill then moved to the main script's sheet, the head 34.36 and 10.01.)
+// A tab's count of a related list in it, asked of the source as the record is shown and drawn in the tab's pill
+// (open-small): list 103.42 and 33.50 to 104.25 and 33.78, to 104.3 and 33.8. Its rows and New the app's own way
+// first (`"open": "app"`): 104.41 and 33.85, to 104.5 and 33.9.
+// A column moved by dragging its header (0.26, open-columns): its ghost, the columns sliding aside, the line where it
+// goes, Escape, a finger's long press, the table scrolled at its edges, its place said (the widgets' movedTo, carried
+// by the part) and its sheet — columns 10.96 and 4.05 to 17.42 and 6.42; with the Columns menu's button given the
+// focus back without scrolling the table to it, and the edge's scroll by the time a frame took, 17.53 and 6.48; with
+// the Columns menu's cell held at the header's end, the card's marks for both held ends moved in from the list part,
+// 18.28 and 6.64 — to 18.3 and 6.7. The list part, which hands each header and the card to it, 103.42 and 33.50 to
+// 103.38 and 33.47, under its own.
+// A page names its records (0.26, open-names): each part's sentences in the page's words for them, their English with
+// it — list 103.42 and 33.50 measured before, 106.67 and 34.19 after (its pager, nothing found, Select all, Export,
+// Edit, Print's count, Import's report and Undo, a related list's New, View all, None and "5 of 23 invoices" in its
+// model page's words: 35), to 106.7 and 34.2; import 35.99 and 14.29 to 36.29 and 14.37 (Import 10 contacts, could not
+// import them, made none of it: 4), to 36.3 and 14.4; duplicates 14.79 and 6.24 to 15.85 and 6.54 (a customer with
+// this phone, It's a new customer, the merge's title, words and column: 7, and a label written small where the page
+// says so), to 15.9 and 6.6.
+// Every label inside a sentence small where the page asks (open-names, as one class): each part's sentences that put a
+// label after a word asking the one rule in the main script (labelAt) — relations 19.93 and 7.52 to 20.09 and 7.59 (a
+// link's ×, a tags' Add), phone 37.77 and 16.47 to 37.85 and 16.51 (its country's name), lines 37.78 and 12.85 to
+// 37.86 and 12.89 (a line's cell that waits), filters 11.25 and 4.21 to 11.31 and 4.24, columns 10.96 and 4.05 to 11.06
+// and 4.11, import 36.29 and 14.37 to 36.37 and 14.39 (its form's messages so) — each to the next 0.1 over; duplicates
+// 15.85 and 6.54 to 15.69 and 6.46, its own lowering gone for the one rule, to 15.7 and 6.5. A list's Edit dialog
+// asking its labels as the list's page does, and a related list naming none for a page that only asks them small:
+// list 106.68 and 34.19 to 106.73 and 34.21, to 106.8 and 34.3.
+// A table of lines a block round it on paper, which every engine breaks between its rows (0.26, open-print): lines
+// 37.78 and 12.85 measured before, 37.85 and 12.87 after, its raw to 37.9.
+// The four open-items lanes joined (0.26; each lane's lines above measured on 0.25.0), with across them a list on paper
+// (no Columns cell, nothing held in view, no drag's ghost or line), a work item's head on paper (no Copy title) and a
+// moved column said by the one rule (labelAt): head 34.46 and 10.02 measured on 0.25.0, 34.39 and 10.02 after; list
+// 103.42 and 33.50 to 107.73 and 34.56; columns 10.96 and 4.05 to 18.86 and 6.78; lines 37.78 and 12.85 to 37.93 and
+// 12.91; import 35.99 and 14.29 to 36.36 and 14.39; duplicates 14.79 and 6.24 to 15.67 and 6.45; relations 19.93 and
+// 7.52 to 20.07 and 7.58; phone 37.77 and 16.47 to 37.84 and 16.50; filters 11.25 and 4.21 to 11.30 and 4.24 — each to
+// the next 0.1 over; the rest as they were.
+// A related list's View all saying what its list is kept to, as chips a person may take away (0.26, the owner walk's
+// site lane: the record by its name, the list's own filter by its title; the list opened with them): list 107.73 and
+// 34.56 measured before, 108.02 and 34.66 after, to 108.1 and 34.7.
+// The owner's walk of 0.25 mended in the engine: lines 37.93 and 12.91 measured before, 40.51 and 13.97 after — a block
+// pasted row by row, the plain table's and the grid's one way, its names read through the source's search, a row whose
+// name reads as no record refused whole and said, a number, a day or a phone whole on paper; list 107.73 and 34.56 to
+// 109.27 and 34.98 — the key over the rows, a printout's lines one each, its whole cells, an untitled related list's head
+// off paper; import 36.36 and 14.39 to 37.59 and 14.77 — characters misread said, a header alone said, the rows to fix
+// as the file had them under the fields' labels; cards 11.41 and 3.65 to 11.85 and 3.77 — an amount never broken
+// inside, its line's room given; columns 18.86 and 6.78 to 19.01 and 6.86 — the name column held first — each to the
+// next 0.1 over; the rest as they were (duplicates' 15.67 and 6.45 to 15.63 and 6.44).
+// The owner's walk's two lanes joined: list 107.73 and 34.56 measured before, 109.56 and 35.09 after — their 0.29 and
+// 1.54 added up — to 109.6 and 35.1; the other parts as the engine lane's line says.
+// Print on intent (0.26, size-026): print new, 15.99 and 5.22 — the whole look's rules for paper (print-styles.ts, 9.35)
+// and what is done as printing begins and Ctrl+P's print of the page (print-look.ts, 5.82) — to 16.0 and 5.3; list
+// 109.56 and 35.09 measured before, 109.78 and 35.19 after — its Print waiting for the print part, a list meant for
+// paper fetching it, and the words only it and the print part read now (printing, printedOn) — to 109.8 and 35.2.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [109.8, 35.2], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1366,7 +1498,7 @@ const PART_GIVES = {
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],
   date: ['dateBox', 'dateBoxWidget', 'dateRules', 'withCalendar', 'weekdayHead', 'dateRangeWidget'],
-  list: ['listView', 'relatedList', 'relatedListPage', 'installListStyles'],
+  list: ['listView', 'relatedList', 'relatedListPage', 'relatedCount', 'installListStyles'],
   cards: ['cardSpec', 'cardReads', 'drawCard', 'installCardStyles'],
   columns: ['columnChoices', 'columnsKey', 'installColumnStyles'],
   import: ['openImport', 'installImportStyles'],
@@ -1380,9 +1512,10 @@ const PART_GIVES = {
   slots: ['slotsWidget'],
   relations: ['many2oneWidget', 'tagsWidget', 'charTagsWidget', 'linkCheckboxesWidget', 'referenceWidget'],
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
+  print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', print: 'printPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1476,8 +1609,9 @@ console.log(`parts: ${partSizes.join('; ')}`);
  * screen (its phones, its totals, its Export and Edit), its Import, its cards and the columns a person shapes, a
  * gallery, a record's related list, a theme, a table of lines, a customer's statusbar and photo, a work item's head,
  * text and path picker for its bug, the filter bar for its backlog, a date's box (on a public page with its bot check),
- * the survey kinds, a booking's slots, a customer's possible duplicates (never waited for) — and the page is drawn
- * whole once they have come. Pages
+ * the survey kinds, a booking's slots, a customer's possible duplicates (never waited for), the print part for a page
+ * meant for paper (fetched once it is drawn, never run, never waited for) — and the page is drawn whole once they have
+ * come. Pages
  * open in an order where each part's first use is clear, the parts in after each step said in full.
  */
 {
@@ -1538,8 +1672,10 @@ console.log(`parts: ${partSizes.join('; ')}`);
   contact.destroy();
   gone('contact');
   // A list with its search bar: the list part, the page drawn once it came; its phone column's numbers written by the
-  // phone part, in already. Export, Edit, Import and Print are asked for by the page: none is in its bar.
-  const customers = inPage.mountViewer(host, { page: read('customers.page.json'), dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
+  // phone part, in already. Export, Edit, Import and Print are asked for by the page: none is in its bar. Its cards on a
+  // phone (the demo's customers have some) left out: a list that asks for none never brings the cards part.
+  const listed = read('customers.page.json');
+  const customers = inPage.mountViewer(host, { page: { ...listed, layout: { ...listed.layout, card: undefined } }, dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders', phone: '+201012345678' } } } }) });
   waits(customers, 'a list');
   await customers.drawn;
   hasIn("a list's screen", 'list, phone, relations');
@@ -1554,8 +1690,13 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const invoiced = { 1: { name: 'INV/1', invoice_date: `${year}-01-15`, due_date: `${year}-02-15`, state: 'paid', currency_id: egp, amount: 100 }, 2: { name: 'INV/2', invoice_date: `${year}-01-20`, due_date: `${year}-02-20`, state: 'sent', currency_id: egp, amount: 250 } };
   const invoices = inPage.mountViewer(host, { page: read('invoices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { invoice: invoiced, currency: { 1: { name: 'EGP' } } } }) });
   await invoices.drawn;
-  // Its rows cards on a phone (the cards part), its totals in sight under them; Print in its bar, as it asks.
-  hasIn('invoices that add up', 'cards, list, phone, relations');
+  // Its rows cards on a phone (the cards part), its totals in sight under them; Print in its bar, as it asks — and so,
+  // a page meant for paper, the print part fetched once the page is drawn and the browser idle (print.ts), never run:
+  // the first part a page asks for that it draws nothing from. Every page before it asked for none of it.
+  hasIn('invoices that add up, before the browser is idle', 'cards, list, phone, relations');
+  for (let turn = 0; turn < 300 && !inPage.printPart.loaded; turn++) await tick();
+  hasIn('invoices that add up', 'cards, list, phone, print, relations');
+  if (host.querySelector('form.fd-form')?.hasAttribute('data-fd-print')) throw new Error('in a page, the print part fetched for a page meant for paper laid it out for paper');
   if (host.querySelector('.fd-list-print-button')?.hidden !== false) throw new Error('in a page, a list that asks for Print does not offer it');
   if (!(await until(() => host.querySelector('.fd-list-total:not([hidden])')?.textContent.includes('350')))) throw new Error(`in a page, a list's totals row is not drawn: ${host.querySelector('.fd-list-total')?.textContent ?? 'no totals row'}`);
   invoices.destroy();
@@ -1566,7 +1707,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const contacts = inPage.mountViewer(host, { page: read('contacts.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'crm.contact': { 1: { name: 'Nile Traders', state: 'customer', phone: '+201012345678' } } } }) });
   waits(contacts, 'a list with cards and columns a person shapes');
   await contacts.drawn;
-  hasIn('contacts to export, edit in bulk and shape', 'cards, columns, list, phone, relations');
+  hasIn('contacts to export, edit in bulk and shape', 'cards, columns, list, phone, print, relations');
   if (host.querySelector('.fd-list-export')?.hidden !== false || !host.querySelector('.fd-list-edit')) throw new Error("in a page, a list that asks for Export and Edit does not offer them");
   const contactRow = await until(() => host.querySelector('.fd-list-row'));
   if (!host.querySelector('thead .fd-list-columns-button') || !contactRow?.querySelector('.fd-list-card .fd-list-card-title') || !contactRow.querySelector('td[data-col="state"] .fd-value-badge')) throw new Error("in a page, a list's Columns menu, cards or pills are not drawn from their parts");
@@ -1575,10 +1716,10 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Its Import, in the bar without its part; pressed, the import part comes, its dialog and its sheet with it.
   const importing = host.querySelector('.fd-list-import-button');
   if (!importing || importing.hidden) throw new Error('in a page, a list that asks for Import does not offer it');
-  hasIn('contacts with Import in their bar', 'cards, columns, list, phone, relations');
+  hasIn('contacts with Import in their bar', 'cards, columns, list, phone, print, relations');
   importing.click();
   if (!(await until(() => doc.querySelector('.fd-import .fd-import-drop')))) throw new Error("in a page, Import's dialog is not drawn from its part");
-  hasIn('Import pressed', 'cards, columns, import, list, phone, relations');
+  hasIn('Import pressed', 'cards, columns, import, list, phone, print, relations');
   if (!doc.getElementById('fieldia-import-styles')) throw new Error("in a page, Import's sheet is not put in");
   doc.querySelector('.fd-import .fd-dialog-close').click();
   if (doc.querySelector('.fd-import')) throw new Error("in a page, Import's dialog is not taken away as it closes");
@@ -1587,7 +1728,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Homes as a gallery: the cards part already in, the list opening on its cards.
   const homes = inPage.mountViewer(host, { page: read('homes-gallery.page.json'), dataSource: inPage.createMemoryDataSource({ records: { home: { 1: { name: 'Nile view flat', offer: 'sale', price: 4500000, currency: 'EGP' } } } }) });
   await homes.drawn;
-  hasIn('homes as a gallery', 'cards, columns, import, list, phone, relations');
+  hasIn('homes as a gallery', 'cards, columns, import, list, phone, print, relations');
   if (host.querySelector('.fd-list')?.getAttribute('data-as') !== 'gallery' || !(await until(() => host.querySelector('.fd-list-card')))) throw new Error('in a page, a gallery does not open on its cards');
   homes.destroy();
   gone('homes');
@@ -1599,7 +1740,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
     dataSource: inPage.createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } }, invoice: { ...invoiced, 3: { ...invoiced[1], name: 'INV/3', partner_id: { id: 1, label: 'Nile Traders' } } } } }),
   });
   await account.drawn;
-  hasIn('a customer with its invoices', 'cards, columns, import, list, phone, relations');
+  hasIn('a customer with its invoices', 'cards, columns, import, list, phone, print, relations');
   if (!(await until(() => host.querySelector('[data-node="invoices"] .fd-list-row')))?.textContent.includes('INV/3') || host.querySelectorAll('[data-node="invoices"] .fd-list-row').length !== 1) throw new Error(`in a page, a related list does not list the records that point at its record: ${host.querySelector('[data-node="invoices"]')?.textContent ?? 'no related list'}`);
   if (!host.querySelector('[data-node="invoices"] .fd-list-row .fd-list-card .fd-list-card-title')) throw new Error("in a page, a related list's rows carry no card for a phone");
   account.destroy();
@@ -1608,7 +1749,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
   await themed.drawn;
-  hasIn('a theme the app gives', 'cards, columns, import, list, phone, relations, themes');
+  hasIn('a theme the app gives', 'cards, columns, import, list, phone, print, relations, themes');
   if (themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error('in a page, a theme the app gives is not worn from its part');
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
@@ -1619,7 +1760,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(order, 'a page with a table of lines');
   await order.drawn;
-  hasIn('an order with a table of lines', 'cards, columns, import, lines, list, phone, relations, themes');
+  hasIn('an order with a table of lines', 'cards, columns, import, lines, list, phone, print, relations, themes');
   if (!host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error('in a page, a table of lines is not drawn from its part');
   order.destroy();
   gone('order');
@@ -1628,7 +1769,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(customer, 'a sheet with a statusbar and a photo');
   await customer.drawn;
-  hasIn("a customer's sheet", 'business, cards, columns, files, import, lines, list, phone, relations, themes');
+  hasIn("a customer's sheet", 'business, cards, columns, files, import, lines, list, phone, print, relations, themes');
   if (!host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error('in a page, a statusbar is not drawn from its part');
   if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
   customer.destroy();
@@ -1637,7 +1778,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(bug, "a work item's bug");
   await bug.drawn;
-  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, import, lines, list, path, phone, quiet, relations, text, themes');
+  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, import, lines, list, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
@@ -1645,7 +1786,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, import, lines, list, path, phone, quiet, relations, text, themes');
+  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, import, lines, list, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-filter-bar')) throw new Error("in a page, a backlog's filter bar is not drawn from its part");
   backlog.destroy();
   gone('backlog');
@@ -1654,7 +1795,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(signup, 'a page with a date');
   await signup.drawn;
-  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, quiet, relations, text, themes');
+  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error('in a page, a date is not drawn from its part');
   if (!host.querySelector('.fd-trap[inert] input[name="website"]')) throw new Error("in a page, a public page's bot check has no hidden box");
   signup.destroy();
@@ -1663,7 +1804,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(survey, 'a survey');
   await survey.drawn;
-  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, quiet, relations, survey, text, themes');
+  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, print, quiet, relations, survey, text, themes');
   if (!host.querySelector('.fd-matrix-table')) throw new Error('in a page, a matrix is not drawn from its part');
   survey.destroy();
   gone('survey');
@@ -1675,7 +1816,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   waits(drive, 'a test drive');
   await drive.drawn;
   await tick(0);
-  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, quiet, relations, slots, survey, text, themes');
+  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (!host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error('in a page, booking slots are not drawn from their part');
   drive.destroy();
   gone('drive');
@@ -1686,7 +1827,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, quiet, relations, slots, survey, text, themes');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
@@ -1701,6 +1842,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
   const ranks = ranked.map((style) => Number(style.getAttribute('data-fd-rank')));
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
+  // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
+  if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
@@ -1709,8 +1852,80 @@ console.log(`parts: ${partSizes.join('; ')}`);
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place; each part's own words in once it came");
 }
+
+/**
+ * On paper, in a page that never printed: the print part asked for only as a person prints. The browser's own print
+ * (its menu) before it came prints the main sheet's plain look — nothing laid out for paper — and asks for the part,
+ * so the next print is whole; Ctrl+P before it came is held back while it comes, then the browser asked to print, the
+ * form laid out for paper meanwhile and put back once printed; once it is in, so at once, in the press. Its sheet
+ * right after Fieldia's own (PART_RANK.print, 0).
+ */
+for (const first of ['menu', 'keys']) {
+  const { JSDOM, VirtualConsole } = await import('jsdom');
+  const problems = [];
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', (error) => problems.push(error.message));
+  virtualConsole.on('error', (message) => problems.push(String(message)));
+  const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body><div id="app"></div></body></html>', {
+    url: pathToFileURL(join(BUNDLE, 'page.html')).href,
+    runScripts: 'dangerously',
+    resources: 'usable',
+    pretendToBeVisual: true,
+    virtualConsole,
+  });
+  await new Promise((done) => dom.window.addEventListener('load', done));
+  const { Fieldia: inPage, document: doc } = dom.window;
+  const tick = (ms = 10) => new Promise((done) => dom.window.setTimeout(done, ms));
+  const until = async (ready) => {
+    for (let turn = 0; turn < 300 && !ready(); turn++) await tick();
+    return ready();
+  };
+  const asked = () => [...doc.querySelectorAll('script[src]')].map((tag) => tag.getAttribute('src')).filter((src) => /fieldia\.print\.js$/.test(src));
+  const view = inPage.mountViewer(doc.getElementById('app'), { page: JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/delivery.page.json'), 'utf8')), dataSource: inPage.createMemoryDataSource() });
+  await view.drawn;
+  const form = doc.querySelector('form.fd-form');
+  await tick(50);
+  if (inPage.printPart.loaded || asked().length || doc.getElementById('fieldia-print-styles')) throw new Error('on paper, a page no one printed asked for the print part');
+  if (!/@media print\{[^}]*--fd-text: ?#1d2024 ?!important/.test(doc.getElementById('fieldia-styles').textContent)) throw new Error("on paper, Fieldia's own sheet has no plain look for a print before the print part came");
+  const prints = [];
+  // As a browser's dialog: told before and after, inside print().
+  dom.window.print = () => {
+    dom.window.dispatchEvent(new dom.window.Event('beforeprint'));
+    prints.push({ laidOut: form.hasAttribute('data-fd-print'), sheet: !!doc.getElementById('fieldia-print-styles') });
+    dom.window.dispatchEvent(new dom.window.Event('afterprint'));
+  };
+  const ctrlP = () => {
+    const press = new dom.window.KeyboardEvent('keydown', { key: 'p', code: 'KeyP', ctrlKey: true, bubbles: true, cancelable: true });
+    doc.body.dispatchEvent(press);
+    return press.defaultPrevented;
+  };
+  if (first === 'menu') {
+    // The browser's menu: told it prints, the page as it is — and the part asked for.
+    dom.window.dispatchEvent(new dom.window.Event('beforeprint'));
+    if (form.hasAttribute('data-fd-print')) throw new Error("on paper, the browser's print before the print part came laid the page out as the part does");
+    if (!(await until(() => inPage.printPart.loaded))) throw new Error("on paper, the browser's print before the print part came did not ask for it");
+    dom.window.dispatchEvent(new dom.window.Event('afterprint'));
+    if (form.hasAttribute('data-fd-print')) throw new Error('on paper, the print part laid out a form as it came, unasked');
+    // The next print whole.
+    dom.window.print();
+    if (prints.length !== 1 || !prints[0].laidOut || !prints[0].sheet || form.hasAttribute('data-fd-print')) throw new Error(`on paper, the browser's print once the part came is not whole, or not put back: ${JSON.stringify(prints)}`);
+  } else {
+    // Ctrl+P: held back, the part asked for; once it came, the browser asked to print the page laid out whole.
+    if (!ctrlP()) throw new Error('on paper, Ctrl+P before the print part came was not held back');
+    if (!(await until(() => prints.length))) throw new Error('on paper, Ctrl+P before the print part came never printed');
+    if (prints.length !== 1 || !prints[0].laidOut || !prints[0].sheet || form.hasAttribute('data-fd-print')) throw new Error(`on paper, Ctrl+P did not print the whole look, or did not put the page back: ${JSON.stringify(prints)}`);
+    // Once it is in, at once, in the press.
+    if (!ctrlP() || prints.length !== 2 || !prints[1].laidOut || form.hasAttribute('data-fd-print')) throw new Error(`on paper, Ctrl+P once the print part was in did not print the whole look at once: ${JSON.stringify(prints)}`);
+  }
+  const ids = [...doc.head.querySelectorAll('style[id]')].map((style) => style.id);
+  if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles' || doc.getElementById('fieldia-print-styles').getAttribute('data-fd-rank') !== '0') throw new Error(`on paper, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
+  view.destroy();
+  if (problems.length) throw new Error(`on paper: ${problems.join('; ')}`);
+  dom.window.close();
+}
+console.log("on paper: a page no one printed asks for no print part; the browser's menu prints its plain look and asks for it, the next print whole; Ctrl+P waits for it and prints the whole look, at once once it came; its sheet right after Fieldia's own");
 
 /**
  * In an Arabic page, its add-on after the main script and the parts after both: a list of customers drawn in Arabic,

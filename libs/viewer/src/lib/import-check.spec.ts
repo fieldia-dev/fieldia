@@ -16,7 +16,7 @@ import { VIEWER_LABELS } from './labels';
  */
 
 const page: Page = {
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'contacts',
   title: 'Contacts',
   data: { kind: 'record', model: 'crm.contact' },
@@ -63,7 +63,7 @@ describe('a file’s columns matched to the page’s fields', () => {
 
 const sheetOf = (headers: string[], rows: FileCell[][]): FileSheet => ({ kind: 'csv', headers, rows, numbers: rows.map((_, i) => i + 2), total: rows.length });
 
-async function check(headers: string[], rows: FileCell[][], options: { locale?: 'en' | 'ar' | 'de'; dateOrder?: 'dmy' | 'mdy' | 'ymd'; phones?: boolean } = {}) {
+async function check(headers: string[], rows: FileCell[][], options: { locale?: 'en' | 'ar' | 'de'; dateOrder?: 'dmy' | 'mdy' | 'ymd'; phones?: boolean; lowerLabels?: boolean } = {}) {
   const dataSource = createMemoryDataSource({
     records: {
       country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' }, 3: { name: 'Georgia' }, 4: { name: 'Georgia' } },
@@ -81,7 +81,7 @@ async function check(headers: string[], rows: FileCell[][], options: { locale?: 
     locale,
     dateOrder: options.dateOrder ?? 'dmy',
     today: '2026-10-16',
-    messages: MESSAGES[locale],
+    messages: options.lowerLabels ? { ...MESSAGES[locale], lowerLabels: true } : MESSAGES[locale],
     labels: WIDGET_LABELS[locale],
     words: { importNoneCalled: viewer.importNoneCalled, importSeveralCalled: viewer.importSeveralCalled, importNotYesNo: viewer.importNotYesNo },
     yes: Object.values(VIEWER_LABELS).map((words) => words.yes).concat(['yes', 'true', '1', 'x']),
@@ -129,6 +129,11 @@ describe('a file’s rows read and checked', () => {
     expect(rows[1].problems).toEqual(['Country: more than one is called “Georgia”', 'Customer since: months go from 1 to 12', 'Seats must be at least 1']);
   });
 
+  it('keeps a label that heads its reason, “Status: …”, or begins it, as written where the page asks labels small', async () => {
+    const { rows } = await check(['Name', 'Country', 'Seats', 'Status'], [['Sara', 'Atlantis', '2.5', 'Prospect']], { lowerLabels: true });
+    expect(rows[0].problems).toEqual(['Country: nothing is called “Atlantis”', 'Seats must be a whole number', 'Status: nothing is called “Prospect”']);
+  });
+
   it('says a required field is empty, and words past a field’s most', async () => {
     const { rows } = await check(['Name', 'Email'], [[null, 'x@example.com'], ['A name far too long to fit in forty characters, surely', null]]);
     expect(rows[0].problems).toEqual(['Name is required']);
@@ -160,7 +165,7 @@ describe('a file’s rows read and checked', () => {
 
 describe('a day and its time read from a file', () => {
   const visits: Page = {
-    fieldia: '0.4',
+    fieldia: '0.5',
     id: 'visits',
     title: 'Visits',
     data: { kind: 'record', model: 'visit' },

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "real-sale-contract",
   "title": "Contract",
   "data": { "kind": "record", "model": "sale.contract" },
