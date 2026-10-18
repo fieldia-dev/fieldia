@@ -46,7 +46,7 @@ test.describe('hours and a per cent in a field with digits', () => {
       const fieldia = (window as any).Fieldia;
       const demo = (window as any).fieldiaDemo;
       const shown = {
-        fieldia: '0.4',
+        fieldia: '0.5',
         id: 'places',
         title: 'Places',
         data: { kind: 'responses' },

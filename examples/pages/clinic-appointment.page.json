@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "clinic-appointment",
   "title": "Appointment",
   "data": { "kind": "record", "model": "clinic.visit" },

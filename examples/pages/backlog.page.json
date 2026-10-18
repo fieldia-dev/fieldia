@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "backlog",
   "data": { "kind": "record", "model": "work.item" },
   "look": { "theme": "fluent", "density": "compact" },

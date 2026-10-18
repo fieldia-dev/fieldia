@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "wi-picker",
   "title": "Bug 4127",
   "description": "The pickers of a work item: Area and Iteration as paths with suggestions and a tree, State in its own list, Planning's choices in Fieldia's own list, tags added from a button, and no one assigned yet.",

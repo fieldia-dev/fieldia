@@ -80,8 +80,8 @@ describe('upgradePage', () => {
 
 describe('the format in the checks', () => {
   it('a page newer than this Fieldia: checkPage and validatePage say to update Fieldia', () => {
-    const newer = { ...page(), fieldia: '0.5' };
-    const said = `this page is in format 0.5, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
+    const newer = { ...page(), fieldia: '0.6' };
+    const said = `this page is in format 0.6, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
     expect(checkPage(newer)).toEqual({ ok: false, issues: [{ path: 'fieldia', message: said }] });
     const validated = validatePage(newer);
     expect(validated.ok).toBe(false);
@@ -128,13 +128,13 @@ describe('a page from 0.20 or 0.21 (format 0.1)', () => {
 });
 
 describe('a page from 0.22 or 0.23 (format 0.2)', () => {
-  it('is read as it is, 0.3 and 0.4 having only added: its version moved on, its own objects kept', () => {
+  it('is read as it is, 0.3, 0.4 and 0.5 having only added: its version moved on, its own objects kept', () => {
     const fields = { when: { type: 'datetime', label: 'When' } };
     const layout = { type: 'sections', id: 'root', children: [{ type: 'field', id: 'w', field: 'when' }] };
     const given = { fieldia: '0.2', id: 'kept', data: { kind: 'responses' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.2');
-    expect(read).toMatchObject({ fieldia: '0.4' });
+    expect(read).toMatchObject({ fieldia: '0.5' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -142,13 +142,27 @@ describe('a page from 0.22 or 0.23 (format 0.2)', () => {
 });
 
 describe('a page from 0.24 (format 0.3)', () => {
-  it('is read as it is, 0.4 having only added: its version moved on, its own objects kept', () => {
+  it('is read as it is, 0.4 and 0.5 having only added: its version moved on, its own objects kept', () => {
     const fields = { when: { type: 'datetime', label: 'When', timeZone: 'Africa/Cairo' } };
     const layout = { type: 'list', id: 'root', columns: ['when'], export: true, bulkEdit: true };
     const given = { fieldia: '0.3', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.3');
-    expect(read).toMatchObject({ fieldia: '0.4' });
+    expect(read).toMatchObject({ fieldia: '0.5' });
+    expect(read.fields).toBe(fields);
+    expect(read.layout).toBe(layout);
+    expect(validatePage(given)).toMatchObject({ ok: true });
+  });
+});
+
+describe('a page from 0.25 (format 0.4)', () => {
+  it('is read as it is, 0.5 having only added: its version moved on, its own objects kept', () => {
+    const fields = { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } };
+    const layout = { type: 'list', id: 'root', columns: ['name', 'phone'], card: { title: 'name', fields: ['phone'] }, optionalColumns: { phone: 'show' }, rowBold: 'phone', print: true };
+    const given = { fieldia: '0.4', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
+    const read = upgradePage(given);
+    expect(given.fieldia).toBe('0.4');
+    expect(read).toMatchObject({ fieldia: '0.5' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });

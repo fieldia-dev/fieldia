@@ -21,7 +21,7 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 Object.assign(globalThis, { TextEncoder, TextDecoder, DecompressionStream });
 
 const contacts: Page = {
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'contacts',
   title: 'Contacts',
   data: { kind: 'record', model: 'contact' },

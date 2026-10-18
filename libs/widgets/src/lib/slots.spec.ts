@@ -22,7 +22,7 @@ const SHOWROOM: MemorySchedule = {
 };
 
 const PAGE: Page = {
-  fieldia: '0.4',
+  fieldia: '0.5',
   id: 'drive',
   timeZone: 'Europe/Berlin',
   data: { kind: 'record', model: 'drive' },

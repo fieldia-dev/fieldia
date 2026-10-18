@@ -14,7 +14,7 @@ import { VIEWER_LABELS } from './labels';
 
 const lead = (lower?: boolean): Page =>
   ({
-    fieldia: '0.4',
+    fieldia: '0.5',
     id: 'lead',
     title: 'Lead',
     data: { kind: 'record', model: 'lead' },
@@ -203,7 +203,7 @@ describe('a list and a record’s ways on a page that asks for its labels small'
       [true, 'They changed: phone.', 'Put back phone'],
       [undefined, 'They changed: Phone.', 'Put back Phone'],
     ] as const) {
-      const page = { fieldia: '0.4', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } }, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-phone', field: 'phone' }] }, ...(lower ? { lowerLabels: true } : {}) } as unknown as Page;
+      const page = { fieldia: '0.5', id: 'lead', data: { kind: 'record', model: 'lead' }, fields: { name: { type: 'char', label: 'Name' }, phone: { type: 'char', label: 'Phone' } }, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-phone', field: 'phone' }] }, ...(lower ? { lowerLabels: true } : {}) } as unknown as Page;
       const source = createMemoryDataSource({ records: { lead: { 1: { name: 'Villa', phone: '1' } } }, versions: { by: 'Sara' } });
       const host = document.createElement('div');
       document.body.append(host);
@@ -226,7 +226,7 @@ describe('a line’s own dialog on a page that asks for its labels small', () =>
   const DAYS = { type: 'selection', label: 'Work days', multiple: true, options: ['Sun', 'Mon', 'Tue'].map((day) => ({ value: day, label: day })) };
   const order = (lower: boolean | undefined, opens?: 'record'): Page =>
     ({
-      fieldia: '0.4',
+      fieldia: '0.5',
       id: 'roster',
       data: { kind: 'record', model: 'roster' },
       fields: { line_ids: { type: 'one2many', label: 'Shifts', relation: 'roster.shift', fields: { days: DAYS } } },
@@ -240,7 +240,7 @@ describe('a line’s own dialog on a page that asks for its labels small', () =>
   /** The app's page for a shift: what a line opens in its own way (`lineOpens: "record"`), saying so itself or not. */
   const shift = (lowerLabels?: boolean): Page =>
     ({
-      fieldia: '0.4',
+      fieldia: '0.5',
       id: 'shift',
       data: { kind: 'record', model: 'roster.shift' },
       fields: { days: DAYS },

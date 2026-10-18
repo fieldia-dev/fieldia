@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.4",
+  "fieldia": "0.5",
   "id": "real-legal-case",
   "title": "Legal case",
   "description": "Sherkety ERP's case record (legal.case, view_legal_case_form), with what legal_crm, legal_billing and legal_trust add to it.",
