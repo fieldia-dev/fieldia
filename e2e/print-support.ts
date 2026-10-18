@@ -7,10 +7,12 @@ import { expect } from './fixtures';
 import { pdfSheets, sheetProblems, type PdfSheet } from './pdf-text';
 
 /**
- * A record on paper as each engine prints it: Chromium by `page.pdf()` (which says beforeprint and afterprint itself),
- * Firefox by its own print to a file — silent, to "Save to PDF", in a Firefox of its own launched for it with those
- * settings, its header and footer words blank — each sheet then read (pdf-text.ts) and kept, with a PNG of each where
- * poppler's pdftoppm is at hand, in test-results/screens for a person to look at. A4, 12mm margins all round.
+ * A record on paper as each engine prints it, as a person prints it — Ctrl+P, which Fieldia holds back while its print
+ * part comes the first time (0.26: print.ts in @fieldia/viewer), then lays the page out and asks the browser to print:
+ * Chromium by `page.pdf()` once Ctrl+P was pressed (it says beforeprint and afterprint itself), Firefox by its own
+ * print to a file — silent, to "Save to PDF", in a Firefox of its own launched for it with those settings, its header
+ * and footer words blank — each sheet then read (pdf-text.ts) and kept, with a PNG of each where poppler's pdftoppm is
+ * at hand, in test-results/screens for a person to look at. A4, 12mm margins all round.
  */
 
 const SCREENS = 'test-results/screens';
@@ -27,8 +29,27 @@ function keep(bytes: Buffer, name: string): void {
   }
 }
 
-/** The page as Chromium prints it. */
+/**
+ * Ctrl+P (⌘P on a Mac's keyboard) as a person presses it, the browser's print dialog then open: Fieldia's, the print
+ * part asked for and in, the page laid out for paper, then the browser's print asked — which here tells the page
+ * printing begins (beforeprint) and leaves its dialog open, until the test says it closed (afterprint) or prints a PDF.
+ */
+export async function pressPrint(page: Page, keys = 'ControlOrMeta+p'): Promise<void> {
+  await page.evaluate(() => {
+    const host = window as unknown as { fdPrints: number };
+    host.fdPrints = 0;
+    window.print = () => {
+      host.fdPrints += 1;
+      window.dispatchEvent(new Event('beforeprint'));
+    };
+  });
+  await page.keyboard.press(keys);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { fdPrints: number }).fdPrints), { message: 'Ctrl+P asked the browser to print' }).toBe(1);
+}
+
+/** The page as Chromium prints it: Ctrl+P pressed, then the PDF of what its dialog prints. */
 export async function chromiumSheets(page: Page, name: string): Promise<PdfSheet[]> {
+  await pressPrint(page);
   const bytes = await page.pdf({ format: 'A4', margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN } });
   keep(bytes, name);
   return pdfSheets(bytes);
@@ -70,8 +91,9 @@ export async function firefoxSheets(playwright: PlaywrightWorkerArgs['playwright
       await page.goto(`${baseURL}/plain/?${one.query}`);
       await expect(page.locator('form.fd-form').first()).not.toHaveAttribute('aria-busy', 'true');
       await one.before?.(page);
-      // Printed as the person's Ctrl+P prints it; the file is whole once its size holds still.
-      void page.evaluate(() => window.print()).catch(() => undefined);
+      // Printed by the person's Ctrl+P, Fieldia's (its part's look, then the browser's print); the file is whole once
+      // its size holds still.
+      void page.keyboard.press('Control+p').catch(() => undefined);
       let size = -1;
       await expect
         .poll(
@@ -96,10 +118,10 @@ export async function firefoxSheets(playwright: PlaywrightWorkerArgs['playwright
   }
 }
 
-/** The headings the page prints — its tabs' names, its groups' and steps' titles — every tab drawn as printing begins. */
+/** The headings the page prints — its tabs' names, its groups' and steps' titles — every tab drawn by Ctrl+P. */
 export async function headingsOf(page: Page): Promise<string[]> {
+  await pressPrint(page);
   return page.evaluate(() => {
-    window.dispatchEvent(new Event('beforeprint'));
     const tabs = [...document.querySelectorAll('.fd-tabpanel[data-fd-tab]')].map((panel) => panel.getAttribute('data-fd-tab') ?? '');
     const titles = [...document.querySelectorAll('.fd-section-title, .fd-step-title')].map((title) => title.textContent?.trim() ?? '');
     window.dispatchEvent(new Event('afterprint'));

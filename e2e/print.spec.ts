@@ -2,25 +2,27 @@ import { type Locator, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { expect, test } from './fixtures';
-import { squash } from './pdf-text';
-import { chromiumSheets, expectSheetsClean, firefoxSheets, headingsOf } from './print-support';
+import { pdfSheets, squash } from './pdf-text';
+import { chromiumSheets, expectSheetsClean, firefoxSheets, headingsOf, pressPrint } from './print-support';
 import { open, screen } from './support';
 
 /**
  * On paper (the plain demo): an invoice printed — by Ctrl+P, by the gear's Print › This record, or as the app's own
- * PDF shown over it — and a list of invoices printed, every one the search finds, grouped and totalled. The browser's
- * own print is a dialog no test can press, so each test does what a browser does: it says printing begins (the
- * window's beforeprint), lays the page out for paper (`emulateMedia`), and — in Chromium — prints it to a PDF
- * (`page.pdf`, which says beforeprint and afterprint itself). The PDFs land in test-results/screens beside the
- * screens, each sheet a PNG where poppler's pdftoppm is at hand, for a person to look at.
+ * PDF shown over it — and a list of invoices printed, every one the search finds, grouped and totalled. Ctrl+P is
+ * pressed as a person presses it: Fieldia's, which loads the print part the first time (0.26) and asks the browser
+ * to print. The browser's own print is a dialog no test can press, so each test does what a browser does once asked:
+ * it says printing begins (the window's beforeprint), lays the page out for paper (`emulateMedia`), and — in
+ * Chromium — prints it to a PDF (`page.pdf`, which says beforeprint and afterprint itself). The PDFs land in
+ * test-results/screens beside the screens, each sheet a PNG where poppler's pdftoppm is at hand, for a person to look
+ * at. The print part on intent — asked for only as a person shows they mean to print — is checked at the end.
  */
 
 const NOW = 'now=2026-10-14T09:40';
 const invoice = (record = 4102) => `page=real-invoice&record=${record}&skin=underline&${NOW}`;
 
-/** As a browser begins printing: told, then laid out for paper. */
+/** Ctrl+P, as a person presses it: the browser asked to print, which tells the page so, then lays it out for paper. */
 async function printing(page: Page) {
-  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await pressPrint(page);
   await page.emulateMedia({ media: 'print' });
 }
 /** As it ends. */
@@ -88,11 +90,12 @@ test.describe('an invoice printed', () => {
     expect(problems).toEqual([]);
   });
 
-  test('prints to a PDF of its own sheets (Chromium)', async ({ page, browserName }) => {
+  test('Ctrl+P prints to a PDF of its own sheets (Chromium)', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'only Chromium prints to a PDF here');
     const { problems } = await open(page, 'plain', invoice());
     await expect(page.locator('.fd-statusbar')).toBeVisible();
-    // page.pdf() says beforeprint and afterprint itself, as a browser's Print does.
+    // page.pdf() says beforeprint and afterprint itself, as a browser's Print does: the dialog Ctrl+P opened, printed.
+    await pressPrint(page);
     expect(await pdf(page, 'print-invoice')).toBeGreaterThanOrEqual(2);
     await expect(page.locator('.fd-print-box')).toHaveCount(0);
     expect(problems).toEqual([]);
@@ -695,6 +698,180 @@ test.describe('a work item’s head title and a tab’s count on paper', () => {
     await printing(page);
     await expect(pill).toBeHidden();
     await expect(page.locator('.fd-tabpanel[data-fd-tab="Quotations"]')).toBeVisible();
+    await printed(page);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('the print part, on intent', () => {
+  /** Each time the page asked for the print part: its chunk (as an app's bundler splits it) or its script (fieldia.print.js). */
+  const asks = (page: Page) => {
+    const asked: string[] = [];
+    page.on('request', (request) => {
+      const path = new URL(request.url()).pathname;
+      if (/\/(chunks\/print-part-[\w-]+|fieldia\.print)\.js$/.test(path)) asked.push(path);
+    });
+    return asked;
+  };
+  /**
+   * Long enough for what a page asks for once it is drawn and the browser idle (print.ts): an idle moment, then past
+   * the second a browser that says nothing of idle waits — or, for one never idle, that second alone. Nothing is
+   * awaited here but that time: what is checked after it is that nothing came of it.
+   */
+  const settled = (page: Page, idle = true) =>
+    page.evaluate(
+      (idle) =>
+        new Promise<void>((done) => {
+          const later = () => setTimeout(done, 1300);
+          if (idle && 'requestIdleCallback' in window) requestIdleCallback(later, { timeout: 3000 });
+          else later();
+        }),
+      idle
+    );
+  /** The browser's print, counted, telling nothing: what a page asks of it. */
+  const countPrints = (page: Page) => page.evaluate(() => ((window as unknown as { fdPrints: number }).fdPrints = 0, (window.print = () => void ((window as unknown as { fdPrints: number }).fdPrints += 1))));
+  const prints = (page: Page) => page.evaluate(() => (window as unknown as { fdPrints: number }).fdPrints);
+  const laidOut = (page: Page) => page.evaluate(() => [...document.querySelectorAll('form.fd-form')].some((form) => form.hasAttribute('data-fd-print')));
+
+  test('a page no one prints never asks for it: a form filled in and sent from one <script> tag; there Ctrl+P brings fieldia.print.js', async ({ page }) => {
+    const asked = asks(page);
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/script/');
+    await expect(page.locator('.fd-form')).toBeVisible();
+    await page.getByLabel('Your name').fill('Omar Farouk');
+    await page.getByLabel('Phone').fill('+20 100 555 0101');
+    await page.getByLabel('Afternoon').check();
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses.length)).toBe(1);
+    await settled(page);
+    expect(asked).toEqual([]);
+    // Ctrl+P: the part beside fieldia.js, then the form laid out for paper as the browser prints it.
+    await pressPrint(page);
+    expect(asked).toEqual(['/script/fieldia.print.js']);
+    expect(await laidOut(page)).toBe(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    expect(await laidOut(page)).toBe(false);
+    expect(problems).toEqual([]);
+  });
+
+  test('a customer’s record opened and its tabs gone through asks for none of it', async ({ page }) => {
+    const asked = asks(page);
+    const { problems } = await open(page, 'plain', `page=customer&skin=underline&${NOW}`);
+    for (const tab of ['Contacts', 'Sales and billing', 'Notes']) {
+      await page.getByRole('tab', { name: tab }).click();
+      await expect(page.locator(`.fd-tabpanel[data-fd-tab="${tab}"]`)).toBeVisible();
+    }
+    await settled(page);
+    expect(asked).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('Ctrl+P before it came asks for it, then prints the whole look — every tab under its name, the day over it (Chromium’s PDF)', async ({ page, browserName }) => {
+    const asked = asks(page);
+    const { problems } = await open(page, 'plain', `page=real-employee&record=4122&skin=underline&${NOW}`);
+    await settled(page);
+    expect(asked).toEqual([]);
+    const tabs = ['Resume', 'Work Information', 'Private Information', 'HR Settings'];
+    // A tab never opened is not drawn yet.
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="HR Settings"] .fd-field')).toHaveCount(0);
+    // ⌘P where the keyboard is a Mac's — Safari's engine — and Ctrl+P elsewhere.
+    await pressPrint(page, browserName === 'webkit' ? 'Meta+p' : 'Control+p');
+    expect(asked).toHaveLength(1);
+    if (browserName === 'chromium') {
+      const bytes = await page.pdf({ format: 'A4', margin: { top: '12mm', bottom: '12mm', left: '12mm', right: '12mm' } });
+      mkdirSync('test-results/screens', { recursive: true });
+      writeFileSync('test-results/screens/print-on-intent-employee.pdf', bytes);
+      try {
+        execFileSync('pdftoppm', ['-r', '60', '-png', 'test-results/screens/print-on-intent-employee.pdf', 'test-results/screens/print-on-intent-employee']);
+      } catch {
+        // No poppler here: the PDF alone, to open.
+      }
+      const lines = pdfSheets(bytes).flatMap((sheet) => sheet.lines.map((line) => line.text.trim()));
+      for (const tab of tabs) expect(lines, `${tab} under its name`).toContain(tab);
+      // The day it was printed (this page keeps no clock of its own: today's).
+      expect(lines.some((line) => /^Printed \d{1,2} \w{3} \d{4}/.test(line))).toBe(true);
+      expect(await laidOut(page)).toBe(false);
+    } else {
+      await page.emulateMedia({ media: 'print' });
+      for (const tab of tabs) await expect(page.locator(`.fd-tabpanel[data-fd-tab="${tab}"]`)).toBeVisible();
+      await expect(page.locator('.fd-tabpanel[data-fd-tab="HR Settings"] .fd-field').first()).toBeVisible();
+      await expect(page.locator('.fd-print-head .fd-print-when')).toHaveText(/^Printed \d{1,2} \w{3} \d{4}/);
+      await screen(page, 'print-on-intent-employee');
+      await printed(page);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  test('the browser’s own menu before it came prints the plain look, light, no buttons — and asks for it: the next print whole', async ({ page }) => {
+    const asked = asks(page);
+    const { problems } = await open(page, 'plain', `page=customer&skin=underline&scheme=dark&${NOW}`);
+    const form = page.locator('form.fd-form');
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="Notes"] .fd-field')).toHaveCount(0);
+    // As the browser's menu prints: told, then laid out for paper, nothing waited for.
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    expect(await laidOut(page)).toBe(false);
+    await expect(form).toHaveCSS('color', 'rgb(29, 32, 36)');
+    expect(await form.locator('.fd-button, .fd-actions, .fd-help').evaluateAll((all) => all.filter((one) => one.getClientRects().length).length)).toBe(0);
+    await expect(page.locator('.fd-print-head')).toBeHidden();
+    // The page as it is on the screen: the tab never opened not drawn.
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="Notes"] .fd-field')).toHaveCount(0);
+    await screen(page, 'print-plain-look');
+    await expect.poll(() => asked.length, { message: 'the part asked for as that print began' }).toBe(1);
+    await printed(page);
+    // The next print, by the menu again: whole.
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    expect(await laidOut(page)).toBe(true);
+    for (const tab of ['Contacts', 'Sales and billing', 'Notes']) await expect(page.locator(`.fd-tabpanel[data-fd-tab="${tab}"]`)).toBeVisible();
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="Notes"] .fd-field').first()).toBeVisible();
+    await expect(page.locator('.fd-print-head')).toBeVisible();
+    await screen(page, 'print-whole-after-menu');
+    await printed(page);
+    expect(asked).toHaveLength(1);
+    expect(problems).toEqual([]);
+  });
+
+  test('shown intent fetches it and prints nothing: the gear opened with Print in it, a pointer resting on a list’s Print', async ({ page }) => {
+    // A browser never idle: what the page asks for on its own, it never asks.
+    await page.addInitScript(() => ((window as unknown as { requestIdleCallback: () => number }).requestIdleCallback = () => 0));
+    const asked = asks(page);
+    const { problems } = await open(page, 'plain', invoice());
+    await countPrints(page);
+    await settled(page, false);
+    expect(asked).toEqual([]);
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await expect.poll(() => asked.length, { message: 'the gear opened' }).toBe(1);
+    expect(await laidOut(page)).toBe(false);
+    expect(await prints(page)).toBe(0);
+    // Its This invoice prints, at once.
+    await page.getByRole('menuitem', { name: 'This invoice' }).click();
+    await expect.poll(() => prints(page)).toBe(1);
+    // A list's Print, a pointer resting on it.
+    await page.goto(`/plain/?page=contacts&skin=underline&${NOW}`);
+    await expect(page.locator('.fd-list-table tbody tr.fd-list-row')).toHaveCount(10);
+    await countPrints(page);
+    await settled(page, false);
+    expect(asked).toHaveLength(1);
+    await page.getByRole('button', { name: 'Print' }).hover();
+    await expect.poll(() => asked.length, { message: 'a pointer resting on Print' }).toBe(2);
+    expect(await prints(page)).toBe(0);
+    expect(problems).toEqual([]);
+  });
+
+  test('a page meant for paper asks for it once drawn and the browser idle, prints nothing — and its menu’s print is whole', async ({ page }) => {
+    const asked = asks(page);
+    const { problems } = await open(page, 'plain', invoice());
+    await countPrints(page);
+    await expect.poll(() => asked.length, { message: 'its own words for paper' }).toBe(1);
+    await settled(page);
+    expect(await laidOut(page)).toBe(false);
+    expect(await prints(page)).toBe(0);
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    expect(await laidOut(page)).toBe(true);
+    await expect(page.locator('.fd-tabpanel[data-fd-tab="Other Info"]').first()).toBeVisible();
     await printed(page);
     expect(problems).toEqual([]);
   });

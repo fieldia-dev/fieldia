@@ -1,6 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, open, screen } from './support';
+import { pressPrint } from './print-support';
 
 /**
  * A related list inside a record, as a person uses it: a customer with its invoices and quotations, a property with
@@ -220,7 +221,8 @@ test.describe('a customer’s invoices, inside the customer', () => {
     await expect(rows(invoices)).toHaveCount(5);
     const shown = invoices.locator('.fd-list-shown');
     await expect(shown).toBeHidden();
-    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    // Ctrl+P, as a person presses it (the print part asked for, the browser asked to print).
+    await pressPrint(page);
     await page.emulateMedia({ media: 'print' });
     await expect(rows(invoices).locator('td:first-child')).toHaveText(mine.slice(0, 5).map((invoice) => invoice.name));
     await expect(shown).toBeVisible();
