@@ -34,7 +34,7 @@ import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, typ
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
-import { printAlone } from './print';
+import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { cardsPart, columnsPart, filtersPart, importPart, type ColumnsPart } from './viewer-parts';
 import { xlsxOf, XLSX_TYPE } from './xlsx';
@@ -1268,6 +1268,12 @@ export function listView(context: ListContext): ListView {
   const printButton = el('button', { type: 'button', class: 'fd-button fd-record-gear fd-list-print-button' }, ...(printIcon ? [printIcon] : []), labels.printList);
   printButton.hidden = !printOn;
   printButton.addEventListener('click', () => void printAll());
+  // A list meant for paper: the print part fetched once the browser has nothing else to do, and as a pointer rests on
+  // its Print (print.ts).
+  if (printOn) {
+    printSoon(doc);
+    printIntent(printButton);
+  }
 
   /** Every record that matches on paper: asked of the source (list-print.ts), then the browser's print of it alone. */
   function printAll(): Promise<void> {
@@ -1276,9 +1282,12 @@ export function listView(context: ListContext): ListView {
     return busy(printButton, async () => {
       const grouping = groupedNow && source.groups ? groupByFields(facets).map((text) => groupKey(page, text)) : [];
       progress.textContent = fill(labels.printing, { done: number(0), n: number(matching) });
+      // The print part, which prints it, asked for as its records are.
+      const printer = loadPrint();
       let out: Awaited<ReturnType<typeof printout>>;
+      let paper: Awaited<typeof printer>;
       try {
-        out = await printout(
+        [out, paper] = await Promise.all([printout(
           {
             page,
             node,
@@ -1309,7 +1318,8 @@ export function listView(context: ListContext): ListView {
             if (!destroyed) progress.textContent = fill(labels.printing, { done: number(done), n: number(n) });
           },
           PRINT_MOST
-        );
+        ), printer]);
+        if (!paper) throw new Error('The print part could not come');
       } catch {
         if (!destroyed) context.say?.(sentence(labels.printFailedNoun, labels.printFailed), 'danger');
         return;
@@ -1324,7 +1334,7 @@ export function listView(context: ListContext): ListView {
       element.append(out.sheet);
       // Its footer at the foot of every sheet, its room kept there.
       keepFootRoom(out.sheet.querySelector<HTMLElement>(':scope > .fd-print-foot'));
-      await printAlone(doc, out.sheet, () => out.sheet.remove());
+      await paper.printAlone(doc, out.sheet, () => out.sheet.remove());
     });
   }
 

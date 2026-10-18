@@ -77,7 +77,7 @@ import { duplicatesPart, headPart, listPart, partsFor, type HeadPart } from './v
 import { filesPart } from '@fieldia/widgets';
 import { saveSafety } from './save-safety';
 import { steadyPresses } from './steady-press';
-import { printLook } from './print';
+import { paperFor, printIntent } from './print';
 import { waitWords } from './waiting';
 export type { Breadcrumb, RecordPager } from './record-bar';
 
@@ -1022,6 +1022,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
       if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
+      // A button that prints: the print part fetched as a pointer rests on it.
+      if (node.steps?.some((step) => step.do === 'print')) printIntent(button);
       spans(button, node.colspan);
       // Its confirmation, then its steps: the form asks, through the viewer. Undo with nothing to put back says so.
       button.addEventListener('click', () => {
@@ -2385,8 +2387,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
-  // On paper, the app's logo and words, the record's title and the day over the page, its footer under it (print.ts).
-  const paper = printLook({
+  // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
+  // the print part's, as a person shows they mean to print (print.ts).
+  const paper = paperFor({
     doc,
     el,
     root,

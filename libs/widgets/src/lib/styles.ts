@@ -9,7 +9,7 @@ import { PICKER_CSS } from './styles-picker';
 import { HEAD_CSS } from './styles-head';
 import { TEXT_CSS } from './styles-text';
 import { BROKEN_CSS } from './broken-styles';
-import { PRINT_CSS, PRINT_GRIDS_CSS } from './styles-print';
+import { PRINT_CSS } from './styles-print';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -878,9 +878,11 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 // too — a state's words, a field's lock (styles-lock) — stays here, where it stood. The pickers' (a work tracker's
 // lists, styles-picker); a record's head after them, which draws its boxes (and a dot in its lead slot) its own way;
 // a work item's text, groups and links (styles-text) after those.
-// A form on paper (PRINT) closes them: what it hides or shows for paper insists, as the parts' sheets come after it.
+// A form on paper (PRINT) closes them: the printout's parts kept off the screen and a plain look for paper — the whole
+// look is the print part's, whose sheet goes right after this one (PART_RANK.print), where its rules stood here: what
+// it hides or shows for paper insists, as the other parts' sheets come after it.
 // The page's own looks for each kind of part (KINDS, CHOICES, PARTS) come last, so they win over everything before them.
-const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS + PRINT_GRIDS_CSS;
+const BASE_CSS = SKINS_CSS + LOOK_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + LOCK_CSS + PICKER_CSS + HEAD_CSS + TEXT_CSS + BROKEN_CSS + PRINT_CSS;
 const LOOKS_CSS = KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 /**
  * Fieldia's stylesheet as every page has it. The parts loaded on first use (parts.ts) bring their own sheets, each
@@ -941,8 +943,14 @@ export function installStyles(document: Document): void {
  * which are the list's, above): its rules stood at the head of the page's own looks, just after the survey kinds'
  * looks and a line's grip, so its sheet goes after the survey kinds' looks, last of the parts' — before the grip's
  * rule, which names nothing of a card.
+ *
+ * The print part's (0.26, the viewer's `print`, loaded as a person shows they mean to print: Ctrl+P, a Print pressed,
+ * the gear opened): the whole look on paper, cut from the end of this sheet's first half, where it stood after every
+ * rule of the main sheet and before every part's sheet — whose own rules for paper (a table of lines', a list's, a
+ * statusbar's) come after it, as they did. So it is first of them all, rank 0, right after this sheet; on the screen it
+ * holds nothing but what lays a form out while a heading's room on paper is measured.
  */
-export const PART_RANK = { lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

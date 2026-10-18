@@ -3,6 +3,7 @@ import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
 import type { ViewerLabels } from './labels';
+import { prefetchPrint } from './print';
 import { barredWords } from './save-safety';
 
 /**
@@ -188,6 +189,8 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
     if (box.right > doc.documentElement.clientWidth - 4 || box.left < 4) menu.setAttribute('data-end', '');
     gear.setAttribute('aria-expanded', 'true');
     doc.addEventListener('pointerdown', onOutside, true);
+    // Its built-in Print in sight: the print part fetched, for the press that may come.
+    if (drawn.some((d) => d.item.builtin === 'print' && !d.button.hidden)) prefetchPrint();
     const items = shown();
     (at === 'first' ? items[0] : items[items.length - 1])?.focus();
   }

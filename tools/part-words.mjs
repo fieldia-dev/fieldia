@@ -71,7 +71,7 @@ export const PART_WORDS = {
     widgets: ['enterNumber', 'enterDate', 'enterValue', 'phoneCallNamed', 'phoneWhatsAppNamed'],
     viewer: [
       'previousPage', 'nextPage', 'selectAll', 'viewList', 'viewMap', 'viewBoth', 'viewGallery', 'rowActions', 'selectRecord', 'noRecords', 'selectAllMatching', 'selectingAll', 'selectedOf', 'selectAllFailed', 'showAs',
-      'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne',
+      'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printing', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne', 'printedOn',
       'bulkTitle', 'bulkTitleOne', 'bulkField', 'bulkApply', 'bulkAsk', 'bulkAskOne', 'bulkSet', 'bulkClear', 'bulkProgress', 'bulkDone', 'bulkDoneOne', 'bulkSome', 'bulkWhy', 'bulkChangedSince',
       'importDone', 'importDoneOne', 'importStopped', 'importSome', 'importUndo', 'importUndoAsk', 'importUndoAskOne', 'importUndoing', 'importUndone', 'importUndoneOne', 'importUndoSome', 'importRow', 'importDownload', 'importFailed',
       'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
@@ -85,6 +85,7 @@ export const PART_WORDS = {
   },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds'] },
   phone: { widgets: ['phoneNoCountry', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
+  print: { viewer: ['printedOn'] },
   relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {

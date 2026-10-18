@@ -1,6 +1,7 @@
 import type { ButtonNode, Field, FieldNode, Page, SectionNode, SheetTitle } from '@fieldia/core';
 import { businessPart, choicePart, datePart, filesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
+import { printPart } from './print';
 import type * as CardsModule from './cards-part';
 import type * as ColumnsModule from './columns-part';
 import type * as DuplicatesModule from './duplicates-part';
@@ -60,8 +61,8 @@ export function installListStyles(doc: Document): Promise<void> {
   );
 }
 
-/** Every part the viewer can draw from, its own and its widgets'. */
-const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
+/** Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing. */
+const EVERY_PART: readonly Part[] = [headPart, listPart, cardsPart, columnsPart, importPart, filtersPart, duplicatesPart, printPart, textPart, pathPart, choicePart, datePart, linesPart, businessPart, filesPart, surveyPart, phonePart, slotsPart, relationsPart, themesPart, quietPart];
 
 /** A group holding a Markdown text alone, whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -183,7 +184,8 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
 }
 
 /**
- * The parts a page draws from, loaded — or, with no page, every part. The
+ * The parts a page draws from, loaded — or, with no page, every part, the
+ * print part too (which a page loads as a person means to print: print.ts). The
  * viewer and its dialogs wait for a page's parts themselves before they draw
  * it; this is for an app that wants them in before it mounts, so the page is
  * drawn whole the moment it is mounted. Rejects when one could not come (the

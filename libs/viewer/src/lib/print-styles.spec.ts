@@ -1,12 +1,13 @@
-import { FORM_WIDTHS } from './styles';
-import { LEFT_OUT, PRINT_CSS, PRINT_GRIDS_CSS } from './styles-print';
+import { FIELDIA_CSS, FORM_WIDTHS, PART_RANK } from '@fieldia/widgets';
+import { installPrintStyles, LEFT_OUT, PRINT_GRIDS_CSS, PRINT_PART_CSS } from './print-styles';
 
 /**
- * A form on paper: what no browser test can read off a sheet — which width's rules lay a grid's parts side by side —
- * checked against the screen's own widths, and the few declarations each engine needs to repeat a footer.
+ * A form on paper (the print part's sheet): what no browser test can read off a sheet — which width's rules lay a
+ * grid's parts side by side — checked against the screen's own widths, and the few declarations each engine needs to
+ * repeat a footer; and where the sheet stands, and what the main sheet keeps for a print before the part came.
  */
 
-const paper = PRINT_CSS.slice(PRINT_CSS.indexOf('@media print {'));
+const paper = PRINT_PART_CSS.slice(PRINT_PART_CSS.indexOf('@media print {'));
 
 describe('a grid on paper', () => {
   it('lays its parts side by side at the sheet’s widths the screen gives it more than one column: FORM_WIDTHS’', () => {
@@ -56,7 +57,47 @@ describe('a record’s footer on paper', () => {
     expect(paper).toContain('.fd-form > .fd-content > .fd-print-end { display: table-footer-group !important; break-inside: avoid; }');
   });
 
-  it('is shown nowhere on the screen', () => {
-    expect(PRINT_CSS.slice(0, PRINT_CSS.indexOf('@media print {'))).toContain('.fd-print-head, .fd-print-end, .fd-print-foot, .fd-print-box { display: none; }');
+  it('is shown nowhere on the screen: the main sheet keeps it out of sight, before the part came too', () => {
+    expect(FIELDIA_CSS).toContain('.fd-print-head, .fd-print-end, .fd-print-foot, .fd-print-box { display: none; }');
+  });
+});
+
+describe('the print part’s sheet', () => {
+  afterEach(() => document.head.replaceChildren());
+
+  it('lays nothing out on the screen but a form measured for paper', () => {
+    const screen = PRINT_PART_CSS.slice(0, PRINT_PART_CSS.indexOf('@media print {')).replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const rule of screen.split('}').map((one) => one.trim()).filter(Boolean)) expect(rule.startsWith('.fd-form[data-fd-measure]')).toBe(true);
+    expect(PRINT_GRIDS_CSS.slice(0, PRINT_GRIDS_CSS.indexOf('@media print{'))).toMatch(/^\.fd-form\[data-fd-measure\][^{]*\{[^}]*\}$/);
+  });
+
+  it('goes right after the main sheet, before every other part’s: where its rules stood in it', () => {
+    expect(PART_RANK.print).toBe(0);
+    expect(Math.min(...Object.values(PART_RANK).filter((rank) => rank !== PART_RANK.print))).toBeGreaterThan(PART_RANK.print);
+    const lines = document.createElement('style');
+    lines.id = 'fieldia-lines-styles';
+    lines.setAttribute('data-fd-rank', String(PART_RANK.lines));
+    const base = document.createElement('style');
+    base.id = 'fieldia-styles';
+    const looks = document.createElement('style');
+    looks.id = 'fieldia-styles-looks';
+    document.head.append(base, lines, looks);
+    installPrintStyles(document);
+    installPrintStyles(document);
+    expect([...document.head.querySelectorAll('style')].map((style) => style.id)).toEqual(['fieldia-styles', 'fieldia-print-styles', 'fieldia-lines-styles', 'fieldia-styles-looks']);
+  });
+
+  it('is what the whole look needs; the main sheet keeps only a plain look for paper: buttons, bars and hints left out, light', () => {
+    const main = FIELDIA_CSS.slice(FIELDIA_CSS.indexOf('.fd-print-head, .fd-print-end'));
+    const plain = main.slice(main.indexOf('@media print {'));
+    expect(plain).toContain('--fd-text: #1d2024 !important');
+    expect(plain).toContain('.fd-form :is(.fd-record-bar, .fd-actions, .fd-wizard-nav, .fd-stats, .fd-side, .fd-button,');
+    // Each it leaves out, the part's leaves out too: the part's sheet over it changes none of it.
+    const left = /\.fd-form :is\(([^)]*)\) \{ display: none !important; \}/.exec(plain)?.[1].split(',').map((one) => one.trim()) ?? [];
+    expect(left.length).toBeGreaterThan(5);
+    for (const one of left) expect(LEFT_OUT.split(',').map((it) => it.trim())).toContain(one);
+    // The whole look's own rules are the part's alone.
+    expect(FIELDIA_CSS).not.toContain('fd-print-keep');
+    expect(FIELDIA_CSS).not.toContain('table-footer-group');
   });
 });
