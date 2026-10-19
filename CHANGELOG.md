@@ -15,6 +15,30 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 
+## 0.26.1 — 2026-10-19
+
+**Two accessibility fixes**, found by checking fieldia.dev's new front page with
+axe in every engine. Nothing an app writes changes.
+
+- **A grouped list is a table whose rows claim no tree.** Its group rows no
+  longer carry `aria-level`, which only a treegrid's rows may, and a parent's row
+  in a list of records under their parents no longer carries `aria-expanded`;
+  its toggle says open or closed. A group's heading is a button named with its
+  count in words and its sums ("Cairo, 12 invoices, EGP 4,312,550.00"), in the
+  page's own word for its records. The arrow keys cross a heading as they move
+  between rows; Right opens it and Left closes it, reversed right to left.
+- **A map's credits are targets a finger can press.** Each credit link, and a
+  provider's mark where it is a link, is at least 24px tall in the same small
+  type (WCAG 2.2, 2.5.8), since a pin can come too close for spacing to excuse a
+  smaller one. The credits' strip is 24px tall.
+
+**Upgrading.** An app that passes a whole viewer `labels` object adds
+`groupCount`, `groupCountOne`, `groupCountNoun` and `groupCountNounOne`. A test
+that found a group row by `aria-level`, or a parent row by `aria-expanded`, finds
+the heading's button instead.
+
+**Size.** `fieldia.js` unchanged (162.9 KB gzipped); the list part 35.5 KB.
+
 ## 0.26.0 — 2026-10-18
 
 **A page names its records, a column moved by its header, a record's footer
