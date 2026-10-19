@@ -148,7 +148,7 @@ function invoices(has) {
     title: 'Invoices',
     data: { kind: 'record', model: 'invoice' },
     fields: {
-      number: { type: 'char', label: 'Number' },
+      number: { type: 'char', label: 'No.' },
       customer: { type: 'char', label: 'Customer' },
       due: { type: 'date', label: 'Due' },
       amount: { type: 'monetary', label: 'Amount', currency: 'EUR' },
@@ -164,7 +164,9 @@ function invoices(has) {
     layout: {
       type: 'list',
       id: 'list',
-      columns: ['number', 'customer', 'due', 'amount', 'state'],
+      // Four columns, as the stage's pane fits them: the due date read by the overdue rule, not shown; no boxes to choose rows.
+      columns: ['number', 'customer', 'amount', 'state'],
+      choose: false,
       ...(has.total ? { cells: { amount: { total: 'sum' } } } : {}),
       ...(has.overdue ? { rowTones: [{ tone: 'danger', label: 'Overdue', when: "state == 'sent' and due < today()" }] } : {}),
       ...(has.filter ? { filters: [{ id: 'unpaid', label: 'Unpaid', filter: [{ field: 'state', op: '=', value: 'sent' }] }], defaultFilters: ['unpaid'] } : {}),
@@ -225,6 +227,9 @@ function booking(has) {
   };
 }
 
+/** The page a tab's steps end on. */
+const lastOf = (list) => list[list.length - 1].text;
+
 /** A tab's steps, each the whole page as it stands then and the words the stage bar says as it is drawn. */
 function steps(make, adds) {
   let has = {};
@@ -235,8 +240,9 @@ function steps(make, adds) {
 }
 
 /**
- * The stage's tabs, in order: each its name, the file it writes, its steps — what each adds, in plain words — then
- * the words the bar says as someone uses it (home.js plays them), the last of them its finished state's.
+ * The stage's tabs, in order: each its name, the file it writes, its steps — what each adds, in plain words — (and
+ * those it takes on a phone's screen instead, `narrow`), then the words the bar says as someone uses it (home.js
+ * plays them), the last of them its finished state's. `json` is the page its steps end on; `narrowJson` a phone's.
  */
 export const TABS = [
   {
@@ -258,7 +264,16 @@ export const TABS = [
     id: 'list',
     name: 'A list',
     file: 'invoices.page.json',
+    // A table wherever the stage is wider than a phone; on a phone's screen (520px or less) its rows as cards, a step
+    // of their own (`narrow`, which home.js plays there).
     steps: steps(invoices, [
+      ['A list of invoices', {}],
+      ['A total under the amounts', { total: true }],
+      ['Overdue ones in red, with a key', { overdue: true }],
+      ['A filter, on as it opens: Unpaid', { filter: true }],
+      ['Group By customer, in the search', { group: true }],
+    ]),
+    narrow: steps(invoices, [
       ['A list of invoices', {}],
       ['At a phone’s width, cards', { cards: true }],
       ['A total under the amounts', { total: true }],
@@ -292,7 +307,7 @@ export const TABS = [
     ]),
     used: ['Now someone books', 'A day picked: its free times', 'Meanwhile, someone else books one', 'That time pressed: said taken, nothing booked', 'Another time booked, and back by', 'The finished booking: try it'],
   },
-].map((tab) => ({ ...tab, json: tab.steps[tab.steps.length - 1].text }));
+].map((tab) => ({ ...tab, json: lastOf(tab.steps), ...(tab.narrow ? { narrowJson: lastOf(tab.narrow) } : {}) }));
 
 /** The record's steps and page, as the stage's first tab writes them; home.mjs shows its page before any script runs. */
 export const STEPS = TABS[0].steps;

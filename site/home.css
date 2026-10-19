@@ -176,6 +176,11 @@
 .stage-form .fd-content > :is(.fd-page-head, .fd-list) { margin-inline: 16px; }
 .stage-form .fd-content > .fd-page-head { margin-block: 14px 10px; }
 .stage-form .fd-content > .fd-list { margin-block-end: 16px; }
+/* A list's table at the pane's width, as a narrow screen of an app has it: its words a little smaller and closer, so its
+   four columns fit beside the JSON from a laptop's width, an amount never wrapped. */
+.stage-form .fd-content > .fd-list .fd-list-table { font-size: 13.5px; }
+.stage-form .fd-content > .fd-list .fd-list-head { font-size: 12.5px; }
+.stage-form .fd-content > .fd-list .fd-list-table :is(th, td) { padding-inline: 7px; }
 /* A list's map as tall as the pane leaves it under the list's title, search and switcher (home.js measures the pane),
    its key in sight; where the stage has no height of its own, the map's own. */
 .stage-form[style*="--pane"] .fd-map-list .fd-map-box { height: max(280px, calc(var(--pane) - 160px)) !important; }

@@ -108,7 +108,7 @@ const power = ([name, figure, words, href]) =>
   `<li><a class="power" href="${href}"><span class="power-figure">${figure}</span><b>${name}</b><span class="power-words">${words}</span><span class="power-go" aria-hidden="true">→</span></a></li>`;
 
 /** The stage's tabs for home.js, each its steps — the page as it stands then and what it adds — and the words as it is used; `<` written so that no text ends the script. */
-const TABS_DATA = JSON.stringify(TABS.map(({ json, ...tab }) => tab)).replace(/</g, '\\u003c');
+const TABS_DATA = JSON.stringify(TABS.map(({ json, narrowJson, ...tab }) => tab)).replace(/</g, '\\u003c');
 
 /** A small drawing for each tab, in the tab's words' colour: a record's sheet, a list's rows, a pin, a calendar. */
 const TAB_ICONS = {

@@ -577,15 +577,15 @@ test(`with reduced motion each tab shows its finished state at once, the page it
   await page.waitForTimeout(3000);
   expect(await shownTab(page)).toBe(RECORD.id);
 
-  // The list: unpaid invoices grouped by customer, each with its sum, the first opened as cards, the overdue in red.
+  // The list: a table of unpaid invoices grouped by customer, each with its sum, Kessler's opened, its overdue one in red.
   await tabOf(page, LIST).click();
   await atRest(LIST);
   await expect(form.locator('.fd-facet .fd-facet-text')).toHaveText(['Unpaid', 'Customer']);
-  await expect(form.locator('.fd-list-group')).toHaveCount(4);
-  await expect(form.locator('.fd-list-group').first()).toContainText('Brandt & Söhne');
-  await expect(form.locator('.fd-list-group').first()).toContainText('€ 12,400.00');
-  await expect(form.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
-  await expect(form.locator('.fd-list-body [data-tone="danger"]')).toContainText(['INV-0407']);
+  await expect(form.locator('.fd-list')).not.toHaveAttribute('data-as', /./);
+  await expect(form.locator('.fd-list-table thead th')).toHaveText(['No.', 'Customer', 'Amount', 'Status']);
+  await expect(form.locator('.fd-list-group')).toHaveText(['Brandt & Söhne (1) · € 12,400.00', 'Café Amsel (1) · € 640.00', 'Kessler GmbH (2) · € 7,010.50', 'Nordlicht AG (2) · € 4,405.00']);
+  await expect(form.locator('.fd-list-row')).toHaveCount(2);
+  await expect(form.locator('.fd-list-row[data-tone="danger"]')).toHaveText(['INV-0412Kessler GmbH€ 4,860.00Sent']);
   await expect(form.getByRole('list', { name: 'Key to the rows' })).toHaveText('Overdue');
   await expect(form.locator('.fd-list-totals')).toContainText('€ 24,455.50');
   await page.screenshot({ path: `test-results/screens/site-home-stage-list-at-rest-${colorScheme}.png` });
@@ -613,6 +613,47 @@ test(`with reduced motion each tab shows its finished state at once, the page it
   expect(problems).toEqual([]);
 });
 }
+
+test('the list is a table beside the JSON, its four columns whole and its amounts on one line; cards on a phone alone', async ({ page }) => {
+  test.setTimeout(120000);
+  const form = page.locator('#stage-form');
+  /** How far the list's table runs past its box: nothing, or it scrolls sideways inside it. */
+  const overrun = () => form.locator('.fd-list-scroll').evaluate((box) => box.scrollWidth - box.clientWidth);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080], [768, 1024]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(SITE + '/');
+    await tabOf(page, LIST).click();
+    await expect(page.locator('#stage-step')).toHaveText(finished(LIST));
+    expect(await drawnPage(page), `${width}`).toEqual(JSON.parse(LIST.json));
+    await expect(form.locator('.fd-list'), `${width}`).not.toHaveAttribute('data-as', /./);
+    await expect(form.locator('.fd-list-table thead th')).toHaveText(['No.', 'Customer', 'Amount', 'Status']);
+    expect(await overrun(), `${width}: the table fits its pane`).toBeLessThanOrEqual(0);
+    // Every row the search finds, not only the group opened: the filter and the grouping taken off.
+    await form.locator('.fd-facet-remove').first().click();
+    await form.locator('.fd-facet-remove').first().click();
+    await expect(form.locator('.fd-list-row')).toHaveCount(9);
+    expect(await overrun(), `${width}: every row fits`).toBeLessThanOrEqual(0);
+    // An amount on one line: as tall as its row's number.
+    const lines = await form.locator('.fd-list-row').evaluateAll((rows) => rows.map((row) => [row.querySelector('td.fd-num')!.getBoundingClientRect().height, row.querySelector('td')!.getBoundingClientRect().height]));
+    for (const [amount, number] of lines) expect(amount, `${width}: an amount on one line`).toBe(number);
+  }
+
+  // On a phone's screen: the same list, a step more — its rows as cards — and the page it draws the one it shows.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await keepWhatIsSaid(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(SITE + '/');
+  await tabOf(page, LIST).click();
+  await expect(page.locator('#stage-step')).toHaveText(finished(LIST), { timeout: 60000 });
+  const said: string[] = await page.evaluate(() => (window as any).heroSaid);
+  expect(said.slice(said.indexOf(`Writing ${LIST.file}`))).toEqual([`Writing ${LIST.file}`, ...LIST.narrow!.map((step) => step.words), ...LIST.used]);
+  expect(LIST.steps.map((step) => step.words)).not.toContain('At a phone’s width, cards');
+  expect(await jsonShown(page)).toEqual(JSON.parse(LIST.narrowJson!));
+  expect(await drawnPage(page)).toEqual(JSON.parse(LIST.narrowJson!));
+  await expect(form.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+  await expectNoSidewaysScroll(page);
+});
 
 test('Skip finishes the tab shown and Replay writes it again', async ({ page }) => {
   test.setTimeout(60000);

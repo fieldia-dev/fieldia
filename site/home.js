@@ -32,7 +32,10 @@
   var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.stage-tabs [role="tab"]'));
   /** Each tab: its steps (site/hero.mjs), each the whole page as it stands then and what it adds in words; then the words said as it is used, its finished state's last. */
   var TABS = tabsData ? JSON.parse(tabsData.textContent) : [];
-  var lastPage = function (tab) { return tab.steps[tab.steps.length - 1].text; };
+  /** A phone's screen, where the stage is its whole width: a tab with steps of its own there (the list's cards) takes them. */
+  var phone = window.matchMedia('(max-width: 520px)');
+  var stepsOf = function (tab) { return phone.matches && tab.narrow ? tab.narrow : tab.steps; };
+  var lastPage = function (tab) { var list = stepsOf(tab); return list[list.length - 1].text; };
 
   /** A day counted from today, as a date field keeps it: the invoices fall due round the reader's own today. */
   function day(offset) {
@@ -112,15 +115,15 @@
   // -- A list: a few customers' invoices, round the reader's today --
   function invoiceRecords() {
     var rows = [
-      ['INV-0436', 'Nordlicht Studio', 21, 1280, 'sent'],
-      ['INV-0431', KESSLER.label, 16, 2150.5, 'sent'],
+      ['INV-0436', 'Nordlicht AG', 21, 1280, 'sent'],
+      ['INV-0431', 'Kessler GmbH', 16, 2150.5, 'sent'],
       ['INV-0428', 'Café Amsel', 9, 640, 'sent'],
-      ['INV-0419', 'Nordlicht Studio', -4, 3125, 'sent'],
-      ['INV-0412', KESSLER.label, -12, 4860, 'sent'],
+      ['INV-0419', 'Nordlicht AG', -4, 3125, 'sent'],
+      ['INV-0412', 'Kessler GmbH', -12, 4860, 'sent'],
       ['INV-0407', 'Brandt & Söhne', -18, 12400, 'sent'],
       ['INV-0401', 'Café Amsel', -26, 980, 'paid'],
       ['INV-0394', 'Brandt & Söhne', -33, 8750, 'paid'],
-      ['INV-0388', KESSLER.label, -41, 9400, 'paid'],
+      ['INV-0388', 'Kessler GmbH', -41, 9400, 'paid'],
     ];
     var invoice = {};
     rows.forEach(function (r, i) { invoice[i + 1] = { number: r[0], customer: r[1], due: day(r[2]), amount: r[3], state: r[4] }; });
@@ -249,7 +252,7 @@
         var now = p.layout;
         return [now.cells && !was.cells && '.fd-list-totals', now.rowTones && !was.rowTones && '.fd-list-key', now.filters && !was.filters && '.fd-facet'].filter(Boolean);
       },
-      // Grouped by customer from the search's own menu, as a person groups it, and the first customer opened.
+      // Grouped by customer from the search's own menu, as a person groups it, and Kessler's opened: one invoice overdue, one not.
       use: async function (say, alive) {
         say(0);
         await wait(900);
@@ -257,12 +260,12 @@
         say(1);
         await wait(1700);
         if (!alive()) return;
-        press(await found('.fd-group-toggle'));
+        press(await kessler());
         say(2);
         await wait(1500);
       },
       done: async function () {
-        if (await groupByCustomer()) press(await found('.fd-group-toggle'));
+        if (await groupByCustomer()) press(await kessler());
       },
     },
     map: {
@@ -340,6 +343,8 @@
     press(stageForm.querySelector('button[aria-label="Search options"]'));
     return !!customer;
   }
+  /** Kessler's group in the list, by its heading. */
+  var kessler = function () { return found('.fd-group-toggle', function (el) { return el.textContent.indexOf('Kessler') >= 0; }); };
   /** A district of the map pressed, as a person presses it: its homes searched for, and the map showing only theirs (Zamalek's one). */
   async function pressDistrict() {
     if (!press(await found('path.fd-map-region', function (el) { return /^Zamalek/.test(el.getAttribute('aria-label') || ''); }))) return false;
@@ -502,8 +507,9 @@
     stepWords.textContent = 'Writing ' + tab.file;
     if (!(await begin(alive))) return;
     var lines = [];
-    for (var s = 0; s < tab.steps.length; s++) {
-      var step = tab.steps[s];
+    var steps = stepsOf(tab);
+    for (var s = 0; s < steps.length; s++) {
+      var step = steps[s];
       var plan = edits(lines, step.text.split('\n'));
       var fresh = [];
       lines = [];
