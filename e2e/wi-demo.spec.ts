@@ -134,7 +134,7 @@ test.describe('the backlog', () => {
     await expect(menu.getByRole('menuitemcheckbox', { name: 'Task' })).toHaveAttribute('aria-checked', 'true');
     await expect(rows(page)).toHaveCount(18);
     await expect(row(page, 4128)).toHaveAttribute('data-depth', '1');
-    await expect(row(page, 4127)).toHaveAttribute('aria-expanded', 'true');
+    await expect(row(page, 4127).locator('.fd-list-twisty')).toHaveAttribute('aria-expanded', 'true');
     const ids = await rows(page).evaluateAll((trs) => trs.slice(0, 3).map((tr) => (tr as HTMLElement).dataset['id']));
     expect(ids).toEqual(['4127', '4128', '4131']);
     await page.keyboard.press('Escape');
