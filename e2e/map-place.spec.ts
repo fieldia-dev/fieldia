@@ -297,9 +297,11 @@ test('a scroll over the map scrolls the page and says how to zoom; Ctrl with it 
   const middle = await at(map, 0.5, 0.5);
   await page.mouse.move(middle.x, middle.y);
   await page.mouse.wheel(0, 240);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  await expect(map.locator('.fd-map-veil')).toHaveText('Use Ctrl + scroll to zoom the map');
+  // The veil says how to zoom for 1.4 s from the wheel: read it first, before waiting for the page to scroll, which a
+  // slow runner may take longer than that to show.
   await expect(map.locator('.fd-map-veil')).toHaveAttribute('data-show', '');
+  await expect(map.locator('.fd-map-veil')).toHaveText('Use Ctrl + scroll to zoom the map');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   expect(await zoomOf(map)).toBe(zoom);
   // Ctrl with the wheel zooms. Playwright's WebKit now and then drops one synthetic wheel (it passed and failed on the
   // same commit): the gesture is made again until the map answers it, a few seconds at most.
