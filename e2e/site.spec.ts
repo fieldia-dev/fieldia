@@ -562,13 +562,7 @@ test(`with reduced motion each tab shows its finished state at once, the page it
     await expect(stage.getByRole('button', { name: 'Skip' })).toBeHidden();
     expect(await jsonShown(page), tab.id).toEqual(JSON.parse(tab.json));
     await expect.poll(() => drawnPage(page)).toEqual(JSON.parse(tab.json));
-    // One finding is the viewer's, not the stage's: a Group By heading's row says its level (aria-level) in a table, where
-    // ARIA gives rows a level only in a treegrid (libs/viewer/src/lib/list-groups.ts) — every grouped list has it.
-    const viewers = (finding: string) => / · aria-conditional-attr · \.fd-list-group\[/.test(finding);
-    // And one is the map's: its provider's credit line ("© OpenStreetMap contributors", Leaflet's link, 13px tall), which
-    // axe in WebKit, never in Chromium, finds too close to the districts' shapes, each a target as big as its district.
-    const credits = (finding: string) => tab.id === MAP.id && / · target-size · (a\[target="_blank"\]|:root) · /.test(finding);
-    expect((await axeFindings(page, `the stage's ${tab.id} · ${colorScheme}`)).filter((finding) => !viewers(finding) && !credits(finding))).toEqual([]);
+    expect(await axeFindings(page, `the stage's ${tab.id} · ${colorScheme}`)).toEqual([]);
   };
   // The record: a company, its VAT number typed, its invoices.
   await atRest(RECORD);
