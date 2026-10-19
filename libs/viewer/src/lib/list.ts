@@ -441,6 +441,9 @@ export function listView(context: ListContext): ListView {
     return next as HTMLElement | null;
   };
 
+  /** Put the keyboard on a row: a record's row itself, a group's heading or its Show more by its button. */
+  const focusRow = (tr: HTMLElement | null) => (tr?.classList.contains('fd-list-row') ? tr : tr?.querySelector<HTMLElement>(':scope > td > button'))?.focus();
+
   /** The card under this one in a gallery, or over it: in the next line of cards, the nearest across. */
   const cardBeside = (tr: HTMLElement, down: boolean) => {
     const at = tr.getBoundingClientRect();
@@ -596,11 +599,11 @@ export function listView(context: ListContext): ListView {
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
         // In a gallery, the card over or under this one; else the row.
-        (element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown'))?.focus();
+        focusRow(element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown'));
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && element.hasAttribute('data-as')) {
         // Cards: the next towards the line's end, the one before towards its start.
         event.preventDefault();
-        shownBeside(tr, event.key === forward)?.focus();
+        focusRow(shownBeside(tr, event.key === forward));
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && tr.hasAttribute('data-parent-of')) {
         // A parent opens towards the line's end, closes towards its start: flipped right to left.
         event.preventDefault();
@@ -649,8 +652,8 @@ export function listView(context: ListContext): ListView {
       // this page shows a parent at all, so names keep their place as a filter lets parents in or out.
       const cell = tr.querySelector<HTMLElement>(':scope > td[data-name]');
       if (under.length) {
+        // Open or closed said by its toggle: a table's row claims no tree (aria-expanded belongs to a treegrid's rows).
         tr.setAttribute('data-parent-of', String(under.length));
-        tr.setAttribute('aria-expanded', String(!closed.has(id)));
         const twisty = el('button', { type: 'button', class: 'fd-list-twisty', tabindex: '-1', 'aria-expanded': String(!closed.has(id)), 'aria-label': show(nameColumn, record.values) || id });
         twisty.addEventListener('click', () => fold(id, twisty.getAttribute('aria-expanded') === 'true'));
         cell?.prepend(twisty);
@@ -681,7 +684,6 @@ export function listView(context: ListContext): ListView {
       const id = tr.dataset['id'] ?? '';
       const twisty = tr.querySelector(':scope > td > .fd-list-twisty');
       twisty?.setAttribute('aria-expanded', String(!closed.has(id)));
-      if (twisty) tr.setAttribute('aria-expanded', String(!closed.has(id)));
       if (tr.hasAttribute('data-parent-of')) stack.push({ depth, closed: closed.has(id) });
     }
   }
@@ -858,6 +860,7 @@ export function listView(context: ListContext): ListView {
     sort: () => sort,
     groups: (key, filter) => headings(source, key, filter),
     recordRow: row,
+    step: (tr, down) => focusRow(shownBeside(tr, down)),
     changed,
   });
 

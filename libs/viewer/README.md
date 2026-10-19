@@ -334,7 +334,10 @@ source both ask, never waited for. Its words are the viewer's labels
 A page whose layout is a `list` shows its records as a table: pages, sorting,
 a search bar with suggestions, filters, group by and favourites. Your data
 source answers `list` and `groups`; a row opens through `onOpenRecord`, and the
-page's buttons reach `onAction` with the chosen `recordIds`. See
+page's buttons reach `onAction` with the chosen `recordIds`. A group's heading
+is a button that says open or closed, its name and its count in words ("Cairo,
+12 invoices"), the list staying a table; the arrow keys cross it as they move
+between rows, Right opens it and Left closes it. See
 [lists and search](https://fieldia.dev/lists/).
 
 Other ways of showing a list's records come from `listViews`, by name: a

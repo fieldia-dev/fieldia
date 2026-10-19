@@ -102,6 +102,56 @@ for (const variant of VARIANTS) {
       await expect(names(page)).toHaveCount(0);
     });
 
+    test('a group’s heading is a button named with its count in words, worked by keyboard as the rows are', async ({ page }) => {
+      await open(page, variant, 'page=customers');
+      await page.getByRole('button', { name: 'Search options' }).click();
+      const grouping = menu(page).locator('[data-group-kind="groupBy"]');
+      await grouping.getByRole('button', { name: 'Country' }).click();
+      await grouping.getByRole('button', { name: 'Status' }).click();
+      await page.keyboard.press('Escape');
+      // What a screen reader hears: no tree on a table's rows, a button open or closed, its name the group and its count.
+      const egypt = page.getByRole('button', { name: 'Egypt, 10 customers', exact: true });
+      const jordan = page.getByRole('button', { name: 'Jordan, 1 customer', exact: true });
+      await expect(egypt).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('.fd-list-table tr[aria-level], .fd-list-table tr[aria-expanded]')).toHaveCount(0);
+      await egypt.focus();
+      await page.keyboard.press('Enter');
+      await expect(egypt).toHaveAttribute('aria-expanded', 'true');
+      const draft = page.getByRole('button', { name: 'Draft, 2 customers', exact: true });
+      await expect(draft).toBeVisible();
+      // Down from the heading to the next one in, Right opens it, and down again to its first record's row.
+      await page.keyboard.press('ArrowDown');
+      await expect(page.getByRole('button', { name: 'Active, 6 customers', exact: true })).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+      await expect(draft).toBeFocused();
+      await page.keyboard.press('ArrowRight');
+      await expect(draft).toHaveAttribute('aria-expanded', 'true');
+      await expect(names(page)).toHaveText(['Cairo Coworking', 'Maadi Labs']);
+      await page.keyboard.press('ArrowDown');
+      await expect(page.locator('.fd-list-row').first()).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+      // Past the last record of a group: the next group's heading, then back up.
+      await expect(jordan).toBeFocused();
+      await page.keyboard.press('ArrowUp');
+      await expect(page.locator('.fd-list-row').last()).toBeFocused();
+      await page.keyboard.press('ArrowUp');
+      await page.keyboard.press('ArrowUp');
+      await expect(draft).toBeFocused();
+      // Left on an open heading closes it; Space works it as any button.
+      await page.keyboard.press('ArrowLeft');
+      await expect(draft).toHaveAttribute('aria-expanded', 'false');
+      await expect(names(page)).toHaveCount(0);
+      await egypt.focus();
+      await page.keyboard.press('Space');
+      await expect(egypt).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('.fd-list-group')).toHaveCount(3);
+      await page.keyboard.press('ArrowRight');
+      await expect(egypt).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('.fd-list-group')).toHaveCount(6);
+    });
+
     test('hands the app the chosen records with the list’s button, after asking, and opens a record from its row', async ({ page }) => {
       const { demo } = await open(page, variant, 'page=customers');
       await page.getByRole('checkbox', { name: 'Select Delta Foods' }).check();

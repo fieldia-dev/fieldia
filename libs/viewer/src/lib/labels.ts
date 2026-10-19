@@ -376,6 +376,14 @@ export interface ViewerLabels {
   none: string;
   loadMore: string;
   /**
+   * How many records a list's group holds, in words (`{n}`: more, or one), said with its name by its heading's button:
+   * "Cairo, 12 records" where the heading shows "Cairo (12)".
+   */
+  groupCount: string;
+  groupCountNoun?: string;
+  groupCountOne: string;
+  groupCountNounOne?: string;
+  /**
    * A list's filter bar (`search: "fields"`): its keyword box, the button that
    * clears every filter, each field's list of values (`{label}`, the field's),
    * and the gear that chooses which fields it offers. A list of nested rows:
@@ -798,6 +806,10 @@ const en: ViewerLabels = {
   no: 'No',
   none: 'None',
   loadMore: 'Show {n} more',
+  groupCount: '{n} records',
+  groupCountNoun: '{n} {records}',
+  groupCountOne: '{n} record',
+  groupCountNounOne: '{n} {record}',
   filterByKeyword: 'Filter by keyword',
   clearFilters: 'Clear filters',
   expandAll: 'Expand all',

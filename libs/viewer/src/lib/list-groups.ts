@@ -1,4 +1,5 @@
-import { addDays, fill, spanStart, DATE_INTERVALS, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
+import { addDays, fill, recordSentence, spanStart, DATE_INTERVALS, type DataSource, type DateInterval, type DayCount, type Group, type Locale, type Page, type RecordId, type RecordPermissions, type RecordVersion, type ResolvedFilter, type SortOrder, type Value } from '@fieldia/core';
+import { formatNumber } from '@fieldia/widgets';
 import type { El } from './dom';
 import { daysFilter, spanEnd } from './list-days';
 import type { ViewerLabels } from './labels';
@@ -36,6 +37,8 @@ export interface GroupContext {
   groups: (key: GroupKey, filter: ResolvedFilter[]) => Promise<Heading[]>;
   /** A record's row, at a depth under its groups. */
   recordRow: (record: Row, level: number) => HTMLTableRowElement;
+  /** Put the keyboard on the row shown next to this one, down or up: a record's row, or a heading's button. */
+  step: (tr: HTMLElement, down: boolean) => void;
   /** Rows came or went. */
   changed: () => void;
 }
@@ -99,6 +102,37 @@ export function groupFilter(context: Pick<GroupContext, 'page' | 'count'>, key: 
   return daysFilter(field, group.value as string, spanEnd(group.value as string, key.interval), def.type === 'datetime' ? 'datetime' : 'date', zone);
 }
 
+/**
+ * What a group's heading says to a screen reader, its button's name: the group, how many records it holds in words, and
+ * its sums — "Cairo, 12 invoices, EGP 4,312,550.00" where it shows "Cairo (12) · EGP 4,312,550.00". The heading is a
+ * table's row, so it claims no tree (`aria-level` belongs to a treegrid's rows); its button says open or closed.
+ */
+export function groupWords(context: Pick<GroupContext, 'page' | 'labels' | 'locale' | 'fill'>, name: string, group: Heading): string {
+  const { page, labels, locale } = context;
+  const one = new Intl.PluralRules(locale).select(group.count) === 'one';
+  const count = context.fill(
+    one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale),
+    { n: formatNumber(group.count, 0, locale) }
+  );
+  return [name, count, ...(group.sums ? [group.sums.replace(/^·\s*/, '')] : [])].join(', ');
+}
+
+/**
+ * A group's row worked by keyboard as a record's row is, by its button: the arrows up and down to the row beside it, and
+ * a heading's (`folds`) opened towards the line's end and closed towards its start, flipped right to left.
+ */
+function arrows(context: GroupContext, button: HTMLButtonElement, tr: HTMLElement, folds: boolean) {
+  button.addEventListener('keydown', (event) => {
+    const down = event.key === 'ArrowDown';
+    if (down || event.key === 'ArrowUp') context.step(tr, down);
+    else if (folds && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+      const forward = tr.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+      if ((button.getAttribute('aria-expanded') === 'true') !== (event.key === forward)) button.click();
+    } else return;
+    event.preventDefault();
+  });
+}
+
 /** Take away every row under a group: its records, its groups and theirs. */
 function closeUnder(tr: HTMLElement) {
   const level = Number(tr.dataset['level']);
@@ -119,15 +153,16 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
   const { el, labels } = context;
   const key = grouping[level];
   const filter: ResolvedFilter[] = [...within, ...groupFilter(context, key, group)];
+  const name = groupName(context, key, group);
   const toggle = el(
     'button',
-    { type: 'button', class: 'fd-group-toggle', 'aria-expanded': 'false' },
-    el('span', { class: 'fd-group-label' }, groupName(context, key, group)),
+    { type: 'button', class: 'fd-group-toggle', 'aria-expanded': 'false', 'aria-label': groupWords(context, name, group) },
+    el('span', { class: 'fd-group-label' }, name),
     ' ',
     el('span', { class: 'fd-group-count' }, `(${group.count})`),
     ...(group.sums ? [' ', el('span', { class: 'fd-group-sums', ...(group.sumsWhy ? { title: group.sumsWhy } : {}) }, group.sums)] : [])
   );
-  const tr = el('tr', { class: 'fd-list-group', 'data-level': String(level), 'aria-level': String(level + 1) }, el('td', { colspan: String(context.columns) }, toggle));
+  const tr = el('tr', { class: 'fd-list-group', 'data-level': String(level) }, el('td', { colspan: String(context.columns) }, toggle));
   tr.style.setProperty('--fd-level', String(level));
   let opening = false;
 
@@ -156,6 +191,7 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
     const more = el('button', { type: 'button', class: 'fd-button fd-button-link' }, context.fill(labels.loadMore, { n: left }));
     const moreRow = el('tr', { class: 'fd-list-more', 'data-level': String(level + 1) }, el('td', { colspan: String(context.columns) }, more));
     moreRow.style.setProperty('--fd-level', String(level));
+    arrows(context, more, moreRow, false);
     more.addEventListener('click', async () => {
       more.disabled = true;
       const next = await recordsFrom(offset + answer.records.length);
@@ -174,5 +210,6 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
       context.changed();
     } else if (!opening) void open();
   });
+  arrows(context, toggle, tr, true);
   return tr;
 }

@@ -1194,7 +1194,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // part's), a CSV file's characters misread and its header alone said, the key over a list's rows named — each language's
 // words: Arabic's 67.23 and 11.66 measured before, 68.25 and 11.82 after, to 68.3 and 11.9; German's 31.46 and 10.29 to
 // 31.91 and 10.42, to 32.0 and 10.5; French's 31.76 and 10.28 to 32.24 and 10.42, to 32.3 and 10.5.
-const ADD_ON_BUDGET_KB = { ar: [68.3, 11.9], de: [32.0, 10.5], fr: [32.3, 10.5] };
+// A grouped list's heading said with its count in words (0.26.1, a11y-0261), "Cairo, 12 records" and with a page's
+// words for its records, two words in Arabic, four in German and French: Arabic's 68.25 and 11.82 measured before,
+// 68.38 and 11.83 after, its raw to 68.4; German's 31.91 and 10.42 to 32.03 and 10.44, to 32.1; French's 32.24 and
+// 10.41 to 32.37 and 10.43, to 32.4.
+const ADD_ON_BUDGET_KB = { ar: [68.4, 11.9], de: [32.1, 10.5], fr: [32.4, 10.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1489,7 +1493,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and what is done as printing begins and Ctrl+P's print of the page (print-look.ts, 5.82) — to 16.0 and 5.3; list
 // 109.56 and 35.09 measured before, 109.78 and 35.19 after — its Print waiting for the print part, a list meant for
 // paper fetching it, and the words only it and the print part read now (printing, printedOn) — to 109.8 and 35.2.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [109.8, 35.2], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// A grouped list's rows claiming no tree a table cannot hold (0.26.1, a11y-0261): each heading's button named with its
+// count in words and its sums ("Cairo, 12 invoices, EGP 4.3M", their English with it), the arrows crossing a heading,
+// Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
+// and 35.5.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

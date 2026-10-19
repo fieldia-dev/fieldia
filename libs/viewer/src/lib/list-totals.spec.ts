@@ -120,6 +120,12 @@ describe('a list’s totals', () => {
     button(host, 'City')!.click();
     await until(() => headings(host).length === 3 && headings(host)[0]?.includes('·'));
     expect(headings(host)).toEqual(['Cairo (2) · Amount EGP 3,500.00 · Hours Average 3.00', 'Dubai (1) · Amount USD 400.00 · Hours Average 1.00', 'Giza (2) · Amount EGP 850.50 · Hours Average 3.00']);
+    // Said by its button as it is seen: the count in words, then the sums.
+    expect([...host.querySelectorAll('.fd-group-toggle')].map((toggle) => toggle.getAttribute('aria-label'))).toEqual([
+      'Cairo, 2 records, Amount EGP\u00a03,500.00 · Hours Average 3.00',
+      'Dubai, 1 record, Amount USD\u00a0400.00 · Hours Average 1.00',
+      'Giza, 2 records, Amount EGP\u00a0850.50 · Hours Average 3.00',
+    ]);
   });
 
   it('says a sum alone, with no column’s name, when one column is totalled', async () => {

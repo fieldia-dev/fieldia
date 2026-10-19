@@ -117,6 +117,29 @@ test.describe('axe on what a person reaches', () => {
     expect(await axeFindings(page, 'order line dialog')).toEqual([]);
   });
 
+  // A list grouped and opened two deep: its group rows claim no tree a table cannot hold (aria-level on a table's row).
+  for (const look of ['skin=underline', 'skin=underline&scheme=dark']) {
+    test(`a list grouped by customer and by month, opened · ${look}`, async ({ page }) => {
+      await visit(page, `/plain/?page=invoices&${look}&now=2026-10-14T09:40`);
+      await page.getByRole('button', { name: 'Search options' }).click();
+      const panel = page.locator('.fd-search-panel');
+      await panel.locator('[data-group-kind="groupBy"]').getByRole('button', { name: 'Customer', exact: true }).click();
+      await panel.getByRole('group', { name: 'Invoice date' }).getByRole('button', { name: 'Month' }).click();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.fd-facet .fd-facet-text')).toHaveText(['This year', 'Customer > Invoice date: Month']);
+      const customer = page.locator('.fd-list-group[data-level="0"] .fd-group-toggle').first();
+      await customer.click();
+      const month = page.locator('.fd-list-group[data-level="1"] .fd-group-toggle').first();
+      await expect(month).toBeVisible();
+      const findings = await axeFindings(page, `grouped by customer, one open ${look}`);
+      await month.click();
+      await expect(page.locator('.fd-list-row').first()).toBeVisible();
+      await screen(page, `a11y-list-grouped-${look.replace(/\W+/g, '-')}`, { viewport: true });
+      findings.push(...(await axeFindings(page, `grouped by customer and month, both open ${look}`)));
+      expect(findings).toEqual([]);
+    });
+  }
+
   for (const look of ['skin=underline', 'skin=outlined&scheme=dark', 'skin=underline&locale=ar&dir=rtl']) {
     test(`a list with its search open · ${look}`, async ({ page }) => {
       await visit(page, `/plain/?page=customers&${look}`);

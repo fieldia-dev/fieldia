@@ -243,6 +243,8 @@ export const ar: ViewerLabels = {
   no: 'لا',
   none: 'بلا قيمة',
   loadMore: 'عرض {n} أخرى',
+  groupCount: 'عدد السجلات: {n}',
+  groupCountOne: 'سجل واحد',
   filterByKeyword: 'تصفية بكلمة',
   clearFilters: 'مسح عوامل التصفية',
   expandAll: 'توسيع الكل',

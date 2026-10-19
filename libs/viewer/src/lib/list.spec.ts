@@ -198,6 +198,88 @@ describe('a list grouped by its fields', () => {
     expect(rows(host)).toEqual([]);
   });
 
+  /** The ARIA a treegrid's row may carry and a table's may not: a table's rows claim no tree. */
+  const TREE = ['aria-level', 'aria-expanded', 'aria-setsize', 'aria-posinset'];
+  const treeClaims = (host: Element) => [...host.querySelectorAll('.fd-list-table tr')].flatMap((tr) => TREE.filter((name) => tr.hasAttribute(name)).map((name) => `${tr.textContent}: ${name}`));
+  const key = (target: Element, name: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true }));
+
+  it('says what each group is without a tree a table cannot hold: a button that opens it, named with its count in words', async () => {
+    const host = await mount();
+    await groupBy(host, 'Country', 'Status');
+    // Still a table, of rows and cells: a group's row is a cell across every column holding its button.
+    expect(host.querySelector('.fd-list-table')?.hasAttribute('role')).toBe(false);
+    const egypt = group(host, 'Egypt');
+    expect(egypt.closest('td')?.colSpan).toBe(5);
+    expect(egypt.getAttribute('aria-expanded')).toBe('false');
+    expect([...host.querySelectorAll('.fd-group-toggle')].map((b) => b.getAttribute('aria-label'))).toEqual(['Egypt, 2 records', 'Jordan, 1 record', 'None, 1 record']);
+    egypt.click();
+    await until(() => groups(host).length === 5);
+    group(host, 'Draft').click();
+    await until(() => rows(host).length === 1);
+    expect(group(host, 'Active').getAttribute('aria-label')).toBe('Active, 1 record');
+    expect(treeClaims(host)).toEqual([]);
+    // Seen, as it always was: the name, and the count in brackets.
+    expect(groups(host)).toEqual(['Egypt (2)', '  Active (1)', '  Draft (1)', 'Jordan (1)', 'None (1)']);
+  });
+
+  it('counts a group in the words the page names its records by, in its language', async () => {
+    const named = { ...customers, records: { one: 'customer', other: 'customers', a: 'a customer' } } as Page;
+    const host = await mount({}, named);
+    await groupBy(host, 'Country');
+    expect([...host.querySelectorAll('.fd-group-toggle')].map((b) => b.getAttribute('aria-label'))).toEqual(['Egypt, 2 customers', 'Jordan, 1 customer', 'None, 1 customer']);
+    handle?.destroy();
+    host.remove();
+    // A page that names none, in German: the language's own word for records.
+    const german = await mount({ locale: 'de' });
+    button(german, 'Suchoptionen')!.click();
+    button(german.querySelector('.fd-search-panel [data-group-kind="groupBy"]') as HTMLElement, 'Country')!.click();
+    await until(() => german.querySelector('.fd-list-group'));
+    expect(group(german, 'Egypt').getAttribute('aria-label')).toBe('Egypt, 2 Einträge');
+    expect(group(german, 'Jordan').getAttribute('aria-label')).toBe('Jordan, 1 Eintrag');
+  });
+
+  it('is worked by keyboard as its rows are: the arrows cross a group’s heading, which opens towards the line’s end and closes towards its start', async () => {
+    const host = await mount();
+    await groupBy(host, 'Country');
+    const [egypt, jordan] = [group(host, 'Egypt'), group(host, 'Jordan')];
+    egypt.focus();
+    key(egypt, 'ArrowRight');
+    await until(() => rows(host).length === 2);
+    expect(egypt.getAttribute('aria-expanded')).toBe('true');
+    // Open already: Right again changes nothing.
+    key(egypt, 'ArrowRight');
+    expect(egypt.getAttribute('aria-expanded')).toBe('true');
+    key(egypt, 'ArrowDown');
+    expect(document.activeElement).toBe(rows(host)[0]);
+    key(rows(host)[0], 'ArrowDown');
+    key(rows(host)[1], 'ArrowDown');
+    expect(document.activeElement).toBe(jordan);
+    key(jordan, 'ArrowUp');
+    expect(document.activeElement).toBe(rows(host)[1]);
+    key(rows(host)[1], 'ArrowUp');
+    key(rows(host)[0], 'ArrowUp');
+    expect(document.activeElement).toBe(egypt);
+    key(egypt, 'ArrowLeft');
+    expect(egypt.getAttribute('aria-expanded')).toBe('false');
+    expect(rows(host)).toEqual([]);
+    key(egypt, 'ArrowDown');
+    expect(document.activeElement).toBe(jordan);
+  });
+
+  it('turns a heading’s arrows round right to left', async () => {
+    const host = await mount({ locale: 'ar', dir: 'rtl' });
+    button(host, 'خيارات البحث')!.click();
+    button(host.querySelector('.fd-search-panel [data-group-kind="groupBy"]') as HTMLElement, 'Country')!.click();
+    await until(() => host.querySelector('.fd-list-group'));
+    const first = group(host, 'Egypt');
+    key(first, 'ArrowLeft');
+    await until(() => rows(host).length > 0);
+    expect(first.getAttribute('aria-expanded')).toBe('true');
+    key(first, 'ArrowRight');
+    expect(first.getAttribute('aria-expanded')).toBe('false');
+    expect(rows(host)).toEqual([]);
+  });
+
   it('shows a group’s records a page at a time, with the rest a click away', async () => {
     const host = await mount({}, { ...customers, layout: { ...(customers.layout as object), pageSize: 1 } as Page['layout'] });
     await groupBy(host, 'Country');

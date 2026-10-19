@@ -170,11 +170,14 @@ describe('rows under their parent', () => {
     expect(titles(rows(host))).toEqual(['Stock count shows 12 after releasing 3', 'Write the stock test', 'Check the scanner log', 'Cancel stage loses the download']);
     expect(rows(host).map((tr) => tr.dataset['depth'])).toEqual(['0', '1', '2', '0']);
     const parent = rows(host)[0];
-    expect(parent.getAttribute('aria-expanded')).toBe('true');
-    expect(parent.querySelector('.fd-list-twisty')?.getAttribute('aria-label')).toBe('Stock count shows 12 after releasing 3');
+    // Open or closed said by its toggle: a table's row claims no tree (aria-expanded is a treegrid's row's alone).
+    const twisty = parent.querySelector('.fd-list-twisty') as HTMLButtonElement;
+    expect(twisty.getAttribute('aria-expanded')).toBe('true');
+    expect(twisty.getAttribute('aria-label')).toBe('Stock count shows 12 after releasing 3');
     byName(host, 'Collapse all').click();
     expect(titles(shown(host))).toEqual(['Stock count shows 12 after releasing 3', 'Cancel stage loses the download']);
-    expect(parent.getAttribute('aria-expanded')).toBe('false');
+    expect(twisty.getAttribute('aria-expanded')).toBe('false');
+    expect(rows(host).filter((tr) => ['aria-expanded', 'aria-level', 'aria-setsize', 'aria-posinset'].some((name) => tr.hasAttribute(name)))).toEqual([]);
     byName(host, 'Expand all').click();
     expect(shown(host)).toHaveLength(4);
   });
