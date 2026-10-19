@@ -2,8 +2,9 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
 import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/catalog.mjs';
-import { HERO_JSON, STEPS } from '../site/hero.mjs';
+import { HERO_JSON, TABS } from '../site/hero.mjs';
 import { expectNoSidewaysScroll, screen } from './support';
+import { axeFindings } from './a11y-support';
 import { gzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 
@@ -246,13 +247,28 @@ test('the gallery on a phone: a compact list, each demo its name and one line', 
 
 // ---- the front page's opening ----------------------------------------------------------
 
-/** The words the stage's bar says as the page is written and used, in order: each step's, then someone using it. */
-const USED = ['Now someone uses it', 'Marked a company: the VAT number appears, now required', 'The finished record: try it'];
-const FINISHED = USED[USED.length - 1];
+/** The stage's tabs, as site/hero.mjs writes them: the record first. */
+const [RECORD, LIST, MAP, BOOKING] = TABS;
+/** The words a tab's bar says once it is done: the last of its `used`. */
+const finished = (tab: (typeof TABS)[number]) => tab.used[tab.used.length - 1];
 /** The release the site is built from, as npm has it. */
 const RELEASE = JSON.parse(readFileSync('libs/viewer/package.json', 'utf8')).version as string;
+const tabOf = (page: Page, tab: (typeof TABS)[number]) => page.getByRole('tab', { name: tab.name });
+const shownTab = (page: Page) => page.evaluate(() => (window as any).fieldiaHero.tab() as string);
+const drawnPage = (page: Page) => page.evaluate(() => (window as any).fieldiaHero.page());
+const jsonShown = async (page: Page) => JSON.parse((await page.locator('#stage-json').textContent())!);
+/** Every word the stage's bar says, as it says it, kept in `heroSaid`. */
+const keepWhatIsSaid = (page: Page) =>
+  page.addInitScript(() => {
+    const said: string[] = [];
+    (window as any).heroSaid = said;
+    new MutationObserver(() => {
+      const words = document.getElementById('stage-step')?.textContent ?? '';
+      if (words && said[said.length - 1] !== words) said.push(words);
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
 
-test('the front page opens with a headline, one line for a business and one for developers, Get started, and what is new in the release', async ({ page }) => {
+test('the front page opens with a headline, a line for a business and one for developers, Get started, and what is new in the release', async ({ page }) => {
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(SITE + '/');
@@ -262,12 +278,12 @@ test('the front page opens with a headline, one line for a business and one for 
     await expect(copy.nth(0)).toHaveClass(/kicker/);
     await expect(copy.nth(1)).toHaveText('Write the screen once.Fieldia runs it in your app.');
     await expect(copy.nth(2)).toHaveClass(/lede-business/);
+    await expect(copy.nth(2)).toHaveText('Customer records, orders, invoices, bookings: the screens your team works in, in your look and your language.');
     await expect(copy.nth(3)).toHaveClass(/lede-dev/);
+    await expect(copy.nth(3)).toHaveText('Each screen is a JSON file, not a component. Fieldia draws it in React, Vue, Angular or plain JavaScript, and hands every record to your backend.');
     await expect(copy.nth(4)).toHaveClass(/opening-actions/);
-    // Each line one sentence.
-    for (const line of [copy.nth(2), copy.nth(3)]) expect((await line.textContent())!.trim()).toMatch(/^[^.]+\.$/);
+    // The business line in a business owner's words: no JSON, no framework.
     await expect(copy.nth(2)).not.toContainText(/JSON|JavaScript|React|Vue|Angular/);
-    await expect(copy.nth(3)).toContainText('plain JavaScript, React, Vue or Angular');
   }
   // The kicker names the release and links to what is new in it, on GitHub.
   const minor = RELEASE.split('.').slice(0, 2).join('.');
@@ -275,6 +291,7 @@ test('the front page opens with a headline, one line for a business and one for 
   const news = page.getByRole('link', { name: `What’s new in ${minor}` });
   await expect(news).toHaveAttribute('href', `https://github.com/fieldia-dev/fieldia/releases/tag/v${RELEASE}`);
   await expect(page.getByRole('link', { name: 'Get started' }).first()).toHaveAttribute('href', '/start/');
+  await expect(page.locator('#copy-install')).toHaveAttribute('data-copy', 'npm install @fieldia/viewer');
 });
 
 test('the business areas in a strip under the opening, each to its demos', async ({ page }) => {
@@ -299,12 +316,12 @@ test('the business areas in a strip under the opening, each to its demos', async
   await expect(page.locator('.gallery-section#clinic')).toBeInViewport();
 });
 
-test('the opening on the first screen: side by side on a laptop, the stage’s record readable; on a phone Get started before the fold', async ({ page }) => {
-  test.setTimeout(120000);
+test('the opening on the first screen: side by side on a laptop, its tabs and the stage’s record readable; on a phone Get started before the fold', async ({ page }) => {
+  test.setTimeout(180000);
   for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
     await page.setViewportSize({ width, height });
     await page.goto(SITE + '/');
-    await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
+    await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words, { timeout: 20000 });
     const stage = (await page.locator('.home-opening .stage').boundingBox())!;
     const copy = (await page.locator('.opening-copy').boundingBox())!;
     // Beside the words, and the words and the stage both whole on the first screen, under the bar.
@@ -313,6 +330,10 @@ test('the opening on the first screen: side by side on a laptop, the stage’s r
       expect(part.y, `${width}: the ${name}' top`).toBeGreaterThanOrEqual(60);
       expect(part.y + part.height, `${width}: the ${name}' foot`).toBeLessThanOrEqual(height);
     }
+    // The four tabs over it, each whole in view, on one line.
+    for (const tab of TABS) await expect(tabOf(page, tab), `${width}: ${tab.name}`).toBeInViewport({ ratio: 1 });
+    const tops = await page.getByRole('tablist', { name: 'Examples' }).getByRole('tab').evaluateAll((tabs) => tabs.map((t) => Math.round(t.getBoundingClientRect().top)));
+    expect(new Set(tops).size, `${width}: the tabs on one line`).toBe(1);
     // The record's first field on the screen, and the record not a postage stamp: as wide as a phone's screen or more.
     await expect(page.locator('#stage-form [data-field="name"]')).toBeInViewport({ ratio: 1 });
     expect((await page.locator('#stage-form').boundingBox())!.width, `${width}: the record's width`).toBeGreaterThanOrEqual(420);
@@ -320,53 +341,68 @@ test('the opening on the first screen: side by side on a laptop, the stage’s r
     expect(parseFloat(await page.locator('#stage-json').evaluate((pre) => getComputedStyle(pre).fontSize))).toBeGreaterThanOrEqual(13);
     await page.screenshot({ path: `test-results/screens/site-home-opening-${width}.png` });
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(SITE + '/');
-  await expect(page.locator('#opening-h')).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('link', { name: 'Get started' }).first()).toBeInViewport({ ratio: 1 });
-  // The stage after the words.
-  expect((await page.locator('.home-opening .stage').boundingBox())!.y).toBeGreaterThan((await page.locator('.opening-actions').first().boundingBox())!.y);
-  await page.screenshot({ path: 'test-results/screens/site-home-opening-390.png' });
-  // Nothing sideways at any width, on either side of where the words and the stage go side by side: the finished
-  // record drawn at once (reduced motion), its invoices' table the widest it gets.
+  for (const [width, height] of [[390, 844], [360, 740]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(SITE + '/');
+    await expect(page.locator('#opening-h')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole('link', { name: 'Get started' }).first()).toBeInViewport({ ratio: 1 });
+    // The stage after the words; its four tabs across the phone's width, none cut and nothing to scroll sideways.
+    expect((await page.locator('.home-opening .stage').boundingBox())!.y).toBeGreaterThan((await page.locator('.opening-actions').first().boundingBox())!.y);
+    const strip = page.getByRole('tablist', { name: 'Examples' });
+    expect(await strip.evaluate((el) => el.scrollWidth - el.clientWidth), `${width}: the tabs fit`).toBeLessThanOrEqual(0);
+    const across = (await strip.boundingBox())!;
+    for (const tab of TABS) {
+      const box = (await tabOf(page, tab).boundingBox())!;
+      expect(box.x, `${width}: ${tab.name}`).toBeGreaterThanOrEqual(across.x);
+      expect(box.x + box.width, `${width}: ${tab.name}`).toBeLessThanOrEqual(across.x + across.width + 0.5);
+      expect(box.height, `${width}: ${tab.name}, a finger's target`).toBeGreaterThanOrEqual(40);
+    }
+    await page.screenshot({ path: `test-results/screens/site-home-opening-${width}.png` });
+  }
+  // Nothing sideways at any width, on either side of where the words and the stage go side by side: each tab's
+  // finished state drawn at once (reduced motion) — the record's invoices' table, the list's cards, the map, the month.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const width of [1920, 1440, 1280, 1180, 1179, 1024, 800, 799, 768, 520, 390, 360]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(SITE + '/');
     await expect(page.locator('#stage-form .fd-related tbody tr')).toHaveCount(4);
     await expectNoSidewaysScroll(page);
+    if (![1920, 1180, 800, 390, 360].includes(width)) continue;
+    for (const [tab, drawn] of [[LIST, '.fd-list-group'], [MAP, '.fd-map-card'], [BOOKING, '.fd-slots-chosen']] as const) {
+      await tabOf(page, tab).click();
+      await expect(page.locator('#stage-step')).toHaveText(finished(tab));
+      await expect(page.locator(`#stage-form ${drawn}`).first(), `${width}: ${tab.name}`).toBeVisible();
+      await expectNoSidewaysScroll(page);
+    }
   }
 });
 
-test('the stage writes customer.page.json step by step, draws each step, and ends on the page it shows', async ({ page }) => {
+test('the record tab writes customer.page.json step by step, draws each step, and ends on the page it shows', async ({ page }) => {
   test.setTimeout(90000);
   const problems = watch(page);
-  // Every word the stage's bar says, as it says it.
-  await page.addInitScript(() => {
-    const said: string[] = [];
-    (window as any).heroSaid = said;
-    new MutationObserver(() => {
-      const words = document.getElementById('stage-step')?.textContent ?? '';
-      if (words && said[said.length - 1] !== words) said.push(words);
-    }).observe(document, { subtree: true, childList: true, characterData: true });
-  });
+  await keepWhatIsSaid(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(SITE + '/');
   const stage = page.locator('.home-opening .stage');
   const form = page.locator('#stage-form');
   // A customer's record, by its name, as the first step is drawn: the JSON pane says what was written.
-  await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words, { timeout: 20000 });
   await expect(form.locator('[data-field="name"] textarea')).toHaveValue('Kessler Logistik GmbH');
-  expect(JSON.parse((await page.locator('#stage-json').textContent())!)).toEqual(JSON.parse(STEPS[0].text));
+  expect(await jsonShown(page)).toEqual(JSON.parse(RECORD.steps[0].text));
   await expect(stage.getByRole('button', { name: 'Skip' })).toBeVisible();
-  await expect(page.locator('#stage-step')).toHaveText(FINISHED, { timeout: 60000 });
+  // The tab named, and its panel named by it.
+  await expect(tabOf(page, RECORD)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tabpanel', { name: RECORD.name })).toBeVisible();
+  // The pointer resting on the stage: someone is reading, and it stays on this tab once it is done.
+  const box = (await stage.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD), { timeout: 60000 });
   // Each step in order, then someone using it.
   const said: string[] = await page.evaluate(() => (window as any).heroSaid);
-  expect(said.slice(said.indexOf(STEPS[0].words))).toEqual([...STEPS.map((step) => step.words), ...USED]);
+  expect(said.slice(said.indexOf(RECORD.steps[0].words))).toEqual([...RECORD.steps.map((step) => step.words), ...RECORD.used]);
   // The page drawn last is the page shown, and the page the site was built with.
-  const shown = JSON.parse((await page.locator('#stage-json').textContent())!);
-  expect(shown).toEqual(JSON.parse(HERO_JSON));
-  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(shown);
+  expect(await jsonShown(page)).toEqual(JSON.parse(HERO_JSON));
+  expect(await drawnPage(page)).toEqual(JSON.parse(RECORD.json));
   // A real record: its phone read for its country, money in euros, Lead › Customer, and the rule's VAT number,
   // required now that it is a company.
   await expect(form.getByRole('combobox', { name: 'Country of Phone' })).toHaveValue('DE');
@@ -393,32 +429,213 @@ test('the stage writes customer.page.json step by step, draws each step, and end
   // Try it: a person, not a company, has no VAT number to give.
   await form.getByRole('switch', { name: 'A company' }).uncheck();
   await expect(form.locator('[data-field="vat"]')).toBeHidden();
+  // Still on the record: the pointer on it held the stage there.
+  expect(await shownTab(page)).toBe(RECORD.id);
   await page.screenshot({ path: 'test-results/screens/site-home-stage-finished.png' });
   expect(problems).toEqual([]);
 });
 
-test('the stage’s Skip and Replay, and with reduced motion the finished record at once', async ({ page }) => {
+test('untouched, the stage plays each tab in turn: every step’s words, then its use, each ending on the page it shows', async ({ page }) => {
+  test.setTimeout(180000);
+  const problems = watch(page);
+  await keepWhatIsSaid(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(SITE + '/');
+  for (const tab of TABS) {
+    await expect(page.locator('#stage-step')).toHaveText(finished(tab), { timeout: 60000 });
+    await expect(tabOf(page, tab)).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#stage-file')).toHaveText(tab.file);
+    expect(await jsonShown(page), tab.id).toEqual(JSON.parse(tab.json));
+    expect(await drawnPage(page), tab.id).toEqual(JSON.parse(tab.json));
+    await page.screenshot({ path: `test-results/screens/site-home-stage-${tab.id}.png` });
+  }
+  // Each tab's steps in order, then someone using it, the tabs one after another.
+  const said: string[] = await page.evaluate(() => (window as any).heroSaid);
+  expect(said.slice(said.indexOf(`Writing ${RECORD.file}`))).toEqual(TABS.flatMap((tab) => [`Writing ${tab.file}`, ...tab.steps.map((step) => step.words), ...tab.used]));
+  // And after the last, it rests there: nothing goes round again.
+  await page.waitForTimeout(4000);
+  expect(await shownTab(page)).toBe(BOOKING.id);
+  await expect(page.locator('#stage-step')).toHaveText(finished(BOOKING));
+  expect(problems).toEqual([]);
+});
+
+test('a press in the stage keeps it on the tab it shows: the next never comes by itself', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(SITE + '/');
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[1].words, { timeout: 20000 });
+  // A press on the JSON, as someone reading it would.
+  await page.locator('#stage-json').click();
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD), { timeout: 60000 });
+  await page.waitForTimeout(5000);
+  expect(await shownTab(page)).toBe(RECORD.id);
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD));
+  await expect(tabOf(page, LIST)).toHaveAttribute('aria-selected', 'false');
+  // A tab pressed plays that tab, and stays on it once it is done.
+  await tabOf(page, LIST).click();
+  await expect(page.locator('#stage-step')).toHaveText(LIST.steps[0].words, { timeout: 20000 });
+  await expect(page.locator('#stage-step')).toHaveText(finished(LIST), { timeout: 60000 });
+  await page.waitForTimeout(4000);
+  expect(await shownTab(page)).toBe(LIST.id);
+});
+
+test('the stage’s tabs by keyboard: the arrows, Home and End, each tab marked and its panel named by it', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(SITE + '/');
+  const tabs = page.getByRole('tablist', { name: 'Examples' }).getByRole('tab');
+  await expect(tabs).toHaveText(TABS.map((tab) => tab.name));
+  // One stop for the tabs: the one shown.
+  await expect(tabs.nth(0)).toHaveAttribute('tabindex', '0');
+  for (const i of [1, 2, 3]) await expect(tabs.nth(i)).toHaveAttribute('tabindex', '-1');
+  // Reached by Tab from the buttons before it, its focus in sight.
+  await page.locator('#copy-install').focus();
+  await page.keyboard.press('Tab');
+  await expect(tabOf(page, RECORD)).toBeFocused();
+  expect(await tabOf(page, RECORD).evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe('none');
+  const at = async (tab: (typeof TABS)[number]) => {
+    await expect(tabOf(page, tab)).toBeFocused();
+    await expect(tabOf(page, tab)).toHaveAttribute('aria-selected', 'true');
+    await expect(tabOf(page, tab)).toHaveAttribute('tabindex', '0');
+    await expect(tabs.and(page.locator('[aria-selected="true"]'))).toHaveCount(1);
+    await expect(page.getByRole('tabpanel', { name: tab.name })).toBeVisible();
+    await expect(page.locator('#stage-file')).toHaveText(tab.file);
+    await expect(page.locator('#stage-step')).toHaveText(finished(tab));
+  };
+  await page.keyboard.press('ArrowRight');
+  await at(LIST);
+  await page.keyboard.press('End');
+  await at(BOOKING);
+  await page.keyboard.press('ArrowRight');
+  await at(RECORD);
+  await page.keyboard.press('ArrowLeft');
+  await at(BOOKING);
+  await page.keyboard.press('Home');
+  await at(RECORD);
+  // The tab's panel next, then into it: Replay, the JSON, the page drawn.
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Replay' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#stage-json')).toBeFocused();
+});
+
+test('the map’s code is not asked for before its tab, and comes when its tab is shown', async ({ page }) => {
+  test.setTimeout(90000);
+  const asked: string[] = [];
+  page.on('request', (request) => request.url().includes('/hero/') && asked.push(request.url()));
+  // While the first tab plays: none of it, nor Leaflet.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(SITE + '/');
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[5].words, { timeout: 40000 });
+  expect(asked).toEqual([]);
+  expect(await page.evaluate(() => 'L' in window || !!document.querySelector('.leaflet-container'))).toBe(false);
+
+  // With reduced motion nothing plays by itself: the list's tab shown asks for none of it; the map's does.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(SITE + '/');
+  asked.length = 0;
+  await tabOf(page, LIST).click();
+  await expect(page.locator('#stage-step')).toHaveText(finished(LIST));
+  await page.waitForTimeout(500);
+  expect(asked).toEqual([]);
+  const map = page.waitForResponse((response) => response.url().endsWith('/hero/map.js'));
+  await tabOf(page, MAP).click();
+  expect((await map).status()).toBe(200);
+  // Leaflet in a chunk of its own, asked for once a map is shown.
+  await expect(page.locator('#stage-form .leaflet-container')).toBeVisible();
+  expect(asked.some((url) => /\/hero\/leaflet-src-[A-Z0-9]+\.js$/.test(url))).toBe(true);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+test(`with reduced motion each tab shows its finished state at once, the page it draws the JSON it shows, and none moves on · ${colorScheme}`, async ({ page }) => {
+  test.setTimeout(120000);
+  const problems = watch(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme });
+  await page.goto(SITE + '/');
+  const stage = page.locator('.home-opening .stage');
+  const form = page.locator('#stage-form');
+  // Each at rest, and the page round it passing axe: AA contrast, names, the tabs' roles.
+  const atRest = async (tab: (typeof TABS)[number]) => {
+    await expect(page.locator('#stage-step')).toHaveText(finished(tab));
+    await expect(stage.getByRole('button', { name: 'Replay' })).toBeVisible();
+    await expect(stage.getByRole('button', { name: 'Skip' })).toBeHidden();
+    expect(await jsonShown(page), tab.id).toEqual(JSON.parse(tab.json));
+    await expect.poll(() => drawnPage(page)).toEqual(JSON.parse(tab.json));
+    // One finding is the viewer's, not the stage's: a Group By heading's row says its level (aria-level) in a table, where
+    // ARIA gives rows a level only in a treegrid (libs/viewer/src/lib/list-groups.ts) — every grouped list has it.
+    const viewers = (finding: string) => / · aria-conditional-attr · \.fd-list-group\[/.test(finding);
+    // And one is the map's: its provider's credit line ("© OpenStreetMap contributors", Leaflet's link, 13px tall), which
+    // axe in WebKit, never in Chromium, finds too close to the districts' shapes, each a target as big as its district.
+    const credits = (finding: string) => tab.id === MAP.id && / · target-size · (a\[target="_blank"\]|:root) · /.test(finding);
+    expect((await axeFindings(page, `the stage's ${tab.id} · ${colorScheme}`)).filter((finding) => !viewers(finding) && !credits(finding))).toEqual([]);
+  };
+  // The record: a company, its VAT number typed, its invoices.
+  await atRest(RECORD);
+  await expect(form.locator('[data-field="vat"] input')).toHaveValue('DE 123456789');
+  await expect(form.locator('.fd-related tbody tr')).toHaveCount(4);
+  await page.waitForTimeout(3000);
+  expect(await shownTab(page)).toBe(RECORD.id);
+
+  // The list: unpaid invoices grouped by customer, each with its sum, the first opened as cards, the overdue in red.
+  await tabOf(page, LIST).click();
+  await atRest(LIST);
+  await expect(form.locator('.fd-facet .fd-facet-text')).toHaveText(['Unpaid', 'Customer']);
+  await expect(form.locator('.fd-list-group')).toHaveCount(4);
+  await expect(form.locator('.fd-list-group').first()).toContainText('Brandt & Söhne');
+  await expect(form.locator('.fd-list-group').first()).toContainText('€ 12,400.00');
+  await expect(form.locator('.fd-list')).toHaveAttribute('data-as', 'cards');
+  await expect(form.locator('.fd-list-body [data-tone="danger"]')).toContainText(['INV-0407']);
+  await expect(form.getByRole('list', { name: 'Key to the rows' })).toHaveText('Overdue');
+  await expect(form.locator('.fd-list-totals')).toContainText('€ 24,455.50');
+  await page.screenshot({ path: `test-results/screens/site-home-stage-list-at-rest-${colorScheme}.png` });
+
+  // The map: Zamalek's homes found from its district, one home's card open, each district shaded with a key.
+  await tabOf(page, MAP).click();
+  await atRest(MAP);
+  await expect(form.locator('.fd-facet .fd-facet-text')).toHaveText(['In Zamalek']);
+  await expect(form.locator('.fd-map-card .fd-map-card-title')).toHaveText('Nile-view flat');
+  await expect(form.locator('.fd-map-card')).toContainText('E£ 9,500,000.00');
+  await expect(form.locator('.fd-map-legend .fd-map-legend-title')).toHaveText('Homes for sale');
+  await expect(form.locator('path.fd-map-region[data-shade]').first()).toBeAttached();
+  await page.screenshot({ path: `test-results/screens/site-home-stage-map-at-rest-${colorScheme}.png` });
+
+  // The booking: on Berlin's clock, a day's free times, one chosen, its end written in Back by.
+  await tabOf(page, BOOKING).click();
+  await atRest(BOOKING);
+  await expect(form.locator('.fd-slots-zone')).toHaveText(/^Times are Central European (Standard |Summer )?Time$/);
+  await expect(form.locator('.fd-slots-chip[aria-pressed="true"]')).toHaveCount(1);
+  await expect(form.locator('.fd-slots-chosen')).toHaveText(/, \d\d:00 to \d\d:45 CES?T$/);
+  await expect(form.locator('[data-field="stop"] input')).not.toHaveValue('');
+  await page.screenshot({ path: `test-results/screens/site-home-stage-booking-at-rest-${colorScheme}.png` });
+  await page.waitForTimeout(3000);
+  expect(await shownTab(page)).toBe(BOOKING.id);
+  expect(problems).toEqual([]);
+});
+}
+
+test('Skip finishes the tab shown and Replay writes it again', async ({ page }) => {
+  test.setTimeout(60000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(SITE + '/');
   const stage = page.locator('.home-opening .stage');
-  await expect(page.locator('#stage-step')).toHaveText(STEPS[1].words, { timeout: 20000 });
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[1].words, { timeout: 20000 });
   await stage.getByRole('button', { name: 'Skip' }).click();
-  await expect(page.locator('#stage-step')).toHaveText(FINISHED);
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD));
   await expect(stage.getByRole('button', { name: 'Skip' })).toBeHidden();
   await expect(page.locator('#stage-form [data-field="vat"] input')).toHaveValue('DE 123456789');
-  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(JSON.parse(HERO_JSON));
+  expect(await drawnPage(page)).toEqual(JSON.parse(HERO_JSON));
   // Replay writes it again from the first step.
   await stage.getByRole('button', { name: 'Replay' }).click();
   await expect(stage.getByRole('button', { name: 'Skip' })).toBeVisible();
-  await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(SITE + '/');
-  await expect(page.locator('#stage-step')).toHaveText(FINISHED);
-  await expect(stage.getByRole('button', { name: 'Replay' })).toBeVisible();
-  await expect(page.locator('#stage-form .fd-related tbody tr')).toHaveCount(4);
-  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(JSON.parse(HERO_JSON));
-  expect(JSON.parse((await page.locator('#stage-json').textContent())!)).toEqual(JSON.parse(HERO_JSON));
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words, { timeout: 20000 });
+  // Each tab its own: the booking's Skip finishes the booking.
+  await tabOf(page, BOOKING).click();
+  await expect(page.locator('#stage-step')).toHaveText(BOOKING.steps[0].words, { timeout: 20000 });
+  await stage.getByRole('button', { name: 'Skip' }).click();
+  await expect(page.locator('#stage-step')).toHaveText(finished(BOOKING));
+  await expect(page.locator('#stage-form .fd-slots-chip[aria-pressed="true"]')).toHaveCount(1);
+  expect(await drawnPage(page)).toEqual(JSON.parse(BOOKING.json));
 });
 
 test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {

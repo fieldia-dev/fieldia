@@ -4,6 +4,7 @@
  * demos, and the designer's, to try on the site (all built first by
  * tools/build-demos.mjs).
  */
+import { build } from 'esbuild';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -39,6 +40,29 @@ writeFileSync(
 );
 
 for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'story.js', 'story.css', 'features.css', 'gallery.js', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
+// The front page's map (site/hero-map.mjs), for its stage's map tab: @fieldia/map from source, drawing with the page's
+// own fieldia.js — Fieldia's packages read from `window.Fieldia`, never a second copy — and Leaflet in a chunk of its
+// own, loaded with the first map shown. home.js imports /hero/map.js the first time it needs it.
+const pageFieldia = {
+  name: 'page-fieldia',
+  setup(builder) {
+    builder.onResolve({ filter: /^@fieldia\/(core|widgets|viewer)$/ }, ({ path }) => ({ path, namespace: 'page-fieldia' }));
+    builder.onLoad({ filter: /.*/, namespace: 'page-fieldia' }, () => ({ contents: 'module.exports = window.Fieldia;', loader: 'js' }));
+  },
+};
+await build({
+  entryPoints: { map: join(WORKSPACE, 'site/hero-map.mjs') },
+  bundle: true,
+  splitting: true,
+  format: 'esm',
+  minify: true,
+  target: 'es2022',
+  outdir: join(OUT, 'hero'),
+  chunkNames: '[name]-[hash]',
+  tsconfig: join(WORKSPACE, 'tsconfig.base.json'),
+  plugins: [pageFieldia],
+  logLevel: 'warning',
+});
 // The feature pages' pictures, taken from the real demos (tools/feature-shots.mjs).
 cpSync(join(WORKSPACE, 'site/img'), join(OUT, 'img'), { recursive: true });
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));

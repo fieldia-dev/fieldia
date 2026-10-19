@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
 import { COUNTS, SIZES, TESTS, Words, figure, words } from '../facts.mjs';
 import { AREAS, DEMOS, areaOf } from '../../demos/catalog.mjs';
-import { HERO_JSON, STEPS } from '../hero.mjs';
+import { HERO_JSON, TABS } from '../hero.mjs';
 
 /**
  * The front page tells one story, top to bottom: what a business gets from it, in
- * one sentence, and for developers in one more, beside a page of JSON written and
- * drawn as it grows into a customer's record (the hero's stage, site/hero.mjs);
+ * one sentence, and for developers in two more, beside pages of JSON written and
+ * drawn as they grow — a customer's record, a list, a map, a booking, a tab each
+ * (the hero's stage, site/hero.mjs);
  * the business areas it is at work in, under it; it starts as a question people answer;
  * then it runs a business record; it is the same in every framework; it already
  * starts from a template in any of its themes; it already draws real ERP
@@ -106,8 +107,18 @@ const POWERS = [
 const power = ([name, figure, words, href]) =>
   `<li><a class="power" href="${href}"><span class="power-figure">${figure}</span><b>${name}</b><span class="power-words">${words}</span><span class="power-go" aria-hidden="true">→</span></a></li>`;
 
-/** The stage's steps for home.js, each the page as it stands then and what it adds; `<` written so that no text ends the script. */
-const STEPS_DATA = JSON.stringify(STEPS).replace(/</g, '\\u003c');
+/** The stage's tabs for home.js, each its steps — the page as it stands then and what it adds — and the words as it is used; `<` written so that no text ends the script. */
+const TABS_DATA = JSON.stringify(TABS.map(({ json, ...tab }) => tab)).replace(/</g, '\\u003c');
+
+/** A small drawing for each tab, in the tab's words' colour: a record's sheet, a list's rows, a pin, a calendar. */
+const TAB_ICONS = {
+  record: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  map: '<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>',
+  booking: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+};
+const tabButton = (tab, i) =>
+  `<button type="button" role="tab" class="stage-tab" id="stage-tab-${tab.id}" aria-controls="stage-panel" aria-selected="${i === 0}" tabindex="${i ? -1 : 0}"><svg viewBox="0 0 24 24" aria-hidden="true">${TAB_ICONS[tab.id]}</svg>${tab.name}</button>`;
 
 export default {
   path: '/',
@@ -126,25 +137,28 @@ export default {
   <div class="opening-copy">
     <p class="kicker"><span>Open source · MIT · ${VERSION}</span> <a class="kicker-new" href="${NEW_IN}">What’s new in ${VERSION}<span aria-hidden="true"> →</span></a></p>
     <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it in your app.</span></h1>
-    <p class="lede lede-business">Your team gets the screens its work runs on — customer records, orders, invoices, bookings — in your look and your language.</p>
-    <p class="lede lede-dev"><b>For developers:</b> a page is a short JSON file, and Fieldia draws it in plain JavaScript, React, Vue or Angular, checks what people type, runs its rules and buttons, and hands the record to your backend.</p>
+    <p class="lede lede-business">Customer records, orders, invoices, bookings: the screens your team works in, in your look and your language.</p>
+    <p class="lede lede-dev">Each screen is a JSON file, not a component. Fieldia draws it in React, Vue, Angular or plain JavaScript, and hands every record to your backend.</p>
     <div class="opening-actions">
       <a class="btn btn-solid" href="/start/">Get started</a>
       <button class="btn btn-copy" type="button" id="copy-install" data-copy="npm install @fieldia/viewer"><code>npm install @fieldia/viewer</code><span class="copy-word" aria-hidden="true">Copy</span></button>
     </div>
   </div>
 
-  <div class="stage" role="region" aria-label="A page of JSON, and the customer record Fieldia draws from it">
-    <div class="stage-bar">
-      <span class="stage-file">customer.page.json</span>
-      <span class="stage-step" id="stage-step" aria-live="polite">The whole page</span>
-      <span class="stage-controls"><button type="button" id="stage-replay">Replay</button><button type="button" id="stage-skip" hidden>Skip</button></span>
+  <div class="stage" role="region" aria-label="Pages of JSON, and what Fieldia draws from each">
+    <div class="stage-tabs" role="tablist" aria-label="Examples">${TABS.map(tabButton).join('')}</div>
+    <div class="stage-panel" id="stage-panel" role="tabpanel" aria-labelledby="stage-tab-${TABS[0].id}">
+      <div class="stage-bar">
+        <span class="stage-file" id="stage-file">${TABS[0].file}</span>
+        <span class="stage-step" id="stage-step" aria-live="polite">The whole page</span>
+        <span class="stage-controls"><button type="button" id="stage-replay">Replay</button><button type="button" id="stage-skip" hidden>Skip</button></span>
+      </div>
+      <div class="stage-panes">
+        <pre class="stage-json" id="stage-json" tabindex="0" aria-label="The page’s JSON"><code>${HERO_JSON.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre>
+        <div class="stage-form" id="stage-form"></div>
+      </div>
     </div>
-    <div class="stage-panes">
-      <pre class="stage-json" id="stage-json" tabindex="0" aria-label="The page’s JSON"><code>${HERO_JSON.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre>
-      <div class="stage-form" id="stage-form"></div>
-    </div>
-    <script type="application/json" id="stage-steps">${STEPS_DATA}</script>
+    <script type="application/json" id="stage-tabs-data">${TABS_DATA}</script>
   </div>
 </section>
 

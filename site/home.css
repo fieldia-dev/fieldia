@@ -120,17 +120,28 @@
 .kicker-new:hover { border-color: var(--h-caret); color: var(--h-stage-ink); background: rgba(255, 199, 95, 0.16); }
 .kicker-new:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 3px; }
 /* Each line of the headline balanced on its own: never a word alone under the rest. */
-.home-opening h1 { font-size: clamp(36px, 6.4vw, 58px); line-height: 1.02; }
-.home-opening h1 span { display: block; text-wrap: balance; }
-.home-opening h1 br { display: none; }
+.home-opening .opening-copy h1 { font-size: clamp(36px, 6.4vw, 58px); line-height: 1.02; }
+.home-opening .opening-copy h1 span { display: block; text-wrap: balance; }
+.home-opening .opening-copy h1 br { display: none; }
 /* The business line in the stage's own ink; the developers' a step quieter and smaller. */
 .lede-business { color: var(--h-stage-ink); font-size: clamp(17px, 1.6vw, 20px); line-height: 1.5; }
 .lede-dev { font-size: 15px; line-height: 1.55; }
-.lede-dev b { color: var(--h-stage-ink); font-weight: 650; }
 .home-opening .opening-actions { margin-top: 6px; }
 
-/* The stage: a bar, then the JSON and the record it draws. */
+/* The stage: its tabs, then the tab's panel — a bar, then the JSON and what it draws. */
 .home-opening .stage { display: flex; flex-direction: column; }
+.stage-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* What a page can be, a tab each: the one shown in the stage's ink over a line of signal blue, the others quieter. A
+   strip too narrow for them scrolls on its own, never the page. */
+.stage-tabs { display: flex; gap: 4px; padding: 6px 10px 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; border-bottom: 1px solid rgba(164, 179, 204, 0.18); background: rgba(2, 8, 20, 0.35); }
+.stage-tabs::-webkit-scrollbar { display: none; }
+.stage-tab { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 14px; border: 0; border-radius: 8px 8px 0 0; background: transparent; color: var(--h-stage-muted); font: 600 14.5px/1 var(--font); white-space: nowrap; cursor: pointer; transition: color 0.15s ease, background-color 0.15s ease; }
+.stage-tab svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.stage-tab:hover { color: var(--h-stage-ink); background: rgba(164, 179, 204, 0.08); }
+.stage-tab[aria-selected="true"] { color: var(--h-stage-ink); }
+.stage-tab[aria-selected="true"] svg { color: var(--h-signal); }
+.stage-tab[aria-selected="true"]::after { content: ""; position: absolute; inset: auto 8px 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--h-signal); }
+.story .stage-tab:focus-visible { outline: 2px solid var(--h-signal); outline-offset: -3px; }
 .stage-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 10px 12px 10px 16px; border-bottom: 1px solid rgba(164, 179, 204, 0.18); font: 13px/1.35 var(--h-mono); color: var(--h-stage-muted); }
 .stage-file::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 10px; border-radius: 50%; background: var(--h-ok); box-shadow: 0 0 0 4px rgba(47, 158, 102, 0.2); vertical-align: middle; }
 .stage-step { color: var(--h-caret); min-width: 0; }
@@ -161,11 +172,21 @@
 .stage-form .fd-header:not(:has(.fd-statusbar, .fd-button:not([hidden]))) { display: none; }
 .stage-form .fd-sheet-layout { margin-block-start: 14px; padding-inline: 16px; }
 .stage-form .fd-card { padding: 0; border: 0; border-radius: 0; background: transparent; gap: 14px; }
+/* A list page in the stage — the list, the map — its title, search and rows set in from the pane's edges as a sheet's fields are. */
+.stage-form .fd-content > :is(.fd-page-head, .fd-list) { margin-inline: 16px; }
+.stage-form .fd-content > .fd-page-head { margin-block: 14px 10px; }
+.stage-form .fd-content > .fd-list { margin-block-end: 16px; }
+/* A list's map as tall as the pane leaves it under the list's title, search and switcher (home.js measures the pane),
+   its key in sight; where the stage has no height of its own, the map's own. */
+.stage-form[style*="--pane"] .fd-map-list .fd-map-box { height: max(280px, calc(var(--pane) - 160px)) !important; }
 /* The live forms wear the reader's scheme (home.js, live.js); a form that names one adds room round itself, and these cards have their own. */
 .story :is(.stage-form, .live-form) .fd-form[data-scheme] > .fd-content { padding: 0; }
 .stage-form :is(.fd-field, .fd-statusbar, .fd-related) { transition: background-color 0.6s ease; border-radius: 8px; }
 .stage-form .just-drawn { animation: drawn 1.1s ease both; }
-@keyframes drawn { from { background-color: rgba(79, 157, 255, 0.2); transform: translateY(6px); } to { background-color: transparent; transform: none; } }
+/* The booking's time someone else takes meanwhile, on another screen: ringed while this screen still offers it. */
+.stage-form .fd-slots-chip.hero-taken { outline: 2px dashed var(--h-warn); outline-offset: 2px; }
+/* From a tint to the part's own ground: a map's legend keeps its own. */
+@keyframes drawn { from { background-color: rgba(79, 157, 255, 0.2); transform: translateY(6px); } }
 
 /* From a tablet's width up: the JSON beside the record it draws, both the stage's height — written there and drawn
    here at a glance — and the stage as tall as the screen allows. */
@@ -183,7 +204,7 @@
     padding-block: var(--hero-pad);
   }
   .home-opening .opening-copy { max-width: none; }
-  .home-opening h1 { font-size: clamp(40px, 3.4vw, 60px); }
+  .home-opening .opening-copy h1 { font-size: clamp(40px, 3.4vw, 60px); }
   .lede-business { font-size: 18px; }
   .home-opening .stage { height: clamp(480px, calc(100svh - 60px - 2 * var(--hero-pad)), 820px); }
 }
@@ -345,6 +366,11 @@
   .home-opening .stage { margin-inline: calc(-1 * var(--hero-start)); border-radius: 0; border-inline: 0; }
   .stage-form .fd-header { padding-inline: 12px; }
   .stage-form .fd-sheet-layout { padding-inline: 12px; }
+  .stage-form .fd-content > :is(.fd-page-head, .fd-list) { margin-inline: 12px; }
   .stage-form .fd-related .fd-list-table { font-size: 13px; }
   .stage-form .fd-related .fd-list-table :is(th, td) { padding-inline: 6px; }
+  /* The four tabs across the phone's width, their words alone. */
+  .stage-tabs { gap: 0; padding-inline: 4px; }
+  .stage-tab { flex: 1 0 auto; padding: 0 10px; }
+  .stage-tab svg { display: none; }
 }

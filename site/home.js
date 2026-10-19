@@ -1,4 +1,4 @@
-// fieldia.dev's front page: the stage that writes a page and draws it, the record that runs itself,
+// fieldia.dev's front page: the stage that writes four pages and draws each, the record that runs itself,
 // the framework tabs and the counters. Every form here is the real viewer (fieldia.js),
 // driven through its public API; with reduced motion, each part shows its finished state at once.
 (function () {
@@ -18,17 +18,21 @@
     seen.observe(el);
   }
 
-  // ---- the stage: a customer's page of JSON, written step by step where each part belongs, drawn at each step ----
+  // ---- the stage: four pages of JSON, a tab each, each written step by step where each part belongs, drawn at each
+  // step, then used; the first plays once it is seen, and each the next once it is done, until someone touches it ----
   var stage = document.querySelector('.home-opening .stage');
+  var panel = document.getElementById('stage-panel');
   var json = document.getElementById('stage-json');
   var stageForm = document.getElementById('stage-form');
+  var fileName = document.getElementById('stage-file');
   var stepWords = document.getElementById('stage-step');
   var replay = document.getElementById('stage-replay');
   var skip = document.getElementById('stage-skip');
-  var stepsData = document.getElementById('stage-steps');
-  /** Each step: the whole page as it stands then (site/hero.mjs), and what it adds in words. The last is the page shown. */
-  var STEPS = stepsData ? JSON.parse(stepsData.textContent) : [];
-  var FULL = STEPS.length ? STEPS[STEPS.length - 1].text : '';
+  var tabsData = document.getElementById('stage-tabs-data');
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.stage-tabs [role="tab"]'));
+  /** Each tab: its steps (site/hero.mjs), each the whole page as it stands then and what it adds in words; then the words said as it is used, its finished state's last. */
+  var TABS = tabsData ? JSON.parse(tabsData.textContent) : [];
+  var lastPage = function (tab) { return tab.steps[tab.steps.length - 1].text; };
 
   /** A day counted from today, as a date field keeps it: the invoices fall due round the reader's own today. */
   function day(offset) {
@@ -36,9 +40,44 @@
     d.setDate(d.getDate() + offset);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
+  /**
+   * A press, as a person's lands: the element's own click. A part pressed may move the focus into itself, as it does for
+   * a person's press (a time said taken, its neighbour focused): for a few seconds after, the focus is given back
+   * where the reader had it and the page left where it stood, so the stage never takes either from them.
+   */
+  var pressed = { until: 0, focus: null, x: 0, y: 0 };
+  function press(el) {
+    if (!el) return false;
+    if (performance.now() > pressed.until) pressed = { until: 0, focus: document.activeElement, x: window.scrollX, y: window.scrollY };
+    pressed.until = performance.now() + 3000;
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    return true;
+  }
+  function giveBack(e) {
+    if (performance.now() > pressed.until) return;
+    var had = pressed.focus;
+    if (had && had !== document.body && had.isConnected && !stageForm.contains(had)) had.focus({ preventScroll: true });
+    else e.target.blur();
+    if (window.scrollX !== pressed.x || window.scrollY !== pressed.y) window.scrollTo(pressed.x, pressed.y);
+  }
+  /** The first element that matches in the stage's form, once it is there: a part comes on its own (a list's rows, a map's pins). */
+  function found(selector, test) {
+    return new Promise(function (done) {
+      var tries = 0;
+      (function look() {
+        var all = Array.prototype.slice.call(stageForm.querySelectorAll(selector));
+        var el = test ? all.filter(test)[0] : all[0];
+        if (el || ++tries > 60) return done(el || null);
+        setTimeout(look, 50);
+      })();
+    });
+  }
+  var named = function (words) { return function (el) { return el.textContent.trim() === words; }; };
+
+  // -- A record: a customer, and the app's own pages for an invoice --
   var KESSLER = { id: 1, label: 'Kessler Logistik GmbH' };
   /** One customer, not yet marked a company, and four of its invoices: one of them past its day. */
-  function records() {
+  function customerRecords() {
     return {
       customer: { 1: { name: KESSLER.label, phone: '+493012345678', company: false, vat: '', credit: 25000, stage: 'customer' } },
       invoice: {
@@ -69,6 +108,256 @@
       layout: { type: 'list', id: 'list', columns: ['number', 'customer', 'due', 'amount', 'state'], cells: { state: { widget: 'dot', options: { tones: { sent: 'info', paid: 'success' } } } } },
     },
   };
+
+  // -- A list: a few customers' invoices, round the reader's today --
+  function invoiceRecords() {
+    var rows = [
+      ['INV-0436', 'Nordlicht Studio', 21, 1280, 'sent'],
+      ['INV-0431', KESSLER.label, 16, 2150.5, 'sent'],
+      ['INV-0428', 'Café Amsel', 9, 640, 'sent'],
+      ['INV-0419', 'Nordlicht Studio', -4, 3125, 'sent'],
+      ['INV-0412', KESSLER.label, -12, 4860, 'sent'],
+      ['INV-0407', 'Brandt & Söhne', -18, 12400, 'sent'],
+      ['INV-0401', 'Café Amsel', -26, 980, 'paid'],
+      ['INV-0394', 'Brandt & Söhne', -33, 8750, 'paid'],
+      ['INV-0388', KESSLER.label, -41, 9400, 'paid'],
+    ];
+    var invoice = {};
+    rows.forEach(function (r, i) { invoice[i + 1] = { number: r[0], customer: r[1], due: day(r[2]), amount: r[3], state: r[4] }; });
+    return { invoice: invoice };
+  }
+
+  // -- A map: homes for sale in central Cairo, each in its district --
+  function homeRecords() {
+    var rows = [
+      ['Nile-view flat', 9500000, 'Zamalek', 30.0626, 31.2197],
+      ['Garden duplex', 14200000, 'Garden City', 30.0398, 31.2337],
+      ['Corner flat', 6800000, 'Dokki', 30.0391, 31.2087],
+      ['Flat by the park', 5900000, 'Dokki', 30.0442, 31.2151],
+      ['Family flat', 5400000, 'Mohandessin', 30.0553, 31.1986],
+      ['Flat by the club', 7300000, 'Mohandessin', 30.0601, 31.2047],
+      ['Old-town loft', 7900000, 'Downtown', 30.0489, 31.2441],
+      ['Penthouse', 21000000, 'Garden City', 30.0342, 31.2299],
+    ];
+    var home = {};
+    rows.forEach(function (r, i) { home[i + 1] = { name: r[0], price: r[1], district: r[2], place: { type: 'Point', coordinates: [r[4], r[3]] } }; });
+    return { home: home };
+  }
+  /** The map's own code (site/hero-map.mjs, built into /hero/map.js): asked for once, the first time it is needed. */
+  var mapViews = null;
+  function loadMap() {
+    mapViews = mapViews || import('/hero/map.js').then(function (made) { return made.heroMapViews(); });
+    return mapViews;
+  }
+
+  // -- A booking: a showroom in Berlin, open Monday to Saturday, a drive 45 minutes and 15 kept free after it --
+  var ZONE = 'Europe/Berlin';
+  var HOURS = { 1: ['09:00', '17:00'], 2: ['09:00', '17:00'], 3: ['09:00', '17:00'], 4: ['09:00', '17:00'], 5: ['09:00', '17:00'], 6: ['10:00', '14:00'] };
+  var minutesOf = function (time) { return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)); };
+  /** A few drives already booked, the same each visit: two most days, at times the day has. */
+  function driveRecords() {
+    var drive = {};
+    var id = 1;
+    var today = Fieldia.dayIn(Date.now(), ZONE);
+    var wall = Fieldia.wallOf(today);
+    for (var n = 0; n < 35; n++) {
+      var at = new Date(Date.UTC(wall.year, wall.month - 1, wall.day + n));
+      var open = HOURS[at.getUTCDay() || 7];
+      if (!open) continue;
+      [n % 3, 3 + (n % 4)].forEach(function (k) {
+        var minutes = minutesOf(open[0]) + k * 60;
+        if (minutes + 45 > minutesOf(open[1])) return;
+        var start = Fieldia.instantsAt({ year: at.getUTCFullYear(), month: at.getUTCMonth() + 1, day: at.getUTCDate(), hour: Math.floor(minutes / 60), minute: minutes % 60 }, ZONE)[0];
+        drive[id++] = { name: 'Booked', start: new Date(start).toISOString() };
+      });
+    }
+    return { drive: drive };
+  }
+  /**
+   * The showroom's free times, as a data source's `slots` answers them: each day asked, its times an hour apart on
+   * Berlin's clock, less those gone by and those a drive holds. Open with times left; full with none; closed where it
+   * has no hours or every time has gone by.
+   */
+  function showroomSlots(request, records) {
+    var length = request.length || 45;
+    var held = Object.keys(records.drive || {}).map(function (key) { return String(key) === String(request.recordId) ? NaN : Date.parse(records.drive[key].start); });
+    var days = {};
+    var first = Fieldia.wallOf(request.from);
+    var last = Fieldia.wallOf(request.to);
+    for (var at = Date.UTC(first.year, first.month - 1, first.day); at <= Date.UTC(last.year, last.month - 1, last.day); at += 86400000) {
+      var date = new Date(at);
+      var open = HOURS[date.getUTCDay() || 7];
+      if (!open) continue;
+      var free = [];
+      var ahead = false;
+      for (var minutes = minutesOf(open[0]); minutes + length <= minutesOf(open[1]); minutes += 60) {
+        var start = Fieldia.instantsAt({ year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate(), hour: Math.floor(minutes / 60), minute: minutes % 60 }, ZONE)[0];
+        if (start <= Date.now()) continue;
+        ahead = true;
+        if (held.some(function (h) { return Math.abs(h - start) < 60 * 60000; })) continue;
+        free.push(new Date(start).toISOString());
+      }
+      days[date.toISOString().slice(0, 10)] = free.length ? { state: 'open', free: free } : { state: ahead ? 'full' : 'closed' };
+    }
+    return { days: days, length: length };
+  }
+
+  /**
+   * What each tab draws with: its records, what the viewer is given beside the page, what each step adds to mark it as
+   * it arrives, and someone using it — `use` says each of the tab's words in turn, `done` puts it as it ends at once.
+   */
+  var KITS = {
+    record: {
+      source: function () { return Fieldia.createMemoryDataSource({ records: customerRecords(), labelField: { customer: 'name', invoice: 'number' } }); },
+      options: function () { return { recordId: 1, pages: PAGES }; },
+      marks: function (before, p) {
+        var added = Object.keys(p.fields).filter(function (f) { return !(f in before.fields); }).map(function (f) { return '[data-field="' + f + '"]'; });
+        if (p.layout.statusbar && !before.layout.statusbar) added.push('.fd-statusbar');
+        var related = function (q) { return q.layout.children.filter(function (c) { return c.type === 'related'; })[0]; };
+        if (related(p) && (!related(before) || (related(p).rowTones && !related(before).rowTones))) added.push('.fd-related');
+        return added;
+      },
+      // Marked a company: the rule shows its VAT number, now required, and it is typed.
+      use: async function (say, alive) {
+        var form = viewer.form;
+        say(0);
+        await wait(900);
+        if (!alive()) return;
+        form.setValue('company', true);
+        say(1);
+        await new Promise(function (done) { setTimeout(done, 60); });
+        var vat = stageForm.querySelector('[data-field="vat"]');
+        if (vat) bringIntoSight(vat);
+        await wait(1300);
+        var typed = 'DE 123456789';
+        for (var i = 1; i <= typed.length; i++) {
+          if (!alive()) return;
+          form.setValue('vat', typed.slice(0, i));
+          await wait(90);
+        }
+      },
+      done: function () {
+        viewer.form.setValue('company', true);
+        viewer.form.setValue('vat', 'DE 123456789');
+      },
+    },
+    list: {
+      source: function () { return Fieldia.createMemoryDataSource({ records: invoiceRecords() }); },
+      options: function () { return {}; },
+      marks: function (before, p) {
+        var was = before.layout;
+        var now = p.layout;
+        return [now.cells && !was.cells && '.fd-list-totals', now.rowTones && !was.rowTones && '.fd-list-key', now.filters && !was.filters && '.fd-facet'].filter(Boolean);
+      },
+      // Grouped by customer from the search's own menu, as a person groups it, and the first customer opened.
+      use: async function (say, alive) {
+        say(0);
+        await wait(900);
+        if (!alive() || !(await groupByCustomer())) return;
+        say(1);
+        await wait(1700);
+        if (!alive()) return;
+        press(await found('.fd-group-toggle'));
+        say(2);
+        await wait(1500);
+      },
+      done: async function () {
+        if (await groupByCustomer()) press(await found('.fd-group-toggle'));
+      },
+    },
+    map: {
+      source: function () { return Fieldia.createMemoryDataSource({ records: homeRecords() }); },
+      ready: loadMap,
+      options: function (views) { return { listViews: views }; },
+      // The map's own parts come into it as they are drawn: its pins, their words, its shades and key.
+      marks: function () { return []; },
+      // A district pressed searches for its homes; a pin pressed opens its home's card.
+      use: async function (say, alive) {
+        say(0);
+        await wait(900);
+        if (!alive() || !(await pressDistrict())) return;
+        say(1);
+        await wait(1800);
+        if (!alive()) return;
+        press(await found('.fd-map-mark[data-id="1"] .fd-map-face'));
+        say(2);
+        await wait(1500);
+      },
+      done: async function () {
+        if (await pressDistrict()) press(await found('.fd-map-mark[data-id="1"] .fd-map-face'));
+      },
+    },
+    booking: {
+      source: function () { return Fieldia.createMemoryDataSource({ records: driveRecords(), slots: showroomSlots }); },
+      options: function () { return { recordId: null }; },
+      marks: function (before, p) {
+        if (p.fields.stop && !before.fields.stop) return ['[data-field="stop"]'];
+        return p.timeZone !== before.timeZone || p.layout.children[0].widget !== before.layout.children[0].widget ? ['[data-field="start"]'] : [];
+      },
+      // A day picked; one of its times booked on another screen meanwhile, which this one is not told of; that time
+      // pressed, said taken; another booked.
+      use: async function (say, alive) {
+        say(0);
+        await wait(900);
+        if (!alive() || !(await pickDay())) return;
+        say(1);
+        bringIntoSight(stageForm.querySelector('.fd-slots-times'));
+        await wait(1500);
+        if (!alive()) return;
+        var chips = stageForm.querySelectorAll('.fd-slots-chip');
+        var taken = chips[1] || chips[0];
+        if (!taken) return;
+        source.records.drive[999] = { name: 'Someone else', start: new Date(Number(taken.dataset.at)).toISOString() };
+        taken.classList.add('hero-taken');
+        say(2);
+        await wait(1800);
+        if (!alive()) return;
+        var at = taken.dataset.at;
+        press(taken);
+        // Told, and the times asked again without it.
+        await found('.fd-slots-said', function (el) { return el.textContent.trim() !== ''; });
+        say(3);
+        await wait(2000);
+        if (!alive()) return;
+        var other = await found('.fd-slots-chip', function (el) { return el.dataset.at !== at; });
+        if (!alive()) return;
+        press(other);
+        say(4);
+        await backBy();
+        await wait(1500);
+      },
+      done: async function () {
+        if (await pickDay() && press(await found('.fd-slots-chip'))) await backBy();
+      },
+    },
+  };
+  /** The list's Group By, from its search's menu: Customer picked, the menu closed. */
+  async function groupByCustomer() {
+    var options = await found('button[aria-label="Search options"]');
+    if (!press(options)) return false;
+    var customer = await found('[data-group-kind="groupBy"] button', named('Customer'));
+    press(customer);
+    press(stageForm.querySelector('button[aria-label="Search options"]'));
+    return !!customer;
+  }
+  /** A district of the map pressed, as a person presses it: its homes searched for, and the map showing only theirs (Zamalek's one). */
+  async function pressDistrict() {
+    if (!press(await found('path.fd-map-region', function (el) { return /^Zamalek/.test(el.getAttribute('aria-label') || ''); }))) return false;
+    await found('.fd-facet');
+    return !!(await found('.fd-map-mark[data-id="1"]', function () { return !stageForm.querySelector('.fd-map-mark[data-id]:not([data-id="1"])'); }));
+  }
+  /** Back by, once the time picked has written it (and the record's bar has come with the change), brought into sight. */
+  async function backBy() {
+    var stop = await found('[data-field="stop"]', function (el) { var input = el.querySelector('input'); return !!input && input.value !== ''; });
+    await new Promise(requestAnimationFrame);
+    if (stop) bringIntoSight(stop);
+  }
+  /** The first day with times free, pressed: its times shown. */
+  async function pickDay() {
+    var open = await found('.fd-slots-days button[data-state="open"]');
+    if (!press(open)) return false;
+    return !!(await found('.fd-slots-chip'));
+  }
 
   var esc = function (t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
   /** One line of the JSON, coloured: keys, strings and literals. */
@@ -138,30 +427,32 @@
     return out;
   }
 
+  var current = 0;
+  /** Whether the stage has a height of its own (home.css), its JSON beside what it draws. */
+  var tall = window.matchMedia('(min-width: 800px)');
   var shownPage = null;
   var viewer = null;
   var source = null;
+  /** What the tab's kit gives the viewer beside the page: for the map, its map's code, once loaded. */
+  var given = null;
   /** The page drawn, as the reader's scheme dresses it; the part it adds marked as it arrives, and brought into sight. */
   function draw(p) {
+    var kit = KITS[TABS[current].id];
     var before = shownPage;
     var kept = stageForm.scrollTop;
     shownPage = p;
     if (viewer) viewer.destroy();
-    viewer = Fieldia.mountViewer(stageForm, { page: readers(p), dataSource: source, recordId: 1, pages: PAGES, skin: 'outlined' });
+    // How tall the pane is, where the stage has a height of its own: a map fills it rather than running on under it.
+    stageForm.style.setProperty('--pane', tall.matches ? stageForm.clientHeight + 'px' : '');
+    viewer = Fieldia.mountViewer(stageForm, Object.assign({ page: readers(p), dataSource: source, skin: 'outlined' }, kit.options(given)));
     stageForm.scrollTop = kept;
-    var added = [];
-    if (before) {
-      Object.keys(p.fields).filter(function (f) { return !(f in before.fields); }).forEach(function (f) { added.push('[data-field="' + f + '"]'); });
-      if (p.layout.statusbar && !before.layout.statusbar) added.push('.fd-statusbar');
-      var related = function (q) { return q.layout.children.filter(function (c) { return c.type === 'related'; })[0]; };
-      if (related(p) && !related(before)) added.push('.fd-related');
-      if (related(p) && related(before) && related(p).rowTones && !related(before).rowTones) added.push('.fd-related');
-    }
-    viewer.form.settled().then(function () {
-      // The related list's part comes on its own: wait for its rows before looking for them.
+    var added = before ? kit.marks(before, p) : [];
+    var mine = viewer;
+    return viewer.form.settled().then(function () {
+      // A list's rows and a related list come on their own: wait for them before looking.
       return new Promise(function (done) { setTimeout(done, 80); });
     }).then(function () {
-      if (viewer === null || shownPage !== p) return;
+      if (viewer !== mine) return;
       var shown = added.map(function (s) { return stageForm.querySelector(s); }).filter(Boolean);
       shown.forEach(function (el) { if (!calm) el.classList.add('just-drawn'); });
       if (shown[0]) bringIntoSight(shown[0]);
@@ -177,22 +468,42 @@
   }
 
   var run = 0;
+  /** The tab's own: a fresh source of its records, an empty pane, and what it draws with (the map's code) at hand. */
+  async function begin(alive) {
+    var tab = TABS[current];
+    var kit = KITS[tab.id];
+    if (viewer) { viewer.destroy(); viewer = null; }
+    shownPage = null;
+    stageForm.textContent = '';
+    stageForm.scrollTop = 0;
+    fileName.textContent = tab.file;
+    source = kit.source();
+    given = null;
+    if (!kit.ready) return true;
+    try {
+      given = await kit.ready();
+    } catch (error) {
+      if (alive()) { stepWords.textContent = 'The map could not load. Try again later.'; skip.hidden = true; replay.hidden = false; }
+      return false;
+    }
+    return alive();
+  }
   /** Letters typed a millisecond: four a frame at 60 frames a second. */
   var TYPED = 0.24;
-  /** The page written step by step, each step's new lines typed where they belong, then drawn. */
+  /** The tab's page written step by step, each step's new lines typed where they belong, then drawn; then someone uses it. */
   async function play() {
     var mine = ++run;
     var alive = function () { return mine === run; };
+    var tab = TABS[current];
     replay.hidden = true;
     skip.hidden = false;
-    if (viewer) { viewer.destroy(); viewer = null; }
-    shownPage = null;
-    source = Fieldia.createMemoryDataSource({ records: records(), labelField: { customer: 'name', invoice: 'number' } });
-    stageForm.textContent = '';
-    stageForm.scrollTop = 0;
+    json.innerHTML = '<code></code>';
+    json.scrollTop = 0;
+    stepWords.textContent = 'Writing ' + tab.file;
+    if (!(await begin(alive))) return;
     var lines = [];
-    for (var s = 0; s < STEPS.length; s++) {
-      var step = STEPS[s];
+    for (var s = 0; s < tab.steps.length; s++) {
+      var step = tab.steps[s];
       var plan = edits(lines, step.text.split('\n'));
       var fresh = [];
       lines = [];
@@ -205,8 +516,8 @@
         var at = lines.length - 1;
         var written = e.from;
         // The rest of the step's lines as they stood, so the pane shows the whole page round the line being written.
-        var rest = plan.slice(k + 1).filter(function (x) { return 'keep' in x; }).map(function (x) { return x.keep; });
-        paint(lines.concat(rest), fresh, at);
+        var others = plan.slice(k + 1).filter(function (x) { return 'keep' in x; }).map(function (x) { return x.keep; });
+        paint(lines.concat(others), fresh, at);
         var typing = json.querySelectorAll('.ln')[at];
         // Typed by the clock, not by the frame: as quick on a slow screen, a few more letters a frame.
         var since = performance.now();
@@ -223,66 +534,96 @@
       paint(lines, fresh, -1);
       stepWords.textContent = step.words;
       draw(JSON.parse(step.text));
-      await wait(s === 0 ? 900 : 1300);
+      await wait(s === 0 ? 1000 : 1400);
       if (!alive()) return;
     }
-    await use(alive);
+    // Someone uses it, saying each of the tab's words in turn but the last, its finished state's.
+    await KITS[tab.id].use(function (i) { if (alive()) stepWords.textContent = tab.used[i]; }, alive);
+    if (!alive()) return;
+    finish();
+    played();
   }
 
-  /** Someone uses the finished record: marked a company, the rule shows its VAT number, now required, and it is typed. */
-  async function use(alive) {
-    var form = viewer.form;
-    stepWords.textContent = 'Now someone uses it';
-    await wait(900);
-    if (!alive()) return;
-    form.setValue('company', true);
-    stepWords.textContent = 'Marked a company: the VAT number appears, now required';
-    await new Promise(function (done) { setTimeout(done, 60); });
-    var vat = stageForm.querySelector('[data-field="vat"]');
-    if (vat) bringIntoSight(vat);
-    await wait(1300);
-    var typed = 'DE 123456789';
-    for (var i = 1; i <= typed.length; i++) {
-      if (!alive()) return;
-      form.setValue('vat', typed.slice(0, i));
-      await wait(90);
-    }
-    if (!alive()) return;
-    finish('The finished record: try it');
-  }
-
-  function finish(words) {
-    paint(FULL.split('\n'), [], -1);
-    stepWords.textContent = words;
+  /** The tab at rest: its page as written, Replay offered, and the words of its finished state. */
+  function finish() {
+    var tab = TABS[current];
+    paint(lastPage(tab).split('\n'), [], -1);
+    stepWords.textContent = tab.used[tab.used.length - 1];
     skip.hidden = true;
     replay.hidden = false;
   }
 
-  /** The finished record at once: for Skip, and for reduced motion. */
-  function rest() {
-    run++;
-    if (!source) source = Fieldia.createMemoryDataSource({ records: records(), labelField: { customer: 'name', invoice: 'number' } });
-    draw(JSON.parse(FULL));
-    viewer.form.settled().then(function () {
-      viewer.form.setValue('company', true);
-      viewer.form.setValue('vat', 'DE 123456789');
-    });
-    finish('The finished record: try it');
+  /** The tab finished at once, as it ends when played: for Skip, and for reduced motion. */
+  async function rest() {
+    var mine = ++run;
+    var alive = function () { return mine === run; };
+    var tab = TABS[current];
+    json.scrollTop = 0;
+    finish();
+    if (!(await begin(alive))) return;
+    await draw(JSON.parse(lastPage(tab)));
+    if (alive()) await KITS[tab.id].done();
   }
 
-  if (stage && json && stageForm && STEPS.length && window.Fieldia) {
-    // Read by the site's tests: the page the stage has drawn, as its JSON says it.
-    window.fieldiaHero = { page: function () { return shownPage; } };
+  // ---- which tab, and the stage moving on to the next by itself until someone touches it ----
+  /** Whether the stage moves on to the next tab once one is done: until someone presses, types or points in it. */
+  var onward = !calm;
+  var next = null;
+  function hold() {
+    onward = false;
+    clearTimeout(next);
+    // The reader's own hand from now: where the focus goes is theirs.
+    pressed.until = 0;
+  }
+  /** A tab shown: its tab marked, its panel named by it, and played (or at rest, with reduced motion). */
+  function show(i, focus) {
+    current = i;
+    tabButtons.forEach(function (b, k) {
+      b.setAttribute('aria-selected', String(k === i));
+      b.tabIndex = k === i ? 0 : -1;
+    });
+    panel.setAttribute('aria-labelledby', tabButtons[i].id);
+    if (focus) tabButtons[i].focus();
+    if (calm) rest();
+    else play();
+  }
+  /** A tab played to its end by itself: the map's code fetched for later, and the next tab played after a rest, while it is seen. */
+  function played() {
+    loadMap().catch(function () { return null; });
+    if (!onward || current >= TABS.length - 1) return;
+    next = setTimeout(function () {
+      whenSeen(stage, function () { if (onward) show(current + 1, false); }, 0.3);
+    }, 2600);
+  }
+
+  if (stage && json && stageForm && TABS.length && window.Fieldia) {
+    // Read by the site's tests: the tab shown, and the page the stage has drawn, as its JSON says it.
+    window.fieldiaHero = { tab: function () { return TABS[current].id; }, page: function () { return shownPage; } };
+    tabButtons.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { if (i !== current || !run) show(i, false); });
+      tab.addEventListener('keydown', function (e) {
+        var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabButtons.length - 1 : null;
+        if (to === null) return;
+        e.preventDefault();
+        show((to + tabButtons.length) % tabButtons.length, true);
+      });
+    });
+    // Someone reading: a press, a key or a pointer in the stage keeps it on the tab it shows, for good.
+    ['pointerdown', 'keydown', 'wheel'].forEach(function (type) { stage.addEventListener(type, hold, { passive: true }); });
+    stage.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch') hold(); }, { passive: true });
+    // Focus come by the keyboard (the tabs come first); the form's own focus may move as it is used.
+    stage.addEventListener('focusin', function (e) { if (!stageForm.contains(e.target)) hold(); });
+    stageForm.addEventListener('focusin', giveBack);
     replay.addEventListener('click', function () { play(); });
-    skip.addEventListener('click', rest);
+    skip.addEventListener('click', function () { rest(); });
     if (calm) rest();
     else {
       // Played once it is seen: on a phone, under the words, not before the reader gets to it; empty until then.
       json.innerHTML = '<code></code>';
-      stepWords.textContent = 'Writing customer.page.json';
+      stepWords.textContent = 'Writing ' + TABS[0].file;
       replay.hidden = true;
       skip.hidden = false;
-      // Unless Skip came first.
+      // Unless Skip or a tab came first.
       whenSeen(stage, function () { if (!run) play(); }, 0.3);
     }
   }
