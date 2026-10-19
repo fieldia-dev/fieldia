@@ -10,10 +10,11 @@ import { changedFiles, siteOnly, testedOnPullRequest } from './ci-scope.mjs';
 test('a change to the site alone is the site’s', () => {
   assert.equal(siteOnly(['site/pages/home.mjs', 'site/home.css', 'site/home.js', 'e2e/site.spec.ts']), true);
   assert.equal(siteOnly(['docs/plans/input-rules.md', 'site/hero.mjs']), true);
+  assert.equal(siteOnly(['tools/build-site.mjs', 'site/hero-map.mjs', 'e2e/site.spec.ts']), true);
 });
 
 test('anything the site is built from, or that tests more than the site, runs every gate', () => {
-  for (const other of ['libs/viewer/src/lib/list.ts', 'demos/catalog.mjs', 'examples/pages/customer.page.json', 'tools/build-site.mjs', '.github/workflows/ci.yml', 'e2e/a11y.spec.ts', 'CHANGELOG.md', 'package-lock.json']) {
+  for (const other of ['libs/viewer/src/lib/list.ts', 'demos/catalog.mjs', 'examples/pages/customer.page.json', 'tools/build-demos.mjs', '.github/workflows/ci.yml', 'e2e/a11y.spec.ts', 'CHANGELOG.md', 'package-lock.json']) {
     assert.equal(siteOnly(['site/home.css', other]), false, other);
   }
 });

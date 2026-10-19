@@ -3,7 +3,7 @@
  *
  *   tested  a push to main of a commit whose CI run on a pull request passed: main is fast-forwarded to the commit
  *           the pull request tested, so its gates ran on these very files; nothing runs twice.
- *   site    every file changed is fieldia.dev's own (site/, its specs' pages, docs/): the site is built and its own
+ *   site    every file changed is fieldia.dev's own (site/, the tool that builds it, its specs, docs/): the site is built and its own
  *           specs run, not the gates of the packages and the demos, which the change cannot reach.
  *
  * Anything else — a package, a demo, an example page, a tool, the workflow itself — runs every gate.
@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
 /** Files that only fieldia.dev is made of, or that nothing is built from. A spec here tests the site alone. */
-const SITE_ONLY = [/^site\//, /^docs\//, /^e2e\/site\.spec\.ts$/, /^e2e\/site-pages\.ts$/];
+const SITE_ONLY = [/^site\//, /^docs\//, /^tools\/build-site\.mjs$/, /^e2e\/site\.spec\.ts$/, /^e2e\/site-pages\.ts$/];
 
 /** Whether every file changed is the site's own; an empty list is not (nothing known, so everything runs). */
 export function siteOnly(files) {
