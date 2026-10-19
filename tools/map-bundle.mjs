@@ -108,8 +108,11 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
  * the one rule for a label inside a sentence (open-names), the core and
  * widgets code it draws with; a list's map in a page of its own 91 more,
  * within its 31.1 (31,830).
+ * 0.26.1: the credits' links a 24px target (11 to 15 bytes) took a list's map
+ * in a page of its own from 31,830 to the 31.1 itself, over it on CI's build:
+ * 31.2.
  */
-const BUDGET = { fields: 26.5, all: 46.4, embed: 31.1, leaflet: 47, routes: 2 };
+const BUDGET = { fields: 26.5, all: 46.4, embed: 31.2, leaflet: 47, routes: 2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
