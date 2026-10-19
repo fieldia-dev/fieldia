@@ -7,9 +7,37 @@ on:
 
 # This file is the gate list. A check that does not run here does not exist,
 # however often it passes on someone's machine.
+#
+# Its first job reads what a change can reach (tools/ci-scope.mjs): a change to fieldia.dev alone runs the site's
+# gates; a push to main of a commit whose pull request passed CI runs none again, main being fast-forwarded to the
+# commit the pull request tested; anything else runs every gate.
 jobs:
+  scope:
+    name: What this change can break
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      tested: ${{ steps.scope.outputs.tested }}
+      site: ${{ steps.scope.outputs.site }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: scope
+        run: node tools/ci-scope.mjs
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          GH_TOKEN: ${{ github.token }}
+
   check:
     name: Typecheck, lint, test, build
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -24,7 +52,7 @@ jobs:
       - run: npm ci
       # The release tools: CHANGELOG.md has a section for every version released, and the page format's shapes; and the
       # words the script bundle's parts carry for themselves, read by their parts alone (tools/part-words.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
       # exports point at missing files or its ESM output would not resolve in
       # Node — the packaging mistakes that pass every source-level test.
@@ -41,6 +69,8 @@ jobs:
 
   browser:
     name: Browser gates (every framework demo, ${{ matrix.shard }} of 4)
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
     # The first quarter took 19 minutes on 0.22's first green run: room above it, so a slow runner is not a failure.
     timeout-minutes: 30
@@ -102,6 +132,8 @@ jobs:
 
   engines:
     name: Browser smoke in ${{ matrix.engine }}
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     # Firefox, and WebKit — Safari's engine, which every browser on an iPhone runs: the smoke set playwright.config.ts
@@ -147,5 +179,52 @@ jobs:
         if: always()
         with:
           name: screens-${{ matrix.engine }}
+          path: test-results/
+          retention-days: 14
+
+  site:
+    name: fieldia.dev alone
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A change to the site's own files: the site built from the demos and packages as they are, and its own specs —
+    # every page, link and the live forms (site.spec.ts) and axe on every page, light and dark (a11y.spec.ts).
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Chromium for Playwright
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
+          for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
+            timeout 240 npx playwright install --with-deps chromium && exit 0
+            echo "Install try $try stalled or failed."
+          done
+          exit 1
+      - run: npx nx run-many -t build -p angular viewer designer
+        env:
+          NX_DAEMON: 'false'
+      - run: node tools/build-demos.mjs
+      - run: node tools/build-site.mjs
+      - run: npx playwright test e2e/site.spec.ts --project=chromium
+      - run: npx playwright test e2e/a11y.spec.ts --project=chromium -g "axe on fieldia.dev"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens-site
           path: test-results/
           retention-days: 14
