@@ -2,11 +2,13 @@ import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
 import { COUNTS, SIZES, TESTS, Words, figure, words } from '../facts.mjs';
 import { AREAS, DEMOS, areaOf } from '../../demos/catalog.mjs';
+import { HERO_JSON, STEPS } from '../hero.mjs';
 
 /**
  * The front page tells one story, top to bottom: what a business gets from it, in
- * one sentence, and the business areas it is at work in; then, for developers, a
- * page of JSON is written and drawn as it grows (the hero's stage); it starts as a question people answer;
+ * one sentence, and for developers in one more, beside a page of JSON written and
+ * drawn as it grows into a customer's record (the hero's stage, site/hero.mjs);
+ * the business areas it is at work in, under it; it starts as a question people answer;
  * then it runs a business record; it is the same in every framework; it already
  * starts from a template in any of its themes; it already draws real ERP
  * screens; it is built in an open designer; and it is small and open. Every moving part is the real viewer, driven by home.js.
@@ -46,7 +48,10 @@ const row = (items) =>
   `<div class="reel-track"><div class="reel-set">${items.map(card).join('')}</div><div class="reel-set" aria-hidden="true">${items.map(card).join('').replace(/<a /g, '<a tabindex="-1" ')}</div></div>`;
 
 /** The released version, as npm has it: read from the viewer's package, so the page never names an old one. */
-const VERSION = JSON.parse(readFileSync(new URL('../../libs/viewer/package.json', import.meta.url), 'utf8')).version.split('.').slice(0, 2).join('.');
+const RELEASE = JSON.parse(readFileSync(new URL('../../libs/viewer/package.json', import.meta.url), 'utf8')).version;
+const VERSION = RELEASE.split('.').slice(0, 2).join('.');
+/** What is new in it, in its release's own words on GitHub. */
+const NEW_IN = `https://github.com/fieldia-dev/fieldia/releases/tag/v${RELEASE}`;
 
 /** The template library, as the Templates page lists it; six of them shown here, forms and records. */
 const TEMPLATES = JSON.parse(readFileSync(new URL('../../examples/templates/index.json', import.meta.url), 'utf8'));
@@ -101,32 +106,8 @@ const POWERS = [
 const power = ([name, figure, words, href]) =>
   `<li><a class="power" href="${href}"><span class="power-figure">${figure}</span><b>${name}</b><span class="power-words">${words}</span><span class="power-go" aria-hidden="true">→</span></a></li>`;
 
-/** The page the hero writes, as it is mounted at its last step; home.js writes it again, line by line. */
-const HERO_JSON = `{
-  "fieldia": "0.5",
-  "id": "project-brief",
-  "title": "Start a project",
-  "fields": {
-    "name": { "type": "char", "label": "Your name", "required": true },
-    "builds": {
-      "type": "selection", "label": "You build with",
-      "options": [
-        { "value": "react", "label": "React" },
-        { "value": "vue", "label": "Vue" },
-        { "value": "other", "label": "Something else" }
-      ]
-    },
-    "other": { "type": "char", "label": "Which one?" },
-    "budget": { "type": "monetary", "label": "Budget", "currency": "EGP" }
-  },
-  "layout": { "type": "sections", "id": "root", "children": [
-    { "type": "field", "id": "n", "field": "name" },
-    { "type": "field", "id": "b", "field": "builds", "widget": "radio" },
-    { "type": "field", "id": "o", "field": "other",
-      "invisible": "builds != 'other'", "required": true },
-    { "type": "field", "id": "m", "field": "budget" }
-  ] }
-}`;
+/** The stage's steps for home.js, each the page as it stands then and what it adds; `<` written so that no text ends the script. */
+const STEPS_DATA = JSON.stringify(STEPS).replace(/</g, '\\u003c');
 
 export default {
   path: '/',
@@ -141,34 +122,36 @@ export default {
   body: `
 <div class="story">
 
-<section class="opening" aria-labelledby="opening-h">
+<section class="opening home-opening" aria-labelledby="opening-h">
   <div class="opening-copy">
-    <p class="kicker">Open source · MIT · ${VERSION}</p>
-    <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it everywhere.</span></h1>
-    <p class="lede lede-business">Your team gets the screens its work runs on — customer records, approvals, bookings, maps — inside your own app, in your look and your language.</p>
-    <nav class="uses" aria-label="See it at work">
-      <p class="uses-h" id="uses-h">See it at work in</p>
-      <ul aria-labelledby="uses-h">${USES.map(([id, label, count]) => `<li><a href="/demos/#${id}">${label}<span class="uses-n">${count}<span class="hidden-words"> demos</span></span></a></li>`).join('')}</ul>
-    </nav>
-    <p class="lede lede-dev"><b>For developers:</b> a page is a short piece of JSON — its fields, its layout, its rules and its buttons. Fieldia runs it in plain JavaScript, React, Vue or Angular: it draws the form, checks what people type, works out the totals, follows the page’s rules, runs its buttons, and hands the record to your backend.</p>
+    <p class="kicker"><span>Open source · MIT · ${VERSION}</span> <a class="kicker-new" href="${NEW_IN}">What’s new in ${VERSION}<span aria-hidden="true"> →</span></a></p>
+    <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it in your app.</span></h1>
+    <p class="lede lede-business">Your team gets the screens its work runs on — customer records, orders, invoices, bookings — in your look and your language.</p>
+    <p class="lede lede-dev"><b>For developers:</b> a page is a short JSON file, and Fieldia draws it in plain JavaScript, React, Vue or Angular, checks what people type, runs its rules and buttons, and hands the record to your backend.</p>
     <div class="opening-actions">
       <a class="btn btn-solid" href="/start/">Get started</a>
       <button class="btn btn-copy" type="button" id="copy-install" data-copy="npm install @fieldia/viewer"><code>npm install @fieldia/viewer</code><span class="copy-word" aria-hidden="true">Copy</span></button>
     </div>
   </div>
 
-  <div class="stage" role="region" aria-label="A page of JSON, and the form Fieldia draws from it">
+  <div class="stage" role="region" aria-label="A page of JSON, and the customer record Fieldia draws from it">
     <div class="stage-bar">
-      <span class="stage-file">project-brief.page.json</span>
-      <span class="stage-step" id="stage-step" aria-live="polite">The finished page</span>
+      <span class="stage-file">customer.page.json</span>
+      <span class="stage-step" id="stage-step" aria-live="polite">The whole page</span>
       <span class="stage-controls"><button type="button" id="stage-replay">Replay</button><button type="button" id="stage-skip" hidden>Skip</button></span>
     </div>
     <div class="stage-panes">
       <pre class="stage-json" id="stage-json" tabindex="0" aria-label="The page’s JSON"><code>${HERO_JSON.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre>
       <div class="stage-form" id="stage-form"></div>
     </div>
+    <script type="application/json" id="stage-steps">${STEPS_DATA}</script>
   </div>
 </section>
+
+<nav class="uses" aria-label="See it at work">
+  <p class="uses-h" id="uses-h">See it at work in</p>
+  <ul aria-labelledby="uses-h">${USES.map(([id, label, count]) => `<li><a href="/demos/#${id}">${label}<span class="uses-n">${count}<span class="hidden-words"> demos</span></span></a></li>`).join('')}</ul>
+</nav>
 
 <section class="chapter" id="question" aria-labelledby="question-h">
   <div class="chapter-copy">

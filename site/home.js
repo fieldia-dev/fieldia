@@ -18,138 +18,273 @@
     seen.observe(el);
   }
 
-  // ---- the stage: a page of JSON written line by line, drawn at each step ----
+  // ---- the stage: a customer's page of JSON, written step by step where each part belongs, drawn at each step ----
+  var stage = document.querySelector('.home-opening .stage');
   var json = document.getElementById('stage-json');
   var stageForm = document.getElementById('stage-form');
   var stepWords = document.getElementById('stage-step');
   var replay = document.getElementById('stage-replay');
   var skip = document.getElementById('stage-skip');
-  var FULL = json ? json.textContent : '';
+  var stepsData = document.getElementById('stage-steps');
+  /** Each step: the whole page as it stands then (site/hero.mjs), and what it adds in words. The last is the page shown. */
+  var STEPS = stepsData ? JSON.parse(stepsData.textContent) : [];
+  var FULL = STEPS.length ? STEPS[STEPS.length - 1].text : '';
 
-  var NAME = { type: 'char', label: 'Your name', required: true };
-  var BUILDS = { type: 'selection', label: 'You build with', options: [{ value: 'react', label: 'React' }, { value: 'vue', label: 'Vue' }, { value: 'other', label: 'Something else' }] };
-  var OTHER = { type: 'char', label: 'Which one?' };
-  var BUDGET = { type: 'monetary', label: 'Budget', currency: 'EGP' };
-  function page(fields, nodes) {
+  /** A day counted from today, as a date field keeps it: the invoices fall due round the reader's own today. */
+  function day(offset) {
+    var d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  var KESSLER = { id: 1, label: 'Kessler Logistik GmbH' };
+  /** One customer, not yet marked a company, and four of its invoices: one of them past its day. */
+  function records() {
     return {
-      fieldia: '0.5', id: 'project-brief', title: 'Start a project', data: { kind: 'responses' }, fields: fields,
-      layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: nodes }] },
+      customer: { 1: { name: KESSLER.label, phone: '+493012345678', company: false, vat: '', credit: 25000, stage: 'customer' } },
+      invoice: {
+        11: { number: 'INV-0431', due: day(16), amount: 2150.5, state: 'sent', customer: KESSLER },
+        12: { number: 'INV-0412', due: day(-12), amount: 4860, state: 'sent', customer: KESSLER },
+        13: { number: 'INV-0388', due: day(-41), amount: 9400, state: 'paid', customer: KESSLER },
+        14: { number: 'INV-0359', due: day(-70), amount: 7300, state: 'paid', customer: KESSLER },
+      },
     };
   }
-  var node = function (id, field, extra) { return Object.assign({ type: 'field', id: id, field: field }, extra || {}); };
-  var all = { name: NAME, builds: BUILDS, other: OTHER, budget: BUDGET };
-  // Where the text stands at each step, what the page holds then, and what the step shows.
-  var STEPS = [
-    { at: '"name": {', words: 'A field', page: page({ name: NAME }, [node('n', 'name')]) },
-    { at: '"other": {', words: 'A choice of three', page: page({ name: NAME, builds: BUILDS }, [node('n', 'name'), node('b', 'builds')]) },
-    { at: '"budget": {', words: 'A box for the answer', page: page({ name: NAME, builds: BUILDS, other: OTHER }, [node('n', 'name'), node('b', 'builds'), node('o', 'other')]) },
-    { at: '"layout": {', words: 'Money, in its currency', page: page(all, [node('n', 'name'), node('b', 'builds'), node('o', 'other'), node('m', 'budget')]) },
-    { at: '{ "type": "field", "id": "o"', words: 'The choice as radio buttons', page: page(all, [node('n', 'name'), node('b', 'builds', { widget: 'radio' }), node('o', 'other'), node('m', 'budget')]) },
-    { at: '{ "type": "field", "id": "m"', words: 'A condition hides “Which one?”', page: page(all, [node('n', 'name'), node('b', 'builds', { widget: 'radio' }), node('o', 'other', { invisible: "builds != 'other'", required: true }), node('m', 'budget')]) },
-  ];
-  STEPS.forEach(function (step) { step.cut = FULL.indexOf(step.at); });
+  // The app's own pages for an invoice: a row, and New, open one in a dialog; View all opens them all. Each names its
+  // records, so the list inside the customer says "New invoice" and "View all invoices".
+  var INVOICE_FIELDS = {
+    number: { type: 'char', label: 'Number', required: true },
+    customer: { type: 'many2one', label: 'Customer', relation: 'customer', required: true },
+    due: { type: 'date', label: 'Due' },
+    amount: { type: 'monetary', label: 'Amount', currency: 'EUR' },
+    state: { type: 'selection', label: 'Status', default: 'sent', options: [{ value: 'sent', label: 'Sent' }, { value: 'paid', label: 'Paid' }] },
+  };
+  var NAMED = { one: 'invoice', other: 'invoices', a: 'an invoice' };
+  var PAGES = {
+    invoice: {
+      fieldia: '0.5', id: 'invoice', title: 'Invoice', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
+      layout: { type: 'sheet', id: 'sheet', title: { field: 'number', placeholder: 'INV-0001' }, children: [{ type: 'section', id: 'main', columns: 2, children: ['customer', 'state', 'due', 'amount'].map(function (f) { return { type: 'field', id: f, field: f }; }) }] },
+    },
+    invoices: {
+      fieldia: '0.5', id: 'invoices', title: 'Invoices', data: { kind: 'record', model: 'invoice' }, records: NAMED, fields: INVOICE_FIELDS,
+      layout: { type: 'list', id: 'list', columns: ['number', 'customer', 'due', 'amount', 'state'], cells: { state: { widget: 'dot', options: { tones: { sent: 'info', paid: 'success' } } } } },
+    },
+  };
 
   var esc = function (t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-  /** The JSON written so far, coloured: keys, strings, and literals. */
-  function paint(text, caret) {
-    var out = esc(text).replace(/("(?:[^"\\]|\\.)*")(\s*:)?|\b(true|false|null|-?\d+(?:\.\d+)?)\b/g, function (m, str, colon, lit) {
+  /** One line of the JSON, coloured: keys, strings and literals. */
+  function colour(line) {
+    return esc(line).replace(/("(?:[^"\\]|\\.)*")(\s*:)?|\b(true|false|null|-?\d+(?:\.\d+)?)\b/g, function (m, str, colon, lit) {
       if (str) return colon ? '<span class="k">' + str + '</span>' + colon : '<span class="s">' + str + '</span>';
       return '<span class="l">' + lit + '</span>';
     });
-    json.innerHTML = '<code>' + out + (caret ? '<span class="caret" aria-hidden="true"></span>' : '') + '</code>';
+  }
+  /** One line's inside: its words coloured, the caret after them while it is the line being written. */
+  var lineHtml = function (line, caret) { return colour(line) + (caret ? '<span class="caret" aria-hidden="true"></span>' : '') + '\n'; };
+  /**
+   * The JSON as it stands: a line each, a line too long for the pane wrapping under its own indent; the lines this step
+   * added marked, the caret at the end of the line being written, and that line kept in sight.
+   */
+  function paint(lines, fresh, at) {
+    json.innerHTML = '<code>' + lines.map(function (line, i) {
+      return '<span class="ln' + (fresh[i] ? ' fresh' : '') + '" style="--i:' + (line.length - line.trimStart().length) + '">' + lineHtml(line, i === at) + '</span>';
+    }).join('') + '</code>';
+    if (at >= 0) keepInSight(json.querySelectorAll('.ln')[at]);
+  }
+  /** The line being written, as it grows: that line alone drawn again. */
+  function retype(line, text) {
+    line.innerHTML = lineHtml(text, true);
+    keepInSight(line);
+  }
+  /** The line being written kept in the pane's middle third. */
+  function keepInSight(line) {
+    var top = line.offsetTop;
+    if (top < json.scrollTop + json.clientHeight / 3 || top + line.offsetHeight > json.scrollTop + (json.clientHeight * 2) / 3) json.scrollTop = Math.max(0, top - json.clientHeight / 2);
   }
 
+  /**
+   * How one step's lines become the next's: the lines both keep (their longest run in common), and for the rest, a
+   * line changed (typed on from what the two share at its start) or a line added (typed in where it belongs).
+   */
+  function edits(before, after) {
+    var n = before.length;
+    var m = after.length;
+    var common = [];
+    for (var i = 0; i <= n; i++) common.push(new Array(m + 1).fill(0));
+    for (i = n - 1; i >= 0; i--) for (var j = m - 1; j >= 0; j--) common[i][j] = before[i] === after[j] ? common[i + 1][j + 1] + 1 : Math.max(common[i + 1][j], common[i][j + 1]);
+    var out = [];
+    var gone = [];
+    i = 0;
+    j = 0;
+    while (j < m) {
+      // A line both have is kept, unless one like it comes later and this one is new: a part is typed whole, top down.
+      if (i < n && before[i] === after[j] && common[i][j + 1] < common[i][j]) {
+        out.push({ keep: after[j] });
+        gone = [];
+        i++;
+        j++;
+      } else if (i < n && common[i + 1][j] >= common[i][j + 1]) {
+        gone.push(before[i]);
+        i++;
+      } else {
+        // A line where one went: typed on from the start they share.
+        var was = gone.shift();
+        // Its indent at once: only the words are typed.
+        var from = after[j].length - after[j].trimStart().length;
+        if (was !== undefined) while (from < was.length && was[from] === after[j][from]) from++;
+        out.push({ write: after[j], from: from });
+        j++;
+      }
+    }
+    return out;
+  }
+
+  var shownPage = null;
   var viewer = null;
+  var source = null;
+  /** The page drawn, as the reader's scheme dresses it; the part it adds marked as it arrives, and brought into sight. */
   function draw(p) {
-    var before = viewer ? Object.keys(viewer.form.getState().values) : [];
+    var before = shownPage;
+    var kept = stageForm.scrollTop;
+    shownPage = p;
     if (viewer) viewer.destroy();
-    viewer = Fieldia.mountViewer(stageForm, { page: readers(p), dataSource: Fieldia.createMemoryDataSource(), skin: 'outlined' });
-    // The field this step added is marked as it arrives.
-    Object.keys(p.fields).filter(function (f) { return before.indexOf(f) === -1; }).forEach(function (f) {
-      var el = stageForm.querySelector('[data-field="' + f + '"]');
-      if (el && !calm) el.classList.add('just-drawn');
+    viewer = Fieldia.mountViewer(stageForm, { page: readers(p), dataSource: source, recordId: 1, pages: PAGES, skin: 'outlined' });
+    stageForm.scrollTop = kept;
+    var added = [];
+    if (before) {
+      Object.keys(p.fields).filter(function (f) { return !(f in before.fields); }).forEach(function (f) { added.push('[data-field="' + f + '"]'); });
+      if (p.layout.statusbar && !before.layout.statusbar) added.push('.fd-statusbar');
+      var related = function (q) { return q.layout.children.filter(function (c) { return c.type === 'related'; })[0]; };
+      if (related(p) && !related(before)) added.push('.fd-related');
+      if (related(p) && related(before) && related(p).rowTones && !related(before).rowTones) added.push('.fd-related');
+    }
+    viewer.form.settled().then(function () {
+      // The related list's part comes on its own: wait for its rows before looking for them.
+      return new Promise(function (done) { setTimeout(done, 80); });
+    }).then(function () {
+      if (viewer === null || shownPage !== p) return;
+      var shown = added.map(function (s) { return stageForm.querySelector(s); }).filter(Boolean);
+      shown.forEach(function (el) { if (!calm) el.classList.add('just-drawn'); });
+      if (shown[0]) bringIntoSight(shown[0]);
     });
+  }
+  /** The form's pane scrolled, the page itself never: the part just drawn in sight. */
+  function bringIntoSight(el) {
+    if (stageForm.scrollHeight <= stageForm.clientHeight) return;
+    var top = el.getBoundingClientRect().top - stageForm.getBoundingClientRect().top + stageForm.scrollTop;
+    var bottom = top + el.offsetHeight;
+    var to = bottom > stageForm.scrollTop + stageForm.clientHeight ? Math.min(top - 16, bottom - stageForm.clientHeight + 16) : top < stageForm.scrollTop ? top - 16 : stageForm.scrollTop;
+    stageForm.scrollTo({ top: Math.max(0, to), behavior: calm ? 'auto' : 'smooth' });
   }
 
   var run = 0;
+  /** Letters typed a millisecond: four a frame at 60 frames a second. */
+  var TYPED = 0.24;
+  /** The page written step by step, each step's new lines typed where they belong, then drawn. */
   async function play() {
     var mine = ++run;
     var alive = function () { return mine === run; };
     replay.hidden = true;
     skip.hidden = false;
     if (viewer) { viewer.destroy(); viewer = null; }
+    shownPage = null;
+    source = Fieldia.createMemoryDataSource({ records: records(), labelField: { customer: 'name', invoice: 'number' } });
     stageForm.textContent = '';
-    var shown = 0;
-    for (var i = 0; i < STEPS.length; i++) {
-      var step = STEPS[i];
-      while (shown < step.cut) {
-        if (!alive()) return;
-        shown = Math.min(step.cut, shown + 3);
-        paint(FULL.slice(0, shown), true);
-        await new Promise(requestAnimationFrame);
+    stageForm.scrollTop = 0;
+    var lines = [];
+    for (var s = 0; s < STEPS.length; s++) {
+      var step = STEPS[s];
+      var plan = edits(lines, step.text.split('\n'));
+      var fresh = [];
+      lines = [];
+      for (var k = 0; k < plan.length; k++) {
+        var e = plan[k];
+        if ('keep' in e) { lines.push(e.keep); fresh.push(false); continue; }
+        lines.push(e.write.slice(0, e.from));
+        // What the step adds is marked, once there is a page round it to mark it in.
+        fresh.push(s > 0);
+        var at = lines.length - 1;
+        var written = e.from;
+        // The rest of the step's lines as they stood, so the pane shows the whole page round the line being written.
+        var rest = plan.slice(k + 1).filter(function (x) { return 'keep' in x; }).map(function (x) { return x.keep; });
+        paint(lines.concat(rest), fresh, at);
+        var typing = json.querySelectorAll('.ln')[at];
+        // Typed by the clock, not by the frame: as quick on a slow screen, a few more letters a frame.
+        var since = performance.now();
+        while (written < e.write.length) {
+          var now = await new Promise(requestAnimationFrame);
+          if (!alive()) return;
+          written = Math.min(e.write.length, written + Math.max(1, Math.round((now - since) * TYPED)));
+          since = now;
+          lines[at] = e.write.slice(0, written);
+          retype(typing, lines[at]);
+        }
       }
+      if (!alive()) return;
+      paint(lines, fresh, -1);
       stepWords.textContent = step.words;
-      draw(step.page);
-      await wait(1100);
+      draw(JSON.parse(step.text));
+      await wait(s === 0 ? 900 : 1300);
       if (!alive()) return;
-    }
-    while (shown < FULL.length) {
-      if (!alive()) return;
-      shown = Math.min(FULL.length, shown + 3);
-      paint(FULL.slice(0, shown), true);
-      await new Promise(requestAnimationFrame);
     }
     await use(alive);
   }
 
-  /** Someone uses the finished page: the condition shows its box, a budget is typed and read as money. */
+  /** Someone uses the finished record: marked a company, the rule shows its VAT number, now required, and it is typed. */
   async function use(alive) {
-    paint(FULL, false);
-    stepWords.textContent = 'Now someone uses it';
     var form = viewer.form;
-    await wait(700);
+    stepWords.textContent = 'Now someone uses it';
+    await wait(900);
     if (!alive()) return;
-    form.setValue('name', 'Lina Haddad');
-    await wait(700);
-    if (!alive()) return;
-    form.setValue('builds', 'other');
-    stepWords.textContent = 'Picked “Something else”: the condition shows the box';
+    form.setValue('company', true);
+    stepWords.textContent = 'Marked a company: the VAT number appears, now required';
+    await new Promise(function (done) { setTimeout(done, 60); });
+    var vat = stageForm.querySelector('[data-field="vat"]');
+    if (vat) bringIntoSight(vat);
     await wait(1300);
-    if (!alive()) return;
-    form.setValue('other', 'Svelte');
-    await wait(700);
-    var typed = '2400000';
+    var typed = 'DE 123456789';
     for (var i = 1; i <= typed.length; i++) {
       if (!alive()) return;
-      form.setValue('budget', Number(typed.slice(0, i)));
-      await wait(110);
+      form.setValue('vat', typed.slice(0, i));
+      await wait(90);
     }
-    stepWords.textContent = 'The budget, read as Egyptian pounds';
-    finish();
+    if (!alive()) return;
+    finish('The finished record: try it');
   }
 
-  function finish() {
+  function finish(words) {
+    paint(FULL.split('\n'), [], -1);
+    stepWords.textContent = words;
     skip.hidden = true;
     replay.hidden = false;
   }
 
-  /** The finished page at once: for Skip, and for reduced motion. */
+  /** The finished record at once: for Skip, and for reduced motion. */
   function rest() {
     run++;
-    paint(FULL, false);
-    draw(STEPS[STEPS.length - 1].page);
-    viewer.form.setValue('builds', 'other');
-    viewer.form.setValue('other', 'Svelte');
-    viewer.form.setValue('budget', 2400000);
-    stepWords.textContent = 'The finished page: try it';
-    finish();
+    if (!source) source = Fieldia.createMemoryDataSource({ records: records(), labelField: { customer: 'name', invoice: 'number' } });
+    draw(JSON.parse(FULL));
+    viewer.form.settled().then(function () {
+      viewer.form.setValue('company', true);
+      viewer.form.setValue('vat', 'DE 123456789');
+    });
+    finish('The finished record: try it');
   }
 
-  if (json && stageForm && window.Fieldia) {
+  if (stage && json && stageForm && STEPS.length && window.Fieldia) {
+    // Read by the site's tests: the page the stage has drawn, as its JSON says it.
+    window.fieldiaHero = { page: function () { return shownPage; } };
     replay.addEventListener('click', function () { play(); });
     skip.addEventListener('click', rest);
     if (calm) rest();
-    else play();
+    else {
+      // Played once it is seen: on a phone, under the words, not before the reader gets to it; empty until then.
+      json.innerHTML = '<code></code>';
+      stepWords.textContent = 'Writing customer.page.json';
+      replay.hidden = true;
+      skip.hidden = false;
+      // Unless Skip came first.
+      whenSeen(stage, function () { if (!run) play(); }, 0.3);
+    }
   }
 
   // ---- the record: a quotation that is sent, changed and confirmed ----

@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { sitePages } from './site-pages';
 import { AREAS, AREA_IDS, DEMOS, FEATURED, areaOf, demoHref } from '../demos/catalog.mjs';
+import { HERO_JSON, STEPS } from '../site/hero.mjs';
 import { expectNoSidewaysScroll, screen } from './support';
 import { gzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
@@ -243,22 +244,181 @@ test('the gallery on a phone: a compact list, each demo its name and one line', 
   expect((await card.boundingBox())!.height).toBeLessThan(90);
 });
 
-test('the front page opens with what a business gets, then its business areas, each to its demos', async ({ page }) => {
+// ---- the front page's opening ----------------------------------------------------------
+
+/** The words the stage's bar says as the page is written and used, in order: each step's, then someone using it. */
+const USED = ['Now someone uses it', 'Marked a company: the VAT number appears, now required', 'The finished record: try it'];
+const FINISHED = USED[USED.length - 1];
+/** The release the site is built from, as npm has it. */
+const RELEASE = JSON.parse(readFileSync('libs/viewer/package.json', 'utf8')).version as string;
+
+test('the front page opens with a headline, one line for a business and one for developers, Get started, and what is new in the release', async ({ page }) => {
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(SITE + '/');
-    // The first words after the headline are a business owner's; the developers' come after the areas.
-    const copy = page.locator('.opening-copy > p, .opening-copy > nav');
-    await expect(copy.nth(1)).toHaveClass(/lede-business/);
-    await expect(copy.nth(2)).toHaveClass(/uses/);
+    // In this order, and nothing else: the kicker, the headline, a business owner's line, a developer's, the buttons.
+    const copy = page.locator('.opening-copy > *');
+    await expect(copy).toHaveCount(5);
+    await expect(copy.nth(0)).toHaveClass(/kicker/);
+    await expect(copy.nth(1)).toHaveText('Write the screen once.Fieldia runs it in your app.');
+    await expect(copy.nth(2)).toHaveClass(/lede-business/);
     await expect(copy.nth(3)).toHaveClass(/lede-dev/);
-    const uses = page.getByRole('navigation', { name: 'See it at work' }).getByRole('link');
-    await expect(uses).toHaveCount(AREAS.length - 1);
-    await expect(uses.first()).toBeInViewport();
+    await expect(copy.nth(4)).toHaveClass(/opening-actions/);
+    // Each line one sentence.
+    for (const line of [copy.nth(2), copy.nth(3)]) expect((await line.textContent())!.trim()).toMatch(/^[^.]+\.$/);
+    await expect(copy.nth(2)).not.toContainText(/JSON|JavaScript|React|Vue|Angular/);
+    await expect(copy.nth(3)).toContainText('plain JavaScript, React, Vue or Angular');
   }
-  await page.getByRole('navigation', { name: 'See it at work' }).getByRole('link', { name: /^Clinic/ }).click();
+  // The kicker names the release and links to what is new in it, on GitHub.
+  const minor = RELEASE.split('.').slice(0, 2).join('.');
+  await expect(page.locator('.kicker')).toContainText(`Open source · MIT · ${minor}`);
+  const news = page.getByRole('link', { name: `What’s new in ${minor}` });
+  await expect(news).toHaveAttribute('href', `https://github.com/fieldia-dev/fieldia/releases/tag/v${RELEASE}`);
+  await expect(page.getByRole('link', { name: 'Get started' }).first()).toHaveAttribute('href', '/start/');
+});
+
+test('the business areas in a strip under the opening, each to its demos', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(SITE + '/');
+  const strip = page.getByRole('navigation', { name: 'See it at work' });
+  // Under the opening, not among its words, and a strip: one row on a laptop.
+  await expect(page.locator('.opening-copy .uses')).toHaveCount(0);
+  const opening = (await page.locator('.home-opening').boundingBox())!;
+  const box = (await strip.boundingBox())!;
+  expect(Math.round(box.y)).toBe(Math.round(opening.y + opening.height));
+  expect(box.height).toBeLessThan(80);
+  const uses = strip.getByRole('link');
+  await expect(uses).toHaveCount(AREAS.length - 1);
+  // Each area's demos counted as the catalog has them.
+  for (const area of AREAS.filter((a) => a.id !== 'building-blocks')) {
+    const link = strip.locator(`a[href="/demos/#${area.id}"]`);
+    await expect(link, area.id).toHaveText(`${area.label}${DEMOS.filter((demo) => areaOf(demo.id) === area.id).length} demos`);
+  }
+  await strip.getByRole('link', { name: /^Clinic/ }).click();
   await expect(page).toHaveURL(/\/demos\/#clinic$/);
   await expect(page.locator('.gallery-section#clinic')).toBeInViewport();
+});
+
+test('the opening on the first screen: side by side on a laptop, the stage’s record readable; on a phone Get started before the fold', async ({ page }) => {
+  test.setTimeout(120000);
+  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(SITE + '/');
+    await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
+    const stage = (await page.locator('.home-opening .stage').boundingBox())!;
+    const copy = (await page.locator('.opening-copy').boundingBox())!;
+    // Beside the words, and the words and the stage both whole on the first screen, under the bar.
+    expect(stage.x, `${width}: the stage beside the words`).toBeGreaterThan(copy.x + copy.width);
+    for (const [name, part] of [['stage', stage], ['words', copy]] as const) {
+      expect(part.y, `${width}: the ${name}' top`).toBeGreaterThanOrEqual(60);
+      expect(part.y + part.height, `${width}: the ${name}' foot`).toBeLessThanOrEqual(height);
+    }
+    // The record's first field on the screen, and the record not a postage stamp: as wide as a phone's screen or more.
+    await expect(page.locator('#stage-form [data-field="name"]')).toBeInViewport({ ratio: 1 });
+    expect((await page.locator('#stage-form').boundingBox())!.width, `${width}: the record's width`).toBeGreaterThanOrEqual(420);
+    // The JSON readable: 13px or more.
+    expect(parseFloat(await page.locator('#stage-json').evaluate((pre) => getComputedStyle(pre).fontSize))).toBeGreaterThanOrEqual(13);
+    await page.screenshot({ path: `test-results/screens/site-home-opening-${width}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(SITE + '/');
+  await expect(page.locator('#opening-h')).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('link', { name: 'Get started' }).first()).toBeInViewport({ ratio: 1 });
+  // The stage after the words.
+  expect((await page.locator('.home-opening .stage').boundingBox())!.y).toBeGreaterThan((await page.locator('.opening-actions').first().boundingBox())!.y);
+  await page.screenshot({ path: 'test-results/screens/site-home-opening-390.png' });
+  // Nothing sideways at any width, on either side of where the words and the stage go side by side: the finished
+  // record drawn at once (reduced motion), its invoices' table the widest it gets.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const width of [1920, 1440, 1280, 1180, 1179, 1024, 800, 799, 768, 520, 390, 360]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(SITE + '/');
+    await expect(page.locator('#stage-form .fd-related tbody tr')).toHaveCount(4);
+    await expectNoSidewaysScroll(page);
+  }
+});
+
+test('the stage writes customer.page.json step by step, draws each step, and ends on the page it shows', async ({ page }) => {
+  test.setTimeout(90000);
+  const problems = watch(page);
+  // Every word the stage's bar says, as it says it.
+  await page.addInitScript(() => {
+    const said: string[] = [];
+    (window as any).heroSaid = said;
+    new MutationObserver(() => {
+      const words = document.getElementById('stage-step')?.textContent ?? '';
+      if (words && said[said.length - 1] !== words) said.push(words);
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(SITE + '/');
+  const stage = page.locator('.home-opening .stage');
+  const form = page.locator('#stage-form');
+  // A customer's record, by its name, as the first step is drawn: the JSON pane says what was written.
+  await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
+  await expect(form.locator('[data-field="name"] textarea')).toHaveValue('Kessler Logistik GmbH');
+  expect(JSON.parse((await page.locator('#stage-json').textContent())!)).toEqual(JSON.parse(STEPS[0].text));
+  await expect(stage.getByRole('button', { name: 'Skip' })).toBeVisible();
+  await expect(page.locator('#stage-step')).toHaveText(FINISHED, { timeout: 60000 });
+  // Each step in order, then someone using it.
+  const said: string[] = await page.evaluate(() => (window as any).heroSaid);
+  expect(said.slice(said.indexOf(STEPS[0].words))).toEqual([...STEPS.map((step) => step.words), ...USED]);
+  // The page drawn last is the page shown, and the page the site was built with.
+  const shown = JSON.parse((await page.locator('#stage-json').textContent())!);
+  expect(shown).toEqual(JSON.parse(HERO_JSON));
+  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(shown);
+  // A real record: its phone read for its country, money in euros, Lead › Customer, and the rule's VAT number,
+  // required now that it is a company.
+  await expect(form.getByRole('combobox', { name: 'Country of Phone' })).toHaveValue('DE');
+  await expect(form.locator('[data-field="phone"] input[type="tel"]')).toHaveValue('+49 30 1234 5678');
+  await expect(form.locator('[data-field="credit"] input')).toHaveValue('25,000.00');
+  await expect(form.locator('[data-field="credit"]')).toContainText('€');
+  await expect(form.getByRole('list', { name: 'Stage' })).toHaveText('LeadCustomer');
+  await expect(form.getByRole('list', { name: 'Stage' }).locator('[aria-current="step"]')).toHaveText('Customer');
+  await expect(form.locator('[data-field="vat"] input')).toHaveValue('DE 123456789');
+  await expect(form.locator('[data-field="vat"] input')).toHaveAttribute('aria-required', 'true');
+  // Their invoices inside it, the overdue one toned and said in a key, its words in the invoice page's own names.
+  const invoices = form.getByRole('group', { name: 'Their invoices, 4' });
+  await expect(invoices.locator('tbody tr')).toHaveCount(4);
+  await expect(invoices.locator('tbody tr[data-tone="danger"]')).toHaveCount(1);
+  await expect(invoices.locator('tbody tr[data-tone="danger"]')).toContainText('INV-0412');
+  await expect(invoices.getByRole('list', { name: 'Key to the rows' })).toHaveText('Overdue');
+  await expect(invoices.getByRole('button', { name: 'New invoice' })).toBeVisible();
+  // View all opens every invoice of this customer's, the app's own list of them.
+  await invoices.getByRole('button', { name: 'View all invoices' }).click();
+  const all = page.getByRole('dialog');
+  await expect(all.locator('tbody tr')).toHaveCount(4);
+  await page.keyboard.press('Escape');
+  await expect(all).toBeHidden();
+  // Try it: a person, not a company, has no VAT number to give.
+  await form.getByRole('switch', { name: 'A company' }).uncheck();
+  await expect(form.locator('[data-field="vat"]')).toBeHidden();
+  await page.screenshot({ path: 'test-results/screens/site-home-stage-finished.png' });
+  expect(problems).toEqual([]);
+});
+
+test('the stage’s Skip and Replay, and with reduced motion the finished record at once', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(SITE + '/');
+  const stage = page.locator('.home-opening .stage');
+  await expect(page.locator('#stage-step')).toHaveText(STEPS[1].words, { timeout: 20000 });
+  await stage.getByRole('button', { name: 'Skip' }).click();
+  await expect(page.locator('#stage-step')).toHaveText(FINISHED);
+  await expect(stage.getByRole('button', { name: 'Skip' })).toBeHidden();
+  await expect(page.locator('#stage-form [data-field="vat"] input')).toHaveValue('DE 123456789');
+  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(JSON.parse(HERO_JSON));
+  // Replay writes it again from the first step.
+  await stage.getByRole('button', { name: 'Replay' }).click();
+  await expect(stage.getByRole('button', { name: 'Skip' })).toBeVisible();
+  await expect(page.locator('#stage-step')).toHaveText(STEPS[0].words, { timeout: 20000 });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(SITE + '/');
+  await expect(page.locator('#stage-step')).toHaveText(FINISHED);
+  await expect(stage.getByRole('button', { name: 'Replay' })).toBeVisible();
+  await expect(page.locator('#stage-form .fd-related tbody tr')).toHaveCount(4);
+  expect(await page.evaluate(() => (window as any).fieldiaHero.page())).toEqual(JSON.parse(HERO_JSON));
+  expect(JSON.parse((await page.locator('#stage-json').textContent())!)).toEqual(JSON.parse(HERO_JSON));
 });
 
 test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {
