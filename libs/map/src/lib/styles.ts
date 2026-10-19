@@ -3,6 +3,12 @@
  * tokens and the dark scheme reach the map's buttons, search, shapes and
  * grips. Fixed on purpose: the veil over the map that asks for two fingers
  * or Ctrl (white words on a dark veil, as an image's caption has them).
+ *
+ * The credits keep their small type, each link a target a finger can press:
+ * 24px tall at the least (WCAG 2.2's 24 by 24 CSS px; a pin can come too near
+ * for room round a smaller one to do), its words at its middle and on the
+ * line of the words beside it, the strip as tall as its links; the provider's
+ * mark too where it is a link, its picture where it was.
  */
 export const MAP_CSS = `
 .fd-map-field { display: grid; gap: 8px; min-width: 0; }
@@ -39,11 +45,11 @@ export const MAP_CSS = `
 .fd-map-zoom button:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-map-zoom button:focus-visible, .fd-map-hint button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-map-credits {
-  position: absolute; right: 0; bottom: 0; z-index: 1000; max-width: 72%; padding: 1px 6px; font-size: 11px; line-height: 1.5;
+  position: absolute; right: 0; bottom: 0; z-index: 1000; max-width: 72%; padding: 0 6px; font-size: 11px; line-height: 1.5;
   background: color-mix(in srgb, var(--fd-surface) 88%, transparent); color: var(--fd-text); border-top-left-radius: 4px;
 }
-.fd-map-credits a { color: inherit; }
-.fd-map-logo { position: absolute; left: 6px; bottom: 4px; z-index: 1000; display: inline-flex; align-items: center; text-decoration: none; }
+.fd-map-credits a { color: inherit; display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; }
+.fd-map-logo { position: absolute; left: 6px; bottom: 1px; z-index: 1000; display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; text-decoration: none; }
 .fd-map-logo img { height: 18px; width: auto; display: block; }
 .fd-map-logo span {
   font: 700 12px/1.4 system-ui, sans-serif; padding: 0 5px; border-radius: 3px;

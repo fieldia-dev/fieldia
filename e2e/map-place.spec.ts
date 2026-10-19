@@ -374,6 +374,24 @@ test('no accessibility findings, empty and with a place', async ({ page }) => {
   expect(await axeFindings(page, 'place, set')).toEqual([]);
 });
 
+test('the credits’ link is a finger’s size (24px), inside its strip: a place set just over it leaves no target too small', async ({ page }) => {
+  const { map } = await openPlace(page);
+  const link = map.locator('.fd-map-credits a');
+  await expect(link).toHaveText('© OpenStreetMap contributors');
+  const [box, strip] = [(await link.boundingBox())!, (await map.locator('.fd-map-credits').boundingBox())!];
+  expect(box.height, 'the link is shorter than 24px').toBeGreaterThanOrEqual(24);
+  expect(box.width).toBeGreaterThanOrEqual(24);
+  // All of it is where it is drawn: a press anywhere on it is on it, none on the map around it.
+  expect(box.y).toBeGreaterThanOrEqual(strip.y - 0.5);
+  expect(box.y + box.height).toBeLessThanOrEqual(strip.y + strip.height + 0.5);
+  expect(await link.evaluate((a) => getComputedStyle(a).fontSize)).toBe('11px');
+  // A pin a hair over the link: axe's spacing allowance no longer holds, so the link's own size must.
+  await page.mouse.click(box.x + box.width / 2, strip.y - 3);
+  await expect.poll(() => valueOf(page, 'deliver_to')).toMatchObject({ type: 'Point' });
+  await screen(page, 'map-credits-under-a-pin', { viewport: true });
+  expect(await axeFindings(page, 'a place just over the credits')).toEqual([]);
+});
+
 for (const variant of ['react', 'vue', 'angular']) {
   test(`${variant}: the place widget is there and a press writes the place`, async ({ page }) => {
     await stubMaps(page);

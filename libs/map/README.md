@@ -261,7 +261,9 @@ pin, or the bubble, that holds the place they were on.
 
 Keys never live in Fieldia: pass one restricted to your sites, or a function
 fetching a short-lived token from your server. Each provider's credits are shown
-in the map's corner, and its mark where its terms ask. Read your provider's
+in the map's corner, and its mark where its terms ask: in small type, each link
+and the mark 24px tall, a target a finger can press (WCAG 2.2) though a pin
+comes near it. Read your provider's
 terms on keeping search results: a place field keeps what it finds (Mapbox's
 permanent geocoding is asked for by default). OpenStreetMap's public map images,
 Photon's public server and Nominatim are for trying things out: their policies
