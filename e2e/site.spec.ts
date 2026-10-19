@@ -267,6 +267,22 @@ const keepWhatIsSaid = (page: Page) =>
       if (words && said[said.length - 1] !== words) said.push(words);
     }).observe(document, { subtree: true, childList: true, characterData: true });
   });
+/** One turn of the stage's screen between being made and made: the pane busy or not, the wait it shows, whether a line of the JSON is being typed, the bar's words. */
+type Wait = { busy: string | null; kind?: string; typing: boolean; words: string };
+/** Each turn, as it comes, kept in `heroWaits`. */
+const keepTheWaits = (page: Page) =>
+  page.addInitScript(() => {
+    const waits: Wait[] = [];
+    (window as any).heroWaits = waits;
+    new MutationObserver(() => {
+      const form = document.getElementById('stage-form');
+      if (!form) return;
+      const now = { busy: form.getAttribute('aria-busy'), kind: document.getElementById('stage-wait')?.dataset['kind'], typing: !!document.querySelector('#stage-json .caret'), words: document.getElementById('stage-step')?.textContent ?? '' };
+      const last = waits[waits.length - 1] ?? { busy: 'false', typing: false };
+      if (now.busy !== last.busy || now.typing !== last.typing) waits.push(now);
+    }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-busy', 'data-kind'] });
+  });
+const waitsKept = (page: Page): Promise<Wait[]> => page.evaluate(() => (window as any).heroWaits);
 
 test('the front page opens with a headline, a line for a business and one for developers, Get started, and what is new in the release', async ({ page }) => {
   for (const width of [390, 1280]) {
@@ -439,6 +455,7 @@ test('untouched, the stage plays each tab in turn: every step’s words, then it
   test.setTimeout(180000);
   const problems = watch(page);
   await keepWhatIsSaid(page);
+  await keepTheWaits(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(SITE + '/');
   for (const tab of TABS) {
@@ -452,6 +469,14 @@ test('untouched, the stage plays each tab in turn: every step’s words, then it
   // Each tab's steps in order, then someone using it, the tabs one after another.
   const said: string[] = await page.evaluate(() => (window as any).heroSaid);
   expect(said.slice(said.indexOf(`Writing ${RECORD.file}`))).toEqual(TABS.flatMap((tab) => [`Writing ${tab.file}`, ...tab.steps.map((step) => step.words), ...tab.used]));
+  // The screen being made for exactly as long as each step's lines are typed: busy while a line is written, and not
+  // once the step is drawn; a tab's first step sketched, each later one under a veil; never while a tab is used or at rest.
+  const waits = await waitsKept(page);
+  for (const wait of waits) expect(wait.busy, JSON.stringify(wait)).toBe(String(wait.typing));
+  expect(waits.filter((wait) => wait.busy === 'true').map((wait) => [wait.kind, wait.words])).toEqual(
+    TABS.flatMap((tab) => tab.steps.map((step, i) => (i ? ['update', tab.steps[i - 1].words] : ['first', `Writing ${tab.file}`]))),
+  );
+  expect(waits.filter((wait) => wait.busy === 'false').map((wait) => wait.words)).toEqual(TABS.flatMap((tab) => tab.steps.map((step) => step.words)));
   // And after the last, it rests there: nothing goes round again.
   await page.waitForTimeout(4000);
   expect(await shownTab(page)).toBe(BOOKING.id);
@@ -550,6 +575,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 test(`with reduced motion each tab shows its finished state at once, the page it draws the JSON it shows, and none moves on · ${colorScheme}`, async ({ page }) => {
   test.setTimeout(120000);
   const problems = watch(page);
+  await keepTheWaits(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme });
   await page.goto(SITE + '/');
@@ -560,6 +586,9 @@ test(`with reduced motion each tab shows its finished state at once, the page it
     await expect(page.locator('#stage-step')).toHaveText(finished(tab));
     await expect(stage.getByRole('button', { name: 'Replay' })).toBeVisible();
     await expect(stage.getByRole('button', { name: 'Skip' })).toBeHidden();
+    // Its screen made at once: never a sketch, a veil or a chip.
+    await expect(form).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#stage-wait')).toBeHidden();
     expect(await jsonShown(page), tab.id).toEqual(JSON.parse(tab.json));
     await expect.poll(() => drawnPage(page)).toEqual(JSON.parse(tab.json));
     expect(await axeFindings(page, `the stage's ${tab.id} · ${colorScheme}`)).toEqual([]);
@@ -604,6 +633,15 @@ test(`with reduced motion each tab shows its finished state at once, the page it
   await page.screenshot({ path: `test-results/screens/site-home-stage-booking-at-rest-${colorScheme}.png` });
   await page.waitForTimeout(3000);
   expect(await shownTab(page)).toBe(BOOKING.id);
+  // Not once, on any tab, was the pane busy: nor as Replay writes one again, line by line.
+  expect(await waitsKept(page)).toEqual([]);
+  await stage.getByRole('button', { name: 'Replay' }).click();
+  await expect(page.locator('#stage-step')).not.toHaveText(finished(BOOKING));
+  await expect(page.locator('#stage-step')).toHaveText(finished(BOOKING), { timeout: 30000 });
+  const waits = await waitsKept(page);
+  expect(waits.some((wait) => wait.typing)).toBe(true);
+  expect(waits.filter((wait) => wait.busy === 'true')).toEqual([]);
+  await expect(page.locator('#stage-wait')).toBeHidden();
   expect(problems).toEqual([]);
 });
 }
@@ -671,6 +709,107 @@ test('Skip finishes the tab shown and Replay writes it again', async ({ page }) 
   await expect(page.locator('#stage-step')).toHaveText(finished(BOOKING));
   await expect(page.locator('#stage-form .fd-slots-chip[aria-pressed="true"]')).toHaveCount(1);
   expect(await drawnPage(page)).toEqual(JSON.parse(BOOKING.json));
+});
+
+test('while a step is written its screen shows it is being made: a tab’s first sketched, each later under a veil, neither once it is drawn', async ({ page }) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(SITE + '/');
+  const form = page.locator('#stage-form');
+  const screen = page.locator('#stage-form > *');
+  const sketch = page.locator('#stage-wait .stage-sketch');
+  const chip = page.locator('#stage-wait .stage-busy');
+  // The first step typed: the empty pane busy, a screen sketched in it and said to be drawn. The chip is not read out:
+  // the bar's words are the stage's one live region.
+  await expect(form).toHaveAttribute('aria-busy', 'true', { timeout: 20000 });
+  await expect(page.locator('#stage-step')).toHaveText(`Writing ${RECORD.file}`);
+  await expect(sketch).toBeVisible();
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveText('Drawing the screen…');
+  await expect(page.locator('#stage-wait')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('.home-opening .stage [aria-live]')).toHaveCount(1);
+  await expect(screen).toHaveCount(0);
+  // Drawn: the record in the sketch's place, the pane no longer busy.
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words);
+  await expect(form).toHaveAttribute('aria-busy', 'false');
+  await expect(form.locator('[data-field="name"]')).toBeVisible();
+  await expect(sketch).toBeHidden();
+  await expect(chip).toBeHidden();
+  // A later step typed (their invoices, the longest): the record stays, dimmed under a veil, the chip saying it is updating.
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[4].words, { timeout: 30000 });
+  await expect(form).toHaveAttribute('aria-busy', 'true', { timeout: 10000 });
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveText('Updating…');
+  await expect(sketch).toBeHidden();
+  await expect(form.locator('.fd-statusbar')).toBeVisible();
+  await expect.poll(() => screen.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeLessThan(0.6);
+  // Drawn: the veil lifted, and what the step adds marked as just drawn.
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[5].words);
+  await expect(form).toHaveAttribute('aria-busy', 'false');
+  await expect(chip).toBeHidden();
+  await expect(form.locator('.fd-related.just-drawn')).toBeVisible();
+  await expect.poll(() => screen.evaluate((el) => Number(getComputedStyle(el).opacity))).toBe(1);
+});
+
+test('the screen being made is never left behind: not by Skip, not by a tab changed mid-typing; Replay sketches it again', async ({ page }) => {
+  test.setTimeout(90000);
+  await keepTheWaits(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(SITE + '/');
+  const stage = page.locator('.home-opening .stage');
+  const form = page.locator('#stage-form');
+  const none = async () => {
+    await expect(form).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('#stage-wait')).toBeHidden();
+  };
+  const busySince = async (from: number) => (await waitsKept(page)).slice(from).filter((wait) => wait.busy === 'true');
+  // Skip as the first step is typed: its sketch gone at once, and none comes as the tab finishes.
+  await expect(form).toHaveAttribute('aria-busy', 'true', { timeout: 20000 });
+  await stage.getByRole('button', { name: 'Skip' }).click();
+  const skipped = (await waitsKept(page)).length;
+  await none();
+  await expect(page.locator('#stage-step')).toHaveText(finished(RECORD));
+  await page.waitForTimeout(1500);
+  await none();
+  expect(await busySince(skipped)).toEqual([]);
+  // Replay: from the sketch again.
+  await stage.getByRole('button', { name: 'Replay' }).click();
+  await expect(form).toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('#stage-wait')).toHaveAttribute('data-kind', 'first');
+  await expect(page.locator('#stage-wait .stage-sketch')).toBeVisible();
+  await expect(page.locator('#stage-step')).toHaveText(RECORD.steps[0].words);
+  // The map's tab pressed while a later step is typed under the veil: the veil gone with the press, while the map's own
+  // code is fetched, and the map's first step sketched once it is typed.
+  /** `id` pressed the moment a later step is typed under the veil; what the pane is straight after. */
+  const pressUnderTheVeil = async (id: string) =>
+    (
+      await page.waitForFunction(
+        (id) => {
+          const pane = document.getElementById('stage-form')!;
+          if (pane.getAttribute('aria-busy') !== 'true' || document.getElementById('stage-wait')!.dataset['kind'] !== 'update') return false;
+          const from = (window as any).heroWaits.length;
+          document.getElementById(id)!.click();
+          return { from, busy: pane.getAttribute('aria-busy'), screens: pane.childElementCount };
+        },
+        id,
+        { polling: 10, timeout: 30000 },
+      )
+    ).jsonValue();
+  const switched = await pressUnderTheVeil('stage-tab-map');
+  expect([switched.busy, switched.screens]).toEqual(['false', 0]);
+  await expect(page.locator('#stage-step')).toHaveText(MAP.steps[0].words, { timeout: 20000 });
+  await none();
+  await expect(page.locator('#stage-form .fd-map-box')).toBeVisible();
+  // The first the pane was busy after the press: the map's own first step, sketched.
+  expect((await busySince(switched.from)).slice(0, 1).map((wait) => [wait.kind, wait.words])).toEqual([['first', `Writing ${MAP.file}`]]);
+  // Skip as a later step of the map is typed: the veil lifted at once, and the map finished.
+  const finishedNow = await pressUnderTheVeil('stage-skip');
+  expect(finishedNow.busy).toBe('false');
+  await none();
+  await expect(page.locator('#stage-step')).toHaveText(finished(MAP));
+  await expect(page.locator('#stage-form > *')).toHaveCSS('opacity', '1');
+  await page.waitForTimeout(1000);
+  expect(await busySince(finishedNow.from)).toEqual([]);
 });
 
 test('Maps has its own place in the top bar, beside Demos, and is the one lit on the maps page', async ({ page }) => {

@@ -155,7 +155,11 @@ export default {
       </div>
       <div class="stage-panes">
         <pre class="stage-json" id="stage-json" tabindex="0" aria-label="The page’s JSON"><code>${HERO_JSON.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre>
-        <div class="stage-form" id="stage-form"></div>
+        <div class="stage-form" id="stage-form" aria-busy="false"></div>
+        <div class="stage-wait" id="stage-wait" aria-hidden="true">
+          <span class="stage-sketch"><i class="sk-title"></i><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span><span class="sk-field"><i></i><i></i></span></span>
+          <span class="stage-busy"><span class="stage-spin"></span><span id="stage-wait-words">Drawing the screen…</span></span>
+        </div>
       </div>
     </div>
     <script type="application/json" id="stage-tabs-data">${TABS_DATA}</script>

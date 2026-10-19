@@ -24,6 +24,9 @@
   --h-chip: #e7eefb;
   --h-picked: #eaf2ff;
   --h-warn: #a14f00;
+  /* The stage's screen as it is being made (home.js): a sketch's bars, and the light that passes over them. */
+  --h-sketch: #e9eef6;
+  --h-sheen: #f7f9fc;
   --h-stage: #071a35;
   --h-stage-2: #0b2447;
   --h-stage-ink: #e8eef8;
@@ -65,6 +68,8 @@
     --h-chip: #1d3354;
     --h-picked: #1a2f4f;
     --h-warn: #f2b55c;
+    --h-sketch: #1e2a3d;
+    --h-sheen: #26344b;
   }
 }
 
@@ -193,11 +198,53 @@
 /* From a tint to the part's own ground: a map's legend keeps its own. */
 @keyframes drawn { from { background-color: rgba(79, 157, 255, 0.2); transform: translateY(6px); } }
 
+/* The screen being made, while a step's lines are typed (home.js marks the pane aria-busy for exactly that long): an
+   empty pane a sketch of a screen, a pane with one its screen under a light veil; a small chip says which. The step
+   drawn lifts it: the screen fades in over the sketch, or comes out from under the veil. */
+.stage-panes { position: relative; }
+/* Over the screen's pane exactly, whichever way the panes are set, adding nothing to its height; nothing in it pressed. */
+.stage-wait {
+  position: absolute; inset: 0; grid-column: 1; grid-row: 2; z-index: 1; overflow: hidden; pointer-events: none; container-type: inline-size;
+  opacity: 0; visibility: hidden; transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+}
+.stage-form[aria-busy="true"] ~ .stage-wait { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
+/* The screen there, dimmed toward the pane's own ground while its next step is written: still read through it. */
+.stage-form > * { transition: opacity 0.15s ease; }
+.stage-form[aria-busy="true"] > * { opacity: 0.45; }
+/* The step drawn comes up from where the screen before it stood (home.js): from nothing over the sketch, or from as dim
+   as the veil had made it by then (a step of a word is typed before the veil is all the way down), never a blink. */
+.stage-form[data-lift] > * { animation: lift 0.18s ease; }
+@keyframes lift { from { opacity: var(--lift-from, 0); } }
+/* An empty pane's sketch: a screen's title and its fields as a sheet sets them, two a row where there is room, a
+   light passing over them. */
+.stage-sketch { display: none; position: absolute; inset: 0; padding: 12px 16px; background: var(--h-surface); grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 18px 20px; }
+.stage-wait[data-kind="first"] .stage-sketch { display: grid; }
+.stage-sketch i { display: block; height: 34px; border-radius: 8px; background: linear-gradient(100deg, var(--h-sketch) 40%, var(--h-sheen) 50%, var(--h-sketch) 60%) 100% 0 / 300% 100% var(--h-sketch); animation: sheen 1.8s ease-in-out infinite; }
+.stage-sketch .sk-title { grid-column: 1 / -1; width: min(46%, 260px); height: 22px; margin-block-end: 6px; border-radius: 6px; }
+.sk-field { display: grid; gap: 8px; }
+.stage-sketch .sk-field i:first-child { width: 38%; height: 9px; border-radius: 4px; }
+.stage-sketch .sk-field:nth-child(3) i:first-child { width: 26%; }
+.stage-sketch .sk-field:nth-child(4) i:first-child { width: 46%; }
+.stage-sketch .sk-field:nth-child(5) i:first-child { width: 32%; }
+@keyframes sheen { to { background-position: 0 0; } }
+/* A narrow pane, a phone's: a field a row, three of them. */
+@container (max-width: 440px) {
+  .stage-sketch { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .stage-sketch .sk-title { width: 36%; }
+  .stage-sketch .sk-field:last-child { display: none; }
+}
+/* The chip at the pane's top end, as tall as the bar a record has there and over it: a spinner, and what is being
+   done. Its words are not read out; the bar's are. */
+.stage-busy { position: absolute; inset-block-start: 6px; inset-inline-end: 14px; display: inline-flex; align-items: center; gap: 8px; padding: 7.5px 13px 7.5px 10px; border: 1px solid var(--h-line); border-radius: 999px; background: var(--h-surface); color: var(--h-muted); font: 600 12.5px/1.3 var(--font); white-space: nowrap; box-shadow: 0 6px 18px rgba(16, 25, 43, 0.1); }
+.stage-spin { flex: none; width: 12px; height: 12px; box-sizing: border-box; border: 2px solid var(--h-line); border-top-color: var(--h-navy); border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(1turn); } }
+
 /* From a tablet's width up: the JSON beside the record it draws, both the stage's height — written there and drawn
    here at a glance — and the stage as tall as the screen allows. */
 @media (min-width: 800px) {
   .stage-panes { grid-template-columns: clamp(318px, 24vw, 350px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .stage-json { height: auto; border-bottom: 0; border-inline-end: 1px solid rgba(164, 179, 204, 0.18); }
+  .stage-wait { grid-column: 2; grid-row: 1; }
   .home-opening .stage { height: clamp(520px, 72svh, 680px); }
 }
 /* Side by side once both fit: the words a column, the stage the rest, each on the first screen. */
@@ -335,6 +382,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reel-track, .stage-json .caret, .tab-panels pre.code, .stage-form .just-drawn { animation: none !important; }
+  /* The screen being made never shows here (each tab is at rest at once); were it to, it would not move. */
+  .stage-sketch i, .stage-spin, .stage-form[data-lift] > * { animation: none !important; }
+  .stage-wait, .stage-form > * { transition: none !important; }
   .reel { mask-image: none; }
   .reel { margin-inline: 0; }
   .reel-track { width: auto; }
@@ -372,6 +422,8 @@
   .stage-form .fd-header { padding-inline: 12px; }
   .stage-form .fd-sheet-layout { padding-inline: 12px; }
   .stage-form .fd-content > :is(.fd-page-head, .fd-list) { margin-inline: 12px; }
+  .stage-sketch { padding-inline: 12px; }
+  .stage-busy { inset-inline-end: 10px; }
   .stage-form .fd-related .fd-list-table { font-size: 13px; }
   .stage-form .fd-related .fd-list-table :is(th, td) { padding-inline: 6px; }
   /* The four tabs across the phone's width, their words alone. */

@@ -28,6 +28,8 @@
   var stepWords = document.getElementById('stage-step');
   var replay = document.getElementById('stage-replay');
   var skip = document.getElementById('stage-skip');
+  var stageWait = document.getElementById('stage-wait');
+  var waitWords = document.getElementById('stage-wait-words');
   var tabsData = document.getElementById('stage-tabs-data');
   var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.stage-tabs [role="tab"]'));
   /** Each tab: its steps (site/hero.mjs), each the whole page as it stands then and what it adds in words; then the words said as it is used, its finished state's last. */
@@ -440,12 +442,36 @@
   var source = null;
   /** What the tab's kit gives the viewer beside the page: for the map, its map's code, once loaded. */
   var given = null;
-  /** The page drawn, as the reader's scheme dresses it; the part it adds marked as it arrives, and brought into sight. */
-  function draw(p) {
+  /**
+   * The screen being made, for exactly as long as a step's lines are typed (the typing is the work): `first` an empty
+   * pane sketched, `update` the screen there under a veil, each with its chip (home.css); the pane busy meanwhile. Its
+   * chip's words are not read out: the bar's words are the stage's live region.
+   */
+  function making(kind) {
+    stageWait.dataset.kind = kind;
+    waitWords.textContent = kind === 'first' ? 'Drawing the screen…' : 'Updating…';
+    stageForm.setAttribute('aria-busy', 'true');
+  }
+  /** The screen made, or the tab left or finished at once: never a sketch or a veil left behind. */
+  function made() {
+    stageForm.setAttribute('aria-busy', 'false');
+  }
+
+  /**
+   * The page drawn, as the reader's scheme dresses it; the part it adds marked as it arrives, and brought into sight.
+   * `lift`, as a step is played: the screen fades in where the sketch was (`first`) or comes out from under the veil,
+   * from as dim as the screen before it stood.
+   */
+  function draw(p, lift) {
     var kit = KITS[TABS[current].id];
     var before = shownPage;
     var kept = stageForm.scrollTop;
     shownPage = p;
+    if (lift) {
+      var was = stageForm.firstElementChild;
+      stageForm.style.setProperty('--lift-from', was ? getComputedStyle(was).opacity : '0');
+      stageForm.dataset.lift = lift;
+    } else delete stageForm.dataset.lift;
     if (viewer) viewer.destroy();
     // How tall the pane is, where the stage has a height of its own: a map fills it rather than running on under it.
     stageForm.style.setProperty('--pane', tall.matches ? stageForm.clientHeight + 'px' : '');
@@ -477,6 +503,8 @@
   async function begin(alive) {
     var tab = TABS[current];
     var kit = KITS[tab.id];
+    made();
+    delete stageForm.dataset.lift;
     if (viewer) { viewer.destroy(); viewer = null; }
     shownPage = null;
     stageForm.textContent = '';
@@ -484,7 +512,7 @@
     fileName.textContent = tab.file;
     source = kit.source();
     given = null;
-    if (!kit.ready) return true;
+    if (!kit.ready) return alive();
     try {
       given = await kit.ready();
     } catch (error) {
@@ -510,6 +538,10 @@
     var steps = stepsOf(tab);
     for (var s = 0; s < steps.length; s++) {
       var step = steps[s];
+      // The screen being made while the step is written: the tab's first sketched, each later under a veil. Not with
+      // reduced motion, where Replay alone plays a tab.
+      var kind = calm ? null : s === 0 ? 'first' : 'update';
+      if (kind) making(kind);
       var plan = edits(lines, step.text.split('\n'));
       var fresh = [];
       lines = [];
@@ -539,7 +571,8 @@
       if (!alive()) return;
       paint(lines, fresh, -1);
       stepWords.textContent = step.words;
-      draw(JSON.parse(step.text));
+      made();
+      draw(JSON.parse(step.text), kind);
       await wait(s === 0 ? 1000 : 1400);
       if (!alive()) return;
     }
