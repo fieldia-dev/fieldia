@@ -1,5 +1,5 @@
 import type { ActionStep, PageEvents } from './actions';
-import type { Field, Fields, FilterItem, LineField, LineKinds, SelectionOption } from './field';
+import type { Field, Fields, FilterItem, LineField, SelectionOption } from './field';
 import { optionsField, optionsList } from './choice-options';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListCard, ListNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
@@ -25,8 +25,9 @@ import type { FieldTools } from './part-checks';
 import { checkSlots } from './slots-checks';
 import { checkSignature } from './signature-checks';
 import { checkEndings } from './endings-checks';
-import { checkMap, checkPlace, type MapTools } from './map-checks';
-import { checkTable, type TableTools } from './table-checks';
+import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
+import { checkLineKinds, checkTable, type TableTools } from './table-checks';
+import { checkStatusbar } from './statusbar-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -558,7 +559,7 @@ export class ReferenceCheck {
       if (def.type === 'one2many') {
         // Its lines read the record they are on — on a line, that line — as parent.
         this.checkFields(def.fields, `${path}.fields`, name, fields);
-        if ('lineKinds' in def && def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
+        if ('lineKinds' in def && def.lineKinds) checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`, this.fieldTools());
         if (def.sequenceField !== undefined) {
           const sequence = def.fields[def.sequenceField];
           if (!sequence) this.report(`${path}.sequenceField`, `"${def.sequenceField}" is not a field of the lines of "${name}"`);
@@ -595,25 +596,7 @@ export class ReferenceCheck {
     }
   }
 
-  private checkLineKinds(field: string, kinds: LineKinds, lineFields: Record<string, LineField>, path: string) {
-    const kindField = lineFields[kinds.field];
-    if (!kindField) this.report(`${path}.field`, `"${kinds.field}" is not a field of the lines of "${field}"`);
-    else if (kindField.type !== 'selection' && kindField.type !== 'char') {
-      this.report(`${path}.field`, `"${kinds.field}" is a ${kindField.type}; the field that says what a line is must be a selection or char`);
-    } else if (kindField.type === 'selection') {
-      for (const which of ['section', 'note'] as const) {
-        const value = kinds[which] ?? which;
-        if (!kindField.options.some((o) => o.value === value)) this.report(`${path}.${which}`, `"${kinds.field}" has no option "${value}"`);
-      }
-    }
-    const text = lineFields[kinds.text];
-    if (!text) this.report(`${path}.text`, `"${kinds.text}" is not a field of the lines of "${field}"`);
-    else if (text.type !== 'char' && text.type !== 'text') {
-      this.report(`${path}.text`, `"${kinds.text}" is a ${text.type}; a section's or note's text must be a char or text field`);
-    }
-  }
 
-  /** A page's own buttons at its foot: buttons as any. */
   /** The tools a table of lines' checks are handed (table-checks.ts). */
   private tableTools(): TableTools {
     return {
@@ -663,6 +646,7 @@ export class ReferenceCheck {
     };
   }
 
+  /** A page's own buttons at its foot: buttons as any. */
   private walkFooter(footer: ButtonNode[] | undefined, path: string) {
     footer?.forEach((button, i) => {
       this.claim(button.id, `${path}.footer[${i}]`);
@@ -804,29 +788,8 @@ export class ReferenceCheck {
       if (sheet.title.avatarField !== undefined) this.need(sheet.title.avatarField, `${path}.title.avatarField`);
       sheet.title.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.title.placeholderWhen[${i}]`, ['when']));
     }
-    if (sheet.statusbar) {
-      const { field, visibleStates, durationsField, fold, saves, clickable } = sheet.statusbar;
-      const at = `${path}.statusbar`;
-      this.checkModifiers(sheet.statusbar, at);
-      if (durationsField !== undefined) {
-        const times = this.need(durationsField, `${at}.durationsField`);
-        if (times && times.type !== 'json') this.report(`${at}.durationsField`, `"${durationsField}" is a ${times.type}; time per step comes from a json field`);
-      }
-      if (saves && !clickable) this.report(`${at}.saves`, 'a click saves only where a step can be clicked (clickable)');
-      const def = this.need(field, `${path}.statusbar.field`);
-      if (fold && def && def.type !== 'many2one') this.report(`${at}.fold`, 'steps fold by their record (a stage), so only a link’s steps fold; a choice keeps the steps it shows with visibleStates');
-      if (def && def.type !== 'selection' && def.type !== 'many2one') {
-        this.report(`${path}.statusbar.field`, `"${field}" is a ${def.type}; a statusbar needs a selection or many2one`);
-      }
-      if (def?.type === 'selection' && visibleStates) {
-        const values = new Set(def.options.map((o) => o.value));
-        visibleStates.forEach((state, i) => {
-          if (!values.has(state)) {
-            this.report(`${path}.statusbar.visibleStates[${i}]`, `"${state}" is not an option of "${field}"`);
-          }
-        });
-      }
-    }
+    // A statusbar, drawn by the business part, whose checks come with it in the one-tag script.
+    if (sheet.statusbar) checkStatusbar(sheet.statusbar, path, { ...this.fieldTools(), checkModifiers: (owner, at, keys) => this.checkModifiers(owner, at, keys) });
     sheet.buttons?.forEach((button, i) => {
       this.claim(button.id, `${path}.buttons[${i}]`);
       this.checkModifiers(button, `${path}.buttons[${i}]`);
@@ -889,23 +852,6 @@ export class ReferenceCheck {
     }
   }
 
-  /** An address with suggestions: a char field, its place kept as a place field keeps one, its parts in a json field. */
-  private checkAddressSearch(node: FieldNode, def: Field | LineField | undefined, path: string) {
-    const options = node.options ?? {};
-    const kind = (key: string) => {
-      const name = options[key];
-      return typeof name === 'string' && has(this.page.fields, name) ? this.page.fields[name].type : undefined;
-    };
-    if (def && def.type !== 'char') this.report(`${path}.widget`, `address-search is for a char field; "${node.field}" is a ${def.type}`);
-    const place = kind('placeField');
-    if (place && place !== 'json' && place !== 'float') this.report(`${path}.options.placeField`, `"${options['placeField']}" is a ${place}; a place is kept in a json field, or in a float field (its latitude) with longitudeField`);
-    if (place === 'float' && options['longitudeField'] === undefined) this.report(`${path}.options.placeField`, `"${options['placeField']}" keeps a latitude: name the float field for its longitude in longitudeField`);
-    if (options['longitudeField'] !== undefined && place !== 'float') this.report(`${path}.options.longitudeField`, 'longitudeField goes with a placeField that is a float field, its latitude');
-    const longitude = kind('longitudeField');
-    if (longitude && longitude !== 'float') this.report(`${path}.options.longitudeField`, `"${options['longitudeField']}" is a ${longitude}; a longitude is kept in a float field`);
-    const parts = kind('partsField');
-    if (parts && parts !== 'json') this.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
-  }
 
   /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
@@ -957,7 +903,8 @@ export class ReferenceCheck {
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
-    if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
+    // An address with suggestions, drawn by the app's maps: its checks come with a map's in the one-tag script.
+    if (node.widget === 'address-search') checkAddressSearch(node, def, path, this.mapTools());
     // Booking slots on a date and time, a signature on a file: drawn by their parts, whose checks of their settings come
     // with them in the one-tag script.
     if (node.widget === 'slots' && def && def.type !== 'datetime') this.report(`${path}.widget`, `slots is for a datetime field; "${node.field}" is a ${def.type}`);

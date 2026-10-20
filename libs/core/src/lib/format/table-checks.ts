@@ -1,4 +1,4 @@
-import type { Field } from './field';
+import type { Field, LineField, LineKinds } from './field';
 import type { ButtonNode, FieldNode, StatButton } from './layout';
 import type { FieldTools } from './part-checks';
 import type { Scope } from './references';
@@ -65,5 +65,23 @@ export function checkTable(node: FieldNode, def: Extract<Field, { type: 'one2man
     for (const column of Object.keys(node.optionalColumns)) {
       if (!shown.includes(column)) tools.report(`${path}.optionalColumns.${column}`, `"${column}" is not a column of "${node.field}"`);
     }
+  }
+}
+
+export function checkLineKinds(field: string, kinds: LineKinds, lineFields: Record<string, LineField>, path: string, tools: FieldTools): void {
+  const kindField = lineFields[kinds.field];
+  if (!kindField) tools.report(`${path}.field`, `"${kinds.field}" is not a field of the lines of "${field}"`);
+  else if (kindField.type !== 'selection' && kindField.type !== 'char') {
+    tools.report(`${path}.field`, `"${kinds.field}" is a ${kindField.type}; the field that says what a line is must be a selection or char`);
+  } else if (kindField.type === 'selection') {
+    for (const which of ['section', 'note'] as const) {
+      const value = kinds[which] ?? which;
+      if (!kindField.options.some((o) => o.value === value)) tools.report(`${path}.${which}`, `"${kinds.field}" has no option "${value}"`);
+    }
+  }
+  const text = lineFields[kinds.text];
+  if (!text) tools.report(`${path}.text`, `"${kinds.text}" is not a field of the lines of "${field}"`);
+  else if (text.type !== 'char' && text.type !== 'text') {
+    tools.report(`${path}.text`, `"${kinds.text}" is a ${text.type}; a section's or note's text must be a char or text field`);
   }
 }

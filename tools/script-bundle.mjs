@@ -159,7 +159,8 @@ const asksForParts = (table, parts) => ({
  * The checks of a page the one-tag script carries in the part that draws what they check, not in its main script: a
  * list page's own settings and a related list's in the list part, a record's head in the head part, a page's limits and
  * Continue later in the limits part, booking slots' settings in the slots part, a signature's in the files part, a page's
- * endings in the answers part, a table of lines' in the lines part, and a map's in a part of their own
+ * endings in the answers part, a table of lines' in the lines part, a sheet's statusbar in the business part, and a
+ * map's in a part of their own
  * (fieldia.mapchecks.js), which the viewer asks for as the check owes it. The packages' `checkPage` runs them at once. Here the main script is built
  * with each module below standing in — its checks owed (`owe`, the reference check's `later`) until its part has come,
  * and the viewer running the check again then, before the page is drawn — and each part's script puts its module's
@@ -172,8 +173,9 @@ const CHECKS_IN_PARTS = {
   slots: { file: 'libs/core/src/lib/format/slots-checks.ts', names: ['checkSlots'] },
   files: { file: 'libs/core/src/lib/format/signature-checks.ts', names: ['checkSignature'] },
   answers: { file: 'libs/core/src/lib/format/endings-checks.ts', names: ['checkEndings'] },
-  mapchecks: { file: 'libs/core/src/lib/format/map-checks.ts', names: ['checkMap', 'checkPlace'] },
-  lines: { file: 'libs/core/src/lib/format/table-checks.ts', names: ['checkTable'] },
+  mapchecks: { file: 'libs/core/src/lib/format/map-checks.ts', names: ['checkMap', 'checkPlace', 'checkAddressSearch'] },
+  lines: { file: 'libs/core/src/lib/format/table-checks.ts', names: ['checkTable', 'checkLineKinds'] },
+  business: { file: 'libs/core/src/lib/format/statusbar-checks.ts', names: ['checkStatusbar'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
 const checksLater = {
@@ -998,8 +1000,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // endings in the answers part, 515.34 after; a map's checks — a form's map and a list's on one — in a part of their own
 // (fieldia.mapchecks.js, 5.76), asked for by the viewer as the check owes them, 511.39 after; a table of lines' own
 // settings in the lines part, 509.75 after; the app's own functions' calls in the functions part, which a viewer given
-// some waits for — their names and what each takes known at once — 509.19 after, to 509.2.
-const BUDGET_KB = 509.2;
+// some waits for — their names and what each takes known at once — 509.19 after; a sheet's statusbar's checks in the
+// business part, a table's line kinds' in the lines part and an address with suggestions' with a map's, 506.85 after,
+// to 506.9.
+const BUDGET_KB = 506.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1226,8 +1230,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // a signature's and endings' checks in their parts, 168.42 after; a map's checks in fieldia.mapchecks.js (2.24), asked
 // for by a page with a map as its check owes them, 167.32 after; a table of lines' checks in the lines part (0.72 more
 // there), 166.98 after; the app's own functions' calls in fieldia.functions.js (0.38 more there), 166.69 after, to
-// 166.7.
-const GZIP_BUDGET_KB = 166.7;
+// 166.7; a statusbar's, a table's line kinds' and an address's checks in their parts, 166.05 after, to 166.1.
+const GZIP_BUDGET_KB = 166.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1782,8 +1786,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // the fields a pin and a card show, a form's map's and a list's — to 5.8 and 2.3; a table of lines' checks — its columns,
 // totals, order, cells' and rows' rules, the columns a person may hide — lines 42.26 and 14.57 to 44.65 and 15.29, to
 // 44.7 and 15.3; the app's own functions' calls — what one gives tidied, one that asks its server waiting for its answer
-// — functions 4.32 and 1.88 to 5.25 and 2.26, to 5.3 and 2.3.
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [44.7, 15.3], business: [30.4, 11.1], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [4.0, 1.9], mapchecks: [5.8, 2.3] };
+// — functions 4.32 and 1.88 to 5.25 and 2.26, to 5.3 and 2.3; a statusbar's checks — business 30.30 and 11.10 to 31.38
+// and 11.53, to 31.4 and 11.6 — a table's line kinds' — lines 44.65 and 15.29 to 45.34 and 15.51, to 45.4 and 15.6 — and
+// an address with suggestions' — mapchecks 5.76 and 2.24 to 6.89 and 2.56, to 6.9 and 2.6.
+const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [127.6, 41.0], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [4.0, 1.9], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1919,7 +1925,7 @@ for (const part of PARTS) {
   if (alone.checkPage({ ...wrong, layout: { type: 'sections', id: 's', children: [] } }).later) throw new Error('a page with no list owes the list part its checks');
   // A map's checks owed to a part of their own: a form's map at once, and a list's on a map once the list part ran them.
   const mapOrder = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/map-order.page.json'), 'utf8'));
-  if (alone.checkPage(mapOrder).later?.join() !== 'mapchecks') throw new Error(`a form's map's checks are not owed to their part: ${JSON.stringify(alone.checkPage(mapOrder).later)}`);
+  if (!alone.checkPage(mapOrder).later?.includes('mapchecks')) throw new Error(`a form's map's checks are not owed to their part: ${JSON.stringify(alone.checkPage(mapOrder).later)}`);
   const homes = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/map-homes.page.json'), 'utf8'));
   if (withList.checkPage(homes).later?.join() !== 'mapchecks') throw new Error("a list on a map does not owe its map's checks once the list part ran its own");
   // In a page: such a list mounted before its part came draws nothing, and what is drawn rejects with the mount's words.

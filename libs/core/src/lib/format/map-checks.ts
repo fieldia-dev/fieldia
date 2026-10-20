@@ -1,15 +1,19 @@
 import type { ActionStep } from './actions';
 import type { Field, LineField } from './field';
-import type { MapCard, MapNode, Pin } from './layout';
+import type { FieldNode, MapCard, MapNode, Pin } from './layout';
 import type { Page } from './page';
 import type { Scope } from './references';
 
 /**
  * The checks of a map — a form's (`type: "map"`), and where a list's records are on one (`map`, list-checks.ts): its
- * layers, places, routes, reachable areas and fences, and the fields a pin and a card show. A map is drawn by the app's
+ * layers, places, routes, reachable areas and fences, and the fields a pin and a card show — and of an address with
+ * suggestions (`address-search`). A map is drawn by the app's
  * maps (@fieldia/map); in the one-tag script its checks come in a part of their own a page with a map asks for, run
  * once it came (later-checks.ts). The packages' checks run them at once.
  */
+/** Whether a record holds a key of its own. */
+const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
 export interface MapTools {
   readonly page: Page;
   need(name: string, path: string, scope?: Record<string, Field | LineField>): Field | LineField | undefined;
@@ -134,4 +138,22 @@ export function checkMap(node: MapNode, path: string, tools: MapTools): void {
     if (fence.within !== undefined && !node.layers.some((layer) => layer.id === fence.within && layer.reachable)) tools.report(`${at}.within`, `a fence is within a reachable area of this map; "${fence.within}" is not one`);
     tools.checkSteps(fence.steps, `${at}.steps`);
   });
+}
+
+/** An address with suggestions: a char field, its place kept as a place field keeps one, its parts in a json field. */
+export function checkAddressSearch(node: FieldNode, def: Field | LineField | undefined, path: string, tools: MapTools): void {
+  const options = node.options ?? {};
+  const kind = (key: string) => {
+    const name = options[key];
+    return typeof name === 'string' && has(tools.page.fields, name) ? tools.page.fields[name].type : undefined;
+  };
+  if (def && def.type !== 'char') tools.report(`${path}.widget`, `address-search is for a char field; "${node.field}" is a ${def.type}`);
+  const place = kind('placeField');
+  if (place && place !== 'json' && place !== 'float') tools.report(`${path}.options.placeField`, `"${options['placeField']}" is a ${place}; a place is kept in a json field, or in a float field (its latitude) with longitudeField`);
+  if (place === 'float' && options['longitudeField'] === undefined) tools.report(`${path}.options.placeField`, `"${options['placeField']}" keeps a latitude: name the float field for its longitude in longitudeField`);
+  if (options['longitudeField'] !== undefined && place !== 'float') tools.report(`${path}.options.longitudeField`, 'longitudeField goes with a placeField that is a float field, its latitude');
+  const longitude = kind('longitudeField');
+  if (longitude && longitude !== 'float') tools.report(`${path}.options.longitudeField`, `"${options['longitudeField']}" is a ${longitude}; a longitude is kept in a float field`);
+  const parts = kind('partsField');
+  if (parts && parts !== 'json') tools.report(`${path}.options.partsField`, `"${options['partsField']}" is a ${parts}; an address's parts are kept in a json field`);
 }
