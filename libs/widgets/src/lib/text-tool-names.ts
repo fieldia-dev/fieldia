@@ -6,11 +6,11 @@
 
 export type TextTool =
   | 'bold' | 'italic' | 'underline' | 'bulletList' | 'numberList' | 'highlight' | 'colour' | 'emoji' | 'outdent' | 'indent'
-  | 'strike' | 'size' | 'code' | 'mention' | 'reference' | 'clearFormatting' | 'image' | 'link' | 'unlink' | 'taskList' | 'heading' | 'attach';
+  | 'strike' | 'size' | 'code' | 'mention' | 'reference' | 'clearFormatting' | 'image' | 'link' | 'unlink' | 'taskList' | 'heading' | 'attach' | 'table';
 
 export const TEXT_TOOLS: readonly TextTool[] = [
   'bold', 'italic', 'underline', 'bulletList', 'numberList', 'highlight', 'colour', 'emoji', 'outdent', 'indent',
-  'strike', 'size', 'code', 'mention', 'reference', 'clearFormatting', 'image', 'link', 'unlink', 'taskList', 'heading', 'attach',
+  'strike', 'size', 'code', 'mention', 'reference', 'clearFormatting', 'image', 'link', 'unlink', 'taskList', 'heading', 'attach', 'table',
 ];
 
 /** The rich editor's tools when a page names none: bold to Remove link, as a work item's System Info has them. */

@@ -49,6 +49,12 @@ export const EDITOR_CSS = /* css */ `
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) li[data-task="done"]::before { background: var(--fd-accent); border-color: var(--fd-accent); box-shadow: inset 0 0 0 2px var(--fd-surface); }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) li[data-task="done"] { text-decoration: line-through; color: var(--fd-muted); }
 :is(.fd-text-area, .fd-md-view, .fd-md-preview) :is([data-mention], [data-record]) { color: var(--fd-text-link); font-weight: 600; }
+/* Its tables plain, in the field's own look, as wide as the text, a header row on a light ground, words wrapped. */
+:is(.fd-text-area, .fd-md-view, .fd-md-preview) table { width: 100%; margin: 0 0 6px; border-collapse: collapse; }
+:is(.fd-text-area, .fd-md-view, .fd-md-preview) :is(td, th) { min-width: 2em; padding: 4px 8px; border: 1px solid var(--fd-border-strong); text-align: start; vertical-align: top; }
+:is(.fd-text-area, .fd-md-view, .fd-md-preview) th { font-weight: 600; background: var(--fd-text-fill); }
+:is(.fd-text-area, .fd-md-view, .fd-md-preview) caption { padding-block-end: 4px; font-weight: 600; text-align: start; }
+:is(.fd-text-area, .fd-md-view, .fd-md-preview) :is(td, th) > :last-child { margin-block-end: 0; }
 /* The toolbar only while the text is worked in: no edge and no tools at rest, a light box when pointed at. */
 /* Not in Markdown, whose card keeps its own room; :where, so a host's own rule (a comment box's 0) still wins. */
 .fd-text[data-toolbar="focus"]:not(:where([data-editor="markdown"])) { padding-block-end: 17px; }
@@ -189,6 +195,13 @@ export const EDITOR_CSS = /* css */ `
 .fd-text-colour-none { background: linear-gradient(to top right, transparent calc(50% - 1px), #d13438 calc(50% - 1px), #d13438 calc(50% + 1px), transparent calc(50% + 1px)); }
 .fd-text-emoji { grid-template-columns: repeat(5, 36px); min-width: 0; padding: 6px; }
 .fd-text-emoji > .fd-text-menu-item { justify-content: center; min-height: 32px; padding: 0; font-size: 18px; }
+/* A table's size, picked on a grid of cells 24px square (a finger's target), those up to the one pointed at lit; its size
+   in words under them. */
+.fd-table-pick { grid-template-columns: repeat(8, 24px); gap: 3px; min-width: 0; padding: 8px; }
+.fd-table-pick > .fd-text-menu-item { min-height: 24px; height: 24px; padding: 0; border: 1px solid var(--fd-border-strong); border-radius: 2px; }
+.fd-table-pick > .fd-text-menu-item:hover { background: none; }
+.fd-table-pick > .fd-text-menu-item.fd-on { border-color: var(--fd-accent); background: var(--fd-accent-soft); }
+.fd-table-pick-size { grid-column: 1 / -1; margin: 6px 0 0; color: var(--fd-text); font-size: 12px; line-height: 16px; text-align: center; }
 .fd-links-menu { width: 223px; }
 .fd-links-menu .fd-text-menu-item { gap: 12px; padding-inline: 14px; }
 /* People and records, as they are typed after their key. */
@@ -233,6 +246,11 @@ span.fd-links-name { color: var(--fd-text); cursor: default; }
   .fd-form :is(.fd-field-tools, .fd-links-remove, .fd-links-add, .fd-text-bar) { display: none !important; }
   .fd-form .fd-blank:is(.fd-text-area, .fd-md-view)::before { content: none !important; }
   .fd-form .fd-text-area { border-color: transparent !important; padding-inline: 0 !important; }
+  .fd-form .fd-text-box { border-color: transparent !important; background: none !important; }
+  .fd-form :is(.fd-text-area, .fd-md-view) tr { break-inside: avoid; }
+  /* Blocks on paper, which every engine breaks between their lines: Firefox cut a flex box's or a grid's part where the
+     sheet ended, a table's line across two sheets, its header never again. */
+  .fd-form :is(.fd-text:not([hidden]), .fd-text[data-editor="rich"] > .fd-text-box, .fd-md-field) { display: block; }
 }
 `;
 

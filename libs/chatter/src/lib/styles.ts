@@ -26,6 +26,9 @@ export const CHATTER_STYLES = `
 .fd-message-body p { margin: 0 0 6px; }
 .fd-message-body p:last-child { margin-bottom: 0; }
 .fd-message-body img { max-width: 100%; height: auto; }
+.fd-message-body table { width: 100%; margin: 0 0 6px; border-collapse: collapse; }
+.fd-message-body :is(td, th) { min-width: 2em; padding: 4px 8px; border: 1px solid var(--fd-border-strong); text-align: start; vertical-align: top; }
+.fd-message-body th { font-weight: 600; background: color-mix(in srgb, var(--fd-text) 6%, var(--fd-surface)); }
 .fd-tracking { margin: 0; padding-inline-start: 18px; color: var(--fd-text); }
 .fd-composer-actions .fd-spacer { flex: 1; }
 .fd-attach .fd-icon { width: 1.1em; height: 1.1em; margin-inline-end: 0.35em; vertical-align: -0.2em; }

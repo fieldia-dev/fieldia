@@ -16,6 +16,8 @@ export interface MenuChoice {
   lead?: Node | null;
   /** A choice that is on now, as a colour picked: ✓ and `aria-checked`. */
   checked?: boolean;
+  /** `checked` as a setting on or off (a table's header row), not one of several. */
+  toggle?: boolean;
   run(): void;
 }
 
@@ -28,7 +30,21 @@ export interface TextMenu {
 
 let menus = 0;
 
-export function textMenu(doc: Document, anchor: HTMLElement, options: { label: string; align?: 'start' | 'end'; className?: string; grid?: boolean; within?: HTMLElement }): TextMenu {
+export interface TextMenuOptions {
+  label: string;
+  align?: 'start' | 'end';
+  className?: string;
+  /** Its choices as a grid of tiles; with `columns`, ↓ and ↑ move a row of that many, ← → along one, never past its ends. */
+  grid?: boolean;
+  columns?: number;
+  within?: HTMLElement;
+  /** Under its choices: words of its own, such as the size a table's grid stands at. */
+  foot?: HTMLElement;
+  /** The choice moved to — by the keys, or a pointer over it in a grid of columns — by its place. */
+  onActive?(at: number, items: readonly HTMLElement[]): void;
+}
+
+export function textMenu(doc: Document, anchor: HTMLElement, options: TextMenuOptions): TextMenu {
   const element = doc.createElement('div');
   element.className = `fd-text-menu${options.className ? ` ${options.className}` : ''}`;
   element.id = `fd-text-menu-${++menus}`;
@@ -48,6 +64,7 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
     const at = (to + items.length) % items.length;
     items.forEach((item, i) => (item.tabIndex = i === at ? 0 : -1));
     items[at].focus();
+    options.onActive?.(at, items);
   };
 
   function place() {
@@ -71,7 +88,7 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
       const item = doc.createElement('button');
       item.type = 'button';
       item.className = 'fd-text-menu-item';
-      item.setAttribute('role', choice.checked === undefined ? 'menuitem' : 'menuitemradio');
+      item.setAttribute('role', choice.checked === undefined ? 'menuitem' : choice.toggle ? 'menuitemcheckbox' : 'menuitemradio');
       if (choice.checked !== undefined) item.setAttribute('aria-checked', String(choice.checked));
       item.tabIndex = -1;
       const words = doc.createElement('span');
@@ -85,10 +102,13 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
         close(true);
         choice.run();
       });
+      if (options.columns) item.addEventListener('pointerenter', () => move(items.indexOf(item)));
       return item;
     });
-    element.replaceChildren(...items);
+    element.replaceChildren(...items, ...(options.foot ? [options.foot] : []));
     element.hidden = false;
+    // Two menus may open from one button (a table's size, or what to do to the table): it controls the one open.
+    anchor.setAttribute('aria-controls', element.id);
     anchor.setAttribute('aria-expanded', 'true');
     anchor.classList.add('fd-pressed');
     place();
@@ -116,10 +136,14 @@ export function textMenu(doc: Document, anchor: HTMLElement, options: { label: s
     const at = items.indexOf(doc.activeElement as HTMLElement);
     const rtl = getComputedStyle(element).direction === 'rtl';
     const across = options.grid ? { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 } : {};
-    const step = ({ ArrowDown: 1, ArrowUp: -1, ...across } as Record<string, number>)[event.key];
+    const columns = options.columns ?? 0;
+    const step = ({ ArrowDown: columns || 1, ArrowUp: -(columns || 1), ...across } as Record<string, number>)[event.key];
     if (step !== undefined) {
       event.preventDefault();
-      move(at + step);
+      // In a grid of columns, a move stops at its edges: down past the last row, or along past a row's end, is none.
+      const to = at + step;
+      if (columns && (to < 0 || to >= items.length || (Math.abs(step) === 1 && Math.floor(to / columns) !== Math.floor(at / columns)))) return;
+      move(to);
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
       move(event.key === 'Home' ? 0 : items.length - 1);

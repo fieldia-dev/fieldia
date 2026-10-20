@@ -74,6 +74,28 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     last = clean;
     form.setValue(name, clean.trim() === '' ? null : clean);
   });
+  // What is pasted from Word, Excel, Google Docs or a page is put in plain by the text part's cleaner where the caret
+  // was: at once once that part has come, else as soon as it comes; if it cannot, as any value is kept. Words alone
+  // (no HTML) are the browser's to paste, as they were.
+  area.addEventListener('paste', (event) => {
+    const html = event.clipboardData?.getData('text/html') ?? '';
+    if (area.getAttribute('contenteditable') !== 'true' || !html.trim()) return;
+    event.preventDefault();
+    const selection = document.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    const put = (clean: string, putHtml = (_box: HTMLElement, html: string, doc: Document): unknown => doc.execCommand?.('insertHTML', false, html)) => {
+      if (document.activeElement === area && range && area.contains(range.commonAncestorContainer)) {
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        putHtml(area, clean, document);
+      }
+      // The person has gone on elsewhere: the table at the text's end, the focus left where it is.
+      else area.insertAdjacentHTML('beforeend', clean);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    // Once the part has come, its load answers before the next key: the paste is put in at once.
+    textPart.load().then((part) => put(part.cleanPasted(html, document), part.putHtml), () => put(sanitizeHtml(html, document)));
+  });
   area.addEventListener('blur', () => {
     // Show what was stored: anything unsafe that was typed or pasted is gone.
     if (area.innerHTML !== last) area.innerHTML = last;

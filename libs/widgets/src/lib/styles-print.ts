@@ -35,5 +35,8 @@ export const PRINT_CSS = /* css */ `
   .fd-form :is(.fd-record-bar, .fd-actions, .fd-wizard-nav, .fd-stats, .fd-side, .fd-button, .fd-dialog-close, .fd-help, .fd-help-tip-wrap, .fd-says, .fd-toast,
     .fd-combo-open, .fd-combo-clear, .fd-calendar-button, .fd-chip-remove, .fd-lines-tools, .fd-lines-grip, .fd-lines-adds, .fd-richtext-bar, .fd-count, .fd-choice-clear) { display: none !important; }
   .fd-form :is(input, textarea)::placeholder { color: transparent !important; }
+  /* A formatted text's table broken only between its rows, its header row again (whole where it fits: the print part's). */
+  .fd-form :is(.fd-richtext, .fd-text-area, .fd-md-view) tr { break-inside: avoid; }
+  .fd-form .fd-richtext-box { display: block; }
 }
 `;

@@ -177,6 +177,28 @@ function keepRooms(root: HTMLElement): HTMLElement[] {
   return given;
 }
 
+/**
+ * A formatted text's tables short enough to be whole on a sheet (`data-fd-whole`, which paper does not break), measured
+ * as paper lays them out — a sheet's width, every tab shown — as printing begins; a longer one breaks between its rows.
+ * Under A4's and Letter's room less a page's head and foot, as KEEP_MOST is under a heading's. The tables marked.
+ */
+const TABLE_MOST = 800;
+function wholeTables(root: HTMLElement): HTMLElement[] {
+  const tables = [...root.querySelectorAll<HTMLElement>(':is(.fd-richtext, .fd-text-area, .fd-md-view) table')].filter((table) => table.closest('.fd-form') === root);
+  if (!tables.length) return [];
+  root.setAttribute('data-fd-measure', '');
+  try {
+    const short = tables.filter((table) => {
+      const { height } = table.getBoundingClientRect();
+      return height > 0 && height <= TABLE_MOST;
+    });
+    for (const table of short) table.setAttribute('data-fd-whole', '');
+    return short;
+  } finally {
+    root.removeAttribute('data-fd-measure');
+  }
+}
+
 /** The words of nodes made by `valueWords`, as they read now. */
 const wordsOf = (nodes: readonly (Node | string)[]) => nodes.map((node) => (typeof node === 'string' ? node : (node.textContent ?? ''))).join('');
 
@@ -214,8 +236,9 @@ export function printLook(context: PrintContext, parts: PrintParts): PrintLook {
     when.textContent = context.fill(labels.printedOn, { date: restingText(context.now().toISOString(), 'datetime', context.locale, page.timeZone) });
   }
 
-  /** The boxes given room measured under their headings, to take it away once printed. */
+  /** The boxes given room measured under their headings, to take it away once printed; the tables kept whole. */
   let kept: HTMLElement[] = [];
+  let whole: HTMLElement[] = [];
   /** The words written beside each box for paper, to take away once printed. */
   const written: { box: Element; words: HTMLElement }[] = [];
   function writeBoxes() {
@@ -247,6 +270,7 @@ export function printLook(context: PrintContext, parts: PrintParts): PrintLook {
     fillIn();
     writeBoxes();
     kept = keepRooms(root);
+    whole = wholeTables(root);
     // With a dialog's form in front, it alone prints: never the page behind with the dialog over it. Unless a Print
     // of one part alone is on its way already.
     const page = doc.documentElement;
@@ -269,6 +293,8 @@ export function printLook(context: PrintContext, parts: PrintParts): PrintLook {
       box.style.removeProperty('--fd-print-whole');
     }
     kept = [];
+    for (const table of whole) table.removeAttribute('data-fd-whole');
+    whole = [];
     root.removeAttribute('data-fd-print');
     if (inFront) {
       inFront = false;

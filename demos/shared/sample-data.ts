@@ -38,6 +38,7 @@ import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
 import reading from '../../examples/pages/reading.page.json';
 import workItem from '../../examples/pages/work-item.page.json';
+import contractFees from '../../examples/pages/contract-fees.page.json';
 import { customPage } from './custom-page';
 import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
@@ -65,6 +66,7 @@ import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptOver } from './kept';
 import { consentPage, sampleConsents } from './consents';
+import { CONTRACT_FEES_RECORDS } from './contract-fees';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -95,6 +97,8 @@ export const pages: Record<string, Page> = {
   // Code in its own language, in CodeMirror and in VS Code's editor: shared/code-page.ts.
   code: codePage,
   order: order as Page,
+  // A service agreement's clauses, its fees a price table pasted from an office app: shared/contract-fees.ts.
+  'contract-fees': contractFees as Page,
   rules: rules as Page,
   layout: layout as Page,
   lists: lists as Page,
@@ -478,6 +482,7 @@ export function sampleDataSource() {
       'shop.order': sampleWeekOrders(),
       'wi.history': { 1: wiHistoryRecord() },
       ...CONTAINED_RECORDS,
+      ...CONTRACT_FEES_RECORDS,
       'shop.kitchen': { 1: sampleKitchen() },
       listing: { 1: LISTING },
       // The contacts, and the people who own them (shared/contacts.ts).

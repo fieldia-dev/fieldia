@@ -107,14 +107,16 @@ export const PRINT_PART_CSS = /* css */ `
      break between their rows. */
   .fd-form fieldset.fd-section { --fd-print-keep: 144px; display: var(--fd-print-whole, flow-root); inline-size: 100%; vertical-align: top; }
   .fd-form fieldset.fd-section:has(> .fd-section-title)::before { content: ""; display: block; block-size: var(--fd-print-keep); margin-block-end: calc(-1 * var(--fd-print-keep)); break-inside: avoid; }
-  .fd-form :is(.fd-field:has(thead), .fd-related) { display: block; break-inside: auto; --fd-print-keep: 96px; }
-  .fd-form :is(.fd-field:has(thead), .fd-related)::before { content: ""; display: block; block-size: var(--fd-print-keep); margin-block-end: calc(-1 * var(--fd-print-keep)); break-inside: avoid; }
+  .fd-form :is(.fd-field:has(thead), .fd-field:has(:is(.fd-richtext, .fd-text-area, .fd-md-view) table), .fd-related) { display: block; break-inside: auto; --fd-print-keep: 96px; }
+  .fd-form :is(.fd-field:has(thead), .fd-field:has(:is(.fd-richtext, .fd-text-area, .fd-md-view) table), .fd-related)::before { content: ""; display: block; block-size: var(--fd-print-keep); margin-block-end: calc(-1 * var(--fd-print-keep)); break-inside: avoid; }
   .fd-form .fd-related > :where(:not([hidden]) ~ :not([hidden])) { margin-block-start: 8px; }
-  .fd-form .fd-field:has(thead) > .fd-label { display: block; margin-block-end: 4px; }
+  .fd-form :is(.fd-field:has(thead), .fd-field:has(:is(.fd-richtext, .fd-text-area, .fd-md-view) table)) > .fd-label { display: block; margin-block-end: 4px; }
   .fd-form :is(.fd-step-title, .fd-text-heading, .fd-richtext :is(h1, h2, h3, h4)) { break-inside: avoid; break-after: avoid; }
   .fd-form :is(.fd-step-title, .fd-text-heading, .fd-richtext :is(h1, h2, h3, h4))::after { content: ""; display: block; block-size: 80px; margin-block-end: -80px; }
-  /* The room under a last heading never past the record's end: Firefox gave what stood out a blank sheet of its own. */
-  .fd-form > .fd-content > :not(.fd-print-end) { overflow-y: clip; overflow-x: visible; }
+  /* The room under a last heading never past the record's end: Firefox gave what stood out a blank sheet of its own. In
+     Firefox alone (-moz-appearance): Chromium draws a table's header again on each sheet past the end of the box the
+     table is in, and cut there a long table's last lines, one for each sheet its header came again on. */
+  @supports (-moz-appearance: none) { .fd-form > .fd-content > :not(.fd-print-end) { overflow-y: clip; overflow-x: visible; } }
   .fd-form .fd-step[hidden]:not([data-off]) { display: block !important; }
   .fd-form .fd-section-folded > :is(.fd-grid, .fd-section-description)[hidden] { display: block !important; }
   .fd-form .fd-section-toggle { padding: 0; border: 0; background: none; color: inherit; font: inherit; }
@@ -142,6 +144,12 @@ export const PRINT_PART_CSS = /* css */ `
   .fd-form thead { display: table-header-group; }
   .fd-form tfoot { display: table-row-group; }
   .fd-form :is(tr, .fd-field, .fd-alert, .fd-badges, .fd-title-row, .fd-print-head, .fd-print-foot) { break-inside: avoid; }
+  /* A formatted text's table whole on a sheet where it fits (measured as printing begins: print-look.ts), else broken
+     between its rows, its header row again. */
+  .fd-form :is(.fd-richtext, .fd-text-area, .fd-md-view) table[data-fd-whole] { break-inside: avoid; }
+  /* A formatted text a block (the classic one's box; the work item's are its part's): Firefox cut a grid's part where
+     the sheet ended, a table's line across two sheets, its header never again. */
+  .fd-form .fd-richtext-box { display: block; }
 
   /* The printout's head: the logo and the app's words, the record's title and the day; its footer under it. */
   .fd-form .fd-print-head { display: flex; align-items: center; gap: 16px; margin-block-end: 16px; padding-block-end: 10px; border-block-end: 2px solid var(--fd-accent); }

@@ -873,8 +873,15 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // facetsToFilter as `>=` and `<=` (a date and time's days as the list counts them), the page's `filterRanges`,
 // `filterCounts` and `filterSheet` in its schema and its checks, and the memory source counting a record of links under
 // each of them: 503.41 measured before, 505.15 after — 1.74 more, to 505.2.
-// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74, to 509.0.
-const BUDGET_KB = 509.0;
+// Tables inside formatted text (0.27, w4-rich-tables): every formatted text keeps a table — its cells, a cell's span
+// over its neighbours, a header's scope, the way its columns run, a cell's alignment, and words a style makes bold,
+// italic, underlined or struck as elements (a bold its style undoes, Google Docs' wrapper, its words) — wherever it is
+// stored, loaded or shown, so the sanitizer every page draws formatted text through grows (sanitize.ts, 2.1 of 5.1);
+// the classic editor's look for a table and its paste of anything with HTML in it, made plain by the text part's cleaner
+// as it is pasted (extras.ts); a table's rows whole on paper, its box a block, before the print part came: 503.41
+// measured before, 505.57 after — 2.2 more, to 505.6.
+// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16, to 511.2.
+const BUDGET_KB = 511.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1075,8 +1082,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // part asked for again can come: 163.68 to 163.80, to 163.9.
 // Filters that sales teams and buyers expect (listed with the raw budget above): 162.94 measured before, 163.45 after —
 // 0.51 more, to 163.5.
-// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51, to 164.7.
-const GZIP_BUDGET_KB = 164.7;
+// Tables inside formatted text (listed with the raw budget above): 162.94 measured before, 163.77 after — 0.8 more, to
+// 163.8. The table tool, its picker, Tab and Escape in a table, Markdown's tables and a paste made plain are the text
+// part's.
+// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83, to 165.5.
+const GZIP_BUDGET_KB = 165.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1233,10 +1243,14 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // from and until a day, why one is refused — "is between", and a phone's sheet's Filters, Clear all and Show, 17 words
 // in each: Arabic's 68.38 and 11.83 measured before, 69.29 and 12.02 after, to 69.3 and 12.1; German's 32.03 and 10.44
 // to 32.51 and 10.59, to 32.6 and 10.6; French's 32.37 and 10.43 to 32.90 and 10.60, to 33.0 and 10.7.
-// Both, merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 and 11.83 + 0.38 + 0.19, to 72.3 and 12.5; German's
-// 32.03 + 1.30 + 0.48 and 10.44 + 0.31 + 0.15, to 33.9 and 11.0; French's 32.37 + 1.26 + 0.53 and 10.43 + 0.34 + 0.17, to
-// 34.2 and 11.0.
-const ADD_ON_BUDGET_KB = { ar: [72.3, 12.5], de: [33.9, 11.0], fr: [34.2, 11.0] };
+// Tables inside formatted text (0.27, w4-rich-tables): the table tool's 22 words in each — its name, its picker's
+// sizes, what may be done where the caret is, the keys a table takes and what is said once done: Arabic's 68.38 and
+// 11.83 measured before, 70.14 and 12.12 after, to 70.2 and 12.2; German's 32.03 and 10.44 to 32.82 and 10.67, to 32.9
+// and 10.7; French's 32.37 and 10.43 to 33.21 and 10.68, to 33.3 and 10.7.
+// All merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 + 1.76 and 11.83 + 0.38 + 0.19 + 0.29, to 74.1 and
+// 12.7; German's 32.03 + 1.30 + 0.48 + 0.79 and 10.44 + 0.31 + 0.15 + 0.23, to 34.7 and 11.2; French's 32.37 + 1.26 +
+// 0.53 + 0.84 and 10.43 + 0.34 + 0.17 + 0.25, to 35.1 and 11.2.
+const ADD_ON_BUDGET_KB = { ar: [74.1, 12.7], de: [34.7, 11.2], fr: [35.1, 11.2] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1558,11 +1572,20 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // boxes, words and chip and a count's mark, which it hands the filter bar (filter-range.ts, filter-count.ts: a part's
 // code is in one part), a custom filter's "is between", the search bar's counts of its filters and favourites, a count
 // asked of the source — to 117.6 and 37.9.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.0, 5.3] };
+// Tables inside formatted text (0.27, w4-rich-tables): text 56.45 and 18.84 measured before, 73.00 and 24.62 after —
+// the table tool, its picker of a size on a grid of 8 by 8 and its menu of what to do where the caret is (rich-table.ts,
+// 4.0), rows and columns added and taken away round cells spanning several, a header row, Tab from cell to cell (a row
+// past the last) and Escape out (formatted-text.ts), whatever is pasted from Word, Excel, Google Docs and Sheets or a
+// page made plain — Word's lists lists again, fonts and colours left behind — and put in as given, what a Fieldia editor
+// copies marked as its own so its colours, highlights and sizes come back with it (pasted-html.ts, 4.6), GitHub's tables
+// in Markdown both ways, their look on the screen and on paper and their 22 English words — to 73.1 and 24.7; print 15.99 and 5.22 to 16.81 and 5.38 — a formatted text's
+// table measured whole where it fits a sheet (print-look.ts), its field broken between its rows, the classic box a
+// block — to 16.9 and 5.4.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
-  text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu'],
+  text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
   path: ['pathPickerWidget'],
   choice: ['ownListWidget', 'searchWidget', 'choiceTagsWidget'],
   filters: ['filterBar', 'installFilterStyles'],

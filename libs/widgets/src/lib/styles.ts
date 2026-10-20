@@ -454,6 +454,13 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-richtext.fd-blank[contenteditable="true"]::before { content: attr(data-placeholder); position: absolute; color: var(--fd-muted); opacity: 0.8; pointer-events: none; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }
+/* A formatted text's tables: plain, in the field's own look, as wide as the text, a header row on a light ground, words
+   wrapped in their cells, never cut. The text part's editors (styles-editor.ts) and a conversation's messages draw
+   theirs alike. */
+.fd-richtext table { width: 100%; margin: 0 0 6px; border-collapse: collapse; }
+.fd-richtext :is(td, th) { min-width: 2em; padding: 4px 8px; border: 1px solid var(--fd-border-strong); text-align: start; vertical-align: top; }
+.fd-richtext th { font-weight: 600; background: color-mix(in srgb, var(--fd-text) 6%, var(--fd-surface)); }
+.fd-richtext :is(td, th) > :last-child { margin-block-end: 0; }
 textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
 
 /* ---- sections, tabs ---------------------------------------------------- */

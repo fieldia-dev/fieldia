@@ -122,6 +122,32 @@ export interface WidgetLabels {
   attachFile: string;
   switchAnyway: string;
   headingLevel: string;
+  /**
+   * A formatted text's tables: the tool, its picker's sizes (`{rows}` by `{columns}`, each counted), a Markdown
+   * table's column (`{n}`), what may be done where the caret is, the keys a table takes, and what is said once done.
+   */
+  tableTool: string;
+  tableInsert: string;
+  tableSize: string;
+  tableRows: string;
+  tableRowsOne: string;
+  tableColumns: string;
+  tableColumnsOne: string;
+  tableColumn: string;
+  tableRowAbove: string;
+  tableRowBelow: string;
+  tableColumnLeft: string;
+  tableColumnRight: string;
+  tableDeleteRow: string;
+  tableDeleteColumn: string;
+  tableHeaderRow: string;
+  tableDelete: string;
+  tableKeys: string;
+  tableRowAdded: string;
+  tableColumnAdded: string;
+  tableRowDeleted: string;
+  tableColumnDeleted: string;
+  tableDeleted: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -550,6 +576,28 @@ const en: WidgetLabels = {
   attachFile: 'Attach a file',
   switchAnyway: 'Switch',
   headingLevel: 'Heading {n}',
+  tableTool: 'Table',
+  tableInsert: 'Insert a table',
+  tableSize: '{rows} by {columns}',
+  tableRows: '{n} rows',
+  tableRowsOne: '{n} row',
+  tableColumns: '{n} columns',
+  tableColumnsOne: '{n} column',
+  tableColumn: 'Column {n}',
+  tableRowAbove: 'Insert row above',
+  tableRowBelow: 'Insert row below',
+  tableColumnLeft: 'Insert column left',
+  tableColumnRight: 'Insert column right',
+  tableDeleteRow: 'Delete row',
+  tableDeleteColumn: 'Delete column',
+  tableHeaderRow: 'Header row',
+  tableDelete: 'Delete table',
+  tableKeys: 'In a table, Tab goes to the next cell and Escape leaves the table.',
+  tableRowAdded: 'Row added.',
+  tableColumnAdded: 'Column added.',
+  tableRowDeleted: 'Row deleted.',
+  tableColumnDeleted: 'Column deleted.',
+  tableDeleted: 'Table deleted.',
   upload: 'Upload a file',
   uploadImage: 'Add a photo',
   replace: 'Replace',

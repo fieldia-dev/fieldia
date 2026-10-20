@@ -3,8 +3,10 @@ import { fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
-import { textMenu, type MenuChoice } from './text-menu';
+import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
+import { copyHtml, keepCells, pasteHtml } from './pasted-html';
+import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
 
 /**
@@ -21,6 +23,14 @@ import { installEditorStyles } from './styles-editor';
  * left. Tools that find no room go under "…", a menu. Every tool is a named
  * button with a tooltip; none looks pressed-out: Remove link with no link
  * under the cursor says so.
+ *
+ * What is pasted from Word, Excel, Google Docs or a page is put in plain
+ * (`pasteHtml`): its words, marks, links, lists, headings and tables, without
+ * the source's fonts and colours. Tables (rich-table.ts): the table tool puts
+ * one in at a size picked on its grid, or — with the caret in one — adds and
+ * takes away rows and columns and sets its header row. In a table, Tab goes
+ * to the next cell (past the last, a new row) and Escape out of it, said once
+ * as the caret first comes in.
  */
 
 export interface TextSuggestion {
@@ -48,6 +58,8 @@ export interface FormattedTextOptions {
   label?: string;
   placeholder?: string;
   labels?: WidgetLabels;
+  /** The page's language, for counts in words ("1 row by 3 columns"). */
+  locale?: string;
   icons?: IconSet;
   editor?: TextEditor;
   /** The tools of the editor it starts in; the other editor has its own set. */
@@ -145,18 +157,24 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   element.append(richBox, mdCard, under, ask, suggest);
 
   let sayTimer: ReturnType<typeof setTimeout> | undefined;
-  function say(text: string) {
+  /** Words that stay their while as the person types on (the keys a table takes), where others go at the next key. */
+  let lasting = false;
+  function say(text: string, stays = false) {
     said.textContent = '';
     said.textContent = text;
+    lasting = stays && !!text;
     clearTimeout(sayTimer);
-    sayTimer = setTimeout(() => (said.textContent = ''), 6000);
+    sayTimer = setTimeout(() => {
+      said.textContent = '';
+      lasting = false;
+    }, 6000);
   }
 
   // ---- values ---------------------------------------------------------------------------
   function emit() {
     const html = editor === 'rich' ? sanitizeHtml(area.innerHTML, doc) : sanitizeHtml(markdownToHtml(markdown.value), doc);
     const value = isEmpty(html) ? null : html;
-    area.classList.toggle('fd-blank', editor === 'rich' && !area.textContent?.trim() && !area.querySelector('img, li'));
+    area.classList.toggle('fd-blank', editor === 'rich' && !area.textContent?.trim() && !area.querySelector('img, li, table'));
     if (value === last) return;
     last = value;
     options.onInput?.(value);
@@ -165,7 +183,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     const clean = html ? sanitizeHtml(html, doc) : '';
     if (editor === 'rich') {
       if (area.innerHTML !== clean) area.innerHTML = clean;
-      area.classList.toggle('fd-blank', !area.textContent?.trim() && !area.querySelector('img, li'));
+      area.classList.toggle('fd-blank', !area.textContent?.trim() && !area.querySelector('img, li, table'));
     } else {
       const text = htmlToMarkdown(clean, doc);
       if (markdown.value !== text) markdown.value = text;
@@ -253,6 +271,157 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     if (!files.length) return;
     event.preventDefault();
     files.forEach(insertPicture);
+  });
+
+  // ---- tables ---------------------------------------------------------------------------------
+  /** The cell where the caret is (or was, as a tool is pressed), in a table of this text. */
+  const caretCell = (live = false): HTMLTableCellElement | null => {
+    const node = (live ? null : lastRange?.startContainer) ?? doc.getSelection()?.anchorNode ?? null;
+    const at = node?.nodeType === Node.ELEMENT_NODE ? (node as Element) : node?.parentElement;
+    const cell = at?.closest?.('td, th') as HTMLTableCellElement | null;
+    return cell && area.contains(cell) ? cell : null;
+  };
+  /** The caret into a cell: its words selected, as Tab selects them in a word processor, or at its start. */
+  function intoCell(cell: Element, whole = true) {
+    const range = doc.createRange();
+    range.selectNodeContents(cell);
+    if (!whole || !cell.textContent?.trim()) range.collapse(true);
+    const selection = doc.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    lastRange = range.cloneRange();
+  }
+  /** A table put back changed (or taken away) as one step the browser's Undo takes back; the caret into its cell `at`. */
+  function replaceTable(table: HTMLTableElement, next: HTMLTableElement | null, at?: [number, number]) {
+    const index = [...area.querySelectorAll('table')].indexOf(table);
+    area.focus();
+    const range = doc.createRange();
+    range.selectNode(table);
+    const selection = doc.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    doc.execCommand?.(next ? 'insertHTML' : 'delete', false, next?.outerHTML);
+    const now = next ? (area.querySelectorAll('table')[index] as HTMLTableElement | undefined) : undefined;
+    if (now && next) keepCells(now, next);
+    const cell = now && at ? cellAt(now, at) : null;
+    if (cell) intoCell(cell, false);
+    emit();
+  }
+  /**
+   * The table and cell at a place (its table's among the text's, the cell's row and column): a menu's choice acts on
+   * the place the caret was as it opened, found again as it is pressed, whatever the text was drawn as meanwhile.
+   */
+  type Place = { index: number; at: [number, number] };
+  const placeNow = (): Place | null => {
+    const cell = caretCell();
+    const table = cell?.closest('table');
+    return cell && table ? { index: [...area.querySelectorAll('table')].indexOf(table), at: placeOf(tableGrid(table), cell) } : null;
+  };
+  function editAt(place: Place, edit: TableEdit | null, said: string) {
+    const table = area.querySelectorAll('table')[place.index] as HTMLTableElement | undefined;
+    const cell = table && cellAt(table, place.at);
+    if (!table || !cell) return;
+    const done = edit ? editTable(table, cell, edit) : null;
+    replaceTable(table, done?.table ?? null, done?.at);
+    say(done ? said : labels.tableDeleted);
+  }
+  /** What may be done to the table the caret is in: what would leave no row or column is left out (Delete table is there). */
+  function tableChoices(): MenuChoice[] {
+    const place = placeNow();
+    const table = place && (area.querySelectorAll('table')[place.index] as HTMLTableElement);
+    if (!place || !table) return [];
+    // Left and right as the table is drawn: right to left, left is after.
+    const rtl = getComputedStyle(table).direction === 'rtl';
+    const choice = (label: string, edit: TableEdit | null, said = '') => ({ label, run: () => editAt(place, edit, said) });
+    return [
+      choice(labels.tableRowAbove, 'rowAbove', labels.tableRowAdded),
+      choice(labels.tableRowBelow, 'rowBelow', labels.tableRowAdded),
+      choice(labels.tableColumnLeft, rtl ? 'columnAfter' : 'columnBefore', labels.tableColumnAdded),
+      choice(labels.tableColumnRight, rtl ? 'columnBefore' : 'columnAfter', labels.tableColumnAdded),
+      ...(tableHeight(table) > 1 ? [choice(labels.tableDeleteRow, 'deleteRow', labels.tableRowDeleted)] : []),
+      ...(tableWidth(table) > 1 ? [choice(labels.tableDeleteColumn, 'deleteColumn', labels.tableColumnDeleted)] : []),
+      { ...choice(labels.tableHeaderRow, 'header'), checked: hasHeader(table), toggle: true },
+      choice(labels.tableDelete, null),
+    ];
+  }
+  /** A table of empty cells where the caret is, its header row on, the caret in its first cell; a line to write on after it. */
+  function insertTable(rows: number, columns: number) {
+    if (editor === 'markdown') {
+      const before = markdown.value.slice(0, markdown.selectionStart);
+      const lead = !before || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+      return insertMarkdown(`${lead}${markdownTable(rows, columns, (n) => fillIn(labels.tableColumn, { n }))}\n\n`);
+    }
+    restore();
+    const had = new Set(area.querySelectorAll('table'));
+    doc.execCommand?.('insertHTML', false, newTable(doc, rows, columns).outerHTML);
+    const added = [...area.querySelectorAll('table')].find((table) => !had.has(table));
+    if (added && !added.nextSibling) added.after(make('p', {}, make('br')));
+    const first = added?.rows[0]?.cells[0];
+    if (first) intoCell(first, false);
+    emit();
+  }
+  /** The table tool's menus, from its button or "…": its size picked on a grid, or what to do to the table the caret is in. */
+  const tableMenus = new Map<HTMLElement, { pick: TextMenu; act: TextMenu }>();
+  function openTableMenu(anchor: HTMLElement, label: string, fromMore: boolean) {
+    let menus = tableMenus.get(anchor);
+    if (!menus) {
+      const align = fromMore ? 'end' : 'start';
+      const size = make('p', { class: 'fd-table-pick-size', 'aria-hidden': 'true' });
+      const lit = (at: number, items: readonly HTMLElement[]) => {
+        const [r, c] = [Math.floor(at / PICK_COLUMNS), at % PICK_COLUMNS];
+        items.forEach((item, i) => item.classList.toggle('fd-on', Math.floor(i / PICK_COLUMNS) <= r && i % PICK_COLUMNS <= c));
+        size.textContent = tableSize(labels, r + 1, c + 1, options.locale);
+      };
+      menus = {
+        pick: textMenu(doc, anchor, { label: labels.tableInsert, align, grid: true, columns: PICK_COLUMNS, className: 'fd-table-pick', within: element, foot: size, onActive: lit }),
+        act: textMenu(doc, anchor, { label, align, within: element }),
+      };
+      tableMenus.set(anchor, menus);
+    }
+    if (editor === 'rich' && caretCell()) menus.act.open(tableChoices());
+    else menus.pick.open(pickerChoices(doc, labels, options.locale, insertTable));
+  }
+  /** Tab to the next cell (Shift+Tab, the one before), a new row past the last; Escape to the line after the table. */
+  let toldKeys = false;
+  function tableKey(event: KeyboardEvent): boolean {
+    if (editor !== 'rich' || readonly || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || (event.key !== 'Tab' && event.key !== 'Escape')) return false;
+    const cell = caretCell(true);
+    const table = cell?.closest('table');
+    if (!cell || !table) return false;
+    event.preventDefault();
+    if (event.key === 'Escape') {
+      let after = table.nextSibling;
+      if (!after) {
+        after = make('p', {}, make('br'));
+        table.after(after);
+      }
+      const range = doc.createRange();
+      range.setStart(after, 0);
+      const selection = doc.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      return true;
+    }
+    const cells = cellsInOrder(table);
+    const i = cells.indexOf(cell);
+    if (event.shiftKey) {
+      if (i > 0) intoCell(cells[i - 1]);
+    } else if (i < cells.length - 1) intoCell(cells[i + 1]);
+    else {
+      // Past the last cell, a row of its own, as a table of lines adds a line.
+      const done = editTable(table, cell, 'rowBelow');
+      if (done) replaceTable(table, done.table, [done.at[0], 0]);
+      say(labels.tableRowAdded);
+    }
+    return true;
+  }
+  area.addEventListener('paste', (event) => editor === 'rich' && !readonly && pasteHtml(event, doc, area) && emit());
+  // What is copied or cut from it is marked as its own: pasted back here or in another, its colours and sizes stay.
+  area.addEventListener('copy', (event) => editor === 'rich' && copyHtml(event, area, doc));
+  area.addEventListener('cut', (event) => {
+    if (editor !== 'rich' || readonly || !copyHtml(event, area, doc)) return;
+    doc.execCommand?.('delete', false);
+    emit();
   });
 
   // ---- the tools --------------------------------------------------------------------------------
@@ -439,6 +608,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
           button,
           press(from) {
             if (!choosing) return run(tool, reference);
+            if (tool === 'table') return openTableMenu(from, label, from !== button);
             const menu = from === button ? (stop.menu ??= textMenu(doc, button, { label, grid: tool === 'emoji', className: tool === 'emoji' ? 'fd-text-emoji' : undefined, within: element })) : moreMenuFor(from, label, tool);
             menu.open(choicesOf(tool));
           },
@@ -758,14 +928,19 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   for (const box of [area, markdown] as HTMLElement[]) {
     box.addEventListener('keydown', (event) => {
       if (suggestKeys(event)) return;
+      if (tableKey(event)) return;
       if (options.onKey?.(event)) return;
     });
     box.addEventListener('input', () => {
-      say('');
+      if (!lasting) say('');
       emit();
       void lookUp();
     });
   }
+  // The keys a table takes said again once the person has left the text and comes back (its toolbar and menus are its).
+  element.addEventListener('focusout', (event) => {
+    if (!element.contains(event.relatedTarget as Node | null)) toldKeys = false;
+  });
   area.addEventListener('blur', () => {
     // What is shown is what was kept: anything unsafe typed or pasted is gone.
     if (editor === 'rich' && area.innerHTML !== (last ?? '') && last !== null) area.innerHTML = last;
@@ -789,6 +964,11 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     if (!selection?.rangeCount || !area.contains(selection.anchorNode)) return;
     lastRange = selection.getRangeAt(0).cloneRange();
     richBar?.reflect();
+    // The keys a table takes, said once as the caret first comes into one while the text is worked in.
+    if (!toldKeys && editor === 'rich' && !readonly && doc.activeElement === area && caretCell(true)) {
+      toldKeys = true;
+      say(labels.tableKeys, true);
+    }
   };
   doc.addEventListener('selectionchange', reflect);
 
