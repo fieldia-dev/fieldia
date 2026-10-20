@@ -89,6 +89,7 @@ export type { PageLimits } from './lib/format/limits';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 export { isQuestion, labelAt, quotedLabel, recordSentence } from './lib/record/record-words';
+export { dayWords } from './lib/record/day-words';
 export { wideColumns } from './lib/format/columns';
 export { relatedInTab } from './lib/format/head-checks';
 export { BULK_KINDS, bulkEditFields, bulkSettable } from './lib/format/bulk-edit';

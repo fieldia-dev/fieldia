@@ -7,7 +7,9 @@ import { fill, type Messages } from './messages';
 import type { Stopped } from './run';
 import type { Scheduler } from './scheduler';
 import { countsAsked, dayAlone, limitInstant, seatedFields, type FormLimits, type Seats, type TakingState } from './taking';
+import { dayWords } from './day-words';
 import { isOwnZone } from './zones';
+import type { DateOrder } from './input-rules';
 import type { Value } from './values';
 
 /**
@@ -233,26 +235,12 @@ export function formLimits(host: LimitsHost): Limits {
 }
 
 /**
- * A day or a day and a time in words, in the messages' language, on the page's clock: "20 November 2026", "1 November
- * 2026 at 09:00" — with the zone's short name where it is not the browser's own ("09:00 GMT+2").
+ * A day or a day and a time in words, as the page's date boxes write one (`dayWords`): in its order (`order`, the
+ * page's `look.dateOrder`, else the messages'), its language, on its clock — "20 Nov 2026", "1 Nov 2026, 09:00" — with
+ * the zone's short name where it is not the browser's own ("09:00 EET").
  */
-export function whenWords(written: string, at: number, messages: Messages, zone?: string): string {
-  if (dayAlone(written)) {
-    const [y, m, d] = written.split('-').map(Number);
-    return new Intl.DateTimeFormat(messages.locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC', numberingSystem: 'latn' }).format(Date.UTC(y, m - 1, d));
-  }
-  const elsewhere = !!zone && !isOwnZone(zone);
-  return new Intl.DateTimeFormat(messages.locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    numberingSystem: 'latn',
-    ...(zone ? { timeZone: zone } : {}),
-    ...(elsewhere ? { timeZoneName: 'short' as const } : {}),
-  }).format(at);
+export function whenWords(written: string, at: number, messages: Messages, zone?: string, order?: DateOrder): string {
+  return dayAlone(written) ? dayWords(written.slice(0, 10), messages, order) : dayWords('', messages, order, { at, zone, named: !!zone && !isOwnZone(zone) });
 }
 
 /**
@@ -260,13 +248,19 @@ export function whenWords(written: string, at: number, messages: Messages, zone?
  * closed on 20 November 2026.", "This form has all the responses it takes.", "You have sent your answers to this form
  * already." — or null while it takes them (or still asks).
  */
+/** The order a page writes its days in: its own `look.dateOrder`, else its messages'. */
+const orderOf = (page: Page, messages: Messages): DateOrder | undefined => {
+  const own: unknown = page.look?.dateOrder;
+  return own === 'dmy' || own === 'mdy' || own === 'ymd' ? own : messages.dateOrder;
+};
+
 export function takingWords(page: Page, limits: FormLimits | null | undefined, messages: Messages): string | null {
   const written = page.limits;
   switch (limits?.state) {
     case 'soon':
-      return written?.opens && limits.opens ? fill(messages.formOpens, { when: whenWords(written.opens, Date.parse(limits.opens), messages, page.timeZone) }) : null;
+      return written?.opens && limits.opens ? fill(messages.formOpens, { when: whenWords(written.opens, Date.parse(limits.opens), messages, page.timeZone, orderOf(page, messages)) }) : null;
     case 'closed':
-      return written?.closes && limits.closes ? fill(messages.formClosed, { when: whenWords(written.closes, Date.parse(limits.closes), messages, page.timeZone) }) : null;
+      return written?.closes && limits.closes ? fill(messages.formClosed, { when: whenWords(written.closes, Date.parse(limits.closes), messages, page.timeZone, orderOf(page, messages)) }) : null;
     case 'full':
       return messages.formFull;
     case 'sent':

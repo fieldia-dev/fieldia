@@ -125,7 +125,7 @@ describe('a range’s end', () => {
     expect(form.validate()).toBe(false);
     expect(form.getState().errors['to_day']).toBe('To can’t be on a Friday or Saturday');
     form.setValue('to_day', '2026-09-28');
-    expect(form.getState().errors['to_day']).toBe('To can’t be before October 1, 2026');
+    expect(form.getState().errors['to_day']).toBe('To can’t be before 1 Oct 2026');
   });
 
   it('keeps unread text typed in its box, and Save refuses with it', () => {

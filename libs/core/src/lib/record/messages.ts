@@ -1,5 +1,6 @@
 import { LANGUAGES } from './locales/all';
 import { labelAt } from './record-words';
+import type { DateOrder } from './input-rules';
 
 /**
  * Validation messages, by language. `{label}` is the field's label; the other
@@ -157,12 +158,17 @@ export interface Messages {
    * a form's page asks (`lowerLabels`): set on the form's own messages, never in a language's table.
    */
   lowerLabels?: boolean;
+  /**
+   * The order the page writes its days in (`look.dateOrder`), as a message names a day ("can't be after 20 Oct 2026",
+   * `dayWords`): set on the form's own messages, never in a language's table. Day first without it.
+   */
+  dateOrder?: DateOrder;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
 
 /** A message every language has: the sentences in a page's words for its records (`…Noun`) are each language's own to give. */
-export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels'>;
+export type MessageKey = Exclude<keyof Messages, `${string}Noun` | 'lowerLabels' | 'dateOrder'>;
 
 /** English: always here, and the words a language leaves out. */
 const en: Messages = {

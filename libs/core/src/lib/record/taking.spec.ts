@@ -111,15 +111,15 @@ describe('when a page opens and closes, on its own clock', () => {
     const time = manualTime('2026-10-31T12:00:00Z');
     const form = createForm({ page: signup({ limits: { opens: '2026-11-01T09:00', closes: '2026-11-20' } }), now: time.now, scheduler: time });
     expect(form.getState().limits).toEqual({ state: 'soon', opens: '2026-11-01T07:00:00.000Z', closes: '2026-11-20T22:00:00.000Z', seats: {} });
-    expect(takingWords(form.page, form.getState().limits, MESSAGES.en)).toMatch(/^This form opens on November 1, 2026(,| at) 09:00/);
+    expect(takingWords(form.page, form.getState().limits, MESSAGES.en)).toMatch(/^This form opens on 1 Nov 2026, 09:00/);
     // The page left open as it opens, listened to as a viewer listens: it opens of itself.
     form.subscribe(() => undefined);
     time.to('2026-11-01T07:00:01Z');
     expect(form.getState().limits?.state).toBe('open');
     time.to('2026-11-20T22:00:01Z');
     expect(form.getState().limits?.state).toBe('closed');
-    expect(takingWords(form.page, form.getState().limits, MESSAGES.en)).toBe('This form closed on November 20, 2026.');
-    expect(takingWords(form.page, form.getState().limits, MESSAGES.de)).toBe('Dieses Formular wurde am 20. November 2026 geschlossen.');
+    expect(takingWords(form.page, form.getState().limits, MESSAGES.en)).toBe('This form closed on 20 Nov 2026.');
+    expect(takingWords(form.page, form.getState().limits, MESSAGES.de)).toBe('Dieses Formular wurde am 20. Nov. 2026 geschlossen.');
   });
 
   it('refuses answers sent after it closed, in words, though the page was open when they were typed', async () => {
@@ -130,7 +130,7 @@ describe('when a page opens and closes, on its own clock', () => {
     form.setValue('session', 'eve');
     time.advance(2 * 3600_000);
     expect(await form.save()).toBe(false);
-    expect(form.getState().saveProblem).toEqual({ kind: 'rule', message: 'This form closed on November 20, 2026.' });
+    expect(form.getState().saveProblem).toEqual({ kind: 'rule', message: 'This form closed on 20 Nov 2026.' });
     expect(source.responses).toEqual([]);
   });
 

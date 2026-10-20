@@ -132,7 +132,7 @@ describe('a date typed in the page’s order', () => {
     keys(input, '20/12/2026');
     input.blur();
     form.boxLeft('x');
-    expect(form.getState().errors['x']).toBe('Start date can’t be after December 12, 2026');
+    expect(form.getState().errors['x']).toBe('Start date can’t be after 12 Dec 2026');
   });
 
   it('never writes anything back while the box has focus, and waits for a year of four digits', () => {
@@ -491,7 +491,7 @@ describe('the calendar beside a date', () => {
     day(12).click();
     expect(value()).toBe('2026-10-14');
     const note = el.querySelector('.fd-calendar-note') as HTMLElement;
-    expect([note.hidden, note.textContent]).toEqual([false, 'Start date can’t be before October 13, 2026']);
+    expect([note.hidden, note.textContent]).toEqual([false, 'Start date can’t be before 13 Oct 2026']);
     day(16).click();
     expect(note.textContent).toBe('Start date can’t be on a Friday or Saturday');
     day(15).click();

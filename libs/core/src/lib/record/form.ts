@@ -931,7 +931,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const page = zonedPage(options.page);
   const scheduler = options.scheduler ?? hostScheduler;
   // A field's label small inside a message's sentence where the page asks (`lowerLabels`).
-  const messages: Messages = page.lowerLabels ? { ...(options.messages ?? MESSAGES.en), lowerLabels: true } : (options.messages ?? MESSAGES.en);
+  // …and a day written in the page's order where it says one (`look.dateOrder`): "can't be after Oct 20, 2026".
+  const dateOrder: unknown = page.look?.dateOrder;
+  const ownOrder = dateOrder === 'mdy' || dateOrder === 'ymd' || dateOrder === 'dmy' ? dateOrder : undefined;
+  const messages: Messages =
+    page.lowerLabels || ownOrder ? { ...(options.messages ?? MESSAGES.en), ...(page.lowerLabels ? { lowerLabels: true } : {}), ...(ownOrder ? { dateOrder: ownOrder } : {}) } : (options.messages ?? MESSAGES.en);
   /** One of the form's sentences in the words the page names its records by (`records`), else as the language says it plainly. */
   const named = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, messages.locale);
   /** The app's functions the page's expressions call: a name none may call is refused now. */
