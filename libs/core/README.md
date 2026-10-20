@@ -112,11 +112,15 @@ condition call functions by name. Fieldia's own: `round`, `roundMoney`, `min`,
 - `empty(value)` holds for nothing, words of only spaces, an empty list; zero and
   no are values. `firstOf(a, b, …)` is the first that is not empty.
 
-Each is read as the page is: a function there is not, or given too many or too few
-values, is refused with words that say so. `validatePage` also refuses a value of a
-kind a function does not take — `age(notes)`: "age takes a date as its first value;
-"notes" is text" (`kindProblems` gives them to your own tools). A function given a
-value it cannot use gives nothing, never an error.
+Each is read as the page is. **Refused**, by `validatePage`, `checkPage` and so as a
+form is made: a function there is not, or one given too many or too few values.
+**A warning**, never a refusal: a value of a kind a function does not take —
+`age(notes)`: "age takes a date as its first value; "notes" is text". `validatePage`
+passes such a page and says it in `warnings` beside it (`pageWarnings(page)` gives
+them alone; `kindProblems` to your own tools); the designer says it as a fix to make;
+the viewer runs the page as it always did, the call giving nothing — a function given
+a value it cannot use gives nothing, never an error. A page that passed before still
+passes.
 
 **Your app's own.** Give the form `functions` — the viewer and the React, Vue and
 Angular components take the same option — and a page calls them by name, beside
@@ -134,7 +138,9 @@ createForm({
 });
 ```
 
-A function that asks your server gives a promise. What is worked out from it waits
+A number one gives is tidied as Fieldia's own arithmetic tidies one — `price * 1.1`
+of 100 is 110, never 110.00000000000001 — and one that is no number (NaN, Infinity) is
+nothing. A function that asks your server gives a promise. What is worked out from it waits
 while it is asked — empty meanwhile, `form.getState().asked` says so by field
 (`{ total: {} }`), `form.waitsFor('total')` gives `{ field: 'total', asking: true }`,
 and the viewer shows an ellipsis, said in words ("Working out Total…") — then its

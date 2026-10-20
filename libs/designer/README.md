@@ -201,8 +201,10 @@ createDesigner({ page, functions: { districtPrice: { takes: [1, 1], values: ['te
 ```
 
 Every formula box lists Fieldia's functions by what they work on — Numbers, Dates,
-Words, Choosing — each with its words, and says a value of a kind a function does not
-take: "“age” takes a date: Notes is text".
+Words, Choosing — each with its words. A function there is not, or given too many or
+too few values, is refused as a formula is typed; a value of a kind a function does not
+take is said and kept — "“age” takes a date: Notes is text", in the box's result and as
+a "should fix" check, never stopping an edit or a publish.
 
 ### Options that follow the answers
 
