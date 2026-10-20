@@ -130,6 +130,7 @@ export const changes = {
   smallLabels: (on: boolean): string => (on ? 'Field names are written small inside Fieldia’s sentences' : 'Field names are written as they are inside Fieldia’s sentences'),
   limits: (now: 'on' | 'off' | 'changed') => ({ on: 'It takes answers only when and as many as it says', off: 'It takes answers at any time, as many as come', changed: 'When it takes answers, and how many, changed' })[now],
   continueLater: (on: boolean): string => (on ? 'It offers Continue later' : 'It no longer offers Continue later'),
+  suggest: (now: 'on' | 'off' | 'changed') => ({ on: 'It offers Fill from text, by your app’s AI', off: 'It no longer offers Fill from text', changed: 'How Fill from text fills the form changed' })[now],
   thePage: 'the page',
   // ---- the look
   look: {

@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Page } from '@fieldia/core';
+import type { Field, FieldNode, JsonValue, Page } from '@fieldia/core';
 import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -75,6 +75,31 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   function most(): Part {
     const box = limitBox(w.mostCharacters, 'size', { integer: true, min: 1, placeholder: w.any });
     return { element: word(w.mostCharacters, box.input), refresh: (page, node) => box.show(page.fields[node.field], own(page.fields[node.field], 'size')) };
+  }
+
+  /**
+   * A text's AI help (`options.rewrite`): Draft writes it from the record, Polish makes the words typed clearer — by the
+   * app's own model; an app's own tools in the page kept as they are.
+   */
+  function aiTools(): Part {
+    let given: unknown[] = [];
+    /** Draft and Polish as ticked, the app's own tools after them as the page has them. */
+    const set = (tool: 'draft' | 'polish', on: boolean) => {
+      const has = (one: string) => (one === tool ? on : given.includes(true) || given.includes(one));
+      const next: unknown[] = [...(['draft', 'polish'] as const).filter(has), ...given.filter((one) => typeof one === 'object' && one !== null)];
+      designer.setWidgetOptions(id, { rewrite: next.length ? (next as JsonValue) : null });
+    };
+    const draft = toggle(w.aiDraft, (on) => set('draft', on));
+    const polish = toggle(w.aiPolish, (on) => set('polish', on));
+    return {
+      element: row(el('span', { class: 'fd-inline-setting' }, w.aiTools), draft.element, polish.element),
+      refresh(_page, node) {
+        const tools = node.options?.['rewrite'];
+        given = tools === true ? [true] : Array.isArray(tools) ? tools : [];
+        draft.button.setAttribute('aria-checked', String(tools === true || given.includes('draft')));
+        polish.button.setAttribute('aria-checked', String(tools === true || given.includes('polish')));
+      },
+    };
   }
 
   /** A paragraph's rows, and whether it grows as people type. */
@@ -489,6 +514,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
+  if (kind === 'short-answer' || kind === 'paragraph' || kind === 'rich-text') parts.push(aiTools());
   if (kind === 'number' || kind === 'amount') parts.push(range());
   if (kind === 'number') parts.push(units());
   if (kind === 'amount') parts.push(money());

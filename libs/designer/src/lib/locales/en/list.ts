@@ -58,6 +58,8 @@ export const list = {
   filterRangesNote: 'A whole number’s values are listed unless it goes by its range. A number’s least values are a press each: “2+” bedrooms.',
   filterCounts: 'Say how many each filter finds',
   filterCountsHint: 'Beside each value of the filter bar, and each filter and saved search in the search bar’s menu: “Late 5”. Counted by the app’s server as the search changes.',
+  searchToFilter: 'Search in plain words (AI)',
+  searchToFilterHint: '“Villas in New Cairo under 15M” turned into the list’s own filters by your app’s AI (the data source’s searchToFilter), with Undo. Hidden where the source has none.',
   filterSheet: 'On a phone, the filters in a sheet',
   filterSheetHint: 'A Filters button opens every field at once; “Show 37 results” takes them together.',
   parentField: 'Rows under their parent, by',

@@ -69,6 +69,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.botCheck': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.duplicates': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.limits': ['on', 'off', 'changed'].map((now) => [now]),
+  'changes.suggest': ['on', 'off', 'changed'].map((now) => [now]),
   'changes.continueLater': [[true], [false]],
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],

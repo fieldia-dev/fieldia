@@ -637,6 +637,12 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     if (!designer.setListOptions({ filterCounts: counts.checked })) counts.checked = pageList().filterCounts === true;
   });
   const countsRow = el('div', { class: 'fd-prop', 'data-part': 'filter-counts' }, el('label', { class: 'fd-q-required' }, counts, el('span', {}, w.filterCounts)), el('p', { class: 'fd-properties-hint' }, w.filterCountsHint));
+  // A search in plain words read as filters by the app's AI (`searchToFilter`).
+  const plainWords = el('input', { type: 'checkbox', 'aria-label': w.searchToFilter }) as HTMLInputElement;
+  plainWords.addEventListener('change', () => {
+    if (!designer.setListOptions({ searchToFilter: plainWords.checked })) plainWords.checked = pageList().searchToFilter === true;
+  });
+  const wordsRow = el('div', { class: 'fd-prop', 'data-part': 'search-to-filter' }, el('label', { class: 'fd-q-required' }, plainWords, el('span', {}, w.searchToFilter)), el('p', { class: 'fd-properties-hint' }, w.searchToFilterHint));
   const parent = el('select', { class: 'fd-input fd-select', 'aria-label': w.parentField }) as HTMLSelectElement;
   parent.addEventListener('change', () => designer.setListOptions({ parentField: parent.value || null }));
   const parentWhy = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noParentField);
@@ -666,6 +672,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     filterFieldsRow,
     sheetRow,
     countsRow,
+    wordsRow,
     parentRow,
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
@@ -733,6 +740,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       sheetRow.hidden = list.search !== 'fields';
       sheet.checked = list.filterSheet === true;
       counts.checked = list.filterCounts === true;
+      plainWords.checked = list.searchToFilter === true;
       const offered = list.filterFields ?? [];
       const filterable = [...new Set([...offered, ...everyField(page, designer).filter(({ field }) => FILTERABLE.has(field.type)).map(({ name }) => name)])];
       /**

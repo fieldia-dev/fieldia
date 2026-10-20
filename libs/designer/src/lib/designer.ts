@@ -407,6 +407,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** "Continue later" (`continueLater`): the answers kept on the app's server with a link to carry on; false takes it away. */
   setContinueLater(on: boolean): boolean;
   /**
+   * AI help's Fill from text (`suggest`): `{}` offers it, `null` takes it away; its button's words (`label`), the fields
+   * it may fill (`fields`: none, every one shown a person can set) and a text field whose words it reads in place of
+   * words pasted (`fromField`) — each `null` (or empty) taking that one away. Refused on a list of records.
+   */
+  setSuggest(patch: { label?: string | null; fields?: string[] | null; fromField?: string | null } | null): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -816,6 +822,8 @@ export function createDesigner(options: {
     forgetGoneTargets(draft);
     // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
     forgetGoneDuplicates(draft);
+    // Nor one AI help fills or reads, and a field no longer of text has no text tools.
+    forgetGoneAssist(draft);
     // A related list taken out of a tab takes the tab's count of it with it.
     forgetGoneCounts(draft);
     const checked = checkEdit(page, draft);
@@ -1542,6 +1550,22 @@ export function createDesigner(options: {
       }, 'continueLater');
     },
 
+    setSuggest(patch) {
+      return apply(
+        (draft) => {
+          if (patch === null) return void delete draft.suggest;
+          if (draft.layout.type === 'list') throw new Refusal((w) => w.refusals.suggestForForms);
+          const now: Record<string, unknown> = { ...draft.suggest };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === '' || (Array.isArray(value) && !value.length)) delete now[key];
+            else now[key] = Array.isArray(value) ? [...new Set(value)] : typeof value === 'string' && key === 'label' ? value.trim() : value;
+          }
+          draft.suggest = now as Page['suggest'];
+        },
+        patch ? `suggest:${Object.keys(patch).join(',')}` : null
+      );
+    },
+
     setDuplicates(patch) {
       return apply(
         (draft) => {
@@ -2092,6 +2116,36 @@ function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch, func
       else delete card.fields;
     }
   }
+}
+
+/** The kinds AI help fills (`suggest.fields`), and those whose words it reads and rewrites. */
+const FILLED = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'selection', 'date', 'datetime', 'many2one', 'many2many', 'one2many']);
+const TEXTS = new Set(['char', 'text', 'html']);
+
+/**
+ * AI help as its fields change: those Fill from text fills still on the page, of a kind it fills and a person can set
+ * (none left, it fills every one shown); the words it reads a text field's still; a text field's tools on text alone.
+ */
+function forgetGoneAssist(page: Page): void {
+  const suggest = page.suggest;
+  if (suggest) {
+    const from = suggest.fromField && TEXTS.has(page.fields[suggest.fromField]?.type ?? '') ? suggest.fromField : undefined;
+    const fields = suggest.fields?.filter((name) => name !== from && FILLED.has(page.fields[name]?.type ?? '') && page.fields[name]?.readonly !== true && page.fields[name]?.compute === undefined);
+    const { fields: _fields, fromField: _from, ...rest } = suggest;
+    page.suggest = { ...rest, ...(fields?.length ? { fields } : {}), ...(from ? { fromField: from } : {}) };
+  }
+  const visit = (value: unknown): void => {
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (!value || typeof value !== 'object') return;
+    const node = value as FieldNode;
+    if (node.type === 'field' && node.options && 'rewrite' in node.options && !TEXTS.has(page.fields[node.field]?.type ?? '')) {
+      const { rewrite: _, ...options } = node.options;
+      if (Object.keys(options).length) node.options = options;
+      else delete node.options;
+    }
+    for (const child of Object.values(value)) if (child && typeof child === 'object') visit(child);
+  };
+  visit(page.layout);
 }
 
 /** The fields possible duplicates are found by (`duplicates`) that are still on the page and of a kind to compare: none left, the setting goes. */

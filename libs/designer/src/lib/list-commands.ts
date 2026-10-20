@@ -42,6 +42,8 @@ export interface ListOptionsPatch extends RowRulesPatch {
   filterCounts?: boolean;
   /** On a phone, the filter bar's fields in a sheet with "Show 37 results": true asks for it, false takes it away. */
   filterSheet?: boolean;
+  /** A search in plain words read as filters by the app's AI (`searchToFilter`): true asks for it, false takes it away. */
+  searchToFilter?: boolean;
   /** The link to the list's own records its rows nest under; null for none. */
   parentField?: string | null;
   /** The records on a calendar too: when each starts and ends, its words, its colour, a column for each; null for none. */
@@ -341,6 +343,8 @@ export function listCommands(context: {
         }
         if (options.filterCounts === true) list.filterCounts = true;
         else if (options.filterCounts === false) delete list.filterCounts;
+        if (options.searchToFilter === true) list.searchToFilter = true;
+        else if (options.searchToFilter === false) delete list.searchToFilter;
         if (options.filterSheet === false) delete list.filterSheet;
         else if (options.filterSheet === true) {
           if (list.search !== 'fields') throw new Refusal((w) => w.refusals.sheetNeedsFilterBar);

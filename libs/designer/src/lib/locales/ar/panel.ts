@@ -167,6 +167,10 @@ const NAMES: Record<string, string> = {
   'One with its article': 'الواحد مع أداة التنكير',
   'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
+  'Fill from text': 'الملء من نص',
+  'Its button’s words': 'كلمات زرّه',
+  'Fills from': 'يملأ من',
+  'Fields it may fill': 'الحقول التي يملؤها',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -564,6 +568,16 @@ export const panel: DesignerWords['panel'] = {
   duplicatesNone: 'لا حقل هنا يصلح للبحث عنها: أضف نصًا أو رقمًا أو تاريخًا أو اختيارًا أو رابطًا.',
   duplicatesOn: 'متى يُبحث عنها',
   duplicatesOnAs: { type: 'أثناء الكتابة وعند الحفظ', save: 'عند حفظ السجل فقط' },
+  suggest: 'الملء من نص (ذكاء اصطناعي)',
+  suggestOn: 'عرض الملء من نص',
+  suggestHint: 'زر يملأ النموذج من كلمات يلصقها الناس — بريد إلكتروني أو توقيع أو رسالة — أو من ملفات، بالذكاء الاصطناعي لتطبيقك عبر مصدر البيانات. تظهر كل قيمة عند حقلها لقبولها أو رفضها، مع إمكانية التراجع. يُخفى حيث لا يملكه المصدر.',
+  suggestLabel: 'كلمات زرّه',
+  suggestLabelExample: 'الملء من بريد إلكتروني',
+  suggestFrom: 'يملأ من',
+  suggestFromHint: 'كلمات يلصقها الناس أو ملفات يضيفونها، أو كلمات يحملها حقل في السجل — رسالة مشترٍ أو ملاحظات زيارة — تُقرأ بضغطة.',
+  suggestPasted: 'كلمات ملصوقة أو ملفات',
+  suggestFields: 'الحقول التي يملؤها',
+  suggestFieldsHint: 'إن لم يُحدَّد شيء: كل حقل ظاهر يستطيع الناس تغييره.',
   recordsCalled: 'اسم السجلات',
   recordsOne: 'اسم السجل الواحد',
   recordsOneExample: 'عميل',
