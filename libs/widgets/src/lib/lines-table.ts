@@ -400,6 +400,37 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     },
     true
   );
+  /**
+   * A block pasted on a dropdown cell, which takes no typing: no browser sends a paste there. Ctrl or ⌘ and V on one
+   * moves the focus to a box of the table's own, out of sight, as the keys go down — the browser pastes into it, in every
+   * engine — and the block spreads from that cell as from a text cell's, one value too (a choice by its words); the
+   * dropdown has the focus back. Nothing pasted (an empty clipboard), it has it back as the keys come up.
+   */
+  const catcher = make('textarea', { class: 'fd-lines-paste-catcher', tabindex: '-1', 'aria-hidden': 'true' }) as HTMLTextAreaElement;
+  let catching: HTMLSelectElement | null = null;
+  body.addEventListener('keydown', (event) => {
+    const box = event.target as HTMLElement;
+    if (readonly || !(box instanceof HTMLSelectElement) || event.key.toLowerCase() !== 'v' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+    catching = box;
+    catcher.value = '';
+    catcher.focus({ preventScroll: true });
+  });
+  const caught = () => {
+    const box = catching;
+    catching = null;
+    box?.focus({ preventScroll: true });
+    return box;
+  };
+  catcher.addEventListener('paste', (event) => {
+    event.preventDefault();
+    const box = caught();
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    const td = box?.closest('td');
+    const key = td?.closest('tr')?.dataset['line'];
+    if (text && td && key && rows.has(key)) pasteBlock(key, td.dataset['column'] ?? '', blockOf(text));
+  });
+  catcher.addEventListener('keyup', () => catching && caught());
+  element.append(catcher);
   // The note goes once the person moves on: a key in a cell, or the table left.
   body.addEventListener('keydown', (event) => {
     if (!pasteNote.hidden && !(event.ctrlKey || event.metaKey)) pasteNote.hidden = true;

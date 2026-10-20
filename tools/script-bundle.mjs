@@ -1510,10 +1510,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Right and Left opening and closing it — list 109.78 and 35.19 measured before, 110.61 and 35.49 after, to 110.7
 // and 35.5.
 // A table line's choices from the app's lists (0.27, w4-line-choices): a block pasted reads such a cell among its own
-// line's choices, the row's links and other cells read first, and says why where they could not be asked — lines 40.51
-// and 13.97 measured before, 41.46 and 14.30 after, to 41.5 and 14.3; a list's Import reads a choice that follows
-// another field by each row's own values, once for each — import 37.59 and 14.77 to 38.02 and 14.99, to 38.1 and 15.0.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [41.5, 14.3], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// line's choices, the row's links and other cells read first, and says why where they could not be asked, and a block
+// pasted on a dropdown cell, where no engine sends a paste, is caught by a box of the table's own and spreads as on a
+// text cell — lines 40.51 and 13.97 measured before, 42.26 and 14.57 after, to 42.3 and 14.6; a list's Import reads a
+// choice that follows another field by each row's own values, once for each — import 37.59 and 14.77 to 38.02 and
+// 14.99, to 38.1 and 15.0.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.0], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.3, 14.6], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

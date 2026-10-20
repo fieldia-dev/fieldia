@@ -153,6 +153,37 @@ describe('a table line’s choices from the app’s lists', () => {
     );
   });
 
+  it('spreads a block pasted on a dropdown cell as on a text cell, its choices read by their words', async () => {
+    const { form, el } = mount([
+      { key: 'a', values: { connection: 'gmail', tool: null } },
+      { key: 'b', values: { connection: 'slack', tool: null } },
+    ]);
+    await form.settled();
+    // Ctrl+V on the dropdown: the table's own box out of sight takes the paste, as the browser sends it there.
+    const box = select(el, 0, 'connection');
+    box.focus();
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true }));
+    const catcher = el.querySelector('.fd-lines-paste-catcher') as HTMLTextAreaElement;
+    expect(document.activeElement).toBe(catcher);
+    paste(catcher, 'Slack\tPost message\nGmail\tRead inbox\n');
+    expect(document.activeElement).toBe(box);
+    await pasted();
+    await form.settled();
+    expect(values(form).map((line) => [line['connection'], line['tool']])).toEqual([
+      ['slack', 'post_message'],
+      ['gmail', 'read_inbox'],
+    ]);
+    expect(el.querySelector('.fd-lines-paste-note')?.textContent).toBe('Pasted into 4 cells.');
+    // One value on a dropdown: the choice so called.
+    const tool = select(el, 1, 'tool');
+    tool.focus();
+    tool.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', metaKey: true, bubbles: true, cancelable: true }));
+    paste(catcher, 'Send email');
+    await pasted();
+    await form.settled();
+    expect(values(form)[1]['tool']).toBe('send_email');
+  });
+
   it('says a tool pasted could not be looked up when the choices could not be asked', async () => {
     const { form, el } = mount([{ key: 'a', values: { connection: 'gmail', tool: null } }], async () => {
       throw new Error('The server is away');

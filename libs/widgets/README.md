@@ -109,7 +109,9 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
-Rows copied from a spreadsheet and pasted in a cell of a table of lines (or on
+Rows copied from a spreadsheet and pasted in a cell of a table of lines — a
+dropdown's too, where no browser sends a paste: Ctrl or ⌘ and V on it is caught by
+a box of the table's own, out of sight — (or on
 a cell of @fieldia/grid, chosen or open for typing) go each on its own line from
 that cell, across the columns shown, each cell read as its column reads what is
 typed (the page's marks and digits in any script, an amount in its line's
