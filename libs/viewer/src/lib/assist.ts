@@ -381,9 +381,14 @@ export function watchAssist(context: AssistContext): AssistKit {
     undoAll.focus();
   }
 
+  /** Every proposal of the batch still waiting let go; those kept from it stay, with their Undo. */
   function rejectBatch() {
     if (!review) return;
-    endReview(true);
+    const batch = review.batch;
+    if (![...kept.values()].some((one) => !one.alone && one.batch === batch)) return endReview(true);
+    for (const [field, one] of pending) if (one.batch === batch) pending.delete(field);
+    draw();
+    undoAll.focus();
   }
 
   /** What was kept, put back — but where the person changed it since: their typing wins. */
@@ -620,6 +625,9 @@ export function watchAssist(context: AssistContext): AssistKit {
   async function rewrite(field: string, how: string, button: HTMLButtonElement) {
     if (button.hasAttribute('aria-busy') || !source?.rewrite) return;
     const words = (button.lastElementChild as HTMLElement).textContent ?? '';
+    const tools = button.parentElement as HTMLElement;
+    // Why the last ask brought no words goes as it is asked again.
+    if (tools.nextElementSibling?.classList.contains('fd-assist-failed')) tools.nextElementSibling.remove();
     button.setAttribute('aria-busy', 'true');
     setText(button.lastElementChild as HTMLElement, labels.assistWriting);
     try {
@@ -649,8 +657,8 @@ export function watchAssist(context: AssistContext): AssistKit {
       say(`${labels.assistProposedText}: ${labelOf(field)}`);
       notes.get(field)?.note.querySelector<HTMLElement>('.fd-proposal-accept')?.focus();
     } catch (error) {
-      say(fill(labels.assistRewriteFailed, { why: error instanceof Error ? error.message : String(error) }));
-      placeOf(field)?.wrapper.querySelector<HTMLElement>('.fd-assist-tools')?.setAttribute('data-failed', '');
+      // Said under the tools, and to a screen reader at once; the field holds what it held.
+      if (!gone && tools.isConnected) tools.after(el('p', { class: 'fd-assist-failed', role: 'alert' }, fill(labels.assistRewriteFailed, { why: error instanceof Error ? error.message : String(error) })));
     } finally {
       button.removeAttribute('aria-busy');
       setText(button.lastElementChild as HTMLElement, words);

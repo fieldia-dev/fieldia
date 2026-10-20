@@ -58,6 +58,7 @@ const ASSIST_CSS = /* css */ `
 .fd-assist-tools[hidden] { display: none; }
 .fd-assist-tool { min-height: 28px; padding: 2px 4px; font-size: 13px; }
 .fd-assist-tool[aria-busy="true"] { color: var(--fd-muted); cursor: progress; }
+.fd-assist-failed { margin: 4px 0 0; padding: 6px 10px; border-radius: var(--fd-control-radius); background: var(--fd-error-soft); color: var(--fd-error); font-size: 13px; }
 /* The words pasted in. */
 .fd-assist-dialog .fd-form-dialog-body { display: grid; gap: 10px; align-content: start; }
 .fd-assist-hint { margin: 0; color: var(--fd-muted); font-size: 13.5px; }

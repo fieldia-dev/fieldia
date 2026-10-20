@@ -194,6 +194,8 @@ test.describe('homes searched in plain words', () => {
     await expect(page.locator('.fd-assist-read')).toContainText('Read as filters: Type: Villa · District: New Cairo · Price: up to');
     await expect(page.locator('.fd-assist-read')).toContainText('Stand-in AI, no model');
     await expect(keyword).toHaveValue('');
+    // The keyboard back in the box the words were typed in.
+    await expect(keyword).toBeFocused();
     // None for sale there at that price: said as any search that finds none.
     await expect(page.locator('.fd-list-empty')).toBeVisible();
     await page.locator('.fd-assist-read').getByRole('button', { name: 'Undo' }).click();

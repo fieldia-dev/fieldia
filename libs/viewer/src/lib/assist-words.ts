@@ -208,8 +208,11 @@ export function searchWords(context: WordsContext): { read(): Promise<void>; typ
           const first = suggestions(left, page, node, { searchFor: labels.searchFor }, context.locale)[0];
           if (first) next = [...next, { kind: 'field', field: first.field, label: first.fieldLabel, values: [{ op: first.op, value: first.value, label: first.valueLabel }] }];
         }
+        const pressed = doc.activeElement === button;
         bar.take(next, keep);
         context.offer();
+        // The ✦ pressed goes with the words it read: the keyboard back in the box, to type on.
+        if (pressed && button.hidden) bar.input.focus();
         const read = facets.map((facet) => `${facet.label}: ${facet.values.map((value) => value.label).join(` ${labels.or} `)}`);
         const why = [answer?.why ?? '', unused.length ? fill(labels.assistNotUsed, { items: unused.join(', ') }) : ''].filter(Boolean).join(' ');
         tell([fill(labels.assistWordsMade, { filters: read.join(' · ') || left }), why].filter(Boolean).join('\n'), true);

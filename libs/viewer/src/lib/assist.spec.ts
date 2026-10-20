@@ -161,6 +161,18 @@ describe('Fill from text', () => {
     expect(handle?.form.getState().dirty).toEqual([]);
   });
 
+  it('lets the rest go on Reject all, what was kept keeping its Undo', async () => {
+    await mount({ dataSource: source(), recordId: 1 });
+    await fillFrom(SIGNATURE);
+    button('Accept', proposal('city') as HTMLElement)?.click();
+    button('Reject all')?.click();
+    expect(host.querySelectorAll('.fd-proposal:not(.fd-proposal-kept)')).toHaveLength(0);
+    expect(values()['city']).toBe('Cairo');
+    expect(values()['email']).toBe('orders@deltafoods.example');
+    button('Undo', proposal('city') as HTMLElement)?.click();
+    expect(values()['city']).toBeNull();
+  });
+
   it('leaves a field typed in while it was asked as the person typed it, and says so', async () => {
     let answer: (result: SuggestResult) => void = () => undefined;
     const ds = source();
@@ -281,6 +293,23 @@ describe('a text field’s Draft and Polish', () => {
     await pass(0);
     expect(proposal('notes')).toBeNull();
     expect(values()['notes']).toBe('my own words');
+  });
+
+  it('says under its tools why no words came, and lets that go as it is asked again', async () => {
+    let fail = true;
+    const failing = { ...source(), rewrite: async (request: RewriteRequest): Promise<RewriteResult> => (fail ? Promise.reject(new Error('The model is busy')) : { text: `Drafted for ${request.field}.` }) };
+    await mount({ dataSource: failing, recordId: 1 });
+    button('Draft')?.click();
+    await pass(0);
+    await pass(0);
+    expect(host.querySelector('.fd-field[data-path="notes"] .fd-assist-failed')?.textContent).toBe('No words came back: The model is busy');
+    expect(values()['notes']).toBe('');
+    fail = false;
+    button('Draft')?.click();
+    await pass(0);
+    await pass(0);
+    expect(host.querySelector('.fd-assist-failed')).toBeNull();
+    expect(proposal('notes')?.querySelector('ins')?.textContent).toBe('Drafted for notes.');
   });
 
   it('hides its tools on a record the person can only read', async () => {
