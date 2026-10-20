@@ -55,8 +55,9 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
   const prefix = `fd-approval-${++bands}`;
   const titleId = `${prefix}-title`;
   const title = el('p', { class: 'fd-approval-title', id: titleId });
-  const why = el('p', { class: 'fd-approval-why', hidden: '' });
-  const reason = el('p', { class: 'fd-approval-reason', hidden: '' });
+  // The source's own words, and a reason as it was written: each in the way its own words run, on a page of either.
+  const why = el('p', { class: 'fd-approval-why', dir: 'auto', hidden: '' });
+  const reason = el('p', { class: 'fd-approval-reason', dir: 'auto', hidden: '' });
   const words = el('div', { class: 'fd-approval-words' }, title, why, reason);
   const buttons = el('div', { class: 'fd-approval-actions' });
   const retry = el('button', { type: 'button', class: 'fd-button', hidden: '' }, labels.retry);
@@ -132,7 +133,7 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
     const what = entry.decision === 'requested' ? fill(labels.approvalAskedEntry, { name: entry.by }) : fill(entry.decision === 'approved' ? labels.approvalApprovedEntry : labels.approvalRejectedEntry, { name: entry.by, level });
     const at = formApprovalsPart.loaded?.approvalWhen(entry.at, ctx.messages, page) ?? entry.at;
     const item = el('li', { class: 'fd-approval-entry', 'data-decision': entry.decision }, el('span', { class: 'fd-approval-entry-what' }, what), el('time', { class: 'fd-approval-entry-at', datetime: entry.at }, at));
-    if (entry.reason) item.append(el('q', { class: 'fd-approval-entry-reason' }, entry.reason));
+    if (entry.reason) item.append(el('q', { class: 'fd-approval-entry-reason', dir: 'auto' }, entry.reason));
     return item;
   }
 

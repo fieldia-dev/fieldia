@@ -46,8 +46,9 @@ const APPROVALS_CSS = /* css */ `
 .fd-approval-said:empty { display: none; }
 .fd-approval-toggle { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; border: none; background: none; color: var(--fd-accent); font: inherit; cursor: pointer; }
 .fd-approval-toggle::before { content: ""; width: 6px; height: 6px; border-inline-end: 1.5px solid currentColor; border-block-end: 1.5px solid currentColor; rotate: -45deg; transition: rotate 0.15s; }
-.fd-approval-toggle:dir(rtl)::before { rotate: 135deg; }
 .fd-approval-toggle[aria-expanded="true"]::before { rotate: 45deg; }
+.fd-approval-toggle:dir(rtl)::before { rotate: 45deg; }
+.fd-approval-toggle:dir(rtl)[aria-expanded="true"]::before { rotate: -45deg; }
 .fd-approval-toggle:hover { text-decoration: underline; }
 .fd-approval-toggle:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 4px; }
 .fd-approval-history { display: grid; gap: 8px; margin: 0; padding: 8px 0 0; border-block-start: 1px solid var(--fd-border); list-style: none; }
