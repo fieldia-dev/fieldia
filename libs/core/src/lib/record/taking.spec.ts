@@ -7,7 +7,8 @@ import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import { MESSAGES } from './messages';
 import type { Scheduler } from './scheduler';
-import { limitInstant, limitsNow, takingWords } from './taking';
+import { limitsNow, takingWords } from './form-limits';
+import { limitInstant } from './taking';
 
 /**
  * Opening, closing and limiting a page of responses (`limits`), and a choice's places (`seats` on an option): the page

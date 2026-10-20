@@ -1,6 +1,6 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition, SelectionOption } from '../format/field';
-import { choiceOptions, optionsField, optionsList } from '../format/choice-options';
+import { optionsField, optionsList } from '../format/choice-options';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -22,7 +22,7 @@ import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
-import { fill, fillMessage, MESSAGES, type Messages } from './messages';
+import { fillMessage, MESSAGES, type Messages } from './messages';
 import { recordSentence } from './record-words';
 import { askKey, cellOf, listedColumns, notOffered, type ListedColumn } from './line-choices';
 import {
@@ -42,11 +42,11 @@ import {
   type UploadFile,
   type DuplicateMatch,
   type MergeResult,
-  type LimitsResult,
   type SavedDraft,
   type StoredDraft,
 } from './data-source';
-import { countsAsked, fullChosen, limitsNow, seatedFields, takingWords, type FormLimits } from './taking';
+import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
+import type { Limits } from './form-limits';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -1183,7 +1183,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     sent: null,
     asked: Object.fromEntries(askedNow),
     takenOut: {},
-    // Worked out once the form has its state (`showLimits`, as it is made).
+    // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
   };
@@ -1648,7 +1648,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           if (lost.length) clearChoices(cell ? cell.table : name, cell, lost, namedChoices(lost, shown, loaded));
           put({ options: loaded });
           // Options of the app's list with places, never counted yet: how many took each is asked.
-          if (!cell && loaded.some((option) => option.seats !== undefined) && !counted?.perChoice?.[name]) void track(askLimits());
+          if (!cell && loaded.some((option) => option.seats !== undefined) && (!limitsKit || limitsKit.uncounted(name))) void track(limitsCode().then((kit) => kit?.ask()));
         },
         (error) => put({ options: shown, error: (error as Error).message ?? String(error) })
       )
@@ -2135,10 +2135,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       errors[path] = found.failed === undefined ? fillMessage(messages, messages.stillWorkedOut, { label }) : fillMessage(messages, messages.notWorkedOut, { label, problem: found.failed });
     }
     // A choice held whose places filled up since it was picked: never sent, said under it.
-    for (const [name, places] of Object.entries(state.limits?.seats ?? {})) {
-      const full = seen.has(name) && !errors[name] ? fullChosen(page.fields[name], places, state.values[name]) : [];
-      if (full.length) errors[name] = fill(messages.choiceFilled, { option: full.map((option) => option.label).join(', ') });
-    }
+    if (limitsKit) Object.assign(errors, limitsKit.fullErrors(seen, errors));
     // A saved form placed here answers for its fields by its own page's rules.
     for (const node of visibleFieldNodes(root, 'form')) {
       const part = attached.get(node.id);
@@ -2504,94 +2501,68 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     );
   }
 
-  /** The source's last answer to `limits`: null until it told. */
-  let counted: LimitsResult | null = null;
-  let limitsTimer: unknown = null;
-  /** The choice fields whose own options have places. */
-  const seated = seatedFields(page);
-  /** A choice's options as shown: its own, or its app's list's once loaded. */
-  const optionsOf = (name: string): readonly Option[] => {
-    const def = page.fields[name];
-    if (def?.type !== 'selection') return [];
-    if (optionsList(def.optionsFrom)) return (started ? state.choices[name]?.options : null) ?? [];
-    // Carried from an earlier question: its options, and the choice's own after them.
-    return optionsField(def.optionsFrom) ? choiceOptions(page.fields, name) : (def.options ?? []);
-  };
-  /** The choice fields with places now: those of the page's own, and of the app's lists whose options loaded with them. */
-  const seatedNow = () => [...seated, ...Object.keys(started ? state.choices : {}).filter((name) => !seated.includes(name) && optionsOf(name).some((option) => option.seats !== undefined))];
-  /** Whether the form asks the source for counts: the page shown (never a saved form placed in it), a source that tells them, and something to count. */
-  const asksLimits = () => !outer && !!options.dataSource?.limits && (countsAsked(page) || seatedNow().length > 0);
-  /** The page's counts asked as it opens and not told yet: nothing is typed meanwhile. */
-  let askingFirst = asksLimits() && countsAsked(page);
-  /** The limits as they are now: none for a saved form placed in another, which takes answers as its record does. */
-  const limitsHere = (): FormLimits | null => (outer ? null : limitsNow(page, clock(), counted, askingFirst, optionsOf));
+  // ---- when the page takes answers, and each choice's places (the limits part: form-limits.ts) --------------------
 
-  /** The limits shown as they are now, and the next moment they change of themselves — the page opening, closing — awaited. */
-  function showLimits() {
-    const limits = limitsHere();
-    if (JSON.stringify(limits) !== JSON.stringify(state.limits ?? null)) set({ limits });
-    if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
-    limitsTimer = null;
-    const next = [limits?.opens, limits?.closes].map((at) => (at ? Date.parse(at) - clock() : -1)).filter((ms) => ms > 0).sort((a, b) => a - b)[0];
-    // Within the longest wait a timer keeps (24 days), while something listens: a page left open as it opens or closes
-    // says so then. (A form no one listens to keeps no timer that would hold a process open.)
-    if (next !== undefined && next < 2 ** 31 - 1 && !disposed && listeners.size) limitsTimer = scheduler.setTimeout(showLimits, next + 50);
+  /** The limits made for this form from the limits part, once it came: none before, nor on a page with neither limits nor places. */
+  let limitsKit: Limits | null = null;
+  /** Whether the record shown was loaded once: its counts are asked then, its own choices not counted against it. */
+  let loadedOnce = false;
+  /** Whether the form keeps limits: a page with them or with places of its own, or a list's choices that came with places. */
+  const keepsLimits = () => !outer && (hasLimits(page) || Object.values(state.choices).some((choices) => choices.options?.some((option) => option.seats !== undefined)));
+  /**
+   * The limits, made from their part as it comes — at once where it has come — shown, and asked of the source as the
+   * form opens (or once its record is loaded); null where the form keeps none, or the part could not come: the source's
+   * submit decides then.
+   */
+  function limitsCode(): Promise<Limits | null> {
+    if (limitsKit || !keepsLimits()) return Promise.resolve(limitsKit);
+    if (formLimitsPart.loaded) return Promise.resolve(limitsMade(formLimitsPart.loaded));
+    return formLimitsPart.load().then(limitsMade, () => null);
   }
-
-  /** Ask the source's `limits` again and show what it tells, on the record it was asked for; without it, the dates alone. */
-  async function askLimits(): Promise<void> {
-    const source = options.dataSource;
-    if (!asksLimits() || !source?.limits) return showLimits();
-    const shown = shownNow();
-    const user = options.user ? { user: { id: options.user.id, ...(options.user.name ? { name: options.user.name } : {}) } } : {};
-    // A source that never answers keeps no one from the questions for long: past 10 seconds they show, and its submit decides.
-    const waited = askingFirst
-      ? scheduler.setTimeout(() => {
-          if (!askingFirst || !shown()) return;
-          askingFirst = false;
-          showLimits();
-        }, 10000)
-      : null;
-    try {
-      const told = await source.limits({ pageId: page.id, model: page.data.kind === 'record' ? page.data.model : '', recordId: state.recordId, fields: seatedNow(), ...user });
-      if (!shown()) return;
-      counted = told ?? {};
-    } catch {
-      // Not told: the page keeps to its dates alone, and the source's submit refuses as it would.
-      if (!shown()) return;
-    } finally {
-      if (waited !== null) scheduler.clearTimeout(waited);
-    }
-    askingFirst = false;
-    showLimits();
+  function limitsMade(part: FormLimitsPart): Limits | null {
+    if (limitsKit || disposed) return limitsKit;
+    const kit = part.formLimits({
+      page,
+      dataSource: options.dataSource,
+      user: options.user,
+      messages,
+      scheduler,
+      state: () => state,
+      set,
+      clock,
+      started: () => started,
+      shownNow,
+      generation: () => generation,
+      replaced: () => named(messages.recordReplacedNoun, messages.recordReplaced),
+      listened: () => listeners.size > 0,
+      disposed: () => disposed,
+      refuse(name, message) {
+        // Said until the field changes from what it holds, as a refused save's words are.
+        serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
+        set({ errors: { ...state.errors, [name]: message } });
+      },
+    });
+    limitsKit = kit;
+    kit.show();
+    if (kit.asks() && (state.recordId == null || loadedOnce)) void track(kit.ask());
+    return kit;
   }
+  /** Ask the source's `limits` again and show what it tells; without the limits part, nothing to ask. */
+  const askLimits = (): Promise<void> => (limitsKit ? limitsKit.ask() : Promise.resolve());
+  /** Whether the form asks the source for counts. */
+  const asksLimits = () => !!limitsKit?.asks();
 
   /**
-   * Whether the page takes these answers now, asked of the source again just before they go: why not, as a save's
-   * problem, or null. A choice that filled up meanwhile is the check's to say, under its field.
+   * Whether the page takes these answers now, asked of the source again just before they go — the limits part waited
+   * for where the form keeps limits: why not, as a save's problem, or null.
    */
   async function stillTaking(asked: number): Promise<Stopped | null> {
-    if (outer || (!page.limits && !seatedNow().length)) return null;
-    await askLimits();
-    if (asked !== generation) return { reason: 'save', message: named(messages.recordReplacedNoun, messages.recordReplaced) };
-    const limits = limitsHere();
-    const why = limits && limits.state !== 'open' && limits.state !== 'asking' ? takingWords(page, limits, messages) : null;
-    if (!why) return null;
-    const problem: SaveProblem = { kind: 'rule', message: why };
-    set({ status: 'error', error: why, saveProblem: problem, conflict: null, limits });
-    return { reason: 'save', message: why };
+    const kit = await limitsCode();
+    return kit ? kit.stillTaking(asked) : null;
   }
 
   /** A choice of a full option, picked by the person, refused under its field: the field keeps what it held. */
-  function refusedFull(name: string, value: Value): boolean {
-    const full = fullChosen(page.fields[name], state.limits?.seats[name], value, state.values[name]);
-    if (!full.length) return false;
-    const message = fill(messages.choiceFull, { option: full.map((option) => option.label).join(', ') });
-    // Said until the field changes from what it holds, as a refused save's words are.
-    serverErrors[name] = { message, value: JSON.stringify(state.values[name] ?? null) };
-    set({ errors: { ...state.errors, [name]: message } });
-    return true;
-  }
+  const refusedFull = (name: string, value: Value): boolean => !!limitsKit?.refusedFull(name, value);
 
   function scheduleAutosave() {
     const autosave = options.autosave;
@@ -3101,6 +3072,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), version: version ?? null, can: can ?? null, unread: {}, takenOut: {} });
       // Each choice's places, for this record: its own choices are its own.
+      loadedOnce = true;
       if (asksLimits()) void track(askLimits());
       if (again) return;
       offerDraft();
@@ -3498,12 +3470,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     subscribe(listener) {
       listeners.add(listener);
       // Listened to: the page opening or closing is said as it comes.
-      if (listeners.size === 1 && limitsTimer === null && (state.limits?.opens || state.limits?.closes)) showLimits();
+      if (listeners.size === 1) limitsKit?.heard(true);
       return () => {
         listeners.delete(listener);
-        if (listeners.size || limitsTimer === null) return;
-        scheduler.clearTimeout(limitsTimer);
-        limitsTimer = null;
+        if (!listeners.size) limitsKit?.heard(false);
       };
     },
 
@@ -4177,7 +4147,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       clearFiles();
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
-      if (limitsTimer !== null) scheduler.clearTimeout(limitsTimer);
+      limitsKit?.dispose();
       listeners.clear();
       events.clear();
       for (const part of attached.values()) part.inner.form.dispose();
@@ -4186,10 +4156,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   // A record's starting values may already break a warning rule; nothing listens yet.
   state = { ...state, warnings: collectWarnings() };
-  // When the page takes answers, at once; its counts and each choice's places as the source tells them.
-  showLimits();
-  // A record's own counts are asked once it is loaded: its own choices are not counted against it.
-  if (asksLimits() && state.recordId == null) void track(askLimits());
+  // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
+  // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
+  if (keepsLimits()) void track(limitsCode());
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

@@ -941,8 +941,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // measured before, 534.54 after; the bodies of the formula language's sixteen functions beyond the plain ones in
 // @fieldia/core's functions part (fieldia.functions.js, 4.32), with the days they count — their names and what each
 // takes kept, so a page reads and checks as ever, a value worked out from one waiting for it as for an app's function
-// that asks — 532.31 after, to 532.4.
-const BUDGET_KB = 532.4;
+// that asks — 532.31 after; a form's limits beside the viewer's in the limits part (fieldia.limits.js) — when the page
+// takes answers and each choice's places worked out, its counts asked as it opens, again before its answers go and
+// after, a full choice refused, and why it takes none now in words — a page with limits or places waiting for it, 529.28
+// after, to 529.3.
+const BUDGET_KB = 529.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1162,8 +1165,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // members in fieldia.memory.js (5.71 gzipped), loaded the first time a page's memory source is asked — never by a page
 // whose app gives its own source, as an app's real one does — 178.21 measured before, 174.04 after; the sixteen
 // functions' bodies in fieldia.functions.js (1.88), loaded before a page whose formulas call one is drawn, 173.40
-// after, to 173.5.
-const GZIP_BUDGET_KB = 173.5;
+// after; a form's limits in fieldia.limits.js, with the viewer's (2.00 more there), loaded before a page with limits or
+// places is drawn, 172.39 after, to 172.4.
+const GZIP_BUDGET_KB = 172.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1703,8 +1707,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // The 0.27 size pass: memory new, 16.07 and 5.71 — a memory source's every member a backend has, on what the one-tag
 // script's source keeps at once (memory-kept.ts, in the main script) — to 16.1 and 5.8; functions new, 4.32 and 1.88 —
 // age, years, months, addDays, addMonths, addYears, contains, startsWith, endsWith, upper, lower, join, average,
-// roundMoney, empty and firstOf, their bodies alone, and the days they count (dates.ts) — to 4.4 and 1.9.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9] };
+// roundMoney, empty and firstOf, their bodies alone, and the days they count (dates.ts) — to 4.4 and 1.9; limits 5.37 and
+// 2.41 measured before, 10.23 and 4.41 after — a form's limits, @fieldia/core's (form-limits.ts), in the same script as
+// the viewer's: when the page takes answers and each choice's places, the counts asked, a full choice refused, and its
+// six sentences — to 10.3 and 4.5.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [10.3, 4.5], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [4.4, 1.9] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1730,7 +1737,7 @@ const PART_GIVES = {
   duplicates: ['watchDuplicates', 'openMergeScreen', 'installDuplicateStyles'],
   answers: ['sentenceValue', 'orderedDay', 'wordedWidget', 'drawEnding', 'linkedValueWords'],
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
-  limits: ['drawLimits', 'installLimitsStyles'],
+  limits: ['drawLimits', 'installLimitsStyles', 'formLimits'],
   memory: ['createMemoryDataSource', 'memorySource'],
   functions: ['functionBody'],
 };

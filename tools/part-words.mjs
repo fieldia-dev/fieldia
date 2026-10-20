@@ -62,7 +62,7 @@ export const PART_WORDS = {
       'importStartNoun', 'importStartNounOne', 'importNotMadeNoun', 'importFailedNoun',
     ],
   },
-  limits: { viewer: ['closedTyped', 'laterButton', 'laterSaving', 'laterSaved', 'laterLink', 'laterLinkName', 'laterCopy', 'laterCopied', 'laterAgain', 'laterBack', 'laterFailed', 'resumeMissing'] },
+  limits: { messages: ['formOpens', 'formClosed', 'formFull', 'formSent', 'choiceFull', 'choiceFilled'], viewer: ['closedTyped', 'laterButton', 'laterSaving', 'laterSaved', 'laterLink', 'laterLinkName', 'laterCopy', 'laterCopied', 'laterAgain', 'laterBack', 'laterFailed', 'resumeMissing'] },
   lines: {
     widgets: [
       'addSection', 'addNote', 'openLine', 'chooseLine', 'chooseAllLines', 'linesChosen', 'addAnother', 'totalWaits', 'cellWaits', 'notPastedCells', 'cellName', 'cellOfHeading', 'notPastedWhy', 'pasteBeyondLines', 'pasteBeyondLinesOne', 'pasteAddedLines', 'pasteAddedLinesOne',

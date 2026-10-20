@@ -295,7 +295,8 @@ export {
 } from './lib/record/input-rules';
 export { dayOf } from './lib/record/limits';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
-export { limitInstant, takingWords, whenWords, type FormLimits, type Seats, type TakingState } from './lib/record/taking';
+export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
+// (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';
 export { fieldPattern } from './lib/format/pattern';
