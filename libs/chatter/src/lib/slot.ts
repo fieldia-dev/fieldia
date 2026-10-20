@@ -1,7 +1,7 @@
 import type { FileValue, Form, FormState, RecordRequest } from '@fieldia/core';
 import { textPart, type Part, type TextReference } from '@fieldia/widgets';
-import { mountChatter, type ChatterOptions } from './chatter';
-import { discussionPart } from './chatter-parts';
+import { mountChatter, wantsChannels, type ChatterOptions } from './chatter';
+import { channelsPart, discussionPart } from './chatter-parts';
 import { drawnLater } from './later';
 import type { ChatterSource, RecordRef } from './source';
 
@@ -27,13 +27,17 @@ export interface ChatterSlotOptions extends Omit<ChatterOptions, 'record'> {
  * shows. It waits while the record is new, starts once it is saved, follows
  * the form to another record, and fetches again after each save and each
  * time the record is loaded again — when a backend posts what changed. What
- * a `post` step or the app's answer posts, it posts.
+ * a `post` step or the app's answer posts, it posts. Its activities' hours
+ * and its messages' times are on the page's clock (`timeZone`), its days
+ * written in the page's order, its today the form's; what it is answered is
+ * laid only on the record the form still shows (`form.recordShown`).
  *
  *   mountViewer(host, { page, dataSource, slots: { chatter: chatterSlot({ source }) } })
  */
 export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement, context: { form: Form }) => () => void) & { readonly parts: readonly Part[] } {
-  // A Discussion's code and its editor are parts loaded on first use: named, so the viewer draws the page once they are in.
-  const parts: readonly Part[] = options.look === 'discussion' ? [discussionPart, textPart] : [];
+  // A Discussion's code and its editor are parts loaded on first use: named, so the viewer draws the page once they are
+  // in; so is a conversation's that knows its channels or is live.
+  const parts: readonly Part[] = options.look === 'discussion' ? [discussionPart, textPart] : wantsChannels(options) ? [channelsPart] : [];
   return Object.assign((element: HTMLElement, { form }: { form: Form }) => {
     const model = options.model ?? (form.page.data.kind === 'record' ? form.page.data.model : null);
     const recordOf = (state: FormState): RecordRef | null => (model && state.recordId != null ? { model, id: state.recordId } : null);
@@ -45,7 +49,15 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
       part.mountDiscussion(element, { ...rest, records: form.page.records, record, placeholder, references, onCount: (count) => onCount?.(count, form) });
     const chatter =
       look !== 'discussion'
-        ? mountChatter(element, { ...rest, records: form.page.records, record: shown })
+        ? mountChatter(element, {
+            ...rest,
+            records: form.page.records,
+            record: shown,
+            timeZone: rest.timeZone ?? form.page.timeZone,
+            dateOrder: rest.dateOrder ?? form.page.look?.dateOrder,
+            now: rest.now ?? (() => form.now()),
+            recordShown: rest.recordShown ?? (() => form.recordShown()),
+          })
         : discussionPart.loaded && textPart.loaded
           ? discussion(discussionPart.loaded, shown)
           : drawnLater(element, shown, Promise.all([discussionPart.load(), textPart.load()]).then(([part]) => (record) => discussion(part, record)));

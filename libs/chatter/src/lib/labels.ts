@@ -88,6 +88,30 @@ export interface ChatterLabels {
   discardComment: string;
   discard: string;
   keepWriting: string;
+  /**
+   * A conversation that knows its channels (ChatterOptions.channels): the reply's choice of channel and to whom
+   * (`{to}`), its box and its Send by the channel picked (`{channel}`).
+   */
+  sendBy: string;
+  toWhom: string;
+  writeBy: string;
+  sendByChannel: string;
+  /** A message's delivery, as its ticks say it; one not delivered, and why (`{reason}`). */
+  sending: string;
+  sent: string;
+  delivered: string;
+  read: string;
+  notDelivered: string;
+  notDeliveredWhy: string;
+  /** Messages arriving while the conversation is shown, said politely: from `{name}`, by `{channel}`; `{n}` of them. */
+  newMessage: string;
+  newMessageBy: string;
+  newMessages: string;
+  /** An activity due at an hour: `{time}` on the page's clock, `{when}` the time alone today, else the day and the time. */
+  todayAt: string;
+  overdueSince: string;
+  /** The time box beside the due date, as an activity is scheduled. */
+  dueTime: string;
 }
 
 /**
@@ -176,6 +200,22 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Discard your comment?',
     discard: 'Discard',
     keepWriting: 'Keep writing',
+    sendBy: 'Send by',
+    toWhom: 'To {to}',
+    writeBy: 'Message by {channel}…',
+    sendByChannel: 'Send by {channel}',
+    sending: 'Sending',
+    sent: 'Sent',
+    delivered: 'Delivered',
+    read: 'Read',
+    notDelivered: 'Not delivered',
+    notDeliveredWhy: 'Not delivered: {reason}',
+    newMessage: 'New message from {name}',
+    newMessageBy: 'New {channel} message from {name}',
+    newMessages: '{n} new messages',
+    todayAt: 'Today at {time}',
+    overdueSince: 'Overdue since {when}',
+    dueTime: 'Time',
   },
   ar: {
     conversation: 'المحادثة',
@@ -250,6 +290,22 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'هل تريد تجاهل تعليقك؟',
     discard: 'تجاهل',
     keepWriting: 'متابعة الكتابة',
+    sendBy: 'الإرسال عبر',
+    toWhom: 'إلى {to}',
+    writeBy: 'رسالة عبر {channel}…',
+    sendByChannel: 'إرسال عبر {channel}',
+    sending: 'جارٍ الإرسال',
+    sent: 'أُرسلت',
+    delivered: 'وصلت',
+    read: 'قُرئت',
+    notDelivered: 'لم تصل',
+    notDeliveredWhy: 'لم تصل: {reason}',
+    newMessage: 'رسالة جديدة من {name}',
+    newMessageBy: 'رسالة جديدة عبر {channel} من {name}',
+    newMessages: 'رسائل جديدة: {n}',
+    todayAt: 'اليوم الساعة {time}',
+    overdueSince: 'متأخر منذ {when}',
+    dueTime: 'الوقت',
   },
   de: {
     conversation: 'Unterhaltung',
@@ -324,6 +380,22 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Kommentar verwerfen?',
     discard: 'Verwerfen',
     keepWriting: 'Weiterschreiben',
+    sendBy: 'Senden per',
+    toWhom: 'An {to}',
+    writeBy: 'Nachricht per {channel}…',
+    sendByChannel: 'Per {channel} senden',
+    sending: 'Wird gesendet',
+    sent: 'Gesendet',
+    delivered: 'Zugestellt',
+    read: 'Gelesen',
+    notDelivered: 'Nicht zugestellt',
+    notDeliveredWhy: 'Nicht zugestellt: {reason}',
+    newMessage: 'Neue Nachricht von {name}',
+    newMessageBy: 'Neue Nachricht per {channel} von {name}',
+    newMessages: '{n} neue Nachrichten',
+    todayAt: 'Heute um {time}',
+    overdueSince: 'Überfällig seit {when}',
+    dueTime: 'Uhrzeit',
   },
   fr: {
     conversation: 'Conversation',
@@ -398,5 +470,21 @@ export const CHATTER_LABELS: Record<Locale, ChatterLabels> = {
     discardComment: 'Abandonner votre commentaire ?',
     discard: 'Abandonner',
     keepWriting: 'Continuer à écrire',
+    sendBy: 'Envoyer par',
+    toWhom: 'À {to}',
+    writeBy: 'Message par {channel}…',
+    sendByChannel: 'Envoyer par {channel}',
+    sending: 'Envoi en cours',
+    sent: 'Envoyé',
+    delivered: 'Distribué',
+    read: 'Lu',
+    notDelivered: 'Non distribué',
+    notDeliveredWhy: 'Non distribué : {reason}',
+    newMessage: 'Nouveau message de {name}',
+    newMessageBy: 'Nouveau message par {channel} de {name}',
+    newMessages: '{n} nouveaux messages',
+    todayAt: 'Aujourd’hui à {time}',
+    overdueSince: 'En retard depuis {when}',
+    dueTime: 'Heure',
   },
 };

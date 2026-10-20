@@ -75,4 +75,45 @@ describe('createMemoryChatter', () => {
     expect(stored).toEqual(expect.objectContaining({ name: 'floor plan.pdf', type: 'application/pdf', size: 5 }));
     expect(stored.url).toMatch(/^data:application\/pdf;base64,/);
   });
+
+  it('has no channels and pushes nothing unless it is told to: a source as 0.28 had', () => {
+    const source = chatter();
+    expect([source.replyChannels, source.subscribe]).toEqual([undefined, undefined]);
+  });
+
+  it('says the channels each record can be written to by, sends by one, delivers, receives and pushes it all to who subscribes', async () => {
+    jest.useFakeTimers();
+    try {
+      const enquiry = { model: 'enquiry', id: 1 };
+      const source = createMemoryChatter({
+        me: { id: 1, name: 'Salma Nabil' },
+        live: true,
+        deliverAfter: 1500,
+        replyChannels: [{ id: 'whatsapp', to: '+20 100 123 4567' }],
+        records: { 'enquiry:2': { replyChannels: [] } },
+      });
+      expect(await source.replyChannels!(enquiry)).toEqual([{ id: 'whatsapp', to: '+20 100 123 4567' }]);
+      expect(await source.replyChannels!({ model: 'enquiry', id: 2 })).toEqual([]);
+      const pushed: unknown[] = [];
+      const stop = source.subscribe!(enquiry, (change) => pushed.push(change));
+      const sent = await source.post(enquiry, { kind: 'message', body: '<p>Thursday at 11?</p>', channel: 'whatsapp', to: '+20 100 123 4567' });
+      expect(sent).toEqual(expect.objectContaining({ channel: 'whatsapp', direction: 'out', delivery: 'sent' }));
+      // A note by the note channel goes nowhere outside: no ticks.
+      const note = await source.post(enquiry, { kind: 'note', body: '<p>Serious buyer.</p>', channel: 'note' });
+      expect([note.channel, note.delivery]).toEqual(['note', undefined]);
+      jest.advanceTimersByTime(1500);
+      expect(pushed).toEqual([{ type: 'delivery', id: sent.id, delivery: 'delivered', failure: null }]);
+      source.deliver(enquiry, sent.id, 'read');
+      const received = source.receive(enquiry, { author: { id: 2, name: 'Mona Adel' }, body: '<p>Perfect.</p>', channel: 'whatsapp' });
+      expect(received).toEqual(expect.objectContaining({ kind: 'message', direction: 'in', channel: 'whatsapp' }));
+      expect(pushed.slice(1)).toEqual([{ type: 'delivery', id: sent.id, delivery: 'read', failure: null }, { type: 'message', message: received }]);
+      expect((await source.messages(enquiry)).map((message) => [message.id, message.delivery ?? null])).toEqual([[received.id, null], [note.id, null], [sent.id, 'read']]);
+      stop();
+      source.deliver(enquiry, sent.id, 'failed', 'Blocked');
+      expect(pushed).toHaveLength(3);
+      expect((await source.messages(enquiry))[2]).toEqual(expect.objectContaining({ delivery: 'failed', failure: 'Blocked' }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
