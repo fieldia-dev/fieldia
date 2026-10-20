@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { cleanPasted, pasteTable } from './pasted-html';
+import { cleanPasted, pasteHtml } from './pasted-html';
 import { sanitizeHtml } from './sanitize';
 
 /**
- * A table pasted into a formatted text from Word, Excel, Google Docs or Google Sheets, kept as plain table markup: the
+ * What is pasted into a formatted text from Word, Excel, Google Docs or Google Sheets, kept as plain markup: the
  * clipboard's HTML as each app writes it (fixtures/clipboard: a quote's price table, its header bold, its amounts at
- * the end of their cells, a total across three columns), cleaned to the same table whichever app it came from — no
- * widths, no columns' sizes, no borders or fonts, no classes — and still nothing that could run.
+ * the end of their cells, a total across three columns; a clause's heading, marked words, link, lists and a centred
+ * line), cleaned to the same whichever app it came from — no widths, no columns' sizes, no borders, fonts, colours or
+ * classes — and still nothing that could run.
  */
 
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures/clipboard', `${name}.html`), 'utf8');
@@ -51,6 +52,38 @@ describe('a table pasted from an office app', () => {
   });
 });
 
+describe('text pasted from an office app or a page', () => {
+  const TERMS =
+    '<h2>Payment terms</h2><p>The Client pays <b>within 30 days</b>; a <i>late payment</i> adds 2% a month. See <a href="https://nile.example/terms">the full terms</a>.</p>' +
+    '<ul><li>Design<ul><li>Brand guide</li></ul></li><li>Build</li></ul><ol><li>Sign</li><li>Pay the first part</li></ol>';
+
+  it('from Word: its heading, marks and link kept, its lists lists again — nested, numbered — its fonts and colours gone', () => {
+    // Its centred last line ends in the line break written in it; the second Word writes for other programs is gone.
+    expect(cleanPasted(fixture('word-text'), document)).toBe(`${TERMS}<p style="text-align: center;">Thank you<br></p>`);
+  });
+
+  it('from Google Docs: the same, its list nested beside an item put in it, its highlight and link’s blue gone', () => {
+    expect(cleanPasted(fixture('google-docs-text'), document)).toBe(`${TERMS}<p style="text-align: center;">Thank you</p>`);
+  });
+
+  it('from a page: its classes, fonts, colours and sizes gone; a person linked in place kept', () => {
+    expect(
+      cleanPasted(
+        '<div class="post" style="font-family: Georgia; color: #333"><h3 style="font-size: 30px; color: navy">Notes</h3><p>Call <span data-mention="7" style="color: #0078d4">@Karim</span> <span style="background-color: #ffff00; font-size: 20px">today</span>, <u>before</u> <s>noon</s>.</p></div>',
+        document
+      )
+    ).toBe('<div><h3>Notes</h3><p>Call <span data-mention="7">@Karim</span> today, <u>before</u> <s>noon</s>.</p></div>');
+  });
+
+  it('Word’s lists one by one: a new list where its number changes, letters numbered, a symbol a bullet', () => {
+    const item = (list: number, level: number, mark: string, words: string) =>
+      `<p class=MsoListParagraph style='mso-list:l${list} level${level} lfo1'><![if !supportLists]><span style='font-family:Wingdings'><span style='mso-list:Ignore'>${mark}<span>&nbsp;&nbsp;</span></span></span><![endif]>${words}</p>`;
+    expect(cleanPasted(`${item(0, 1, 'a.', 'One')}${item(0, 1, 'b.', 'Two')}<p class=MsoNormal>Between</p>${item(1, 1, '§', 'Three')}${item(2, 1, 'i.', 'Four')}`, document)).toBe(
+      '<ol><li>One</li><li>Two</li></ol><p>Between</p><ul><li>Three</li></ul><ol><li>Four</li></ol>'
+    );
+  });
+});
+
 describe('a table stays safe', () => {
   it('runs nothing: no script, event, style, link to script or other attribute in or on it', () => {
     expect(
@@ -87,10 +120,8 @@ describe('words a style marks', () => {
     expect(sanitizeHtml('<b style="font-weight:normal" id="docs-internal-guid-1"><p>plain</p></b><strong style="font-weight: 400">x</strong><em style="font-style: normal">y</em><b>z</b>')).toBe('<p>plain</p>xy<b>z</b>');
   });
 
-  it('pasted, a span that keeps nothing is its words; its colour kept unless it is the words’ own black or white', () => {
-    expect(cleanPasted('<p><span style="color:#000000;background-color:transparent">a</span><span style="color:#d13438">b</span><span style="background-color:#ffffff">c</span></p>', document)).toBe(
-      '<p>a<span style="color: rgb(209, 52, 56);">b</span>c</p>'
-    );
+  it('pasted, a span is its words: its colour, highlight and size the field’s own', () => {
+    expect(cleanPasted('<p><span style="color:#000000;background-color:transparent">a</span><span style="color:#d13438">b</span><span style="background-color:#ffff00;font-size:20px">c</span></p>', document)).toBe('<p>abc</p>');
   });
 });
 
@@ -99,7 +130,7 @@ describe('pasting a table into a formatted text', () => {
     const event = Object.assign(new Event('paste', { cancelable: true }), { clipboardData: { getData: (type: string) => (type === 'text/html' ? html : 'plain') } }) as unknown as ClipboardEvent;
     const commands: [string, string | undefined][] = [];
     (document as unknown as { execCommand: unknown }).execCommand = (command: string, _ui: boolean, value?: string) => commands.push([command, value]);
-    return { taken: pasteTable(event, document, document.body), prevented: event.defaultPrevented, commands };
+    return { taken: pasteHtml(event, document, document.body), prevented: event.defaultPrevented, commands };
   };
 
   it('puts the table in as plain markup, in one step the browser undoes', () => {
@@ -112,8 +143,8 @@ describe('pasting a table into a formatted text', () => {
     expect(paste('<!--StartFragment--><tr><td>a</td><td align=right>1</td></tr><!--EndFragment-->').commands).toEqual([['insertHTML', '<table><tbody><tr><td>a</td><td style="text-align: right;">1</td></tr></tbody></table>']]);
   });
 
-  it('leaves anything else to the browser, as before', () => {
-    expect(paste('<p>Hello <b>you</b></p>')).toEqual({ taken: false, prevented: false, commands: [] });
+  it('puts in any other markup plain too, and leaves words alone (no HTML) to the browser, as before', () => {
+    expect(paste('<p style="font-family: Georgia">Hello <b>you</b></p>')).toEqual({ taken: true, prevented: true, commands: [['insertHTML', '<p>Hello <b>you</b></p>']] });
     expect(paste('')).toEqual({ taken: false, prevented: false, commands: [] });
   });
 });

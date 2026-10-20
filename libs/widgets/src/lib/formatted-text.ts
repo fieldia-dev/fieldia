@@ -5,7 +5,7 @@ import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
 import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
-import { keepCells, pasteTable } from './pasted-html';
+import { keepCells, pasteHtml } from './pasted-html';
 import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
 
@@ -24,11 +24,13 @@ import { installEditorStyles } from './styles-editor';
  * button with a tooltip; none looks pressed-out: Remove link with no link
  * under the cursor says so.
  *
- * Tables (rich-table.ts): one pasted from Word, Excel or Google Docs is kept,
- * plain (`pasteTable`); the table tool puts one in at a size picked on its
- * grid, or — with the caret in one — adds and takes away rows and columns and
- * sets its header row. In a table, Tab goes to the next cell (past the last, a
- * new row) and Escape out of it, said once as the caret first comes in.
+ * What is pasted from Word, Excel, Google Docs or a page is put in plain
+ * (`pasteHtml`): its words, marks, links, lists, headings and tables, without
+ * the source's fonts and colours. Tables (rich-table.ts): the table tool puts
+ * one in at a size picked on its grid, or — with the caret in one — adds and
+ * takes away rows and columns and sets its header row. In a table, Tab goes
+ * to the next cell (past the last, a new row) and Escape out of it, said once
+ * as the caret first comes in.
  */
 
 export interface TextSuggestion {
@@ -413,7 +415,7 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     }
     return true;
   }
-  area.addEventListener('paste', (event) => editor === 'rich' && !readonly && pasteTable(event, doc, area) && emit());
+  area.addEventListener('paste', (event) => editor === 'rich' && !readonly && pasteHtml(event, doc, area) && emit());
 
   // ---- the tools --------------------------------------------------------------------------------
   /** What a tool does when pressed, in the editor shown now. */

@@ -9,7 +9,8 @@ import { expectNoSidewaysScroll, node, open, screen } from './support';
 /**
  * Tables inside formatted text, on the service agreement (examples/pages/contract-fees.page.json): a table pasted
  * from Word, Excel, Google Docs or Google Sheets — their clipboard's own HTML (libs/widgets/src/lib/fixtures/clipboard)
- * — kept as a plain table in the field's look, in the work item's editor and in the classic one; the table tool's
+ * — kept as a plain table in the field's look, in the work item's editor and in the classic one, and text from Word or
+ * Docs with its heading, marks, link and lists, its fonts and colours left behind; the table tool's
  * picker, its menu of what to do where the cursor is, Tab from cell to cell and Escape out, the browser's Undo of a
  * change; right to left; and on paper, each table whole, its header row again on a new sheet, nothing cut.
  */
@@ -79,6 +80,64 @@ test.describe('a table pasted into a formatted text', () => {
       expect(problems).toEqual([]);
     });
   }
+
+  for (const [name, app] of [
+    ['word-text', 'Word'],
+    ['google-docs-text', 'Google Docs'],
+  ] as const) {
+    for (const [field, editor] of [
+      ['f-payment', 'the work item’s editor'],
+      ['f-scope', 'the classic editor'],
+    ] as const) {
+      test(`text from ${app} into ${editor}: its heading, marks, link and lists kept, its fonts and colours left behind`, async ({ page }) => {
+        const { problems } = await open(page, 'plain', QUERY);
+        const box = area(page, field);
+        await box.click();
+        await box.press('ControlOrMeta+End');
+        await paste(box, fixture(name));
+        await expect(box.locator('h2')).toHaveText('Payment terms');
+        // Lists again, nested as the source has them; the numbered one numbered.
+        expect(await box.locator(':scope > ul > li').evaluateAll((items) => items.map((li) => li.firstChild?.textContent))).toEqual(['Design', 'Build']);
+        await expect(box.locator(':scope > ul > li > ul > li')).toHaveText(['Brand guide']);
+        await expect(box.locator(':scope > ol > li')).toHaveText(['Sign', 'Pay the first part']);
+        await expect(box.locator('b')).toHaveText(['within 30 days']);
+        await expect(box.locator('i')).toHaveText(['late payment']);
+        await expect(box.getByRole('link', { name: 'the full terms' })).toHaveAttribute('href', 'https://nile.example/terms');
+        // The link in the page's own link colour, underlined once by the page; the last line centred.
+        expect(await box.locator('a u').count()).toBe(0);
+        expect(await box.locator('p', { hasText: 'Thank you' }).evaluate((el) => getComputedStyle(el).textAlign)).toBe('center');
+        const stored = (await value(page, field === 'f-scope' ? 'scope' : 'payment')) ?? '';
+        expect(stored).toContain('<h2>Payment terms</h2><p>The Client pays <b>within 30 days</b>; a <i>late payment</i> adds 2% a month.');
+        expect(stored).not.toMatch(/font|color|background|mso-|class=|<span|<o:p|lang=|Georgia|Arial|·/i);
+        await screen(page, `rich-tables-text-${name}-${field}`);
+        expect(problems).toEqual([]);
+      });
+    }
+  }
+
+  test('the classic editor on a page that had no need of the text part: it comes as one pastes, and puts the words in', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
+    const parts = () => page.evaluate(() => performance.getEntriesByType('resource').filter((entry) => /text-part/.test(entry.name)).length);
+    expect(await parts(), 'the text part before the paste').toBe(0);
+    const box = node(page, 'f-brief').locator('.fd-richtext');
+    // Pasted over the brief's words, all of them chosen.
+    await box.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    const waited = await box.evaluate(async (el, html) => {
+      const event = new ClipboardEvent('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'clipboardData', { value: { types: ['text/html'], files: [], getData: (type: string) => (type === 'text/html' ? html : '') } });
+      const from = performance.now();
+      el.dispatchEvent(event);
+      while (!el.querySelector('h2')) await new Promise((done) => setTimeout(done, 5));
+      return performance.now() - from;
+    }, fixture('word-text'));
+    expect(await parts(), 'the text part as the paste came').toBe(1);
+    // As long as the part took to come, measured: said in the report, held well under a second here.
+    test.info().annotations.push({ type: 'first paste waited', description: `${Math.round(waited)} ms` });
+    expect(waited).toBeLessThan(1000);
+    await expect(box.locator(':scope > ul > li > ul > li')).toHaveText(['Brand guide']);
+    expect(problems).toEqual([]);
+  });
 
   test('into the classic editor too, made plain by the text part as it is pasted', async ({ page }) => {
     const { problems } = await open(page, 'plain', QUERY);

@@ -1,33 +1,92 @@
 import { sanitizeHtml } from './sanitize';
 
 /**
- * A table pasted into a formatted text from Word, Excel, Google Docs or Google Sheets — or any page — made plain, in
- * the text part: the clipboard's HTML as `sanitizeHtml` keeps any value (no script, no event, no style but a block's
- * alignment and a span's colour, size and highlight), and plainer still, as the field's own words:
+ * What is pasted into a formatted text from Word, Excel, Google Docs or Sheets — or any page — made plain, in the text
+ * part: the clipboard's HTML as `sanitizeHtml` keeps any value (no script, no event, no style but a block's alignment),
+ * and plainer still, as the field's own words. Bold, italic, underlined and struck words, links, lists, headings,
+ * tables and alignment are kept; Office's markup, fonts, sizes, colours, highlights, classes and widths left behind:
  *
+ * - Word's lists, written as paragraphs with a bullet or a number before them for other programs (`mso-list`), are
+ *   lists again, nested by their level, numbered where their marks are numbers or letters; Google Docs' list nested
+ *   beside an item, in it;
  * - Excel's cells bold or aligned by a class of its sheet (`.xl65 { font-weight: 700 }`) are so as they come in;
- * - a cell holding one paragraph (Word's, Docs') holds its words, the paragraph's alignment the cell's;
- * - a span with nothing left to keep is its words, and the black or white every word of Docs is written in, the
- *   field's own colour (dark in a light scheme, light in a dark one);
- * - a block round a table alone (Docs') is the table, and the lines the source was written in are spaces.
+ * - a cell or a list's item holding one paragraph (Word's, Docs') holds its words, the paragraph's alignment its own;
+ * - a link's words are its own colour, never underlined twice;
+ * - a span left with nothing to keep is its words; a block round a table alone (Docs') is the table; the lines the
+ *   source was written in are spaces, and Word's second line break for other programs, and Safari's newline after
+ *   what was copied, go.
  *
  * The result reads the same through `sanitizeHtml` again: what is stored is what was put in.
  */
 
 /** What stands as a block of its own: a space beside one is nothing. */
 const BLOCKS = /^(P|DIV|H[1-4]|UL|OL|LI|BLOCKQUOTE|PRE|BR|TABLE)$/;
-/** The words' own colour, as the source wrote it: black or white. */
-const OWN_COLOUR = /^rgba?\((0, 0, 0|255, 255, 255)(, 1)?\)$/;
+/** A paragraph Word writes as an item of a list: its list and level (`mso-list:l0 level2 lfo1`). */
+const WORD_ITEM = /mso-list:\s*l(\d+)\s+level(\d+)/i;
+
+/** What Word writes between `<![if !support…]>` and `<![endif]>` for programs other than itself: its words, and gone. */
+function forOthers(root: Node, what: RegExp): string[] {
+  const doc = root.ownerDocument ?? (root as Document);
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+  const starts: Comment[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) if (what.test((node as Comment).data)) starts.push(node as Comment);
+  return starts.map((start) => {
+    let end: Node | null = start.nextSibling;
+    while (end && !(end.nodeType === Node.COMMENT_NODE && /^\[endif\]/i.test((end as Comment).data))) end = end.nextSibling;
+    const range = doc.createRange();
+    range.setStartAfter(start);
+    if (end) range.setEndBefore(end);
+    else range.setEndAfter(start.parentNode?.lastChild ?? start);
+    const words = range.toString();
+    range.deleteContents();
+    return words;
+  });
+}
+
+/** Word's list paragraphs as lists: each run of them one list, nested by level, its kind by the marks before its items. */
+function wordLists(root: DocumentFragment, doc: Document) {
+  const items = [...root.querySelectorAll<HTMLElement>('p, h1, h2, h3, h4, h5, h6, div')].filter((one) => WORD_ITEM.test(one.getAttribute('style') ?? ''));
+  // Runs of items side by side, as the source has them, before any is moved.
+  const runs: HTMLElement[][] = [];
+  items.forEach((item, i) => (i && item.previousElementSibling === items[i - 1] ? runs[runs.length - 1].push(item) : runs.push([item])));
+  for (const run of runs) {
+    let open: { level: number; id: string; list: HTMLElement }[] = [];
+    for (const paragraph of run) {
+      const [, id, level] = WORD_ITEM.exec(paragraph.getAttribute('style') ?? '') as RegExpExecArray;
+      const depth = Number(level);
+      const mark = (forOthers(paragraph, /^\[if !supportLists\]/i).join('') + [...paragraph.querySelectorAll('[style*="mso-list:Ignore" i]')].map((ignored) => (ignored.remove(), ignored.textContent)).join('')).replace(/[\s\u00a0]/g, '');
+      if (open.length && id !== open[0].id && depth <= open[0].level) open = [];
+      while (open.length && open[open.length - 1].level > depth) open.pop();
+      let top = open[open.length - 1];
+      if (!top || top.level < depth) {
+        const list = doc.createElement(/^\(?([0-9]+|[a-z]{1,4})[.)]/i.test(mark) ? 'ol' : 'ul');
+        if (top) (top.list.lastElementChild ?? top.list).append(list);
+        else paragraph.before(list);
+        open.push((top = { level: depth, id, list }));
+      }
+      const item = doc.createElement('li');
+      item.append(...paragraph.childNodes);
+      top.list.append(item);
+      paragraph.remove();
+    }
+  }
+}
 
 /** Pasted markup made plain: see above. Rows alone (a spreadsheet's fragment) in a table of their own. */
 export function cleanPasted(html: string, doc: Document): string {
   const box = doc.createElement('template');
   box.innerHTML = /<table[\s>]/i.test(html) || !/<tr[\s>]/i.test(html) ? html : `<table>${html}</table>`;
-  for (const sheet of box.content.querySelectorAll('style')) {
+  const content = box.content;
+  for (const sheet of content.querySelectorAll('style')) {
     for (const [, name, rules] of (sheet.textContent ?? '').matchAll(/\.([\w-]+)\s*\{([^}]*)\}/g)) {
-      for (const marked of box.content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute('style', `${rules};${marked.getAttribute('style') ?? ''}`);
+      for (const marked of content.querySelectorAll<HTMLElement>(`[class~="${name}"]`)) marked.setAttribute('style', `${rules};${marked.getAttribute('style') ?? ''}`);
     }
   }
+  wordLists(content, doc);
+  forOthers(content, /^\[if !supportLineBreakNewLine\]/i);
+  for (const newline of content.querySelectorAll('br.Apple-interchange-newline')) newline.remove();
+  // A link's words in its own colour, its own underline: the source's on its words go.
+  for (const marked of content.querySelectorAll<HTMLElement>('a[style], a [style]')) for (const name of ['color', 'text-decoration', 'text-decoration-line']) marked.style.removeProperty(name);
   box.innerHTML = sanitizeHtml(box.innerHTML, doc);
   const plain = (parent: Node) => {
     for (const node of [...parent.childNodes]) {
@@ -36,11 +95,13 @@ export function cleanPasted(html: string, doc: Document): string {
       const tag = element.tagName;
       if (tag !== 'PRE') plain(element);
       if (tag === 'SPAN') {
-        for (const name of ['color', 'background-color']) if (OWN_COLOUR.test(element.style.getPropertyValue(name))) element.style.removeProperty(name);
-        if (!element.getAttribute('style')) element.removeAttribute('style');
+        // Its colour, highlight and size the field's own; a person or record linked in place keeps its span.
+        element.removeAttribute('style');
         if (!element.attributes.length) element.replaceWith(...element.childNodes);
       } else if (tag === 'DIV' && element.children.length === 1 && element.firstElementChild?.tagName === 'TABLE') element.replaceWith(...element.childNodes);
-      else if (/^T[DH]$/.test(tag)) {
+      // A list nested beside an item (Google Docs'), in it.
+      else if (/^[OU]L$/.test(tag) && /^[OU]L$/.test(element.parentElement?.tagName ?? '') && element.previousElementSibling?.tagName === 'LI') element.previousElementSibling.append(element);
+      else if (/^(T[DH]|LI)$/.test(tag)) {
         const only = element.children.length === 1 && element.firstElementChild?.tagName === 'P' && ![...element.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) ? (element.firstElementChild as HTMLElement) : null;
         if (!only) continue;
         if (!element.style.textAlign && only.style.textAlign) element.style.textAlign = only.style.textAlign;
@@ -91,12 +152,13 @@ export function putHtml(box: HTMLElement, html: string, doc: Document): void {
 }
 
 /**
- * A paste into a formatted text (`box`): a table (or rows) on the clipboard put in as `cleanPasted` makes it, where the
- * caret is (`putHtml`). Whatever else is pasted is the browser's, as it was. True when it took the paste.
+ * A paste into a formatted text (`box`): the clipboard's HTML put in as `cleanPasted` makes it, where the caret is
+ * (`putHtml`). Words alone (no HTML: a plain text's, a file's) are the browser's to paste, as they were. True when it
+ * took the paste.
  */
-export function pasteTable(event: ClipboardEvent, doc: Document, box: HTMLElement): boolean {
+export function pasteHtml(event: ClipboardEvent, doc: Document, box: HTMLElement): boolean {
   const html = event.clipboardData?.getData('text/html') ?? '';
-  if (!/<t(able|r)[\s>]/i.test(html)) return false;
+  if (!html.trim()) return false;
   event.preventDefault();
   putHtml(box, cleanPasted(html, doc), doc);
   return true;

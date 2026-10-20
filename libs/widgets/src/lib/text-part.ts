@@ -9,6 +9,6 @@
 export { modernHtml } from './html-field';
 export { linksWidget } from './links';
 export { formattedText, decorateLinks } from './formatted-text';
-export { cleanPasted, pasteTable, putHtml } from './pasted-html';
+export { cleanPasted, pasteHtml, putHtml } from './pasted-html';
 export { markdownToHtml, htmlToMarkdown, markdownLoses } from './markdown';
 export { textMenu } from './text-menu';

@@ -109,13 +109,18 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
-A formatted text (`html`) keeps tables. One pasted from Word, Excel, Google
-Docs or Google Sheets — or copied from any page — comes in as a plain table in
-the field's own look: its cells, a cell spanning several (`colspan`,
-`rowspan`), a header row, a cell's alignment (an amount at its end) and bold or
-italic words kept; its widths, columns' sizes, borders, fonts and classes
-left behind, and the black Google Docs writes every word in. It is cleaned as every value is: no script, no
-event, no style but alignment ever reaches the page. The work item's editor
+What is pasted into a formatted text (`html`) from Word, Excel, Google Docs or
+Google Sheets — or copied from any page — comes in plain, in the field's own
+look, in either editor: its headings, bold, italic, underlined and struck
+words, links, lists (Word's too, which it writes as paragraphs, nested by
+their level) and alignment kept; its fonts, sizes, colours, highlights,
+classes, widths and Office's own markup left behind. Words alone (no HTML) are
+the browser's to paste, as before. The cleaner is the text part's: the classic
+editor asks for it as something is pasted, and puts the paste in as soon as it
+comes. A formatted text keeps tables: their cells, a cell spanning several
+(`colspan`, `rowspan`), a header row and a cell's alignment (an amount at its
+end). Everything is cleaned as every value is: no script, no event, no style
+but alignment ever reaches the page. The work item's editor
 gets a table tool where a field names `table` among its `tools`:
 
 ```json

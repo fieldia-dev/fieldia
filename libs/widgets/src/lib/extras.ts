@@ -74,11 +74,12 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     last = clean;
     form.setValue(name, clean.trim() === '' ? null : clean);
   });
-  // A table pasted from Word, Excel or Google Docs is kept, made plain by the text part (asked for as it is pasted) where
-  // the caret was; if that part cannot come, as any value is kept.
+  // What is pasted from Word, Excel, Google Docs or a page is put in plain by the text part's cleaner where the caret
+  // was: at once once that part has come, else as soon as it comes; if it cannot, as any value is kept. Words alone
+  // (no HTML) are the browser's to paste, as they were.
   area.addEventListener('paste', (event) => {
     const html = event.clipboardData?.getData('text/html') ?? '';
-    if (area.getAttribute('contenteditable') !== 'true' || !/<t(able|r)[\s>]/i.test(html)) return;
+    if (area.getAttribute('contenteditable') !== 'true' || !html.trim()) return;
     event.preventDefault();
     const selection = document.getSelection();
     const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
@@ -92,6 +93,7 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
       else area.insertAdjacentHTML('beforeend', clean);
       area.dispatchEvent(new Event('input', { bubbles: true }));
     };
+    // Once the part has come, its load answers before the next key: the paste is put in at once.
     textPart.load().then((part) => put(part.cleanPasted(html, document), part.putHtml), () => put(sanitizeHtml(html, document)));
   });
   area.addEventListener('blur', () => {
