@@ -182,6 +182,13 @@ export interface WidgetLabels {
   signatureTakenAway: string;
   notSignedYet: string;
   /**
+   * The signing's own part that could not come (offline, its script blocked): a picture not signed for want of it, a
+   * signature kept whose evidence it cannot show, and Try again, which asks for it again.
+   */
+  notSignedNoPart: string;
+  signingNoPart: string;
+  signingRetry: string;
+  /**
    * A file on its way to the app's store, where the data source stores files:
    * the words under its name as it waits, is made smaller, goes (`{n}` per
    * cent) or did not get there; its bar's name and Cancel's (`{name}`); Retry;
@@ -584,6 +591,9 @@ const en: WidgetLabels = {
   changeAnswersAsk: 'Change your answers? The signature is taken away, and you sign again once they are right.',
   signatureTakenAway: 'Signature taken away: change your answers, then sign again.',
   notSignedYet: 'Not signed yet: first put right {fields}, then sign again.',
+  notSignedNoPart: 'Not signed yet: the signing could not load.',
+  signingNoPart: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed.',
+  signingRetry: 'Try again',
   uploading: 'Uploading…',
   uploadPercent: '{n}%',
   uploadWaiting: 'Waiting…',

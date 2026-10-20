@@ -84,6 +84,10 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   });
   // Why a picture uploaded was not taken, or answers not signed: said politely, under the pad's tools.
   const refused = make('div', { class: 'fd-help fd-file-note fd-signature-note', role: 'status', hidden: '' });
+  // The signing's part that could not come (offline, a script blocked): said, with Try again, which asks for it again.
+  const retry = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.signingRetry);
+  const unloadedWords = make('span');
+  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', role: 'alert', hidden: '' }, unloadedWords, ' ', retry);
   const tools = make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear);
   const element = make(
     'div',
@@ -91,7 +95,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     make('div', { class: 'fd-signature-box' }, canvas, image, hint),
     ...(typeof footerWords === 'string' && footerWords ? [make('span', { class: 'fd-signature-footer' }, footerWords)] : []),
     tools,
-    refused
+    refused,
+    unloaded
   );
 
   const pen = () => {
@@ -148,7 +153,9 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     if (blank()) {
       mine = null;
       turn++;
-      return form.setValue(name, null);
+      form.setValue(name, null);
+      if (unsigned) leftUnsigned(null);
+      return;
     }
     let url: string | undefined;
     try {
@@ -180,18 +187,60 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   let evidence: Signing | null = null;
   let lastState: WidgetState | null = null;
   let gone = false;
-  const coming: Promise<void> | null = evidencing
-    ? loadEvidencePart().then(
-        (part) => {
-          if (gone) return;
-          evidence = part.signingFor({ form, name, node, document, words, locale, say, letGo, takeAway });
-          tools.before(evidence.element);
-          if (lastState) evidence.update(lastState.value, lastState.values, lastState.readonly);
-        },
-        // A part that cannot come signs nothing: the picture is kept, as a plain signature's.
-        () => undefined
-      )
-    : null;
+  /** The evidence part asked for: in, or — offline, its script blocked — not come, until Try again asks once more. */
+  let failed = false;
+  const ask = (): Promise<void> =>
+    loadEvidencePart().then(
+      (part) => {
+        failed = false;
+        if (gone || evidence) return;
+        evidence = part.signingFor({ form, name, node, document, words, locale, say, letGo, takeAway });
+        tools.before(evidence.element);
+        if (lastState) evidence.update(lastState.value, lastState.values, lastState.readonly);
+      },
+      () => {
+        failed = true;
+      }
+    );
+  let coming: Promise<void> | null = evidencing ? ask() : null;
+
+  /**
+   * Its part not come: never a picture kept unsigned in silence. Said under the signature, with Try again; the picture
+   * to sign kept on the pad and in the field, and every save, check and step forward refusing it with the same words —
+   * the form's own refusal of what does not read (`setUnread`) — until it is signed, or taken away. A signature kept
+   * signed (its evidence in its value) says the part did not come too: its answers stay locked until it does.
+   */
+  let unsigned: string | null = null;
+  const valueNow = () => {
+    const value = form.getState().values[name];
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as FileValue) : null;
+  };
+  /** The picture `key` left unsigned for want of the part (null: none), and what the field says of it. */
+  function leftUnsigned(key: string | null) {
+    unsigned = key;
+    const kept = form.getState().unread[name];
+    if (key) {
+      if (kept?.message !== words.notSignedNoPart) form.setUnread(name, { text: '', message: words.notSignedNoPart });
+    } else if (kept?.message === words.notSignedNoPart) form.setUnread(name, null);
+    drawUnloaded();
+  }
+  function drawUnloaded() {
+    const value = valueNow();
+    const pending = !!value && unsigned !== null && keyOf(value) === unsigned && !evidenceOf(value);
+    const said = !failed ? null : pending ? words.notSignedNoPart : evidenceOf(value ?? undefined) ? words.signingNoPart : null;
+    if (unloadedWords.textContent !== (said ?? '')) setText(unloadedWords, said ?? '');
+    setHidden(unloaded, !said);
+  }
+  retry.addEventListener('click', () => {
+    setHidden(unloaded, true);
+    coming = ask();
+    // The picture left unsigned is signed once the part has come; else it is said again.
+    void coming.then(() => {
+      const value = valueNow();
+      if (value && keyOf(value) === unsigned && !evidenceOf(value)) sign(value);
+      else drawUnloaded();
+    });
+  });
 
   /**
    * The answers signed with this picture, by the evidence part — once it has come — once what is typed in them is read.
@@ -210,7 +259,12 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       }
     };
     const run: Promise<void> = (coming ?? Promise.resolve())
-      .then(() => (evidence && current() ? evidence.sign(picture, { settle, current }) : undefined))
+      .then(() => {
+        if (!current()) return undefined;
+        if (!evidence) return leftUnsigned(keyOf(picture));
+        leftUnsigned(null);
+        return evidence.sign(picture, { settle, current });
+      })
       .catch(() => undefined)
       .finally(() => {
         if (signing === run) signing = null;
@@ -222,6 +276,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   function letGo() {
     mine = null;
     form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
   }
 
   /** Taken away by Change answers: the answers it signed open, to change and sign again. */
@@ -232,6 +287,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     typed.value = '';
     showPad();
     form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
     typed.focus();
   }
 
@@ -318,6 +374,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     typed.value = '';
     showPad();
     form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
     typed.focus();
   });
 
@@ -365,6 +422,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       // strokes to clear.
       clear.hidden = readonly || (evidencing && !!evidenceOf(value)) || (!value && (!evidencing || blank()));
       evidence?.update(value, state.values, readonly);
+      if (evidencing) drawUnloaded();
       undo.hidden = readonly || !strokes.length || !image.hidden;
       if (upload) upload.hidden = readonly;
       canvas.classList.toggle('fd-signature-locked', readonly);

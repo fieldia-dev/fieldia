@@ -1209,9 +1209,11 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 10.41 to 32.37 and 10.43, to 32.4.
 // A signature that signs answers (0.27, w4-signature): who signed and when, whether the answers are as signed, Change
 // answers and its question, the signature taken away, the answers to put right first, and a signed answer's lock — nine
-// sentences in each: Arabic's 68.38 and 11.83 measured before, 69.92 and 12.08 after, to 70.0 and 12.1; German's 32.03
-// and 10.44 to 32.70 and 10.64, to 32.8 and 10.7; French's 32.37 and 10.43 to 33.06 and 10.66, to 33.1 and 10.7.
-const ADD_ON_BUDGET_KB = { ar: [70.0, 12.1], de: [32.8, 10.7], fr: [33.1, 10.7] };
+// sentences in each, and three more for its part that could not come (not signed for want of it, a signature kept whose
+// evidence it cannot show, Try again): Arabic's 68.38 and 11.83 measured before, 70.54 and 12.14 after, to 70.6 and
+// 12.2; German's 32.03 and 10.44 to 32.98 and 10.71, to 33.0 and 10.8; French's 32.37 and 10.43 to 33.32 and 10.73, to
+// 33.4 and 10.8.
+const ADD_ON_BUDGET_KB = { ar: [70.6, 12.2], de: [33.0, 10.8], fr: [33.4, 10.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1517,8 +1519,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // once what is typed in them is read, the answers to put right said, "Signed by … , …" and whether the answers are as
 // signed under it, Change answers asked in place (signature-signing.ts), its words and its sheet — to 9.2 and 4.3. The
 // files part keeps the pad drawing and the picture kept whether or not it has come, and what waits for it: a signing,
-// and a save for the signing — files 33.46 and 12.32 measured before, 34.59 and 12.75 after, to 34.6 and 12.8.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [34.6, 12.8], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
+// and a save for the signing; and, where it cannot come (offline, its script blocked), never a picture kept unsigned
+// in silence — "Not signed yet: the signing could not load." with Try again, which asks for it again, and every save
+// refusing the picture with those words — files 33.46 and 12.32 measured before, 35.73 and 13.14 after, to 35.8 and
+// 13.2.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.6, 14.0], business: [30.4, 11.1], files: [35.8, 13.2], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [15.7, 6.5], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

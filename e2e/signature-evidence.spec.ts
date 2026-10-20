@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
@@ -154,6 +155,84 @@ test.describe('a consent signed, read by everyone', () => {
       expect(await axeFindings(page, 'changed after')).toEqual([]);
     });
   }
+});
+
+test.describe('a consent whose signing could not load', () => {
+  /** What a blocked script tells the console: the test's own doing. */
+  const blockedSaid = /evidence|Failed to load resource|dynamically imported module|module script failed|ERR_FAILED|could not be loaded/i;
+
+  test('says so under the signature with Try again, keeps the picture, and a save refuses it with why', async ({ page }) => {
+    await page.setViewportSize(WIDE);
+    // The signing's part refused, as offline or with its script blocked. An app bundled as modules (this demo): the
+    // browser keeps a module it could not fetch for the page's life, so Try again asks, and is told so again.
+    await page.route(/\/evidence-part-[^/]*\.js(\?.*)?$/, (route) => route.abort());
+    ({ problems } = await open(page, 'plain', `page=clinic-consent&record=new&skin=outlined&now=${NOW}`));
+    await answer(page);
+    await draw(page, sign(page).locator('canvas'));
+    const note = sign(page).locator('.fd-signature-unloaded');
+    await expect(note).toHaveText('Not signed yet: the signing could not load. Try again');
+    await expect(note).toHaveAttribute('role', 'alert');
+    // The picture kept on the pad and in the field — never signed in silence.
+    await expect(sign(page).locator('canvas')).toBeVisible();
+    expect((await state(page)).values.signature).toMatchObject({ name: 'signature.png', type: 'image/png' });
+    expect((await state(page)).values.signature.signed).toBeUndefined();
+    // A save refuses it, saying why under it.
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(sign(page).locator('.fd-error')).toHaveText('Not signed yet: the signing could not load.');
+    expect((await state(page)).recordId).toBeNull();
+    await sign(page).scrollIntoViewIfNeeded();
+    await screen(page, 'signature-evidence-unloaded', { viewport: true });
+    await note.getByRole('button', { name: 'Try again' }).click();
+    await expect(note).toHaveText('Not signed yet: the signing could not load. Try again');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(sign(page).locator('.fd-error')).toHaveText('Not signed yet: the signing could not load.');
+    expect((await state(page)).recordId).toBeNull();
+    problems = problems.filter((said) => !blockedSaid.test(said));
+  });
+
+  test('with one script tag, Try again loads the part once it can come: signed, and saved', async ({ page }) => {
+    await page.setViewportSize(WIDE);
+    problems = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
+    let blocked = true;
+    await page.route(/\/fieldia\.evidence\.js(\?.*)?$/, (route) => (blocked ? route.abort() : route.continue()));
+    // fieldia.js and its parts from beside it (the script demo's folder), the consent mounted on that page.
+    await page.goto('/script/');
+    await expect(page.locator('.fd-form').first()).toBeVisible();
+    const consent = JSON.parse(readFileSync('examples/pages/clinic-consent.page.json', 'utf8'));
+    await page.evaluate(
+      ([given, now]) => {
+        const host = document.createElement('div');
+        host.id = 'consent';
+        document.body.append(host);
+        const fieldia = (window as any).Fieldia;
+        (window as any).consent = fieldia.mountViewer(host, { page: given, dataSource: fieldia.createMemoryDataSource(), now: () => new Date(now as string) });
+      },
+      [consent, NOW]
+    );
+    const host = page.locator('#consent');
+    const signature = host.locator('[data-node="f-signature"]');
+    await expect(signature.locator('canvas')).toBeVisible();
+    await answer(page);
+    await draw(page, signature.locator('canvas'));
+    const note = signature.locator('.fd-signature-unloaded');
+    await expect(note).toHaveText('Not signed yet: the signing could not load. Try again');
+    const shown = () => page.evaluate(() => (window as any).consent.form.getState());
+    expect((await shown()).values.signature.signed).toBeUndefined();
+    await host.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(signature.locator('.fd-error')).toHaveText('Not signed yet: the signing could not load.');
+    // Back online: Try again asks for fieldia.evidence.js once more — a script tag of its own — and the picture is signed.
+    blocked = false;
+    await note.getByRole('button', { name: 'Try again' }).click();
+    await expect(signature.locator('.fd-signature-state')).toHaveText('✓The answers are as they were signed.');
+    await expect(note).toBeHidden();
+    await expect(signature.locator('.fd-error')).toBeHidden();
+    expect((await shown()).values.signature.signed).toMatchObject({ by: 'Mona Adel', at: NOW });
+    await host.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(async () => (await shown()).recordId).not.toBeNull();
+    problems = problems.filter((said) => !blockedSaid.test(said));
+  });
 });
 
 test.describe('a consent kept', () => {

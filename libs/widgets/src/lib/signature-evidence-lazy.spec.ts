@@ -89,4 +89,51 @@ describe('the evidence part', () => {
     expect(document.getElementById('fieldia-evidence-styles')).not.toBeNull();
     expect(form.node('f-patient').readonly).toBe(true);
   });
+
+  it('that cannot come never keeps the picture unsigned in silence: said, with Try again; a save refuses it until signed', async () => {
+    const asked = jest.spyOn(evidencePart, 'load').mockRejectedValueOnce(new Error('offline'));
+    const { form, draw, sign, value, saved } = consent({ signs: ['patient'], signerField: 'patient' }, true);
+    await form.load();
+    const signature = draw('signature');
+    sign(signature);
+    await form.settle();
+    await tick();
+    const note = signature.querySelector('.fd-signature-unloaded') as HTMLElement;
+    expect(note.hidden).toBe(false);
+    expect(note.getAttribute('role')).toBe('alert');
+    expect(note.textContent).toBe('Not signed yet: the signing could not load. Try again');
+    // The picture kept, on the pad and in the field — unsigned, and said so to every save.
+    expect(value()).toEqual({ name: 'signature.png', type: 'image/png', size: 4, data: 'QUJDRA==' });
+    expect((signature.querySelector('canvas') as HTMLCanvasElement).hidden).toBe(false);
+    expect(await form.save()).toBe(false);
+    expect(saved).toEqual([]);
+    expect(form.getState().errors['signature']).toBe('Not signed yet: the signing could not load.');
+    expect(form.validate()).toBe(false);
+    // Try again asks for the part once more: signed, the save goes.
+    (note.querySelector('button') as HTMLButtonElement).click();
+    expect(note.hidden).toBe(true);
+    for (let turn = 0; turn < 5; turn++) await tick();
+    await form.settle();
+    expect(asked).toHaveBeenCalledTimes(2);
+    expect(value()?.signed?.fields).toEqual(['patient']);
+    expect(form.getState().unread['signature']).toBeUndefined();
+    expect(note.hidden).toBe(true);
+    expect(await form.save()).toBe(true);
+    expect(saved[0]?.signed?.by).toBe('Mona Adel');
+    asked.mockRestore();
+  });
+
+  it('that cannot come lets a picture taken away go with its refusal: Clear leaves nothing to refuse', async () => {
+    const asked = jest.spyOn(evidencePart, 'load').mockRejectedValue(new Error('offline'));
+    const { form, draw, sign } = consent({ signs: ['patient'] });
+    const signature = draw('signature');
+    sign(signature);
+    await form.settle();
+    await tick();
+    expect(form.getState().unread['signature']?.message).toBe('Not signed yet: the signing could not load.');
+    (signature.querySelector('.fd-signature-clear') as HTMLButtonElement).click();
+    expect(form.getState().unread['signature']).toBeUndefined();
+    expect((signature.querySelector('.fd-signature-unloaded') as HTMLElement).hidden).toBe(true);
+    asked.mockRestore();
+  });
 });
