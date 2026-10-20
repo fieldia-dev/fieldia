@@ -109,6 +109,31 @@ one. `options.endField` takes the booking's end. It comes in a part of its own,
 `fieldia.slots.js` (`slotsPart`), with the date part; without `slots` in the
 data source it is the date and time box.
 
+A formatted text (`html`) keeps tables. One pasted from Word, Excel, Google
+Docs or Google Sheets — or copied from any page — comes in as a plain table in
+the field's own look: its cells, a cell spanning several (`colspan`,
+`rowspan`), a header row, a cell's alignment (an amount at its end) and bold or
+italic words kept; its widths, columns' sizes, borders, fonts and classes
+left behind, and the black Google Docs writes every word in. It is cleaned as every value is: no script, no
+event, no style but alignment ever reaches the page. The work item's editor
+gets a table tool where a field names `table` among its `tools`:
+
+```json
+{ "type": "field", "id": "f-fees", "field": "fees", "options": { "tools": ["bold", "italic", "bulletList", "link", "table"] } }
+```
+
+Pressed, it puts in a table at a size picked on a grid of 8 by 8 (by the arrow
+keys or the pointer, "3 rows by 4 columns"), its header row on and the cursor
+in its first cell; with the cursor in a table, it offers Insert row above or
+below, Insert column left or right (as the table is drawn: mirrored right to
+left), Delete row, Delete column, Header row and Delete table — each one step
+the browser's Undo takes back. In a table, Tab goes to the next cell, its words
+selected, Shift+Tab back, Tab past the last cell adds a row, and Escape leaves
+the table; said once as the cursor first comes into one. In Markdown a table is
+GitHub's (`| a | b |` over `| --- | ---: |`), both ways; switching asks first
+where a table cannot be written so. On paper a table is whole on a sheet where
+it fits, else broken between its rows with its header row again.
+
 Rows copied from a spreadsheet and pasted in a cell of a table of lines (or on
 a cell of @fieldia/grid, chosen or open for typing) go each on its own line from
 that cell, across the columns shown, each cell read as its column reads what is
