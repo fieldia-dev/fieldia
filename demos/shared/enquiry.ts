@@ -27,9 +27,12 @@ export const ENQUIRY_ICONS = {
   note: '<path d="M5 3.5h10l4 4V20.5H5z"/><path d="M15 3.5v4h4M8.5 12h7M8.5 16h4.5"/>',
 };
 
-/** What the enquiry page's chatter is given, beside its source: the agency's channels and their icons. */
-export function enquiryChatterOptions(params: URLSearchParams): Pick<ChatterOptions, 'channels' | 'icons'> {
-  return params.get('page') === 'enquiry' ? { channels: ENQUIRY_CHANNELS, icons: ENQUIRY_ICONS } : {};
+/**
+ * What the enquiry page's chatter is given, beside its source: the agency's channels and their icons, and the demos'
+ * clock for what is due today (`?now=`) — in every framework, as their forms do not all take one.
+ */
+export function enquiryChatterOptions(params: URLSearchParams): Pick<ChatterOptions, 'channels' | 'icons' | 'now'> {
+  return params.get('page') === 'enquiry' ? { channels: ENQUIRY_CHANNELS, icons: ENQUIRY_ICONS, now: demoNow } : {};
 }
 
 /** The buyers. */

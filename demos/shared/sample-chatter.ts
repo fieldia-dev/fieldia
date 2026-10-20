@@ -36,7 +36,7 @@ export function sampleChatter(params: URLSearchParams = new URLSearchParams(type
     me: salma,
     people: [salma, mona, karim, youssef],
     activityTypes: [call, todo, meeting],
-    ...(enquiry ? { live: true, deliverAfter: 1500, now: demoNow } : {}),
+    ...(enquiry ? { live: true, deliverAfter: 2500, now: demoNow } : {}),
     records: {
       ...enquiryChatter({ me: salma, karim }, { call, todo, meeting }),
       // The vendor bill's conversation: what was tracked as it was confirmed, and the vendor's own word.
