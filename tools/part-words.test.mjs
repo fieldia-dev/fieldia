@@ -116,17 +116,6 @@ async function scriptModules() {
       },
     ],
   });
-  const reach = (from) => {
-    const seen = new Set();
-    const next = [from];
-    while (next.length) {
-      const file = next.pop();
-      if (seen.has(file) || !metafile.inputs[file]) continue;
-      seen.add(file);
-      for (const one of metafile.inputs[file].imports) if (one.kind !== 'dynamic-import' && !one.external) next.push(one.path);
-    }
-    return seen;
-  };
   // An output and every chunk it imports, but those already counted: what a script is made of, as the build keeps it.
   const outputs = metafile.outputs;
   const madeOf = (first, counted = new Set()) => {
