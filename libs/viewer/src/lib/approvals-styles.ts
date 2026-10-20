@@ -23,6 +23,7 @@ const APPROVALS_CSS = /* css */ `
 .fd-approval:is([data-status="rejected"], [data-status="failed"]) .fd-approval-mark::before { content: "✕"; }
 .fd-approval-words { flex: 1 1 16em; min-width: 0; display: grid; gap: 2px; }
 .fd-approval-title { margin: 0; font-size: 14.5px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.fd-approval-title:focus { outline: none; }
 .fd-approval-why { margin: 0; color: var(--fd-muted); line-height: 1.45; }
 .fd-approval-reason { margin: 2px 0 0; padding-inline-start: 10px; border-inline-start: 2px solid var(--fd-approval-tone); line-height: 1.45; overflow-wrap: anywhere; }
 .fd-approval-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }

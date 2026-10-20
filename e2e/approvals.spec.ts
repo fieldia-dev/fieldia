@@ -51,6 +51,8 @@ for (const variant of ['plain', 'react']) {
     test('approved by Finance, then by the CFO signed in after: the order moves on, its history told beside it', async ({ page }) => {
       await decide(page, 'Approve').click();
       await expect(title(page)).toHaveText('Waiting for CFO: Sara Nabil');
+      // The button gone with the decision: the focus on where the order stands now.
+      await expect(title(page)).toBeFocused();
       await expect(levels(page)).toHaveText(['FinanceApproved by Mona Adel', 'CFOWaiting']);
       // Nothing more for Finance to decide.
       await expect(band(page).locator('.fd-approval-actions button')).toHaveCount(0);
@@ -121,6 +123,7 @@ for (const variant of ['plain', 'react']) {
       await dialog.getByRole('button', { name: 'Reject', exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(title(page)).toHaveText('Rejected by Karim Fathy (Manager)');
+      await expect(title(page)).toBeFocused();
       await expect(band(page).locator('.fd-approval-reason')).toHaveText('Attach the receipt, please.');
       await band(page).getByRole('button', { name: 'Approval history (5)' }).click();
       await expect(band(page).locator('.fd-approval-entry-what')).toHaveText(['Omar Said asked for approval', 'Karim Fathy approved for Manager', 'Mona Adel rejected it for Finance', 'Omar Said asked for approval', 'Karim Fathy rejected it for Manager']);

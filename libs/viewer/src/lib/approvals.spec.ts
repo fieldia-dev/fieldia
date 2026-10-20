@@ -132,6 +132,8 @@ describe('a record waiting for approval', () => {
     button('Approve').click();
     await until(() => text('.fd-approval-title') === 'Waiting for CFO: Sara Nabil');
     expect(shownButtons()).toEqual([]);
+    // Its button gone with the decision, the focus is on where it stands now.
+    expect(document.activeElement).toBe(band()?.querySelector('.fd-approval-title'));
     expect([...(band()?.querySelectorAll('.fd-approval-level') ?? [])].map((li) => li.textContent)).toEqual(['FinanceApproved by Mona Adel', 'CFOWaiting']);
     expect(host.querySelector('.fd-announce')?.textContent ?? '').toMatch(/Approv/);
   });
@@ -156,6 +158,7 @@ describe('a record waiting for approval', () => {
     (dialog.querySelector('.fd-actions .fd-button-danger') as HTMLButtonElement).click();
     await until(() => text('.fd-approval-title') === 'Rejected by Mona Adel (Finance)');
     expect(dialog.isConnected).toBe(false);
+    expect(document.activeElement).toBe(band()?.querySelector('.fd-approval-title'));
     expect(band()?.getAttribute('data-status')).toBe('rejected');
     expect(text('.fd-approval-reason')).toBe('The quote is out of date: ask for a new one');
     expect(handle?.form.getState().values['state']).toBe('rejected');

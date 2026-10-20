@@ -54,7 +54,8 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
   installApprovalStyles(ctx.root.ownerDocument);
   const prefix = `fd-approval-${++bands}`;
   const titleId = `${prefix}-title`;
-  const title = el('p', { class: 'fd-approval-title', id: titleId });
+  // Where the focus goes once a decision took the button pressed away: what it moved the record on to, read out.
+  const title = el('p', { class: 'fd-approval-title', id: titleId, tabindex: '-1' });
   // The source's own words, and a reason as it was written: each in the way its own words run, on a page of either.
   const why = el('p', { class: 'fd-approval-why', dir: 'auto', hidden: '' });
   const reason = el('p', { class: 'fd-approval-reason', dir: 'auto', hidden: '' });
@@ -171,6 +172,8 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
     try {
       await form.decide(level, decision, reasonGiven);
       ctx.announce(fill(decision === 'approved' ? labels.approvalApprovedFor : labels.approvalRejectedFor, { level: name }));
+      // The button pressed gone with the decision (nothing more for this person to decide): the focus on where it stands now.
+      if (reasonGiven === undefined && !button.isConnected) title.focus();
       return null;
     } catch (error) {
       const why = fill(decision === 'approved' ? labels.approvalApproveFailed : labels.approvalRejectFailed, { why: error instanceof Error ? error.message : String(error) });
@@ -207,8 +210,8 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
     const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
     const close = () => {
       backdrop.remove();
-      // Back to the button pressed where it still shows; else to the band's first button, or the band.
-      const back = opener.isConnected && !opener.closest('[hidden]') ? opener : (buttons.querySelector<HTMLElement>('button') ?? toggle);
+      // Back to the button pressed where it still shows; else — the decision taken it away — to where the record stands now.
+      const back = opener.isConnected && !opener.closest('[hidden]') ? opener : title;
       back.focus();
     };
     const refuse = (words: string) => {
