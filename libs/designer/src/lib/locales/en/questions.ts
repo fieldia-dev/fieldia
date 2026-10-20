@@ -92,6 +92,11 @@ export const questions = {
   givePoints: 'Give points: make it a quiz',
   points: 'Points',
   pointsFor: (option: string) => `Points for ${option}`,
+  givePlaces: 'Limit places: how many may pick each',
+  places: 'Places',
+  placesFor: (option: string) => `Places for ${option}`,
+  placesHint: 'Shown as places left, and Full, once your server counts who took them (the data source’s limits). A full one is refused when picked. Empty: no limit.',
+  noLimit: 'No limit',
   // ---- choices
   layOut: 'Lay out',
   oneColumn: 'One column',

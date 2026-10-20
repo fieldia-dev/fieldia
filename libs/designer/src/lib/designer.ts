@@ -1,4 +1,5 @@
 import {
+  limitInstant,
   validatePage,
   wideColumns,
   type AnswerRule,
@@ -387,6 +388,15 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setRecords(records: { one: string; other: string; a?: string } | null): boolean;
   /** A field's label written small inside Fieldia's sentences (`lowerLabels`), the page's own setting; false takes it away. */
   setLowerLabels(on: boolean): boolean;
+  /**
+   * When a page of responses takes answers, and how many (`limits`): when it opens and closes (a day and a time on the
+   * page's clock, 2026-11-01T09:00), the most responses, one from each person, and its words while it takes none — each
+   * `null` (false, or empty) taking that one away, the setting going with the last. A page of responses only, refused
+   * on a record's; refused where it closes before it opens.
+   */
+  setPageLimits(patch: { opens?: string | null; closes?: string | null; maxResponses?: number | null; onePerPerson?: boolean | null; message?: string | null }): boolean;
+  /** "Continue later" (`continueLater`): the answers kept on the app's server with a link to carry on; false takes it away. */
+  setContinueLater(on: boolean): boolean;
   /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
@@ -1466,6 +1476,33 @@ export function createDesigner(options: {
         if (on) draft.lowerLabels = true;
         else delete draft.lowerLabels;
       }, 'lowerLabels');
+    },
+
+    setPageLimits(patch) {
+      return apply(
+        (draft) => {
+          if (draft.data.kind !== 'responses') throw new Refusal((w) => w.refusals.limitsForResponses);
+          const limits: Record<string, unknown> = { ...(draft.limits ?? {}) };
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === undefined || value === false || (typeof value === 'string' && !value.trim())) delete limits[key];
+            else limits[key] = value;
+          }
+          const opens = typeof limits['opens'] === 'string' ? limitInstant(limits['opens'], draft.timeZone) : null;
+          const closes = typeof limits['closes'] === 'string' ? limitInstant(limits['closes'], draft.timeZone, true) : null;
+          if (opens !== null && closes !== null && closes <= opens) throw new Refusal((w) => w.refusals.closesBeforeOpens);
+          // Its words alone say nothing of when: they go with the last of the rest.
+          if (Object.keys(limits).some((key) => key !== 'message')) draft.limits = limits as Page['limits'];
+          else delete draft.limits;
+        },
+        `limits:${Object.keys(patch).join(',')}`
+      );
+    },
+
+    setContinueLater(on) {
+      return apply((draft) => {
+        if (on) draft.continueLater = true;
+        else delete draft.continueLater;
+      }, 'continueLater');
     },
 
     setDuplicates(patch) {

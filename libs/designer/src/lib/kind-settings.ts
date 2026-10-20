@@ -30,6 +30,8 @@ type Part = Omit<KindSettings, 'elements'> & { element: HTMLElement };
 const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'ranking']);
 /** Kinds whose options may be worth points: a matrix's options are its columns. */
 const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
+/** Kinds whose options may have places, counted by the app: a session's seats, an offer's stock. */
+const SEATED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice']);
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 /** A setting's number as the page holds it, or null. */
@@ -318,6 +320,50 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     };
   }
 
+  /** Places for each option — a session's seats — once one has them, and the way to give them. */
+  function places(): Part {
+    const start = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-give-places' }, w.givePlaces);
+    start.addEventListener('click', () => {
+      if (designer.setOptionDetails(id, 0, { seats: 10 })) (list.querySelector('input') as HTMLInputElement | null)?.focus();
+    });
+    const list = el('ul', { class: 'fd-kind-points fd-kind-places' });
+    const block = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, w.places), list, el('p', { class: 'fd-properties-hint' }, w.placesHint));
+    /** Each option's places box, kept as it is left: emptying one takes that option's places away, and no other's. */
+    const rows: { name: HTMLElement; input: HTMLInputElement; options: SettingNumberOptions; refresh(): void; seats: number | null }[] = [];
+    return {
+      element: el('div', { class: 'fd-kind-points-box' }, start, block),
+      standsIn: false,
+      refresh(page, node) {
+        const options = optionsOf(page.fields[node.field]);
+        const typing = list.contains(list.ownerDocument.activeElement);
+        const seated = options.some((o) => o.seats !== undefined);
+        start.hidden = seated || typing;
+        block.hidden = !seated && !typing;
+        while (rows.length > options.length) {
+          rows.pop();
+          list.lastElementChild?.remove();
+        }
+        while (rows.length < options.length) {
+          const index = rows.length;
+          const name = el('span', { class: 'fd-kind-points-name' });
+          const row = { name, seats: null as number | null } as (typeof rows)[number];
+          const options: SettingNumberOptions & { placeholder: string } = { label: w.places, integer: true, min: 0, optional: true, placeholder: w.noLimit, saved: () => row.seats, commit: (n) => designer.setOptionDetails(id, index, { seats: n }) };
+          const box = numberBox(options);
+          Object.assign(row, { input: box.input, options, refresh: box.refresh });
+          list.append(el('li', { class: 'fd-kind-points-row' }, name, box.input));
+          rows.push(row);
+        }
+        options.forEach((option, i) => {
+          rows[i].name.textContent = option.label;
+          rows[i].options.label = w.placesFor(option.label);
+          rows[i].input.setAttribute('aria-label', rows[i].options.label);
+          rows[i].seats = held(option.seats);
+          rows[i].refresh();
+        });
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'slider') parts.push(slider());
   if (kind === 'image-choice') parts.push(pictures());
@@ -327,6 +373,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   if (kind && SHUFFLED.has(kind)) parts.push(shuffle());
   parts.push(...choiceSettings(el, designer, id, kind));
   if (kind && SCORED.has(kind)) parts.push(points());
+  if (kind && SEATED.has(kind)) parts.push(places());
   const app = appKindSettings(el, designer, id, kind);
   if (app) parts.push(app);
   if (!parts.length) return null;
