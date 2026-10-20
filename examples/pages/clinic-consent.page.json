@@ -1,0 +1,101 @@
+{
+  "fieldia": "0.5",
+  "id": "clinic-consent",
+  "title": "Consent to treatment",
+  "data": { "kind": "record", "model": "clinic.consent" },
+  "records": { "one": "consent", "other": "consents", "a": "a consent" },
+  "timeZone": "Africa/Cairo",
+  "fields": {
+    "patient": { "type": "char", "label": "Patient", "required": true },
+    "birth_date": { "type": "date", "label": "Date of birth", "required": true },
+    "treatment": {
+      "type": "selection",
+      "label": "Treatment",
+      "required": true,
+      "options": [
+        { "value": "botox", "label": "Anti-wrinkle injections" },
+        { "value": "filler", "label": "Dermal filler" },
+        { "value": "peel", "label": "Chemical peel" },
+        { "value": "laser", "label": "Laser hair removal" }
+      ]
+    },
+    "areas": {
+      "type": "selection",
+      "label": "Areas treated",
+      "multiple": true,
+      "required": true,
+      "options": [
+        { "value": "forehead", "label": "Forehead" },
+        { "value": "frown", "label": "Frown lines" },
+        { "value": "crows_feet", "label": "Crow’s feet" },
+        { "value": "lips", "label": "Lips" },
+        { "value": "cheeks", "label": "Cheeks" }
+      ]
+    },
+    "pregnant": { "type": "boolean", "label": "I am pregnant or breastfeeding" },
+    "allergies": { "type": "text", "label": "Allergies, and medicines I take" },
+    "risks_read": { "type": "boolean", "label": "I have read the risks above, and my questions were answered", "required": true },
+    "photos": { "type": "boolean", "label": "Before and after photos may be kept in my file" },
+    "signature": { "type": "binary", "label": "Patient’s signature", "required": true },
+    "doctor_notes": { "type": "text", "label": "Doctor’s notes" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "patient", "placeholder": "Patient’s name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "you",
+        "title": "You and your treatment",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-birth", "field": "birth_date" },
+          { "type": "field", "id": "f-treatment", "field": "treatment" },
+          { "type": "field", "id": "f-areas", "field": "areas", "widget": "checkboxes", "colspan": 2 },
+          { "type": "field", "id": "f-pregnant", "field": "pregnant", "widget": "tick", "colspan": 2 },
+          { "type": "field", "id": "f-allergies", "field": "allergies", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "risks",
+        "title": "The risks",
+        "children": [
+          {
+            "type": "text",
+            "id": "risks-text",
+            "text": "Redness, swelling and small bruises where the needle went in are common and pass within a few days. Rarely, a nearby muscle weakens for a few weeks, or an infection needs treating. Tell us at once about any trouble seeing, speaking or swallowing."
+          },
+          { "type": "field", "id": "f-risks", "field": "risks_read", "widget": "tick" },
+          { "type": "field", "id": "f-photos", "field": "photos", "widget": "tick" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "sign",
+        "title": "Sign",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-signature",
+            "field": "signature",
+            "widget": "signature",
+            "help": "Signing keeps your answers above as they are. To change one afterwards, press Change answers and sign again.",
+            "options": {
+              "signs": ["patient", "birth_date", "treatment", "areas", "pregnant", "allergies", "risks_read", "photos"],
+              "signerField": "patient",
+              "footerLabel": "I agree to the treatment described above."
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "clinic",
+        "title": "For the clinic",
+        "children": [{ "type": "field", "id": "f-notes", "field": "doctor_notes" }]
+      }
+    ]
+  }
+}

@@ -127,7 +127,7 @@ ${code(
     <tr><td>an ${c('html')} field</td><td>${c('toolbar')}: ${c('false')} leaves the formatting toolbar off. The toolbar's Heading makes a heading in one press. As a work item's text: ${c('toolbar')} ${c('"focus"')} — no edge and no toolbar at rest, a light box when pointed at, the toolbar inside the box while worked in — at ${c('toolbarAt')} ${c('"top"')} or ${c('"bottom"')}; ${c('tools')}: which, in order, of ${c('bold')}, ${c('italic')}, ${c('underline')}, ${c('bulletList')}, ${c('numberList')}, ${c('highlight')}, ${c('colour')}, ${c('emoji')}, ${c('outdent')}, ${c('indent')}, ${c('strike')}, ${c('size')}, ${c('code')}, ${c('mention')}, ${c('reference')}, ${c('clearFormatting')}, ${c('image')}, ${c('link')}, ${c('unlink')}, ${c('taskList')}, ${c('heading')}, ${c('attach')} — those with no room go under “…”; ${c('editor')}: ${c('"markdown"')} shows the text as it reads and edits it as Markdown in a card with a Preview, still stored as clean HTML — empty, with no ${c('placeholder')}, alone in a group whose heading holds its ✎, it takes no room until that ✎ starts it; ${c('switchEditor')}: ${c('true')} offers the other editor, asking first when formatting would be lost; ${c('mention')}: ${c('{ "model": "res.users" }')} and ${c('references')}: ${c('[{ "key": "#", "model": "work.item", "label": "Work item", "icon": "hash" }]')} find people after @ and records after their key, with your data source's ${c('search')}</td></tr>
     <tr><td>${c('links')} on a ${c('many2many')}</td><td>A work item's links: ${c('add')}: ${c('"menu"')} — Add link opens Existing item (a search) and New item (a new record in a dialog) — or ${c('"search"')}; ${c('addLabel')}: its words; ${c('help')}: words in a light box while none is linked, ${c('[words](https://…)')} as links, with ${c('helpIcon')} before them — white on a tile of ${c('helpTile')}'s colour (${c('"#d84a12"')}), as a tracker marks its code's links; ${c('emptyLink')}: a link in the empty box that finds an existing record. Each record linked opens from its name, and goes with its ×</td></tr>
     <tr><td>a ${c('many2one')} or ${c('many2many')}</td><td>${c('create')}: ${c('false')} never offers to make a record from what was typed. With dialogs, both end their list with Search more… when it has no room, and open a linked record — a ${c('many2many')} from its tag — unless ${c('open')} is ${c('false')}, Flectra's ${c('no_open')}. ${c('avatar')}: ${c('true')} shows the record's picture before its name, or its initials (Flectra's avatar widgets) — and in the quiet look, while no one is picked, a person's outline before the node's ${c('placeholder')}, “No one selected”; on a ${c('many2one')}, ${c('details')}: ${c('true')} shows lines of the record under the link — an address, a tax number, as Flectra's ${c('show_address')}; on a ${c('many2many')}, ${c('colors')}: ${c('true')} draws each tag in its record's colour, 1 to 11 as Flectra numbers them (${c('color_field')}). The picture, lines and colour come from the data source, with each record it finds or loads — see <a href="/data/#related">what a link shows</a></td></tr>
-    <tr><td>${c('signature')} on a ${c('binary')}</td><td>${c('color')} (${c('"#1b2a5c"')}) and ${c('penWidth')} (3): the pen; the node's ${c('placeholder')}: words on the blank pad; ${c('footerLabel')}: words kept under it; ${c('upload')}: ${c('true')} lets a picture of a signature be uploaded. Undo takes the last stroke away; a typed name is kept as the value's ${c('text')}</td></tr>
+    <tr><td>${c('signature')} on a ${c('binary')}</td><td>${c('color')} (${c('"#1b2a5c"')}) and ${c('penWidth')} (3): the pen; the node's ${c('placeholder')}: words on the blank pad; ${c('footerLabel')}: words kept under it; ${c('upload')}: ${c('true')} lets a picture of a signature be uploaded. Undo takes the last stroke away; a typed name is kept as the value's ${c('text')}. ${c('signs')}: ${c('"form"')} or the fields by name, and ${c('signerField')}: <a href="#signature">a signature that signs the answers</a></td></tr>
     <tr><td>${c('address')} on a ${c('json')}</td><td>${c('parts')}: which, of ${c('street')}, ${c('line2')}, ${c('city')}, ${c('region')}, ${c('postcode')}, ${c('country')} (the first, third, fifth and sixth unless it says); ${c('requiredParts')}: those that must be filled, each asked for by name; ${c('country')}: the ISO code it starts on. The country is chosen from a list in the page's language and kept as its code, ${c('"EG"')}</td></tr>
     <tr><td>a ${c('one2many')} as a table</td><td>${c('min')}: lines at least, a new table starting with them; ${c('max')}: at most; ${c('addLabel')}: the Add button's words, and ${c('addSectionLabel')}, ${c('addNoteLabel')} those of its section's and note's (the grid takes the three too); ${c('emptyLabel')}: a sentence while there is no line; ${c('confirmDelete')}: ${c('true')} asks before a line with something in it goes. A line moves by its grip, or by Alt+↑/↓ from inside it</td></tr>
     <tr><td>${c('duration')} on a ${c('float')}</td><td>Hours as HH:MM, typed so or as ${c('6.5')}: Flectra's ${c('float_time')}. ${c('suffix')}: words after it in its box, ${c('"hours"')}</td></tr>
@@ -173,6 +173,40 @@ ${code(
   <li>In the designer, a file or picture field's card and panel set it: <em>Make photos smaller</em>, then <em>Photo quality</em>.</li>
 </ul>
 <p>${c('shrinkPhoto(file, { maxSide, quality })')} from ${c('@fieldia/widgets')} does the same for your own code.</p>
+
+<h2 id="signature">A signature that signs the answers</h2>
+<p>A consent, an engagement letter, a reservation contract: a signature's picture alone is weak evidence in a dispute. A signature whose node says ${c('signs')} — ${c('"form"')}, every answer shown, or the fields by name — keeps beside its picture who signed, when, and a fingerprint (SHA-256) of the answers it signed, and locks those answers while it is kept. ${c('signerField')} names the field holding the signer's name; left out, the name typed on the pad, else the person the app says is using the form.</p>
+${code(
+  'json',
+  `
+{
+  "type": "field",
+  "id": "f-signature",
+  "field": "signature",
+  "widget": "signature",
+  "options": {
+    "signs": ["patient", "treatment", "areas", "risks_read"],
+    "signerField": "patient",
+    "footerLabel": "I agree to the treatment described above."
+  }
+}`
+)}
+<ul>
+  <li><strong>Signed as the person saw it.</strong> What is typed in the answers is read first; an answer still to give, or text that does not read, is said under the pad — “Not signed yet: first put right Treatment, then sign again.” — and nothing is signed, what was drawn kept to sign again.</li>
+  <li><strong>Said under it.</strong> “Signed by Mona Adel, 19 Oct 2026, 11:42” on the page's clock, and whether the answers are as they were signed: the fingerprint made again from them as the record opens and as they change — a step, the app or your server changing a signed answer is said, “An answer has changed since it was signed.”</li>
+  <li><strong>Locked once signed.</strong> Each answer it signed is read-only while it is kept, its lock saying how to change it. <em>Change answers</em> asks in place, then takes the signature away: the answers open, and the person signs again.</li>
+  <li><strong>Kept with the signature.</strong> The value's ${c('signed')}: ${c('{ "format": "fieldia-signature/1", "by", "at", "fields", "sha256" }')}. A save storing the picture keeps it; a store that keeps a signature as bytes keeps it beside them.</li>
+</ul>
+<p>The fingerprint is the SHA-256 of a canonical text your server can write again in any language: the JSON ${c('{ "answers", "at", "by", "field", "format", "page" }')} as RFC 8785 writes it — no spaces, keys in order — each answer as the person saw it, written so a store that hands it back another way reads the same (a link its record's id, a file its name, size and kind, nothing ${c('null')}). The rules are in ${c('@fieldia/core')}'s README; the files part has them as functions:</p>
+${code(
+  'ts',
+  `
+import { filesPart } from '@fieldia/widgets';
+
+const { answersMatch, signatureText, sha256Hex } = await filesPart.load();
+await answersMatch(record.signature.signed, page, 'signature', record); // true while no signed answer changed`
+)}
+<p>In the designer, a signature's settings say what it <em>Signs</em> — nothing, every answer on the page, or the answers chosen — and the <em>Signer's name</em>. Two people signing in turn is your app's to order (a flow's): each signature signs its answers.</p>
 
 <h2 id="autofill">Filled in by the browser, and a phone's keyboard</h2>
 <p>A field node's ${c('autocomplete')} says what the browser may fill its box in with, from what the person saved: a purpose from the HTML standard's list — ${c('name')}, ${c('given-name')}, ${c('family-name')}, ${c('email')}, ${c('tel')}, ${c('organization')}, ${c('street-address')}, ${c('postal-code')}, ${c('country')}, ${c('bday')}, ${c('one-time-code')}, ${c('cc-number')}… — with ${c('shipping')}, ${c('billing')} or ${c('section-…')} before it, and ${c('home')}, ${c('work')} or ${c('mobile')} before a phone or an email; or ${c('off')}, so the browser offers nothing. Its ${c('inputmode')} picks the keyboard a phone shows: ${c('numeric')}, ${c('decimal')}, ${c('tel')}, ${c('email')}, ${c('url')}, ${c('search')} or ${c('text')}. The page's checks refuse a purpose the standard does not list, in its words.</p>
