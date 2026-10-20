@@ -503,7 +503,11 @@ export interface GroupRequest extends GroupInterval {
   filter: ResolvedFilter[];
 }
 
-/** The records under one value of a field: a link's by its id, and those with none as a group of their own (value null). */
+/**
+ * The records under one value of a field: a link's by its id, a record of links (a many2many) under each of its links
+ * — tags counted as a server groups them, a list's filter counting each — and those with none as a group of their own
+ * (value null).
+ */
 export interface Group {
   value: JsonValue;
   label: string;

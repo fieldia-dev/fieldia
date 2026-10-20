@@ -68,6 +68,7 @@ export type {
   Pin,
   ListFilter,
   FilterPeriod,
+  FilterRange,
   LabelPlace,
   ScreenWidth,
   AnswerRule,
@@ -209,7 +210,7 @@ export type {
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
-export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
+export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';

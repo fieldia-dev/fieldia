@@ -9408,6 +9408,22 @@
             "minLength": 1
           }
         },
+        "filterRanges": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/FilterRange"
+          }
+        },
+        "filterCounts": {
+          "type": "boolean"
+        },
+        "filterSheet": {
+          "type": "boolean"
+        },
         "parentField": {
           "type": "string",
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
@@ -9855,6 +9871,20 @@
         "start",
         "title"
       ],
+      "additionalProperties": false
+    },
+    "FilterRange": {
+      "type": "object",
+      "properties": {
+        "atLeast": {
+          "minItems": 1,
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
       "additionalProperties": false
     },
     "ListGallery": {

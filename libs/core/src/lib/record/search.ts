@@ -11,6 +11,9 @@ import { foldDigits, foldForSearch, readNumber, stripMarks } from './input-rules
  * one field (any of them), named filters (any of them), a custom filter, or
  * the fields the list is grouped by. The facets all apply together.
  *
+ * A field's values may be a range, one value of one chip: `between` [from, to], `>=` from or `<=` to, its `label` the
+ * range in words — "Price: 1,000,000 – 3,000,000", "Bedrooms: 2+", "Listed on: from 1 Oct 2026".
+ *
  * A custom filter of a period ("Invoice date: This month") keeps the period,
  * counted again each time the list asks — kept as a favourite, it is right
  * the next day; `filter` is what it was counted as when it was made. A field
@@ -21,6 +24,8 @@ export type Facet =
   | { kind: 'filters'; ids: string[]; labels: string[] }
   | { kind: 'custom'; label: string; filter: ResolvedFilter[]; period?: FilterPeriod }
   | { kind: 'groupBy'; fields: string[]; labels: string[] };
+
+type FieldFacet = Extract<Facet, { kind: 'field' }>;
 
 /** One way to search what was typed: a field, how to compare, and the words that say so. */
 export interface Suggestion {
@@ -84,17 +89,46 @@ export function suggestions(typed: string, page: Page, list: ListNode, words: { 
   return found.map((s, i) => ({ s, i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map(({ s }) => s);
 }
 
+/** A day as a date field holds one: "2026-10-19". */
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The conditions for a field's days from `from` to `last`, both kept (either left out for no end), as a list counts
+ * days — on a date and time, from the first moment of `from` to before the first of the day after `last` in its time
+ * zone; null where the field's days need nothing of the kind (a date's own days compare as they are).
+ */
+export type RangeDays = (field: string, from: string | null, last: string | null) => ResolvedFilter[] | null;
+
+/**
+ * A field facet's value as the conditions a data source reads: its own, or for a range — `between` [from, to], `>=`
+ * from, `<=` to, each end kept — `>=` and `<=` (any source reads them; `between` it need not), a range of days on a
+ * date and time as `days` counts them.
+ */
+function valueConditions(field: string, value: FieldFacet['values'][number], days?: RangeDays): ResolvedFilter[] {
+  const { op } = value;
+  if (op !== 'between' && op !== '>=' && op !== '<=') return [{ field, op, value: value.value }];
+  const ends = op === 'between' ? (Array.isArray(value.value) && value.value.length === 2 ? value.value : null) : op === '>=' ? [value.value, null] : [null, value.value];
+  if (!ends) return [{ field, op, value: value.value }];
+  const [from, to] = ends.map((end) => (end === undefined || end === '' ? null : end));
+  const isDay = (end: JsonValue) => end === null || (typeof end === 'string' && DAY.test(end));
+  const counted = days && (from !== null || to !== null) && isDay(from) && isDay(to) ? days(field, from as string | null, to as string | null) : null;
+  if (counted) return counted;
+  return [...(from !== null ? [{ field, op: '>=' as const, value: from }] : []), ...(to !== null ? [{ field, op: '<=' as const, value: to }] : [])];
+}
+
 /**
  * The filter a list's facets make: the values of one field any of them, named filters any of them, the facets all
  * together. A period — a named filter's, a custom filter's — is counted by `periods`, as the list counts days (its
- * clock, its week, its time zone); a custom filter without it keeps what it was counted as.
+ * clock, its week, its time zone); a custom filter without it keeps what it was counted as. A field's range — one
+ * chip, "Price: 1,000,000 – 3,000,000" — reaches the source as `>=` and `<=`, a date and time's days counted by `days`.
  */
-export function facetsToFilter(facets: readonly Facet[], list: ListNode, periods?: (period: FilterPeriod) => ResolvedFilter[]): ResolvedFilter[] {
+export function facetsToFilter(facets: readonly Facet[], list: ListNode, periods?: (period: FilterPeriod) => ResolvedFilter[], days?: RangeDays): ResolvedFilter[] {
   const filter: ResolvedFilter[] = [];
   for (const facet of facets) {
     if (facet.kind === 'field') {
-      const conditions = facet.values.map((v) => ({ field: facet.field, op: v.op, value: v.value }));
-      filter.push(conditions.length === 1 ? conditions[0] : { any: conditions });
+      const each = facet.values.map((v) => valueConditions(facet.field, v, days)).filter((conditions) => conditions.length);
+      if (each.length === 1) filter.push(...each[0]);
+      else if (each.length > 1) filter.push({ any: each.map((conditions) => (conditions.length === 1 ? conditions[0] : { all: conditions })) });
     } else if (facet.kind === 'filters') {
       // A list's own filters have no valueFrom: their conditions are already values.
       const chosen = facet.ids

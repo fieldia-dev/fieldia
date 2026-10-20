@@ -1208,6 +1208,29 @@ export interface ListNode {
    * Path. The field's label unless said; translated with the page's words.
    */
   filterLabels?: { [field: string]: string };
+  /**
+   * The fields of `filterFields` filtered by their range rather than by values
+   * ticked, by field: From and To in its list, and the press for each least
+   * value it names ("2+" bedrooms) — one chip, "Price: 1,000,000 – 3,000,000".
+   * A whole number named here; a decimal, an amount, a date and a date and
+   * time are filtered by their range whether named or not.
+   */
+  filterRanges?: { [field: string]: FilterRange };
+  /**
+   * How many records each filter finds, beside it: each value in the filter
+   * bar's lists ("Villa 12"), and each named filter and favourite in the
+   * search bar's menu ("Late 5") — counted with the rest of the search, asked
+   * of the data source (`groups`, `totals`), and shown where it can count.
+   * Off unless true.
+   */
+  filterCounts?: boolean;
+  /**
+   * On a phone (the filter bar 520px wide or less), the filter bar's fields
+   * in a sheet over the list, behind a Filters button: every field at once,
+   * changed together and shown with "Show 37 homes" — the records they find,
+   * counted as they change. Off unless true.
+   */
+  filterSheet?: boolean;
   /** Rows nested under their parent by this many2one (to the list's own model), with Expand all and Collapse all in the header. */
   parentField?: string;
   /**
@@ -1287,6 +1310,15 @@ export interface ListNode {
    * that record alone, as a button for the rows chosen runs with them.
    */
   rowButtons?: ButtonNode[];
+}
+
+/**
+ * A filter of a field's range in a list's filter bar (`ListNode.filterRanges`): From and To, and where it names them,
+ * a press for each least value — "Any", "1+", "2+", "3+" — as a buyer chooses bedrooms.
+ */
+export interface FilterRange {
+  /** The least values offered as a press each, in order: [1, 2, 3, 4] draws "1+" to "4+". A number's alone. */
+  atLeast?: number[];
 }
 
 /** What a list's card shows of its record, by field: the columns' unless said (see `ListNode.card`). */
@@ -1838,6 +1870,13 @@ export const ListCardSchema = z
   })
   .meta({ id: 'ListCard' });
 
+/** A filter of a field's range in a list's filter bar: the least values offered as a press each. */
+export const FilterRangeSchema = z
+  .strictObject({
+    atLeast: z.array(z.number()).min(1).max(12).optional(),
+  })
+  .meta({ id: 'FilterRange' });
+
 /** A list's gallery: whether the list opens on it, and how wide a card is at least. */
 export const ListGallerySchema = z
   .strictObject({
@@ -2211,6 +2250,9 @@ export const ListNodeSchema = z.strictObject({
   search: z.enum(['bar', 'fields']).optional(),
   filterFields: z.array(fieldName).min(1).optional(),
   filterLabels: z.record(fieldName, z.string().min(1)).optional(),
+  filterRanges: z.record(fieldName, FilterRangeSchema).optional(),
+  filterCounts: z.boolean().optional(),
+  filterSheet: z.boolean().optional(),
   parentField: fieldName.optional(),
   export: z.boolean().optional(),
   bulkEdit: z.union([z.boolean(), z.array(fieldName).min(1)]).optional(),

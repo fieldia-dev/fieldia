@@ -627,21 +627,27 @@ function compareValues(a: unknown, b: unknown): { result: number; empty: boolean
 }
 
 /**
- * Records under each value of a field: a link's by its record, nothing as its own group, last; the rest by their
- * labels. With `interval`, a date's by the span it falls in, its first day the group's value and label, in time order.
+ * Records under each value of a field: a link's by its record, a record of links (a many2many) under each of its
+ * links, as a server groups tags; nothing as its own group, last; the rest by their labels. With `interval`, a date's
+ * by the span it falls in, its first day the group's value and label, in time order.
  */
 function groupRows(rows: Values[], field: string, by: GroupInterval = {}): (Group & { rows: Values[] })[] {
   const grouped = new Map<string, Group & { rows: Values[] }>();
+  const isLink = (item: unknown): item is RelatedRecord => item !== null && typeof item === 'object' && !Array.isArray(item) && 'id' in item;
   for (const values of rows) {
-    const raw = values[field] ?? null;
-    const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
-    const value = (by.interval ? spanStart(raw, by.interval, by) : link ? link.id : raw) as JsonValue;
-    const key = JSON.stringify(value);
-    const label = by.interval ? (value ?? '') : link ? link.label : raw === null || raw === '' ? '' : String(raw);
-    const group = grouped.get(key) ?? { value, label: String(label), count: 0, rows: [] };
-    group.count++;
-    group.rows.push(values);
-    grouped.set(key, group);
+    const held = values[field] ?? null;
+    // Links: the record under each one; none, under nothing.
+    const each = Array.isArray(held) && !by.interval && held.every(isLink) ? (held.length ? held : [null]) : [held];
+    for (const raw of each) {
+      const link = isLink(raw) ? raw : null;
+      const value = (by.interval ? spanStart(raw, by.interval, by) : link ? link.id : raw) as JsonValue;
+      const key = JSON.stringify(value);
+      const label = by.interval ? (value ?? '') : link ? link.label : raw === null || raw === '' ? '' : String(raw);
+      const group = grouped.get(key) ?? { value, label: String(label), count: 0, rows: [] };
+      group.count++;
+      group.rows.push(values);
+      grouped.set(key, group);
+    }
   }
   return [...grouped.values()].sort((a, b) => (a.value === null) === (b.value === null) ? a.label.localeCompare(b.label) : a.value === null ? 1 : -1);
 }
