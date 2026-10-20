@@ -29,7 +29,7 @@ export const LATIN_KEPT = [
   // JSON's own words, as they are typed in it.
   ...['true', 'false', 'null'],
   // Language tags, as examples of what to type.
-  ...['ar', 'es', 'pt-BR'],
+  ...['ar', 'en', 'es', 'pt-BR'],
   // Fieldia's own name, as its look's; an editor's, as people know it; the captchas', as people know them.
   'Fieldia',
   ...['VS', 'Code'],

@@ -1,3 +1,5 @@
+import { displayName } from '../../language-names';
+
 const s = (n: number | string) => (String(n) === '1' ? '' : 's');
 const orList = (words: readonly string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`);
 const andList = (words: readonly string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
@@ -66,6 +68,11 @@ export const settingsChanges = {
   oneDate: 'one date, with no end',
   runsFrom: (field: string) => `runs from “${field}”`,
   onZone: (zone: string) => `on the clock of ${zone}`,
+  // ---- a text typed in several languages, each by a person (its languages by their names)
+  languageName: (tag: string) => displayName('en', tag),
+  typedIn: (languages: readonly string[]) => `typed in ${andList(languages)}`,
+  oneLanguage: 'typed in one language',
+  requiredIn: (languages: readonly string[]) => `a required answer typed in ${andList(languages)}`,
   onPageZone: 'on the page’s clock',
   scheduleOf: (name: string) => `asks for the free times of “${name}”`,
   ownSchedule: 'asks for the free times by its own name',

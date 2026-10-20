@@ -1120,6 +1120,9 @@ export function createDesigner(options: {
         }
         if (old.help) next.help = old.help;
         if (old.required) next.required = true;
+        // Typed in several languages, it stays so as words of another kind typed: a short answer made a paragraph.
+        const languages = old as { translate?: string[]; requiredIn?: string[] };
+        if (languages.translate && ['char', 'text', 'html'].includes(next.type) && !kind.widget) Object.assign(next, { translate: languages.translate, ...(languages.requiredIn ? { requiredIn: languages.requiredIn } : {}) });
         draft.fields[node.field] = next;
         if (kind.widget) node.widget = kind.widget;
         else delete node.widget;

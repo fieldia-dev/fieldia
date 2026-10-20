@@ -148,6 +148,12 @@ export const questions = {
   noColourFor: (label: string) => `No colour of its own for ${label}`,
   // ---- text, numbers and dates
   mostCharacters: 'Most characters',
+  /** A text typed in several languages, each by a person: its switch, its languages, one added or taken away, and those a required answer is typed in. */
+  severalLanguages: 'Typed in several languages',
+  typedIn: 'Typed in',
+  addLanguage: 'Add a language',
+  removeLanguage: (name: string) => `Take ${name} away`,
+  requiredIn: 'Required in',
   any: 'Any',
   growsAsTyped: 'Grows as people type',
   decimals: 'Decimals',

@@ -49,6 +49,12 @@ const FIELD_WORDS: Record<string, Words> = {
   digits: (v, _now, _kind, w) => (v === undefined ? w.usualDecimals : w.decimals((v as number[])[1])),
   days: (v, _now, _kind, w) => (Array.isArray(v) ? w.notOn(w.dayNames.filter((_, i) => !v.includes(i + 1))) : w.anyWeekday),
   default: (v, now, _kind, w) => (now.field.type !== 'date' ? null : v === 'today' ? w.startsToday : w.startsEmpty),
+  // A text typed in several languages, by their names; of those, the languages a required answer is typed in.
+  translate: (v, _now, _kind, w) => (Array.isArray(v) ? w.typedIn(v.map((tag) => w.languageName(String(tag)))) : w.oneLanguage),
+  requiredIn: (v, now, _kind, w) => {
+    const all = (now.field as { translate?: string[] }).translate;
+    return all ? w.requiredIn((Array.isArray(v) ? v : all).map((tag) => w.languageName(String(tag)))) : null;
+  },
   // A date and time on a zone's clock: its own, or the page's.
   timeZone: (v, now, _kind, w) => (now.field.type !== 'datetime' ? null : v ? w.onZone(String(v)) : w.onPageZone),
   // An amount's money look, by an example in its own currency: "written as 1,610,000 EGP".

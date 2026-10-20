@@ -140,6 +140,13 @@ export const refusals = {
   wholeRange: 'A whole number runs from and to whole numbers',
   dayIs: 'A day is a date, today, or days after or before today',
   limitsFromModel: (label: string) => `The limits of ${label} come from the model`,
+  // ---- a text in several languages
+  onlyTextLanguages: 'Only a short answer, a paragraph or formatted text is typed in several languages',
+  languagesFromModel: (label: string) => `The languages of ${label} come from the model`,
+  languageTag: (tag: string) => `“${tag}” is not a language’s code: write it as ar, en or pt-BR`,
+  languagesPlainText: 'A text in several languages is typed as words: show it as a short answer, a paragraph or formatted text first',
+  requiredInNeedsLanguages: 'Choose the languages it is typed in first',
+  requiredInOne: 'A required answer is typed in one language at least: to ask for none, take Required off',
   onlyTextSize: 'Only a short answer or a paragraph has a most characters',
   sizeWhole: 'The most characters is a whole number, 1 or more',
   onlyLimits: 'Only a number, an amount or a date has limits',
