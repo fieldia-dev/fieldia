@@ -577,6 +577,26 @@ const form = createForm({ page, dataSource, resume: new URLSearchParams(location
 form.on('draft', ({ key, later, saved }) => later && console.log('Continue from', saved.link));
 ```
 
+## AI help: values proposed, words written, a search read
+
+Three optional members answer with the app's own model — Fieldia ships no model
+and no keys. `suggest({ page, values, fields, from: { text?, files? } })` gives
+values for a form (a page's `suggest`: `fields`, `label`, `from`, `fromField`),
+a table's lines to add among them; `rewrite({ field, how, text, values })` a
+text field's words (its node's `options.rewrite`: `"draft"`, `"polish"`, or
+`{ "how", "label" }`); `searchToFilter({ text, fields })` a list's conditions
+(its `searchToFilter`). The viewer shows each value on its field to accept or
+reject first, and Undo after; `checkPage` and `validatePage` check the settings.
+The memory source has each member only where its `assist` option answers it;
+`assistStandIn({ drafts })` is a stand-in for demos and tests — no model, words
+read by their patterns, every answer saying so ("Stand-in AI, no model: …"):
+
+```ts
+import { assistStandIn, createMemoryDataSource } from '@fieldia/core';
+
+const dataSource = createMemoryDataSource({ records, assist: assistStandIn({ drafts: { 'enquiry.reply': (values) => `Dear ${values.partner_name},` } }) });
+```
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

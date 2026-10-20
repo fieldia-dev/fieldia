@@ -40,6 +40,9 @@ interface DataSource {
   limits?(request: LimitsRequest): Promise<LimitsResult>;    // responses taken, this person's, each choice's takers
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>; // keep the answers so far, to continue later
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
+  suggest?(request: SuggestRequest): Promise<SuggestResult>;  // AI: values for a form, from words or files
+  rewrite?(request: RewriteRequest): Promise<RewriteResult>;  // AI: a text field drafted or polished
+  searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>; // AI: plain words as filters
 }`
 )}
 
@@ -72,6 +75,7 @@ interface DataSource {
     <tr><td>${c('notDuplicates')} · ${c('markNotDuplicate')}</td><td>A saved record with possible duplicates is shown; someone presses <em>It's someone new</em></td><td>What was let be kept on your server, so every device lets it be — without both, the person's browser keeps it. See <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
     <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
+    <tr><td>${c('suggest')} · ${c('rewrite')} · ${c('searchToFilter')}</td><td>Someone presses Fill from text (a page's ${c('suggest')}), a text field's Draft or Polish (its ${c('rewrite')}), or ✦ beside a list's search (${c('searchToFilter')})</td><td>AI help by your own model, each value shown to accept or reject — see <a href="#ai">AI help</a>; without one, what asks for it is hidden</td></tr>
   </tbody>
 </table>
 </div>
@@ -308,6 +312,46 @@ mountViewer(element, { page, dataSource, resume: new URLSearchParams(location.se
   <li>Without the two members, no Continue later shows, and drafts stay in the browser's store as they always have (with their step now). ${c('form.continueLater()')}, ${c('form.canContinueLater()')} and the form's ${c('draft')} event (${c('onDraft')} in React, ${c('@draft')} in Vue, ${c('(draft)')} in Angular) are there for a screen of your own.</li>
 </ul>
 
+<h2 id="ai">AI help: values proposed, words written, a search read</h2>
+<p>Your app's own model fills a form from an e-mail or a message, drafts and polishes a text field, and turns a search typed in plain words into filters — through three members of your data source. Fieldia ships no model and no keys, and sends nothing anywhere but to your source. What it adds is the part every AI-first app builds again: <strong>every value proposed is shown on its field before it is kept</strong> — the value it would take the place of struck through, the new one, <strong>Accept</strong> and <strong>Reject</strong>, a table's lines to add listed under it — and over the form how many, your model's why, <strong>Accept all</strong> and <strong>Reject all</strong>. Nothing is written until it is accepted, and <strong>Undo</strong> puts back what was there.</p>
+${code(
+  'json',
+  `
+"suggest": { "label": "Fill from an e-mail", "fields": ["name", "email", "phone", "website", "country_id", "child_ids"] }
+"suggest": { "label": "Fill from their message", "fromField": "message", "fields": ["kind", "district", "budget", "bedrooms"] }
+{ "type": "field", "id": "f-reply", "field": "reply", "options": { "rewrite": ["draft", "polish"] } }
+{ "type": "list", "id": "homes", "columns": ["name", "kind", "district", "price"], "searchToFilter": true }`
+)}
+${code(
+  'ts',
+  `
+const dataSource = {
+  ...yourDataSource,
+  // Fill from text: the words pasted (or a field's own, fromField), files picked, the page and the fields to fill.
+  async suggest({ page, values, fields, from, language }) {
+    const answer = await fetch('/api/ai/fill', { method: 'POST', body: JSON.stringify({ page, values, fields, text: from.text, language }) });
+    return answer.json();   // { values: { name: 'Amman Fresh Markets', country_id: 'Jordan', child_ids: [{ name: 'Lina Haddad' }] }, why }
+  },
+  // Draft and Polish (and a tool of your own, by its how).
+  async rewrite({ field, how, text, values, language }) {
+    const answer = await fetch('/api/ai/write', { method: 'POST', body: JSON.stringify({ field, how, text, values, language }) });
+    return answer.json();   // { text, why? }
+  },
+  // A search in plain words: conditions on the fields asked.
+  async searchToFilter({ text, fields, page }) {
+    const answer = await fetch('/api/ai/search', { method: 'POST', body: JSON.stringify({ text, fields, page }) });
+    return answer.json();   // { filter: [{ field: 'kind', op: '=', value: 'villa' }, { field: 'price', op: '<=', value: 15000000 }], why }
+  },
+};`
+)}
+<ul>
+  <li>${c('suggest({ pageId, model, recordId, page, values, fields, from, language })')} — ${c('fields')} are those the page's ${c('suggest.fields')} names, else every field shown that the person can set; ${c('from.text')} the words pasted, or those of the field ${c('suggest.fromField')} names (a buyer's message, a visit's notes, read at a press with no box to paste in); ${c('from.files')} files picked. Answer ${c('{ values, why? }')}: each value as its field holds one — a link as ${c('{ id, label }')} or by its name, looked for exactly as a name typed is; a choice by its value or label; a table of lines' as the lines to add.</li>
+  <li>${c('rewrite({ field, how, text, values, … })')} — ${c('how')} is ${c('draft')} (write it from the record), ${c('polish')} (make the words there clearer, offered once there are some), or the ${c('how')} of a tool of your own, ${c('{ "how": "formal", "label": "More formal" }')}. Answer ${c('{ text, why? }')}: shown under the field in full.</li>
+  <li>${c('searchToFilter({ text, fields, page, … })')} — answer ${c('{ filter, text?, why? }')}: conditions on the fields asked (${c('=')}, ${c('in')}, ${c('>=')}, ${c('<=')}, ${c('between')}, ${c('contains')} for links, ${c('ilike')} for words), each made a filter of the list's own kind — a chip, or the filter bar's values and ranges — and ${c('text')}, words left to search for as typed. Undo puts the search and the words back.</li>
+  <li><strong>The person comes first.</strong> A proposal is for the record it was asked for: another record shown, or Discard, and it goes; an answer that comes late is laid nowhere. A field typed in while it was asked keeps what was typed (<em>“Left as you typed: Email”</em>), and typing in a field with a proposal lets it go. A value that does not read as its field holds one — a name no record has, a choice not offered — is not used, and said.</li>
+  <li><strong>Your agent's own values</strong>, worked out elsewhere: ${c("handle.propose({ city: 'Amman' }, { why: 'From the last call' })")} shows them the same way, with no member needed.</li>
+</ul>
+
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
 ${code(
@@ -493,6 +537,14 @@ ${code(
 import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
 
 const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });`
+)}
+<p>Its AI help — ${c('suggest')}, ${c('rewrite')} and ${c('searchToFilter')} — is there only where its ${c('assist')} option answers it. ${c('assistStandIn()')} is a stand-in for demos and tests, with no model and no keys: words read by their patterns (a signature's name, job, company, e-mail, phones, website and address; a search's choices, links and numbers — <em>“villas in New Cairo under 15M”</em>), a polish that puts capitals and full stops in and writes out <em>“u”</em>, <em>“pls”</em> and <em>“asap”</em>, a draft from a template of yours. Each of its answers says so: <em>“Stand-in AI, no model: …”</em>.</p>
+${code(
+  'ts',
+  `
+import { assistStandIn, createMemoryDataSource } from '@fieldia/core';
+
+const dataSource = createMemoryDataSource({ records, assist: assistStandIn({ drafts: { 'enquiry.reply': (values) => \`Dear \${values.partner_name}, …\` } }) });`
 )}
 <p>Its ${c('list')} gives ${c('allIds')} when asked, and its ${c('writeMany')} refuses each record as its ${c('save')} would (the person's ${c('can')}, a version older than the record's); its ${c('createMany')} makes each record as its ${c('save')} makes a new one; it has no ${c('exportRecords')} or ${c('importRecords')}, so the browser writes an export and reads an import, as without a server. Its ${c('upload')} keeps each file as a ${c('data:')} address, so a preview needs nothing else. ${c('storage')} makes it as slow, or as unreliable, as a real store, to see files on their way and Retry:</p>
 ${code(

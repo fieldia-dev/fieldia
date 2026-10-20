@@ -914,3 +914,82 @@ In plain words:
   `limits` option's starting counts, a record page's model's records but the one edited; `saveDraft` keys drafts
   `draft-1`, `draft-2`… (`drafts` shows them, with `later`), with `draftLink(key)`'s link on "Continue later";
   `loadDraft` finds them, and the `drafts` option's. Tests: `libs/core/src/lib/record/taking.spec.ts`, `drafts.spec.ts`.
+
+## 19. AI help: values proposed, words written, a search read (Wave 5, lane w5-ai)
+
+Three more members, each optional as everything here: each answers with the app's own model — Fieldia ships no model
+and no keys, and sends nothing anywhere but to the source. Without `suggest` no "Fill from text" shows; without
+`rewrite` a text field's tools are hidden; without `searchToFilter` a list has no ✦ and searches the words as typed.
+
+```ts
+suggest?(request: SuggestRequest): Promise<SuggestResult>;
+rewrite?(request: RewriteRequest): Promise<RewriteResult>;
+searchToFilter?(request: SearchToFilterRequest): Promise<SearchToFilterResult>;
+
+interface SuggestRequest {
+  pageId: string;
+  model: string;                     // empty for a page of responses
+  recordId: RecordId | null;
+  page: Page;                        // as shown, in the reader's words: labels, kinds, options for the model to read
+  values: Values;                    // the record's values now
+  fields: string[];                  // the fields a proposal may fill: suggest.fields, else those shown a person can set
+  from: { text?: string; files?: UploadFile[] };   // words pasted, a record's own (suggest.fromField), files picked
+  language: string;                  // the page's language tag
+}
+interface SuggestResult {
+  values: Values;                    // by field; a link as { id, label } or its name; a table's lines to add, each its values
+  why?: string;                      // shown over the values proposed
+}
+interface RewriteRequest {
+  pageId: string; model: string; recordId: RecordId | null; page: Page; values: Values;
+  field: string;                     // the text field
+  how: string;                       // "draft", "polish", or an app's own tool's `how`
+  text: string;                      // its words now ('' for a draft of an empty field)
+  language: string;
+}
+interface RewriteResult { text: string; why?: string }
+interface SearchToFilterRequest {
+  pageId: string; model: string; page: Page;
+  text: string;                      // "villas in New Cairo under 15M"
+  fields: string[];                  // the fields a condition may name: the filter bar's and search fields, else the
+                                     // list's columns, search fields, filter fields and groups
+  language: string;
+}
+interface SearchToFilterResult {
+  filter: ResolvedFilterCondition[]; // = a value (a choice's value; a link's id, or { id, label }), in, >=, <=, >, <,
+                                     // between [from, to], contains (a record of links), ilike (words in a text)
+  text?: string;                     // words left to search for as typed
+  why?: string;                      // shown with the filters made
+}
+```
+
+In plain words:
+
+- **Nothing is kept unasked.** Each value proposed is shown on its field — the value it would take the place of
+  struck through, the new one, Accept and Reject — a table's lines to add listed under it, and over the form how many,
+  the source's `why`, Accept all and Reject all; a text field's words under it in full. Nothing is written until the
+  person accepts it: a save meanwhile saves what the fields hold. Accepted, it is written as the person's own (the
+  page's change steps and the source's onchange run for it), and Undo puts back what was there — but not over what the
+  person typed since. A list's filters made from words are the list's own (chips, or the filter bar's values and
+  ranges), taken away as any; Undo puts the search and the words back.
+- **Read, never taken as it came.** A value is read as its field holds one: words, a number as the page writes one, yes
+  or no, a choice by its value or label among those offered now, a day, a link as `{ id, label }` or by its name —
+  looked for exactly, as a typed name is (`SearchRequest.exact`): none or several called so, it is not used, and why is
+  said ("Country (nothing is called “Egyptt”)"). A field the page did not ask, one the person cannot set, or a kind a
+  proposal does not fill (a file, a picture) is not used, and said. A condition on a field not asked, or an `op` the list
+  cannot show, likewise.
+- **Late answers.** Each ask is for the record shown (`form.recordShown()`): another record shown, or the person's
+  Discard, and the answer is laid nowhere — and what was proposed and not yet accepted goes too. Before it asks, the
+  form reads what is typed (`form.settle()`). A field the person typed in while it was asked keeps what they typed
+  ("Left as you typed: Email"); typing in a field with a proposal lets the proposal go; a text field typed in while its
+  draft was asked keeps the person's words. A list's ✦ pressed again, or the box typed in, leaves an earlier answer
+  unheard.
+- **The app's own proposal.** `handle.propose(values, { why })` (the viewer's) shows values the app worked out — an
+  agent's — the same way, with no `suggest` member; it answers how many were proposed.
+- **Failing.** A member that throws: its message is said (in the dialog, under the field's tools, or under the list's
+  bar), and nothing changes.
+- The memory source has each member only where its `assist` option answers it: `assistStandIn()` (@fieldia/core, not in
+  the one-tag script) is a stand-in with no model — words read by their patterns, the same every time, a draft from the
+  app's template (`drafts`, by `model.field`) — whose every `why` begins "Stand-in AI, no model:". Tests:
+  `libs/core/src/lib/record/memory-assist.spec.ts`, `libs/viewer/src/lib/assist.spec.ts`, `assist-words.spec.ts`,
+  `e2e/ai-help.spec.ts`.
