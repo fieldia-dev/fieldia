@@ -51,7 +51,7 @@ const AREA_OF = {
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'agent-tools', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent', 'visit-feedback', 'clinic-intake'],
-  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
+  'real-estate': ['map-homes', 'map-many-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property', 'listing'],
   surveys: ['survey', 'signup', 'event-signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -105,6 +105,7 @@ const SEARCH_WORDS = {
   'map-homes': 'homes houses property properties real estate listings flats apartments villas rent rental sale price map pins search area shortlist',
   'map-embed': 'homes houses property real estate listings map website own page embed filter',
   'map-homes-arabic': 'homes houses property real estate map arabic right to left rtl',
+  'map-many-homes': 'homes houses property properties real estate listings portal marketplace thousands many 20000 20,000 big large map clusters cluster bubbles counts counted server zoom pan egypt cairo alexandria north coast',
   'map-couriers': 'couriers drivers riders fleet delivery map vehicles car scooter bike tracking free busy',
   'map-order': 'order delivery tracking courier driver eta arrival map food kitchen live where is my order',
   'map-round': 'route round stops van delivery driver map order lines numbered',
@@ -690,6 +691,21 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-many-homes',
+    name: '20,000 homes on a map',
+    category: 'lists',
+    query: 'page=map-many-homes&skin=outlined',
+    blurb: 'Twenty thousand homes for sale and to rent across Egypt on one map: the data source counts them where they crowd and the map draws its answer, so it shows every home a search finds without loading them, and asks again as you zoom and pan. The list beside it pages through them as ever.',
+    howTo: [
+      'Zoom in on Cairo: each bubble parts into smaller ones, each counted by the data source, until the streets show each home’s price on its pin.',
+      'Click a bubble: the map zooms to where its homes are.',
+      'Move the map: Search this area says how many homes are in view, from the bubbles drawn. Press it: the list keeps those homes, and “In this area” joins the search bar.',
+      'Pick For rent from the search menu: the map fits the rentals, every one of them counted.',
+      'Point at a row in the list: its pin lights up on the map, inside a bubble too.',
+      'Zoom in on the New Capital until the bubble of Capital Tower stands alone, then click it: sixty flats in one place, the first fifty listed and the rest counted.',
+    ],
+  },
+  {
     id: 'map-embed',
     name: 'A map in a page of your own',
     category: 'lists',
@@ -1127,6 +1143,7 @@ export function demoHref(demo, framework = 'plain') {
  */
 export const OPENED = [
   { page: 'map-home', name: 'A home for sale', from: 'map-homes' },
+  { page: 'map-many-home', name: 'One of 20,000 homes', from: 'map-many-homes' },
   { page: 'map-courier', name: 'A courier', from: 'map-couriers' },
   { page: 'map-week-order', name: 'An order of the week', from: 'map-zones' },
   { page: 'clinic-appointment', name: 'An appointment', from: 'clinic-calendar' },

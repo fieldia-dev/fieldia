@@ -1,4 +1,4 @@
-import { alikeRecords, createMemoryDataSource, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import listing from '../../examples/pages/listing.page.json';
@@ -54,6 +54,7 @@ import { templatePages } from './templates';
 import wiText from '../../examples/pages/wi-text.page.json';
 import { wiTextRecords } from './wi-text';
 import { AMENITIES, sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
+import { manyHomes, manyHomesPages } from './many-homes';
 import { sampleLeads } from './leads';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
@@ -155,6 +156,8 @@ export const pages: Record<string, Page> = {
   'wi-history': wiHistoryPage,
   'map-zones': mapZones as Page,
   'map-heat': mapHeat as Page,
+  // Twenty thousand homes across Egypt, gathered on the data source where they crowd, and the home each opens (shared/many-homes.ts).
+  ...manyHomesPages,
   'map-kitchen': mapKitchen as Page,
   'map-week-order': mapWeekOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
@@ -241,6 +244,7 @@ const RECORD_PAGES: Record<string, string> = {
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
+  'map-many-homes': 'map-many-home',
   ...calendarDemo.recordPages,
   'test-drives': 'test-drive',
   // An invoice from the invoices list, and from a customer's (View all, by the app's route — or in its dialog, over
@@ -452,11 +456,11 @@ const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
  * its page in the demo's look and language, so a card's link opens it here,
  * in a new tab, or is copied, as a link is.
  */
-function linkedHomes(homes: Record<number, Values>): Record<number, Values> {
+function linkedHomes(homes: Record<number, Values>, page = 'map-home'): Record<number, Values> {
   const here = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
   for (const [id, home] of Object.entries(homes)) {
     const to = new URLSearchParams(here);
-    to.set('page', 'map-home');
+    to.set('page', page);
     to.set('record', id);
     home['link'] = `?${to}`;
   }
@@ -475,7 +479,10 @@ function quietHeader(page: Page): Page {
 export function sampleDataSource() {
   const params = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
   const showroomSlots = scheduleSlots({ showroom: showroom() }, { now: demoNow });
+  // The twenty thousand homes, made only for the pages that show them; their map's bubbles counted here, as a server counts them.
+  const many = ['map-many-homes', 'map-many-home'].includes(params.get('page') ?? '');
   const options = withReal({
+    ...(many ? { clusters: gridClusters({ models: ['home.egypt'] }) } : {}),
     // The listing's photos go to a store as slow as a phone's upload, one of them failing once (shared/listing-photos.ts).
     ...(params.get('page') === 'listing-photos' ? { storage: LISTING_STORAGE } : {}),
     lists: { ...appLists, ...agentLists },
@@ -508,6 +515,7 @@ export function sampleDataSource() {
       ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
+      ...(many ? { 'home.egypt': linkedHomes(manyHomes(), 'map-many-home') } : {}),
       'home.amenity': Object.fromEntries(Object.entries(AMENITIES).map(([id, name]) => [id, { name }])),
       // A sales team's buyer leads, made round now (shared/leads.ts).
       lead: sampleLeads(),

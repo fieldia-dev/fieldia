@@ -1,0 +1,117 @@
+{
+  "fieldia": "0.7",
+  "id": "map-many-homes",
+  "title": "Homes across Egypt",
+  "description": "20,000 homes for sale and to rent on one map: the data source counts them where they crowd, so the map shows every one of them, never loading them all, and the list beside it pages through them as ever.",
+  "data": { "kind": "record", "model": "home.egypt" },
+  "records": { "one": "home", "other": "homes", "a": "a home" },
+  "fields": {
+    "name": { "type": "char", "label": "Home" },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        { "value": "flat", "label": "Flat" },
+        { "value": "duplex", "label": "Duplex" },
+        { "value": "penthouse", "label": "Penthouse" },
+        { "value": "villa", "label": "Villa" },
+        { "value": "chalet", "label": "Chalet" }
+      ]
+    },
+    "offer": {
+      "type": "selection",
+      "label": "Offer",
+      "options": [{ "value": "sale", "label": "For sale" }, { "value": "rent", "label": "For rent" }]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currencyField": "currency",
+      "digits": [12, 0],
+      "money": { "currency": "code", "at": "after", "per": [{ "period": "month", "when": "offer == 'rent'" }] }
+    },
+    "currency": { "type": "char", "label": "Currency" },
+    "bedrooms": { "type": "integer", "label": "Bedrooms" },
+    "area_m2": { "type": "integer", "label": "Area, m²" },
+    "district": {
+      "type": "selection",
+      "label": "Where",
+      "options": [
+        { "value": "new_cairo", "label": "New Cairo" },
+        { "value": "sheikh_zayed", "label": "Sheikh Zayed" },
+        { "value": "october", "label": "6th of October" },
+        { "value": "new_capital", "label": "New Capital" },
+        { "value": "madinaty", "label": "Madinaty" },
+        { "value": "shorouk", "label": "El Shorouk" },
+        { "value": "maadi", "label": "Maadi" },
+        { "value": "heliopolis", "label": "Heliopolis" },
+        { "value": "nasr_city", "label": "Nasr City" },
+        { "value": "zamalek", "label": "Zamalek" },
+        { "value": "mohandessin", "label": "Mohandessin" },
+        { "value": "dokki", "label": "Dokki" },
+        { "value": "alexandria", "label": "Alexandria" },
+        { "value": "agami", "label": "Agami" },
+        { "value": "north_coast", "label": "North Coast" },
+        { "value": "ain_sokhna", "label": "Ain Sokhna" },
+        { "value": "hurghada", "label": "Hurghada" },
+        { "value": "el_gouna", "label": "El Gouna" },
+        { "value": "sharm", "label": "Sharm El Sheikh" },
+        { "value": "mansoura", "label": "Mansoura" },
+        { "value": "tanta", "label": "Tanta" },
+        { "value": "port_said", "label": "Port Said" },
+        { "value": "ismailia", "label": "Ismailia" },
+        { "value": "luxor", "label": "Luxor" },
+        { "value": "aswan", "label": "Aswan" }
+      ]
+    },
+    "lat": { "type": "float", "label": "Latitude" },
+    "lng": { "type": "float", "label": "Longitude" },
+    "photo": { "type": "image", "label": "Photo" },
+    "link": { "type": "char", "label": "Link" },
+    "listed_on": { "type": "date", "label": "Listed on" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "homes",
+    "columns": ["name", "offer", "price", "bedrooms"],
+    "sort": [{ "field": "listed_on", "desc": true }],
+    "pageSize": 12,
+    "searchFields": ["name", "district", "kind", "offer"],
+    "card": {
+      "title": "name",
+      "image": "photo",
+      "status": "offer",
+      "lead": true,
+      "labels": false,
+      "fields": ["price", ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }]]
+    },
+    "filters": [
+      { "id": "sale", "label": "For sale", "filter": [{ "field": "offer", "op": "=", "value": "sale" }] },
+      { "id": "rent", "label": "For rent", "filter": [{ "field": "offer", "op": "=", "value": "rent" }] },
+      { "id": "villas", "label": "Villas and chalets", "filter": [{ "field": "kind", "op": "in", "value": ["villa", "chalet"] }] },
+      { "id": "family", "label": "Three bedrooms or more", "filter": [{ "field": "bedrooms", "op": ">=", "value": 3 }] }
+    ],
+    "groupBy": ["district", "kind", "offer"],
+    "map": {
+      "latitude": "lat",
+      "longitude": "lng",
+      "pin": {
+        "label": "price",
+        "money": { "home": "EGP", "currency": "symbol", "at": "before" },
+        "tones": [{ "tone": "info", "when": "offer == 'rent'" }]
+      },
+      "card": {
+        "title": "name",
+        "image": "photo",
+        "href": "link",
+        "labels": false,
+        "lead": true,
+        "fields": [
+          "price",
+          ["district", { "field": "bedrooms", "unit": { "one": "bedroom", "other": "bedrooms" } }, { "field": "area_m2", "unit": "m²" }]
+        ]
+      },
+      "view": "both"
+    }
+  }
+}
