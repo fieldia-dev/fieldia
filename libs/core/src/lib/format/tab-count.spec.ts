@@ -17,7 +17,7 @@ const quotations = {
 };
 
 const customer = (count: unknown, children: unknown[] = [quotations]) => ({
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'customer',
   data: { kind: 'record', model: 'partner' },
   fields: { name: { type: 'char', label: 'Name' }, notes: { type: 'text', label: 'Notes' }, line_ids: { type: 'one2many', label: 'Lines', relation: 'line', fields: { name: { type: 'char', label: 'Name' } } } },

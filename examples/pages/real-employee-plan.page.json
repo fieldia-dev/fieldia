@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.5",
+  "fieldia": "0.6",
   "id": "real-employee-plan",
   "title": "Launch Plan",
   "data": { "kind": "record", "model": "mail.activity.schedule" },

@@ -9,7 +9,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const page: Page = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'visit',
   title: 'Visit',
   print: { footer: 'Bring this sheet to room {room}.' },
@@ -59,7 +59,7 @@ function fresh(): Fresh {
 }
 
 const invoice: Page = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'invoice',
   title: 'Invoice',
   data: { kind: 'record', model: 'invoice' },

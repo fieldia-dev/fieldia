@@ -32,7 +32,7 @@ const invoiceFields = {
 
 /** An invoice on its own: what a customer's invoice opens in, and what New makes, its customer filled in. */
 export const invoicePage = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'invoice',
   title: 'An invoice',
   data: { kind: 'record', model: 'invoice' },
@@ -82,7 +82,7 @@ const quotationFields = {
 
 /** A quotation on its own. */
 export const quotationPage = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'quotation',
   title: 'A quotation',
   data: { kind: 'record', model: 'quotation' },
@@ -132,7 +132,7 @@ const viewingFields = {
 
 /** A viewing on its own: what a home's viewing opens in, and what New makes, its home filled in. */
 export const viewingPage = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'viewing',
   title: 'A viewing',
   data: { kind: 'record', model: 'viewing' },
@@ -163,7 +163,7 @@ export const viewingPage = {
 
 /** Every viewing, the list View all opens a home's in. */
 export const viewingsPage = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'viewings',
   title: 'Viewings',
   data: { kind: 'record', model: 'viewing' },

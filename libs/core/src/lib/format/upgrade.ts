@@ -25,9 +25,12 @@ export interface PageUpgrade {
  * page's `print` and `duplicates`, the `print` step and the built-in Print — so a 0.3 page is a 0.4 page as it is;
  * and 0.5 (Fieldia 0.26) only added again — a page's `records` and `lowerLabels`, a tab's count of a related list in it
  * (`count: { related }`, beside a field's name), a related list's `open`, a node's `print: false`, a row tone's `label`
- * and a list's `rowBoldLabel` — so a 0.4 page is a 0.5 page as it is. A release that renames or reshapes a setting adds
- * a step here, with its example; one that only adds needs none: the page is the same, and upgradePage writes the new
- * version in it.
+ * and a list's `rowBoldLabel` — so a 0.4 page is a 0.5 page as it is; and 0.6 (Fieldia 0.27) only added once more — a
+ * page's `endings`, `limits` and `continueLater`, an option's `seats` and `invisible`, `optionsFrom` carried from a
+ * question (`{ field, picked }`) and on a table's line, a signature's `signs` and `signerField`, a list's
+ * `filterRanges`, `filterCounts` and `filterSheet`, `{field}` words in a page's words — so a 0.5 page is a 0.6 page as
+ * it is. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * none: the page is the same, and upgradePage writes the new version in it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];
 

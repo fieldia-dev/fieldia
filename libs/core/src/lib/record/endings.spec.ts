@@ -7,7 +7,7 @@ import type { SubmitResult } from './data-source';
 
 /** A clinic's feedback: the branch visited, a rating asked of it by name, and a name to thank. */
 const feedback = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'feedback',
   data: { kind: 'responses' },
   fields: {

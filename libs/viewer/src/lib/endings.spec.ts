@@ -23,7 +23,7 @@ const button = (host: Element, text: string) => [...host.querySelectorAll('butto
 /** A clinic's booking: a branch, a day, a service with its price, a name — and what it says once sent. */
 function booking(more: Partial<Page> = {}): Page {
   return {
-    fieldia: '0.5',
+    fieldia: '0.6',
     id: 'booking',
     data: { kind: 'responses' },
     look: { dateOrder: 'mdy' },

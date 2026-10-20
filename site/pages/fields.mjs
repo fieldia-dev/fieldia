@@ -50,7 +50,7 @@ ${code(
   'json',
   `
 {
-  "fieldia": "0.5",
+  "fieldia": "0.6",
   "phone": { "country": "EG", "shown": "national" },
   "fields": { "mobile": { "type": "char", "label": "Mobile" }, "office": { "type": "char", "label": "Dubai office" } },
   "layout": { "type": "sections", "id": "s", "children": [

@@ -14,7 +14,7 @@ import { alikeRecords } from './memory-duplicates';
 
 const page = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.5',
+    fieldia: '0.6',
     id: 'customer-card',
     data: { kind: 'record', model: 'partner' },
     fields: {

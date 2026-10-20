@@ -23,7 +23,7 @@ const slack = { id: 2, label: 'Slack' };
 
 function page(tool: Record<string, unknown> = {}, more: Record<string, unknown> = {}): Page {
   return {
-    fieldia: '0.5',
+    fieldia: '0.6',
     id: 'agent',
     data: { kind: 'record', model: 'agent' },
     fields: {
@@ -402,7 +402,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
     const { source, asked } = lists();
     const fields = (page().fields['tools'] as { fields: Record<string, unknown> }).fields;
     const dialog = createForm({
-      page: { fieldia: '0.5', id: 'line', data: { kind: 'record', model: 'values' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 't', field: 'tool' }] } } as Page,
+      page: { fieldia: '0.6', id: 'line', data: { kind: 'record', model: 'values' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 't', field: 'tool' }] } } as Page,
       dataSource: source,
       values: { connection_id: gmail },
       parent: { values: { name: 'Helper' }, fields: page().fields },
@@ -415,7 +415,7 @@ describe('a table line’s choices from the app’s lists, in a form', () => {
 
 describe('a line’s own form, its choices from the app’s lists', () => {
   const fields = (page().fields['tools'] as { fields: Record<string, unknown> }).fields;
-  const dialogPage = { fieldia: '0.5', id: 'line', data: { kind: 'record', model: 'values' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'c', field: 'connection_id' }, { type: 'field', id: 't', field: 'tool' }] } } as Page;
+  const dialogPage = { fieldia: '0.6', id: 'line', data: { kind: 'record', model: 'values' }, fields, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'c', field: 'connection_id' }, { type: 'field', id: 't', field: 'tool' }] } } as Page;
 
   it('takes out and says a tool its new connection does not offer, as the line’s row does', async () => {
     const { source, asked } = lists();

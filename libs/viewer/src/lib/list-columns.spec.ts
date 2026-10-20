@@ -13,7 +13,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
  */
 
 const contacts: Page = {
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'contacts',
   title: 'Contacts',
   data: { kind: 'record', model: 'contact' },

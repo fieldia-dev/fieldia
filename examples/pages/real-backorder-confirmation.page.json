@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.5",
+  "fieldia": "0.6",
   "id": "real-backorder-confirmation",
   "title": "Create Backorder?",
   "data": { "kind": "responses" },

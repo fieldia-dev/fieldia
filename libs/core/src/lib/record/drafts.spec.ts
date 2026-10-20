@@ -13,7 +13,7 @@ import type { Scheduler } from './scheduler';
 
 const intake = (more: Partial<Page> = {}): Page =>
   ({
-    fieldia: '0.5',
+    fieldia: '0.6',
     id: 'patient-intake',
     data: { kind: 'responses' },
     continueLater: true,

@@ -1,12 +1,12 @@
 /** The page format version this build reads and writes. */
-export const FORMAT_VERSION = '0.5' as const;
+export const FORMAT_VERSION = '0.6' as const;
 
 /**
  * Every format Fieldia has had, oldest first; the last is FORMAT_VERSION. A page in an older one is brought up to date
  * by `upgradePage`, step by step (`PAGE_UPGRADES`), wherever it is read: `checkPage`, `validatePage`, the viewer, the
  * designer. A release that changes what a page may say adds its version here (see the format's docs, "Versions").
  */
-export const FORMAT_VERSIONS = ['0.1', '0.2', '0.3', '0.4', '0.5'] as const satisfies readonly string[];
+export const FORMAT_VERSIONS = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6'] as const satisfies readonly string[];
 
 /** A format Fieldia has had: a page may say any of them, and is read in the current one. */
 export type FormatVersion = (typeof FORMAT_VERSIONS)[number];

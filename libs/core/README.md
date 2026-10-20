@@ -28,7 +28,7 @@ list of records — that your app implements;
 The page format is also a JSON Schema, for editors and other languages:
 `@fieldia/core/page.schema.json`.
 
-A page says which format it is written in (`"fieldia": "0.5"`, `FORMAT_VERSION`; a page in 0.1, 0.2, 0.3 or 0.4 is read as it is).
+A page says which format it is written in (`"fieldia": "0.6"`, `FORMAT_VERSION`; a page in 0.1, 0.2, 0.3, 0.4 or 0.5 is read as it is).
 One in an older format is brought up to date as it is read — by `checkPage`,
 `validatePage` and `createForm`, so by the viewer and the designer too — and
 `upgradePage` does it for the pages your app keeps. One newer than this Fieldia

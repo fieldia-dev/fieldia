@@ -9,7 +9,7 @@ import type { Page } from './page';
  */
 
 const page = (more: Record<string, unknown> = {}, layout?: unknown): unknown => ({
-  fieldia: '0.5',
+  fieldia: '0.6',
   id: 'feedback',
   data: { kind: 'responses' },
   fields: {

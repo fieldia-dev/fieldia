@@ -111,7 +111,7 @@ describe('<FieldiaForm> for Vue', () => {
   });
 
   it('hands the form the app’s functions, each call reaching the newest given', async () => {
-    const priced: Page = { fieldia: '0.5', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
+    const priced: Page = { fieldia: '0.6', id: 'priced', data: { kind: 'responses' }, fields: { price: { type: 'float', label: 'Price' }, total: { type: 'float', label: 'Total', compute: 'withTax(price)' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-price', field: 'price' }, { type: 'field', id: 'f-total', field: 'total' }] } };
     const ready: ViewerHandle[] = [];
     const wrapper = mount(FieldiaForm, { props: { page: priced, functions: { withTax: (price: number) => price * 2 }, onReady: (handle: ViewerHandle) => ready.push(handle) }, attachTo: document.body });
     await nextTick();
