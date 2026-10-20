@@ -56,7 +56,7 @@ describe('a list drawn as a backlog, by the designer', () => {
     expect(designer.getPage().fields['area']).toEqual(model['area']);
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(designer.setListOptions({ filterFields: ['notes'] })).toBe(false);
-    expect(designer.getState().issues).toEqual(['The filter bar cannot list the values of Notes']);
+    expect(designer.getState().issues).toEqual(['The filter bar cannot list the values of Notes, nor take its range']);
     // The search bar back: the fields' values go with the filter bar, and the fields only they named leave the page.
     expect(designer.setListOptions({ search: 'bar' })).toBe(true);
     expect(list(designer).search).toBeUndefined();

@@ -1,4 +1,6 @@
 import {
+  addDays,
+  dayStarts,
   facetsToFilter,
   groupByFields,
   importFields,
@@ -12,6 +14,7 @@ import {
   type Form,
   type ListNode,
   type Locale,
+  type RangeDays,
   type ResolvedFilter as Resolved,
   type Page,
   type RecordId,
@@ -24,6 +27,7 @@ import {
 import { drawIcon, formatNumber, keepsWhole, moneyReads, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetLabels } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
+import { filterKit } from './filter-range';
 import type { ViewerLabels } from './labels';
 import { listCells, plain, rowRules } from './list-cells';
 import { daysFilter, periodDays } from './list-days';
@@ -322,7 +326,28 @@ export function listView(context: ListContext): ListView {
   };
   /** How a Group By of a date asks for its spans: by the list's week and time zone. */
   const interval = (key: GroupKey) => (key.interval ? { interval: key.interval, weekStart: count.weekStart, timeZone: zoneOfField(key.field) } : {});
-  const currentFilter = () => [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node, periods)];
+  /**
+   * A date and time's range of days (a filter bar's, a custom filter's "is between"), as the list counts days: from the
+   * first moment of the first day to before the first of the day after the last, in the field's zone.
+   */
+  const rangeDays: RangeDays = (field, from, last) => {
+    if (page.fields[field]?.type !== 'datetime') return null;
+    const zone = zoneOfField(field);
+    return [...(from ? [{ field, op: '>=' as const, value: dayStarts(from, zone) }] : []), ...(last ? [{ field, op: '<' as const, value: dayStarts(addDays(last, 1), zone) }] : [])];
+  };
+  /** The conditions a search of these facets makes, the list's fixed ones with them, as the list asks for its records. */
+  const searchFilter = (of: Facet[]): ResolvedFilter[] => [...(context.fixedFilter ?? []), ...facetsToFilter(of, node, periods, rangeDays)];
+  const currentFilter = () => searchFilter(facets);
+  /**
+   * How many records a filter finds (`filterCounts`, a filter sheet's Show): the source's totals' count, else its list's
+   * total (a page of one); null where it can do neither.
+   */
+  const countOf = async (filter: ResolvedFilter[]): Promise<number | null> => {
+    const source = context.dataSource;
+    if (source?.totals) return (await source.totals({ model, filter, totals: {} })).count;
+    if (source?.list) return (await source.list({ model, fields: [], filter, sort: [], offset: 0, limit: 1 })).total;
+    return null;
+  };
 
   // ---- the table ---------------------------------------------------------------
 
@@ -936,8 +961,8 @@ export function listView(context: ListContext): ListView {
   const filters = node.search === 'fields' ? filtersPart.loaded : undefined;
   const search =
     filters
-      ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], facets, onChange: searched })
-      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}) });
+      ? filters.filterBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, dataSource: context.dataSource, model, fixedFilter: () => context.fixedFilter ?? [], searchFilter, count: countOf, facets, onChange: searched, kit: filterKit })
+      : searchBar({ page, node, doc, el, labels, fill, uid: context.uid, icons: context.icons, preferences: context.preferences, locale, facets, periods, onChange: searched, ...(inRecord ? { menu: false } : {}), ...(node.filterCounts ? { count: countOf, searchFilter } : {}) });
 
   /**
    * The key to the rows' own looks, where the page says what they mean (`rowTones`' labels, `rowBoldLabel`): each

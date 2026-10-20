@@ -47,11 +47,11 @@ export const AREAS = [
 const AREA_OF = {
   sales: ['order', 'quick-order', 'rules', 'map-zones', 'map-heat', 'template-quote-request', 'template-product', 'real-sale-order', 'real-sale-invoice-wizard', 'real-product', 'real-sale-contract', 'test-drive', 'test-drives'],
   accounting: ['reading', 'vendor-bill', 'template-invoice', 'template-expense-claim', 'real-invoice', 'real-register-payment', 'real-expense', 'invoices'],
-  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'customer-account', 'customer-card'],
+  crm: ['customer', 'customers', 'template-contact-us', 'template-support-request', 'template-customer', 'real-contact', 'real-opportunity', 'real-tender', 'contacts', 'leads-queue', 'customer-account', 'customer-card'],
   people: ['layout', 'template-job-application', 'template-employee-onboarding', 'template-leave-request', 'real-time-off', 'real-employee'],
   operations: ['backlog', 'work-item', 'template-task', 'template-purchase-order', 'real-task', 'real-transfer', 'real-manufacturing-order', 'real-maintenance-request', 'real-legal-case', 'map-couriers', 'map-round', 'map-order', 'map-kitchen'],
   clinic: ['clinic-calendar', 'template-patient-intake', 'template-appointment-booking', 'real-clinic-appointment', 'clinic-consent'],
-  'real-estate': ['map-homes', 'homes-gallery', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property'],
+  'real-estate': ['map-homes', 'homes-gallery', 'homes-search', 'map-embed', 'listing-photos', 'booking-week', 'template-property-enquiry', 'property'],
   surveys: ['survey', 'signup', 'kinds', 'template-newsletter', 'template-customer-feedback', 'template-event-registration', 'template-course-evaluation', 'real-survey'],
   'building-blocks': ['fields', 'business', 'code', 'custom', 'contained', 'delivery', 'lists', 'map-delivery', 'map-address', 'map-zone', 'script', 'customer-locked', 'two-tabs', 'viewer-role', 'customers-arabic', 'customer-arabic', 'signup-french', 'signup-keys', 'customer-toast', 'map-homes-arabic', 'booking-week-arabic'],
 };
@@ -73,6 +73,8 @@ const SEARCH_WORDS = {
   invoices: 'invoice bill bills billing accounts receivable payments overdue unpaid due totals sum currency dollars pounds month quarter print printout paper pdf phone mobile cards',
   contacts: 'people clients customers export import upload excel csv spreadsheet download bulk mass update edit many select all owner status phone mobile email columns hide show resize reorder drag move rearrange print cards',
   'homes-gallery': 'homes houses property properties real estate listings photos pictures gallery grid cards tiles book viewing',
+  'homes-search': 'homes houses property properties real estate buy buyer portal search filter filters facets count counts price range from to min max area bedrooms beds 2+ amenities phone mobile sheet show results',
+  'leads-queue': 'leads queue sales team crm follow up follow-up late overdue today this week counts count filters saved searches favourites agent pipeline',
   'customer-account': 'customer client account invoices quotations quotes related records sub list child records inside one2many overdue reminder phone cards print tab count badge route router own page',
   property: 'property home house real estate listing viewings visits appointments related records inside agent client',
   'customer-card': 'duplicate duplicates double twice same customer contact merge dedupe deduplicate already exists',
@@ -249,6 +251,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'leads-queue',
+    name: 'A sales team’s queue, its filters counted',
+    category: 'lists',
+    query: 'page=leads-queue&skin=underline',
+    blurb: 'Buyer leads to follow up: the search menu says how many each filter finds — Late 5, Today 3, No agent yet — counted with the rest of the search as it changes, and so does each search a person keeps. A follow-up that is late is in red.',
+    howTo: [
+      'Press the arrow at the search box’s end: Late says 5, Today 3. Press Late: the five late follow-ups.',
+      'Type “Mona” in the search and pick Search Agent for: Mona: every filter counts Mona’s leads alone.',
+      'Save the search as “Mona’s” under Favourites: it says how many it finds too.',
+      'Add a custom filter: Budget, is between, 5,000,000 and 15,000,000 — one chip, “Budget: E£ 5,000,000 – E£ 15,000,000”.',
+    ],
+  },
+  {
     id: 'homes-gallery',
     name: 'Homes for sale, as a gallery',
     category: 'lists',
@@ -260,6 +275,21 @@ export const DEMOS = [
       'Group By District: a heading over each district’s cards, its count beside it.',
       'Press List over the cards: the same homes as rows, each with a small photo; press Gallery to go back.',
       'Use the arrow keys on a card: left and right along the line, up and down to the card above or below.',
+    ],
+  },
+  {
+    id: 'homes-search',
+    name: 'Homes to buy, filtered as a buyer filters them',
+    category: 'lists',
+    query: 'page=homes-search&skin=underline',
+    blurb: 'A portal’s homes for sale: beside each type, district and amenity how many homes it finds among the rest of the search; the price and the area from and to, bedrooms 2+ and the day listed — each one chip; and on a phone every filter in one sheet whose button says how many homes it will show before it shows them.',
+    howTo: [
+      'Open Type: each type says how many homes it finds. Tick Villa, then open Amenities: the counts are the villas’ now.',
+      'Open Bedrooms and press 2+: the button says “Bedrooms: 2+”, and only homes with two bedrooms or more are left.',
+      'Open Price and type 5,000,000 in From and 15,000,000 in To, then press Enter: one filter, “Price: E£ 5M – E£ 15M”.',
+      'Type 300 in Area’s From and 100 in its To: it says “From is more than To” and keeps what you typed; nothing is filtered by it until you mend it.',
+      'Narrow the window, or open the page on a phone: one Filters button opens every filter in a sheet. Tick Villa: “Show 5 homes” counts them as you go, and only Show filters the list; × lets what you ticked go.',
+      'Press × at the bar’s end: every filter is cleared.',
     ],
   },
   {
@@ -1002,6 +1032,7 @@ export const OPENED = [
   { page: 'invoice', name: 'An invoice', from: 'customer-account' },
   { page: 'quotation', name: 'A quotation', from: 'customer-account' },
   { page: 'viewing', name: 'A viewing', from: 'property' },
+  { page: 'lead', name: 'A lead', from: 'leads-queue' },
 ];
 
 /** What a reader may change about a demo without it becoming another: how it looks, the record it shows, its clock. */

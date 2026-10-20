@@ -869,8 +869,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 2.5 more, to 505.9. Whether a part asked for again once it failed can come (`Part.asksAgain`: the one-tag script's
 // tags can, an app's modules cannot — the browser keeps them failed), so nothing offers a Try again that cannot work:
 // 505.87 to 506.09, to 506.1.
-// Both, merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68, to 507.2.
-const BUDGET_KB = 507.2;
+// Filters that sales teams and buyers expect (0.27, w4-filters): a field's range one value of one chip, read by
+// facetsToFilter as `>=` and `<=` (a date and time's days as the list counts them), the page's `filterRanges`,
+// `filterCounts` and `filterSheet` in its schema and its checks, and the memory source counting a record of links under
+// each of them: 503.41 measured before, 505.15 after — 1.74 more, to 505.2.
+// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74, to 509.0.
+const BUDGET_KB = 509.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1069,8 +1073,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // A signature that signs answers (0.27, w4-signature; listed with the raw budget above): 162.94 measured before, 163.68
 // after — 0.75 more, to 163.7. A page whose signature signs answers takes 4.20 more in fieldia.evidence.js. Whether a
 // part asked for again can come: 163.68 to 163.80, to 163.9.
-// Both, merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86, to 164.2.
-const GZIP_BUDGET_KB = 164.2;
+// Filters that sales teams and buyers expect (listed with the raw budget above): 162.94 measured before, 163.45 after —
+// 0.51 more, to 163.5.
+// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51, to 164.7.
+const GZIP_BUDGET_KB = 164.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1223,7 +1229,14 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // evidence it cannot show — each with Try again, or with a reload where asking again cannot bring it — and Try again):
 // Arabic's 68.38 and 11.83 measured before, 71.34 and 12.21 after, to 71.4 and 12.3; German's 32.03 and 10.44 to 33.33
 // and 10.75, to 33.4 and 10.8; French's 32.37 and 10.43 to 33.63 and 10.77, to 33.7 and 10.8.
-const ADD_ON_BUDGET_KB = { ar: [71.4, 12.3], de: [33.4, 10.8], fr: [33.7, 10.8] };
+// Filters that sales teams and buyers expect (0.27, w4-filters): a range's words — From, To, Any, between, 2+, up to,
+// from and until a day, why one is refused — "is between", and a phone's sheet's Filters, Clear all and Show, 17 words
+// in each: Arabic's 68.38 and 11.83 measured before, 69.29 and 12.02 after, to 69.3 and 12.1; German's 32.03 and 10.44
+// to 32.51 and 10.59, to 32.6 and 10.6; French's 32.37 and 10.43 to 32.90 and 10.60, to 33.0 and 10.7.
+// Both, merged for 0.27.0 (provisional): Arabic's 68.38 + 2.96 + 0.91 and 11.83 + 0.38 + 0.19, to 72.3 and 12.5; German's
+// 32.03 + 1.30 + 0.48 and 10.44 + 0.31 + 0.15, to 33.9 and 11.0; French's 32.37 + 1.26 + 0.53 and 10.43 + 0.34 + 0.17, to
+// 34.2 and 11.0.
+const ADD_ON_BUDGET_KB = { ar: [72.3, 12.5], de: [33.9, 11.0], fr: [34.2, 11.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1539,7 +1552,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // in silence — "Not signed yet: the signing could not load." with Try again, which asks for it again, where asking
 // again can bring it (the one-tag script), else "… Reload the page to sign." and no button, and every save refusing the
 // picture with those words — files 33.46 and 12.32 measured before, 36.15 and 13.26 after, to 36.2 and 13.3.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.0, 5.3] };
+// Filters that sales teams and buyers expect (0.27, w4-filters): filters 11.30 and 4.24 measured before, 22.61 and 7.78
+// after — a count beside each value, a range's dropdown with its presses (filter-range-control.ts), the phone's sheet
+// with Show (filter-sheet.ts) and their sheet — to 22.7 and 7.8; list 110.61 and 35.49 to 117.51 and 37.85 — a range's
+// boxes, words and chip and a count's mark, which it hands the filter bar (filter-range.ts, filter-count.ts: a part's
+// code is in one part), a custom filter's "is between", the search bar's counts of its filters and favourites, a count
+// asked of the source — to 117.6 and 37.9.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.6, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

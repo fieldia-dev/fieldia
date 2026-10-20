@@ -721,3 +721,45 @@ In plain words:
 - **Check it on the server.** The canonical text (`signatureText`, @fieldia/core's README) is written from the record
   the source keeps; its SHA-256 equal to `sha256` says the signed answers are as signed. The memory source keeps the
   value as it is given.
+
+## 15. Counts beside filters, and ranges (Wave 4, lane w4-filters)
+
+A list's filters say how many records each finds (`filterCounts`), take a number's or a date's range as one chip
+(`filterRanges`, a custom filter's "is between"), and on a phone fold into a sheet whose Show says how many records it
+will show (`filterSheet`). **No new member**: every count is asked of what a source already has, so an adapter that
+groups and totals counts filters too, and one that has neither shows no count (hidden, never wrong).
+
+```ts
+// A value's count in a filter bar's list: the field grouped under the rest of the search — every other field's
+// values and ranges, the keyword, the list's fixed conditions; never the field's own ticks.
+groups({ model, field, filter })                       // Group.count, by Group.value
+
+// A named filter's, a favourite's and the sheet's Show: the records a search finds.
+totals({ model, filter, totals: {} })                  // TotalsResult.count
+list({ model, fields: [], filter, sort: [], offset: 0, limit: 1 })   // without totals: ListResult.total
+
+// A range, one value of a field facet, as it reaches every member above and `list` itself:
+// { op: 'between', value: [from, to] } → { field, op: '>=', value: from }, { field, op: '<=', value: to }
+// { op: '>=', value: from }, { op: '<=', value: to } → as they are
+// a date and time's range of days → '>=' its first day's first moment, '<' the first moment of the day after its
+// last, in the field's zone (the list's `RangeDays`); a date's days compare as they are
+```
+
+In plain words:
+
+- **Why no member of its own.** A count is a group's or a total's: `groups` already counts each value of a field
+  under a filter, and `totals` already counts the records a filter finds. A member that asked several counts at once
+  (`counts?({ model, filters: ResolvedFilter[][] })`) would save a menu's few calls a round trip each; it can be
+  declared later without changing these, should a source need it.
+- **A record of links** (a many2many) is grouped under each of its links, as a server groups tags — a record with
+  Garden and Pool counts under both, one with none under nothing — and Group By opens such a group with `contains`.
+  The memory source does so. A source that grouped a many2many by its whole set before gave headings no one could
+  open; one that does as described needs nothing new.
+- **`between` never reaches a source**: `facetsToFilter` writes a range as `>=` and `<=`, which every source reads,
+  so an adapter that never met `between` in a list's search still filters by a range.
+- **When counts are asked**: a filter bar's list as it opens (the field's values grouped under the fixed conditions
+  alone, their counts under the rest: one call where the two are the same); the search bar's named filters and
+  favourites as its menu opens, and again as the search changes while it is open; the sheet's every field and its
+  Show as it opens and on each change. An answer older than the last change is dropped.
+- **Without `groups`** a filter bar lists a choice's and a yes or no's values with no count, and a link's or text's
+  none, as before; **without `totals` and `list`**, Show says "Show results" and the menu no number.

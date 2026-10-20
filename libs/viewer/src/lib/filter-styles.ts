@@ -27,6 +27,51 @@ export const FILTER_CSS = /* css */ `
 .fd-filter-box svg { width: 12px; height: 12px; }
 .fd-filter-option[aria-checked="true"] .fd-filter-box { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text, #fff); }
 .fd-filter-option-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A range (filterRanges): the presses for its least values, then From and To side by side (the list's sheet), what is wrong said under them. */
+.fd-filter-range-menu { padding: 12px; width: 300px; max-width: min(320px, 90vw); max-height: none; overflow: visible; }
+.fd-filter-range { display: grid; gap: 10px; }
+.fd-filter-range-presses { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-filter-range-press {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-grid; place-items: center; min-width: 38px; min-height: 32px; padding-inline: 8px;
+  border: 1px solid var(--fd-border-strong); border-radius: 999px; font-size: 13.5px; color: var(--fd-text); font-variant-numeric: tabular-nums;
+}
+.fd-filter-range-press:hover { background: var(--fd-page); }
+.fd-filter-range-press[aria-pressed="true"] { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text, #fff); }
+.fd-filter-range-press:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* On a phone (filterSheet): the fields behind one Filters button, how many are on beside its words. */
+.fd-filter-sheet-open {
+  all: unset; box-sizing: border-box; cursor: pointer; display: none; align-items: center; gap: 6px; min-height: 36px; padding-inline: 10px;
+  border-radius: 2px; font-size: 14px; color: var(--fd-text);
+}
+.fd-filter-sheet-open[data-picked] { font-weight: 600; }
+.fd-filter-sheet-open:hover { background: var(--fd-page); }
+.fd-filter-sheet-open:focus-visible { outline: 1px solid var(--fd-focus); outline-offset: -1px; }
+.fd-filter-sheet-icon { width: 16px; height: 16px; flex: none; }
+.fd-filter-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding-inline: 5px; box-sizing: border-box; border-radius: 9px; background: var(--fd-accent); color: var(--fd-accent-text, #fff); font-size: 11.5px; font-weight: 600; }
+.fd-filter-badge[hidden] { display: none; }
+.fd-filter-bar[data-sheet] { container: fd-filter-bar / inline-size; }
+@container fd-filter-bar (max-width: 520px) {
+  .fd-filter-bar[data-sheet] .fd-filter-field { display: none; }
+  .fd-filter-bar[data-sheet] .fd-filter-sheet-open { display: inline-flex; }
+}
+/* The sheet: from the foot of a phone's screen, every field at once, Clear all and Show held at its foot. */
+.fd-filter-sheet { max-width: 480px; }
+.fd-filter-sheet-body { display: grid; gap: 18px; align-content: start; }
+.fd-filter-sheet-field { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 6px; }
+.fd-filter-sheet-name { padding: 0; margin-block-end: 2px; font-size: 14px; font-weight: 600; color: var(--fd-text); }
+.fd-filter-sheet-values { display: grid; }
+.fd-filter-sheet-option { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; color: var(--fd-text); cursor: pointer; border-block-end: 1px solid var(--fd-border); }
+.fd-filter-sheet-box { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--fd-accent); }
+.fd-filter-sheet .fd-filter-range-press { min-height: 40px; min-width: 48px; font-size: 15px; }
+.fd-filter-sheet .fd-filter-range-box { min-height: 44px; font-size: 16px; }
+.fd-filter-sheet-foot { display: flex; align-items: center; gap: 12px; }
+.fd-filter-sheet-foot .fd-button { min-height: 44px; }
+.fd-filter-sheet-show { flex: 1 1 auto; justify-content: center; }
+@media (max-width: 600px) {
+  .fd-filter-sheet-backdrop { padding: 0; align-items: end; }
+  .fd-filter-sheet { max-width: none; max-height: 92dvh; border-radius: 12px 12px 0 0; }
+  .fd-filter-sheet-foot { padding-block-end: max(12px, env(safe-area-inset-bottom, 0px)); }
+}
 /* Fluent's filter bar: a card 50px tall, its words a little above the middle, 16px over the table's card (measured). */
 .fd-form[data-fd-theme="fluent"] .fd-list:has(> .fd-list-bar > .fd-filter-bar) { row-gap: 16px; }
 .fd-form[data-fd-theme="fluent"] .fd-filter-bar { min-height: 50px; padding-block: 7px 5px; padding-inline-end: 10px; }

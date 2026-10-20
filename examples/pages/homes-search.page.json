@@ -1,0 +1,243 @@
+{
+  "fieldia": "0.5",
+  "id": "homes-search",
+  "title": "Homes to buy",
+  "description": "Homes for sale filtered as a buyer filters them: how many each type, district and amenity finds beside it, the price and the area from and to, bedrooms 2+ — each one chip — and on a phone every filter in a sheet that says how many homes it shows before it shows them.",
+  "records": {
+    "one": "home",
+    "other": "homes",
+    "a": "a home"
+  },
+  "data": {
+    "kind": "record",
+    "model": "home"
+  },
+  "fields": {
+    "photo": {
+      "type": "image",
+      "label": "Photo"
+    },
+    "name": {
+      "type": "char",
+      "label": "Home"
+    },
+    "kind": {
+      "type": "selection",
+      "label": "Type",
+      "options": [
+        {
+          "value": "flat",
+          "label": "Flat"
+        },
+        {
+          "value": "duplex",
+          "label": "Duplex"
+        },
+        {
+          "value": "penthouse",
+          "label": "Penthouse"
+        },
+        {
+          "value": "villa",
+          "label": "Villa"
+        }
+      ]
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "new_cairo",
+          "label": "New Cairo"
+        },
+        {
+          "value": "sheikh_zayed",
+          "label": "Sheikh Zayed"
+        },
+        {
+          "value": "october",
+          "label": "6th of October"
+        }
+      ]
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ],
+      "money": {
+        "short": true
+      }
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms"
+    },
+    "area_m2": {
+      "type": "integer",
+      "label": "Area, m²"
+    },
+    "amenities": {
+      "type": "many2many",
+      "label": "Amenities",
+      "relation": "home.amenity"
+    },
+    "listed_on": {
+      "type": "date",
+      "label": "Listed on"
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "homes-search",
+    "columns": [
+      "photo",
+      "name",
+      "kind",
+      "district",
+      "price",
+      "bedrooms",
+      "area_m2"
+    ],
+    "sort": [
+      {
+        "field": "listed_on",
+        "desc": true
+      }
+    ],
+    "pageSize": 48,
+    "searchFields": [
+      "name",
+      "district"
+    ],
+    "search": "fields",
+    "filterFields": [
+      "kind",
+      "district",
+      "price",
+      "bedrooms",
+      "area_m2",
+      "amenities",
+      "listed_on"
+    ],
+    "filterLabels": {
+      "area_m2": "Area"
+    },
+    "filterRanges": {
+      "bedrooms": {
+        "atLeast": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "area_m2": {}
+    },
+    "filterCounts": true,
+    "filterSheet": true,
+    "cells": {
+      "photo": {
+        "widget": "image"
+      },
+      "price": {
+        "align": "end"
+      }
+    },
+    "card": {
+      "title": "name",
+      "image": "photo",
+      "status": "kind",
+      "labels": false,
+      "lead": true,
+      "fields": [
+        "price",
+        [
+          "district",
+          {
+            "field": "bedrooms",
+            "unit": {
+              "one": "bedroom",
+              "other": "bedrooms"
+            }
+          },
+          {
+            "field": "area_m2",
+            "unit": "m²"
+          }
+        ]
+      ]
+    },
+    "gallery": {
+      "opens": "gallery"
+    }
+  },
+  "translations": {
+    "ar": {
+      "Home": "المنزل",
+      "Type": "النوع",
+      "Flat": "شقة",
+      "Duplex": "دوبلكس",
+      "Penthouse": "بنتهاوس",
+      "Villa": "فيلا",
+      "Price": "السعر",
+      "Bedrooms": "غرف النوم",
+      "Area, m²": "المساحة، م²",
+      "District": "الحي",
+      "Zamalek": "الزمالك",
+      "Garden City": "جاردن سيتي",
+      "Dokki": "الدقي",
+      "Mohandessin": "المهندسين",
+      "Maadi": "المعادي",
+      "Heliopolis": "مصر الجديدة",
+      "Nasr City": "مدينة نصر",
+      "New Cairo": "القاهرة الجديدة",
+      "Sheikh Zayed": "الشيخ زايد",
+      "6th of October": "السادس من أكتوبر",
+      "Photo": "الصورة",
+      "Listed on": "تاريخ الإدراج",
+      "bedroom": "غرفة نوم",
+      "bedrooms": "غرف نوم",
+      "m²": "م²",
+      "Homes to buy": "منازل للشراء",
+      "home": "منزل",
+      "homes": "منازل",
+      "a home": "منزلًا",
+      "Amenities": "المزايا",
+      "Area": "المساحة"
+    }
+  }
+}

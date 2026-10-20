@@ -324,6 +324,8 @@ export interface ViewerLabels {
   opLess: string;
   opSet: string;
   opNotSet: string;
+  /** A person's own filter of a number or a date between two (`rangeFrom`, `rangeTo`): one chip, "Price: 1,000 – 3,000". */
+  opBetween: string;
   /**
    * A person's own filter of a date by a period (`opPeriod`), and its chip: `{field}` and `{period}`, "Invoice date: This
    * month" — as a date grouped by a span says it too, "Invoice date: Month".
@@ -395,6 +397,33 @@ export interface ViewerLabels {
   collapseAll: string;
   filterNamed: string;
   filterSettings: string;
+  /**
+   * A filter of a number's or a date's range (`filterRanges`, and a custom filter's "is between"): its boxes, the press
+   * that takes it away, and the range in words on its chip — both ends (`{from}`, `{to}`), a number from one up
+   * ("2+"), a number up to one, a date from one or until one — and why it is not taken: its first end past its last.
+   */
+  rangeFrom: string;
+  rangeTo: string;
+  rangeAny: string;
+  rangeBetween: string;
+  rangeOrMore: string;
+  rangeUpTo: string;
+  rangeSince: string;
+  rangeUntil: string;
+  rangeOrder: string;
+  rangeOrderDate: string;
+  /**
+   * A filter bar on a phone (`filterSheet`): its Filters button with how many are on (`{n}`), and the sheet's buttons —
+   * Clear all, and Show with how many records the filters find (`{n}`: more, or one; `{records}`, `{record}` the page's
+   * own words for them), or without a number where the source cannot count.
+   */
+  filtersOn: string;
+  filtersClearAll: string;
+  showResults: string;
+  showResultsNoun?: string;
+  showResultsOne: string;
+  showResultsNounOne?: string;
+  showResultsSome: string;
   /**
    * A saved form placed in another, in its place when it cannot be shown
    * (`{page}`, its title or id): not found, placed inside itself (`{chain}`,
@@ -775,6 +804,7 @@ const en: ViewerLabels = {
   opLess: 'less than',
   opSet: 'is set',
   opNotSet: 'is not set',
+  opBetween: 'is between',
   opPeriod: 'in the period',
   periodChip: '{field}: {period}',
   periodToday: 'Today',
@@ -818,6 +848,23 @@ const en: ViewerLabels = {
   collapseAll: 'Collapse all',
   filterNamed: 'Filter by {label}',
   filterSettings: 'Filter settings',
+  rangeFrom: 'From',
+  rangeTo: 'To',
+  rangeAny: 'Any',
+  rangeBetween: '{from} – {to}',
+  rangeOrMore: '{from}+',
+  rangeUpTo: 'up to {to}',
+  rangeSince: 'from {from}',
+  rangeUntil: 'until {to}',
+  rangeOrder: 'From is more than To',
+  rangeOrderDate: 'From is after To',
+  filtersOn: 'Filters, {n} on',
+  filtersClearAll: 'Clear all',
+  showResults: 'Show {n} results',
+  showResultsNoun: 'Show {n} {records}',
+  showResultsOne: 'Show {n} result',
+  showResultsNounOne: 'Show {n} {record}',
+  showResultsSome: 'Show results',
   formMissing: 'The saved form “{page}” cannot be found.',
   formInItself: 'The saved form “{page}” is not shown here: it would be placed inside itself ({chain}).',
   formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',

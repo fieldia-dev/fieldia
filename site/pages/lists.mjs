@@ -57,6 +57,7 @@ ${code(
     <tr><td>${c('choose')}</td><td>${c('false')}: no box to choose a row, and so no buttons for rows chosen.</td></tr>
     <tr><td>${c('sortable')}</td><td>${c('false')}: a ranked list, such as a backlog, keeps its own order (${c('sort')}): its headers are words, with no press and no arrow, the order still said by ${c('aria-sort')}.</td></tr>
     <tr><td>${c('search')} · ${c('filterFields')} · ${c('filterLabels')}</td><td>${c('"fields"')}: a keyword box and a list of values to tick for each of ${c('filterFields')}, in place of the search bar; ${c('filterLabels')} gives a filter its own, shorter name on the bar, by field (${c('{ "iteration": "Iteration" }')} for Iteration Path), translated with the page's words.</td></tr>
+    <tr><td>${c('filterRanges')} · ${c('filterCounts')} · ${c('filterSheet')}</td><td>A number's or a date's range on the filter bar — From and To, a press for each least value (${c('{ "bedrooms": { "atLeast": [1, 2, 3, 4] } }')}) — one chip; how many records each value, named filter and favourite finds, beside it; and on a phone the filter bar's fields in a sheet with <em>Show 37 homes</em>: see <a href="#filters">filters a buyer and a sales team expect</a>.</td></tr>
     <tr><td>${c('parentField')}</td><td>Rows nested under their parent by this link to the list's own records, with Expand all and Collapse all.</td></tr>
     <tr><td>${c('export')}</td><td>${c('true')}: Export in the list's bar. Off unless said, as Edit is: see <a href="#bulk">taking records away</a>.</td></tr>
     <tr><td>${c('bulkEdit')}</td><td>Edit, for the rows chosen: ${c('true')} offers the columns one value can set, a list of fields offers those. Off unless said: see <a href="#bulk">changing many at once</a>.</td></tr>
@@ -146,6 +147,28 @@ ${code(
 }`
 )}
 <p>Rows under a parent on the same page sit under it, each depth further in; a parent's toggle, or <kbd>→</kbd> and <kbd>←</kbd> on its row (turned round right to left), folds it. A row opened in a dialog comes back: when ${c('onOpenRecord')} answers with a promise, its row is lit (${c('aria-current')}) while the record is open, the list asks for its records again once it settles, and the row has the focus back. ${c('handle.openRecord(id)')} opens one the same way from the app; for a record named in the address as the page loads, ${c('{ lit: false }')} leaves its row unlit, as no row was pressed. ${c('handle.reload()')} asks again, after a new record is made. With the Fluent theme the table reads as the tracker draws it: small muted headers parted by short rules and standing a little in from the words under them, rows 36 pixels tall with no lines between them, a slim scroll bar. <a href="/demos/backlog/">Try the backlog</a>.</p>
+
+<h2 id="filters">Filters a buyer and a sales team expect</h2>
+<p>A filter bar can say how many records each of its values finds, take a number's or a date's range as one filter, and fold into a sheet on a phone:</p>
+${code(
+  'json',
+  `
+{
+  "type": "list", "id": "homes", "columns": ["photo", "name", "kind", "district", "price", "bedrooms", "area_m2"],
+  "search": "fields",
+  "filterFields": ["kind", "district", "price", "bedrooms", "area_m2", "amenities", "listed_on"],
+  "filterRanges": { "bedrooms": { "atLeast": [1, 2, 3, 4, 5] }, "area_m2": {} },
+  "filterCounts": true,
+  "filterSheet": true
+}`
+)}
+<ul>
+  <li><strong>A count beside each value</strong> (${c('filterCounts')}): <em>Villa 5</em>, <em>Garden 13</em> — how many records each value finds among the rest of the search, a field's own ticks left out so its counts stay as they were; read out as <em>Villa, 5 homes</em> in the page's word for its records. Asked of the data source as it groups the field (${c('groups')}, a record of links under each of its links); without ${c('groups')}, the values and no count.</li>
+  <li><strong>A range, one chip</strong> (${c('filterRanges')}): From and To read as every box reads a number or a day — in the page's language and order, a whole number's taking no fraction, From past To said and nothing filtered by it — and a press for each least value, <em>Any</em>, <em>2+</em>, <em>3+</em>. The button says it whole: <em>Price: E£ 5M – E£ 15M</em>, <em>Bedrooms: 2+</em>, <em>Listed on: from 1 Oct 2026</em>. A decimal, an amount and a date go by their range whether named or not; a whole number lists its values unless it is named. The search bar's own filter of a number or a date <em>is between</em> two, one chip too. The data source reads a range as ${c('>=')} and ${c('<=')}, a date and time's days on the list's clock.</li>
+  <li><strong>Counts on named filters and favourites</strong> (${c('filterCounts')}, the search bar's too): the menu says <em>Late 5</em>, <em>Today 3</em> as it opens and as the search narrows — each named filter as if it were the only one on — and each favourite how many its search finds. Counted by the source's ${c('totals')} (its ${c('count')}), else by its ${c('list')}'s total.</li>
+  <li><strong>A phone's sheet</strong> (${c('filterSheet')}): where the filter bar is 520 pixels wide or less, one <em>Filters</em> button — saying how many are on — opens every field at once, its values counted as they change, and <em>Show 37 homes</em> takes them together; × or <kbd>Escape</kbd> lets them go, <em>Clear all</em> empties it, still to be shown. A box whose text is no number keeps the sheet open and says why.</li>
+</ul>
+<p>An app that asks for none of them has its lists as before. <a href="/demos/plain/?page=homes-search&amp;skin=underline">Try the homes to buy</a> or <a href="/demos/plain/?page=leads-queue&amp;skin=underline">a sales team's queue</a>.</p>
 
 <h2 id="app">Opening and acting on records</h2>
 <p>A row opens its record by a click or by <kbd>Enter</kbd>; the app decides what that means. A list's button hands the app the records chosen, as ${c('recordIds')}, in the order they were chosen:</p>

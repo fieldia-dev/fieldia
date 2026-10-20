@@ -3,6 +3,7 @@ import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
 import { favouritesPart } from './favourites';
+import { countMark } from './filter-count';
 import type { ViewerLabels, WordKey } from './labels';
 
 type FieldFacet = Extract<Facet, { kind: 'field' }>;
@@ -26,6 +27,13 @@ export interface SearchContext {
   onChange: (facets: Facet[]) => void;
   /** False: the box alone, with no menu of filters, groups and favourites — a list inside a record's. */
   menu?: boolean;
+  /**
+   * With `filterCounts`: how many records a filter finds, where the source can count (null where it cannot), and the
+   * conditions a search of facets makes, the list's fixed ones with them — so each named filter and favourite in the
+   * menu says how many it finds ("Late 5").
+   */
+  count?: (filter: ResolvedFilter[]) => Promise<number | null>;
+  searchFilter?: (facets: Facet[]) => ResolvedFilter[];
 }
 
 /** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
@@ -56,6 +64,8 @@ export function facetText(facet: Facet, labels: Pick<ViewerLabels, 'or'>): strin
 export function searchBar(context: SearchContext) {
   const { page, node, doc, el, labels, fill, uid } = context;
   let facets = context.facets;
+  /** Each round of counts counts on: an older answer is not drawn over a newer one's. */
+  let counting = 0;
   const icon = (name: string) => {
     const drawn = drawIcon(doc, name, context.icons);
     drawn?.setAttribute('aria-hidden', 'true');
@@ -66,6 +76,7 @@ export function searchBar(context: SearchContext) {
     facets = next;
     drawChips();
     drawPanel();
+    drawCounts();
     context.onChange(facets);
   }
 
@@ -183,8 +194,13 @@ export function searchBar(context: SearchContext) {
     change(next);
   };
 
+  /** Where a filter's or a favourite's count goes, after its words. */
+  const countSlot = () => el('span', { class: 'fd-search-count' });
+  const filterSlots = new Map<string, HTMLElement>();
   const filterButtons = (node.filters ?? []).map((filter) => {
-    const button = el('button', { type: 'button', class: 'fd-search-option', 'aria-pressed': 'false', 'data-filter': filter.id }, filter.label);
+    const slot = countSlot();
+    filterSlots.set(filter.id, slot);
+    const button = el('button', { type: 'button', class: 'fd-search-option', 'aria-pressed': 'false', 'data-filter': filter.id }, filter.label, slot);
     button.addEventListener('click', () => toggleIn('filters', filter.id));
     return button;
   });
@@ -215,9 +231,10 @@ export function searchBar(context: SearchContext) {
   const group = (kind: string, iconName: string, title: string, ...parts: HTMLElement[]) =>
     el('div', { class: 'fd-search-group', 'data-group-kind': kind, role: 'group', 'aria-labelledby': `${panelId}-${kind}` }, heading(iconName, title, `${panelId}-${kind}`), ...parts);
   const panel = el('div', { class: 'fd-search-panel', id: panelId, hidden: '' });
+  let favourites: ReturnType<typeof favouritesPart> | null = null;
   if (menu) {
     const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
-    const favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change });
+    favourites = favouritesPart({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change, ...(context.count ? { slot: countSlot, drawn: drawCounts } : {}) });
     panel.append(
       group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
       ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
@@ -232,10 +249,40 @@ export function searchBar(context: SearchContext) {
     for (const button of groupButtons) button.setAttribute('aria-pressed', String(fields.includes(button.dataset['group'] ?? '')));
   }
 
+  /**
+   * How many records each named filter finds among the rest of the search, and each favourite as it was kept — asked
+   * as the menu opens and as the search changes while it is open, each drawn as it comes; none where the source cannot
+   * count.
+   */
+  function drawCounts() {
+    const { count, searchFilter } = context;
+    if (!count || !searchFilter || panel.hidden) return;
+    const mine = ++counting;
+    // Its number after its words, and its name with the count in words; none where it cannot be counted.
+    const mark = (slot: HTMLElement, words: string, of: Facet[]) => {
+      const owner = slot.parentElement as HTMLElement;
+      const draw = (n: number | null) => {
+        if (mine !== counting) return;
+        const counted = n === null ? null : countMark(el, n, page, labels, fill, context.locale);
+        slot.replaceChildren(...(counted ? [counted.mark] : []));
+        if (counted) owner.setAttribute('aria-label', counted.named(words));
+        else owner.removeAttribute('aria-label');
+      };
+      return count(searchFilter(of)).then(draw, () => draw(null));
+    };
+    // A named filter as if it were the only one on: the filters on are any of them.
+    const rest = facets.filter((f) => f.kind !== 'filters');
+    for (const filter of node.filters ?? []) void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids: [filter.id], labels: [filter.label] }]);
+    for (const { slot, name, facets: kept } of favourites?.slots() ?? []) void mark(slot, name, kept);
+  }
+
   function showPanel(open: boolean) {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
-    if (open) closeOffered();
+    if (open) {
+      closeOffered();
+      drawCounts();
+    }
   }
   toggle.addEventListener('click', () => showPanel(panel.hidden));
   panel.addEventListener('keydown', (event) => {

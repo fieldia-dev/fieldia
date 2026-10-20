@@ -47,7 +47,7 @@ export const PART_WORDS = {
     viewer: ['showAs'],
   },
   evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet'] },
-  filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings'] },
+  filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings', 'rangeAny', 'rangeOrMore', 'filtersOn', 'filtersClearAll', 'showResults', 'showResultsNoun', 'showResultsOne', 'showResultsNounOne', 'showResultsSome'] },
   head: {
     widgets: ['maximiseNamed', 'foldNamed', 'unfoldNamed'],
     viewer: ['restoreSize', 'titleCopied', 'optionsFor', 'updatedBy'],
@@ -76,7 +76,8 @@ export const PART_WORDS = {
       'bulkTitle', 'bulkTitleOne', 'bulkField', 'bulkApply', 'bulkAsk', 'bulkAskOne', 'bulkSet', 'bulkClear', 'bulkProgress', 'bulkDone', 'bulkDoneOne', 'bulkSome', 'bulkWhy', 'bulkChangedSince',
       'importDone', 'importDoneOne', 'importStopped', 'importSome', 'importUndo', 'importUndoAsk', 'importUndoAskOne', 'importUndoing', 'importUndone', 'importUndoneOne', 'importUndoSome', 'importRow', 'importDownload', 'importFailed',
       'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
-      'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opSet', 'opNotSet', 'opPeriod', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
+      'opIs', 'opIsNot', 'opContains', 'opGreater', 'opLess', 'opBetween', 'opSet', 'opNotSet', 'opPeriod',
+      'rangeFrom', 'rangeTo', 'rangeBetween', 'rangeOrMore', 'rangeUpTo', 'rangeSince', 'rangeUntil', 'rangeOrder', 'rangeOrderDate', 'periodChip', 'periodToday', 'periodYesterday', 'periodThisWeek', 'periodLastWeek', 'periodThisMonth', 'periodLastMonth', 'periodThisYear', 'periodLast7Days', 'periodLast30Days', 'periodOverdue',
       'groupByYear', 'groupByQuarter', 'groupByMonth', 'groupByWeek', 'groupByDay', 'groupWeek', 'groupQuarter', 'totalAvg', 'totalMin', 'totalMax', 'totalCount', 'totalMixed', 'totalMixedShort', 'loadMore', 'groupCount', 'groupCountOne', 'expandAll', 'collapseAll',
       'relatedAll', 'relatedAllOf', 'relatedNew', 'relatedNewOf', 'relatedUnsaved', 'relatedNone', 'relatedShown', 'rowsKey',
       'rangeNoun', 'noRecordsNoun', 'selectAllMatchingNoun', 'selectAllFailedNoun', 'exportAllNoun', 'exportAllNounOne', 'exportCutNoun', 'exportFailedNoun', 'exportedNoun', 'exportedNounOne', 'printCutNoun', 'printFailedNoun',

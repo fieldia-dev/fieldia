@@ -1,10 +1,10 @@
-import { cardLines, DATE_PERIODS, type ButtonNode, type DatePeriod, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin, type TotalKind } from '@fieldia/core';
+import { cardLines, DATE_PERIODS, foldDigits, type ButtonNode, type DatePeriod, type Field, type FilterCondition, type ListCell, type ListMap, type ListNode, type MapTool, type Page, type Pin, type TotalKind } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { recordsSettings } from './records-settings';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
-import { FILTERABLE, ruleIsGood, widthIsGood } from './list-commands';
+import { FILTERABLE, RANGE_ONLY, RANGEABLE, ruleIsGood, widthIsGood } from './list-commands';
 import { calendarSection } from './list-calendar';
 import { cardsSection } from './list-cards-settings';
 import { rowsSection } from './list-rows-settings';
@@ -623,8 +623,20 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     el('span', { class: 'fd-prop-name' }, w.filterFields),
     filterBox,
     el('p', { class: 'fd-properties-hint' }, w.filterFieldsNote),
-    el('p', { class: 'fd-properties-hint' }, w.filterLabelsNote)
+    el('p', { class: 'fd-properties-hint' }, w.filterLabelsNote),
+    el('p', { class: 'fd-properties-hint' }, w.filterRangesNote)
   );
+  // On a phone, the filter bar's fields in a sheet; and how many each filter finds, the filter bar's and the search bar's.
+  const sheet = el('input', { type: 'checkbox', 'aria-label': w.filterSheet }) as HTMLInputElement;
+  sheet.addEventListener('change', () => {
+    if (!designer.setListOptions({ filterSheet: sheet.checked })) sheet.checked = pageList().filterSheet === true;
+  });
+  const sheetRow = el('div', { class: 'fd-prop', 'data-part': 'filter-sheet' }, el('label', { class: 'fd-q-required' }, sheet, el('span', {}, w.filterSheet)), el('p', { class: 'fd-properties-hint' }, w.filterSheetHint));
+  const counts = el('input', { type: 'checkbox', 'aria-label': w.filterCounts }) as HTMLInputElement;
+  counts.addEventListener('change', () => {
+    if (!designer.setListOptions({ filterCounts: counts.checked })) counts.checked = pageList().filterCounts === true;
+  });
+  const countsRow = el('div', { class: 'fd-prop', 'data-part': 'filter-counts' }, el('label', { class: 'fd-q-required' }, counts, el('span', {}, w.filterCounts)), el('p', { class: 'fd-properties-hint' }, w.filterCountsHint));
   const parent = el('select', { class: 'fd-input fd-select', 'aria-label': w.parentField }) as HTMLSelectElement;
   parent.addEventListener('change', () => designer.setListOptions({ parentField: parent.value || null }));
   const parentWhy = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noParentField);
@@ -652,6 +664,8 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
     importRow,
     prop(el, w.searchWay, searchWay),
     filterFieldsRow,
+    sheetRow,
+    countsRow,
     parentRow,
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.searchLooksIn), searchBox, el('p', { class: 'fd-properties-hint' }, w.noneTicked)),
     el('div', { class: 'fd-prop fd-prop-filters', 'data-part': 'filters' }, el('span', { class: 'fd-prop-name' }, w.filters), filtersBox, addFilter),
@@ -716,10 +730,42 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
       searchWay.value = list.search ?? 'bar';
       // The filter bar's fields: those whose values it can list, ticked in the order the page keeps them.
       filterFieldsRow.hidden = list.search !== 'fields';
+      sheetRow.hidden = list.search !== 'fields';
+      sheet.checked = list.filterSheet === true;
+      counts.checked = list.filterCounts === true;
       const offered = list.filterFields ?? [];
       const filterable = [...new Set([...offered, ...everyField(page, designer).filter(({ field }) => FILTERABLE.has(field.type)).map(({ name }) => name)])];
+      /**
+       * A number's or a date's filter: a whole number by its range or by its values, and a number's least values, a
+       * press each ("1, 2, 3, 4"), kept while they are being typed in.
+       */
+      const rangeSettings = (name: string, label: string): HTMLElement[] => {
+        const type = page.fields[name]?.type ?? '';
+        if (!RANGEABLE.has(type)) return [];
+        const parts: HTMLElement[] = [];
+        const ranged = RANGE_ONLY.has(type) || !!list.filterRanges?.[name];
+        if (type === 'integer') {
+          const byRange = el('input', { type: 'checkbox', 'aria-label': w.filterByRange(label) }) as HTMLInputElement;
+          byRange.checked = ranged;
+          byRange.addEventListener('change', () => {
+            if (!designer.setListOptions({ filterRange: { field: name, range: byRange.checked ? {} : null } })) byRange.checked = !!pageList().filterRanges?.[name];
+          });
+          parts.push(el('label', { class: 'fd-q-required' }, byRange, el('span', {}, w.filterByRange(label))));
+        }
+        if (ranged && type !== 'date' && type !== 'datetime') {
+          const least = el('input', { class: 'fd-input fd-list-filter-least', 'data-field': name, inputmode: 'decimal', 'aria-label': w.filterAtLeastOf(label), title: w.filterAtLeastOf(label), placeholder: w.filterAtLeastExample }) as HTMLInputElement;
+          least.value = (list.filterRanges?.[name]?.atLeast ?? []).join(', ');
+          // Numbers in any digits, parted by commas, Arabic commas or spaces; a word that is no number is refused with why.
+          least.addEventListener('change', () => {
+            const numbers = foldDigits(least.value).replace(/\u066b/g, '.').split(/[\s,\u060c;]+/).filter(Boolean).map(Number);
+            designer.setListOptions({ filterRange: { field: name, range: numbers.length ? { atLeast: numbers } : {} } });
+          });
+          parts.push(least);
+        }
+        return parts;
+      };
       // Each one offered has a name of its own on the bar, its label unless one is written; kept while it is being typed in.
-      const typing = filterBox.querySelector<HTMLInputElement>('.fd-list-filter-name:focus');
+      const typing = filterBox.querySelector<HTMLInputElement>(':is(.fd-list-filter-name, .fd-list-filter-least):focus');
       if (!typing || !filterable.includes(typing.dataset['field'] ?? '')) {
         filterBox.replaceChildren(
           ...filterable.map((name) => {
@@ -732,7 +778,7 @@ export function listProperties(el: ElementFactory, designer: Designer): Properti
             const own = el('input', { class: 'fd-input fd-list-filter-name', 'data-field': name, 'aria-label': w.filterLabelOf(label), title: w.filterLabelOf(label), placeholder: label }) as HTMLInputElement;
             own.value = list.filterLabels?.[name] ?? '';
             own.addEventListener('change', () => designer.setListOptions({ filterLabel: { field: name, label: own.value } }));
-            return el('div', { class: 'fd-list-filter-field' }, choice, own);
+            return el('div', { class: 'fd-list-filter-field' }, choice, own, ...rangeSettings(name, label));
           })
         );
       }

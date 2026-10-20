@@ -7,6 +7,9 @@ import mapAddress from '../../examples/pages/map-address.page.json';
 import mapZone from '../../examples/pages/map-zone.page.json';
 import mapHomes from '../../examples/pages/map-homes.page.json';
 import homesGallery from '../../examples/pages/homes-gallery.page.json';
+import homesSearch from '../../examples/pages/homes-search.page.json';
+import leadsQueue from '../../examples/pages/leads-queue.page.json';
+import lead from '../../examples/pages/lead.page.json';
 import mapHome from '../../examples/pages/map-home.page.json';
 import mapCouriers from '../../examples/pages/map-couriers.page.json';
 import mapCourier from '../../examples/pages/map-courier.page.json';
@@ -45,7 +48,8 @@ import { codeData, codePage, codePageFor } from './code-page';
 import { templatePages } from './templates';
 import wiText from '../../examples/pages/wi-text.page.json';
 import { wiTextRecords } from './wi-text';
-import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
+import { AMENITIES, sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
+import { sampleLeads } from './leads';
 import { sampleKitchen, sampleWeekOrders } from './districts';
 import { wiHistoryPage, wiHistoryRecord } from './wi-history';
 import { CONTAINED_RECORDS, containedPage } from './contained';
@@ -114,6 +118,11 @@ export const pages: Record<string, Page> = {
   'map-homes': mapHomes as Page,
   // The same homes as a gallery: a card each, its photo large, a viewing booked from it (shared/homes.ts).
   'homes-gallery': homesGallery as Page,
+  // Those for sale in pounds, filtered as a buyer filters them: counts, ranges, bedrooms 2+, a phone's sheet (shared/homes.ts).
+  'homes-search': homesSearch as Page,
+  // A sales team's buyer leads, its filters counted ("Late 5"), and each lead's own page (shared/leads.ts).
+  'leads-queue': leadsQueue as Page,
+  lead: lead as Page,
   // A work item's body: groups with tools at their heading's end, Markdown and rich text, a discussion, links (shared/wi-text.ts).
   'wi-text': wiText as Page,
   'map-home': mapHome as Page,
@@ -204,6 +213,8 @@ const RECORD_PAGES: Record<string, string> = {
   contacts: 'contact',
   'map-homes': 'map-home',
   'homes-gallery': 'map-home',
+  'homes-search': 'map-home',
+  'leads-queue': 'lead',
   'map-couriers': 'map-courier',
   'map-zones': 'map-week-order',
   'map-heat': 'map-week-order',
@@ -215,6 +226,12 @@ const RECORD_PAGES: Record<string, string> = {
   'customer-account': 'invoice',
   property: 'viewing',
 };
+
+/** What a portal's page of homes to buy keeps to, whatever is filtered: homes for sale, priced in pounds. */
+const HOMES_TO_BUY: ResolvedFilter[] = [
+  { field: 'offer', op: '=', value: 'sale' },
+  { field: 'currency', op: '=', value: 'EGP' },
+];
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
@@ -253,7 +270,8 @@ export function optionsFromQuery(params: URLSearchParams): {
   listSearch?: Facet[];
 } {
   const saveStatus = params.get('saveStatus');
-  const listFilter = filterFromQuery(params);
+  // A portal's page of homes to buy: those for sale, in pounds, whatever the buyer filters.
+  const listFilter = filterFromQuery(params) ?? (params.get('page') === 'homes-search' ? HOMES_TO_BUY : undefined);
   const listSearch = searchFromQuery(params);
   return {
     // A list kept to one record's records by its address: a related list's View all, by the app's route — said as chips
@@ -262,8 +280,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(listSearch ? { listSearch } : {}),
     // The contacts' person signed in: Mona Adel, one of their owners — her own contacts bold (the page's rowBold).
     ...(params.get('page') === 'contacts' ? { user: { id: 9001, name: 'Mona Adel' } } : {}),
-    // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both.
-    ...(params.get('page') === 'invoices' ? { now: demoNow } : {}),
+    // The invoices' periods counted from the demo's clock, as their records were made: `?now=` pins both; the leads' follow-ups too.
+    ...(params.get('page') === 'invoices' || params.get('page') === 'leads-queue' ? { now: demoNow } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
     // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
@@ -445,6 +463,9 @@ export function sampleDataSource() {
       ...emptyGridsRecords,
       'account.move': BILLS,
       home: linkedHomes(sampleHomes()),
+      'home.amenity': Object.fromEntries(Object.entries(AMENITIES).map(([id, name]) => [id, { name }])),
+      // A sales team's buyer leads, made round now (shared/leads.ts).
+      lead: sampleLeads(),
       // The homes' viewings and the agents who show them; the customers' quotations (shared/related-lists.ts).
       viewing: sampleViewings(sampleHomes()),
       agent: Object.fromEntries(Object.entries(AGENTS).map(([id, name]) => [id, { name }])),

@@ -104,7 +104,7 @@ describe('a list drawn as a backlog', () => {
   it('refuses filter fields that are no field, that cannot list their values, or without the filter bar', () => {
     expect(problems(page({ search: 'fields', filterFields: ['kind'] }))).toEqual(['layout.filterFields[0]: no field "kind"']);
     expect(problems(page({ search: 'fields', filterFields: ['description'] }))).toEqual([
-      'layout.filterFields[0]: "description" is a html; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number',
+      'layout.filterFields[0]: "description" is a html; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number, or takes the range of a number or a date',
     ]);
     expect(problems(page({ filterFields: ['state'] }))).toEqual(['layout.filterFields: the filter fields are for the "fields" search: add "search": "fields"']);
     expect(problems(page({ search: 'fields', filterFields: [] }))[0]).toMatch(/^layout\.filterFields/);

@@ -374,6 +374,27 @@ plain conditions. A date in `groupBy` groups by its year, quarter, month,
 week or day, asked of `groups` with `interval`. See
 [lists that add up](https://fieldia.dev/lists/#totals).
 
+### Filters a buyer and a sales team expect
+
+A filter bar (`"search": "fields"`) may say how many records each of its values
+finds among the rest of the search — `"filterCounts": true`: *Villa 5*, read out
+as "Villa, 5 homes" — asked of the source's `groups` (a record of links counted
+under each of its links); without `groups`, its values and no count. A number's
+or a date's field filters by its range, From and To, with a press for each least
+value — `"filterRanges": { "bedrooms": { "atLeast": [1, 2, 3, 4] } }` — one chip,
+"Price: E£ 5M – E£ 15M", "Bedrooms: 2+"; a decimal, an amount and a date always
+do, a whole number where it is named. Its boxes read as every box reads a number
+or a day, From past To said and nothing filtered by it. The search bar's own
+filter of a number or a date *is between* two, one chip too. A range reaches the
+source as `>=` and `<=` (`facetsToFilter`), a date and time's days on the list's
+clock. With `filterCounts` the search bar's menu counts each named filter (as if
+it were the only one on) and each favourite — *Late 5* — by the source's
+`totals` (its `count`), else by its `list`'s total. `"filterSheet": true` puts
+the filter bar's fields in a sheet where the bar is 520 pixels wide or less,
+behind one Filters button: every field at once, counted as they change, taken
+together with "Show 37 homes"; × and Escape let them go. See
+[filters](https://fieldia.dev/lists/#filters).
+
 ### Taking records away, changing many
 
 A list takes its records away and changes them in bulk. With every row on

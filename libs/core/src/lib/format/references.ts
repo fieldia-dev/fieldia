@@ -33,6 +33,10 @@ const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'moneta
 const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
 /** The kinds of field a list's filter bar can list the values of. */
 const LISTS_ITS_VALUES = new Set(['selection', 'many2one', 'many2many', 'boolean', 'char', 'integer']);
+/** The kinds of field a list's filter bar filters by their range, From and To: a whole number where the page says so. */
+const HAS_A_RANGE: ReadonlySet<string> = new Set(['integer', 'float', 'monetary', 'date', 'datetime']);
+/** The kinds whose range is all a filter can take of them: no list of their values. */
+const RANGE_ONLY: ReadonlySet<string> = new Set(['float', 'monetary', 'date', 'datetime']);
 /** Kinds of field a list's card shows as its picture: a picture held, or text holding a picture's address. */
 const PICTURES: ReadonlySet<string> = new Set(['image', 'binary', 'char']);
 /** What a calendar's start and end can be: a day, or a day and a time. */
@@ -645,12 +649,33 @@ export class ReferenceCheck {
     if (list.filterFields && list.search !== 'fields') this.report(`${path}.filterFields`, 'the filter fields are for the "fields" search: add "search": "fields"');
     list.filterFields?.forEach((name, i) => {
       const def = this.need(name, `${path}.filterFields[${i}]`);
-      if (def && !LISTS_ITS_VALUES.has(def.type)) this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number`);
+      if (def && !LISTS_ITS_VALUES.has(def.type) && !RANGE_ONLY.has(def.type)) {
+        this.report(`${path}.filterFields[${i}]`, `"${name}" is a ${def.type}; a filter lists the values of a choice, a link, links, a yes or no, text or a whole number, or takes the range of a number or a date`);
+      }
     });
     // A filter's own name is for a filter the bar offers.
     for (const name of Object.keys(list.filterLabels ?? {})) {
       if (!list.filterFields?.includes(name)) this.report(`${path}.filterLabels.${name}`, `"${name}" is no field of filterFields: its name is for a filter the bar offers`);
     }
+    // A range is a number's or a date's the bar offers; the presses for its least values are a number's, in order.
+    for (const [name, range] of Object.entries(list.filterRanges ?? {})) {
+      const at = `${path}.filterRanges.${name}`;
+      if (!list.filterFields?.includes(name)) {
+        this.report(at, `"${name}" is no field of filterFields: a range is for a filter the bar offers`);
+        continue;
+      }
+      const def = this.page.fields[name];
+      if (!def) continue;
+      if (!HAS_A_RANGE.has(def.type)) {
+        this.report(at, `"${name}" is a ${def.type}; a range is a number's or a date's`);
+        continue;
+      }
+      const least = range.atLeast ?? [];
+      if (least.length && (def.type === 'date' || def.type === 'datetime')) this.report(`${at}.atLeast`, `"${name}" is a ${def.type}; the presses for a least value are a number's`);
+      else if (def.type === 'integer' && least.some((n) => !Number.isInteger(n))) this.report(`${at}.atLeast`, `"${name}" holds whole numbers: each least value is one`);
+      else if (least.some((n, i) => i > 0 && n <= least[i - 1])) this.report(`${at}.atLeast`, 'the least values go from the smallest to the largest, each once');
+    }
+    if (list.filterSheet && list.search !== 'fields') this.report(`${path}.filterSheet`, 'the filter sheet is the filter bar\'s on a phone: add "search": "fields"');
     if (list.parentField !== undefined) {
       const def = this.need(list.parentField, `${path}.parentField`);
       const model = this.page.data.kind === 'record' ? this.page.data.model : '';

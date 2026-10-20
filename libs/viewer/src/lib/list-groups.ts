@@ -91,11 +91,11 @@ export function groupName(context: Pick<GroupContext, 'page' | 'labels' | 'local
   return group.label || String(group.value);
 }
 
-/** The records of one group: those holding its value, those with none, or those whose date falls in its span. */
+/** The records of one group: those holding its value (links holding its link), those with none, or those whose date falls in its span. */
 export function groupFilter(context: Pick<GroupContext, 'page' | 'count'>, key: GroupKey, group: Group): ResolvedFilter[] {
   const { field } = key;
   if (group.value === null) return [{ field, op: 'notset', value: null }];
-  if (!key.interval || !startsSpan(group.value, key, context.count)) return [{ field, op: '=', value: group.value }];
+  if (!key.interval || !startsSpan(group.value, key, context.count)) return [{ field, op: context.page.fields[field]?.type === 'many2many' ? 'contains' : '=', value: group.value }];
   const def = context.page.fields[field];
   // A date and time's days in its own zone where it names one, else the list's.
   const zone = (def.type === 'datetime' && def.timeZone) || context.count.timeZone;

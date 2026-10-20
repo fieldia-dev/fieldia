@@ -1,17 +1,18 @@
 import { fill, numberMisfit, readNumber, wallClock, wallDay, wallTime, DATE_PERIODS, type DatePeriod, type Facet, type Field, type FilterPeriod, type JsonValue, type LineField, type Locale, type Page, type ResolvedFilter, type ResolvedFilterCondition } from '@fieldia/core';
 import { dateExample, dateOrderOf, dateShape, displayValue, guard, numberRules, readDateText, refusalHint, refusalWords, typingText, WIDGET_LABELS, type Guard, type RefusalHint } from '@fieldia/widgets';
 import type { El } from './dom';
+import { rangeBoxes, rangeValue, type RangeBoxes } from './filter-range';
 import type { ViewerLabels, WordKey } from './labels';
 
 /** A condition: one a data source reads, or a period a date falls in, counted again each time the list asks. */
 type Op = ResolvedFilterCondition['op'] | 'period';
-type Words = Pick<ViewerLabels, 'opIs' | 'opIsNot' | 'opContains' | 'opGreater' | 'opLess' | 'opSet' | 'opNotSet' | 'opPeriod'>;
+type Words = Pick<ViewerLabels, 'opIs' | 'opIsNot' | 'opContains' | 'opGreater' | 'opLess' | 'opBetween' | 'opSet' | 'opNotSet' | 'opPeriod'>;
 
 const TEXT: [Op, keyof Words][] = [['ilike', 'opContains'], ['=', 'opIs'], ['!=', 'opIsNot'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const LINK: [Op, keyof Words][] = [['ilike', 'opContains'], ['set', 'opSet'], ['notset', 'opNotSet']];
 const CHOICE: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['set', 'opSet'], ['notset', 'opNotSet']];
-const NUMBER: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['>', 'opGreater'], ['<', 'opLess'], ['set', 'opSet'], ['notset', 'opNotSet']];
-const DATE: [Op, keyof Words][] = [['=', 'opIs'], ['>', 'opGreater'], ['<', 'opLess'], ['period', 'opPeriod'], ['set', 'opSet'], ['notset', 'opNotSet']];
+const NUMBER: [Op, keyof Words][] = [['=', 'opIs'], ['!=', 'opIsNot'], ['>', 'opGreater'], ['<', 'opLess'], ['between', 'opBetween'], ['set', 'opSet'], ['notset', 'opNotSet']];
+const DATE: [Op, keyof Words][] = [['=', 'opIs'], ['>', 'opGreater'], ['<', 'opLess'], ['between', 'opBetween'], ['period', 'opPeriod'], ['set', 'opSet'], ['notset', 'opNotSet']];
 /** Each period's words, by its name: "Today", "Last 7 days". */
 export const PERIOD_WORDS: Record<DatePeriod, WordKey> = {
   today: 'periodToday',
@@ -66,6 +67,10 @@ function conditionsFor(def: Field): [Op, keyof Words][] {
  * A date can also be "in the period" — today, this week, last month, the last
  * 30 days, overdue — counted again each time the list asks (`periods`), so the
  * filter kept as a favourite is right the next day: "Invoice date: This month".
+ *
+ * A number or a date "is between" two — From and To, each end kept, either
+ * left open — as one chip, "Price: 1,000,000 – 3,000,000" (filter-range.ts),
+ * a date and time's by its days, as the list counts them.
  */
 export function customFilterPart(context: { page: Page; el: El; labels: ViewerLabels; locale?: Locale; periods?: (period: FilterPeriod) => ResolvedFilter[]; add: (facet: Facet) => void }) {
   const { page, el, labels } = context;
@@ -82,6 +87,8 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   let value: HTMLInputElement | HTMLSelectElement = el('input', { class: 'fd-input', 'aria-label': labels.value });
   /** Whether the value box is a period's list. */
   let periodShown = false;
+  /** From and To, while the condition is "is between". */
+  let between: RangeBoxes | null = null;
   /** The value box's guard and its hint: what it refuses as typed, and why Apply waits. */
   let checks: Guard | null = null;
   let hint: RefusalHint | null = null;
@@ -104,6 +111,14 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
     periodShown = condition.value === 'period';
     checks?.destroy();
     checks = null;
+    between?.destroy();
+    between = null;
+    if (condition.value === 'between') {
+      between = rangeBoxes({ page, def: current, el, labels, locale });
+      valueBox.replaceChildren(between.element);
+      valueBox.hidden = false;
+      return;
+    }
     if (condition.value === 'period') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...DATE_PERIODS.map((period) => el('option', { value: period }, labels[PERIOD_WORDS[period]])));
     else if (current.type === 'selection') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, ...current.options.map((o) => el('option', { value: String(o.value) }, o.label)));
     else if (current.type === 'boolean') value = el('select', { class: 'fd-input', 'aria-label': labels.value }, el('option', { value: 'true' }, labels.yes), el('option', { value: 'false' }, labels.no));
@@ -122,9 +137,9 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
   }
 
   field.addEventListener('change', drawConditions);
-  // To a period's list and back: the box of the condition's kind.
+  // To a period's list, or From and To, and back: the box of the condition's kind.
   condition.addEventListener('change', () => {
-    if ((condition.value === 'period') !== periodShown) drawValue();
+    if ((condition.value === 'period') !== periodShown || (condition.value === 'between') !== !!between) drawValue();
     valueBox.hidden = condition.value === 'set' || condition.value === 'notset';
   });
   button.addEventListener('click', () => {
@@ -146,6 +161,17 @@ export function customFilterPart(context: { page: Page; el: El; labels: ViewerLa
       // The period, kept as it is named, and the conditions it makes today.
       const period: FilterPeriod = { field: field.value, is: value.value as DatePeriod };
       context.add({ kind: 'custom', label: fill(labels.periodChip, { field: current.label, period: labels[PERIOD_WORDS[period.is]] }), filter: context.periods(period), period });
+      form.hidden = true;
+      button.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    if (op === 'between' && between) {
+      // Each box read as it reads alone; both empty, nothing is asked for yet.
+      const ends = between.read(true);
+      if (!ends) return;
+      const range = rangeValue(current, ends, labels, locale);
+      if (!range) return between.say(between.from, words.enterValue);
+      context.add({ kind: 'field', field: field.value, label: current.label, values: [range] });
       form.hidden = true;
       button.setAttribute('aria-expanded', 'false');
       return;

@@ -1,0 +1,243 @@
+{
+  "fieldia": "0.5",
+  "id": "leads-queue",
+  "title": "Leads to follow up",
+  "description": "A sales team's queue of buyer leads: its filters say how many each finds — Late 5, Today 3 — as the menu opens and as the search narrows, and so does each search a person keeps.",
+  "records": {
+    "one": "lead",
+    "other": "leads",
+    "a": "a lead"
+  },
+  "data": {
+    "kind": "record",
+    "model": "lead"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Lead"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "stage": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        {
+          "value": "new",
+          "label": "New"
+        },
+        {
+          "value": "visit",
+          "label": "Visit"
+        },
+        {
+          "value": "offer",
+          "label": "Offer"
+        },
+        {
+          "value": "won",
+          "label": "Won"
+        }
+      ]
+    },
+    "agent": {
+      "type": "char",
+      "label": "Agent"
+    },
+    "budget": {
+      "type": "monetary",
+      "label": "Budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        0
+      ]
+    },
+    "next_on": {
+      "type": "date",
+      "label": "Next follow-up"
+    },
+    "came_on": {
+      "type": "date",
+      "label": "Came in"
+    },
+    "source": {
+      "type": "selection",
+      "label": "Came through",
+      "options": [
+        {
+          "value": "website",
+          "label": "Website"
+        },
+        {
+          "value": "whatsapp",
+          "label": "WhatsApp"
+        },
+        {
+          "value": "walk_in",
+          "label": "Walk-in"
+        },
+        {
+          "value": "referral",
+          "label": "Referral"
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "leads-queue",
+    "columns": [
+      "name",
+      "stage",
+      "agent",
+      "next_on",
+      "budget",
+      "source"
+    ],
+    "sort": [
+      {
+        "field": "next_on"
+      }
+    ],
+    "pageSize": 20,
+    "searchFields": [
+      "name",
+      "agent",
+      "phone"
+    ],
+    "filters": [
+      {
+        "id": "late",
+        "label": "Late",
+        "filter": [
+          {
+            "field": "stage",
+            "op": "!=",
+            "value": "won"
+          }
+        ],
+        "period": {
+          "field": "next_on",
+          "is": "overdue"
+        }
+      },
+      {
+        "id": "today",
+        "label": "Today",
+        "period": {
+          "field": "next_on",
+          "is": "today"
+        }
+      },
+      {
+        "id": "this_week",
+        "label": "This week",
+        "period": {
+          "field": "next_on",
+          "is": "thisWeek"
+        }
+      },
+      {
+        "id": "new",
+        "label": "New this week",
+        "period": {
+          "field": "came_on",
+          "is": "thisWeek"
+        }
+      },
+      {
+        "id": "no_agent",
+        "label": "No agent yet",
+        "filter": [
+          {
+            "field": "agent",
+            "op": "notset"
+          }
+        ]
+      },
+      {
+        "id": "big",
+        "label": "Budget 10M or more",
+        "filter": [
+          {
+            "field": "budget",
+            "op": ">=",
+            "value": 10000000
+          }
+        ]
+      }
+    ],
+    "groupBy": [
+      "stage",
+      "agent",
+      "source"
+    ],
+    "filterCounts": true,
+    "cells": {
+      "stage": {
+        "widget": "badge",
+        "options": {
+          "tones": {
+            "new": "muted",
+            "visit": "info",
+            "offer": "warning",
+            "won": "success"
+          }
+        }
+      }
+    },
+    "rowTones": [
+      {
+        "tone": "danger",
+        "when": "next_on and next_on < today() and stage != 'won'",
+        "label": "A follow-up that is late"
+      }
+    ],
+    "card": {
+      "title": "name",
+      "status": "stage",
+      "fields": [
+        [
+          "next_on",
+          "agent"
+        ],
+        "budget"
+      ]
+    }
+  },
+  "translations": {
+    "ar": {
+      "Leads to follow up": "عملاء للمتابعة",
+      "lead": "عميل",
+      "leads": "عملاء",
+      "a lead": "عميلًا",
+      "Lead": "العميل",
+      "Phone": "الهاتف",
+      "Stage": "المرحلة",
+      "New": "جديد",
+      "Visit": "معاينة",
+      "Offer": "عرض",
+      "Won": "تم البيع",
+      "Agent": "الوكيل",
+      "Budget": "الميزانية",
+      "Next follow-up": "المتابعة التالية",
+      "Came in": "تاريخ الوصول",
+      "Came through": "المصدر",
+      "Website": "الموقع",
+      "WhatsApp": "واتساب",
+      "Walk-in": "زيارة مباشرة",
+      "Referral": "توصية",
+      "Late": "متأخر",
+      "Today": "اليوم",
+      "This week": "هذا الأسبوع",
+      "No agent yet": "بلا وكيل بعد",
+      "Budget 10M or more": "ميزانية 10 ملايين أو أكثر",
+      "A follow-up that is late": "متابعة متأخرة",
+      "New this week": "جديد هذا الأسبوع"
+    }
+  }
+}
