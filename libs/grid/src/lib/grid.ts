@@ -1073,11 +1073,16 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   bar.className = 'fd-lines-chosen';
   bar.hidden = true;
   bar.append(chosenCount, ...chosenButtons.map((b) => b.button));
-  // Lines as cards too (cards: narrow or always): the stylesheet shows them in the grid's place on a narrow form.
+  // Lines as cards too: the stylesheet shows them in the grid's place on a narrow form (`narrow`, as where the page says
+  // nothing: a grid's cells cut their words at a phone's width), or always — where a line can be opened in its own form
+  // to change it (`dialogs`); where nothing can open one, or the page says `never`, a grid at every width.
+  const cardsShape = node.cards === 'never' || (!node.cards && !dialogs) ? null : (node.cards ?? 'narrow');
   const cardList = document.createElement('div');
   cardList.className = 'fd-line-cards';
-  if (node.cards) element.dataset['cards'] = node.cards;
-  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, pasteNote, adds, catcher);
+  if (cardsShape) element.dataset['cards'] = cardsShape;
+  element.append(...(choosing ? [bar] : []), ...(cardsShape ? [cardList] : []), host, problems, pasteNote, adds, catcher);
+  /** Whether the lines show as cards now, in the grid's place. */
+  const asCards = () => !!cardsShape && element.isConnected && (element.ownerDocument.defaultView?.getComputedStyle(cardList).display ?? 'none') !== 'none';
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -1144,6 +1149,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const addAndEdit = (values: Values = {}) => {
     const key = form.addLine(name, values);
     fresh.add(key);
+    // As cards, the new line opens in its own form, as a card is changed; let go there, it goes again.
+    if (asCards()) return void openCard(key);
     const index = lines().findIndex((l) => l.key === key);
     const column = kindOf(lines()[index]) ? spanStart(api)?.getColId() : firstEditable();
     if (index < 0 || !column) return;
@@ -1478,6 +1485,23 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // With dialogs, a line can be opened to see and edit every one of its fields at once.
   // Its own record's page, by the table's model (lineOpens: "record"), or every one of its fields.
   const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly) : undefined);
+  /**
+   * A card's line in its own form: an item's every field, a section's or a note's words alone. A line the grid just
+   * added that comes back as it was added — let go, nothing typed — goes again, as Escape takes one from the grid.
+   */
+  async function openCard(key: string) {
+    const line = lines().find((one) => one.key === key);
+    if (!line || !dialogs) return;
+    const before = JSON.stringify(line.values);
+    if (kindOf(line) && kinds) {
+      const text = def.fields[kinds.text] as Field;
+      const values = await dialogs.editValues({ title: def.label, fields: { [kinds.text]: text }, values: { [kinds.text]: line.values[kinds.text] ?? null }, readonly, ...(form.page.lowerLabels === undefined ? {} : { lowerLabels: form.page.lowerLabels }) });
+      if (values && lines().some((one) => one.key === key)) form.updateLine(name, key, kinds.text, values[kinds.text] ?? null);
+    } else await openLine(line);
+    const now = lines().find((one) => one.key === key);
+    if (fresh.has(key) && now && JSON.stringify(now.values) === before) form.removeLine(name, key);
+    fresh.delete(key);
+  }
   if (node.rowButtons?.length) {
     columnDefs.push({
       colId: '__row_buttons',
@@ -1963,7 +1987,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let cardsDrawn = '';
   /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
   function drawCards() {
-    if (!node.cards) return;
+    if (!cardsShape) return;
     const current = lines();
     const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
     const shownColumns = columns.filter((column) => !hidden.has(column));
@@ -1978,7 +2002,17 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const kind = kindOf(line);
       if (kind && kinds) {
         card.classList.add(`fd-line-card-${kind}`);
-        card.textContent = String(line.values[kinds.text] ?? '');
+        // A section's or a note's words, changed in a form of their own, as its cell is in the grid.
+        const words = String(line.values[kinds.text] ?? '');
+        if (!dialogs || readonly) card.textContent = words;
+        else {
+          const open = document.createElement('button');
+          open.type = 'button';
+          open.className = 'fd-line-card-title';
+          open.textContent = words || (def.fields[kinds.text]?.label ?? '');
+          open.addEventListener('click', () => void openCard(line.key));
+          card.append(open);
+        }
         return card;
       }
       const state = lineStates.get(line.key);
@@ -2037,7 +2071,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       return `${def.fields[column].label}: ${said}`;
     });
     const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
-    cardList.replaceChildren(...cards, ...(total ? [total] : []));
+    // No lines yet: said in the cards' place, as the grid says it in its body.
+    const none = current.length ? null : Object.assign(document.createElement('p'), { className: 'fd-help fd-line-cards-empty', textContent: words('emptyLabel') ?? labels.noLines });
+    cardList.replaceChildren(...(none ? [none] : cards), ...(total && !none ? [total] : []));
   }
 
   /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */

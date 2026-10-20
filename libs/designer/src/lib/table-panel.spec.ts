@@ -156,10 +156,12 @@ describe('a table’s own rules, in the panel', () => {
     expect(node('f-moves').rowButtons).toMatchObject([{ type: 'button', label: 'Serials' }]);
     openTab(host, 'Layout');
     choose(field(row('Table'), 'A line opens'), 'record');
-    choose(field(row('Table'), 'On a phone'), 'narrow');
+    // Cards on a phone unless it says otherwise: Rows keeps the table's rows at every width.
+    expect((field(row('Table'), 'On a phone') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Cards');
+    choose(field(row('Table'), 'On a phone'), 'never');
     choose(field(row('Table'), 'Column widths'), 'content');
     (field(row('Table'), 'Copy a line') as HTMLInputElement).click();
-    expect(node('f-moves')).toMatchObject({ lineOpens: 'record', cards: 'narrow', fit: 'content', options: { copy: true } });
+    expect(node('f-moves')).toMatchObject({ lineOpens: 'record', cards: 'never', fit: 'content', options: { copy: true } });
   });
 
   it('orders the lines by their fields, refusing one the lines lack', () => {

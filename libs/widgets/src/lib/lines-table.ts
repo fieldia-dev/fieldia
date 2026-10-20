@@ -107,8 +107,11 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;
-  // Lines as cards on a narrow form, or always; columns as wide as they hold: the stylesheet draws them so.
-  if (node.cards) element.dataset['cards'] = node.cards;
+  // Lines as cards on a narrow form — as where the page says nothing: a table's boxes cut their words at a phone's width
+  // however its columns share it — or always; rows at every width only where it says `never`. Columns as wide as they
+  // hold. The stylesheet draws them so.
+  const cards = node.cards ?? 'narrow';
+  if (cards !== 'never') element.dataset['cards'] = cards;
   if (node.fit) element.dataset['fit'] = node.fit;
   element.setAttribute('role', 'group');
   const scroller = document.createElement('div');

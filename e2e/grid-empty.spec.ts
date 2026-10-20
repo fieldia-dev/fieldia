@@ -5,7 +5,7 @@ import { expectNoSidewaysScroll, node, screen } from './support';
 /**
  * A table of lines with no lines yet, drawn by the grid (shared/empty-grids.ts): it says so in its body — "No lines
  * yet" — clear of its header and, where it has one, of the totals row under its lines; with or without a totals row,
- * in every engine, on a desktop and on a phone.
+ * in every engine, on a desktop; on a phone, where its lines are cards, in its cards' place.
  */
 
 const box = async (element: Locator) => (await element.boundingBox()) as { x: number; y: number; width: number; height: number };
@@ -25,7 +25,24 @@ async function placed(page: Page, id: string) {
 }
 
 test.describe('an empty table of lines drawn by the grid', () => {
-  for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+  test('says it is empty in its cards’ place on a phone, where its lines are cards', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/plain/?page=empty-grids&skin=underline');
+    for (const id of ['f-lines', 'f-notes']) {
+      const cards = node(page, id).locator('.fd-line-cards');
+      await expect(cards).toBeVisible();
+      await expect(cards.locator('.fd-line-cards-empty')).toHaveText('No lines yet');
+      await expect(node(page, id).locator('.fd-grid-host')).toBeHidden();
+    }
+    await node(page, 'f-lines').scrollIntoViewIfNeeded();
+    await screen(page, 'grid-empty-cards-390', { viewport: true });
+    await expectNoSidewaysScroll(page);
+    expect(problems).toEqual([]);
+  });
+
+  for (const [width, height] of [[1440, 900]] as const) {
     test(`says it is empty in its body, clear of its header and its totals row, at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       const problems: string[] = [];
@@ -45,7 +62,6 @@ test.describe('an empty table of lines drawn by the grid', () => {
         await node(page, id).scrollIntoViewIfNeeded();
         await screen(page, `grid-empty-${id === 'f-lines' ? 'totals' : 'plain'}-${width}`, { viewport: true });
       }
-      if (width === 390) await expectNoSidewaysScroll(page);
       expect(problems).toEqual([]);
     });
   }

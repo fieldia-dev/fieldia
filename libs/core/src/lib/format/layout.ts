@@ -198,9 +198,13 @@ export interface FieldNode {
   /**
    * For one2many: its lines as cards, each column's label by its value — on a
    * narrow form (`narrow`, up to 520px: a phone, as Flectra's mode="tree,kanban"
-   * there), or always.
+   * there), or always; `never`, rows at every width. Left out, as `narrow`: a
+   * table's boxes and a grid's cells cut their words at a phone's width however
+   * its columns share it, and a card gives each its whole width (a grid's cards
+   * open a line in its own form to change it; where nothing can open one, a grid
+   * stays a grid).
    */
-  cards?: 'narrow' | 'always';
+  cards?: 'narrow' | 'always' | 'never';
   /**
    * For one2many: columns as wide as what they hold (`content`), as Flectra
    * sizes a list's, rather than sharing the table's width; or, in a grid,
@@ -1627,7 +1631,7 @@ export const FieldNodeSchema = z.strictObject({
   get lineForm(): z.ZodOptional<typeof LineFormSchema> {
     return LineFormSchema.optional();
   },
-  cards: z.enum(['narrow', 'always']).optional(),
+  cards: z.enum(['narrow', 'always', 'never']).optional(),
   fit: z.enum(['content', 'shrink']).optional(),
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),

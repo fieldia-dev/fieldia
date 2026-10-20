@@ -235,6 +235,28 @@ describe('the grid on a phone', () => {
     expect(asked[0]).toMatchObject({ action: 'action_split', line: { key: 'a' } });
   });
 
+  it('is drawn as cards on a phone by itself, where the page says nothing; a grid only where it says "never"', async () => {
+    // The owner's walk of 0.27: the agent's "Starts when" grid on a phone, every cell "…".
+    const shaped = async (cards?: string) => {
+      const page = JSON.parse(JSON.stringify(order)) as Page;
+      const node = (page.layout as unknown as { children: Record<string, unknown>[] }).children[0];
+      if (cards) node['cards'] = cards;
+      else delete node['cards'];
+      const host = document.createElement('div');
+      document.body.append(host);
+      handle?.destroy();
+      handle = mountViewer(host, { page, widgets: gridWidgets, values: { line_ids: [{ key: 'a', values: { kind: null, name: 'Desk', qty: 12, lot: null } }] } as never });
+      await frames();
+      return host.querySelector('.fd-grid-lines') as HTMLElement;
+    };
+    const plain = await shaped();
+    expect(plain.dataset['cards']).toBe('narrow');
+    expect(plain.querySelectorAll('.fd-line-cards > .fd-line-card')).toHaveLength(1);
+    const never = await shaped('never');
+    expect(never.hasAttribute('data-cards')).toBe(false);
+    expect(never.querySelector('.fd-line-cards')).toBeNull();
+  });
+
   it('sizes its columns to what they hold, sharing none of the width', async () => {
     const { grid } = await mountOrder();
     const api = (await import('./grid')).gridApiOf(grid)!;

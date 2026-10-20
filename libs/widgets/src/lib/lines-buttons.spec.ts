@@ -150,4 +150,16 @@ describe('a plain table on a phone', () => {
     expect(sheet).toContain('@container fd-lines (max-width: 520px)');
     expect(sheet).toContain('.fd-lines[data-cards="always"]');
   });
+
+  it('draws its lines as cards on a phone by itself, where the page says nothing; rows only where it says "never"', () => {
+    // The owner's walk of 0.27: an agent's tools on a phone read "Send an ema", "A f", a tick half hidden.
+    const drawn = (cards?: string) => {
+      const node = { ...(page.layout as { children: FieldNode[] }).children[0], ...(cards ? { cards } : {}) } as FieldNode;
+      const form = createForm({ page, values: { state: 'draft', workorder_ids: [{ key: 'a', values: { name: 'Cut', hours: 2 } }] } as never });
+      return createWidget({ form, name: 'workorder_ids', field: page.fields['workorder_ids'] as Field, node, id: 'fd-wo', document, labels: WIDGET_LABELS.en }).element;
+    };
+    expect(drawn().dataset['cards']).toBe('narrow');
+    expect(drawn('always').dataset['cards']).toBe('always');
+    expect(drawn('never').hasAttribute('data-cards')).toBe(false);
+  });
 });
