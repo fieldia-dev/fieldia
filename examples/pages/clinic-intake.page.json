@@ -1,0 +1,134 @@
+{
+  "fieldia": "0.5",
+  "id": "clinic-intake",
+  "title": "New patient intake",
+  "description": "Six short steps before your first visit. No need to finish now: Continue later keeps your answers, with a link to carry on from your phone or your computer.",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "continueLater": true,
+  "phone": { "country": "EG" },
+  "fields": {
+    "full_name": { "type": "char", "label": "Full name", "required": true },
+    "birth_date": { "type": "date", "label": "Date of birth", "required": true, "max": "today" },
+    "phone": { "type": "char", "label": "Mobile phone", "required": true },
+    "email": { "type": "char", "label": "Email", "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+    "reason": { "type": "text", "label": "What brings you to us?", "required": true, "size": 600 },
+    "referred_by": {
+      "type": "selection",
+      "label": "Who sent you to us?",
+      "options": [
+        { "value": "self", "label": "I found you myself" },
+        { "value": "doctor", "label": "Another doctor" },
+        { "value": "friend", "label": "A friend or family" },
+        { "value": "insurer", "label": "My insurer" }
+      ]
+    },
+    "weight": { "type": "float", "label": "Weight", "digits": [5, 1], "min": 2, "max": 400, "help": "In kilograms." },
+    "height": { "type": "integer", "label": "Height", "min": 40, "max": 250, "help": "In centimetres." },
+    "conditions": {
+      "type": "selection",
+      "label": "Have you ever had any of these?",
+      "multiple": true,
+      "options": [
+        { "value": "diabetes", "label": "Diabetes" },
+        { "value": "heart", "label": "Heart disease" },
+        { "value": "blood_pressure", "label": "High blood pressure" },
+        { "value": "asthma", "label": "Asthma" },
+        { "value": "none", "label": "None of these", "exclusive": true }
+      ]
+    },
+    "medication": { "type": "text", "label": "Medicines you take now" },
+    "allergies": { "type": "text", "label": "Allergies, and what happens" },
+    "surgeries": { "type": "text", "label": "Operations you have had, and when" },
+    "smoker": {
+      "type": "selection",
+      "label": "Do you smoke?",
+      "options": [
+        { "value": "no", "label": "No" },
+        { "value": "former", "label": "I used to" },
+        { "value": "yes", "label": "Yes" }
+      ]
+    },
+    "exercise": {
+      "type": "selection",
+      "label": "How often do you exercise?",
+      "options": [
+        { "value": "rarely", "label": "Rarely" },
+        { "value": "weekly", "label": "Once or twice a week" },
+        { "value": "often", "label": "Most days" }
+      ]
+    },
+    "insurer": { "type": "char", "label": "Insurance company" },
+    "policy": { "type": "char", "label": "Policy number" },
+    "emergency_name": { "type": "char", "label": "Emergency contact", "required": true },
+    "emergency_phone": { "type": "char", "label": "Their phone", "required": true },
+    "consent": { "type": "boolean", "label": "I agree that the clinic keeps these answers in my file, for my care alone.", "required": true }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "intake",
+    "clickable": true,
+    "children": [
+      {
+        "type": "step",
+        "id": "about",
+        "label": "About you",
+        "children": [
+          { "type": "field", "id": "f-name", "field": "full_name", "autocomplete": "name" },
+          { "type": "field", "id": "f-birth", "field": "birth_date", "autocomplete": "bday" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone", "autocomplete": "mobile tel" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email", "autocomplete": "email" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "visit",
+        "label": "Your visit",
+        "children": [
+          { "type": "field", "id": "f-reason", "field": "reason" },
+          { "type": "field", "id": "f-referred", "field": "referred_by", "widget": "radio" },
+          { "type": "field", "id": "f-weight", "field": "weight" },
+          { "type": "field", "id": "f-height", "field": "height" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "history",
+        "label": "Medical history",
+        "children": [
+          { "type": "field", "id": "f-conditions", "field": "conditions", "widget": "checkboxes" },
+          { "type": "field", "id": "f-medication", "field": "medication" },
+          { "type": "field", "id": "f-allergies", "field": "allergies" },
+          { "type": "field", "id": "f-surgeries", "field": "surgeries" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "lifestyle",
+        "label": "Everyday life",
+        "optional": true,
+        "children": [
+          { "type": "field", "id": "f-smoker", "field": "smoker", "widget": "radio" },
+          { "type": "field", "id": "f-exercise", "field": "exercise", "widget": "radio" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "insurance",
+        "label": "Insurance and emergencies",
+        "children": [
+          { "type": "field", "id": "f-insurer", "field": "insurer" },
+          { "type": "field", "id": "f-policy", "field": "policy" },
+          { "type": "field", "id": "f-emergency-name", "field": "emergency_name" },
+          { "type": "field", "id": "f-emergency-phone", "field": "emergency_phone", "widget": "phone" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "consent",
+        "label": "Consent",
+        "children": [{ "type": "field", "id": "f-consent", "field": "consent", "widget": "tick" }]
+      }
+    ]
+  }
+}

@@ -101,7 +101,7 @@ const Contained = defineComponent({
 });
 
 /** The form's events, each emitted under its own name. */
-const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete'] as const;
+const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete', 'draft'] as const;
 
 const EMPTY_STATE: WidgetState = { value: undefined, values: {}, readonly: false, required: false, invalid: false };
 
@@ -133,6 +133,8 @@ export const FieldiaForm = defineComponent({
     maps: { type: Function as PropType<MapPartFactory>, default: undefined },
     fieldTypes: { type: Object as PropType<Record<string, Component>>, default: undefined },
     drafts: { type: Object as PropType<{ store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number }>, default: undefined },
+    /** A draft kept on the app's server to continue from, by its key: what the link Continue later gave carries. */
+    resume: { type: String, default: undefined },
     autosave: { type: Object as PropType<{ delayMs: number }>, default: undefined },
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
@@ -189,6 +191,8 @@ export const FieldiaForm = defineComponent({
     archive: (_event: FormEvents['archive']) => true,
     duplicate: (_event: FormEvents['duplicate']) => true,
     delete: (_event: FormEvents['delete']) => true,
+    /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
+    draft: (_event: FormEvents['draft']) => true,
   },
   setup(props, { slots, emit, expose }) {
     const host = ref<HTMLElement>();
@@ -268,6 +272,7 @@ export const FieldiaForm = defineComponent({
         maps: props.maps,
         slots: slotRenderers,
         drafts: props.drafts,
+        resume: props.resume,
         autosave: props.autosave,
         scheduler: props.scheduler,
         confirm: props.confirm,
@@ -307,7 +312,7 @@ export const FieldiaForm = defineComponent({
     onMounted(mount);
     onBeforeUnmount(unmount);
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {})],
+      () => [props.page, props.form, props.dataSource, props.recordId, props.resume, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {})],
       () => {
         unmount();
         mount();

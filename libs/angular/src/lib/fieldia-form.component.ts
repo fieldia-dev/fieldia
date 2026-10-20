@@ -97,6 +97,8 @@ export class FieldiaFormComponent implements OnDestroy {
   /** Custom fields as Angular components, by `type.widget` or `type`. They receive the inputs they declare. */
   readonly fieldTypes = input<Record<string, Type<unknown>> | undefined>(undefined);
   readonly drafts = input<{ store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number } | undefined>(undefined);
+  /** A draft kept on the app's server to continue from, by its key: what the link Continue later gave carries. */
+  readonly resume = input<string | undefined>(undefined);
   readonly autosave = input<{ delayMs: number } | undefined>(undefined);
   readonly scheduler = input<Scheduler | undefined>(undefined);
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
@@ -169,6 +171,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly archive = output<FormEvents['archive']>();
   readonly duplicate = output<FormEvents['duplicate']>();
   readonly delete = output<FormEvents['delete']>();
+  /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
+  readonly draft = output<FormEvents['draft']>();
 
   private readonly slotTemplates = contentChildren(FieldiaSlotDirective);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -188,6 +192,7 @@ export class FieldiaFormComponent implements OnDestroy {
         form: this.form(),
         dataSource: this.dataSource(),
         recordId: this.recordId(),
+        resume: this.resume(),
         user: this.user(),
         context: this.context(),
         dir: this.dir(),
@@ -226,7 +231,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; context?: ViewerOptions['context']; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; resume?: string; user?: FormUser; context?: ViewerOptions['context']; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -271,6 +276,7 @@ export class FieldiaFormComponent implements OnDestroy {
       form: options.form,
       dataSource: options.dataSource,
       recordId: options.recordId,
+      resume: options.resume,
       user: options.user,
       context: options.context,
       values: this.values(),
@@ -320,6 +326,7 @@ export class FieldiaFormComponent implements OnDestroy {
     handle.on('archive', (event) => this.archive.emit(event));
     handle.on('duplicate', (event) => this.duplicate.emit(event));
     handle.on('delete', (event) => this.delete.emit(event));
+    handle.on('draft', (event) => this.draft.emit(event));
     this.ready.emit(handle);
   }
 

@@ -286,6 +286,18 @@ describe('<FieldiaForm>', () => {
     expect(sent).toEqual([{ product: 'Desk lamp', price: null }]);
   });
 
+  it('opens a draft by its key (resume) at its step, and tells the app each draft kept with Continue later', async () => {
+    const source = createMemoryDataSource({ draftLink: (key) => `https://clinic.example/intake?resume=${key}` });
+    source.drafts['abc'] = { pageId: 'clinic-intake', values: { full_name: 'Mona Adel' }, step: 'visit', savedAt: '2026-10-19T10:42:00Z' };
+    const kept: unknown[] = [];
+    const { container } = render(<FieldiaForm page={page('clinic-intake')} dataSource={source} resume="abc" onDraft={({ key, later }) => kept.push({ key, later })} />);
+    await waitFor(() => [...container.querySelectorAll('.fd-step')].find((step) => !(step as HTMLElement).hidden)?.getAttribute('data-node') === 'visit');
+    fireEvent.click(screen.getByRole('button', { name: 'Continue later' }));
+    await waitFor(() => kept.length === 1);
+    expect(kept).toEqual([{ key: 'abc', later: true }]);
+    expect(source.drafts['abc']).toMatchObject({ step: 'visit', later: true });
+  });
+
   it('draws the pager and the breadcrumbs the app gives, and tells each record the form shows', async () => {
     const shown: unknown[] = [];
     const { container } = render(<FieldiaForm page={staffPage} dataSource={staff()} recordId={1} records={[1, 2]} breadcrumbs={[{ label: 'Employees' }]} onRecord={(event) => shown.push(event.recordId)} />);

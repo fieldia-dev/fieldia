@@ -76,10 +76,12 @@ export interface FieldiaFormProps extends Omit<ViewerOptions, 'slots'> {
   onDuplicate?: (event: FormEvents['duplicate']) => void;
   /** The record was deleted by a step. */
   onDelete?: (event: FormEvents['delete']) => void;
+  /** A draft was kept on the app's server (`saveDraft`): its key, and whether Continue later was pressed. */
+  onDraft?: (event: FormEvents['draft']) => void;
 }
 
 /** The form's events a prop hears, by the prop's name. */
-const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run', onRecord: 'open', onArchive: 'archive', onDuplicate: 'duplicate', onDelete: 'delete' } as const;
+const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run', onRecord: 'open', onArchive: 'archive', onDuplicate: 'duplicate', onDelete: 'delete', onDraft: 'draft' } as const;
 
 /** A form's state as React state: the component re-renders on every change. */
 export function useFormState(form: Form): FormState {
@@ -231,7 +233,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       };
     }
 
-    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, ...options } = latest.current;
+    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
       widgets,
@@ -259,7 +261,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setHandle(null);
       setPortals([]);
     };
-  }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
+    // A draft's key (`resume`) opens that draft, as a record's id opens that record.
+  }, [props.page, props.form, props.dataSource, props.recordId, props.resume, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
 
   // A theme and a skin switch in place: the theme brings its skin, unless one is given here or by the page.
   useEffect(() => {
