@@ -85,5 +85,8 @@ export const ar: Messages = {
   formSent: 'لقد أرسلت إجاباتك على هذا النموذج من قبل.',
   choiceFull: 'لا أماكن متبقية في {option}',
   choiceFilled: 'امتلأ {option} الآن: اختر غيره',
+  approvalLocked: 'مقفل ما دام ينتظر الموافقة',
+  approvalReasonNeeded: 'اذكر سبب الرفض',
+  approvalNotYours: 'ليس لك أن تقرّر في {level} الآن',
   locale: 'ar',
 };

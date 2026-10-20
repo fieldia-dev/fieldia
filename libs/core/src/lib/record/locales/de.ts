@@ -87,5 +87,8 @@ export const de: Messages = {
   formSent: 'Sie haben Ihre Antworten auf dieses Formular bereits gesendet.',
   choiceFull: '{option} ist ausgebucht',
   choiceFilled: '{option} ist jetzt ausgebucht: Wählen Sie etwas anderes',
+  approvalLocked: 'Gesperrt, solange es auf die Genehmigung wartet',
+  approvalReasonNeeded: 'Geben Sie an, warum es abgelehnt wird',
+  approvalNotYours: 'Über {level} entscheiden Sie jetzt nicht',
   locale: 'de',
 };

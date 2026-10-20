@@ -159,6 +159,107 @@ export interface DataSource {
   saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>;
   /** A draft kept by `saveDraft`, by its key: what the viewer's `resume` opens. Null when there is none (sent, or gone). */
   loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>;
+  /**
+   * A record's approvals, for a page with `approval`: the levels it must pass — each with who may approve it there,
+   * whether any one of them or all must, and where it stands — what was decided so far, and the levels this person may
+   * decide now. Asked as a saved record is shown, again after each save and each decision. Who is asked, and in what
+   * order, is the app's to decide — or the approval engine's behind it: Fieldia says it and asks. Without it, nothing
+   * is asked and nothing shows; no levels, and nothing shows either.
+   */
+  approvals?(request: ApprovalsRequest): Promise<Approvals>;
+  /**
+   * A decision at a level this person may decide (`Approvals.mine`): approved, or rejected with why (`reason`, always
+   * given with a rejection). Answer with the approvals as they stand now, or nothing: they are asked again. The record
+   * is loaded again after it, as the decision may have moved it on (its state, what may be changed). Refuse with
+   * `saveRefused` (a `rule`, with why) and nothing is decided. Without it, no Approve or Reject shows.
+   */
+  decide?(request: DecideRequest): Promise<Approvals | void>;
+}
+
+/** Whose approvals are asked: the record shown, and the person, as the app told the form. */
+export interface ApprovalsRequest {
+  model: string;
+  /** The record shown, saved: a new one has none. */
+  recordId: RecordId;
+  /** The person as the app told the form (`user`), where it did: a server knows them by its own sign-in first. */
+  user?: { id: RecordId | null; name?: string };
+}
+
+/** What was decided at a level: approved, or rejected. */
+export type ApprovalDecision = 'approved' | 'rejected';
+
+/**
+ * Where a level stands: `waiting` for its approvers now, `later` — after the levels before it, or until the record is
+ * sent for approval — `approved`, `rejected`, or `skipped`, not needed for this record.
+ */
+export type ApprovalLevelState = 'waiting' | 'later' | 'approved' | 'rejected' | 'skipped';
+
+/** One who may approve at a level, and what they decided there, where they did. */
+export interface Approver {
+  /** Their id, where the app has one: the form's `user` is matched by it. */
+  id?: RecordId;
+  /** Their name, as people know them: "Mona Adel". */
+  name: string;
+  /** What they decided at this level, in the round of asking now; none while they have not. */
+  decision?: ApprovalDecision;
+  /** When, as an ISO date and time. */
+  at?: string;
+}
+
+/** A level a record must pass: Manager, Finance, the CFO, Legal. */
+export interface ApprovalLevel {
+  /** The level's own id, as `decide` and the history name it: "finance". */
+  id: string;
+  /** Its name, in the person's language: "Finance". */
+  name: string;
+  /** Who may approve it there. */
+  approvers: Approver[];
+  /** Met by any one of them (`any`, the default) or by every one (`all`): said in words ("Mona Adel or Omar Said"). */
+  needs?: 'any' | 'all';
+  state: ApprovalLevelState;
+}
+
+/** What happened on a record's way to approval: sent for it, or a decision at a level — who, when, and why. */
+export interface ApprovalEntry {
+  /** A decision at a level, or the record sent for approval (`requested`): each round of asking starts with one. */
+  decision: ApprovalDecision | 'requested';
+  /** The level decided at, by its id; none for `requested`. */
+  level?: string;
+  /** The level's name, where it is no longer among the record's levels: its id is said otherwise. */
+  levelName?: string;
+  /** Who, by the name people know them by. */
+  by: string;
+  /** When, as an ISO date and time. */
+  at: string;
+  /** Why, as they wrote it: always with a rejection, where one approving wrote any. */
+  reason?: string;
+}
+
+/** A record's approvals, as `approvals` and `decide` answer. */
+export interface Approvals {
+  /** The levels it must pass, in their order: none, and it needs no approval — nothing shows. */
+  levels: ApprovalLevel[];
+  /** True: the levels are asked all at once, each waiting together; else one after another, in their order. Words alone. */
+  together?: boolean;
+  /** What happened so far, oldest first: shown beside the record and in its conversation. */
+  history?: ApprovalEntry[];
+  /** The levels this person may decide now, by id: Approve and Reject for each. None: they only see where it stands. */
+  mine?: string[];
+  /** Why it needs approval, in the person's language, said with it: "Orders over EGP 50,000 go to Finance, then the CFO." */
+  why?: string;
+}
+
+/** A decision at a level: what `decide` is asked. */
+export interface DecideRequest {
+  model: string;
+  recordId: RecordId;
+  /** The level decided at, by its id: one of `Approvals.mine`. */
+  level: string;
+  decision: ApprovalDecision;
+  /** Why, as the person wrote it: always given with a rejection. */
+  reason?: string;
+  /** The person as the app told the form (`user`), where it did. */
+  user?: { id: RecordId | null; name?: string };
 }
 
 /** Whose possible duplicates were let be: what `notDuplicates` is asked. */

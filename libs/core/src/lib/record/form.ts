@@ -45,9 +45,12 @@ import {
   type MergeResult,
   type SavedDraft,
   type StoredDraft,
+  type ApprovalDecision,
 } from './data-source';
 import { formLimitsPart, hasLimits, type FormLimits, type FormLimitsPart } from './taking';
 import type { Limits } from './form-limits';
+import { formApprovalsPart, hasApprovals, type FormApproval, type FormApprovalsPart } from './approving';
+import type { ApprovalsKit } from './form-approvals';
 import { draftRead, resumeStep } from './drafts';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -171,6 +174,12 @@ export interface FormState {
    * starts empty. Null while none is.
    */
   readonly resume?: { readonly key: string; readonly missing?: boolean } | null;
+  /**
+   * The record's approvals, on a page with `approval` whose data source tells them (`approvals`): its levels and where
+   * each stands, what was decided, the levels this person may decide, and whether it waits — when its fields lock but
+   * for those the page leaves open. Null for a new record, or a page without them.
+   */
+  readonly approval?: FormApproval | null;
 }
 
 /** A response sent, as `FormState.sent` keeps it. */
@@ -705,6 +714,23 @@ export interface Form {
    */
   refreshLimits(): Promise<void>;
   /**
+   * Ask the data source's `approvals` again for the record shown, and keep what it tells (`approval`). The form asks it
+   * itself as a saved record is shown, after each save, and after a decision.
+   */
+  refreshApprovals(): Promise<void>;
+  /**
+   * Decide at a level of the record's approvals this person may decide now (`approval.mine`): approved, or rejected
+   * with why — a rejection always says why. What is typed is read and the person's changes saved first; the source's
+   * `decide` takes it; the record is loaded again after, its approvals with it. Rejects in words where the level is not
+   * theirs to decide now, a rejection gives no reason, the save is refused, or the source refused the decision.
+   */
+  decide(level: string, decision: ApprovalDecision, reason?: string): Promise<void>;
+  /**
+   * What a field's lock says while the record waits for approval — locked but for the fields the page leaves open
+   * (`approval.open`) — or null where no approval locks it.
+   */
+  approvalLock(name: string): string | null;
+  /**
    * Whether a file picked for a file or picture field is stored at once,
    * through the data source's `upload`. False without one: a file then
    * travels inside the record as base64, as it always has.
@@ -1191,6 +1217,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Worked out once the form has its state, as the limits part comes (`limitsCode`).
     limits: null,
     resume: null,
+    approval: null,
   };
   started = true;
   /**
@@ -1944,6 +1971,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // An answer a signature kept signed: locked until the signature is taken away and signed again.
     const answer = answerOf(node);
     if (answer !== undefined && signedNow().has(answer)) readonly = true;
+    // A record waiting for approval: locked but for the fields the page leaves open (the approvals part).
+    if (answer !== undefined && approvalKit?.locks(answer)) readonly = true;
     return {
       invisible,
       readonly: readonly || (def !== undefined && lockedField(def)),
@@ -2551,6 +2580,41 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A choice of a full option, picked by the person, refused under its field: the field keeps what it held. */
   const refusedFull = (name: string, value: Value): boolean => !!limitsKit?.refusedFull(name, value);
 
+  // ---- a record's approvals (the approvals part: form-approvals.ts) ---------------------------------------------------
+
+  /** The approvals made for this form from the approvals part, once it came: none before, nor on a page without them. */
+  let approvalKit: ApprovalsKit | null = null;
+  /** Whether the form asks for approvals: a record's own page with `approval`, its source telling them. */
+  const keepsApprovals = !outer && hasApprovals(page) && !!options.dataSource?.approvals;
+  /** The approvals, made from their part as it comes — at once where it has come; null without them, or where it could not come. */
+  function approvalsCode(): Promise<ApprovalsKit | null> {
+    if (approvalKit || !keepsApprovals) return Promise.resolve(approvalKit);
+    if (formApprovalsPart.loaded) return Promise.resolve(approvalsMade(formApprovalsPart.loaded));
+    return formApprovalsPart.load().then(approvalsMade, () => null);
+  }
+  function approvalsMade(part: FormApprovalsPart): ApprovalsKit | null {
+    if (!approvalKit && !disposed)
+      approvalKit = part.formApprovals({
+        page,
+        dataSource: options.dataSource,
+        user: options.user,
+        messages,
+        state: () => state,
+        set,
+        shownNow,
+        async saveFirst() {
+          await (readTyped() ?? Promise.resolve());
+          if (!state.dirty.length && !Object.keys(state.unread).length && !(state.uploads ?? []).some(uploadGoing)) return null;
+          const stopped = await saving([]);
+          return stopped ? (stopped.message ?? state.error ?? '') : null;
+        },
+        reload: () => load(true),
+      });
+    return approvalKit;
+  }
+  /** Ask the record shown's approvals, once their part came; nothing on a page without them. */
+  const askApprovals = (): Promise<void> => (keepsApprovals ? approvalsCode().then((kit) => kit?.ask()) : Promise.resolve());
+
   function scheduleAutosave() {
     const autosave = options.autosave;
     // A record the person may not change is never saved unasked: it would only be refused.
@@ -2808,6 +2872,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         scheduleDraft();
         scheduleAutosave();
       }
+      // A save may have sent it for approval, or moved it on: its approvals asked again.
+      if (keepsApprovals) void track(askApprovals());
       // The record as this save left it: a change made while it was on its way is no value of it.
       emit('save', { recordId: state.recordId, values: baseline });
       void track(moment('on.afterSave', page.on?.afterSave, chain, false));
@@ -3066,6 +3132,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Each choice's places, for this record: its own choices are its own.
       loadedOnce = true;
       if (asksLimits()) void track(askLimits());
+      // Its approvals: where it stands, what was decided, what this person may decide — its fields locked while it waits.
+      if (keepsApprovals) void track(askApprovals());
       if (again) return;
       offerDraft();
       void track(opening());
@@ -3096,7 +3164,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     found = null;
     serverKey = null;
     draftEpoch++;
-    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null };
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null, version: null, can: null, conflict: null, setAside: null, unsent: [], unread: {}, takenOut: {}, resume: null, approval: null };
     if (id != null) {
       set({ ...fresh, recordId: id, status: 'idle' });
       await load();
@@ -3511,7 +3579,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({});
     },
 
-    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true || signedNow().has(name),
+    fieldReadonly: (name) => lockedField(fieldDef(name)) || state.can?.edit === false || state.can?.readonlyFields?.includes(name) === true || signedNow().has(name) || !!approvalKit?.locks(name),
 
     loadChoices: (field) => loadChoices(field),
     loadDefinitions,
@@ -3990,6 +4058,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     refreshLimits: () => askLimits(),
 
+    refreshApprovals: () => askApprovals(),
+
+    async decide(level, decision, reason) {
+      const kit = await approvalsCode();
+      if (!kit) throw new Error('This page has no approval, or its data source no approvals()');
+      return track(kit.decide(level, decision, reason));
+    },
+
+    approvalLock: (name) => approvalKit?.lockWords(name) ?? null,
+
     async reloadTheirs() {
       // A save on its way first: its answer is not dropped by the load.
       const asked = shownNow();
@@ -4154,6 +4232,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // When the page takes answers — at once where the limits part has come, else as soon as it does — its counts and each
   // choice's places as the source tells them: a record's own once it is loaded, its own choices not counted against it.
   if (keepsLimits()) void track(limitsCode());
+  // A record's approvals: their part asked for as the form is made, ready by the time its record is loaded.
+  if (keepsApprovals) void track(approvalsCode());
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

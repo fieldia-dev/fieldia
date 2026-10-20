@@ -85,5 +85,8 @@ export const fr: Messages = {
   formSent: 'Vous avez déjà envoyé vos réponses à ce formulaire.',
   choiceFull: '{option} est complet',
   choiceFilled: '{option} est maintenant complet : choisissez autre chose',
+  approvalLocked: 'Verrouillé tant qu’il attend l’approbation',
+  approvalReasonNeeded: 'Dites pourquoi il est refusé',
+  approvalNotYours: 'Ce n’est pas à vous de décider pour {level} maintenant',
   locale: 'fr',
 };

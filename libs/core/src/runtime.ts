@@ -86,6 +86,7 @@ export type { SlotsOptions } from './lib/format/slots-options';
 export type { SignatureOptions } from './lib/format/signature-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageLimits } from './lib/format/limits';
+export type { PageApproval } from './lib/format/approval';
 export type { PageRecords } from './lib/format/records';
 export type { PageEnding } from './lib/format/endings';
 // `quotedLabel` here, not in index.ts alone: the widgets' messages read it, and a package's module taking a name only
@@ -226,12 +227,21 @@ export type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  ApprovalsRequest,
+  ApprovalDecision,
+  ApprovalLevelState,
+  Approver,
+  ApprovalLevel,
+  ApprovalEntry,
+  Approvals,
+  DecideRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf, newRecordSave } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
 export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
 // Time zones: a page's or a field's `timeZone`, its clock, its day, the hour its clocks skip or repeat.
 export { clocksSkip, dayIn, instantsAt, isOwnZone, isTimeZone, ownZone, wallClock, wallDay, wallOf, wallText, wallTime, zoneOffset, type WallTime } from './lib/record/zones';
 export { zonedPage } from './lib/format/zoned';
@@ -299,6 +309,8 @@ export {
 export { dayOf } from './lib/record/limits';
 // When a page takes answers and each choice's places (`limits`, an option's `seats`): the form's state, and its words.
 export { formLimitsPart, hasLimits, limitInstant, type FormLimits, type FormLimitsPart, type Seats, type TakingState } from './lib/record/taking';
+// A record's approvals (`approval`): the form's state of them; asking, deciding and locking are the approvals part's.
+export { formApprovalsPart, hasApprovals, type ApprovalStatus, type FormApproval, type FormApprovalsPart } from './lib/record/approving';
 // (Why a page takes no answers now, in words — `takingWords`, `whenWords` — is the limits part's: index.ts names them.)
 export { ADDRESS_PARTS, postcodeFits, settledPostcode } from './lib/record/structures';
 export { webAddress, settledText, hasPattern, EMAIL_LOCAL_STRAYS } from './lib/record/inputs';

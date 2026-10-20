@@ -8,6 +8,7 @@ import { PageDuplicatesSchema, type PageDuplicates } from './duplicates';
 import { PageRecordsSchema, type PageRecords } from './records';
 import { PageEndingsSchema, type PageEnding } from './endings';
 import { PageLimitsSchema, type PageLimits } from './limits';
+import { PageApprovalSchema, type PageApproval } from './approval';
 import { THEMES, type Theme } from './themes';
 export { THEMES, type Theme } from './themes';
 import { SKINS, type Skin } from './themes';
@@ -210,6 +211,15 @@ export interface Page {
    * sees where people stopped. Hidden where the source has no `saveDraft`.
    */
   continueLater?: boolean;
+  /**
+   * Approvals on a record's page: who must approve it at which level and who has, said on the record ("Waiting for
+   * Finance: Mona Adel"), Approve and Reject — Reject asking why — for those who may decide, the record locked while
+   * it waits but for the fields it names `open`, and what was decided, by whom and when, beside it and in its
+   * conversation. The data source tells them (`approvals`) and takes the decisions (`decide`): the app, or the approval
+   * engine behind it, decides who is asked and in what order. Hidden where the source has no `approvals`. See
+   * `PageApproval`.
+   */
+  approval?: PageApproval;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -297,6 +307,7 @@ export const PageSchema = z
     endings: PageEndingsSchema.optional(),
     limits: PageLimitsSchema.optional(),
     continueLater: z.boolean().optional(),
+    approval: PageApprovalSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

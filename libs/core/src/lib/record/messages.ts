@@ -151,6 +151,13 @@ export interface Messages {
   /** A choice whose places are all taken (an option's `seats`): picked now (`choiceFull`), or held as it filled up. */
   choiceFull: string;
   choiceFilled: string;
+  /**
+   * A record's approvals (`approval`): a field's lock while the record waits for approval, a rejection with no reason
+   * given, and a decision at a level (`{level}`, its name) this person may not decide now.
+   */
+  approvalLocked: string;
+  approvalReasonNeeded: string;
+  approvalNotYours: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
   /**
@@ -263,6 +270,9 @@ const en: Messages = {
   formSent: 'You have sent your answers to this form already.',
   choiceFull: '{option} is full',
   choiceFilled: '{option} is full now: choose another',
+  approvalLocked: 'Locked while it waits for approval',
+  approvalReasonNeeded: 'Say why it is rejected',
+  approvalNotYours: '{level} is not yours to decide now',
   locale: 'en',
 };
 

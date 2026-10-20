@@ -50,12 +50,17 @@ import type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  ApprovalEntry,
+  Approvals,
+  ApprovalsRequest,
+  DecideRequest,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
 import { spanStart } from './periods';
 import { wait, type Scheduler } from './scheduler';
 import { memoryKept, type MemoryKept } from './memory-kept';
+import { memoryApprovals, type MemoryApprovalRoute } from './memory-approvals';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -155,6 +160,16 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * How `approvals` answers, by model: the way a record is approved — its levels, who may approve each, any one or all
+   * of them, in turn or together, and whether it is sent for approval now — worked out from the record; null where it
+   * needs none (an order under its limit). The source keeps each decision as an approval engine would and works out
+   * where each level stands; the person deciding is the form's `user`, matched to an approver by id, else by name.
+   * Without it, no record needs approval.
+   */
+  approvals?: Record<string, (values: Values, id: RecordId) => MemoryApprovalRoute | null | undefined>;
+  /** Each record's approval history to start from, by `model:id`, oldest first: what was decided before. */
+  approvalHistory?: Record<string, ApprovalEntry[]>;
 }
 
 /**
@@ -197,6 +212,14 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
 export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept): MemoryDataSource {
   const { records, notDuplicatePairs, responses, calls, elsewhere, drafts, table, versionOf, moveOn } = kept;
   let draftIds = 0;
+  /** A record's approvals, as an approval engine keeps them (memory-approvals.ts). */
+  const approving = memoryApprovals({
+    routes: options.approvals,
+    history: options.approvalHistory,
+    table,
+    moved: (model, id, by) => (options.versions ? moveOn(model, id, by) : undefined),
+    now: () => new Date().toISOString(),
+  });
   /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
   const addedDefinitions = new Map<string, PropertyDefinition[]>();
   // A new line's id comes after every line id of the records given (kept from an earlier visit, say), never one of them.
@@ -363,6 +386,18 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       if (!kept || kept.pageId !== request.pageId) return null;
       const { pageId: _page, later: _later, ...draft } = structuredCopy(kept);
       return draft;
+    },
+
+    async approvals(request: ApprovalsRequest): Promise<Approvals> {
+      calls.push({ method: 'approvals', request });
+      await pause();
+      return approving.approvals(request);
+    },
+
+    async decide(request: DecideRequest): Promise<Approvals> {
+      calls.push({ method: 'decide', request });
+      await pause();
+      return approving.decide(request);
     },
 
     async load(request: LoadRequest): Promise<Values | LoadedRecord> {
