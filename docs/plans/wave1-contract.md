@@ -692,3 +692,32 @@ In plain words:
   browser's store empty — reads them from the same "server". Tests:
   `libs/core/src/lib/record/duplicates.spec.ts`,
   `libs/viewer/src/lib/duplicates.spec.ts`, `e2e/duplicates.spec.ts`.
+
+## 14. A signature's evidence, kept in its value (Wave 4, lane w4-signature)
+
+No new member: a signature that signs answers (its node's `options.signs`) keeps its evidence in the value a file field
+already has, beside its picture, so every source that keeps a file value keeps it.
+
+```ts
+interface FileValue { /* …as before… */ signed?: SignatureEvidence }
+interface SignatureEvidence {
+  format: string;     // the canonical form: "fieldia-signature/1"
+  by?: string;        // who signed, as named
+  at: string;         // when, ISO 8601 in UTC: "2026-10-19T08:42:00.000Z"
+  fields: string[];   // the answers signed, by field name
+  sha256: string;     // SHA-256 of the canonical text, small hex letters
+}
+```
+
+In plain words:
+
+- **Keep it whole.** A save sends the value with `signed` in it, as it sends a typed name's `text`. A source that stores
+  the picture through `upload` gets the bytes there, and the save carries `{ url, fileId, …, signed }`: an adapter that
+  keeps signatures as bytes in a binary column (Flectra's) keeps `signed` beside them — a JSON column, or a record of
+  its own — and hands it back on `load`. Without it the signature is a picture, as before, and nothing is locked.
+- **Lock what it signed.** While a value with `signed` is kept, the form locks the answers it names (`signedBy`), on
+  the record's load too. A source that wants to refuse a change to a signed answer refuses it in `save`
+  (`saveRefused`), as it refuses any rule.
+- **Check it on the server.** The canonical text (`signatureText`, @fieldia/core's README) is written from the record
+  the source keeps; its SHA-256 equal to `sha256` says the signed answers are as signed. The memory source keeps the
+  value as it is given.

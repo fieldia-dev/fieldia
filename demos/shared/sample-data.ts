@@ -60,6 +60,7 @@ import { emptyGridsPage, emptyGridsRecords } from './empty-grids';
 import { AGENTS, filterFromQuery, relatedLists, sampleQuotations, sampleViewings, searchFromQuery } from './related-lists';
 import { customerCardPage, duplicateCustomers } from './duplicates';
 import { keepWrites, keptApart, keptOver } from './kept';
+import { consentPage, sampleConsents } from './consents';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -81,6 +82,8 @@ export const pages: Record<string, Page> = {
   viewing: relatedLists.pages.viewing,
   // A customer's card that says the customers it may duplicate, and merges two: shared/duplicates.ts.
   'customer-card': customerCardPage,
+  // A clinic's consent to treatment, signed: who, when and the answers' fingerprint kept, the answers locked (shared/consents.ts).
+  'clinic-consent': consentPage,
   fields: fields as Page,
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
@@ -275,8 +278,11 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
     // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
     ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
-    // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are.
-    ...(params.get('page') === 'test-drive' ? { now: demoNow } : {}),
+    // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are; so is a consent's
+    // signing.
+    ...(params.get('page') === 'test-drive' || params.get('page') === 'clinic-consent' ? { now: demoNow } : {}),
+    // The consents round the one shown: the pager over it moves to the next.
+    ...(params.get('page') === 'clinic-consent' ? { records: [1, 2] } : {}),
     // The customers round the one with its invoices and quotations, and the homes round the one with its viewings: the
     // pager over the record moves to the next, its related lists that one's.
     ...(params.get('page') === 'customer-account' ? { records: [1, ...Array.from({ length: 12 }, (_, i) => 20 + i)] } : {}),
@@ -462,6 +468,8 @@ export function sampleDataSource() {
       invoice: sampleInvoices(),
       // The showroom's cars and test drives, made round now (shared/test-drive.ts).
       ...testDriveRecords(),
+      // Two consents signed, one changed in the clinic's system after (shared/consents.ts).
+      'clinic.consent': sampleConsents(),
       'work.item': {
         1: {
           title: 'Stock count wrong after a partial release',

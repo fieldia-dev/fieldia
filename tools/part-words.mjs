@@ -42,10 +42,11 @@ export const PART_WORDS = {
     widgets: [
       'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
-      'removeAsk', 'removed',
+      'removeAsk', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
     ],
     viewer: ['showAs'],
   },
+  evidence: { widgets: ['signedByName', 'signedAt', 'answersAsSigned', 'answersChanged', 'changeAnswers', 'changeAnswersAsk', 'signatureTakenAway', 'notSignedYet'] },
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings'] },
   head: {
     widgets: ['maximiseNamed', 'foldNamed', 'unfoldNamed'],

@@ -26,6 +26,7 @@ export { AddressSearchOptionsSchema } from './lib/format/address-search';
 export { PathPickerOptionsSchema, StateDotOptionsSchema } from './lib/format/picker-options';
 export { PagePhoneSchema, PhoneOptionsSchema } from './lib/format/phone';
 export { SlotsOptionsSchema } from './lib/format/slots-options';
+export { SignatureOptionsSchema } from './lib/format/signature-options';
 export { PageDuplicatesSchema } from './lib/format/duplicates';
 export { PageRecordsSchema } from './lib/format/records';
 export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';

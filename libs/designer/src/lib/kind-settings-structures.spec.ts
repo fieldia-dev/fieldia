@@ -65,6 +65,36 @@ describe('a signature’s settings', () => {
     box('People can upload a picture of it').click();
     expect(node().options).toEqual({ footerLabel: 'I agree this is my signature' });
   });
+
+  it('signs every answer, or those chosen, and names who signs by a field holding a name', () => {
+    const { card, box, node, designer } = openQuestion('signature', (designer) => {
+      for (const [kind, label] of [['short-answer', 'Patient'], ['multiple-choice', 'Treatment']] as const) designer.updateQuestion(designer.addQuestion(kind) as string, { label });
+    });
+    const fieldOf = (label: string) => Object.entries(designer.getPage().fields).find(([, def]) => def.label === label)?.[0] as string;
+    const answers = () => card().querySelector('[aria-label="Answers it signs"]') as HTMLElement;
+    const answer = (label: string) => [...answers().querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === label) as HTMLButtonElement;
+    // Nothing until asked: a picture only, no answers to choose, no signer.
+    expect(box('Signs').value).toBe('');
+    expect(answers().hidden).toBe(true);
+    expect(box('Signer’s name').closest('label')?.hidden).toBe(true);
+    choose(box('Signs'), 'form');
+    expect(node().options).toEqual({ signs: 'form' });
+    expect(box('Signer’s name').closest('label')?.hidden).toBe(false);
+    choose(box('Signer’s name'), fieldOf('Patient'));
+    expect(node().options).toEqual({ signs: 'form', signerField: fieldOf('Patient') });
+    // Those chosen: every other answer to start with, each a chip — never itself.
+    choose(box('Signs'), 'chosen');
+    expect(node().options?.['signs']).toEqual([fieldOf('Patient'), fieldOf('Treatment')]);
+    expect([...answers().querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Patient', 'Treatment']);
+    answer('Patient').click();
+    expect(node().options?.['signs']).toEqual([fieldOf('Treatment')]);
+    expect(answer('Patient').getAttribute('aria-pressed')).toBe('false');
+    answer('Patient').click();
+    expect(node().options?.['signs']).toEqual([fieldOf('Patient'), fieldOf('Treatment')]);
+    // None chosen, or Nothing: it signs nothing, and names no signer.
+    choose(box('Signs'), '');
+    expect(node().options).toBeUndefined();
+  });
 });
 
 describe('an address’s settings', () => {

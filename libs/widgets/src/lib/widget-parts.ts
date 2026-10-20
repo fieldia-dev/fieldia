@@ -7,6 +7,7 @@ import type * as DateModule from './date-part';
 import type * as LinesModule from './lines-part';
 import type * as BusinessModule from './business-part';
 import type * as FilesModule from './files-part';
+import type * as EvidenceModule from './evidence-part';
 import type { ShrinkOptions } from './shrink';
 import type * as SurveyModule from './survey-part';
 import type * as PhoneModule from './phone-part';
@@ -28,6 +29,11 @@ export type LinesPart = typeof LinesModule;
 export type BusinessPart = typeof BusinessModule;
 /** The files part: a file field, a picture field, files on their way to the store, photos made smaller, a signature's pad, a PDF under its file box. */
 export type FilesPart = typeof FilesModule;
+/**
+ * The evidence part: a signature's that signs answers (`options.signs`) — the canonical form of the answers it signs,
+ * their SHA-256, who and when said under it, whether the answers are still as signed, and Change answers.
+ */
+export type EvidencePart = typeof EvidenceModule;
 /** The survey part: a ranking, a matrix, a slider, pictures to choose from, a colour, properties, an address and a progress bar. */
 export type SurveyPart = typeof SurveyModule;
 /** The phone part: a phone number read the world over — its country picked or typed, checked, kept as E.164, shown at rest with its links — and every country's numbers. */
@@ -66,6 +72,24 @@ export function loadLinesPart(): Promise<LinesPart> {
 export const businessPart: Part<BusinessPart> = lazyPart('business', () => import('./business-part'));
 /** A file field, a picture field, a signature's pad and a PDF under its file box, loaded the first time a page shows one. */
 export const filesPart: Part<FilesPart> = lazyPart('files', () => import('./files-part'));
+
+/**
+ * A signature's evidence, loaded the first time a page shows a signature that signs answers (core's `signsAnswers`):
+ * never for a page with uploads or a plain signature. Before it comes, the signature draws and keeps its picture; its
+ * signing waits for it.
+ */
+export const evidencePart: Part<EvidencePart> = lazyPart('evidence', () => import('./evidence-part'));
+/**
+ * The evidence part, asked for, for another part: the files part's signature that signs answers. A function, as
+ * `loadLinesPart` is, for a part takes the main script's names as they stood when it started.
+ */
+export function loadEvidencePart(): Promise<EvidencePart> {
+  return evidencePart.load();
+}
+/** Whether asking for the evidence part again, once it failed, can bring it (`Part.asksAgain`): a function, as above. */
+export function evidencePartAsksAgain(): boolean {
+  return evidencePart.asksAgain === true;
+}
 
 /**
  * A photo made smaller, as `ShrinkOptions` say, or the file itself when it is small already, cannot be read, or would

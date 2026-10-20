@@ -169,6 +169,29 @@ export interface WidgetLabels {
   undo: string;
   uploadSignature: string;
   /**
+   * A signature that signs answers (`options.signs`): who signed and when (`{name}`, `{when}`), or when alone; whether
+   * the answers are still as signed; its way to change them — taken away, asked first — and what is said once it is;
+   * why it was not taken (`{fields}`, the answers to put right, by label).
+   */
+  signedByName: string;
+  signedAt: string;
+  answersAsSigned: string;
+  answersChanged: string;
+  changeAnswers: string;
+  changeAnswersAsk: string;
+  signatureTakenAway: string;
+  notSignedYet: string;
+  /**
+   * The signing's own part that could not come (offline, its script blocked): a picture not signed for want of it, a
+   * signature kept whose evidence it cannot show, and Try again, which asks for it again.
+   */
+  notSignedNoPart: string;
+  signingNoPart: string;
+  signingRetry: string;
+  /** The same where asking again cannot bring it (an app's modules, kept failed by the browser): a reload can. */
+  notSignedReload: string;
+  signingNoPartReload: string;
+  /**
    * A file on its way to the app's store, where the data source stores files:
    * the words under its name as it waits, is made smaller, goes (`{n}` per
    * cent) or did not get there; its bar's name and Cancel's (`{name}`); Retry;
@@ -563,6 +586,19 @@ const en: WidgetLabels = {
   clearDrawing: 'Clear',
   undo: 'Undo',
   uploadSignature: 'Upload a picture',
+  signedByName: 'Signed by {name}, {when}',
+  signedAt: 'Signed {when}',
+  answersAsSigned: 'The answers are as they were signed.',
+  answersChanged: 'An answer has changed since it was signed.',
+  changeAnswers: 'Change answers',
+  changeAnswersAsk: 'Change your answers? The signature is taken away, and you sign again once they are right.',
+  signatureTakenAway: 'Signature taken away: change your answers, then sign again.',
+  notSignedYet: 'Not signed yet: first put right {fields}, then sign again.',
+  notSignedNoPart: 'Not signed yet: the signing could not load.',
+  signingNoPart: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed.',
+  signingRetry: 'Try again',
+  notSignedReload: 'Not signed yet: the signing could not load. Reload the page to sign.',
+  signingNoPartReload: 'The signing could not load: who signed and when are not shown, and the answers cannot be changed. Reload the page to see them.',
   uploading: 'Uploading…',
   uploadPercent: '{n}%',
   uploadWaiting: 'Waiting…',

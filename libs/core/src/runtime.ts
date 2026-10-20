@@ -81,6 +81,7 @@ export type { AddressSearchOptions } from './lib/format/address-search';
 export type { PathPickerOptions, StateDotOptions } from './lib/format/picker-options';
 export type { PagePhone, PhoneOptions } from './lib/format/phone';
 export type { SlotsOptions } from './lib/format/slots-options';
+export type { SignatureOptions } from './lib/format/signature-options';
 export type { PageDuplicates } from './lib/format/duplicates';
 export type { PageRecords } from './lib/format/records';
 export { labelAt, recordSentence } from './lib/record/record-words';
@@ -141,10 +142,13 @@ export {
   type RelatedRecord,
   type ReferenceValue,
   type FileValue,
+  type SignatureEvidence,
   type Line,
   type Value,
   type Values,
 } from './lib/record/values';
+// The answers a signature kept signed: locked until it is taken away (the evidence's fingerprint is the files part's).
+export { evidenceOf, signedBy, signsAnswers, type SignedBy } from './lib/record/signed';
 export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
 export { scoreOf, type Score } from './lib/record/score';
 export type {

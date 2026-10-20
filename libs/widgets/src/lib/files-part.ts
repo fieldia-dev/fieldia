@@ -4,7 +4,8 @@
  * (files.ts), which also shows a file the app hands back from an action (`viewFiles`: the viewer's host, its PDF of
  * a record over the record) — files on their way to the app's store, each with its bar, × and
  * Retry (files-going.ts), photos made smaller before they go (shrink.ts), a
- * signature's pad (signature.ts), a PDF shown under its file box (pdf.ts), and
+ * signature's pad (signature.ts; the evidence of one that signs answers is a
+ * part of its own, evidence-part.ts), a PDF shown under its file box (pdf.ts), and
  * their sheet (styles-files.ts). Loaded the first time a page shows one,
  * through `filesPart`; the names of the files a value holds meanwhile, read
  * only, never written (`plainFilesWidget`), and picking a file waits for it.

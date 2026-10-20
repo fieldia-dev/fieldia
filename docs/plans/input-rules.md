@@ -24,6 +24,7 @@ or writes anything. There is no other way to save.
 | Save / Submit button | a click: the box is left first (its blur and change read it), then the submit | `save()` | yes |
 | A button's key (Alt+…) | viewer.ts `onHotkey` → the button's own path | `save()`, `next()` or a run of steps (below) | yes |
 | A run of steps the person or the app set off: a button, its key, a line's button, `form.run` | form.ts `press`, `run` (`RunScope.typed`) | run.ts `typedFirst`, before the run's first step that reads the form or hands its values on — `call`, `set`, `addLine`, `open` with values, a record or a filter, `post`, `openUrl`, any `when`: `form.settle()`, then text that does not read stops the run (`check`), said under its box. One place in the runner, whatever the step. A moment's run (`on.change`, `afterSave`…) takes the values as they are: it never reads a box under the person's keys | yes |
+| A signature that signs answers (`options.signs`): a stroke ended, a name typed, a picture picked | signature.ts `sign` (files part) | `form.settle()` before its fingerprint is made: an answer it signs whose text does not read, or still to give, is named under the pad and nothing is signed; one changed while the fingerprint was made is read again. A save waits for a signing on its way (`settling`) | yes |
 | Autosave | `scheduleAutosave` (form.ts) | waits while a box is typed in (`typingNow()`); then `save()` | yes |
 | Pager, Done, leaving a record | viewer.ts `leave()` and the edit switch | `form.settle()` (awaited while `reading()`), then `save()` | yes |
 | Wizard Next, the step list | viewer.ts `wizardForward`, the step buttons | `next()` / `goTo()`; refused while `reading()`, then `settle()` and asked again | yes |
@@ -197,6 +198,7 @@ typed. Leaving and every save in §1 take them into the box and read all of it.
 | Lines: a cell's name of none said in the grid, a dialog waiting, `confirmDelete` over typed text, tags waiting for room | widgets `lines-typed.spec.ts`, `rules-char-tags-waiting-when-room-made.spec.ts` | `e2e/rules-grid-link-cell-name-of-none-said.spec.ts`, `rules-grid-line-dialog-keeps-name-found.spec.ts`, `rules-lines-confirm-delete-typed-text.spec.ts` |
 | A grid paste: quoted cells, another currency, past a column's most | grid `cell-paste.spec.ts`, `rules-paste-*.spec.ts` | — |
 | A press is the button's | widgets `press.spec.ts` | `e2e/rules-custom-filter-apply-after-refused-paste.spec.ts` |
+| A signature signs the answers as read: typed text read first, one that does not read or is still to give said, a save waiting for it | widgets `signature-signs.spec.ts` | `e2e/signature-evidence.spec.ts` (Chromium, Firefox, WebKit) |
 | A part's box takes what was typed in its stand-in | widgets `part-swap-lazy.spec.ts`, `business-lazy.spec.ts` | `e2e/rules-part-swap-keeps-typing.spec.ts` (Chromium, Firefox, WebKit) |
 | Read, never rewritten: hours and a per cent passed through, money's currency changed, JSON numbers, a zone's clocks | widgets `read-not-rewrite.spec.ts`, core `clock-changes.spec.ts` | `e2e/rules-hours-percent-*.spec.ts`, `rules-money-*`, `rules-datetime-clock-change-time-said.spec.ts` |
 

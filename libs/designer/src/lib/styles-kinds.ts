@@ -7,6 +7,7 @@
 export const DESIGNER_KINDS_CSS = /* css */ `
 /* ---- the newer kinds' settings ------------------------------------------- */
 .fd-kind-block { display: grid; gap: 6px; width: 100%; justify-items: start; }
+.fd-kind-hint { color: var(--fd-muted); font-size: 12.5px; }
 .fd-kind-matrix { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px 28px; width: 100%; }
 .fd-kind-items, .fd-kind-pictures, .fd-kind-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; width: 100%; }
 .fd-kind-item-row { display: grid; grid-template-columns: minmax(0, 1fr) 28px; gap: 6px; align-items: center; }

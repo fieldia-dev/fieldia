@@ -1081,6 +1081,29 @@ export class ReferenceCheck {
     if (Array.isArray(on)) on.forEach((name, i) => typeof name === 'string' && this.need(name, `${path}.options.dependsOn[${i}]`));
   }
 
+  /**
+   * A signature that signs answers: on a binary field, the answers it signs fields of this page — never itself — and
+   * the signer's name in a field that holds words (a text, or a link's name).
+   */
+  private checkSignature(node: FieldNode, def: Field | LineField | undefined, path: string) {
+    const options = node.options ?? {};
+    if (def && def.type !== 'binary') this.report(`${path}.widget`, `signature is for a binary field; "${node.field}" is a ${def.type}`);
+    const signs = options['signs'];
+    if (Array.isArray(signs)) {
+      signs.forEach((name, i) => {
+        if (typeof name !== 'string') return;
+        if (name === node.field) this.report(`${path}.options.signs[${i}]`, 'a signature signs other answers than its own');
+        else this.need(name, `${path}.options.signs[${i}]`);
+      });
+    }
+    const signer = options['signerField'];
+    if (typeof signer === 'string' && has(this.page.fields, signer)) {
+      const type = this.page.fields[signer].type;
+      if (type !== 'char' && type !== 'many2one') this.report(`${path}.options.signerField`, `"${signer}" is a ${type}; the signer's name is kept in a char field, or is a many2one's record`);
+    }
+    if (signer !== undefined && signs === undefined) this.report(`${path}.options.signerField`, 'signerField names who signs the answers in signs: say which it signs');
+  }
+
   /** A picker's own settings, on the kind of field each is for: a path on a link, Fieldia's own list on a choice, a button adding tags, a colour for each state. */
   private checkPicker(node: FieldNode, def: Field | LineField, path: string) {
     const options = node.options ?? {};
@@ -1143,6 +1166,7 @@ export class ReferenceCheck {
     }
     if (node.widget === 'address-search') this.checkAddressSearch(node, def, path);
     if (node.widget === 'slots') this.checkSlots(node, def, path);
+    if (node.widget === 'signature') this.checkSignature(node, def, path);
     if (def) this.checkPicker(node, def, path);
     // The order lines load in: fields of its lines.
     if (def && node.order) {

@@ -860,7 +860,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // "It's someone new" kept on the app's server (0.27, loose-0262): the form's keepsNotDuplicates, notDuplicates and
 // markNotDuplicate, the memory source's pair of them over the pairs it keeps (`notDuplicatePairs`) — every page's, as
 // the form and the memory source are: 503.41 measured before, 504.52 after — 1.1 more, to 504.6.
-const BUDGET_KB = 504.6;
+// A signature that signs answers (0.27, w4-signature): what every page with a form needs of it stays here — the answers
+// a signature of the page that signs them kept locked, read from its value (core's signed.ts, `evidenceOf`, `signedBy`,
+// `signsAnswers`), the form's `now`, `user` and `shownFields`, a signed answer's lock saying how to change it (one
+// word), the evidence part's holder and its place in `partsFor`, and the names the parts take from the main script's
+// modules for it (the day's words, a label in a sentence, the late answers' test); the canonical form, the fingerprint
+// and the signature's evidence are the evidence part's, fieldia.evidence.js: 503.41 measured before, 505.87 after —
+// 2.5 more, to 505.9. Whether a part asked for again once it failed can come (`Part.asksAgain`: the one-tag script's
+// tags can, an app's modules cannot — the browser keeps them failed), so nothing offers a Try again that cannot work:
+// 505.87 to 506.09, to 506.1.
+// Both, merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68, to 507.2.
+const BUDGET_KB = 507.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1056,7 +1066,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // page that prints takes 5.22 more in fieldia.print.js.
 // "It's someone new" kept on the app's server (listed with the raw budget above): 162.94 measured before, 163.28 after
 // — 0.3 more, to 163.3.
-const GZIP_BUDGET_KB = 163.3;
+// A signature that signs answers (0.27, w4-signature; listed with the raw budget above): 162.94 measured before, 163.68
+// after — 0.75 more, to 163.7. A page whose signature signs answers takes 4.20 more in fieldia.evidence.js. Whether a
+// part asked for again can come: 163.68 to 163.80, to 163.9.
+// Both, merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86, to 164.2.
+const GZIP_BUDGET_KB = 164.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1203,7 +1217,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // words for its records, two words in Arabic, four in German and French: Arabic's 68.25 and 11.82 measured before,
 // 68.38 and 11.83 after, its raw to 68.4; German's 31.91 and 10.42 to 32.03 and 10.44, to 32.1; French's 32.24 and
 // 10.41 to 32.37 and 10.43, to 32.4.
-const ADD_ON_BUDGET_KB = { ar: [68.4, 11.9], de: [32.1, 10.5], fr: [32.4, 10.5] };
+// A signature that signs answers (0.27, w4-signature): who signed and when, whether the answers are as signed, Change
+// answers and its question, the signature taken away, the answers to put right first, and a signed answer's lock — nine
+// sentences in each, and five more for its part that could not come (not signed for want of it, a signature kept whose
+// evidence it cannot show — each with Try again, or with a reload where asking again cannot bring it — and Try again):
+// Arabic's 68.38 and 11.83 measured before, 71.34 and 12.21 after, to 71.4 and 12.3; German's 32.03 and 10.44 to 33.33
+// and 10.75, to 33.4 and 10.8; French's 32.37 and 10.43 to 33.63 and 10.77, to 33.7 and 10.8.
+const ADD_ON_BUDGET_KB = { ar: [71.4, 12.3], de: [33.4, 10.8], fr: [33.7, 10.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -1508,7 +1528,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // A table of lines' date column as wide as its longest day as its box writes it, or its pattern, beside the box's
 // calendar button (0.27, loose-0262: the tender's "14 Mar 20…"): lines 40.51 and 13.97 measured before, 40.77 and 14.02
 // after, to 40.8 and 14.1.
-const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [33.5, 12.4], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.0, 5.3] };
+// A signature that signs answers (0.27, w4-signature): its evidence a part of its own, asked for only by a page whose
+// signature signs answers (`partsFor`) — never by uploads or a plain signature — evidence new, 9.17 and 4.20: the
+// canonical form and its SHA-256 an app works out again (signature-evidence.ts: the browser's SubtleCrypto first,
+// worked out here where a page is served without https), who, when, which answers and their fingerprint kept with it
+// once what is typed in them is read, the answers to put right said, "Signed by … , …" and whether the answers are as
+// signed under it, Change answers asked in place (signature-signing.ts), its words and its sheet — to 9.2 and 4.3. The
+// files part keeps the pad drawing and the picture kept whether or not it has come, and what waits for it: a signing,
+// and a save for the signing; and, where it cannot come (offline, its script blocked), never a picture kept unsigned
+// in silence — "Not signed yet: the signing could not load." with Try again, which asks for it again, where asking
+// again can bring it (the one-tag script), else "… Reload the page to sign." and no button, and every save refusing the
+// picture with those words — files 33.46 and 12.32 measured before, 36.15 and 13.26 after, to 36.2 and 13.3.
+const PART_BUDGET_KB = { head: [34.4, 10.1], text: [56.5, 18.9], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [11.4, 4.3], date: [22.2, 8.4], list: [110.7, 35.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [37.6, 14.8], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [40.8, 14.1], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.4, 12.7], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], print: [16.0, 5.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -1526,6 +1557,7 @@ const PART_GIVES = {
   lines: ['linesWidget', 'linksTableWidget', 'cardsWidget', 'blockOf', 'readPastedCell', 'whyNotPasted'],
   business: ['statusbarWidget', 'priorityWidget', 'durationWidget', 'percentageWidget', 'distributionWidget', 'taxTotalsWidget', 'paymentsWidget', 'copyWidget', 'timerWidget'],
   files: ['binaryWidget', 'imageWidget', 'signatureWidget', 'pdfWidget', 'readFile', 'viewFiles', 'showAppFile', 'goingItem', 'goingList', 'goingWords', 'shrinkPhoto', 'shrinkFor', 'shrinkable', 'installFilesStyles'],
+  evidence: ['signingFor', 'signAnswers', 'answersMatch', 'signatureText', 'signedAnswers', 'canonicalJson', 'sha256Hex', 'installEvidenceStyles'],
   survey: ['rankingWidget', 'matrixWidget', 'sliderWidget', 'imageChoiceWidget', 'colourWidget', 'propertiesWidget', 'addressWidget', 'progressbarWidget'],
   phone: ['phoneWidget', 'readPhone', 'writePhone', 'shownPhone', 'phoneLinks', 'canBeMobile', 'phoneParts', 'phoneCountries', 'phoneCountry', 'flagOf'],
   slots: ['slotsWidget'],
@@ -1534,7 +1566,7 @@ const PART_GIVES = {
   print: ['printLook', 'printPage', 'printAlone', 'installPrintStyles'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', print: 'printPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', relations: 'relationsPart', duplicates: 'duplicatesPart', print: 'printPart' };
 if (PARTS.join() !== Object.keys(PART_GIVES).sort().join()) throw new Error(`the main script asks for the parts ${PARTS.join(', ')}; this check knows ${Object.keys(PART_GIVES).sort().join(', ')}`);
 // The parts a part comes with, in as it is: booking slots bring the date part, whose box they are without the data
 // source's slots.
@@ -1629,7 +1661,8 @@ console.log(`parts: ${partSizes.join('; ')}`);
  * gallery, a record's related list, a theme, a table of lines, a customer's statusbar and photo, a work item's head,
  * text and path picker for its bug, the filter bar for its backlog, a date's box (on a public page with its bot check),
  * the survey kinds, a booking's slots, a customer's possible duplicates (never waited for), the print part for a page
- * meant for paper (fetched once it is drawn, never run, never waited for) — and the page is drawn whole once they have
+ * meant for paper (fetched once it is drawn, never run, never waited for), a signature's evidence for a consent whose
+ * signature signs its answers (never for a plain signature or uploads) — and the page is drawn whole once they have
  * come. Pages
  * open in an order where each part's first use is clear, the parts in after each step said in full.
  */
@@ -1850,9 +1883,36 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
+  // jsdom draws nothing on a canvas: a signature's pad has no pen here.
+  dom.window.HTMLCanvasElement.prototype.getContext = () => null;
+  // A survey's plain signature — a picture, as before — and a page's uploads: the files part, in already; the
+  // evidence's part never asked for.
+  const kinds = inPage.mountViewer(host, { page: read('kinds.page.json'), dataSource: inPage.createMemoryDataSource() });
+  await kinds.drawn;
+  await tick(0);
+  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (!host.querySelector('.fd-signature .fd-signature-pad') || host.querySelector('.fd-signature-evidence')) throw new Error("in a page, a plain signature is not the files part's alone");
+  kinds.destroy();
+  gone('kinds');
+  // A consent whose signature signs its answers: the evidence part asked for, the page drawn once it came — nothing of
+  // it before — and under the signature kept, who signed and when, and that the answers are as signed.
+  const consentPage = read('clinic-consent.page.json');
+  const answers = { patient: 'Mona Adel', birth_date: '1991-04-12', treatment: 'botox', areas: ['forehead', 'crows_feet'], pregnant: false, allergies: 'None', risks_read: true, photos: true };
+  const evidence = { format: 'fieldia-signature/1', by: 'Mona Adel', at: '2026-10-14T07:42:00.000Z', fields: Object.keys(answers), sha256: '3667c9d2ee8f42a370ffc70a2a72bb17c7d0e47f913fe6af6c8c35e101d7697e' };
+  const signedRecord = { ...answers, signature: { name: 'signature.png', type: 'image/png', size: 4, data: 'QUJDRA==', signed: evidence } };
+  const consent = inPage.mountViewer(host, { page: consentPage, recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.consent': { 1: signedRecord } } }) });
+  waits(consent, 'a consent whose signature signs its answers');
+  await consent.drawn;
+  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, path, phone, print, quiet, relations, slots, survey, text, themes');
+  if (!(await until(() => host.querySelector('.fd-signature-state:not([hidden])')?.textContent === '✓The answers are as they were signed.')) || !host.querySelector('.fd-signature-who')?.textContent.startsWith('Signed by Mona Adel, 14 Oct 2026')) throw new Error(`in a page, a consent's evidence is not said under its signature: ${host.querySelector('.fd-signature-evidence')?.textContent ?? 'none'}`);
+  if (!host.querySelector('[data-node="f-treatment"] select')?.disabled) throw new Error("in a page, a consent's signed answer is not locked");
+  // Its parts come by script tags of their own, asked for anew once one failed: what offers to try again may.
+  if (inPage.evidencePart.asksAgain !== true || inPage.filesPart.asksAgain !== true) throw new Error("in a page, the one-tag script's parts do not say they may be asked for again");
+  consent.destroy();
+  gone('consent');
   // Every part's sheet between Fieldia's two halves, in the order of its rank: where its rules stood in Fieldia's own
-  // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', then a phone's and booking
-  // slots' (new at 0.24), a list's Import's and possible duplicates' (0.25), before the themes so a theme still
+  // (PART_RANK) — a table of lines', the business widgets', the survey kinds', the files', a signature's evidence right
+  // after them (0.27), then a phone's and booking slots' (new at 0.24), a list's Import's and possible duplicates' (0.25), before the themes so a theme still
   // reshapes them, the themes' and the quiet look's before the pickers', the head's and the text's, the survey kinds'
   // own looks last; a list's own sheet, its cards' and its columns' after them all, unranked.
   const styles = [...doc.head.querySelectorAll('style[id]')];
@@ -1863,7 +1923,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
   // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
   if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
-  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
+  for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
     const wrong = wordsNotIn(inPage, 'en', part, ENGLISH);
@@ -1871,7 +1931,7 @@ console.log(`parts: ${partSizes.join('; ')}`);
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**

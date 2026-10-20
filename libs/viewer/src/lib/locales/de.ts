@@ -336,6 +336,7 @@ export const de: ViewerLabels = {
   nowIs: 'jetzt {value}',
   readOnlyRecord: 'Sie können diesen Datensatz lesen, aber nicht ändern.',
   fieldNotYours: 'Sie können dieses Feld sehen, aber nicht ändern.',
+  signedAnswer: 'Unterschrieben. Zum Ändern unter der Unterschrift auf „Antworten ändern“ drücken.',
   notOffered: 'Für Sie hier nicht verfügbar: {actions}.',
   duplicateWith: 'Bereits vorhanden, gleich in {fields}: {name}',
   duplicateWithNoun: '{aRecord} mit gleichem Wert in {fields} ist bereits vorhanden: {name}',

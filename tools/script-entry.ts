@@ -9,6 +9,7 @@
  * a page uses them (tools/script-parts.ts).
  */
 import { addLanguage } from '@fieldia/viewer';
+import { partsComeByScriptTag } from '@fieldia/widgets';
 import { partWords } from '../libs/viewer/src/lib/add-language';
 import type { LanguageHost } from './script-language';
 import { startParts } from './script-parts';
@@ -25,6 +26,8 @@ export const VERSION: string = __FIELDIA_VERSION__;
 // Where this script came from, while the browser still says, and the parts whose scripts ran before it — each putting
 // its own words in the tables as it comes.
 startParts(partWords);
+// Each part a script tag of its own, asked for anew after a failure: what offers to try again may (`Part.asksAgain`).
+partsComeByScriptTag();
 
 // A language's script loaded before this one left its words behind: take them now.
 const host = globalThis as LanguageHost;

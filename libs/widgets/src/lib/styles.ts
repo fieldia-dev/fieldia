@@ -949,8 +949,14 @@ export function installStyles(document: Document): void {
  * rule of the main sheet and before every part's sheet — whose own rules for paper (a table of lines', a list's, a
  * statusbar's) come after it, as they did. So it is first of them all, rank 0, right after this sheet; on the screen it
  * holds nothing but what lays a form out while a heading's room on paper is measured.
+ *
+ * A signature's evidence (0.27, the evidence part, loaded for a signature that signs answers): who signed and when,
+ * whether the answers are as signed and Change answers, written under the files part's signature — cut from the files'
+ * sheet, where its rules stood last. So it goes right after the files' (rank 5), before the phone's and every sheet
+ * after, as it stood: it names only its own parts, so nothing it would override comes after it, and a theme still
+ * reshapes its buttons and their focus. The ranks from the phone's on move on by one.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, phone: 5, slots: 6, import: 7, duplicates: 8, themes: 9, quiet: 10, picker: 11, head: 12, groups: 13, text: 14, surveyLooks: 15, cards: 16 } as const;
+export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, themes: 10, quiet: 11, picker: 12, head: 13, groups: 14, text: 15, surveyLooks: 16, cards: 17 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {

@@ -1,11 +1,13 @@
-import { fileProblem, MESSAGES, type FileValue } from '@fieldia/core';
+import { evidenceOf, fileProblem, MESSAGES, signsAnswers, type FileValue } from '@fieldia/core';
 import { readFile } from './files';
-import { whileShown } from './shown';
+import { stillShown, whileShown } from './shown';
 import { goingList } from './files-going';
 import { shrinkFor, shrinkPhoto } from './shrink';
-import { describeState, maker, setHidden, setText, wordsFor } from './kind-parts';
-import type { WidgetFactory } from './widgets';
+import { describeState, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import type { WidgetFactory, WidgetState } from './widgets';
 import { installFilesStyles } from './styles-files';
+import { evidencePartAsksAgain, loadEvidencePart } from './widget-parts';
+import type { Signing } from './signature-signing';
 
 /**
  * A signature on a file field (`binary.signature`): drawn on a pad with a
@@ -20,6 +22,14 @@ import { installFilesStyles } from './styles-files';
  * uploaded as a third way — checked as a file field checks one: a picture
  * (or the kinds the field takes), no larger than its `maxSize`. A file
  * refused keeps the signature there was, and says which and why.
+ *
+ * `options.signs` makes it sign answers — `"form"`, every answer shown, or
+ * the fields by name — and `options.signerField` names the field holding the
+ * signer's name: who, when and the answers' fingerprint kept beside its
+ * picture (`FileValue.signed`), said under it, with Change answers. That is
+ * the evidence part's (signature-signing.ts), asked for by such a signature
+ * alone: until it comes, the pad draws and the picture is kept, and its
+ * signing waits for it — a save waits for that signing, as for one on its way.
  *
  * It comes in the files part (files-part.ts), with a file field's uploads.
  */
@@ -46,6 +56,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   const penWidth = options['penWidth'];
   const width = typeof penWidth === 'number' && penWidth > 0 ? penWidth : 3;
   const footerWords = options['footerLabel'];
+  /** Whether it signs answers: who, when and their fingerprint kept with it (the evidence part's), and those answers locked while it is. */
+  const evidencing = signsAnswers(node);
   const canvas = make('canvas', { class: 'fd-signature-pad', width: String(WIDTH), height: String(HEIGHT), role: 'img', 'aria-label': words.signaturePad });
   const hint = make('span', { class: 'fd-signature-hint', 'aria-hidden': 'true' }, node.placeholder || words.signHere);
   const image = make('img', { class: 'fd-signature-image', alt: field.label, hidden: '' });
@@ -63,21 +75,30 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   const going = goingList(make, words, form, name);
   file.addEventListener('change', (event) => {
     const chosen = file.files?.[0];
-    if (!chosen || !form.canUpload()) return;
+    // A picture that signs answers is read into the record with its evidence first: the save stores it, the evidence kept.
+    if (!chosen || !form.canUpload() || evidencing) return;
     event.stopImmediatePropagation();
     file.value = '';
     const shrink = shrinkFor({ ...field, type: 'image' } as typeof field, true);
     form.upload(name, [chosen], shrink ? { prepare: (picked) => shrinkPhoto(picked as File, shrink, document) } : {});
   });
-  // Why a picture uploaded was not taken: said politely, under the pad's tools.
+  // Why a picture uploaded was not taken, or answers not signed: said politely, under the pad's tools.
   const refused = make('div', { class: 'fd-help fd-file-note fd-signature-note', role: 'status', hidden: '' });
+  // The signing's part that could not come (offline, a script blocked): said, with Try again where asking again can bring
+  // it (`Part.asksAgain`: the one-tag script's tags); where it cannot (an app's modules), a reload is said instead.
+  const retry = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.signingRetry);
+  const unloadedWords = make('span');
+  const retryBox = make('span', {}, ' ', retry);
+  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', role: 'alert', hidden: '' }, unloadedWords);
+  const tools = make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear);
   const element = make(
     'div',
     { id, class: 'fd-signature', role: 'group' },
     make('div', { class: 'fd-signature-box' }, canvas, image, hint),
     ...(typeof footerWords === 'string' && footerWords ? [make('span', { class: 'fd-signature-footer' }, footerWords)] : []),
-    make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear),
-    refused
+    tools,
+    refused,
+    unloaded
   );
 
   const pen = () => {
@@ -133,7 +154,10 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     hint.hidden = !blank();
     if (blank()) {
       mine = null;
-      return form.setValue(name, null);
+      turn++;
+      form.setValue(name, null);
+      if (unsigned) leftUnsigned(null);
+      return;
     }
     let url: string | undefined;
     try {
@@ -143,9 +167,150 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     }
     if (!url) return;
     const data = url.slice(url.indexOf(',') + 1);
+    const was = form.getState().values[name];
+    const own = was && typeof was === 'object' && keyOf(was as FileValue) === mine;
     mine = data;
-    form.setValue(name, { name: 'signature.png', type: 'image/png', size: bytesOf(data), data, ...(typedName && !strokes.length ? { text: typedName } : {}) });
+    const picture: FileValue = { name: 'signature.png', type: 'image/png', size: bytesOf(data), data, ...(typedName && !strokes.length ? { text: typedName } : {}) };
+    // Signed again — a stroke more, a letter of the name — it keeps the answers signed until the new signing is done.
+    const before = evidencing && own ? evidenceOf(was) : null;
+    form.setValue(name, before ? { ...picture, signed: before } : picture);
+    if (evidencing) sign(picture);
   }
+
+  // ---- signing answers (`options.signs`): its evidence is the evidence part's ----
+
+  /** The signing on its way, which a save waits for (`settling`), and the turn of the latest: an older one lays nothing. */
+  let signing: Promise<void> | null = null;
+  let turn = 0;
+  /** True while a signing reads what is typed itself: it does not wait for itself. */
+  let reading = false;
+  const unsettle = evidencing ? form.settling(() => (reading ? undefined : (signing ?? undefined)), () => signing !== null) : null;
+  /** The evidence, once its part has come: its line under the signature and its signing. */
+  let evidence: Signing | null = null;
+  let lastState: WidgetState | null = null;
+  let gone = false;
+  /** The evidence part asked for: in, or — offline, its script blocked — not come, until Try again asks once more. */
+  let failed = false;
+  const ask = (): Promise<void> =>
+    loadEvidencePart().then(
+      (part) => {
+        failed = false;
+        if (gone || evidence) return;
+        evidence = part.signingFor({ form, name, node, document, words, locale, say, letGo, takeAway });
+        tools.before(evidence.element);
+        if (lastState) evidence.update(lastState.value, lastState.values, lastState.readonly);
+      },
+      () => {
+        failed = true;
+      }
+    );
+  let coming: Promise<void> | null = evidencing ? ask() : null;
+
+  /**
+   * Its part not come: never a picture kept unsigned in silence. Said under the signature, with Try again; the picture
+   * to sign kept on the pad and in the field, and every save, check and step forward refusing it with the same words —
+   * the form's own refusal of what does not read (`setUnread`) — until it is signed, or taken away. A signature kept
+   * signed (its evidence in its value) says the part did not come too: its answers stay locked until it does. Try again
+   * only where asking again can bring the part; else the words say to reload the page (hide, never a button that cannot
+   * work).
+   */
+  let unsigned: string | null = null;
+  /** Its words where the part could not come: Try again's, or a reload's where asking again cannot bring it. */
+  const notSigned = () => (evidencePartAsksAgain() ? words.notSignedNoPart : words.notSignedReload);
+  const valueNow = () => {
+    const value = form.getState().values[name];
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as FileValue) : null;
+  };
+  /** The picture `key` left unsigned for want of the part (null: none), and what the field says of it. */
+  function leftUnsigned(key: string | null) {
+    unsigned = key;
+    const kept = form.getState().unread[name];
+    if (key) {
+      if (kept?.message !== notSigned()) form.setUnread(name, { text: '', message: notSigned() });
+    } else if (kept && (kept.message === words.notSignedNoPart || kept.message === words.notSignedReload)) form.setUnread(name, null);
+    drawUnloaded();
+  }
+  function drawUnloaded() {
+    const value = valueNow();
+    const pending = !!value && unsigned !== null && keyOf(value) === unsigned && !evidenceOf(value);
+    const again = evidencePartAsksAgain();
+    const said = !failed ? null : pending ? notSigned() : evidenceOf(value ?? undefined) ? (again ? words.signingNoPart : words.signingNoPartReload) : null;
+    // Try again in its words only where it can work; else none at all.
+    if (again && retryBox.parentNode !== unloaded) unloaded.append(retryBox);
+    else if (!again) retryBox.remove();
+    if (unloadedWords.textContent !== (said ?? '')) setText(unloadedWords, said ?? '');
+    setHidden(unloaded, !said);
+  }
+  retry.addEventListener('click', () => {
+    setHidden(unloaded, true);
+    coming = ask();
+    // The picture left unsigned is signed once the part has come; else it is said again.
+    void coming.then(() => {
+      const value = valueNow();
+      if (value && keyOf(value) === unsigned && !evidenceOf(value)) sign(value);
+      else drawUnloaded();
+    });
+  });
+
+  /**
+   * The answers signed with this picture, by the evidence part — once it has come — once what is typed in them is read.
+   * Laid only while the record is the one shown, the picture still the field's, and this the latest signing.
+   */
+  function sign(picture: FileValue) {
+    const ours = ++turn;
+    const shown = stillShown(form);
+    const current = () => ours === turn && shown() && keyOf((form.getState().values[name] ?? {}) as FileValue) === picture.data;
+    const settle = () => {
+      reading = true;
+      try {
+        return form.settle();
+      } finally {
+        reading = false;
+      }
+    };
+    const run: Promise<void> = (coming ?? Promise.resolve())
+      .then(() => {
+        if (!current()) return undefined;
+        if (!evidence) return leftUnsigned(keyOf(picture));
+        leftUnsigned(null);
+        return evidence.sign(picture, { settle, current });
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (signing === run) signing = null;
+      });
+    signing = run;
+  }
+
+  /** Not signed: the picture is the field's no longer; what was drawn stays on the pad, to clear or add to. */
+  function letGo() {
+    mine = null;
+    form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
+  }
+
+  /** Taken away by Change answers: the answers it signed open, to change and sign again. */
+  function takeAway() {
+    turn++;
+    wipe();
+    mine = null;
+    typed.value = '';
+    showPad();
+    form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
+    typed.focus();
+  }
+
+  /** Said under the pad, politely: why nothing was taken or signed, or (`news`) what was done. */
+  function say(text: string, news = false) {
+    // Said again only when it changes: a name typed letter by letter is not refused aloud at each.
+    if (text && !refused.hidden && refused.textContent === text) return;
+    setText(refused, '');
+    setText(refused, text);
+    setAttr(refused, 'data-news', news ? '' : null);
+    setHidden(refused, !text);
+  }
+
   /** The pad's point under the pointer: the pad is drawn smaller or larger than its own size. */
   function at(event: PointerEvent) {
     const box = canvas.getBoundingClientRect();
@@ -178,7 +343,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
 
   // A name typed is drawn in a hand's script, in place of whatever was drawn.
   typed.addEventListener('input', () => {
-    setHidden(refused, true);
+    // Signing answers, what comes of the signing says its own words.
+    if (!evidencing) setHidden(refused, true);
     showPad();
     strokes = [];
     typedName = typed.value.trim() || null;
@@ -200,11 +366,15 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     // A picture, as the field takes one, no larger than it allows: else the signature there was stays, and it says why.
     const own = field.type === 'binary' ? field : null;
     const problem = fileProblem({ type: 'binary', label: field.label, accept: own?.accept ?? ['image/*'], ...(own?.maxSize !== undefined ? { maxSize: own.maxSize } : {}) }, chosen, MESSAGES[locale ?? 'en'] ?? MESSAGES.en);
-    setText(refused, '');
-    setText(refused, problem ?? '');
-    setHidden(refused, !problem);
-    // Read once another record is shown: laid on no record.
-    if (!problem) void readFile(chosen).then(whileShown(form, (value: FileValue) => form.setValue(name, value)));
+    say(problem ?? '');
+    // Read once another record is shown: laid on no record. One that signs answers is signed as it lands.
+    if (!problem)
+      void readFile(chosen).then(
+        whileShown(form, (value: FileValue) => {
+          form.setValue(name, value);
+          if (evidencing) sign(value);
+        })
+      );
   });
 
   clear.addEventListener('click', () => {
@@ -214,6 +384,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     typed.value = '';
     showPad();
     form.setValue(name, null);
+    if (unsigned) leftUnsigned(null);
     typed.focus();
   });
 
@@ -227,7 +398,12 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   return {
     element,
     focus: () => (typed.hidden ? clear : typed).focus(),
+    destroy() {
+      gone = true;
+      unsettle?.();
+    },
     update(state) {
+      lastState = state;
       readonly = state.readonly;
       const value = state.value && typeof state.value === 'object' && !Array.isArray(state.value) ? (state.value as FileValue) : null;
       const away = document.activeElement !== typed;
@@ -252,7 +428,11 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       hint.hidden = readonly || !blank() || !image.hidden;
       typed.hidden = readonly;
       typed.readOnly = readonly;
-      clear.hidden = readonly || !value;
+      // Signed, its answers change by Change answers (the evidence part's), asked first; one not signed yet keeps its
+      // strokes to clear.
+      clear.hidden = readonly || (evidencing && !!evidenceOf(value)) || (!value && (!evidencing || blank()));
+      evidence?.update(value, state.values, readonly);
+      if (evidencing) drawUnloaded();
       undo.hidden = readonly || !strokes.length || !image.hidden;
       if (upload) upload.hidden = readonly;
       canvas.classList.toggle('fd-signature-locked', readonly);

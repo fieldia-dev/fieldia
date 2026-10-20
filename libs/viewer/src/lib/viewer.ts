@@ -48,8 +48,10 @@ import {
   hotkeyWords,
   labelAt,
   recordSentence,
+  signedBy,
   uploadGoing,
   workAtRisk,
+  type SignedBy,
 } from '@fieldia/core';
 import { afterPress, browserPreferences, createWidget, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetFactory, watchPresses } from '@fieldia/widgets';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
@@ -582,6 +584,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function drawer(scope: Scope) {
     const { form, page } = scope;
     const uid = (id: string) => ownUid(scope.prefix + id);
+    /** The answers signatures kept signed, as the values hold them now: worked out once for each change of the values. */
+    let signed: { values: Readonly<Values>; by: SignedBy } | null = null;
+    const signedNow = (values: Readonly<Values>) => (signed?.values === values ? signed : (signed = { values, by: signedBy(page, values) })).by;
     /** A part's updater, handed the state of the part's own form; one that throws puts the part's box in its place. */
     const watch = (update: Updater) => sink.push(keptTo(drawing, scope.root ? update : () => update(form.getState())));
 
@@ -931,7 +936,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         // A record its source lets the person only read is read whole, as a locked form is: it says why once, over the record.
         const can = state.can;
         lockedNow = readonly && !locked && can?.edit !== false;
-        const why = reason ?? (can?.readonlyFields?.includes(node.field) ? (can.reason ?? labels.fieldNotYours) : undefined);
+        const mayNot = can?.readonlyFields?.includes(node.field);
+        // An answer a signature signed says how to change it — by taking the signature away — unless the source locks it
+        // for this person anyway; a value worked out, never typed, says nothing.
+        const why = !mayNot && !fixed && signedNow(state.values).has(node.field) ? labels.signedAnswer : (reason ?? (mayNot ? (can?.reason ?? labels.fieldNotYours) : undefined));
         const showsLock = lockedNow && (!!why || (wrapper.hasAttribute('data-in-quiet') && !fixed));
         if (showsLock || lockMark) setHidden(lockFor(why), !showsLock);
         if (!lockedNow) point(false);

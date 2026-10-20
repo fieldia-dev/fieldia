@@ -483,6 +483,8 @@ export interface ViewerLabels {
   readOnlyRecord: string;
   readOnlyRecordNoun?: string;
   fieldNotYours: string;
+  /** Said by the lock of an answer a signature signed (`options.signs`): how to change it. */
+  signedAnswer: string;
   notOffered: string;
   /**
    * Possible duplicates (`duplicates`): a record like the one typed, said under the field it matched on — by those
@@ -874,6 +876,7 @@ const en: ViewerLabels = {
   readOnlyRecord: 'You can read this record, but not change it.',
   readOnlyRecordNoun: 'You can read this {record}, but not change it.',
   fieldNotYours: 'You can see this field, but not change it.',
+  signedAnswer: 'Signed. To change it, press Change answers under the signature.',
   notOffered: 'Not open to you here: {actions}.',
   duplicateWith: 'A record with this {fields} already exists: {name}',
   duplicateWithNoun: '{aRecord} with this {fields} already exists: {name}',
