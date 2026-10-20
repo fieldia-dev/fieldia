@@ -186,8 +186,11 @@ app's list gave, or those picked where they are carried from (`picked: false`: t
 left unpicked; a "None of these" is never carried) — less those whose condition hides
 them. A chosen option a change no longer offers is taken out of the answer, never
 silently kept: `form.getState().takenOut` says so by path ("Garden is no longer
-offered, so it was taken out"), until that value is written again — the same words
-for a choice its app's list no longer offers, a page's or a line's. One a record held
+offered, so it was taken out"), while it is true: it goes once the value is written
+again, or once what it names is offered again (Villa picked again, the treatment
+ticked again above, the list asked again offering it); one of several offered again
+leaves it naming the rest. The same words for a choice its app's list no longer
+offers, a page's or a line's. One a record held
 as it was opened stays chosen, and the choice says it is no longer offered. The
 page's checks read each option's condition and refuse a choice carried from itself,
 from a field that is no choice, or round a circle.

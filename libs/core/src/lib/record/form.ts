@@ -1,7 +1,7 @@
 import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, PropertyDefinition } from '../format/field';
 import { changesOptions, hasOptionRules, optionRulesPart, optionsField, optionsList, type OptionRulesPart } from '../format/choice-options';
-import type { OptionRules } from './option-rules';
+import type { OptionRules, TakenOption } from './option-rules';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
@@ -1379,6 +1379,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   function set(patch: Partial<FormState>) {
     const was = state.values;
+    const choicesWas = state.choices;
     const shown = state.errors;
     const edited = edit;
     edit = false;
@@ -1386,6 +1387,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     state = { ...state, ...patch };
     // A line's choices go with their line.
     if (state.values !== was) state = { ...state, choices: choicesNow(state.choices) };
+    // What was said taken out is said while it is true: an option offered again, or picked again, is said no more.
+    if ((state.values !== was || state.choices !== choicesWas) && Object.keys(state.takenOut).length) {
+      const takenOut = takenOutTrue();
+      if (takenOut !== state.takenOut) state = { ...state, takenOut };
+    }
     // What waits for an app's answer, as the values shown last settled.
     if (patch.values !== undefined && patch.asked === undefined && !sameAsked(state.asked, askedNow)) state = { ...state, asked: Object.fromEntries(askedNow) };
     // The person's changes the last save did not send, worked out again from the values as they are now, and from the
@@ -1672,7 +1678,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const written = line
       ? ((values[field] as Line[] | null) ?? []).map((l) => (l.key === line.key ? { ...l, values: { ...l.values, [line.column]: without(l.values[line.column]) } } : l))
       : without(values[field]);
-    writeValues({ ...values, [field]: written }, {}, false, { [line ? `${field}.${line.key}.${line.column}` : field]: takenOutWords(labels) });
+    const path = line ? `${field}.${line.key}.${line.column}` : field;
+    takenOutOf.set(path, lost.map((value, i) => ({ value, label: labels[i] })));
+    writeValues({ ...values, [field]: written }, {}, false, { [path]: takenOutWords(labels) });
     afterEdit(field);
     changed(field, 'step', { keep: true });
   }
@@ -1792,6 +1800,34 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   const takenOutWords = (labels: string[]) =>
     fillMessage(messages, labels.length > 1 ? messages.notOfferedNowMany : messages.notOfferedNow, { name: listedLabels(labels.map((label) => (label.includes('{') ? wordsNow(label) : label))) });
+
+  /** The options each note of `takenOut` names, by its path: a note goes once none of them is still out. */
+  const takenOutOf = new Map<string, readonly TakenOption[]>();
+  /**
+   * The notes of options taken out (`FormState.takenOut`) that are still true for the values and the choices now: one
+   * whose options are all offered again — the type that offers them picked again, the treatment ticked again above, the
+   * app's list asked again offering it — or picked again goes; one with some still out names those. A list being asked
+   * again says nothing yet. The same notes, when none changed.
+   */
+  function takenOutTrue(): Readonly<Record<string, string>> {
+    let kept: Record<string, string> | null = null;
+    for (const path of Object.keys(state.takenOut)) {
+      const options = takenOutOf.get(path);
+      const held = valueAt(state.values, path);
+      if (!options || held === gone || state.choices[path]?.loading) continue;
+      const offered = form.offered(path);
+      if (!offered) continue;
+      const chosen: unknown[] = [held].flat();
+      const left = options.filter((option) => !chosen.includes(option.value) && !offered.some((one) => one.value === option.value));
+      if (left.length === options.length) continue;
+      kept ??= { ...state.takenOut };
+      if (left.length) {
+        takenOutOf.set(path, left);
+        kept[path] = takenOutWords(left.map((option) => option.label));
+      } else delete kept[path];
+    }
+    return kept ?? state.takenOut;
+  }
 
   /** A line's field as its value is checked: its choices from the app's list, those loaded for its line. */
   function checkedLine(path: string, def: LineField): LineField {
@@ -2260,6 +2296,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     if (out) {
       settled = out.values;
       takenOut = { ...takenOut, ...out.said };
+      for (const [path, gone] of Object.entries(out.gone)) takenOutOf.set(path, gone);
     }
     if (Object.keys(takenOut).length || Object.keys(state.takenOut).length) extra = { takenOut, ...extra };
     const values = syncParts(settled, fresh ? 'fresh' : 'edit');

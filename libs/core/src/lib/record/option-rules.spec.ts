@@ -104,16 +104,22 @@ describe('an option shown by a condition', () => {
     expect(form.getState().takenOut).toEqual({ outside: 'Garden is no longer offered, so it was taken out', features: 'Pool and Garage are no longer offered, so they were taken out' });
   });
 
-  it('says it until the choice is written again', () => {
+  it('says it until the choice is written again, or offers it again', () => {
     const form = createForm({ page: unit });
     form.setValue('kind', 'villa');
     form.setValue('outside', 'garden');
     form.setValue('kind', 'flat');
     expect(form.getState().takenOut['outside']).toBeDefined();
-    form.setValue('kind', 'villa');
-    expect(form.getState().takenOut['outside']).toBeDefined();
     form.setValue('outside', 'balcony');
     expect(form.getState().takenOut).toEqual({});
+    form.setValue('kind', 'villa');
+    form.setValue('outside', 'garden');
+    form.setValue('kind', 'flat');
+    expect(form.getState().takenOut['outside']).toBeDefined();
+    // A villa again: Garden is offered again, and no longer said to be gone (taken out all the same).
+    form.setValue('kind', 'villa');
+    expect(form.getState().takenOut).toEqual({});
+    expect(form.getState().values['outside']).toBeNull();
   });
 
   it('stays chosen, unsaid, on a record opened holding it: only a change takes one out', async () => {

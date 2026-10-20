@@ -52,6 +52,22 @@ for (const variant of VARIANTS) {
       await expect(said(page, 'f-features')).toBeHidden();
       await expectNoSidewaysScroll(page);
     });
+
+    test('Villa picked again: the note of Garden and Private pool taken out goes, as both are offered again', async ({ page }) => {
+      const type = node(page, 'f-unit-type');
+      const features = node(page, 'f-features');
+      await tick(type, 'Villa');
+      await tick(features, 'Garden');
+      await tick(features, 'Private pool');
+      await tick(type, 'Studio');
+      await expect(said(page, 'f-features')).toHaveText('Garden and Private pool are no longer offered, so they were taken out');
+      await tick(type, 'Villa');
+      await expect(offered(features)).toHaveText(['Garden', 'Private pool', 'Garage', '24-hour security']);
+      // Offered again: nothing is said of them any more; they stay unticked for the person to tick again.
+      await expect(said(page, 'f-features')).toBeHidden();
+      expect(await ticked(features)).toEqual([]);
+      await screen(page, `${variant}-listing-villa-again`);
+    });
   });
 
   test.describe(`${variant}: after your visit`, () => {
@@ -80,6 +96,12 @@ for (const variant of VARIANTS) {
       await expect(said(page, 'f-again')).toHaveText('Chemical peel is no longer offered, so it was taken out');
       await expect(offered(next)).toHaveText(['Filler', 'Chemical peel', 'Laser hair removal', 'HydraFacial']);
       await screen(page, `${variant}-visit-feedback-taken-out`);
+      // Ticked again above: offered again below, and no longer said to be gone.
+      await tick(treatments, 'Chemical peel');
+      await expect(offered(again)).toHaveText(['Botox', 'Chemical peel', 'None of them']);
+      await expect(said(page, 'f-again')).toBeHidden();
+      expect(await ticked(again)).toEqual([]);
+      await screen(page, `${variant}-visit-feedback-ticked-again`);
     });
 
     test('an age worked out from a birth date keeps an option for adults to them', async ({ page }) => {

@@ -72,6 +72,19 @@ test.describe('an AI agent’s tools, each line’s from its connection', () => 
     expect(problems).toEqual([]);
   });
 
+  test('the first connection picked again: its tools are offered again, and the note of the one taken out goes', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    await pick(page, connection(page, 0), 'Slack', 'Slack — Nile Traders');
+    await expect(said(page, 0)).toHaveText('Send an email is no longer offered, so it was taken out');
+    await pick(page, connection(page, 0), 'Gmail', 'Gmail — sales@niletraders.example');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    await expect(said(page, 0)).toHaveCount(0);
+    // Taken out all the same: the person picks it again.
+    await expect(tool(page, 0)).toHaveValue('');
+    expect(problems).toEqual([]);
+  });
+
   test('a new line’s tools wait for its connection, then are its own', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
     await tools(page).locator('.fd-lines-add').first().click();
