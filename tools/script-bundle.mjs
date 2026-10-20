@@ -915,9 +915,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // and the viewer placing the limits part's screen, banner and button — the screen and Continue later's words in
 // fieldia.limits.js — and a draft's text that did not read said again as it opens, the questions shown after 10 seconds
 // of a source that never answers: 503.41 measured before, 515.71 after — 12.3 more, to 515.8.
-// All merged for 0.27.0 (provisional until the merged build is measured): 503.41 + 1.11 + 2.68 + 1.74 + 2.16 + 4.00 +
-// 4.31 + 13.53 + 12.30, to 545.3.
-const BUDGET_KB = 545.3;
+// All merged for 0.27.0 (provisional until the size step): the lanes' 503.41 + 1.11 + 2.68 + 1.74 + 2.16 + 4.00 + 4.31 +
+// 13.53 + 12.30 is 545.24; the merged build with the cross-lane jobs (one optionsFrom, a line's options by condition
+// and one rule for what is taken out, endings reading the functions, places in every way a choice is drawn) measured
+// 547.63, to 547.7.
+const BUDGET_KB = 547.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1131,8 +1133,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // measured before, 167.70 after — 4.76 more, to 167.8.
 // Opening, closing and limiting a page, and save and resume (listed with the raw budget above): 162.94 measured
 // before, 167.38 after — 4.4 more, to 167.4. A page with limits or Continue later takes 2.41 more in fieldia.limits.js.
-// All merged for 0.27.0 (provisional): 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47 + 4.76 + 4.44, to 177.7.
-const GZIP_BUDGET_KB = 177.7;
+// All merged for 0.27.0 (provisional until the size step): the lanes' 162.94 + 0.34 + 0.86 + 0.51 + 0.83 + 1.52 + 1.47
+// + 4.76 + 4.44 is 177.67; the merged build with the cross-lane jobs measured 178.21, to 178.3.
+const GZIP_BUDGET_KB = 178.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1664,7 +1667,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // Both lanes' lines, merged for 0.27.0 (provisional): 40.51 + 0.26 + 1.75 and 13.97 + 0.05 + 0.60, to 42.6 and 14.7;
 // list's 110.61 + 6.90 + 0.10 and 35.49 + 2.36 + 0.03, to 117.7 and 37.9; import's 37.59 + 0.43 + 0.06 and 14.77 + 0.22 +
 // 0.03, to 38.1 and 15.1.
-const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [10.7, 4.4], filters: [22.7, 7.8], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.1, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4] };
+// An option's places beside its words in the choice part's own list, its list that searches and its tags, a full one
+// refused there as in a radio (0.27, the release's cross-lane job): choice 11.15 and 4.56 measured with them, to 11.2
+// and 4.6.
+// Measured on the merged build, two parts past their lanes' numbers by what the lanes share: filters 22.69 and 7.81, to
+// 22.7 and 7.9; import 38.11 and 15.03, to 38.2 and 15.1.
+const PART_BUDGET_KB = { head: [34.6, 10.1], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [117.7, 37.9], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [42.6, 14.7], business: [30.4, 11.1], files: [36.2, 13.3], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [15.3, 5.9], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.2, 2.1], limits: [5.4, 2.5], print: [16.9, 5.4] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
