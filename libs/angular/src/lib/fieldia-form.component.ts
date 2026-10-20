@@ -8,6 +8,7 @@ import {
   EnvironmentInjector,
   TemplateRef,
   ViewContainerRef,
+  computed,
   contentChildren,
   createComponent,
   effect,
@@ -81,6 +82,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly context = input<ViewerOptions['context']>(undefined);
   /** The app's own functions, which the page's expressions call by name: each call reaches the newest given. */
   readonly functions = input<ViewerOptions['functions']>(undefined);
+  /** Their names alone: a new object with the same names is called through, never mounted again. */
+  private readonly functionNames = computed(() => Object.keys(this.functions() ?? {}).join('|'));
   readonly values = input<Values | undefined>(undefined);
   /** The skin — underline, outlined or quiet: the page's own when left out, else its theme's, else underline. */
   readonly skin = input<Skin | undefined>(undefined);
@@ -193,7 +196,7 @@ export class FieldiaFormComponent implements OnDestroy {
         user: this.user(),
         context: this.context(),
         // Made again when a function is named or no longer named; each call reaches the newest given.
-        functionNames: Object.keys(this.functions() ?? {}).join('|'),
+        functionNames: this.functionNames(),
         dir: this.dir(),
         locale: this.locale(),
         labels: this.labels(),

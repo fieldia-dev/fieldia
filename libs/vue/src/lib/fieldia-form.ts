@@ -2,6 +2,7 @@ import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormSt
 import { mountViewer, newestFunctions, skinFor, type ListViewFactory, type MapPartFactory, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
+  computed,
   defineComponent,
   getCurrentScope,
   h,
@@ -309,8 +310,10 @@ export const FieldiaForm = defineComponent({
 
     onMounted(mount);
     onBeforeUnmount(unmount);
+    // The app's functions' names alone: a new object with the same names is called through, never mounted again.
+    const functionNames = computed(() => Object.keys(props.functions ?? {}).join('|'));
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {}), Object.keys(props.functions ?? {}).join('|')],
+      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {}), functionNames.value],
       () => {
         unmount();
         mount();
