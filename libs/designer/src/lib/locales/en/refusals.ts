@@ -126,6 +126,7 @@ export const refusals = {
   seatsForChoices: 'Places are for a choice’s options: a matrix’s columns take none',
   limitsForResponses: 'Open and close dates and limits are for a form that collects responses: an app’s own screen opens and closes with the app',
   closesBeforeOpens: 'It would close before it opens: pick a closing time after the opening',
+  approvalForRecords: 'Approvals are asked of a model’s records, on a record’s own screen: a form of responses, or a list, has no record to approve',
   rowsFromModel: (label: string) => `The rows of ${label} come from the model`,
   matrixColumnsFromModel: (label: string) => `The columns of ${label} come from the model`,
   onlyMatrix: 'Only a matrix has rows and columns',

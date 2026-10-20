@@ -167,6 +167,9 @@ const NAMES: Record<string, string> = {
   'One with its article': 'الواحد مع أداة التنكير',
   'Field names small inside them': 'أسماء الحقول بحرف صغير داخلها',
   'Duplicates asked for': 'متى يُبحث عن السجلات المكررة',
+  Approvals: 'الموافقات',
+  'Locked while it waits': 'مقفل أثناء الانتظار',
+  'Open while it waits': 'مفتوح أثناء الانتظار',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -564,6 +567,14 @@ export const panel: DesignerWords['panel'] = {
   duplicatesNone: 'لا حقل هنا يصلح للبحث عنها: أضف نصًا أو رقمًا أو تاريخًا أو اختيارًا أو رابطًا.',
   duplicatesOn: 'متى يُبحث عنها',
   duplicatesOnAs: { type: 'أثناء الكتابة وعند الحفظ', save: 'عند حفظ السجل فقط' },
+  approval: 'الموافقات',
+  approvalOn: 'تنتظر سجلاته الموافقة',
+  approvalHint: 'من يجب أن يوافق على السجل وفي أي مستوى، والموافقة والرفض لمن يحق له القرار، وما تقرّر — يُذكر على السجل وفي محادثته. مصدر بيانات تطبيقك، أو محرّك الموافقات فيه، يحدّد من يُسأل وبأي ترتيب. يُخفى حيث لا يذكر شيئًا.',
+  approvalLock: 'مقفل أثناء الانتظار',
+  approvalLockOn: 'إقفال السجل أثناء الانتظار',
+  approvalLockHint: 'إن أُوقف لا يُقفل شيء أثناء الانتظار، ويرفض حفظ تطبيقك ما يجب رفضه.',
+  approvalOpen: 'مفتوح أثناء الانتظار',
+  approvalOpenHint: 'تبقى الحقول المحددة مفتوحة ما دام السجل ينتظر قرارًا، ويُقفل كل حقل آخر ويذكر قفله السبب.',
   recordsCalled: 'اسم السجلات',
   recordsOne: 'اسم السجل الواحد',
   recordsOneExample: 'عميل',

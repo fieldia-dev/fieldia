@@ -407,6 +407,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** "Continue later" (`continueLater`): the answers kept on the app's server with a link to carry on; false takes it away. */
   setContinueLater(on: boolean): boolean;
   /**
+   * Approvals on a record's screen (`approval`): on, its records waiting for approval as the app's data source says —
+   * `on: false` takes the setting away — the fields left open while one waits (`open`; `null` or none, every field
+   * locked), and whether it locks at all (`lock: false`, which leaves none open to name). A record's own screen only,
+   * refused on a form of responses or a list.
+   */
+  setApproval(patch: { on?: boolean; open?: string[] | null; lock?: boolean | null }): boolean;
+  /**
    * The page's phone numbers (`phone`): read the world over (`on`), or text boxes as typed (`on: false` takes the
    * setting away); the country a number typed without its + is read in, and whether a number shows abroad's way or at
    * home's — `null` takes either away.
@@ -816,6 +823,8 @@ export function createDesigner(options: {
     forgetGoneTargets(draft);
     // A field taken away, or made a kind records are not compared by, is no longer one possible duplicates are found by.
     forgetGoneDuplicates(draft);
+    // A field taken away is no longer one left open while a record waits for approval.
+    forgetGoneOpenFields(draft);
     // A related list taken out of a tab takes the tab's count of it with it.
     forgetGoneCounts(draft);
     const checked = checkEdit(page, draft);
@@ -1542,6 +1551,28 @@ export function createDesigner(options: {
       }, 'continueLater');
     },
 
+    setApproval(patch) {
+      return apply(
+        (draft) => {
+          if (patch.on === false) return void delete draft.approval;
+          if (draft.data.kind !== 'record' || draft.layout.type === 'list') throw new Refusal((w) => w.refusals.approvalForRecords);
+          const now: NonNullable<Page['approval']> = { ...(draft.approval ?? {}) };
+          if (patch.open !== undefined) {
+            const open = [...new Set(patch.open ?? [])].filter((name) => draft.fields[name]);
+            if (open.length) now.open = open;
+            else delete now.open;
+          }
+          // Nothing locked, nothing to leave open.
+          if (patch.lock === false) {
+            now.lock = false;
+            delete now.open;
+          } else if (patch.lock !== undefined) delete now.lock;
+          draft.approval = now;
+        },
+        `approval:${Object.keys(patch).join(',')}`
+      );
+    },
+
     setDuplicates(patch) {
       return apply(
         (draft) => {
@@ -2092,6 +2123,16 @@ function changeRelated(draft: Page, node: RelatedNode, patch: RelatedPatch, func
       else delete card.fields;
     }
   }
+}
+
+/** The fields left open while a record waits for approval (`approval.open`) that are still on the page: none left, every field locks. */
+function forgetGoneOpenFields(page: Page): void {
+  const open = page.approval?.open;
+  if (!page.approval || !open) return;
+  const kept = open.filter((name) => page.fields[name]);
+  if (kept.length === open.length) return;
+  const { open: _, ...rest } = page.approval;
+  page.approval = kept.length ? { ...rest, open: kept } : rest;
 }
 
 /** The fields possible duplicates are found by (`duplicates`) that are still on the page and of a kind to compare: none left, the setting goes. */
