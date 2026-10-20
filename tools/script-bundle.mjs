@@ -1005,7 +1005,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // business part, a table's line kinds' in the lines part and an address with suggestions' with a map's, 506.85 after;
 // the functions part waited for only by a page whose formulas call the app's own (the demos give theirs to every page),
 // 506.96 after; what a list shows of its records (its columns, cards) and options by condition and carried checked by
-// the parts that draw them, 504.85 after, to 504.9.
+// the parts that draw them, 504.85 after; Copy title's and Export's words in the parts that read them alone, 504.82
+// after, to 504.9.
 const BUDGET_KB = 504.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1235,8 +1236,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // there), 166.98 after; the app's own functions' calls in fieldia.functions.js (0.38 more there), 166.69 after, to
 // 166.7; a statusbar's, a table's line kinds' and an address's checks in their parts, 166.05 after (166.06 once the
 // functions part waits only for a page calling the app's own); a list's columns' and cards' checks in the list part and
-// options by condition's in the options part, 165.40 after, to 165.5.
-const GZIP_BUDGET_KB = 165.5;
+// options by condition's in the options part, 165.40 after; Copy title's and Export's words in the head and list parts,
+// 165.38 after, to 165.4.
+const GZIP_BUDGET_KB = 165.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -1795,8 +1797,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 11.53, to 31.4 and 11.6 — a table's line kinds' — lines 44.65 and 15.29 to 45.34 and 15.51, to 45.4 and 15.6 — and
 // an address with suggestions' — mapchecks 5.76 and 2.24 to 6.89 and 2.56, to 6.9 and 2.6; what a list shows of its
 // records, its columns' and cards' checks — list 127.54 and 40.96 to 128.95 and 41.42, to 129.0 and 41.5 — and options
-// by condition and carried checked — options 3.93 and 1.80 to 4.97 and 2.25, to 5.0 and 2.3.
-const PART_BUDGET_KB = { head: [36.5, 10.8], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.0, 41.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.0, 2.3], mapchecks: [6.9, 2.6] };
+// by condition and carried checked — options 3.93 and 1.80 to 4.97 and 2.25, to 5.0 and 2.3; Copy title's word in the
+// head part (36.50 and 10.80, to 36.6 and 10.9), Export's in the list part (128.97 and 41.43, under its own).
+const PART_BUDGET_KB = { head: [36.6, 10.9], text: [73.1, 24.7], path: [16.1, 6.4], choice: [11.2, 4.6], filters: [22.7, 7.9], date: [22.2, 8.4], list: [129.0, 41.5], cards: [11.9, 3.8], columns: [19.1, 6.9], import: [38.2, 15.1], themes: [12.3, 3.9], quiet: [8.5, 2.2], lines: [45.4, 15.6], business: [31.4, 11.6], files: [37.0, 13.6], evidence: [9.2, 4.3], survey: [36.7, 12.8], phone: [37.9, 16.6], slots: [16.0, 6.2], relations: [20.1, 7.6], duplicates: [16.2, 6.7], answers: [4.7, 2.4], limits: [11.6, 5.0], print: [16.9, 5.4], memory: [16.1, 5.8], functions: [5.3, 2.3], options: [5.0, 2.3], mapchecks: [6.9, 2.6] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

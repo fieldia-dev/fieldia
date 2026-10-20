@@ -50,7 +50,7 @@ export const PART_WORDS = {
   filters: { viewer: ['filterByKeyword', 'clearFilters', 'filterNamed', 'filterSettings', 'rangeAny', 'rangeOrMore', 'filtersOn', 'filtersClearAll', 'showResults', 'showResultsNoun', 'showResultsOne', 'showResultsNounOne', 'showResultsSome'] },
   head: {
     widgets: ['maximiseNamed', 'foldNamed', 'unfoldNamed'],
-    viewer: ['restoreSize', 'titleCopied', 'optionsFor', 'updatedBy'],
+    viewer: ['restoreSize', 'titleCopied', 'optionsFor', 'updatedBy', 'copyTitle'],
   },
   import: {
     widgets: ['phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart'],
@@ -73,7 +73,7 @@ export const PART_WORDS = {
     widgets: ['enterNumber', 'enterDate', 'enterValue', 'phoneCallNamed', 'phoneWhatsAppNamed'],
     viewer: [
       'previousPage', 'nextPage', 'selectAll', 'viewList', 'viewMap', 'viewBoth', 'viewGallery', 'rowActions', 'selectRecord', 'noRecords', 'selectAllMatching', 'selectingAll', 'selectedOf', 'selectAllFailed', 'showAs',
-      'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printing', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne', 'printedOn',
+      'export', 'exportExcel', 'exportCsv', 'exportCurrency', 'exportAll', 'exportAllOne', 'exporting', 'exportCut', 'exportFailed', 'exported', 'exportedOne', 'printList', 'printing', 'printCut', 'printFailed', 'printFilters', 'printGroups', 'printCount', 'printCountOne', 'printedOn',
       'bulkTitle', 'bulkTitleOne', 'bulkField', 'bulkApply', 'bulkAsk', 'bulkAskOne', 'bulkSet', 'bulkClear', 'bulkProgress', 'bulkDone', 'bulkDoneOne', 'bulkSome', 'bulkWhy', 'bulkChangedSince',
       'importDone', 'importDoneOne', 'importStopped', 'importSome', 'importUndo', 'importUndoAsk', 'importUndoAskOne', 'importUndoing', 'importUndone', 'importUndoneOne', 'importUndoSome', 'importRow', 'importDownload', 'importFailed',
       'searchLabel', 'searchOptions', 'favourites', 'removeFacet', 'addCustomFilter', 'saveSearch', 'searchName', 'useByDefault', 'deleteFavourite', 'noFavourites',
