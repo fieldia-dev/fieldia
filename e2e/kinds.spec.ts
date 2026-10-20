@@ -60,11 +60,21 @@ test.describe('the new kinds in the viewer', () => {
     const days = node(page, 'q-days');
     const range = days.getByRole('slider');
     await expect(days).toHaveClass(/fd-field/);
-    await expect(days.locator('output')).toHaveText('–');
+    // Not answered: says so in words, and shows no knob halfway — a hollow ring at the start of a track with nothing filled.
+    await expect(days.locator('output')).toHaveText('Not answered');
+    await expect(days.locator('.fd-slider-ring')).toBeVisible();
+    await expect(range).toHaveCSS('opacity', '0');
+    const ring = (await days.locator('.fd-slider-ring').boundingBox())!;
+    const track = (await range.boundingBox())!;
+    expect(ring.x - track.x).toBeLessThan(4);
+    await days.scrollIntoViewIfNeeded();
+    await screen(page, 'kinds-slider-not-answered', { viewport: true });
     const { box } = await centre(range);
     await page.mouse.click(box.x + box.width * 0.82, box.y + box.height / 2);
     expect(await valueOf(page, 'office_days')).toBe(4);
     await expect(days.locator('output')).toHaveText('4');
+    await expect(days.locator('.fd-slider-ring')).toBeHidden();
+    await expect(range).toHaveCSS('opacity', '1');
     await page.keyboard.press('ArrowLeft');
     expect(await valueOf(page, 'office_days')).toBe(3);
     await page.keyboard.press('End');

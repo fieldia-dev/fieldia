@@ -10,7 +10,10 @@ import type { WidgetFactory } from './widgets';
  * the value shown beside it and the ends under it, written as the page's
  * readers write numbers. A native range, so the arrow keys, Home and End move
  * it, a screen reader reads it, and it runs right to left on such a page.
- * Until it is slid it is not answered, and says so.
+ * Until it is slid it is not answered, and says so: no knob of its own, a
+ * hollow ring at the start of a track with nothing filled, "Not answered"
+ * beside it — the native range over it, out of sight, still taking the
+ * pointer and the keys, which answer from the start.
  */
 export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale = 'en' }) => {
   installSurveyStyles(document);
@@ -33,7 +36,11 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
     form.setValue(name, null);
     input.focus();
   }, node);
-  const element = make('div', { class: 'fd-slider' }, make('div', { class: 'fd-slider-track' }, input, output), ends, clear.button);
+  // Not answered: a track with nothing filled and a hollow ring at its start, drawn under the range, which is out of sight.
+  const blank = make('span', { class: 'fd-slider-blank', 'aria-hidden': 'true' }, make('span', { class: 'fd-slider-ring' }));
+  // The room "Not answered" takes, kept beside the value once it is answered: the track never grows under the pointer.
+  const room = make('span', { class: 'fd-slider-room', 'aria-hidden': 'true' }, words.notAnswered);
+  const element = make('div', { class: 'fd-slider' }, make('div', { class: 'fd-slider-track' }, make('span', { class: 'fd-slider-rail' }, input, blank), output, room), ends, clear.button);
   if (endWords.some(Boolean)) input.setAttribute('aria-description', endWords.filter(Boolean).join(' … '));
   // Text the number box drawn before the slider came kept unread ("1.5" in whole days): the slider says so, and a value
   // slid to replaces it.
@@ -41,6 +48,18 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
   input.addEventListener('input', () => {
     form.setValue(name, Number(input.value));
     if (unread()) form.setUnread(name, null);
+  });
+  let readonly = false;
+  /** A press, or a key, that leaves the knob where it starts — its least — answers it all the same: the person chose it. */
+  const answerAsIs = () => {
+    if (readonly || typeof form.getState().values[name] === 'number') return;
+    form.setValue(name, Number(input.value));
+    if (unread()) form.setUnread(name, null);
+  };
+  input.addEventListener('pointerup', answerAsIs);
+  input.addEventListener('keydown', (event) => {
+    // After the key has moved it, if it did: Home at the start, or the arrow back, moves nothing and sends no input.
+    if (['Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(event.key)) setTimeout(answerAsIs, 0);
   });
 
   return {
@@ -57,11 +76,13 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
     update(state) {
       const value = typeof state.value === 'number' ? state.value : null;
       element.classList.toggle('fd-slider-empty', value === null);
-      // Not answered: the thumb waits halfway, dimmed, and says so.
-      const at = String(value ?? (min + max) / 2);
+      // Not answered: no knob halfway, which reads as an answer — a ring at the start, the keys moving from there.
+      const at = String(value ?? min);
       if (input.value !== at) input.value = at;
-      output.textContent = value === null ? '–' : written(value);
+      blank.hidden = value !== null;
+      output.textContent = value === null ? words.notAnswered : written(value);
       input.setAttribute('aria-valuetext', value === null ? words.notAnswered : written(value));
+      readonly = state.readonly;
       input.disabled = state.readonly;
       clear.allow(state);
       clear.show(value !== null);
