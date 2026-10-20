@@ -1,4 +1,4 @@
-import { facetsToFilter, labelAt, suggestions, type DataSource, type Facet, type Field, type Group, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
+import { facetsToFilter, labelAt, optionsList, suggestions, type DataSource, type Facet, type Field, type Group, type ListNode, type Locale, type Page, type ResolvedFilter } from '@fieldia/core';
 import { drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import type { FilterKit, RangeEnds } from './filter-range';
@@ -178,13 +178,15 @@ export function filterBar(context: FilterBarContext) {
     const source = context.dataSource;
     const fixed = context.fixedFilter();
     const grouped = (filter: ResolvedFilter[]): Promise<Group[]> => source?.groups?.({ model: context.model, field, filter }) ?? Promise.resolve([]);
-    // Its values are those the fixed conditions let through; its counts, those the rest of the search does.
-    const listedByGroups = def.type !== 'selection' && def.type !== 'boolean' && def.type !== 'many2many';
+    // Its values are those the fixed conditions let through; its counts, those the rest of the search does. A choice
+    // from the app's list has no options of the page's to list: its records' values, as any field's.
+    const fromList = def.type === 'selection' && !!optionsList(def.optionsFrom);
+    const listedByGroups = (def.type !== 'selection' || fromList) && def.type !== 'boolean' && def.type !== 'many2many';
     const listing = listedByGroups ? grouped(fixed) : null;
     const narrowed = counting && source?.groups ? searchFilter(facetsOf(of, field)) : null;
     const counts = narrowed ? (listing && JSON.stringify(narrowed) === JSON.stringify(fixed) ? listing : grouped(narrowed)).catch(() => null) : null;
     let values: Pick[];
-    if (def.type === 'selection') values = def.options.map((option) => ({ value: option.value, label: option.label }));
+    if (def.type === 'selection' && !fromList) values = def.options.map((option) => ({ value: option.value, label: option.label }));
     else if (def.type === 'boolean') values = [{ value: true, label: labels.yes }, { value: false, label: labels.no }];
     else if (def.type === 'many2many') {
       const found = (await source?.search?.({ model: def.relation, query: '', limit: 100 })) ?? [];

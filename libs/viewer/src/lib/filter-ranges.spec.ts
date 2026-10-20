@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, validatePage, type Page, type Values } from '@fieldia/core';
 import { memoryPreferences, type PreferenceStore } from '@fieldia/widgets';
 import { until } from './test-list';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
@@ -436,5 +436,58 @@ describe('the search bar’s named filters and favourites', () => {
     (form.querySelector('.fd-button-primary') as HTMLButtonElement).click();
     await until(() => rows(host).length === 2);
     expect([...host.querySelectorAll('.fd-facet-text')].map((chip) => chip.textContent)).toEqual(['Value: E£\u00a040,000.00 – E£\u00a0100,000.00']);
+  });
+});
+
+describe('filters beside choices that change: carried, from the app’s list, a table’s lines', () => {
+  /** Leads, each with the treatments it asked about, the one it came back for carried from them, and its branch from the app's list. */
+  const leadsPage: Page = {
+    fieldia: '0.5',
+    id: 'leads',
+    title: 'Leads',
+    records: { one: 'lead', other: 'leads' },
+    data: { kind: 'record', model: 'lead' },
+    fields: {
+      name: { type: 'char', label: 'Lead' },
+      asked: { type: 'selection', label: 'Asked about', multiple: true, options: [{ value: 'botox', label: 'Botox' }, { value: 'peel', label: 'Peel' }] },
+      again: { type: 'selection', label: 'Came back for', options: [{ value: 'none', label: 'Nothing' }], optionsFrom: { field: 'asked' } },
+      branch: { type: 'selection', label: 'Branch', options: [], optionsFrom: { list: 'branches' } },
+      visits: { type: 'one2many', label: 'Visits', relation: 'lead.visit', fields: { room: { type: 'selection', label: 'Room', options: [], optionsFrom: { list: 'rooms', dependsOn: ['parent.branch'] } } } },
+    },
+    layout: { type: 'list', id: 'leads', columns: ['name', 'again', 'branch'], search: 'fields', searchFields: ['name'], filterFields: ['again', 'branch'], filterCounts: true },
+  };
+  const leads = () =>
+    createMemoryDataSource({
+      records: {
+        lead: {
+          1: { name: 'Mona', asked: ['botox'], again: 'botox', branch: 'zamalek' },
+          2: { name: 'Hana', asked: ['peel'], again: 'peel', branch: 'zamalek' },
+          3: { name: 'Sara', asked: ['botox'], again: 'botox', branch: 'maadi' },
+        },
+      },
+    });
+
+  it('lists a carried choice by every option it may hold and a listed one by its records’ values, each counted in the records’ words', async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: leadsPage, dataSource: leads() });
+    await until(() => host.querySelector('.fd-list-table tbody tr.fd-list-row'));
+    const again = pick(host, 'again');
+    again.click();
+    await until(() => options(menuOf(again)).some((o) => o.querySelector('.fd-filter-count')));
+    expect(options(menuOf(again)).map(shownOption)).toEqual(['Botox 2', 'Peel 1', 'Nothing 0']);
+    expect(options(menuOf(again))[0].getAttribute('aria-label')).toBe('Botox, 2 leads');
+    const branch = pick(host, 'branch');
+    branch.click();
+    await until(() => options(menuOf(branch)).some((o) => o.querySelector('.fd-filter-count')));
+    expect(options(menuOf(branch)).map(shownOption)).toEqual(['maadi 1', 'zamalek 2']);
+    options(menuOf(branch))[1].click();
+    await until(() => rows(host).length === 2);
+  });
+
+  it('takes no table’s line as a filter: a line’s choice is the line’s own', () => {
+    const lines = { ...leadsPage, layout: { ...leadsPage.layout, filterFields: ['visits'] } } as Page;
+    const result = validatePage(lines);
+    expect(result.ok ? [] : result.issues.map((issue) => issue.path)).toEqual(['layout.filterFields[0]']);
   });
 });
