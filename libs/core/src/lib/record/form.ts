@@ -3377,7 +3377,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     canContinueLater: () => page.continueLater === true && onServer() && page.layout.type !== 'list',
 
     async continueLater() {
-      if (!form.canContinueLater()) throw new Error('This page keeps no drafts on the server: it needs continueLater, and a data source with saveDraft and loadDraft');
+      if (!form.canContinueLater()) throw new Error('No continueLater, or no saveDraft and loadDraft');
       // What is typed is read first, as a save reads it: text that does not read is kept as typed, said again as it opens.
       await (readTyped() ?? Promise.resolve());
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);

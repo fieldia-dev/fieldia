@@ -33,6 +33,3 @@ export const PageLimitsSchema = z
   .meta({ id: 'PageLimits' });
 
 export type PageLimits = z.infer<typeof PageLimitsSchema>;
-
-/** Whether a page's `opens` or `closes` is written as a day alone: it opens at that day's first minute, closes at its end. */
-export const dayAlone = (written: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(written);

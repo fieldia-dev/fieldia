@@ -235,6 +235,6 @@ describe('without the server’s drafts', () => {
     clock.advance(5000);
     await form.settled();
     expect(form.getState()).toMatchObject({ status: 'ready', resume: null });
-    await expect(form.continueLater()).rejects.toThrow('saveDraft');
+    await expect(form.continueLater()).rejects.toThrow('no saveDraft');
   });
 });

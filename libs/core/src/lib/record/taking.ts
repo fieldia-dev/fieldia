@@ -1,6 +1,5 @@
 import type { Field, Option } from '../format/field';
 import type { Page } from '../format/page';
-import { dayAlone } from '../format/limits';
 import type { LimitsResult } from './data-source';
 import { fill, type Messages } from './messages';
 import type { Value } from './values';
@@ -44,6 +43,9 @@ export interface FormLimits {
 }
 
 const MINUTE = 60000;
+
+/** Whether a page's `opens` or `closes` is written as a day alone: it opens at that day's first minute, closes at its end. */
+export const dayAlone = (written: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(written);
 
 /**
  * The instant a page's `opens` or `closes` names, in ms: an instant written with its offset as it is; a day and a time
