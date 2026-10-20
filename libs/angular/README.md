@@ -53,10 +53,15 @@ export class OrderComponent {
 The viewer's `host` and `onOpen` are `[actionHost]` and `[openPage]`; the
 handle from `(ready)` has `on`, `setValues` and `run`.
 
+A page with `continueLater` opens a draft kept on your server by its key —
+`[resume]="route.snapshot.queryParamMap.get('resume') ?? undefined"`, the key the
+link Continue later gave — and `(draft)` is told of each draft kept. A new
+`[resume]` opens that draft, as a new `[recordId]` opens that record.
+
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` in a route's `canDeactivate`, before removing
 `<fieldia-form>`, and before changing an input that mounts it again (`page`,
-`form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
+`form`, `dataSource`, `recordId`, `resume`, `user`, `context`, `dir`, `locale`,
 `labels`, `fieldTypes`). Angular destroys it at once, so nothing else can keep
 the person there. It waits for a save on its way, then asks "Discard your
 changes?" only when their work is at risk, and answers false when they choose to

@@ -254,6 +254,60 @@ import { alikeRecords, createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({ records, duplicates: alikeRecords() });
 ```
 
+## Opening, closing and limiting a form
+
+A page of responses may say when it takes answers, and how many; any choice's
+options may say how many may pick each:
+
+```json
+{
+  "limits": { "opens": "2026-11-01T09:00", "closes": "2026-11-20", "maxResponses": 200, "onePerPerson": true, "message": "See you in December." },
+  "fields": { "session": { "type": "selection", "label": "Session", "options": [{ "value": "am", "label": "Morning", "seats": 30 }] } }
+}
+```
+
+`opens` and `closes` are read on the page's clock (`timeZone`): a day and a
+time, or a day alone — opening at its first minute, closing at its end. The
+data source's `limits({ pageId, model, recordId, fields, user })` answers
+`{ responses, mine, perChoice }`: the responses sent so far, this person's, and
+for each choice field asked how many hold each option (the record edited not
+counted). The form asks it as it opens — `state.limits.state` is `asking`
+meanwhile where the page counts responses — after a record loads, after every
+send, as it starts again, and just before its answers go. `state.limits` tells
+whether it takes answers now (`open`, `soon`, `closed`, `full`, `sent`), when it
+opens and closes, the responses it takes still, and each choice's places
+(`seats[field][value]`: `{ seats, taken, left }`); `takingWords(page, limits,
+messages)` says why it takes none. A full option the person picks is refused,
+said under its field ("Afternoon workshop is full"); one that filled up while
+held, or a page closed since it was opened, stops the send. The app's own
+`setValues` is never refused: the check says it. Without `limits` in the
+source, the page keeps to its dates alone. The memory source counts its own
+responses over its `limits` option's starting counts, and
+`answeredElsewhere(pageId, values)` takes one as someone else would.
+
+## Save and resume on another device
+
+A page with `continueLater` keeps its answers on the app's server as they are
+typed — and as a wizard's step is entered — through the data source's
+`saveDraft({ pageId, model, recordId, key, draft, later })`, which answers with
+the draft's key (and, on Continue later, the `link` to carry on from and words
+of its own); `loadDraft({ pageId, key })` gives the draft back. A draft keeps
+the answers, the wizard's step and the steps passed over, text typed that does
+not read (`unread`, as typed, with why) and the fields answered. The form's
+`resume` (the key from the link) opens it — at its step, or the nearest before
+it that still applies, its unread text said again — and a key that names none
+leaves `state.resume.missing`. `form.continueLater()` reads what is typed and
+keeps the draft (`later: true`); `form.canContinueLater()` says whether the
+page and its source can; the `draft` event tells each draft kept. A send
+carries the draft's key (`SubmitRequest.draft`, `SaveRequest.draft`). Without
+the two members, drafts stay in the browser's store (`drafts.store`), as before
+— with their wizard step now; with them, that store keeps only the key.
+
+```ts
+const form = createForm({ page, dataSource, resume: new URLSearchParams(location.search).get('resume') ?? undefined });
+form.on('draft', ({ key, later, saved }) => later && console.log('Continue from', saved.link));
+```
+
 ## What a page's records are called
 
 A page may say what its records are, so Fieldia's own sentences name them as

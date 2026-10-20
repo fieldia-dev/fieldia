@@ -46,10 +46,15 @@ prop, so what it returns comes back):
 `host` and `on-open` are the viewer's own options (see `@fieldia/viewer`); the
 handle from `@ready` has `on`, `setValues` and `run`.
 
+A page with `continueLater` opens a draft kept on your server by its key —
+`:resume="route.query.resume"`, the key the link Continue later gave — and
+`@draft="({ key, later, saved }) => …"` is told of each draft kept. A new
+`resume` opens that draft, as a new `record-id` opens that record.
+
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` in a router's `beforeRouteLeave`, before removing
 `<FieldiaForm>`, and before changing a prop that mounts it again (`page`,
-`form`, `dataSource`, `recordId`, `user`, `context`, `dir`, `locale`,
+`form`, `dataSource`, `recordId`, `resume`, `user`, `context`, `dir`, `locale`,
 `labels`). Vue unmounts at once, so nothing else can keep the person there. It
 waits for a save on its way, then asks "Discard your changes?" only when their
 work is at risk, and answers false when they choose to stay. `warn-on-leave` has

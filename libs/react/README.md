@@ -43,10 +43,16 @@ again; `onAction` may answer a button or a `call` step:
 `host` and `onOpen` are the viewer's own options (see `@fieldia/viewer`); the
 handle from `ref` or `onReady` has `on`, `setValues` and `run`.
 
+A page with `continueLater` opens a draft kept on your server by its key —
+`resume={new URLSearchParams(location.search).get('resume') ?? undefined}`, the
+key the link Continue later gave — and `onDraft={({ key, later, saved }) => …}`
+is told of each draft kept. A new `resume` opens that draft, as a new
+`recordId` opens that record.
+
 **Before your app leaves the form**, ask its one check: `await
 handle.form.leave()` before a route change, before unmounting `<FieldiaForm>`,
 and before changing a prop that mounts it again (`page`, `form`, `dataSource`,
-`recordId`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`). React
+`recordId`, `resume`, `user`, `context`, `dir`, `labels`, `fieldTypes`, `slots`). React
 unmounts at once, so nothing else can keep the person there. It waits for a save
 on its way, then asks "Discard your changes?" only when their work is at risk,
 and answers false when they choose to stay. `warnOnLeave` has the browser's own

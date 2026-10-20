@@ -35,6 +35,9 @@ interface DataSource {
   slots?(request: SlotsRequest): Promise<SlotsResult>;        // the times free to book, day by day
   duplicates?(request: DuplicatesRequest): Promise<DuplicatesResult>; // records like the one typed
   merge?(request: MergeRequest): Promise<MergeResult | void>; // two records into one
+  limits?(request: LimitsRequest): Promise<LimitsResult>;    // responses taken, this person's, each choice's takers
+  saveDraft?(request: SaveDraftRequest): Promise<SavedDraft>; // keep the answers so far, to continue later
+  loadDraft?(request: LoadDraftRequest): Promise<StoredDraft | null>; // a draft, by its key
 }`
 )}
 
@@ -63,6 +66,8 @@ interface DataSource {
     <tr><td>${c('slots')}</td><td>A date and time drawn as booking slots shows a month, a field it depends on changes, or someone picks a time</td><td>Booking a time from those free — see <a href="#slots">booking slots</a></td></tr>
     <tr><td>${c('duplicates')}</td><td>Someone stops typing in a field the page's ${c('duplicates')} names, a saved record opens, or a record is saved</td><td>Saying which records it may duplicate, under the field they matched on — see <a href="#duplicates">possible duplicates</a></td></tr>
     <tr><td>${c('merge')}</td><td>Someone merges a record with one like it, a value picked for each field</td><td>Merge, beside a possible duplicate — without it, none is offered</td></tr>
+    <tr><td>${c('limits')}</td><td>A page with ${c('limits')} or options with ${c('seats')} opens, and again just before its answers go and after</td><td>The most responses, one from each person, each choice's places left — see <a href="#limits">opening, closing and limiting a form</a>; without it, a page keeps to its dates alone</td></tr>
+    <tr><td>${c('saveDraft')} · ${c('loadDraft')}</td><td>Someone types on a page with ${c('continueLater')}, enters a wizard's step, or presses Continue later; a page opens with a draft's key</td><td>Answers kept on your server, continued on any device — see <a href="#drafts">save and resume</a>; without them, no Continue later shows</td></tr>
   </tbody>
 </table>
 </div>
@@ -239,6 +244,58 @@ const dataSource = {
 )}
 <p>${c('form.findDuplicates()')} asks it for a screen of your own, and ${c('form.merge({ keepId, mergeIds, values })')} merges; ${c('form.canFindDuplicates()')} and ${c('form.canMerge()')} say whether the page and its source can. For demos and tests, ${c('alikeRecords()')} answers from the <a href="#memory">memory data source</a>'s records.</p>
 
+<h2 id="limits">Opening, closing and limiting a form</h2>
+<p>A page of responses — a sign-up, a vote, a limited offer — may say when it takes answers and how many, with ${c('limits')}; and any choice may say how many may pick each option, with ${c('seats')}. A closed form says so as it opens, in place of its questions — <em>“This form opens on 1 November 2026 at 09:00.”</em>, <em>“This form closed on 20 November 2026.”</em>, <em>“This form has all the responses it takes.”</em>, <em>“You have sent your answers to this form already.”</em> — with the page's own ${c('message')} under it: a person learns it before typing anything, never after filling it in.</p>
+${code(
+  'json',
+  `
+"limits": {
+  "opens": "2026-11-01T09:00",
+  "closes": "2026-11-20",
+  "maxResponses": 200,
+  "onePerPerson": true,
+  "message": "Missed it? Write to events@example.com."
+},
+"session": { "type": "selection", "label": "Session", "options": [
+  { "value": "morning", "label": "Morning workshop", "seats": 30 },
+  { "value": "afternoon", "label": "Afternoon workshop", "seats": 25 }
+] }`
+)}
+<ul>
+  <li>${c('opens')} and ${c('closes')} are read on the page's clock (its ${c('timeZone')}, the browser's without one): a day and a time, or a day alone — opening at its first minute, closing at its end, so the form takes answers through that day — or an instant with its offset. They need nothing of your source. A form left open as it opens or closes says so then; answers typed when it closed stay on screen, a banner saying they can no longer be sent, and are refused as they go.</li>
+  <li>${c('limits({ pageId, model, recordId, fields, user })')} — answer ${c('{ responses, mine, perChoice }')}: the responses sent so far (what ${c('maxResponses')} counts), this person's (what ${c('onePerPerson')} counts — know them by your own sign-in; ${c('user')} is what the app told the form), and for each field in ${c('fields')}, by option value, how many hold it — the record edited (${c('recordId')}) not counted against itself. It is asked as the page opens — its questions wait while it is, where the page counts responses — again just before the answers go, and after. A part you leave out is not kept to; throw, and the page keeps to its dates alone.</li>
+  <li>An option with ${c('seats')} shows its places left beside its words — <em>“3 left”</em>, and <em>“Full”</em> once none are — in radios, checkboxes, the browser's list and picture cards. A full option is shown, never hidden: picked, it is refused under its question (<em>“Afternoon workshop is full”</em>), the choice kept as it was. One that filled up while it was held — someone else took the last place — stops the send: <em>“Morning workshop is full now: choose another”</em>. Options from your lists (${c('optionsFrom')}) may carry ${c('seats')} too.</li>
+  <li>Your ${c('submit')} (or ${c('save')}) still has the last word: two people may press Submit for the last place at once.</li>
+</ul>
+
+<h2 id="drafts">Save and resume on another device</h2>
+<p>A long form — a patient's intake, a job application, an enquiry in several steps — is often started on a phone and finished on a laptop. A page with ${c('continueLater')} keeps its answers on your server as they are typed, through ${c('saveDraft')}, and offers <strong>Continue later</strong>: the answers kept, and the link your app makes to carry on from. The link opens the form where it stopped — its wizard's step, its answers, and text typed that did not read yet, kept as typed and said again.</p>
+${code(
+  'ts',
+  `
+const dataSource = {
+  ...yourDataSource,
+  async saveDraft({ pageId, key, draft, later }) {
+    const answer = await fetch(\`/api/drafts/\${key ?? ''}\`, { method: key ? 'PUT' : 'POST', body: JSON.stringify({ pageId, draft, later }) });
+    const { id } = await answer.json();
+    // Continue later: the link to carry on from, which your app may email too.
+    return later ? { key: id, link: \`https://clinic.example/intake?resume=\${id}\`, message: 'We emailed you the link.' } : { key: id };
+  },
+  async loadDraft({ key }) {
+    const answer = await fetch(\`/api/drafts/\${key}\`);
+    return answer.ok ? answer.json() : null;   // { values, step, skipped, unread, answered, savedAt }
+  },
+};
+// The page opened from the link: its key, as the viewer's (or a wrapper's) resume.
+mountViewer(element, { page, dataSource, resume: new URLSearchParams(location.search).get('resume') ?? undefined });`
+)}
+<ul>
+  <li>${c('saveDraft({ pageId, model, recordId, key, draft, later })')} — kept a moment after typing stops, as a wizard's step is entered, and on Continue later (${c('later: true')}). One at a time: the first carries ${c('key: null')} and you answer with the key; each next carries it. ${c('draft')} holds the answers (${c('values')}), the ${c('step')} and the steps passed over (${c('skipped')}), text typed that does not read (${c('unread')}: by its box, as typed, with why), the fields the person ${c('answered')} and ${c('savedAt')} — the partial answers are yours to see: where people stopped, what they wrote.</li>
+  <li>${c('loadDraft({ pageId, key })')} — the draft, or ${c('null')} when there is none (sent, gone): the form then starts empty and says so. A draft that comes after the person started typing is offered, never laid over what they typed.</li>
+  <li>The send carries the draft's key (${c('submit({ …, draft })')}, ${c('save({ …, draft })')}): let it go, or mark it sent. Where the app gives the viewer a ${c('drafts.store')} (the browser's ${c('localStorage')}), it keeps only the key, so the same browser finds the draft again; a server that fails keeps the draft there instead.</li>
+  <li>Without the two members, no Continue later shows, and drafts stay in the browser's store as they always have (with their step now). ${c('form.continueLater()')}, ${c('form.canContinueLater()')} and the form's ${c('draft')} event (${c('onDraft')} in React, ${c('@draft')} in Vue, ${c('(draft)')} in Angular) are there for a screen of your own.</li>
+</ul>
+
 <h2 id="changes">What a save sends</h2>
 <p>${c('changes.values')} has the plain fields that changed. Tables of lines and many2many links come as operations, named the way Odoo names its x2many commands, so an Odoo or Flectra adapter maps them one to one:</p>
 ${code(
@@ -391,6 +448,7 @@ const dataSource = createMemoryDataSource({
 dataSource.responses;   // every submitted response, for tests
 dataSource.changeElsewhere('lead', 1, { stage: 'visit' }, { by: 'Mona' });   // as someone else, on another screen`
 )}
+<p>Its ${c('limits')} counts the responses it takes — and those ${c('answeredElsewhere(pageId, values)')} says someone else sent meanwhile, never this person's — over the starting counts its ${c('limits')} option gives by page (${c("{ 'event-signup': { responses: 147, perChoice: { session: { morning: 28 } } } }")}), and a record page's model's records but the one edited. Its ${c('saveDraft')} keys drafts ${c('draft-1')}, ${c('draft-2')}…, kept in ${c('dataSource.drafts')} (each with its page and ${c('later')}), answering Continue later with ${c('draftLink(key)')}'s link where given; ${c('loadDraft')} finds them, and those its ${c('drafts')} option starts with. A send lets its draft go.</p>
 <p>Its ${c('groups')} and ${c('totals')} group a date by the span it falls in (${c('interval')}), and total an amount in one currency only where ${c('currencies')} names the field holding each record's (see <a href="/lists/#totals">lists that add up</a>).</p>
 <p>Its ${c('slots')} answers from booking schedules, with ${c('scheduleSlots')}: the hours each day of the week on a zone's clock, a booking's length and the minutes kept free after one, holidays, and the records its bookings are — each car's own, with ${c('same')} — a time the clocks skip that day left out, and times gone by too:</p>
 ${code(

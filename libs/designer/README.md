@@ -89,6 +89,19 @@ customers"). `designer.setRecords({ one, other, a })` sets the records' words,
 `null` takes them away, and one word without the other is refused in words;
 `designer.setLowerLabels(on)` sets the labels' case.
 
+## When a form takes answers, and how many
+
+With nothing picked, a form of responses' Rules tab offers **Opens on** and
+**Closes on** — typed in the designer's own date box, on the page's time zone —
+**Most responses**, **One response per person**, and once one of them is set,
+**Words while it takes none**; and, on any screen people type in, **Continue
+later**. A choice's settings offer **Limit places**: a box for each option's
+places, emptied to take one away. `designer.setPageLimits({ opens, closes,
+maxResponses, onePerPerson, message })` sets them (`null` takes one away; a
+close before the open, or limits on a record's screen, are refused in words),
+`designer.setContinueLater(on)` and `designer.setOptionDetails(id, index, {
+seats })` the rest; Publish lists each change.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey
