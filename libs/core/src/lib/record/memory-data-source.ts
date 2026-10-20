@@ -50,6 +50,12 @@ import type {
   SaveDraftRequest,
   SavedDraft,
   LoadDraftRequest,
+  SuggestRequest,
+  SuggestResult,
+  RewriteRequest,
+  RewriteResult,
+  SearchToFilterRequest,
+  SearchToFilterResult,
 } from './data-source';
 import { ConflictError, loadedRecord, newRecordSave, saveProblemOf, saveRefused } from './data-source';
 import { distanceFrom, matchesFilter } from './filter';
@@ -155,15 +161,32 @@ export interface MemoryDataSourceOptions {
   drafts?: Record<string, StoredDraft & { pageId: string }>;
   /** The link "Continue later" answers with, made from the draft's key — the app's own address with it: none without it. */
   draftLink?: (key: string, request: SaveDraftRequest) => string;
+  /**
+   * What answers AI help, from the records the source keeps — `assistStandIn()` is a stand-in with no model, reading
+   * words by their patterns, for demos and tests. Each member given makes the source's member of that name; without
+   * it the source has none, so what asks for it is hidden, as with any source.
+   */
+  assist?: MemoryAssist;
 }
+
+/** What a memory source's AI help answers with (`MemoryDataSourceOptions.assist`): each given, from its records. */
+export interface MemoryAssist {
+  suggest?(request: SuggestRequest, records: Readonly<Record<string, Record<string, Values>>>): SuggestResult | Promise<SuggestResult>;
+  rewrite?(request: RewriteRequest, records: Readonly<Record<string, Record<string, Values>>>): RewriteResult | Promise<RewriteResult>;
+  searchToFilter?(request: SearchToFilterRequest, records: Readonly<Record<string, Record<string, Values>>>): SearchToFilterResult | Promise<SearchToFilterResult>;
+}
+
+/** The members of AI help a memory source has only where its `assist` answers them. */
+type AssistMembers = 'suggest' | 'rewrite' | 'searchToFilter';
 
 /**
  * Every member of a data source but `exportRecords` and `importRecords`: a
  * memory source leaves an export and an import to the browser, as a source
  * without a server of its own does. A test or a demo gives it one by setting
- * it.
+ * it. AI help's (`suggest`, `rewrite`, `searchToFilter`) where its `assist`
+ * option answers them.
  */
-export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords'>>, Pick<DataSource, 'exportRecords' | 'importRecords'> {
+export interface MemoryDataSource extends Required<Omit<DataSource, 'exportRecords' | 'importRecords' | AssistMembers>>, Pick<DataSource, 'exportRecords' | 'importRecords' | AssistMembers> {
   readonly records: Record<string, Record<string, Values>>;
   /**
    * The records said to be someone else for one another, by model: each pair of ids, in the order kept, through
@@ -323,7 +346,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     return counted;
   }
 
-  return {
+  const source: MemoryDataSource = {
     records,
     notDuplicatePairs,
     responses,
@@ -684,6 +707,34 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       addedDefinitions.set(`${request.list}:${JSON.stringify(own)}`, structuredCopy(request.definitions.filter((d) => !own.some((o) => o.name === d.name))));
     },
   };
+  // AI help's members, where the app gave what answers them (`assist`): each called as a server would be, after the
+  // source's pause, from the records it keeps.
+  const assist = options.assist;
+  if (assist?.suggest) {
+    const answer = assist.suggest.bind(assist);
+    source.suggest = async (request) => {
+      calls.push({ method: 'suggest', request });
+      await pause();
+      return answer(request, records);
+    };
+  }
+  if (assist?.rewrite) {
+    const answer = assist.rewrite.bind(assist);
+    source.rewrite = async (request) => {
+      calls.push({ method: 'rewrite', request });
+      await pause();
+      return answer(request, records);
+    };
+  }
+  if (assist?.searchToFilter) {
+    const answer = assist.searchToFilter.bind(assist);
+    source.searchToFilter = async (request) => {
+      calls.push({ method: 'searchToFilter', request });
+      await pause();
+      return answer(request, records);
+    };
+  }
+  return source;
 }
 
 /** The highest numeric id of a line among the records given — their tables of lines, and lines inside lines — or 0. */
